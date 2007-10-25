@@ -39,20 +39,27 @@
  * This interface should be only used locally to the lowering modules and is
  * not exported outside of be.so.
  *
- * Implementation of these functions are in wn_lower.cxx.
- *
  * For the description of the functions declared here, refer to the
- * wn_lower.cxx implementation.
+ * implementation files.
  *
  */
 
 #ifndef wn_lower_private_INCLUDED
 #define wn_lower_private_INCLUDED
 
-#include "wn_lower.h"
+#include "wn_lower.h"	// For LOWER_ACTIONS
 
+/* 
+ * Implementation from wn_lower.cxx.
+ */
 extern WN *lower_scf(WN *, WN *, LOWER_ACTIONS);
 extern WN *lower_expr(WN *, WN *, LOWER_ACTIONS);
 extern WN *lower_stmt(WN *, WN *, LOWER_ACTIONS);
+
+/* 
+ * Implementation from rt_lower_wn.cxx.
+ */
+extern WN *rt_lower_expr(WN *, LOWER_ACTIONS);
+extern void rt_lower_stmt(WN *, LOWER_ACTIONS);
 
 #endif

@@ -110,7 +110,7 @@ RT_LOWER_form_node(WN *new_nd, WN *old_nd) { return new_nd; }
  * target ISA.
  * ==================================================================== 
  */
-WN *
+static WN *
 RT_LOWER_expr (
   WN *tree
 )
@@ -1167,3 +1167,78 @@ RT_lower_wn(WN *tree)
 
   return;
 }
+
+#ifdef TARG_ST
+/* ====================================================================
+ *
+ * Entry points exported for local use by wn_lower.cxx.
+ * 
+ * These entry points are declared in wn_lower_private.h and should
+ * not be used from outside of wn_lower.cxx and related files.
+ * For use outside of the wn_lower utilities, call RT_lower_wn().
+ *
+ * The usage of these private functiosn if for wn_lower.cxx, in particular
+ * when lowering store/load of bitfields, this may generate arithmetic
+ * that require a runtime lowering on some targets.
+ * A typical sequence is: 
+ * lower_bit_field_id()      // may generate STBITS
+ *   -> lower_store_bits()   // may generate U8SHR that is not native
+ *     -> rt_lower_stmt()    // may call runtime
+ *       -> lower_store()    // complete lowering
+ *
+ * WN *rt_lower_expr(WN *, LOWER_ACTIONS)
+ *   perform runtime lowering for the given expression and returns the
+ *   new expression.
+ *
+ * void rt_lower_stmt(WN *, LOWER_ACTIONS)
+ *   perform runtime lowering for the given statement, the statement
+ *   is modified in place. 
+ *   Currently limited to stmt only (no scf,region or function) as 
+ *   the use of this function is supposed to be local to some other
+ *   lowering transformation.
+ *
+ * In both cases the lowering is actually performed only if the 
+ * LOWER_RUNTIME action is active. This action must be activated
+ * by the main lowering driver at CG and HILO lowering time,
+ * i.e. after and only after the actual RT_lower_wn() phase.
+ * This allows client of this interface to use it in any context 
+ * (pre or post runtime lowering).
+ *
+ * Note: currently, in both cases the actions argument is used only to
+ * detect the LOWER_RUNTIME action. Other actions are not applied.
+ * This is the initial philosophy or RT_lower that only does the runtime 
+ * lowering and nothing else. This could be changed for better integration
+ * with the lowering, but then, there may be some phasing problems.
+ * Thus, for now, the client must take care of running an additional 
+ * lowering phase after the runtime lowering, the typical sequence is:
+ *   rt_lower_stmt(wn, OnlyAction(actions, LOWER_RUNTIME));
+ *   wn = lower_stmt(wn, block, actions)
+ * If integrated with the lowering, this could at the end be simplified into:
+ *   wn = rt_lower_stmt(wn, block, actions); 
+ *
+ * ==================================================================== */
+void
+rt_lower_stmt(WN *stmt, LOWER_ACTIONS actions)
+{
+  Is_True(OPERATOR_is_stmt(WN_operator(stmt)), ("%s: stmt nodes only", __FUNCTION__));
+  
+  if (actions & LOWER_RUNTIME) {
+    WN_Lower_Checkdump("Local expr RT Lowering", stmt, 0);
+    RT_LOWER_stmt_wn(stmt);
+    WN_Lower_Checkdump("After Local expr RT lowering", stmt, 0);   
+    WN_verifier(stmt);
+  }
+  
+}
+
+WN *
+rt_lower_expr(WN *tree, LOWER_ACTIONS actions)
+{
+  if (actions & LOWER_RUNTIME) {
+    WN_Lower_Checkdump("Local stmt RT Lowering", tree, 0);
+    tree = RT_LOWER_expr(tree);
+    WN_Lower_Checkdump("After Local stmt RT lowering", tree, 0);   
+  }
+  return tree;
+}
+#endif

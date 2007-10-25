@@ -1214,7 +1214,7 @@ Do_WOPT_and_CG_with_Regions (PU_Info *current_pu, WN *pu)
 	if (WOPT_Enable_Bits_Load_Store)
 	  actions |= LOWER_BIT_FIELD_ID;
 	else
-	  actions |= LOWER_BITS_OP;
+	  actions |= LOWER_BITS_OP; // It implies LOWER_BIT_FIELD_ID
 	actions |= LOWER_FAST_MUL;
 	actions |= LOWER_CNST_MUL;
 #endif

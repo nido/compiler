@@ -481,3 +481,27 @@ WN_Madd_Allowed (TYPE_ID type)
     BETARG_is_enabled_operator(OPR_NMSUB, type, type);
 }
 
+BOOL
+WN_STBITS_Allowed (TYPE_ID type)
+{
+  /* For now we never allow STBITS to go through the middle end
+     as it is not supported by WOPT. 
+     At low level of optimization we could let it go through as
+     it was done before, but I don't see benefit for this.
+     The benefit of always returning false here is that the code
+     selector does not have to implement it.
+  */
+  return FALSE;
+  /* return BETARG_is_enabled_operator(OPR_STBITS, MTYPE_V, type); */
+}
+
+BOOL
+WN_LDBITS_Allowed (TYPE_ID type)
+{
+  /* For the same reason as WN_STBITS_Allowed(), this function return always
+     FALSE.
+  */
+  return FALSE;
+  /* return BETARG_is_enabled_operator(OPR_LDBITS, type, type); */
+}
+

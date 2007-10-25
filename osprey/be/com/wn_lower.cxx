@@ -135,10 +135,6 @@ extern TYPE_ID compute_copy_quantum(INT32 );
 
 extern WN *WN_I1const(TYPE_ID, INT64 con);
 
-#ifdef TARG_ST
-/* In rt_lower_wn.cxx. */
-extern WN *RT_LOWER_expr (WN *tree);
-#endif
 
 /*
  * defined in config.c (should be in config.h)
@@ -246,6 +242,12 @@ static INT32 compute_alignment(WN *, INT64);
 static TYPE_ID compute_next_copy_quantum(TYPE_ID , INT32);
 
 static WN*lower_load_bits (WN* block, WN* wn, LOWER_ACTIONS actions);
+static WN*lower_store_bits (WN* block, WN* wn, LOWER_ACTIONS actions);
+#ifdef TARG_ST
+static void lower_bit_field_id(WN *wn);
+static WN*lower_load_bitfield (WN* block, WN* wn, LOWER_ACTIONS actions);
+static WN*lower_store_bitfield (WN* block, WN* wn, LOWER_ACTIONS actions);
+#endif
 
 #ifdef TARG_ST
 static WN *lower_return(WN *block, WN *tree, LOWER_ACTIONS actions);
@@ -449,6 +451,10 @@ TYPE_ID Promoted_Mtype (
 
 #define	Action(x)			(actions & (x))
 #define	NotAction(x)			(Action(x)==0)
+#ifdef TARG_ST
+#define	OnlyAction(x, action)		((x) & (action))
+#define	RemoveAction(x, action)		((x) & ~(action))
+#endif
 #define	RemoveScfAction(x)		(x & ~(LOWER_SCF))
 #define	RemoveShortCircuitAction(x)	(x & ~(LOWER_SHORTCIRCUIT))
 
@@ -2655,9 +2661,6 @@ is_hilo_type (TYPE_ID type)
 }
 #endif
 
-// temporary until I modify the .h !!
-#define LOWER_HILO (LOWER_DOUBLE|LOWER_LONGLONG)
-
 /* ====================================================================
  *   lower_hilo_expr
  *
@@ -2942,11 +2945,19 @@ lower_hilo_expr (
       // We should never have U8U4LOAD, always an explicit CVT
       Is_True(MTYPE_size_min(WN_rtype(tree)) == MTYPE_size_min(WN_desc(tree)), ("Unexpected LOAD types for hilo lowering"));
       
-      // First lower bit extract and than lower hilo
+#ifdef TARG_ST
+      // We must first lower load bits before performing HILO lowering.
+      // This is an implementation choice; it is simpler to implement like this.
+      // Note that RT lowering is now the responsibility of lower_load_bits.
+      WN *extract_wn = lower_load_bits (block, tree, RemoveAction(actions, LOWER_HILO));
+      lower_hilo_expr(block, extract_wn, actions, hipart, lopart);
+#else
+      // First lower bit extract and then lower hilo
       // Run time lowering may be necessary for IU8 shifts
       WN *extract_wn = lower_load_bits (block, tree, 0);
       extract_wn = RT_LOWER_expr(extract_wn);
       lower_hilo_expr(block, extract_wn, actions, hipart, lopart);
+#endif
     }
     break;
 
@@ -3041,11 +3052,19 @@ lower_hilo_expr (
       // We should never have U8U4LOAD, always an explicit CVT
       FmtAssert(MTYPE_size_min(WN_rtype(tree)) == MTYPE_size_min(WN_desc(tree)), ("Unexpected LOAD types for hilo lowering"));
       
+#ifdef TARG_ST
+      // We must first lower load bits before performing HILO lowering.
+      // This is an implementation choice; it is simpler to implement like this.
+      // Note that RT lowering is now performed the responsibility of lower_load_bits.
+      WN *extract_wn = lower_load_bits (block, tree, RemoveAction(actions, LOWER_HILO));
+      lower_hilo_expr(block, extract_wn, actions, hipart, lopart);
+#else
       // First lower bit extract and than lower hilo
-      // Run time lowering may be necessary for IU8 shifts
+      // Run time lowering may be necessary for I8/U8 shifts
       WN *extract_wn = lower_load_bits (block, tree, 0);
       extract_wn = RT_LOWER_expr(extract_wn);
       lower_hilo_expr(block, extract_wn, actions, hipart, lopart);
+#endif
   }
   break;
   
@@ -3537,11 +3556,12 @@ HILO_lower_wn (
   WN **lopart
 )
 {
+  // LOWER_HILO implies LOWER_RUNTIME
   // Null block also means not to delete the node.
   // that is converted (see Get_hilo_home), but not replaced.
   lower_hilo_expr(NULL, 
 		  wn,
-		  LOWER_HILO,
+		  LOWER_HILO | LOWER_RUNTIME,
                   hipart, 
                   lopart);
   return;
@@ -5813,6 +5833,28 @@ static WN *lower_miload(WN *block, WN *tree, LOWER_ACTIONS actions)
   return wn;
 }
 
+#ifdef TARG_ST
+/* ====================================================================
+ *
+ * lower_load_bitfield()
+ *
+ * lower bitfield load. BSILOAD/BSLDID
+ *
+ * ==================================================================== */
+static WN*
+lower_load_bitfield (WN* block, WN* wn, LOWER_ACTIONS actions)
+{
+  Is_True((WN_operator (wn) == OPR_ILOAD || WN_operator (wn) == OPR_LDID) &&
+	  WN_desc(wn) == MTYPE_BS,
+	  ("expected BSILOAD or BSLDID, not %s",
+	   OPERATOR_name (WN_operator (wn))));
+  
+  lower_bit_field_id(wn);
+  return lower_expr(block, wn, actions);
+}
+#endif
+
+
 /* ====================================================================
  *
  * lower_load_bits
@@ -5823,7 +5865,7 @@ static WN *lower_miload(WN *block, WN *tree, LOWER_ACTIONS actions)
 static WN*
 lower_load_bits (WN* block, WN* wn, LOWER_ACTIONS actions)
 {
-  Is_True (WN_operator (wn) == OPR_LDBITS || WN_operator (wn) == OPR_ILDBITS,
+  Is_True ((WN_operator (wn) == OPR_LDBITS || WN_operator (wn) == OPR_ILDBITS),
 	   ("expected LDBITS or ILDBITS, not %s",
 	    OPERATOR_name(WN_operator(wn))));
 
@@ -5875,9 +5917,36 @@ lower_load_bits (WN* block, WN* wn, LOWER_ACTIONS actions)
   if (rtype != orig_rtype)
     tree = WN_Type_Conversion (tree, orig_rtype);
 
+#ifdef TARG_ST
+  // Call runtime lowering here as extraction may have generated U8 shifts
+  tree = rt_lower_expr (tree, OnlyAction(actions, LOWER_RUNTIME));
   return lower_expr (block, tree, actions);
+#else
+  return lower_expr (block, tree, actions);
+#endif
 } // lower_load_bits
 
+
+#ifdef TARG_ST
+/* ====================================================================
+ *
+ * lower_store_bitfield()
+ *
+ * lower bitfield stores. BSISTORE/BSSTID 
+ *
+ * ==================================================================== */
+static WN*
+lower_store_bitfield (WN* block, WN* wn, LOWER_ACTIONS actions)
+{
+  Is_True((WN_operator (wn) == OPR_ISTORE || WN_operator (wn) == OPR_STID) &&
+	  WN_desc(wn) == MTYPE_BS,
+	  ("expected BSISTORE or BSSTID, not %s",
+	   OPERATOR_name (WN_operator (wn))));
+  
+  lower_bit_field_id(wn);
+  return lower_store(block, wn, actions);
+}
+#endif
 
 /* ====================================================================
  *
@@ -5947,6 +6016,11 @@ lower_store_bits (WN* block, WN* wn, LOWER_ACTIONS actions)
   WN_kid0 (wn) = new_value;
   WN_set_bit_offset_size (wn, 0, 0);
   WN_set_operator (wn, WN_operator(wn) == OPR_STBITS ? OPR_STID : OPR_ISTORE);
+
+#ifdef TARG_ST
+  // U8 shifts may require RT lowering
+  rt_lower_stmt(wn, OnlyAction(actions, LOWER_RUNTIME));
+#endif
 
   return lower_store (block, wn, actions);
 } // lower_store_bits
@@ -6657,7 +6731,8 @@ static BOOL Is_Const_Float(WN *wn)
  * ==================================================================== */
 
 #ifdef TARG_ST
-WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
+WN *
+lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
 #else
 static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
 #endif
@@ -6836,11 +6911,15 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
       return lower_miload(block, tree, actions);
 
     if (Action(LOWER_BIT_FIELD_ID) && WN_desc(tree) == MTYPE_BS) {
+#ifdef TARG_ST
+       // Performs full lowering of bitfield load.
+       return lower_load_bitfield(block, tree, actions);
+#else
       lower_bit_field_id(tree);
-      if (Action(LOWER_BITS_OP) && WN_operator(tree) == OPR_ILDBITS) {
+       if (Action(LOWER_BITS_OP) && WN_operator(tree) == OPR_ILDBITS) {
 	return lower_load_bits (block, tree, actions);
       }
-	
+#endif
     }
 
     if (Action(LOWER_SPLIT_CONST_OFFSETS))
@@ -6912,9 +6991,15 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
       return lower_mldid(block, tree, actions);
 
     if (Action(LOWER_BIT_FIELD_ID) && WN_desc(tree) == MTYPE_BS) {
+#ifdef TARG_ST
+       // Performs full lowering of bitfield load.
+      return lower_load_bitfield(block, tree, actions);
+#else
       lower_bit_field_id(tree);
-      if (Action(LOWER_BITS_OP) && WN_operator(tree) == OPR_LDBITS)
+      if (Action(LOWER_BITS_OP) && WN_operator(tree) == OPR_LDBITS) {
 	return lower_load_bits (block, tree, actions);
+      }
+#endif
     }
 
     if ((WN_class(tree) == CLASS_CONST)	&& (WN_load_offset(tree) == 0))
@@ -6994,8 +7079,13 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
 
   case OPR_ILDBITS:
   case OPR_LDBITS:
+#ifdef TARG_ST
     if (Action(LOWER_BITS_OP))
       return lower_load_bits (block, tree, actions);
+#else
+    if (Action(LOWER_BITS_OP) && !WN_LDBITS_Allowed(WN_rtype(tree)))
+      return lower_load_bits (block, tree, actions);
+#endif
     break;
     
   case OPR_LDA:
@@ -7336,10 +7426,15 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
     {
 #ifdef TARG_ST
       // [SC] Ensure the condition will be fully hilo-lowered.
+      // This may happen at HILO lowering time that the condition
+      // has not been runtime lowered yet. In this case we call directly
+      // the runtime lowering as HILO lowering assume that conditions
+      // is runtime lowered.
       if (Action(LOWER_HILO) && is_hilo_type(WN_rtype(WN_kid0(tree)))) {
-	WN_kid0(tree) = RT_LOWER_expr (WN_NE (WN_rtype(WN_kid0(tree)),
-				     WN_kid0(tree),
-				     WN_Zerocon(WN_rtype(WN_kid0(tree)))));
+	WN_kid0(tree) = rt_lower_expr (WN_NE (WN_rtype(WN_kid0(tree)),
+					      WN_kid0(tree),
+					      WN_Zerocon(WN_rtype(WN_kid0(tree)))), 
+				       OnlyAction(actions, LOWER_RUNTIME));
       }
 #endif
       WN * const kid0 = WN_kid0(tree);	// the condition expression
@@ -8296,7 +8391,8 @@ static WN *lower_mistore(WN *block, WN *tree, LOWER_ACTIONS actions)
  *
  * ==================================================================== */
 
-static WN *lower_store(WN *block, WN *tree, LOWER_ACTIONS actions)
+static WN *
+lower_store(WN *block, WN *tree, LOWER_ACTIONS actions)
 {
   BOOL kids_lowered = FALSE;	/* becomes TRUE when kids are lowered */
 
@@ -8356,9 +8452,14 @@ static WN *lower_store(WN *block, WN *tree, LOWER_ACTIONS actions)
       return lower_mistore(block, tree, actions);
 
     if (Action(LOWER_BIT_FIELD_ID) && WN_desc(tree) == MTYPE_BS) {
+#ifdef TARG_ST
+      // Performs full lowering of bitfield store.
+      return lower_store_bitfield(block, tree, actions);
+#else
       lower_bit_field_id(tree);
       if (Action(LOWER_BITS_OP) && WN_operator (tree) == OPR_ISTBITS)
 	return lower_store_bits (block, tree, actions);
+#endif
     }
 
     if (Action(LOWER_COMPLEX) && MTYPE_is_complex(WN_desc(tree)))
@@ -8759,9 +8860,14 @@ static WN *lower_store(WN *block, WN *tree, LOWER_ACTIONS actions)
       return lower_mstid(block, tree, actions);
 
     if (Action(LOWER_BIT_FIELD_ID) && WN_desc(tree) == MTYPE_BS) {
+#ifdef TARG_ST
+      // Performs full lowering of bitfield store.
+      return lower_store_bitfield(block, tree, actions);
+#else
       lower_bit_field_id(tree);
       if (Action(LOWER_BITS_OP) && WN_operator (tree) == OPR_STBITS)
 	return lower_store_bits (block, tree, actions);
+#endif
     }
 
     if (Action(LOWER_COMPLEX) && MTYPE_is_complex(WN_desc(tree)))
@@ -9045,37 +9151,9 @@ static WN *lower_store(WN *block, WN *tree, LOWER_ACTIONS actions)
 #ifdef TARG_ST
 
   case OPR_ISTBITS:
-
-#if 0 // this was never active anyway ??
-    if (Action(LOWER_BITS_OP))
-      return lower_store_bits (block, tree, actions);
-#endif
-
-    if (Action(LOWER_HILO) && 
-#ifdef NEW_LOWER
-	is_hilo_type(WN_desc(tree))
-#else
-	(MTYPE_is_double(WN_desc(tree)) ||
-	 MTYPE_is_longlong(WN_desc(tree)))
-#endif
-	)
-    {
-      // For HILO lowering of STBITS, we first
-      // lower store bits, than we lower the store
-      // note that run time lowering may be necessary in-between
-      // for U8 shifts.
-      WN *extract_wn = lower_store_bits(block, tree, 0);
-      RT_lower_wn(extract_wn);
-      return lower_store(block, extract_wn, actions);
-    }
-
   case OPR_STBITS:
 
-#if 0 // Arthur: this was never active
-    if (Action(LOWER_BITS_OP))
-      return lower_store_bits (block, tree, actions);
-#endif
-
+    // LOWER_HILO must be checked at first
     if (Action(LOWER_HILO) && 
 #ifdef NEW_LOWER
 	is_hilo_type(WN_desc(tree))
@@ -9085,25 +9163,24 @@ static WN *lower_store(WN *block, WN *tree, LOWER_ACTIONS actions)
 #endif
 	)
     {
-      // For HILO lowering of STBITS, we first
-      // lower store bits, than we lower the store
-      // note that run time lowering may be necessary in-between
-      // for U8 shifts.
-      WN *extract_wn = lower_store_bits(block, tree, 0);
-      RT_lower_wn(extract_wn);
-      return lower_store(block, extract_wn, actions);
-    }
-
+      // For HILO lowering of STBITS, we first lower store bits.
+      // This is an implementation choice as we do not handle HILO lowering of
+      // store_bits. 
+      return lower_store_bits(block, tree, actions);
+    } 
+    else if (Action(LOWER_BITS_OP) && !WN_STBITS_Allowed(WN_desc(tree)))
+      return lower_store_bits (block, tree, actions);
+    
+    break;
 #else /* not TARG_ST */
 
   case OPR_ISTBITS:
   case OPR_STBITS:
     if (Action(LOWER_BITS_OP))
       return lower_store_bits (block, tree, actions);
+    break;
 
 #endif
-
-    break;
 
   case OPR_MSTORE:
     {
@@ -9204,7 +9281,8 @@ static WN *lower_store(WN *block, WN *tree, LOWER_ACTIONS actions)
  *
  * ==================================================================== */
 
-static WN *lower_eval(WN *block, WN *tree, LOWER_ACTIONS actions)
+static WN *
+lower_eval(WN *block, WN *tree, LOWER_ACTIONS actions)
 {
   WN	*child = WN_kid0(tree);
 
@@ -15698,7 +15776,7 @@ static WN *lower_promoted_formal(PLOC ploc, ST *formalST)
 
   ldid = WN_LdidPreg (WN_rtype(ldid), preg);
   cvt =	WN_Type_Conversion(ldid, formalType);
-  cvt = RT_LOWER_expr (cvt);
+  cvt = rt_lower_expr (cvt, LOWER_RUNTIME);
 
 #else
   cvt =	WN_Type_Conversion(ldid, formalType);
@@ -17166,6 +17244,7 @@ const char * LOWER_ACTIONS_name(LOWER_ACTIONS actions)
   case LOWER_FAST_DIV:			return "LOWER_FAST_DIV";
   case LOWER_FAST_MUL:			return "LOWER_FAST_MUL";
   case LOWER_CNST_MUL:			return "LOWER_CNST_MUL";
+  case LOWER_RUNTIME:			return "LOWER_RUNTIME";
 #endif
   default:				return "<unrecognized>";
   }
@@ -17352,6 +17431,10 @@ static LOWER_ACTIONS lower_actions(WN *pu, LOWER_ACTIONS actions)
 		LOWER_SHORTCIRCUIT	  |
 		LOWER_INL_STACK_INTRINSIC |
 		LOWER_INLINE_INTRINSIC	  |
+#ifdef TARG_ST
+	        LOWER_BITS_OP |	/* Force lowering of bit ops before CG. */
+      		LOWER_RUNTIME | /* Force lowering of runtime before CG. */
+#endif
 		LOWER_BIT_FIELD_ID;
 
    /*
@@ -17365,8 +17448,18 @@ static LOWER_ACTIONS lower_actions(WN *pu, LOWER_ACTIONS actions)
     lowering_actions |= actions;
   }
 
+  /* LOWER_BITS_OP implies the lowering of bit fields. */
   if (Action(LOWER_BITS_OP))
     actions |= LOWER_BIT_FIELD_ID;
+
+#ifdef TARG_ST
+  /* LOWER_HILO implies LOWER_RUNTIME as:
+     - LOWER_HILO is called after the CG and the runtime lowering
+     - LOWER_RUNTIME should be active as soon as any transformation is done. */
+  if (Action(LOWER_HILO)) {
+    actions |= LOWER_RUNTIME;
+  }
+#endif
 
   current_actions = actions;
 
@@ -17547,7 +17640,7 @@ WN *WN_Lower(WN *tree, LOWER_ACTIONS actions, struct ALIAS_MANAGER *alias,
 
   lower_end(tree, actions);
 
-  WN_Lower_Checkdump("After lowering", tree, 0);
+  WN_Lower_Checkdump("After lowering", tree, actions);
 
 #ifdef BACK_END
   Stop_Timer(T_Lower_CU);

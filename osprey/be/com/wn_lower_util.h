@@ -186,6 +186,18 @@
  *  Returns true if generation of MADD and alike WHIRL operators is
  *  activated for this type.
  *
+ * BOOL WN_STBITS_Allowed (TYPE_ID type);
+ *
+ *  Returns true if generation of [I]STBITS is
+ *  activated for this type. Generally this means that the code 
+ *  selector can handle STBITS.
+ *
+ * BOOL WN_LDBITS_Allowed (TYPE_ID type);
+ *
+ *  Returns true if generation of [I]LDBITS is
+ *  activated for this type. Generally this means that the code 
+ *  selector can handle LDBITS.
+ *
  * ===================================================================
  */
 
@@ -280,6 +292,9 @@ extern BOOL WN_Is_Emulated(WN *tree);
 extern BOOL WN_Is_Emulated_Type (TYPE_ID type);
 extern BOOL WN_Is_Emulated_Operator (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc);
 extern BOOL WN_Madd_Allowed (TYPE_ID type);
+extern BOOL WN_LDBITS_Allowed (TYPE_ID type);
+extern BOOL WN_STBITS_Allowed (TYPE_ID type);
+
 
 /* ==================================================================== */
 
