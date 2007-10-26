@@ -87,7 +87,9 @@
 
 #include "DaVinci.h"      // for DaVinci viewer (for FB CFG).
 #include "wb_util.h"      // more: move this to another file (gwe).
-
+#ifdef TARG_ST
+#include "W_math.h" // For fabs
+#endif
 // ====================================================================
 
 // Delete this.
@@ -3512,8 +3514,15 @@ Convert_Feedback_Info (const FEEDBACK* fb, const WN* tree,
 	  const FB_Info_Call& info_call = Cur_PU_Feedback->Query_call(wn);
 	  FmtAssert( info_icall.tnv._exec_counter >= info_icall.tnv._counters[0],
 		     ("icall exec counters don't match") );
+#ifdef TARG_ST
+	  //TB: info_call.freq_entry._value is a float value and is guessed.
+	  // info_icall.tnv._exec_counter is an integer and is a counted valus
+	  FmtAssert( fabs(info_icall.tnv._exec_counter - (float)info_call.freq_entry._value) < 1.0 ,
+		     ("icall and call exec counters don't match") );
+#else	  
 	  FmtAssert( info_icall.tnv._exec_counter == info_call.freq_entry._value,
 		     ("icall and call exec counters don't match") );
+#endif
 	}
       }
 #endif // KEY

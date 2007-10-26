@@ -1215,8 +1215,15 @@ OPT_FEEDBACK::Emit_feedback( WN *wn, BB_NODE *bb ) const
 	    fb_info_icall.tnv._counters[0] = fb_info_icall.tnv._counters[0] + (fb_info_icall.tnv._exec_counter - total); 
 	}
 	Cur_PU_Feedback->Annot_icall( wn, fb_info_icall );
+#ifdef TARG_ST
+	  //TB: info_call.freq_entry._value is a float value and is guessed.
+	  // info_icall.tnv._exec_counter is an integer and is a counted valus
+	FmtAssert( fabs(fb_info_icall.tnv._exec_counter - (float)fb_info_call.freq_entry._value) < 1.0 ,
+		   ("icall and call exec counters don't match") );
+#else
  	FmtAssert( fb_info_icall.tnv._exec_counter == fb_info_call.freq_entry._value,
  		   ("icall and call exec counters don't match") );
+#endif
 	/* We cannot do the following checking, because the representation of
 	   _exec_counter is UINT64, and node.freq_total_in is float.
 	   TODO:
