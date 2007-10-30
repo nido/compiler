@@ -3957,6 +3957,49 @@ EBO_Simplify_Compare_MinMaxSequence (
 
 
 
+#ifdef TARG_ST
+/* ============================================================================
+ *    EBO_OP_dont_fold(op)
+ *
+ *    Returns false if the OP is marked as not beneficial to fold.
+ *
+ *    For now, this is not an attribute of the OP itself but a global phasing
+ *    status. In particular CBPO (ref cbpo.cxx) will split address computation
+ *    and this split must not be reversed (i.e. re-folded).
+ *    For this we use a marker on the operation, actually the rematerializable
+ *    property. The rule is thus:
+ *    An operation must not be folded if:
+ *    1. EBO runs after CBPO (approximated by !EBO_in_pre), and,
+ *    2. the operation is rematerializable.
+ *    
+ *    A typical case is:
+ *      MAKE Y = symbol + 8 
+ *      MAKE Z = symbol + 12
+ *    CBPO generates:
+ *      MAKE Y = symbol + 8 
+ *      MAKE Z = Y + 4 	  (set remat flag) 
+ *    We want to avoid EBO re-generating the original code. 
+ *    Hence EBO_OP_dont_fold() must return true.
+ *
+ * ============================================================================
+ */
+static BOOL
+EBO_OP_dont_fold(OP *op)
+{
+  BOOL check_remat = OP_has_result(op);
+  int i;
+  
+  if (EBO_in_pre) return FALSE;
+  
+  for (i = 0; i < OP_results(op) && check_remat; i++) {
+    check_remat = TN_is_rematerializable(OP_result(op, i));
+  }
+  if (!check_remat) return FALSE;
+
+  return TRUE;
+}
+#endif
+
 /* =====================================================================
  *    EBO_Fold_Constant_Expression
  *
@@ -4007,6 +4050,16 @@ EBO_Fold_Constant_Expression (
     }
     fprintf(TFile,"\n");
   }
+
+#ifdef TARG_ST
+  if (EBO_OP_dont_fold(op)) {
+    if (EBO_Trace_Execution) {
+      fprintf(TFile,"<ebo> %s: ops marked dont_fold -> do nothing:\n",
+	      __FUNCTION__);
+    }
+    return FALSE;
+  }
+#endif
 
   if (OP_has_predicate(op) && (opnd_tn[OP_find_opnd_use(op, OU_predicate)] == Zero_TN)) {
 
@@ -4206,15 +4259,8 @@ Constant_Created:
     EBO_OPS_predicate (OP_opnd(op, OP_find_opnd_use(op, OU_predicate)), &ops);
   }
 
-  BOOL check_remat = (BOOL)OP_has_result(op);
-  {
-      int i;
-      for (i = 0; i < OP_results(op) && check_remat; i++) {
-          check_remat = (BOOL)TN_is_rematerializable(OP_result(op, i));
-      }
-  }
   /* No need to replace if same op, avoids infinite loops. */
-  if (OPs_Are_Equivalent(op, OPS_first(&ops)) || check_remat) {
+  if (OPs_Are_Equivalent(op, OPS_first(&ops))) {
     if (EBO_Trace_Execution) {
       fprintf(TFile,"<ebo> %s: ops are equivalent -> do nothing:\n",
 	      __FUNCTION__);
