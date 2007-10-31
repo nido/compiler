@@ -1348,6 +1348,12 @@ Move_Restore_Out_Of_LRANGE( LUNIT* lunit , SPILL_LIST** spill_list)
 // [SC] 3. No predecessor block ends in a branch instruction with an
 //         operand with a singleton subclass, where the register in the
 //         subclass is the register needed in the restore instruction.
+// [VB] 4. No predecessor block ends in a branch instruction
+//         that has the "same_res" property on the register operand
+//         that needs to be restored.
+// [VB] 5. No predecessor block ends in a branch instruction
+//         that has one of its results already allocated to the
+//         register needed in the restore instruction.
 #endif
 //
 //  Condition 2 could be relaxed if we are willing to insert a new block as
@@ -1410,6 +1416,37 @@ Move_Restore_Out_Of_LRANGE( LUNIT* lunit , SPILL_LIST** spill_list)
 	    REGISTER_SET sc_regs = REGISTER_SUBCLASS_members (sc);
 	    if (REGISTER_SET_Size (sc_regs) == 1
 		&& REGISTER_SET_MemberP (sc_regs, reg)) {
+	      return FALSE;
+	    }
+	  }
+	}
+      }
+      // [VB] Check if predecessor block ends in a branch instruction
+      //      that has the "same_res" property on the register operand
+      //      that needs to be restored.
+      for (OP *op = BB_xfer_op (bb); op != NULL; op = OP_next(op)) {
+	for (INT i = 0; i < OP_results(op); i++) {
+	  INT same_res = OP_same_res(op, i);
+	  if (same_res >= 0) {
+	    TN *tn = OP_opnd(op, same_res);
+	    if (TN_is_register(tn) &&
+		(TN_is_dedicated(tn) ||
+		 (TN_register(tn) != REGISTER_UNDEFINED)) &&
+		(TN_register(tn) == reg)) {
+	      return FALSE;
+	    }
+	  }
+	}
+      // [VB] Check if predecessor block ends in a branch instruction
+      //      that has one of its results already allocated to the
+      //      register needed in the restore instruction.
+      for (OP *op = BB_xfer_op (bb); op != NULL; op = OP_next(op)) {
+	for (INT i = 0; i < OP_results(op); i++) {
+	    TN *tn = OP_result(op, i);
+	    if (TN_is_register(tn) &&
+		(TN_is_dedicated(tn) ||
+		 (TN_register(tn) != REGISTER_UNDEFINED)) &&
+		(TN_register(tn) == reg)) {
 	      return FALSE;
 	    }
 	  }
