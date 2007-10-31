@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Oct 31 12:13:03 CET 2007
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-34978
+
+Description:
+------------
+	*  Fix bug #34978: open64 source contains invalid use of unnamed namespace
+	Delivered fixes/codex-34978 rev #14242 with authorization art #35009.
+
+
+Modified Files:
+---------------
+	M      osprey/ipa/local/ipl_summarize_template.h
+	M      osprey/ipa/local/ipl_summarize_util.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct 31 09:39:24 CET 2007
 	Author:    bv11
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

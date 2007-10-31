@@ -315,7 +315,11 @@ Count_tree_size_tuning (FEEDBACK& fb, WN *wn, INT32 &bbs, INT32 &stmts, FB_FREQ&
 // be deleted from hash tables in Restore_from_check_point.
 // -----------------------------------------------------------------
 
+#ifdef TARG_ST
+namespace __GNUEXT {
+#else
 namespace {
+#endif
     template <class X>
     struct ptr_hash {
 	size_t operator() (const X* s) const {
@@ -324,15 +328,25 @@ namespace {
     };
 }
 
+#ifdef TARG_ST
+typedef __GNUEXT::hash_map<CODEREP*, INT, __GNUEXT::ptr_hash<CODEREP>, __GNUEXT::equal_to<CODEREP*>,
+    mempool_allocator<CODEREP*> > CHI_CR_TO_INT_MAP;
+#else
 typedef __GNUEXT::hash_map<CODEREP*, INT, ptr_hash<CODEREP>, __GNUEXT::equal_to<CODEREP*>,
     mempool_allocator<CODEREP*> > CHI_CR_TO_INT_MAP;
+#endif
 extern CHI_CR_TO_INT_MAP* Chi_To_Idx_Map;
 typedef std::vector<CODEREP*, mempool_allocator<CODEREP*> > CHI_CR_ARRAY;
 extern CHI_CR_ARRAY* Hashed_Chis;
 extern INT Num_Chis_On_PU_Start;
 
+#ifdef TARG_ST
+typedef __GNUEXT::hash_map<PHI_NODE*, INT, __GNUEXT::ptr_hash<PHI_NODE>, __GNUEXT::equal_to<PHI_NODE*>,
+    mempool_allocator<PHI_NODE*> > PHI_NODE_TO_INT_MAP;
+#else
 typedef __GNUEXT::hash_map<PHI_NODE*, INT, ptr_hash<PHI_NODE>, __GNUEXT::equal_to<PHI_NODE*>,
     mempool_allocator<PHI_NODE*> > PHI_NODE_TO_INT_MAP;
+#endif
 extern PHI_NODE_TO_INT_MAP* Phi_To_Idx_Map;
 typedef std::vector<PHI_NODE*, mempool_allocator<PHI_NODE*> > PHI_NODE_ARRAY;
 extern PHI_NODE_ARRAY* Hashed_Phis;

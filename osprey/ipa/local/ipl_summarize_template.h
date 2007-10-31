@@ -423,6 +423,16 @@ SUMMARIZE<program>::Summarize (WN *w)
     entry_cache = CXX_NEW(SUMMARY_ENTRY_CACHE(&Temp_pool), &Temp_pool);
 
     // initialize hash tables for translating CODEREP and PHI
+#ifdef TARG_ST
+    Chi_To_Idx_Map =
+        CXX_NEW (CHI_CR_TO_INT_MAP (113, __GNUEXT::ptr_hash<CODEREP> (),
+				    __GNUEXT::equal_to<CODEREP*> (), &Temp_pool),
+		 &Temp_pool);
+    Phi_To_Idx_Map =
+        CXX_NEW (PHI_NODE_TO_INT_MAP (113, __GNUEXT::ptr_hash<PHI_NODE> (),
+				      __GNUEXT::equal_to<PHI_NODE*> (), &Temp_pool),
+		 &Temp_pool);
+#else
     Chi_To_Idx_Map =
 	CXX_NEW (CHI_CR_TO_INT_MAP (113, ptr_hash<CODEREP> (),
 				    __GNUEXT::equal_to<CODEREP*> (), &Temp_pool),
@@ -431,6 +441,7 @@ SUMMARIZE<program>::Summarize (WN *w)
 	CXX_NEW (PHI_NODE_TO_INT_MAP (113, ptr_hash<PHI_NODE> (),
 				      __GNUEXT::equal_to<PHI_NODE*> (), &Temp_pool),
 		 &Temp_pool);
+#endif
     Hashed_Chis = CXX_NEW(CHI_CR_ARRAY(&Temp_pool), &Temp_pool);
     Hashed_Phis = CXX_NEW(PHI_NODE_ARRAY(&Temp_pool), &Temp_pool); 
     Num_Chis_On_PU_Start = Get_chi_idx()+1; 
