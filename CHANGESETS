@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Nov  6 12:34:33 CET 2007
+	Author:    bidaultt
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-35531
+
+Description:
+------------
+	* [trunk] Fix for bug #35531: PFO produces corrupted files when heap is full.
+	Deliver fixes/codex-35531 rev #14269 with authorization branch #35532
+
+
+Modified Files:
+---------------
+	M      osprey/instrumentation/libinstrC/profile.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct 31 12:13:03 CET 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h> //for unlink
 
 #include "profile_interface.h"
 #include "profile_aux.h"
@@ -1063,6 +1064,8 @@ void __profile_finish(void)
 /*       fp = fopen (output_filename, "w+"); */
 
   if (fp == NULL) {
+    //TB: when fp is null an empty file is created. Remove it
+    unlink(output_filename);
      profile_error("Unable to open file: %s", output_filename);
      IN_LIBINSTR = FALSE;
      return;
