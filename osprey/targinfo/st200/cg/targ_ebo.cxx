@@ -4762,76 +4762,64 @@ min_max_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     inverted = FALSE;
   } else if (lhs_tn == false_tn && rhs_tn == true_tn) {
     inverted = TRUE;
-  } else if (lhs_tn == true_tn && TN_Has_Value(lhs_tn)) {
-    EBO_OP_INFO *false_opinfo;
-    if (!find_def_opinfo(false_tninfo, &false_opinfo)) return FALSE;
-    if (op_match_min(false_opinfo->in_op, 
-		     false_opinfo->actual_opnd, 
-		     &min_tn0, &min_tninfo0, &min_tn1, &min_tninfo1)){
-      if (min_tn0 == false_tn && TN_Has_Value(min_tn1)
-	  && TN_Value(min_tn1) < TN_Value(lhs_tn))
-	inverted = FALSE;  
-    } else if (op_match_max(false_opinfo->in_op, 
-			    false_opinfo->actual_opnd, 
-			    &max_tn0, &max_tninfo0, &max_tn1, &max_tninfo1)){
-      if (max_tn0 == false_tn && TN_Has_Value(max_tn1)
-	  && TN_Value(max_tn1) > TN_Value(lhs_tn))
-	inverted = FALSE;  
-    } else
+  } else {
+    // First, normalize the code in the form
+    // select (cmp var c1), min/max(var, c2), c1
+    inverted = FALSE;
+    TN *var_tn, *c1_tn, *c2_tn, *canon_true, *canon_false;
+    EBO_TN_INFO *canon_true_tninfo, *canon_false_tninfo;
+
+    if (TN_Has_Value(lhs_tn)) {
+      c1_tn = lhs_tn;
+      var_tn = rhs_tn;
+      inverted = !inverted;
+    }
+    else if (TN_Has_Value(rhs_tn)) {
+      c1_tn = rhs_tn;
+      var_tn = lhs_tn;
+    }
+    else
       return FALSE;
-  } else if (lhs_tn == false_tn && TN_Has_Value(lhs_tn)) {
-    EBO_OP_INFO *true_opinfo;
-    if (!find_def_opinfo(true_tninfo, &true_opinfo)) return FALSE;
-    if (op_match_min(true_opinfo->in_op, 
-		      true_opinfo->actual_opnd, 
-		      &min_tn0, &min_tninfo0, &min_tn1, &min_tninfo1)){
-      if (min_tn0 == true_tn && TN_Has_Value(min_tn1)
-	  && TN_Value(min_tn1) < TN_Value(lhs_tn))
-	inverted = TRUE;  
-    } else if (op_match_max(true_opinfo->in_op, 
-			    true_opinfo->actual_opnd, 
-			    &max_tn0, &max_tninfo0, &max_tn1, &max_tninfo1)){
-      if (max_tn0 == true_tn && TN_Has_Value(max_tn1)
-	  && TN_Value(max_tn1) > TN_Value(lhs_tn))
-	inverted = TRUE;  
-    } else
+
+    if ( c1_tn != true_tn && c1_tn != false_tn)
       return FALSE;
-  }  else if (rhs_tn == true_tn && TN_Has_Value(rhs_tn)) {
-    EBO_OP_INFO *false_opinfo;
-    if (!find_def_opinfo(false_tninfo, &false_opinfo)) return FALSE;
-    if (op_match_min(false_opinfo->in_op, 
-		     false_opinfo->actual_opnd, 
-		     &min_tn0, &min_tninfo0, &min_tn1, &min_tninfo1)){
-      if (min_tn0 == false_tn && TN_Has_Value(min_tn1)
-	  && TN_Value(min_tn1) < TN_Value(rhs_tn))
-	inverted = TRUE;  
-    } else if (op_match_max(false_opinfo->in_op, 
-			    false_opinfo->actual_opnd, 
-			    &max_tn0, &max_tninfo0, &max_tn1, &max_tninfo1)){
-      if (max_tn0 == false_tn && TN_Has_Value(max_tn1)
-	  && TN_Value(max_tn1) > TN_Value(rhs_tn))
-	inverted = TRUE;  
-    } else
+
+    if (c1_tn == true_tn) {
+      TN  *tmp_tn;
+      EBO_TN_INFO *tmp_tninfo;
+      tmp_tn = false_tn;
+      false_tn = true_tn;
+      true_tn = tmp_tn;
+      tmp_tninfo = false_tninfo;
+      false_tninfo = true_tninfo;
+      true_tninfo = tmp_tninfo;
+      inverted = !inverted;
+    }
+
+    EBO_OP_INFO *canon_true_opinfo;
+    TN *true_tn0, *true_tn1;
+    EBO_TN_INFO *true_tninfo0, *true_tninfo1;
+    if (!find_def_opinfo(true_tninfo, &canon_true_opinfo)) return FALSE;
+    if (op_match_min(canon_true_opinfo->in_op,
+             canon_true_opinfo->actual_opnd,
+             &true_tn0, &true_tninfo0, &true_tn1, &true_tninfo1)
+	&& TN_Has_Value(true_tn1)
+	&& TN_Value(true_tn1) >= TN_Value(c1_tn)
+	&& true_tn0 == var_tn)
+      c2_tn = true_tn1;
+    else if (op_match_max(canon_true_opinfo->in_op,
+              canon_true_opinfo->actual_opnd,
+              &true_tn0, &true_tninfo0, &true_tn1, &true_tninfo1)
+	     && TN_Has_Value(true_tn1)
+	     && TN_Value(true_tn1) <= TN_Value(c1_tn)
+	     && true_tn0 == var_tn)
+      c2_tn = true_tn1;
+    else
       return FALSE;
-  } else if (rhs_tn == false_tn && TN_Has_Value(rhs_tn)) {
-    EBO_OP_INFO *true_opinfo;
-    if (!find_def_opinfo(true_tninfo, &true_opinfo)) return FALSE;
-    if (op_match_min(true_opinfo->in_op, 
-		      true_opinfo->actual_opnd, 
-		      &min_tn0, &min_tninfo0, &min_tn1, &min_tninfo1)){
-      if (min_tn0 == true_tn && TN_Has_Value(min_tn1)
-	  && TN_Value(min_tn1) < TN_Value(rhs_tn))
-	inverted = FALSE;  
-    } else if (op_match_max(true_opinfo->in_op, 
-			    true_opinfo->actual_opnd, 
-			    &max_tn0, &max_tninfo0, &max_tn1, &max_tninfo1)){
-      if (max_tn0 == true_tn && TN_Has_Value(max_tn1)
-	  && TN_Value(max_tn1) > TN_Value(rhs_tn))
-	inverted = FALSE;  
-    } else
-      return FALSE;
-  } else 
-    return FALSE;
+
+
+    /* Beware that we may also generate a sequence min(min(x,c2),c1) or max(max(x,c2),c1) */
+  }
   
   TN *new_tn0 = NULL, *new_tn1 = NULL;
   EBO_TN_INFO *new_tninfo0 = NULL, *new_tninfo1 = NULL;

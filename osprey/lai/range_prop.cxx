@@ -470,11 +470,11 @@ RangePropagateOp (RangeAnalysis &range_analysis,
 	r2 = MakeUnsigned (r2, TN_bitwidth (opnd1));
       }
       // Ensure greater range, if any, is in r1.
-      if (Gt (r2, r1)->Equal (range_analysis.getLattice ()->makeRangeMinMax (1, 1))) {
+      if (Ge (r2, r1)->Equal (range_analysis.getLattice ()->makeRangeMinMax (1, 1))) {
 	SWAP_RANGE (r1, r2);
 	SWAP_TN (opnd1, opnd2);
       }
-      if (Gt (r1, r2)->Equal (range_analysis.getLattice ()->makeRangeMinMax (1, 1))) {
+      if (Ge (r1, r2)->Equal (range_analysis.getLattice ()->makeRangeMinMax (1, 1))) {
 	if (OP_imin (op)) {
 	  // opnd2 must be the minimum
 	  if (TN_is_register (opnd2))

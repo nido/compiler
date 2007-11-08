@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Nov  8 15:12:15 CET 2007
+	Author:    knochelh
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-35161
+
+Description:
+------------
+	* [trunk] Fix for codex bug #35161 Wrong ST200 code generation for clamping sequence.Deliver fixes/codex-35161 at rev #14280 with authorization branch #35295
+
+
+Modified Files:
+---------------
+	M      osprey/lai/range_prop.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Nov  8 11:49:41 CET 2007
 	Author:    knochelh
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
