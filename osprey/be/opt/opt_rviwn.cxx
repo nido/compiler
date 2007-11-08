@@ -85,6 +85,10 @@
 #include "idx_32_set.h"
 #include "opt_cvtl_rule.h"
 
+#ifdef TARG_ST
+#include "targ_sections.h"
+#endif
+
 
 // ====================================================================
 // Create a new LDID of this annotation
@@ -562,7 +566,12 @@ RVI::Is_lda_candidate( const WN *parent, const WN *lda, INT whichkid ) const
     case OPR_MLOAD:
       // if kid0 is a small lda, do not RVI it
       if ( whichkid == 0 ) {
-	return !Uses_Small_Offset( lda_st, lda_offset );
+	return !(Uses_Small_Offset( lda_st, lda_offset )
+#ifdef TARG_STxP70
+		 // we don't want to split base/offset for sda accesses on stxp70.
+		 || Get_Memory_Space(lda_st) == ST_MEMORY_SDA
+#endif
+		 );
       }
       return TRUE;
 
@@ -572,7 +581,12 @@ RVI::Is_lda_candidate( const WN *parent, const WN *lda, INT whichkid ) const
       // register (WN_is_call_related), do not RVI it
       if ( whichkid == 1 ) {
 	WN *rhs = WN_kid0(parent);
-	return (!Uses_Small_Offset( lda_st, lda_offset ) &&
+	return (!(Uses_Small_Offset( lda_st, lda_offset )
+#ifdef TARG_STxP70
+		 // we don't want to split base/offset for sda accesses on stxp70.
+		 || Get_Memory_Space(lda_st) == ST_MEMORY_SDA
+#endif
+		  ) &&
 		!(WN_operator(rhs) == OPR_LDID && // (fix for bug 670407)
 		  ST_class(WN_st(rhs)) == CLASS_PREG &&
 		  Preg_Is_Dedicated(WN_offset(rhs))));
