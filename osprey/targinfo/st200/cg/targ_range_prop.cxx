@@ -548,6 +548,9 @@ match_shl_mullh_sequence (const RangeAnalysis &range_analysis,
   TN *opnd1, *opnd2, *result;
   INT shiftcount;
 
+  if (!ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mulhs_r_r_r))
+    return FALSE;
+
   TOP opcode = OP_code(l1_op);
 
 
