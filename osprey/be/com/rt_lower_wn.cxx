@@ -625,6 +625,34 @@ RT_LOWER_expr (
 	(Emulate_FloatingPoint_Ops && MTYPE_is_float(desc)))
 #endif
       {
+#ifdef TARG_ST
+      if ( (opr == OPR_LT || opr == OPR_GE) &&
+	     MTYPE_is_longlong(desc) && MTYPE_signed_type(desc) &&
+	     WN_operator_is(WN_kid1(tree), OPR_INTCONST) &&
+	     WN_const_val(WN_kid1(tree)) == 0)
+	{
+	  //
+	  // for I8LT/GE with kid1 0, generate:
+	  //       
+	  //        kid0
+	  //        I4INTCONST 32
+	  //      I8ASHR
+	  //    I4I8CVT
+	  //    kid1
+	  //  I4LT/GE
+
+	  WN *wn1, *wn2;
+	  TYPE_ID  mtype = MTYPE_I4;
+
+	  wn1 = WN_Ashr(desc, WN_kid0(tree), WN_Intconst(mtype, 32));
+	  wn2 = WN_Cvt(desc, mtype, wn1);
+	  nd = WN_CreateExp2(opr, mtype, mtype, wn2, WN_Intconst(mtype, 0));
+	  WN_Delete(tree);
+	  
+	  RT_LOWER_expr (nd);
+	  return nd;
+	} 
+#endif
 
       intrinsic = OPCODE_To_INTRINSIC (RT_LOWER_opcode(tree));
 

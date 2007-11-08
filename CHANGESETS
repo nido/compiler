@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Nov  8 11:49:41 CET 2007
+	Author:    knochelh
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-34459
+
+Description:
+------------
+	* [trunk] Fix for codex bug #34459 ST200 long long code generation inefficiency. Deliver fixes/codex-34459 rev #14225 with authorization branch #35339
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/rt_lower_wn.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Nov  6 12:34:33 CET 2007
 	Author:    bidaultt
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
