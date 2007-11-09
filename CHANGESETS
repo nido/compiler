@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Nov  9 10:11:49 CET 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-35050
+
+Description:
+------------
+	* [trunk] Fix for bug #35050: [QMx] Mixer: Trap misaligned with -O0.
+	          -> For STxP70, code generated to access stack allocated
+		     could be incorrect when dealing with aligned_stack functions. 
+	Deliver fixes/codex-35050 rev #14315 with authorization branch #35066
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/expand/exp_memrf.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Nov  8 16:15:59 CET 2007
 	Author:    bv11
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
