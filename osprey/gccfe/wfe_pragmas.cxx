@@ -562,7 +562,13 @@ void WFE_Expand_Pragma(tree stmt)
   case  WFE_PRAGMA_STREAM_ALIGNMENT:
     args[0] = Get_Integer_Value(TREE_VALUE(pragma_args));
     break;
-  
+
+  case WFE_PRAGMA_LOOPPACK:
+    args[0] = Get_Integer_Value(TREE_VALUE(pragma_args));
+    if ((args[0] < 0) || (args[0] > 2))
+      WFE_Pragma_Error(wfe_pragma);
+    break;
+
   default:
     DevWarn ("unsupported Pragma");
     return;
@@ -789,6 +795,7 @@ is_pragma_loop(WN *wn) {
   case WN_PRAGMA_HWLOOP:
   case WN_PRAGMA_LOOPMINITERCOUNT:
   case WN_PRAGMA_LOOPMAXITERCOUNT:
+  case WN_PRAGMA_LOOPPACK:
     return TRUE;
   }
   return FALSE;

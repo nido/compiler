@@ -93,6 +93,8 @@ static const char source_file[] = __FILE__;
 
 #ifdef TARG_ST
 #include "top_properties.h"
+#include "stblock.h" // for ST_alignment
+#include "cg_ivs.h" // For packing
 #endif
 
 #include "targ_cg_private.h"
@@ -477,6 +479,7 @@ EBO_condition_redundant(
 BOOL
 EBO_combine_adjacent_loads(
   OP *op,
+  TN **opnd_tn,
   EBO_TN_INFO **opnd_tninfo,
   EBO_OP_INFO *opinfo,
   INT64 offset_pred,
@@ -498,15 +501,20 @@ EBO_combine_adjacent_loads(
   TN *r2;
   OPS ops = OPS_EMPTY;
 
-  if ((CG_LOOP_load_store_packing&0x200) == 0)
+  if ((CG_LOOP_Packing_flags & PACKING_EBO_LOAD) == 0)
     return FALSE;
 
   if (!Enable_64_Bits_Ops)
     return FALSE;
 
   // FdF 20061027: Perform load packing in EBO_main only
-  if (EBO_in_pre || EBO_in_peep ||
+  if (EBO_in_pre ||
       EBO_in_before_unrolling || EBO_in_after_unrolling)
+    return FALSE;
+
+  // FdF 20070419: EBO_in_peep would be needed to perform packing on
+  // spill accesses (codex #26354).
+  if (EBO_in_peep)
     return FALSE;
     
   if (EBO_Trace_Data_Flow) {
@@ -530,10 +538,45 @@ EBO_combine_adjacent_loads(
 
   // FdF 20061027
   if (!Enable_Misaligned_Access && !Enable_Misaligned_Load) {
-    if (EBO_Trace_Data_Flow) {
-      fprintf(TFile,"%sCannot packed load if unaligned 64-bits is not supported.\n", EBO_trace_pfx);
+    // Check if the alignment is known
+    INT base_alignment = -1;
+    TN *base_tn = opnd_tn[base_index];
+    TN *offset_tn = opnd_tn[offset_index];
+    if ((base_tn == SP_TN) && ((Stack_Alignment()&0x7) == 0)) {
+      ST *base_sym = NULL;
+      INT base_offset = 0;
+      if (TN_is_symbol(offset_tn)) {
+	INT64 base_ofst;
+	base_sym = TN_var(offset_tn);
+	base_offset = TN_offset(offset_tn);
+	Base_Symbol_And_Offset(base_sym, &base_sym, &base_ofst);
+	base_offset += base_ofst;
+	if ((base_sym == NULL) || ((ST_alignment(base_sym)&0x7) == 0))
+	  base_alignment = base_offset & 0x7;
+      }
+      else if (TN_has_value(offset_tn))
+	base_alignment = TN_value(offset_tn) & 0x7;
     }
-    return FALSE;
+    else if (TN_is_symbol(base_tn) && TN_has_value(offset_tn)) {
+      ST *base_sym = TN_var(base_tn);
+      if ((base_sym != NULL) && ((ST_alignment(base_sym) &0x7) == 0))
+	base_alignment = (TN_offset(base_tn) + TN_value(offset_tn)) & 0x7;
+    }
+
+    else if (TN_has_value(base_tn) && TN_is_symbol(offset_tn)) {
+      ST *offset_sym = TN_var(offset_tn);
+      if ((offset_sym != NULL) && ((ST_alignment(offset_sym) &0x7) == 0))
+	base_alignment = (TN_offset(offset_tn) + TN_value(base_tn)) & 0x7;
+    }
+    if (((base_alignment == 4) && (offset_succ > offset_pred)) ||
+	((base_alignment == 0) && (offset_succ < offset_pred))) {
+    }
+    else {
+      if (EBO_Trace_Data_Flow) {
+	fprintf(TFile,"%sCannot packed load if unaligned 64-bits is not supported.\n", EBO_trace_pfx);
+      }
+      return FALSE;
+    }
   }
 
   if (OP_cond_def(op) || OP_cond_def(pred_op)) {
@@ -550,12 +593,13 @@ EBO_combine_adjacent_loads(
   // FdF 20061027: Only 32 to 64 bit packing is supported
   if (size_pred != 4) return FALSE;
 
-  if ((bb != opinfo->in_bb) &&
-      !TN_Is_Constant(pred_result) &&
-      has_assigned_reg(pred_result)) {
+  
+  // FdF 20070511: If op and pred_op are not in the same basic block,
+  // it is too complicated to check that moving one operation close to
+  // the other does not break anything.
+  if (bb != opinfo->in_bb) {
     if (EBO_Trace_Data_Flow) {
-      fprintf(TFile,"%sShouldn't move dedicated register references across blocks.\n",
-              EBO_trace_pfx);
+      fprintf(TFile,"%spred_op and op, candidates for packing, are in different blocks.\n", EBO_trace_pfx);
     }
     return FALSE;
   }
@@ -565,13 +609,6 @@ EBO_combine_adjacent_loads(
   if ((opinfo->actual_rslt[0] == NULL) ||
       (opinfo->actual_rslt[0]->reference_count != 0) ||
       !EBO_tn_available (opinfo->in_bb, opinfo->actual_rslt[0])) {
-
-    if (bb != opinfo->in_bb) {
-      if (EBO_Trace_Data_Flow) {
-	fprintf(TFile,"%sThe result of the predecessor load has already been used.\n", EBO_trace_pfx);
-      }
-      return FALSE;
-    }
 
     // FdF 200601027: pred_result is used or defined between pred_op
     // and succ_op. If succ_result is not used or defined between
@@ -587,32 +624,48 @@ EBO_combine_adjacent_loads(
 	  }
 	  return FALSE;
 	}
-	for (INT idx = 0; idx < OP_opnds(op_iter); idx++) {
-	  if (OP_opnd(op_iter, idx) == succ_result) {
-	    if (EBO_Trace_Data_Flow) {
-	      fprintf(TFile,"%sThe result of the successor load is used between pred_op and op.\n", EBO_trace_pfx);
-	    }
-	    return FALSE;
+      }
+      for (INT idx = 0; idx < OP_opnds(op_iter); idx++) {
+	if (OP_opnd(op_iter, idx) == succ_result) {
+	  if (EBO_Trace_Data_Flow) {
+	    fprintf(TFile,"%sThe result of the successor load is used between pred_op and op.\n", EBO_trace_pfx);
 	  }
+	  return FALSE;
 	}
       }
     }
   }
-  else {
-    // FdF 20061220: pred_result is not used nor defined between
-    // pred_op and succ_op. However, if pred_result is not defined in
-    // the same block as succ_result, it may be live-out on a path
-    // that exits the super-block region.
 
-    if (bb != opinfo->in_bb) {
-      if (EBO_Trace_Data_Flow) {
-	fprintf(TFile,"%sThe result of the predecessor load may be used on another path.\n", EBO_trace_pfx);
+  // FdF 20070511: In any case, memory dependences with operations
+  // between pred_op and op must be checked.
+
+  for (OP *op_iter = OP_next(pred_op); op_iter != op; op_iter = OP_next(op_iter)) {
+    if (!OP_store(op_iter))
+      continue;
+    if (replace_pred_op) {
+      BOOL definite;
+      if (CG_DEP_Mem_Ops_Alias(op_iter, op, &definite)) {
+	if (EBO_Trace_Data_Flow) {
+	  fprintf(TFile,"%sop is aliases with a store operation before pred_op.\n", EBO_trace_pfx);
+	}
+	return FALSE;
       }
-      return FALSE;
+    }
+    else {
+      BOOL definite;
+      if (CG_DEP_Mem_Ops_Alias(pred_op, op_iter, &definite)) {
+	if (EBO_Trace_Data_Flow) {
+	  fprintf(TFile,"%spred_op is aliases with a store operation before op.\n", EBO_trace_pfx);
+	}
+	return FALSE;
+      }
     }
   }
 
+  OP *op1, *op2;
   if (offset_pred < offset_succ) {
+    op1 = pred_op;
+    op2 = op;
     base_tn = OP_opnd(pred_op, base_index);
     offset_tn = OP_opnd(pred_op, offset_index);
     base_tninfo = opinfo->actual_opnd[base_index];
@@ -625,6 +678,8 @@ EBO_combine_adjacent_loads(
     r1 = pred_result;
     r2 = succ_result;
   } else {
+    op1 = op;
+    op2 = pred_op;
     base_tn = OP_opnd(op, base_index);
     offset_tn = OP_opnd(op, offset_index);
     base_tninfo = opnd_tninfo[base_index];
@@ -632,14 +687,23 @@ EBO_combine_adjacent_loads(
     r2 = pred_result;
   }
 
-  extern void Expand_Extract(TN *low_tn, TN *high_tn, TN *src_tn, OPS *ops);
+  if (EBO_in_peep) {
+    // Must check also that (r1,r2) are assigned (R2n,R2n+1), and generate multi
+    FmtAssert(0, ("EBO_combine_adjacent_loads: Not implemented for EBO_in_peep"));
+  }
+  else {
 
-  TN *t64 = Gen_Register_TN (ISA_REGISTER_CLASS_integer, 8);
-  Expand_Load(OPC_I8I8LDID, t64, base_tn, offset_tn, &ops);
-  Expand_Extract(r1, r2, t64, &ops);
+    extern void Expand_Extract(TN *low_tn, TN *high_tn, TN *src_tn, OPS *ops);
 
+    TN *t64 = Gen_Register_TN (ISA_REGISTER_CLASS_integer, 8);
+    Expand_Load(OPC_I8I8LDID, t64, base_tn, offset_tn, &ops);
+    Expand_Extract(r1, r2, t64, &ops);
+  }
   
-  Copy_WN_For_Memory_OP (OPS_first(&ops), op);
+  // FdF 20070510: Do not copy the WN information, but create a map
+  // op->(op1,op2)
+  // Copy_WN_For_Memory_OP (OPS_first(&ops), op);
+  Set_Packed_Ops(OPS_first(&ops), 2, op1, op2);
   OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
 
   if (!EBO_Verify_Ops(&ops)) return FALSE;
@@ -661,7 +725,8 @@ EBO_combine_adjacent_loads(
     OP *ld64_op = OPS_first(&ops);
     if (OP_no_alias(op) && OP_no_alias(pred_op)) Set_OP_no_alias(ld64_op);
     if (OP_spill(op) || OP_spill(pred_op)) Set_OP_spill(ld64_op);
-    add_to_hash_table (FALSE, ld64_op, opnd_tninfo, opnd_tninfo);
+    // FdF 20070402
+    add_to_hash_table (FALSE, ld64_op, NULL, opnd_tninfo, opnd_tninfo);
     EBO_OP_INFO *ld64_opinfo = EBO_opinfo_table[EBO_hash_op(ld64_op, opnd_tninfo)];
     // FdF 20061027: No need to do this since we did not call
     // remove_op
@@ -675,7 +740,15 @@ EBO_combine_adjacent_loads(
     EBO_TN_INFO *tninfo[OP_MAX_FIXED_OPNDS];
     tninfo[0] = ld64_opinfo->actual_rslt[0];
     inc_ref_count(tninfo[0]);
-    add_to_hash_table (FALSE, extract_op, tninfo, tninfo);
+    // FdF 20070402
+    add_to_hash_table (FALSE, extract_op, NULL, tninfo, tninfo);
+
+    // FdF 20070417: Also, set the ref_count for the result of extract op
+    if (opinfo->actual_rslt[0]->reference_count != 0) {
+      EBO_OP_INFO *extract_opinfo = EBO_opinfo_table[EBO_hash_op(extract_op, tninfo)];
+      EBO_TN_INFO *tninfo = extract_opinfo->actual_rslt[(offset_pred < offset_succ) ? 0 : 1];
+      tninfo->reference_count = opinfo->actual_rslt[0]->reference_count;
+    }
   }
 
   opinfo->in_op = NULL;
@@ -842,11 +915,14 @@ EBO_select_value (
     ST *inrevening_st = TN_var(intervening_offset);
     OPS ops1 = OPS_EMPTY;
 
+    // FdF 20070525: Use Expand_Copy to support 8 bytes types
     if (pred_st == inrevening_st) {
-      Build_OP(TOP_mov_r_r, OP_result(op, 0), intervening_result, &ops1);
+      // Build_OP(TOP_mov_r_r, OP_result(op, 0), intervening_result, &ops1);
+      Expand_Copy(OP_result(op, 0), NULL, intervening_result, &ops1);
     }
     else {
-      Build_OP(TOP_mov_r_r, OP_result(op, 0), pred_result, &ops1);
+      // Build_OP(TOP_mov_r_r, OP_result(op, 0), pred_result, &ops1);
+      Expand_Copy(OP_result(op, 0), NULL, pred_result, &ops1);
     }
     Set_OP_copy(OPS_last(&ops1));
     OP_srcpos(OPS_last(&ops1)) = OP_srcpos(op);
@@ -878,13 +954,23 @@ EBO_select_value (
     OPS ops1 = OPS_EMPTY;
 
     /* Copy the "address not equal value". */
+    // FdF 20070515: Use Expand_Select to support 8 bytes types
+#if 0
     Build_OP(TOP_targ_slct_r_r_b_r, 
 	     OP_result(op, 0), 
 	     predicate, 
 	     intervening_result,
 	     pred_result, 
 	     &ops1);
-
+#endif
+    TYPE_ID mtype = (size == 4) ? MTYPE_I4 : MTYPE_I8;
+    Expand_Select(OP_result(op, 0),
+		  predicate,
+		  intervening_result,
+		  pred_result,
+		  mtype,
+		  FALSE,
+		  &ops1);
     OP_srcpos(OPS_last(&ops1)) = OP_srcpos(op);
     OPS_Append_Ops(&ops, &ops1);
   }

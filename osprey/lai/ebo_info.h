@@ -198,6 +198,13 @@ typedef struct local_op_info {
         EBO_OP_INFO *prior;		/* Previous info node. */
         EBO_OP_INFO *next;		/* Next info node. */
 	EBO_TN_INFO **optimal_opnd;	/* Operand array (ptr into tn_info) */
+#ifdef TARG_ST
+  TN *optimal_tn[OP_MAX_FIXED_OPNDS];  /* FdF 20070402: A copy of
+					       opnd_tn when calling
+					       add_to_hash_table, so
+					       as to keep a TN on
+					       immediate values. */
+#endif
 	EBO_TN_INFO **actual_opnd;	/* Operand array (ptr into tn_info) */
 	EBO_TN_INFO **actual_rslt;	/* Result  array (ptr into tn_info) */
 	EBO_TN_INFO *tn_info[		/* Variable size array for EBO_TN_INFOs */
@@ -205,6 +212,20 @@ typedef struct local_op_info {
 		OP_MAX_FIXED_OPNDS +	/* (see EBO_OP_INFO_sizeof). */
 		OP_MAX_FIXED_OPNDS];	/* !!!! tn_info MUST BE LAST!!!! */
 } EBO_OP_INFO;
+
+#ifdef TARG_ST
+// FdF 20070402
+inline TN *
+Opinfo_optimal_tn(EBO_OP_INFO *opinfo, INT idx) {
+  if (idx < OP_MAX_FIXED_OPNDS) {
+    return opinfo->optimal_tn[idx];
+  }
+  else {
+    OP *op = opinfo->in_op;
+    return OP_opnd(op, idx);
+  }
+}
+#endif
 
 /* Given an op, return the 'sizeof' the EBO_OP_INFO struct needed
  * for that OP. For the sake of simplicity, the result of the calculation 

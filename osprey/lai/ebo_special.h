@@ -199,6 +199,7 @@ BOOL EBO_Resolve_Conditional_Branch (OP *op, TN **opnd_tn);
 // Two loads accessing the adjacent memory may be replaced by a
 // single load that fills both destination registers.
 BOOL EBO_combine_adjacent_loads(OP *op,
+				TN **opnd_tn,
 				EBO_TN_INFO **opnd_tninfo,
 				EBO_OP_INFO *opinfo,
 				INT64 pred_offset,

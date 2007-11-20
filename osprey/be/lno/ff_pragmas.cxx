@@ -407,6 +407,16 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
       Get_Do_Loop_Info(next_non_prag_stid)->Max_Iterations = prag_arg1;
       break;
 
+     case WN_PRAGMA_LOOPPACK:
+      remove = TRUE;
+      if (next_non_prag_stid == NULL ||
+          WN_opcode(next_non_prag_stid) != OPC_DO_LOOP) {
+	remove = FALSE;
+	break;
+      }
+      Get_Do_Loop_Info(next_non_prag_stid)->Packing_Level = prag_arg1;
+      break;
+
 #endif
       
      case WN_PRAGMA_AGGRESSIVE_INNER_LOOP_FISSION:
@@ -764,6 +774,12 @@ extern void  LNO_Insert_Pragmas(WN* wn)
     if (dli->Max_Iterations >= 0) {
       WN* pragma = WN_CreatePragma(WN_PRAGMA_LOOPMAXITERCOUNT, (ST_IDX) NULL,
 				   dli->Max_Iterations, 0);
+      WN_set_pragma_compiler_generated(pragma);
+      LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
+    }
+    if (dli->Packing_Level >= 0) {
+      WN* pragma = WN_CreatePragma(WN_PRAGMA_LOOPPACK, (ST_IDX) NULL,
+				   dli->Packing_Level, 0);
       WN_set_pragma_compiler_generated(pragma);
       LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
     }

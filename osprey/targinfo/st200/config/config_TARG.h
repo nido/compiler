@@ -160,6 +160,9 @@ BE_EXPORTED extern BOOL Enable_Sh1AddS_Set;
 
 BE_EXPORTED extern BOOL Enable_Speculate_DivRem;
 BE_EXPORTED extern BOOL Enable_Speculate_DivRem_Set;
+
+BE_EXPORTED extern INT32 CG_LOOP_Packing_level;
+BE_EXPORTED extern INT32 CG_LOOP_Packing_flags;
 #endif
 
 /* ====================================================================

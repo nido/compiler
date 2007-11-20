@@ -177,6 +177,10 @@ inline
 void
 add_to_hash_table ( BOOL in_delay_slot,
                     OP *op,
+#ifdef TARG_ST
+		    // FdF 20070402
+		    TN **opnd_tn,
+#endif
                     EBO_TN_INFO **actual_tninfo,
                     EBO_TN_INFO **optimal_tninfo)
 {
@@ -218,6 +222,14 @@ add_to_hash_table ( BOOL in_delay_slot,
   for (idx = 0; idx < OP_opnds(op); idx++) {
     opinfo->actual_opnd[idx] = actual_tninfo[idx];
     opinfo->optimal_opnd[idx] = optimal_tninfo[idx];
+#ifdef TARG_ST
+    // FdF 20070402
+    if (idx < OP_MAX_FIXED_OPNDS)
+      if (opnd_tn != NULL)
+	opinfo->optimal_tn[idx] = opnd_tn[idx];
+      else
+	opinfo->optimal_tn[idx] = OP_opnd(op, idx);
+#endif
   }
 
   EBO_opinfo_table[hash_value] = opinfo;

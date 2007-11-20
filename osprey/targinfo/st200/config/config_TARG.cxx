@@ -157,6 +157,9 @@ BOOL Enable_Sh1AddS_Set;
 
 BOOL Enable_Speculate_DivRem = FALSE;
 BOOL Enable_Speculate_DivRem_Set;
+
+INT32 CG_LOOP_Packing_level = -1;
+INT32 CG_LOOP_Packing_flags = -1;
 #endif
 
 /* Target machine specification options.  This group defines the target
@@ -276,7 +279,8 @@ static OPTION_DESC Options_TARG[] = {
   { OVK_BOOL,   OV_VISIBLE,    FALSE, "speculate_divrem", "",
     0, 0, 0,    &Enable_Speculate_DivRem, &Enable_Speculate_DivRem_Set,
     "Enable generation of sh1adds and sh1subs" },
-
+  { OVK_INT32,	OV_INTERNAL,	FALSE, "packing_level", NULL,
+    2, 0, 2,	&CG_LOOP_Packing_level, NULL },
 #endif
 
   /* Unimplemented options: */

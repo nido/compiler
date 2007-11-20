@@ -15451,6 +15451,7 @@ Move_Loop_Pragmas(WN *wn_orig, WN *block_orig, WN *block_dest)
       case WN_PRAGMA_HWLOOP:
       case WN_PRAGMA_LOOPMINITERCOUNT:
       case WN_PRAGMA_LOOPMAXITERCOUNT:
+      case WN_PRAGMA_LOOPPACK:
 	WN_EXTRACT_FromBlock(block_orig, wn);
 	WN_INSERT_BlockLast(block_dest, wn);
 	break;

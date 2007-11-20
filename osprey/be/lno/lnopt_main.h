@@ -882,6 +882,7 @@ public:
   mINT16 Pragma_Residue;
   INT64  Min_Iterations;
   INT64  Max_Iterations;
+  mINT8  Packing_Level;
 #endif
   mINT32 Required_Blocksize[MHD_MAX_LEVELS];
   mINT32 Tile_Size; 

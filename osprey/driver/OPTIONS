@@ -2994,8 +2994,11 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"Assume denormals are not supported in FP low-level runtime arithmetic"
 -mreassoc=%d	;		Cc	cpp,f	"-OPT:Reassoc_level=%d"
 	"Set the FP reassociations optimization level"
+#ifdef TARG_ST200
+-mpacking*	;		Cc	cpp,f	""
+	"-mpacking[=n]\n                    n is the level of load/store packing optimization.\n                    '0' means no packing.\n                    '1' means load and store packing with statically known alignment.\n                    '2' means '1' + loop peeling and loop specialization to perform load and store packing with dynamic alignment"
 #endif
-
+#endif
 
 %%% [HC] 060322: STxP70 specific options
 %%% for driver backward compatibility 

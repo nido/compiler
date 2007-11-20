@@ -2394,8 +2394,97 @@ static BOOL verify_mem(BOOL              result,
 #ifdef Is_True_On
 #   include "W_unistd.h" // For getpid
 #endif
+
 #ifdef TARG_ST
-static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega, BOOL lex_neg)
+static BOOL get_mem_dep_unit(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega, BOOL lex_neg);
+
+static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega, BOOL lex_neg) {
+
+  if (!OP_packed(pred_op) && !OP_packed(succ_op))
+    return get_mem_dep_unit(pred_op, succ_op, definite, omega, lex_neg);
+
+  OP *pred_op_unit, *succ_op_unit;
+  int pred_offset, succ_offset;
+
+  *definite = TRUE;
+  BOOL return_value = FALSE;
+  UINT8 omega_var, *omega_unit = (omega != NULL) ? &omega_var : NULL;
+
+  // TBD: Synchronize the unit operations for pred_op and succ_op
+  // before the loop, so that get_mem_dep can be called on the unit
+  // op. The synchronization can be skipped if the first element in
+  // the list is already synchronized.
+
+  pred_offset = 0;
+  for (pred_op_unit = OP_packed(pred_op) ? Get_First_Packed_Op(pred_op, &pred_offset) : pred_op;
+       pred_op_unit != NULL;
+       pred_op_unit = Get_Next_Packed_Op(pred_op, pred_op_unit, &pred_offset)) {
+
+    if (OP_packed(pred_op))
+      OP_MAP_Set(OP_to_WN_map, pred_op, Get_WN_From_Memory_OP(pred_op_unit));
+
+    succ_offset = 0;
+    for (succ_op_unit = OP_packed(succ_op) ? Get_First_Packed_Op(succ_op, &succ_offset) : succ_op;
+	 succ_op_unit != NULL;
+	 succ_op_unit = Get_Next_Packed_Op(succ_op, succ_op_unit, &succ_offset)) {
+
+      // Only look for dependences between same units of packed
+      // ops when definite is true
+      if (*definite)
+	if (succ_offset != pred_offset)
+	  continue;
+
+      BOOL definite_unit;
+      BOOL result_unit;
+
+      if (OP_packed(succ_op))
+      	OP_MAP_Set(OP_to_WN_map, succ_op, Get_WN_From_Memory_OP(succ_op_unit));
+
+      if (omega != NULL)
+	*omega_unit = *omega;
+
+      // TBD: Use pred_op_unit and succ_op_unit here
+      result_unit = get_mem_dep_unit(pred_op, succ_op, &definite_unit, omega_unit, lex_neg);
+
+      if ((omega != NULL) && (pred_offset == 0) && (succ_offset == 0))
+	*omega = *omega_unit;
+
+      if (*definite)
+	*definite = definite_unit;
+      if (!return_value)
+	return_value = result_unit;
+      if (return_value && *definite && omega && (*omega != *omega_unit))
+	*definite = FALSE;
+
+      if (return_value && !*definite)
+	// There is a non definite dependence, return now
+	goto return_point;
+
+      if (*definite)
+	// Only look for dependences between same units of packed ops
+	break;
+
+    } // end for succ_op_unit
+  } // end for pred_op_unit
+
+  if (*definite) {
+    if ((succ_op_unit == NULL) || (Get_Next_Packed_Op(succ_op, succ_op_unit, &succ_offset) != NULL))
+      // Not same number of packed operations in pred_op and succ_op
+      *definite = FALSE;
+  }
+
+ return_point:
+
+  // Reset the WN on pred_op and succ_op if packed
+  if (OP_packed(pred_op))
+    OP_MAP_Set(OP_to_WN_map, pred_op, NULL);
+  if (OP_packed(succ_op))
+    OP_MAP_Set(OP_to_WN_map, succ_op, NULL);
+
+  return return_value;
+}
+
+static BOOL get_mem_dep_unit(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega, BOOL lex_neg)
 #else
 static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
 #endif

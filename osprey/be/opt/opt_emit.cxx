@@ -1118,6 +1118,7 @@ is_loop_pragma(WN *wn) {
     case WN_PRAGMA_HWLOOP:
     case WN_PRAGMA_LOOPMINITERCOUNT:
     case WN_PRAGMA_LOOPMAXITERCOUNT:
+    case WN_PRAGMA_LOOPPACK:
       return TRUE;
     }
   }

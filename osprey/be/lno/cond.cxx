@@ -1199,6 +1199,8 @@ Loop_Pragma(WN_PRAGMA_ID pragma)
     case WN_PRAGMA_LOOPSEQ:
     /* FdF 07/04/2006 */
     case WN_PRAGMA_STREAM_ALIGNMENT:
+    /* FdF 20070927 */
+    case WN_PRAGMA_LOOPPACK:
 #endif
       return TRUE;
   }

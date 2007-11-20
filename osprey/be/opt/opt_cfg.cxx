@@ -792,6 +792,7 @@ Move_Loop_Pragma(CFG *cfg, BB_NODE *from_bb, BB_NODE *to_bb)
       case WN_PRAGMA_HWLOOP:
       case WN_PRAGMA_LOOPMINITERCOUNT:
       case WN_PRAGMA_LOOPMAXITERCOUNT:
+      case WN_PRAGMA_LOOPPACK:
 	Remove_wn_in(from_bb, wn);
 	cfg->Append_wn_in(to_bb, wn);
 	to_bb->Set_haspragma();

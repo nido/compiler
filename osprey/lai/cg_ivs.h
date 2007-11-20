@@ -163,8 +163,39 @@ class LOOP_IVS {
 
 void Perform_Induction_Variables_Optimizations();
 
+/* CG_LOOP load_store_packing:
+   0x1 : Enable load packing
+   0x2 : Enable store packing
+   0x4 : Enable load packing also if alignment is unknown
+   0x8 : Enable loop peeling
+   0x10: Enable loop specialization
+   0x20: Enable loop peeling also when loop trip count is a compile time literal value
+   0x40: Force unroll factor to 2 if required for packing and the
+         loop would not be unrolled otherwise.
+   0x80: Enable packing only on memory bounded loops, but keep other
+         loop transformations related to packing.
+   0x100:Perform packing analysis and loop transformation, but do not
+         actually pack
+   0x200:Perform load packing in EBO
+*/
+enum LOAD_STORE_PACKING {
+  PACKING_LOAD				= 0x1,
+  PACKING_STORE				= 0x2,
+  PACKING_LOAD_DYN_ALIGN 		= 0x4,
+  PACKING_LOOP_PEELING			= 0x8,
+  PACKING_LOOP_SPECIALIZATION		= 0x10,
+  PACKING_LOOP_PEELING_CONST_TRIP_COUNT = 0x20,
+  PACKING_FORCE_LOOP_UNROLL		= 0x40,
+  PACKING_ONLY_MEMORY_BOUNDED		= 0x80,
+  PACKING_NO_ACTUAL_PACKING		= 0x100,
+  PACKING_EBO_LOAD			= 0x200
+};
+extern INT32 Loop_packing_flags;
+extern INT32 CG_LOOP_stream_align;
+
 extern BOOL IVS_Analyze_Load_Store_Packing( CG_LOOP &cg_loop);
-extern BOOL IVS_Perform_Load_Store_Packing( CG_LOOP &cg_loop );
+extern BOOL IVS_Perform_Load_Store_Packing( CG_LOOP &cg_loop);
+extern INT  Loop_Packing_Options(CG_LOOP &cg_loop);
 #endif /* CG_IVS_INCLUDED */
 
 #endif /* TARG_ST */

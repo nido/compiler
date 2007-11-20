@@ -1,6 +1,59 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Nov 20 10:55:14 CET 2007
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-25812
+
+Description:
+------------
+	* [trunk] Fix for bug #25812: Load/store packing fails to pack on fragment shader
+	  Deliver fixes/codex-25812 rev #14418 with authorization branch #35621
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_dce.cxx
+	M      osprey/be/opt/opt_emit.cxx
+	M      osprey/be/opt/opt_cfg.cxx
+	M      osprey/be/lno/lnopt_main.cxx
+	M      osprey/be/lno/ff_pragmas.cxx
+	M      osprey/be/lno/lnopt_main.h
+	M      osprey/be/lno/cond.cxx
+	M      osprey/be/com/wn_lower.cxx
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/get_options.c
+	M      osprey/lai/whirl2ops.h
+	M      osprey/lai/cg_loop.cxx
+	M      osprey/lai/ebo_util.h
+	M      osprey/lai/ebo_special.h
+	M      osprey/lai/ebo_info.h
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/cg_loop.h
+	M      osprey/lai/cg_ivs.cxx
+	M      osprey/lai/cg_ivs.h
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cg_dep_graph.cxx
+	M      osprey/lai/op.h
+	M      osprey/gccfe/wfe_pragmas.def
+	M      osprey/gccfe/wfe_pragmas.cxx
+	M      osprey/common/com/wn_pragmas.h
+	M      osprey/common/com/wn_pragmas.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/config/config_TARG.cxx
+	M      osprey/targinfo/st200/config/config_TARG.h
+	M      osprey/targinfo/st200/config/config_target.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+	M      osprey/targinfo/st200/cg/targ_op.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Nov  9 14:49:34 CET 2007
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

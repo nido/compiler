@@ -507,6 +507,9 @@ enum OP_COND_DEF_KIND {
 				     NOPs, for scheduling/bundling. */
 // BD3 20073008
 #define OP_MASK_PRELOAD    0x0040 /* A load that must be scheduled at L1 miss latency */
+
+// FdF 20071023
+#define OP_MASK_PACKED     0x0080 /* This is is a compiler generated packed operation. */
 #endif
 
 # define OP_glue(o)		(OP_flags(o) & OP_MASK_GLUE)
@@ -595,6 +598,9 @@ enum OP_COND_DEF_KIND {
 # define OP_preload(o)		(OP_flags2(o) & OP_MASK_PRELOAD)
 # define Set_OP_preload(o)	(OP_flags2(o) |= OP_MASK_PRELOAD)
 # define Reset_OP_preload(o)	(OP_flags2(o) &= ~OP_MASK_PRELOAD)
+# define OP_packed(o)		(OP_flags2(o) & OP_MASK_PACKED)
+# define Set_OP_packed(o)	(OP_flags2(o) |= OP_MASK_PACKED)
+# define Reset_OP_packed(o)	(OP_flags2(o) &= ~OP_MASK_PACKED)
 #endif
 
 extern BOOL OP_cond_def( const OP*);

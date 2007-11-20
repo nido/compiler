@@ -98,6 +98,7 @@
 #ifdef TARG_ST
 #include "cg_ssa.h"                 /* for SSA flags */
 #include "cg_select.h"              /* for SELECT flags */
+#include "cg_ivs.h"		    /* for packing flags */
 #endif
 
 #ifdef LAO_ENABLED
@@ -597,8 +598,10 @@ static OPTION_DESC Options_CG[] = {
     7, 0, 7,    &CG_LOOP_unroll_heuristics, NULL },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "licm", "", 
     1, 0, 2,	&IPFEC_Enable_LICM, &IPFEC_Enable_LICM_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "load_store_packing", "", 
-    0x7B, 0, 0x2FF,	&CG_LOOP_load_store_packing, NULL },
+#ifdef TARG_ST200
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "packing_load_store", "packing", 
+    0x25B, 0, 0x3FF,	&CG_LOOP_Packing_flags, NULL },
+#endif
   { OVK_INT32, OV_INTERNAL,	TRUE, "stream_align", "", 
     8, 0, 8,	&CG_LOOP_stream_align, NULL },
   { OVK_BOOL, OV_INTERNAL,	TRUE, "cbpo_opt", "cbpo", 

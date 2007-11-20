@@ -563,6 +563,39 @@ parse_K_option (char **argv, int *argi)
 	return flag;
 }
 
+#ifdef TARG_ST200
+int packing_level = -1;
+static int
+parse_mpacking_option (char **argv, int *argi)
+{
+  string ptr_subopt;
+  string ptr_nextsubopt;
+  int    res = O_mpacking__;
+  
+  /* Go to first sub-option i.e. after -mpacking */
+  ptr_subopt = string_copy(next_string(argv,argi));
+  ptr_subopt = strchr(ptr_subopt,'=');
+  if (ptr_subopt == NULL) {
+    // only -mpacking. default is 2
+    packing_level = 2;
+  }
+  else {
+    char c;
+    packing_level = 0;
+    res = O_Unrecognized;
+    for (c = *++ptr_subopt; (c >= '0') && (c <= '9'); c = *++ptr_subopt) {
+      packing_level = (packing_level * 10) + (c - '0');
+      res = O_mpacking__;
+    }
+    if ((c != '\0') || (packing_level > 2))
+      res = O_Unrecognized;
+  }
+
+  get_next_arg(argi);
+  return res;
+}
+#endif
+
 #ifdef TARG_STxP70
 #include "stxp70_options.i"
 #endif

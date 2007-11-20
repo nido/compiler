@@ -49,7 +49,9 @@
 #include "W_alloca.h"
 #include <ctype.h>
 #include <vector>
-
+#ifdef TARG_ST
+#include <stdarg.h>
+#endif
 #include "defs.h"
 #include "mempool.h"
 #include "wn.h"
@@ -241,6 +243,141 @@ Get_Complement_TN(TN *tn)
   return c_tn;
 }
 
+#ifdef TARG_ST
+// FdF 20070510: For an operation created by load/store packing,
+// associate the list of original operations.
+
+static OP_MAP OP_packed_to_ops_map = NULL;
+
+static OP *
+Link_Packed_Op(OP *opi, OP *opj) {
+  // If opj is already a packed operation, be sure to get down to the
+  // chain
+  int dummy;
+  OP *op;
+
+  OP *opfirst = opj;
+  if (OP_packed(opfirst))
+    opfirst = Get_First_Packed_Op(opfirst, &dummy);
+
+  OP_MAP_Set(OP_packed_to_ops_map, opi, opfirst);
+
+  // Then, find the end of the chain for linking with a next op
+  OP *oplast = opfirst;
+  while ((op = Get_Next_Packed_Op(opfirst, oplast, &dummy)) != NULL)
+    oplast = op;
+
+  return oplast;
+}
+
+void
+Set_Packed_Ops(OP *packed_op, INT n, OP *op1, ...) {
+
+  if (OP_packed_to_ops_map == NULL)
+    OP_packed_to_ops_map = OP_MAP_Create();
+
+  OP *dup_op;
+
+  // FdF 20070515: Call Dup_OP since op1 may later be converted into a
+  // noop when removed from the code.
+  dup_op = Dup_OP(op1);
+  dup_op->bb = OP_bb(op1);
+  Copy_WN_For_Memory_OP (dup_op, op1);
+
+  // If op1 is already a packed operation, be sure to get down to the
+  // chain
+  op1 = Link_Packed_Op(packed_op, dup_op);
+  
+  INT i;
+  va_list ops;
+  OP* opi = op1, *opj;
+
+  va_start(ops, op1);
+  for (i = 1; i < n; i++) {
+    opj = va_arg(ops, OP *);
+
+    // FdF 20070515: Call Dup_OP since opj may later be converted into
+    // a noop when removed from the code.
+    dup_op = Dup_OP(opj);
+    dup_op->bb = OP_bb(opj);
+    Copy_WN_For_Memory_OP (dup_op, opj);
+    opj = dup_op;
+    opi = Link_Packed_Op(opi, opj);
+  }
+  va_end(ops);
+
+  Set_OP_packed(packed_op);
+}
+
+void
+Copy_Packed_Ops(OP *dest_packed, OP *src_packed) {
+
+  Is_True(OP_packed(src_packed) && (OP_packed_to_ops_map != NULL),
+	  ("Copy_Packed_Ops_N: Must be called with a packed op.\n"));
+
+  OP *opi = dest_packed, *opj;
+  int dummy;
+
+  // OP_MAP_Set(OP_packed_to_ops_map, dest_packed, Get_First_Packed_Op(src_packed, &dummy));
+
+  // FdF 20071022: The entire chain is now duplicated, so that each
+  // packed operation points to its own copies of the original
+  // operations. This way, it is possible in cg_dep_graph to update
+  // these copies of original operations with information on the
+  // packed operation (unoll_bb, unrollings, orig_idx).
+  for (opj = Get_First_Packed_Op(src_packed, &dummy); opj; opj = Get_Next_Packed_Op(src_packed, opj, &dummy)) {
+    OP *dup_opj;
+    dup_opj = Dup_OP(opj);
+    dup_opj->bb = OP_bb(opj);
+    Copy_WN_For_Memory_OP (dup_opj, opj);
+    opi = Link_Packed_Op(opi, dup_opj);
+  }
+
+  Set_OP_packed(dest_packed);
+}
+
+// FdF 20070510: For a packed operation, return the first operation
+// associated to packed_op. For a non packed operation, return the
+// original operation.
+
+OP *
+Get_First_Packed_Op(OP *packed_op, int *offset) {
+
+  // *offset must be set to zero in any case.
+  *offset = 0;
+
+  // If not a packed op, return NULL
+  if ((OP_packed_to_ops_map == NULL) || !OP_packed(packed_op))
+    return NULL;
+
+  return (OP *)OP_MAP_Get(OP_packed_to_ops_map, packed_op);
+}
+
+// FdF 20070510: For a packed operation, return the next operation
+// after opi associated to packed_op. For a non packed operation,
+// return NULL;
+
+OP *
+Get_Next_Packed_Op(OP *packed_op, OP *opi, int *offset) {
+
+  // If not a packed op, or the last unit op of a packed op, return
+  // NULL
+  if ((OP_packed_to_ops_map == NULL) || !OP_packed(packed_op))
+    return NULL;
+
+  // For example, 4 16 bit load (h1-h4) can be packed into one 64 bit load (l1) and
+  // also in 2 32 bit load (w1,w2). This gives the following chain:
+  // l1->h1->h2->h3->h4
+  //   /       /
+  // w1      w2
+  // When looking at packed ops for w1, we must stop after h2.
+  
+  *offset += OP_Mem_Ref_Bytes(opi);
+  if (*offset >= OP_Mem_Ref_Bytes(packed_op))
+    return NULL;
+  return (OP *)OP_MAP_Get(OP_packed_to_ops_map, opi);
+}
+#endif
 
 void Copy_WN_For_Memory_OP(OP *dest, OP *src)
 {
@@ -250,6 +387,16 @@ void Copy_WN_For_Memory_OP(OP *dest, OP *src)
     OP_MAP_Set(OP_to_WN_map, dest, wn);
   if (predicate)
     OP_MAP64_Set(predicate_map, dest, predicate);
+
+#ifdef TARG_ST
+  // FdF 20070627: Need also to copy on a packed operation the map to
+  // the unit elements of the original packed operation.
+  if (OP_packed(src)) {
+    Is_True(OP_Mem_Ref_Bytes(dest) == OP_Mem_Ref_Bytes(src),
+	    ("Copy_WN_For_Memory_OP: src and dst do not have the same size."));
+    Copy_Packed_Ops(dest, src);
+  }
+#endif
 }
 
 
@@ -5709,7 +5856,8 @@ Expand_Statement (
 	  (WN_pragma(stmt) == WN_PRAGMA_STREAM_ALIGNMENT) ||
 	  (WN_pragma(stmt) == WN_PRAGMA_HWLOOP) ||
 	  (WN_pragma(stmt) == WN_PRAGMA_LOOPMINITERCOUNT) ||
-	  (WN_pragma(stmt) == WN_PRAGMA_LOOPMAXITERCOUNT)) {
+	  (WN_pragma(stmt) == WN_PRAGMA_LOOPMAXITERCOUNT) ||
+	  (WN_pragma(stmt) == WN_PRAGMA_LOOPPACK)) {
 	ANNOTATION *loop_pragmas = (ANNOTATION *)BB_MAP_Get(loop_pragma_map, Cur_BB);
 	loop_pragmas = ANNOT_Add(loop_pragmas, ANNOT_PRAGMA, (void *)stmt, &MEM_pu_pool);
 	BB_MAP_Set(loop_pragma_map, Cur_BB, loop_pragmas);
@@ -6431,6 +6579,10 @@ Whirl2ops_Finalize (void)
 
 #ifdef TARG_ST
   OP_MAP_Delete(OP_to_callinfo_map);
+  if (OP_packed_to_ops_map != NULL) {
+    OP_MAP_Delete(OP_packed_to_ops_map);
+    OP_packed_to_ops_map = NULL;
+  }
 #endif
 
   OP_MAP_Delete(OP_Asm_Map);

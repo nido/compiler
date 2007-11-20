@@ -2019,6 +2019,8 @@ DCE::Loop_pragma(WN_PRAGMA_ID pragma) const
     case WN_PRAGMA_HWLOOP:
     case WN_PRAGMA_LOOPMINITERCOUNT:
     case WN_PRAGMA_LOOPMAXITERCOUNT:
+    /* FdF 20070927 */
+    case WN_PRAGMA_LOOPPACK:
 #endif
       return TRUE;
   }

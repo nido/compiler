@@ -714,6 +714,27 @@ Configure_Target ()
   if (Is_Target_st240() && !Enable_Rotate_overriden) 
     Enable_Rotate = TRUE;
 
+  /* FdF 20070928: If -mpacking is used, and -CG:packing is not
+     used. Values must be in sync with cg_ivs.h */
+  
+  if (CG_LOOP_Packing_flags == -1) {
+    CG_LOOP_Packing_flags = 0x200;
+
+    if (CG_LOOP_Packing_level >= 0) {
+      switch (CG_LOOP_Packing_level) {
+      case 0:
+	CG_LOOP_Packing_flags = 0x200;
+	break;
+      case 1:
+	CG_LOOP_Packing_flags = 0x203;
+	break;
+      case 2:
+	CG_LOOP_Packing_flags = 0x21b;
+	break;
+      }
+    }
+  }
+
   Init_Targ_Sim();	/* must be done before initialize_stack_frame */
 
 #define IS_POW2(n)              (((n) & ((n)-1))==0)

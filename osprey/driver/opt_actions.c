@@ -797,6 +797,15 @@ Check_Target ( void )
   if (proc != PROC_NONE) {
     add_st200_phase_for_option(flag);
   }
+
+  extern int packing_level;
+
+  if (packing_level != -1) {
+    buffer_t buf;
+    sprintf(buf, "-TARG:packing_level=%d", packing_level);
+    flag = add_new_option(buf);
+    add_st200_phase_for_option(flag);
+  }
 #endif
 
 

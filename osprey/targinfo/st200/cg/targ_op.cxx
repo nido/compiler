@@ -56,6 +56,8 @@
 #include "targ_isa_variants.h"
 #include "config_TARG.h"
 
+#include "stblock.h" // for ST_alignment
+
 /* ====================================================================
  *   OP_Is_Barrier
  *
@@ -288,7 +290,17 @@ BOOL OP_Can_Be_Speculative (
    */
   if ((offset = OP_Offset(op))
       && TN_is_symbol(offset)
-      && ! ST_is_weak_symbol(TN_var(offset))) goto scalar_load;
+      && ! ST_is_weak_symbol(TN_var(offset))) {
+    // FdF 20071015: Be careful that 64 bit loads created by packing have alignment
+    // constraints that may non longer be satisfied after
+    // speculation. Unless we can be sure that the load is statically
+    // correctly aligned, consider that speculation is unsafe
+    if (OP_packed(op)) {
+      if (!TN_is_zero(OP_Base(op)) || ((ST_alignment(TN_var(offset))&7) != 0))
+	return FALSE;
+    }
+    goto scalar_load;
+  }
 
   /*  c) load of a fixed variable (base address is constant or
    *     known to be in bounds).

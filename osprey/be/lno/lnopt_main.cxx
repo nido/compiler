@@ -1109,6 +1109,8 @@ void DO_LOOP_INFO::Print(FILE *fp, INT indentation)
                                Min_Iterations);
   if (Max_Iterations >= 0) fprintf(fp,"%sPragma loopmaxitercount says trip count is at most %d\n", buf,
                                Max_Iterations);
+  if (Packing_Level >= 0) fprintf(fp,"%sPragma looppack says packing level is %d\n", buf,
+                               Packing_Level);
 #endif
   BOOL required_blks = FALSE;
   for (i = 0; i < MHD_MAX_LEVELS; i++)
@@ -1484,6 +1486,7 @@ DO_LOOP_INFO::DO_LOOP_INFO(MEM_POOL *pool, ACCESS_ARRAY *lb, ACCESS_ARRAY *ub,
     Pragma_Residue = 0;
     Min_Iterations = -1;
     Max_Iterations = -1;
+    Packing_Level = -1;
 #endif
     for (INT i = 0; i < MHD_MAX_LEVELS; i++)
       Required_Blocksize[i] = -1;
@@ -1580,6 +1583,7 @@ DO_LOOP_INFO::DO_LOOP_INFO(DO_LOOP_INFO *dli, MEM_POOL *pool) {
     Pragma_Residue = dli->Pragma_Residue;
     Min_Iterations = dli->Min_Iterations;
     Max_Iterations = dli->Max_Iterations;
+    Packing_Level = dli->Packing_Level;
 #endif
     for (INT i = 0; i < MHD_MAX_LEVELS; i++)
       Required_Blocksize[i] = dli->Required_Blocksize[i];

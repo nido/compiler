@@ -366,6 +366,7 @@ typedef enum {
   WN_PRAGMA_HWLOOP,		/* hwloop pragmas. Scope: loop. */
   WN_PRAGMA_LOOPMINITERCOUNT,	/* loop minimum iteration number. Scope: loop. */
   WN_PRAGMA_LOOPMAXITERCOUNT,	/* loop maximum iteration number. Scope: loop. */
+  WN_PRAGMA_LOOPPACK,		/* request packing within the associated loop. Scope: loop. */
 #endif
 
   MAX_WN_PRAGMA			/* last one in enum			*/

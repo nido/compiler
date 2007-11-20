@@ -4394,9 +4394,19 @@ find_duplicate_mem_op (BB *bb,
      /* Determine the address components of the predecessor memory op. */
       pred_base_idx = TOP_Find_Operand_Use(OP_code(pred_op),OU_base);
       pred_offset_idx = TOP_Find_Operand_Use(OP_code(pred_op),OU_offset);
+#ifdef TARG_ST
+      // FdF 20070402
+      pred_base_tn = (pred_base_idx >= 0) ? Opinfo_optimal_tn(opinfo, pred_base_idx) : NULL;
+#else
       pred_base_tn = (pred_base_idx >= 0) ? OP_opnd(pred_op,pred_base_idx) : NULL;
+#endif
       pred_base_tninfo = (pred_base_idx >= 0) ? opinfo->optimal_opnd[pred_base_idx] : NULL;
+#ifdef TARG_ST
+      // FdF 20070402
+      pred_offset_tn = (pred_offset_idx >= 0) ? Opinfo_optimal_tn(opinfo, pred_offset_idx) : NULL;
+#else
       pred_offset_tn = (pred_offset_idx >= 0) ? OP_opnd(pred_op,pred_offset_idx) : NULL;
+#endif
       pred_offset_tninfo = (pred_offset_idx >= 0) ? opinfo->optimal_opnd[pred_offset_idx] : NULL;
     }
 
@@ -4427,6 +4437,24 @@ find_duplicate_mem_op (BB *bb,
       mUINT8 relocs_succ = (succ_offset_tn != NULL) ? TN_relocs(succ_offset_tn) : 0;
       offset_pred = (pred_offset_tn != NULL) ? TN_offset(pred_offset_tn) : 0;
       offset_succ = (succ_offset_tn != NULL) ? TN_offset(succ_offset_tn) : 0;
+
+#ifdef TARG_ST
+      // FdF 20070418: Use the base symbol and offset for comparison
+      if (symbol_pred != NULL) {
+	ST *base_st;
+	INT64 base_offset;
+	Base_Symbol_And_Offset(symbol_pred, &base_st, &base_offset);
+	symbol_pred = base_st;
+	offset_pred += base_offset;
+      }
+      if (symbol_succ != NULL) {
+	ST *base_st;
+	INT64 base_offset;
+	Base_Symbol_And_Offset(symbol_succ, &base_st, &base_offset);
+	symbol_succ = base_st;
+	offset_succ += base_offset;
+      }
+#endif
 
      /* This time, the relocations must be the same. */
       hash_op_matches = (symbol_pred == symbol_succ) && (relocs_pred == relocs_succ);
@@ -4854,6 +4882,9 @@ do_next:
 
   if (adjacent_location != NULL) {
     BOOL op_replaced = EBO_combine_adjacent_loads (op, 
+#ifdef TARG_ST
+						   opnd_tn,
+#endif
 						   opnd_tninfo, 
 						   adjacent_location,
 						   adjacent_offset_pred, 
@@ -5749,8 +5780,12 @@ Find_BB_TNs (BB *bb)
       OP_Change_To_Noop(op);
     } else {
       /* Add this OP to the hash table and define all the result TN's. */
+#ifdef TARG_ST
+      // FdF 20070402
+      add_to_hash_table (in_delay_slot, op, opnd_tn, orig_tninfo, opnd_tninfo);
+#else
       add_to_hash_table (in_delay_slot, op, orig_tninfo, opnd_tninfo);
-
+#endif
       FmtAssert(((EBO_last_opinfo != NULL) && (EBO_last_opinfo->in_op == op)),
                   ("OP wasn't added to hash table"));
 

@@ -540,17 +540,17 @@ LoadStore_Packing_Candidate_Op( OP *op )
   if ( !OP_load( op ) && !OP_store( op ) )
     return FALSE;
 
-  if (OP_load(op) && ((CG_LOOP_load_store_packing&0x1) == 0))
+  if (OP_load(op) && ((Loop_packing_flags & PACKING_LOAD) == 0))
     return FALSE;
 
-  if (OP_store(op) && ((CG_LOOP_load_store_packing&0x2) == 0))
+  if (OP_store(op) && ((Loop_packing_flags & PACKING_STORE) == 0))
     return FALSE;
 
   if ( OP_unalign_store( op ) ||
        OP_unalign_ld( op )    ||
 
        // Skip predicated operations
-       OP_cond_def( op )      ||
+       OP_has_predicate( op )      ||
 
        OP_Mem_Ref_Bytes(op) != 4 )
     return FALSE;
@@ -647,6 +647,7 @@ Pack32_Get_Alignment(OP *memop, INT64 offset) {
   INT64 base_offset = 0;
   ST *base_sym = NULL;
   DEF_KIND kind;
+  BOOL in_inner_loop = TRUE;
 
   // Look for definitions of the base_tn used on the load/store
   // operation. The following cases can occur:
@@ -665,11 +666,18 @@ Pack32_Get_Alignment(OP *memop, INT64 offset) {
 
     TN *opnd_tn = NULL;
     INT64 val;
+    BB *cur_loophead = BB_loop_head_bb(OP_bb(def_base));
 
-    // Check if it is defined in another loop.
-    if (BB_loop_head_bb(OP_bb(def_base)) && (BB_loop_head_bb(OP_bb(def_base)) != loophead)) {
-      def_base = NULL;
-      break;
+    if (in_inner_loop && (cur_loophead != loophead))
+      // This definition is the first one out of the initial loop
+      in_inner_loop = FALSE;
+
+    if (!in_inner_loop) {
+      // Check we are in the immediately enclosing loop.
+      if (cur_loophead != BB_loop_head_bb(CG_LOOP_prolog)) {
+	def_base = NULL;
+	break;
+      }
     }
 
     if (OP_Is_Copy(def_base)) {
@@ -699,7 +707,7 @@ Pack32_Get_Alignment(OP *memop, INT64 offset) {
       break;
     }
 
-    if (TN_is_symbol(base_tn)) {
+    else if (TN_is_symbol(base_tn)) {
       if (TN_Value_At_Op(opnd_tn, def_base, &val)) {
 	if (OP_isub(def_base)) val = -val;
 	base_offset += val;
@@ -711,11 +719,14 @@ Pack32_Get_Alignment(OP *memop, INT64 offset) {
       break;
     }
 
+    // Here, def_base is either defined in this loop, or out of any
+    // loop.
+
     if (TN_Value_At_Op(opnd_tn, def_base, &val)) {
       if (OP_isub(def_base)) val = -val;
       // Ignore offset from operations inside the loop, this offset
       // has already been taken into account
-      if (BB_loop_head_bb(OP_bb(def_base)) != loophead)
+      if (!in_inner_loop)
 	base_offset += val;
       use_base = def_base;
       continue;
@@ -988,9 +999,14 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
 
     INT load1_index = memop_table[candidate_index].index;
     INT load2_index = memop_table[candidate_index+1].index;
+    OP *load1_op = loop_ivs->Op(load1_index);
+    OP *load2_op = loop_ivs->Op(load2_index);
+
     BOOL in_order = (load1_index < load2_index);
+    OP *dom_load1 = in_order ? loop_ivs->Op(load1_index) : loop_ivs->Op(load2_index);
+    OP *dom_load2 = in_order ? loop_ivs->Op(load2_index) : loop_ivs->Op(load1_index);
+    OP *ldp_point = dom_load1;
     INT ldp_index = in_order ? load1_index : load2_index;
-    OP *ldp_point = loop_ivs->Op(ldp_index);;
 
     // Also, the current ldp must be moved before the previous one in
     // case the ldp is or may be unaligned.
@@ -1014,7 +1030,7 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
 
     OPS ops_ldp = OPS_EMPTY;
 
-    // FdF 20061027: Resuse the induction variable of the ldw if span
+    // FdF 20061027: Reuse the induction variable of the ldw if span
     // != -1
     if (span_iteration != -1) {
       INT load_index = in_order ? load1_index : load2_index;
@@ -1026,7 +1042,7 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
       if (in_order)
 	ldp_offset_tn = Adjust_Offset_TN(ldw_offset_tn, adjust_offset);
       else
-	ldp_offset_tn = Adjust_Offset_TN(ldw_offset_tn, adjust_offset + (IV_step > 0) ? -4 : 4);
+	ldp_offset_tn = Adjust_Offset_TN(ldw_offset_tn, adjust_offset + ((IV_step > 0) ? -4 : 4));
       // Also, if ldp is moved before load_op, take into account the
       // modification of the IV between these two locations.
       if ((span_iteration == 1) && (ldp_index == last_ldp_index)) {
@@ -1036,8 +1052,6 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
       }
     }
 
-    OP *load1_op = loop_ivs->Op(load1_index);
-    OP *load2_op = loop_ivs->Op(load2_index);
     TN *t64 = Gen_Register_TN (ISA_REGISTER_CLASS_integer, 8);
 
     TN *t1 = Dup_TN(OP_result(load1_op, 0));
@@ -1074,26 +1088,18 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
 	// FdF 20051003: Do not copy unroll information on LDP, to
 	// avoid dependencies to be optimized.
 	if (OP_load(new_op)) {
-	  Copy_WN_For_Memory_OP (new_op, load1_op);
+	  // FdF 20070510: Do not copy the WN information, but create
+	  // a map op->(op1,op2)
+	  // Copy_WN_For_Memory_OP (new_op, load1_op);
+	  Set_Packed_Ops(new_op, 2, load1_op, load2_op);
 	  for (int i = 0; i < OP_opnds(new_op); i++) {
 	    if (OP_opnd(new_op, i) == ldp_addr_tn)
 	      Set_OP_omega(new_op, i, 1);
 	  }
-	  // FdF 20051108: Copy unroll information on LDP when LOOPDEP
-	  // is used. This is unsafe though.
-	  if (Get_Loopdep_Kind(body) != 0) {
-	    if (Get_Trace(TP_CGLOOP, 0x10) && candidate_index == 0)
-	      fprintf(TFile, "<ivs packing> Optimistics dependences with LOOPDEP.\n");
-	    Set_OP_unroll_bb(new_op, OP_unroll_bb(load1_op));
-	    Set_OP_unrolling(new_op, OP_unrolling(load1_op));
-	    Set_OP_orig_idx(new_op, OP_map_idx(load1_op));
-	  }
 	}
-	else {
-	  Set_OP_unroll_bb(new_op, OP_unroll_bb(load1_op));
-	  Set_OP_unrolling(new_op, OP_unrolling(load1_op));
-	  Set_OP_orig_idx(new_op, OP_map_idx(load1_op));
-	}
+	Set_OP_unroll_bb(new_op, OP_unroll_bb(load1_op));
+	Set_OP_unrolling(new_op, OP_unrolling(load1_op));
+	Set_OP_orig_idx(new_op, OP_orig_idx(load1_op));
       }
     }
 
@@ -1180,9 +1186,6 @@ Combine_Adjacent_Stores( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table )
      a step > 0, the first store must be aligned on 0%8, and aligned on
      4%8 for a step < 0. */
 
-  if (Get_Trace(TP_TEMP, 0x20))
-    return FALSE;
-
   INT memop_count = memop_table[0].count;
 
   int store_index = memop_table[0].index;
@@ -1222,9 +1225,12 @@ Combine_Adjacent_Stores( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table )
     OP *store2_op = loop_ivs->Op(store2_index);
     OPS ops_stp = OPS_EMPTY;
 
+    TN *store1_tn = OP_opnd(store1_op, TOP_Find_Operand_Use(OP_code(store1_op), OU_storeval));
+    TN *store2_tn = OP_opnd(store2_op, TOP_Find_Operand_Use(OP_code(store2_op), OU_storeval));
+
     TN *t64 = Gen_Register_TN (ISA_REGISTER_CLASS_integer, 8);
-    TN *t1 = OP_opnd(store1_op, TOP_Find_Operand_Use(OP_code(store1_op), OU_storeval));
-    TN *t2 = OP_opnd(store2_op, TOP_Find_Operand_Use(OP_code(store2_op), OU_storeval));
+    TN *t1 = TN_is_const_reg(store1_tn) ? store1_tn : Dup_TN_Even_If_Dedicated(store1_tn);
+    TN *t2 = TN_is_const_reg(store2_tn) ? store2_tn : Dup_TN_Even_If_Dedicated(store2_tn);
 
     extern void Expand_Compose(TN *src_tn, TN *low_tn, TN *high_tn, OPS *ops);
 
@@ -1233,13 +1239,15 @@ Combine_Adjacent_Stores( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table )
     else
       Expand_Compose(t64, t2, t1, &ops_stp);
 
-    OP *store_op = in_order ? store2_op : store1_op;
-    INT base_idx = TOP_Find_Operand_Use(OP_code(store_op), OU_base);
-    INT offset_idx = TOP_Find_Operand_Use(OP_code(store_op), OU_offset);
-    TN *stp_addr_tn = OP_opnd(store_op, base_idx);
+    OP *dom_store1 = in_order ? store1_op : store2_op;
+    OP *dom_store2 = in_order ? store2_op : store1_op;
+
+    INT base_idx = TOP_Find_Operand_Use(OP_code(dom_store2), OU_base);
+    INT offset_idx = TOP_Find_Operand_Use(OP_code(dom_store2), OU_offset);
+    TN *stp_addr_tn = OP_opnd(dom_store2, base_idx);
     TN *stp_offset_tn;
     TN *stw_offset_tn;
-    stw_offset_tn = OP_opnd(store_op, offset_idx);
+    stw_offset_tn = OP_opnd(dom_store2, offset_idx);
 
     /*
       The addr and offst of the original operation will be used, to
@@ -1274,35 +1282,50 @@ Combine_Adjacent_Stores( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table )
 	// FdF 20051003: Do not copy unroll information on STP, to
 	// avoid dependencies to be optimized.
 	if (OP_store(new_op)) {
-	  Copy_WN_For_Memory_OP (new_op, store2_op);
+	  // FdF 20070510: Do not copy the WN information, but create
+	  // a map op->(op1,op2)
+	  // Copy_WN_For_Memory_OP (new_op, store2_op);
+	  Set_Packed_Ops(new_op, 2, store1_op, store2_op);
 	  for (int i = 0; i < OP_opnds(new_op); i++) {
 	    if (OP_opnd(new_op, i) == stp_addr_tn)
 	      Set_OP_omega(new_op, i, 1);
 	  }
-	  // FdF 20051108: Copy unroll information on STP when LOOPDEP
-	  // is used. This is unsafe though.
-	  if (Get_Loopdep_Kind(body) != 0) {
-	    if (Get_Trace(TP_CGLOOP, 0x10) && candidate_index == 0)
-	      fprintf(TFile, "<ivs packing> Optimistics dependences with LOOPDEP.\n");
-	    Set_OP_unroll_bb(new_op, OP_unroll_bb(store1_op));
-	    Set_OP_unrolling(new_op, OP_unrolling(store1_op));
-	    Set_OP_orig_idx(new_op, OP_map_idx(store1_op));
-	  }
 	}
-	else {
-	  Set_OP_unroll_bb(new_op, OP_unroll_bb(store2_op));
-	  Set_OP_unrolling(new_op, OP_unrolling(store2_op));
-	  Set_OP_orig_idx(new_op, OP_map_idx(store2_op));
-	}
+	Set_OP_unroll_bb(new_op, OP_unroll_bb(store1_op));
+	Set_OP_unrolling(new_op, OP_unrolling(store1_op));
+	Set_OP_orig_idx(new_op, OP_orig_idx(store1_op));
       }
     }
 
-    // Insert ops_stp before store1 or store2, depending on which one
+    // Insert ops_stp after store1 or store2, depending on which one
     // dominates the other.
-    if (in_order)
-      BB_Insert_Ops(body, store2_op, &ops_stp, TRUE);
-    else
-      BB_Insert_Ops(body, store1_op, &ops_stp, TRUE);
+    BB_Insert_Ops(body, dom_store2, &ops_stp, FALSE);
+
+    /* Replace the first store instruction:
+     * stw ofst1($addr_tn), store1_tn
+     * by
+     * t1 = store1_tn
+     */
+
+    OPS ops_stw1 = OPS_EMPTY;
+    Exp_COPY(t1, store1_tn, &ops_stw1);
+
+    CG_LOOP_Init_OPS(&ops_stw1);
+    BB_Insert_Ops(body, store1_op, &ops_stw1, FALSE);
+
+    /* Replace the second store instruction:
+     * stw ofst2($addr_tn), store2_tn
+     * by
+     * t2 = store2_tn
+     */
+
+    OPS ops_stw2 = OPS_EMPTY;
+    Exp_COPY(t2, store2_tn, &ops_stw2);
+
+    CG_LOOP_Init_OPS(&ops_stw2);
+    BB_Insert_Ops(body, store2_op, &ops_stw2, FALSE);
+
+    /* Finally, remove the two store instructions. */
 
     BB_Remove_Op(body, store1_op);
     BB_Remove_Op(body, store2_op);
@@ -1463,36 +1486,54 @@ Find_Consecutive_Memops(LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table) {
       if (((IV_offset2+offset2_val)&3) != 0)
 	continue;
 
-      if (memop_idx < memop_count) {
-	memop_table[memop_idx].index = opidx2;
-	memop_table[memop_idx].offset = IV_offset2 + offset2_val;
-      }
+      memop_table[memop_idx].index = opidx2;
+      memop_table[memop_idx].offset = IV_offset2 + offset2_val;
+
       memop_idx++;
       Reset_OP_flag1(op2);
     }
 
-    // Not the exact number of memory accesses
-    if (memop_idx != memop_count)
+    // Not enough operations to make contiguous accesses.
+    if (memop_idx < memop_count)
       continue;
 
     // Sort the operations in increasing/decreasing order of the
     // memory accesses.
 
     if (step > 0)
-      qsort(memop_table, memop_count, sizeof(Candidate_Memory_t), Compare_Offsets);
+      qsort(memop_table, memop_idx, sizeof(Candidate_Memory_t), Compare_Offsets);
     else
-      qsort(memop_table, memop_count, sizeof(Candidate_Memory_t), Compare_Offsets_neg);
+      qsort(memop_table, memop_idx, sizeof(Candidate_Memory_t), Compare_Offsets_neg);
 
-    // Check that they are all contiguous.
+    // Find memop_count operations that are all contiguous, set again OP_flag1 for the remaining operations
     int incr = step > 0 ? 4 : -4;
-    int i;
-    for (i = 1; i < memop_count; i++) {
-      if (memop_table[i].offset != (memop_table[i-1].offset+incr))
+    int i, memop_ofst;
+    for (memop_ofst = 0; memop_ofst <= (memop_idx - memop_count); memop_ofst++) {
+      for (i = 1+memop_ofst; i < (memop_count+memop_ofst); i++) {
+	if (memop_table[i].offset != (memop_table[i-1].offset+incr))
+	  break;
+      }
+      if (i == memop_count)
 	break;
     }
-    if (i != memop_count)
+
+    // No sequence of contiguous memop_count operations
+    if (memop_ofst > (memop_idx - memop_count))
       continue;
 
+    // Otherwise, move the memop_count contiguous operations at the
+    // begining of the memop_table, and restore OP_flag1 on the other
+    // operations.
+
+    if (memop_ofst > 0) {
+      for (i = 0; i < memop_ofst; i++)
+	Set_OP_flag1(loop_ivs->Op(memop_table[i].index));
+      for (i = 0; i < memop_count; i++)
+	memop_table[i] = memop_table[i+memop_ofst];
+    }
+    for (i = memop_count + memop_ofst; i < memop_idx; i++)
+      Set_OP_flag1(loop_ivs->Op(memop_table[i].index));
+    
     int alignment;
     if (Enable_Misaligned_Access ||
 	(OP_load(loop_ivs->Op(memop_table[0].index)) && Enable_Misaligned_Load) ||
@@ -1523,6 +1564,7 @@ Find_Consecutive_Memops(LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table) {
 static BOOL
 LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
 {
+  BOOL trace_packing_verbose = Get_Trace(TP_CGLOOP, 0x20);
   BOOL packing_done = FALSE;
 
   BB *body = LOOP_DESCR_loophead(cg_loop.Loop());
@@ -1537,6 +1579,9 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
   // load/store, and see if there are opportunities for packing.
 
   INT Candidate_count = Compute_Packing_IVs(loop_ivs);
+
+  if (trace_packing_verbose)
+    fprintf(stdout, "  <packing> found %d candidate operation(s)\n", Candidate_count);
 
   //  loop_ivs->Trace_IVs_Entries("LoadStore_Packing: after Compute_Packing_IVs");
 
@@ -1574,8 +1619,39 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
   }
   int resource_II = CG_SCHED_EST_Resource_Cycles(se);
 
-  if ((CG_LOOP_load_store_packing & 0x80) && (mem_cnt < resource_II))
+  if (((Loop_packing_flags & PACKING_ONLY_MEMORY_BOUNDED) != 0)
+      && (mem_cnt < resource_II)) {
+    if (trace_packing_verbose) {
+      fprintf(stdout, "  <packing> Packing not performed because loop is not memory bounded\n");
+    }
+    // In case of loop peeling or specialization, discard the
+    // additional code. Only the effect of remainder_after will be
+    // left.
+    if (cg_loop.Peel_stream()) {
+    }
+    else if (cg_loop.Specialize_streams()) {
+      BB *check_align_bb = BB_Unique_Predecessor(CG_LOOP_prolog);
+      BB *other_bb = BB_Other_Successor(check_align_bb, CG_LOOP_prolog);
+      OP *br_op = BB_branch_op(check_align_bb);
+      TN *lab_tn = OP_opnd(br_op, OP_find_opnd_use(br_op, OU_target));
+      Is_True(Is_Label_For_BB(TN_label(lab_tn), other_bb),
+			      ("BB:%d should be labelled %s", BB_id(other_bb), ST_name(TN_label(lab_tn))));
+
+      OPS ops = OPS_EMPTY;
+
+      BB_Remove_Op(check_align_bb, br_op);
+      Unlink_Pred_Succ(check_align_bb, CG_LOOP_prolog);
+      Exp_OP1(OPC_GOTO, NULL, lab_tn, &ops);
+      BB_Append_Ops(check_align_bb, &ops);
+      Change_Succ_Prob(check_align_bb, other_bb, 1.0);
+
+      br_op = BB_branch_op(CG_LOOP_epilog);
+      if (br_op)
+	BB_Remove_Op(CG_LOOP_epilog, br_op);
+      Unlink_Pred_Succ(CG_LOOP_epilog, BB_Unique_Successor(CG_LOOP_epilog));
+    }
     return FALSE;
+  }
 
   INT load_stream_count = 0, store_stream_count = 0;
 
@@ -1585,13 +1661,24 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
     = (Candidate_Memory_t *)alloca( (Candidate_count+1) * sizeof( Candidate_Memory_t ) );
 
   // Initialize the table with the streams
+  INT stream_count = 0;
   INT memop_count;
   Candidate_Memory_t *candidate_stream = memop_table;
   while ((memop_count = Find_Consecutive_Memops(loop_ivs, candidate_stream)) != 0) {
 
     // Only paired of ldw/stw operations can be packed.
-    if ((memop_count&1) == 0)
+    if ((memop_count&1) == 0) {
       candidate_stream += memop_count;
+      stream_count ++;
+    }
+  }
+    
+  if (trace_packing_verbose) {
+    if (stream_count == 0)      
+      fprintf(stdout, "  <packing> no stream found\n");
+    else
+      fprintf(stdout, "  <packing> found %d operations for packing in %d stream(s)\n",
+	      (candidate_stream-memop_table), stream_count);
   }
 
   //  fprintf(TFile, "32 bit Packing = {");
@@ -1619,7 +1706,7 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
       }
     }
     else if ((candidate_stream->alignment == -1) &&
-	     (cg_loop.Special_streams() > 0)) {
+	     cg_loop.Specialize_streams()) {
       // Find the stream
       OP *base_op = loop_ivs->Op(candidate_stream->index);
       INT orig_idx = OP_unroll_bb(base_op) ? OP_orig_idx(base_op) : OP_map_idx(base_op);
@@ -1636,7 +1723,8 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
       }
     }
 
-    if (OP_load(loop_ivs->Op(candidate_stream->index)) && ((CG_LOOP_load_store_packing&0x4) == 0)) {
+    if (OP_load(loop_ivs->Op(candidate_stream->index)) &&
+	((Loop_packing_flags & PACKING_LOAD_DYN_ALIGN) == 0)) {
       // Check also that alignment is statically known
       if (candidate_stream->alignment == -1)
 	continue;
@@ -1668,9 +1756,16 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
     }
   }
 
+  if (trace_packing_verbose) {
+    if ((load_stream_count+store_stream_count) == 0)
+      fprintf(stdout, "  <packing> No packing done on this loop\n");
+    else
+      fprintf(stdout, "  <packing> Packing done on %d streams (%d loads, %d stores)\n", load_stream_count+store_stream_count, load_stream_count, store_stream_count);
+  }
+
   //  fprintf(TFile, "}\n");
   if (Get_Trace(TP_CGLOOP, 0x10)) {
-    fprintf(TFile, "<ivs packing> after unrolling Load stream %d, Store stream %d, Peeling %d, Special %d\n", load_stream_count, store_stream_count, cg_loop.Peel_stream(), (cg_loop.Special_streams() > 0));
+    fprintf(TFile, "<ivs packing> after unrolling Load stream %d, Store stream %d, Peeling %d, Special %d\n", load_stream_count, store_stream_count, cg_loop.Peel_stream(), cg_loop.Specialize_streams());
     fprintf(TFile, "<ivs packing> latency_II %d, resource_II %d %s(memop=%d)\n", latency_II, resource_II, (mem_cnt == resource_II) ? "(memory bounded)" : "", mem_cnt);
 
     mem_cnt = 0;
@@ -1702,6 +1797,8 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
 static BOOL
 LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
 {
+  BOOL trace_packing_verbose = Get_Trace(TP_CGLOOP, 0x20);
+
   BB *body = LOOP_DESCR_loophead(cg_loop.Loop());
   loop_ivs->Init( cg_loop.Loop() );
 
@@ -1714,6 +1811,9 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
   // load/store, and see if there are opportunities for packing.
 
   INT Candidate_count = Compute_Packing_IVs(loop_ivs);
+
+  if (trace_packing_verbose)
+    fprintf(stdout, "  <packing check> found %d candidate operation(s)\n", Candidate_count);
 
   // Now, look for a sequence of load or store operations that can be
   // packed.
@@ -1769,6 +1869,13 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
     }
   }
 
+  if (trace_packing_verbose)
+    if (stream_count == 0)      
+      fprintf(stdout, "  <packing check> no stream found\n");
+  else
+    fprintf(stdout, "  <packing check> found %d operation(s) in %d stream(s), (%d load streams, %d store streams)\n",
+	    candidate_stream-memop_table, stream_count, load_stream_count, store_stream_count);
+
   // Check there is at least one stream candidate for packing
   if (stream_count == 0)
     return FALSE;
@@ -1787,59 +1894,72 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
   // Peeling can be applied if there is only one load stream with
   // unknown alignment, and other streams are store streams.
 
-  if (CG_LOOP_load_store_packing&0x8) {
+  if ((load_stream_count == 1) &&
+      (static_aligned_load_count == 0)) {
+    // Look for this load stream
+    for (candidate_stream = memop_table;
+	 candidate_stream->count > 0;
+	 candidate_stream += candidate_stream->count)
+      if (OP_load(loop_ivs->Op(candidate_stream->index)))
+	break;
+    // Peeling can be applied only on a stream with one memory
+    // operation
+    if (candidate_stream->count == 1)
+      doPeeling = TRUE;
+  }
 
-    if ((load_stream_count == 1) &&
-	(static_aligned_load_count == 0)) {
-      // Look for this load stream
-      for (candidate_stream = memop_table;
-	   candidate_stream->count > 0;
-	   candidate_stream += candidate_stream->count)
-	if (OP_load(loop_ivs->Op(candidate_stream->index)))
-	  break;
-      // Peeling can be applied only on a stream with one memory
-      // operation
-      if (candidate_stream->count == 1)
-	doPeeling = TRUE;
-    }
+  // Peeling can also be applied if there is only one store stream,
+  // with unknown or misaligned alignment.
 
-    // Peeling can also be applied if there is only one store stream,
-    // with unknown or misaligned alignment.
+  else if ((load_stream_count == 0) && (store_stream_count == 1) &&
+	   ((static_aligned_store_count == 0) || (misaligned_store_count == 1))) {
+    candidate_stream = memop_table;
+    // Peeling can be applied only on a stream with one memory operation
+    if (candidate_stream->count == 1)
+      doPeeling = TRUE;
+  }
 
-    else if ((load_stream_count == 0) && (store_stream_count == 1) &&
-	     ((static_aligned_store_count == 0) || (misaligned_store_count == 1))) {
-      candidate_stream = memop_table;
-      // Peeling can be applied only on a stream with one memory operation
-      if (candidate_stream->count == 1)
-	doPeeling = TRUE;
-    }
+  if (doPeeling && (Loop_packing_flags & PACKING_LOOP_PEELING) == 0) {
+    doPeeling = FALSE;
+    if (trace_packing_verbose)
+      fprintf(stdout, "  <packing check> Packing requires loop peeling. Not enabled on this loop.\n");
+  }
 
-    if (doPeeling &&
-	(trip_count_tn != NULL) &&
-	TN_has_value(trip_count_tn) &&
-	((CG_LOOP_load_store_packing&0x20) == 0))
-      doPeeling = FALSE;
+  if (doPeeling &&
+      (trip_count_tn != NULL) &&
+      TN_has_value(trip_count_tn) &&
+      ((Loop_packing_flags & PACKING_LOOP_PEELING_CONST_TRIP_COUNT) == 0)) {
+    doPeeling = FALSE;
+    if (trace_packing_verbose)
+      fprintf(stdout, "  <packing check> Packing requires loop peeling on constant trip count. Not enabled on this loop.\n");
   }
 
   // In case the loop is not candidate for peeling, we can do loop
   // specialization if statically aligned store streams are well
   // aligned, and there are streams with unknown alignment.
 
-  if ((CG_LOOP_load_store_packing&0x10) && !doPeeling &&
-      (misaligned_store_count == 0) &&
+  if (!doPeeling && (misaligned_store_count == 0) &&
       ((static_aligned_load_count + static_aligned_store_count) != stream_count)) {
     // Currently, only up to 4 streams can be managed for loop specialization
     INT dynamic_streams = stream_count - static_aligned_load_count - static_aligned_store_count;
 
     if (dynamic_streams > 4) {
       if (Get_Trace(TP_CGLOOP, 0x10))
-	fprintf(TFile, "<ivs packing> Specialization cannot be applied on loops with more than 4(%d) dynamic streams.\n", dynamic_streams);
+	fprintf(TFile, "<ivs packing> Specialization not applied on loops with more than 4(%d) dynamic streams.\n", dynamic_streams);
+      if (trace_packing_verbose)
+	fprintf(stdout, "  <packing check> Specialization not applied on loops with more than 4(%d) dynamic streams.\n", dynamic_streams);
     }
     // Otherwise, mark the loop for specialization
     else
       doSpecialize = TRUE;
   }
 
+  if (doSpecialize && (Loop_packing_flags & PACKING_LOOP_SPECIALIZATION) == 0) {
+    doSpecialize = FALSE;
+    if (trace_packing_verbose)
+      fprintf(stdout, "  <packing check> Packing requires loop specialization. Not enabled on this loop.\n");
+  }
+      
   // Chek if the loop iterates enough for transformations such as
   // peeling or specialization to be profitable.
   INT loop_iter = 100;
@@ -1923,7 +2043,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
       // For load streams, all or only static aligned ones will be packed.
       if (OP_load(loop_ivs->Op(candidate_stream->index)) &&
 	  (candidate_stream->alignment == -1) &&
-	  (CG_LOOP_load_store_packing&0x4) == 0)
+	  (Loop_packing_flags & PACKING_LOAD_DYN_ALIGN) == 0)
 	continue;
 
       // For store streams, only statically well aligned streams will
@@ -1946,6 +2066,22 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
 	cg_loop.Set_remainder_after();
     }
   }
+
+  if (trace_packing_verbose) {
+    if (cg_loop.Peel_stream())
+      fprintf(stdout, "  <packing check> Requires %s loop peeling for 1 stream\n", cg_loop.Peel_cond() ? "dynamic" : "static");
+    else if (cg_loop.Specialize_streams())
+      fprintf(stdout, "  <packing check> Requires specialization for %d stream(s)\n", cg_loop. Special_streams());
+    else if (stream_count > 0)
+      fprintf(stdout, "  <packing check> Packing could be performed on %d stream(s)\n", stream_count);
+    else
+      fprintf(stdout, "  <packing check> No stream is candidate for packing\n");
+    if (cg_loop.Remainder_after())
+      fprintf(stdout, "  <packing check> Requires remainder after unrolled loop\n");
+    if (cg_loop.Even_factor())
+      fprintf(stdout, "  <packing check> Requires unroll_times%2 == 0\n");      
+  }
+
   // Check if there is at least one stream candidate for packing
   if (stream_count == 0)
     return FALSE;
@@ -1954,7 +2090,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
     if (cg_loop.Even_factor()) {
       fprintf(TFile, "<ivs packing> Loop requires even unroll factor\n");
     }
-    fprintf(TFile, "<ivs packing> before unrolling: Load stream %d, Store stream %d, Peeling %d, Special %d\n", load_stream_count, store_stream_count, cg_loop.Peel_stream(), (cg_loop.Special_streams() > 0));
+    fprintf(TFile, "<ivs packing> before unrolling: Load stream %d, Store stream %d, Peeling %d, Special %d\n", load_stream_count, store_stream_count, cg_loop.Peel_stream(), cg_loop.Specialize_streams());
   }
 
   return TRUE;
@@ -2047,6 +2183,46 @@ BOOL IVS_Analyze_Load_Store_Packing( CG_LOOP &cg_loop )
 
   return can_be_packed;
 }
+
+INT
+Loop_Packing_Options( CG_LOOP &cg_loop )
+{
+  LOOP_DESCR *loop = cg_loop.Loop();
+  BB *head = LOOP_DESCR_loophead( loop );
+
+  INT loop_packing_flags = CG_LOOP_Packing_flags;
+
+  // Now, look if some loop pragmas override this value.
+  ANNOTATION *packing_ant = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
+  while (packing_ant && WN_pragma(ANNOT_pragma(packing_ant)) != WN_PRAGMA_LOOPPACK)
+    packing_ant = ANNOT_Get(ANNOT_next(packing_ant), ANNOT_PRAGMA);
+  if (packing_ant) {
+    WN *wn = ANNOT_pragma(packing_ant);
+    INT packing_level = WN_pragma_arg1(wn);
+    if (Get_Trace(TP_CGLOOP, 0x20)) {
+      fprintf(stdout, "  <packing check> #pragma looppack(%d)\n", packing_level);
+    }
+    // FdF: Same association as in config_target.cxx
+    switch (packing_level) {
+    case 0:
+      loop_packing_flags = 0;
+      break;
+    case 1:
+      loop_packing_flags = 0x203;
+      break;
+    case 2:
+      loop_packing_flags = 0x21b;
+      break;
+    }
+  }
+
+  if (Get_Trace(TP_CGLOOP, 0x20)) {
+    fprintf(stdout, "  <packing check> Packing with flags 0x%x\n", loop_packing_flags);
+  }
+
+  return loop_packing_flags;
+  }
+
 #endif /* !TARG_STxP70 */
 
 #endif
