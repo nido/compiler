@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Nov 21 15:45:24 CET 2007
+	Author:    knochelh
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-35955
+
+Description:
+------------
+	* [trunk] Fix for bug #35955: Incorrect code generation in linux kernel usb code.
+	Deliver fixes/codex-35955 rev #14442 with authorization branch #36061
+
+
+Modified Files:
+---------------
+	M      osprey/common/util/range.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Nov 20 10:55:14 CET 2007
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
