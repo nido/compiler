@@ -6660,40 +6660,44 @@ EMT_Emit_PU (
   if (Assembly &&
       ((PU_is_interrupt(Get_Current_PU())) ||
        (PU_aligned_stack(Get_Current_PU())!=Target_Stack_Alignment))) {
-      BB_LIST* bbList;
-      char *align;
-      INT macrolength;
-
-      macrolength = strlen(ASM_PROLOG_STKALN_STR);
-      if (strlen(ASM_PROLOG_STKALN_STR) < strlen(ASM_EPILOG_STKALN_STR)) {
-	 macrolength = strlen(ASM_EPILOG_STKALN_STR);
+    BB_LIST* bbList;
+    char *align;
+    INT macrolength;
+    
+    macrolength = strlen(ASM_PROLOG_STKALN_STR);
+    if (strlen(ASM_PROLOG_STKALN_STR) < strlen(ASM_EPILOG_STKALN_STR)) {
+      macrolength = strlen(ASM_EPILOG_STKALN_STR);
+    }
+    macrolength += 5;
+    align = (char*)alloca(macrolength);
+    
+    if (PU_aligned_stack(Get_Current_PU())!=0) {
+      sprintf(align, "%s %d", ASM_PROLOG_STKALN_STR,
+	      (int)(PU_aligned_stack(Get_Current_PU())-1));
+    }
+    else if (PU_is_interrupt(Get_Current_PU())) {
+      sprintf(align, "%s 7", ASM_PROLOG_STKALN_STR);
+    }
+    
+    for(bbList = Entry_BB_Head; bbList; bbList = BB_LIST_rest(bbList)) {
+      OP* asmOp = Create_Asm_Macro(align);
+      BB_Prepend_Op(BB_LIST_first(bbList), asmOp);
+      Set_BB_asm(BB_LIST_first(bbList));
+    }
+    
+    for(bbList = Exit_BB_Head; bbList; bbList = BB_LIST_rest(bbList)) {
+      BB *bb = BB_LIST_first(bbList);
+      // [TTh] Fix for bug #35136: Epilog not wanted in case of BB
+      //       containing "noreturn" call.
+      //       Such BB is marked as BBKIND_TAIL_CALL but does not 
+      //       contain a branch op.
+      if (BB_kind(bb) == BBKIND_TAIL_CALL && !BB_branch_op(bb)) {
+	continue;
       }
-      macrolength += 5;
-      align = (char*)alloca(macrolength);
-
-      if (PU_aligned_stack(Get_Current_PU())!=0) {
-	sprintf(align, "%s %d", ASM_PROLOG_STKALN_STR,
-		(int)(PU_aligned_stack(Get_Current_PU())-1));
-      }
-      else if (PU_is_interrupt(Get_Current_PU())) {
-	sprintf(align, "%s 7", ASM_PROLOG_STKALN_STR);
-      }
-
-      for(bbList = Entry_BB_Head; bbList; bbList = BB_LIST_rest(bbList))
-          {
-              OP* asmOp = Create_Asm_Macro(align);
-              BB_Prepend_Op(BB_LIST_first(bbList), asmOp);
-              Set_BB_asm(BB_LIST_first(bbList));
-          }
-
-      for(bbList = Exit_BB_Head; bbList; bbList = BB_LIST_rest(bbList))
-          {
-              OP* asmOp = Create_Asm_Macro(ASM_EPILOG_STKALN_STR);
-              BB_Insert_Op(BB_LIST_first(bbList),
-                           OPS_last(&(BB_LIST_first(bbList)->ops)), asmOp,
-                           TRUE);
-              Set_BB_asm(BB_LIST_first(bbList));
-          }
+      OP* asmOp = Create_Asm_Macro(ASM_EPILOG_STKALN_STR);
+      BB_Insert_Op(bb, OPS_last(&(bb->ops)), asmOp, TRUE);
+      Set_BB_asm(bb);
+    }
   }
 #endif
 

@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Nov 22 17:19:37 CET 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-35136
+
+Description:
+------------
+	* [trunk] Fix for bug #35136: Trap misaligned when calling exit() from a fct with overaligned stack
+	  Deliver fixes/codex-35136 rev #14464 with authorization branch #35223 
+
+Modified Files:
+---------------
+	M      osprey/lai/cgemit.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Nov 21 15:45:24 CET 2007
 	Author:    knochelh
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
