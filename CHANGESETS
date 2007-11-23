@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Nov 23 08:43:13 CET 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-34501
+
+Description:
+------------
+	* [trunk] Fix for bug #34501: automod accessing invalid operands
+	  -> Automod: avoid incorrect transformation done when the memory operation
+	     and the increment operation needs to be moved closer but when we cannot
+	     insure that we can repair in-between operations.
+	  Deliver fixes/codex-34501 rev #14467 with authorization branch #34721 
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_automod.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Nov 22 17:19:37 CET 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
