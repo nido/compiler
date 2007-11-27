@@ -1426,13 +1426,28 @@ Expand_Logical_Not (
     src = Expand_Or_Inline_Immediate(src, MTYPE_I4, ops);
   }
 
-  opcode = TOP_result_register_variant(TOP_cmpeq_r_r_r, 0, TN_register_class(dest));
-  
-  FmtAssert(opcode != TOP_UNDEFINED, ("Expand_Logical_Not"));
-
-  Build_OP (opcode, dest, Zero_TN, src, ops);
-
-  return;
+  switch (TN_register_class (src)) {
+  case ISA_REGISTER_CLASS_branch:
+    if (TN_register_class (dest) == ISA_REGISTER_CLASS_branch) {
+      Exp_Pred_Complement (dest, NULL, src, ops);
+    } else {
+      Expand_Select (dest, src, Zero_TN, Gen_Literal_TN(1, 4), MTYPE_B, FALSE,
+		     ops);
+    }
+    break;
+  case ISA_REGISTER_CLASS_integer:
+    opcode = TOP_result_register_variant(TOP_cmpeq_r_r_r, 0, TN_register_class(dest));
+    
+    FmtAssert(opcode != TOP_UNDEFINED, ("Expand_Logical_Not"));
+    
+    Build_OP (opcode, dest, Zero_TN, src, ops);
+    break;
+  default:
+    FmtAssert (FALSE,
+	       ("Expand_Logical_Not: unsupported register class %s",
+		ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(TN_register_class (src)))));
+    break;
+  }
 }
 
 /* ====================================================================

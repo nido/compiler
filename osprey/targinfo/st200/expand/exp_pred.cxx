@@ -155,7 +155,7 @@ Exp_Pred_Complement (
   FmtAssert(cdest == NULL, 
 	    ("Exp_Pred_Complement, can't have 2 predicates define"));
 
-  OP *opb = TN_ssa_def (src);
+  OP *opb = SSA_Active () ? TN_ssa_def (src) : NULL;
   if (opb && OP_code(opb) == TOP_convib_r_b) {
     ptn = OP_opnd(opb, 0);
     Build_OP(TOP_cmpeq_r_r_b, dest, ptn, Zero_TN, ops);
