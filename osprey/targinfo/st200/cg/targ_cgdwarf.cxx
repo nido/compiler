@@ -329,7 +329,7 @@ Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     if (TN_Is_Unwind_Reg(tn)) {
 #ifdef DEBUG_UNWIND
       fprintf(TFile, "** %s is an unwind reg %d\n", __FUNCTION__,
-	      TN_Get_Debug_Reg_Id(tn));
+ 	      TN_Get_Debug_Reg_Id(tn));
 #endif
 	return tn;
     }
@@ -465,10 +465,15 @@ static BOOL Restore_SP_From_FP(OP *op)
 }
 
 // is 'op' a move from xx to FP ? (ie restore FP from xx)
+// or a restore of FP from the stack
 static BOOL Restore_FP(OP *op)
 {
   if (OP_move(op) && (OP_result(op,0) == FP_TN)) {
     return TRUE;
+  } else if (OP_load(op) && (OP_result(op,0) == FP_TN)) {
+    if (OP_findopnd(op, OU_base) == SP_TN) {
+      return TRUE;
+    }
   }
   return FALSE;
 }
@@ -757,7 +762,7 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
     case1_OK:
       if (OP_result(op,0) == SP_TN) {
 	ue.rc_reg = CLASS_REG_PAIR_sp;
-      
+
 	if ( ( ue.offset > 0 && OP_isub(op) )
 	     || ( ue.offset < 0 && OP_iadd(op) )
 	     ) {
@@ -863,7 +868,7 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 #endif
     TN* copy_tn = OP_opnd(op, opnd_idx);
     TN* result_tn = OP_result(op, OP_Copy_Result(op));
-      
+
     // check that we are copying a callee saved,
     // and that the destination is not a dedicated
     // there is a special case for FP, which is removed

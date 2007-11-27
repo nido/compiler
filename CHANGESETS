@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Nov 27 17:05:42 CET 2007
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-36206
+
+Description:
+------------
+	*  Deliver fix for bug #36206 (Compiler asserts "unwind: unable to
+	compute frame size" (jasper, st240, -O2 -g))
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/cg/targ_cgdwarf.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Nov 27 16:14:57 CET 2007
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
