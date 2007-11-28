@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Nov 28 13:32:13 CET 2007
+	Author:    guillon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/guillon/dev-visibility
+
+Description:
+------------
+	* Deliver branch guillon/dev-visibility with authorization art #35639. Improvement to visibility spec syntax
+
+
+Modified Files:
+---------------
+	M      osprey/common/util/vspec_parse.c
+	M      osprey/common/util/vspec.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Nov 27 17:05:42 CET 2007
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
