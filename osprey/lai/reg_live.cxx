@@ -823,6 +823,12 @@ REG_LIVE_Prolog_Temps(
   FOR_ALL_ISA_REGISTER_CLASS(cl) {
     temps[cl] = REGISTER_SET_Difference(REGISTER_CLASS_caller_saves(cl), 
 					live[cl]);
+#ifdef TARG_ST
+    // [TTh] Depending on the target, some extra caller save registers
+    // might be removed.
+    temps[cl] = REGISTER_SET_Difference(temps[cl],
+					CGTARG_Forbidden_Prolog_Epilog_Registers(cl));
+#endif
   }
 
   /* The last step is to reject any temp which is used or killed by
@@ -888,6 +894,12 @@ REG_LIVE_Epilog_Temps(
   FOR_ALL_ISA_REGISTER_CLASS(cl) {
     temps[cl] = REGISTER_SET_Difference(REGISTER_CLASS_caller_saves(cl),
 					temps[cl]);
+#ifdef TARG_ST
+    // [TTh] Depending on the target, some extra caller save registers
+    // might be removed.
+    temps[cl] = REGISTER_SET_Difference(temps[cl],
+					CGTARG_Forbidden_Prolog_Epilog_Registers(cl));
+#endif
   }
 
   /* Scan the OPs in the exit block backwards and update the available

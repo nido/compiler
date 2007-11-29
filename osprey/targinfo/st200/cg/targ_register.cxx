@@ -267,6 +267,17 @@ CGTARG_Forbidden_LRA_Registers (ISA_REGISTER_CLASS rclass)
   return CGTARG_Forbidden_GRA_Registers (rclass);
 }
 
+/*
+ * The set of forbidden registers for prolog/epilog temporaries
+ */
+REGISTER_SET
+CGTARG_Forbidden_Prolog_Epilog_Registers (ISA_REGISTER_CLASS rclass)
+{
+  REGISTER_SET s = REGISTER_SET_EMPTY_SET;
+  return s;
+}
+
+
 #ifdef TARG_ST
 /* ====================================================================
  *   CGTARG_Prefered_GRA_Registers 

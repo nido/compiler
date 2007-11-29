@@ -75,6 +75,11 @@ extern REGISTER_SET CGTARG_Forbidden_GRA_Registers(ISA_REGISTER_CLASS rclass);
 // [SC] The set of forbidden registers for LRA.
 extern REGISTER_SET CGTARG_Forbidden_LRA_Registers(ISA_REGISTER_CLASS rclass);
 
+#ifdef TARG_ST
+// [TTh] The set of forbidden registers for prolog/epilog temporaries.
+extern REGISTER_SET CGTARG_Forbidden_Prolog_Epilog_Registers(ISA_REGISTER_CLASS rclass);
+#endif
+
 
 // Returns the set of registers that will be selected in priority by
 // GRA (resp. LRA).
