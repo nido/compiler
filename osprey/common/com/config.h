@@ -665,6 +665,7 @@ BE_EXPORTED extern char *Gen_Profile_Name;
 BE_EXPORTED extern BOOL  Call_Mcount;	/* generate a call to mcount in pu entry */
 #ifdef TARG_ST
 BE_EXPORTED extern BOOL  Instrument_Functions_Enabled;	/* generate calls to instrumentation for function entries and exits. */
+BE_EXPORTED extern BOOL Instrument_Functions_Enabled_For_PG; /* generate calls to instrumentation for profiling function entries and exits (gprof method used for stxp70). */
 BE_EXPORTED extern BOOL Profile_Arcs_Enabled_Cgir; /* Create data files for the `gcov' code-coverage utility and instrument code. */
 BE_EXPORTED extern BOOL Profile_Arcs_Enabled; /* Create data files for the `gcov' code-coverage utility and instrument code. */
 BE_EXPORTED extern BOOL Test_Coverage_Enabled; /* Create data files for the `gcov' code-coverage utility and instrument code. */

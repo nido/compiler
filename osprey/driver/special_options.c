@@ -605,6 +605,10 @@ add_special_options (void)
 	  maybe_dynamic();
 	  // [TB]: Activate deadcode even in dynamic mode
 	  deadcode = (olevel >= 2) ? TRUE : FALSE;
+#ifdef TARG_STxP70
+	  //[TB] For the moment deadcode is desactivated for stxp70 by default.
+	  deadcode = FALSE;
+#endif
 	  if (deadcode == TRUE) {
             prepend_option_seen (O__deadcode);
 	  }
@@ -621,9 +625,19 @@ add_special_options (void)
 	  icache_static = FALSE;
 
 	/* If icache_opt is UNDEFINED, set it to TRUE when olevel >= 2*/
-        if (icache_opt == UNDEFINED)
+        if (icache_opt == UNDEFINED) {
+#ifdef TARG_ST200
+	  /* On st200 acticate icacheopt with -O2 */
 	  icache_opt = (olevel >= 2) ? TRUE: FALSE;
-
+#else
+#ifdef TARG_STxP70
+	  /* On stxp70 desactivate icacheopt */
+	  icache_opt = FALSE;
+#else
+#error "default behavior of icache_opt for this target is not defined"
+#endif
+#endif
+	}
 	if (icache_opt == UNDEFINED)
 	  icache_opt = icache_static || icache_profile  || icache_mapping;
 
@@ -708,9 +722,11 @@ add_special_options (void)
 
         if (deadcode == TRUE || icache_opt == TRUE) {
 	  /* AS option */
+#ifdef TARG_ST200	  
 	  flag = add_new_option("--emit-all-relocs");
 	  add_phase_for_option(flag, P_any_as);
 	  prepend_option_seen (flag);
+#endif
 	  if (deadcode == TRUE|| icache_static == TRUE || icache_profile || icache_mapping) {
 	    /* Add -r for link*/
 	    flag = add_new_option("-r");

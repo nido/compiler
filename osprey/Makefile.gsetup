@@ -618,6 +618,9 @@ endif
 
 ifeq ($(BUILD_TARGET), STxP70)
 STD_COMPILE_OPTS += -DTARG_ST -DKEY
+# Thierry : add CGO for Binary Cache Optimizer
+BCO_ENABLED=1
+STD_COMPILE_OPTS += -DBCO_ENABLED 
 endif
 
 ifeq ($(BUILD_OPTIMIZE), DEBUG)

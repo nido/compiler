@@ -1,6 +1,31 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Nov 30 14:38:24 CET 2007
+	Author:    bidaultt
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bidaultt/dev-binopt_for_stxp70
+
+Description:
+------------
+	* [trunk] Deliver bidaultt/dev-binopt_for_stxp70 with authorization branch #34759 
+
+
+Modified Files:
+---------------
+	M      osprey/Makefile.gsetup
+	M      osprey/be/com/wn_lower.cxx
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/phases.c
+	M      osprey/driver/special_options.c
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/config.h
+	M      osprey/targinfo/stxp70/config/config_asm.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Nov 30 09:43:08 CET 2007
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

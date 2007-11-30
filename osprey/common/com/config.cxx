@@ -657,6 +657,8 @@ static OPTION_DESC Options_TENV[] = {
 #ifdef TARG_ST
   { OVK_BOOL,   OV_SHY,		FALSE, "instrument_functions",		NULL,
     0, 0, 0,    &Instrument_Functions_Enabled, NULL },
+  { OVK_BOOL,   OV_SHY,		FALSE, "instrument_functions_for_pg",		NULL,
+    0, 0, 0,    &Instrument_Functions_Enabled_For_PG, NULL },
   { OVK_BOOL,   OV_SHY,		FALSE, "profile_arcs",		NULL,
     0, 0, 0,    &Profile_Arcs_Enabled, NULL },
   { OVK_BOOL,   OV_SHY,		FALSE, "test_coverage",		NULL,
@@ -1020,6 +1022,7 @@ BOOL Call_Mcount = FALSE;	/* generate a call to mcount in pu entry */
 
 #ifdef TARG_ST
 BOOL Instrument_Functions_Enabled = FALSE; /* generate calls to instrumentation for function entries and exits. */
+BOOL Instrument_Functions_Enabled_For_PG = FALSE; /* generate calls to instrumentation for profiling function entries and exits (gprof method used for stxp70). */
 BOOL Profile_Arcs_Enabled = FALSE; /* Create data files for the `gcov' code-coverage utility and instrument code. */
 BOOL Test_Coverage_Enabled = FALSE; /* Create data files for the `gcov' code-coverage utility and instrument code. */
 BOOL Profile_Arcs_Enabled_Cgir = FALSE; /* Create data files for the `gcov' code-coverage utility and instrument code in the cgir. */

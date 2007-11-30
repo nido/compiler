@@ -16253,6 +16253,25 @@ Create_Profile_Func_Exit_Call ()
 {
   return Create_Profile_Func_Call ("__cyg_profile_func_exit");
 }
+
+/*
+ * Create_Profile_Func_Enter_Call_For_PG ()
+ * Create_Profile_Func_Exit_Call_For_PG ()
+ * Create a call to the enter and exit functions respectivelly.
+ * Used for profiling. These functions are defined in libgprof.a for stxp70 target
+ */
+static WN *
+Create_Profile_Func_Enter_Call_For_PG ()
+{
+  return Create_Profile_Func_Call ("__profile_func_enter");
+}
+
+static WN *
+Create_Profile_Func_Exit_Call_For_PG ()
+{
+  return Create_Profile_Func_Call ("__profile_func_exit");
+}
+
 #else
 static WN *
 Create_Mcount_Call (void)
@@ -16271,7 +16290,7 @@ Create_Mcount_Call (void)
  */
 static BOOL
 Instrument_Function_Enabled() {
-  return Instrument_Functions_Enabled && WN_has_sym(current_function) &&
+  return (Instrument_Functions_Enabled || Instrument_Functions_Enabled_For_PG ) && WN_has_sym(current_function) &&
     !PU_no_instrument_function(Pu_Table[ST_pu(WN_st(current_function))]);
 }
 
@@ -16315,7 +16334,12 @@ static WN *lower_preamble_end(WN *block, WN *tree, LOWER_ACTIONS actions)
     }
     
     if (Instrument_Function_Enabled()) {
-      WN *func_enter_call = Create_Profile_Func_Enter_Call();
+      WN *func_enter_call;
+      if (Instrument_Functions_Enabled_For_PG)
+	func_enter_call = Create_Profile_Func_Enter_Call_For_PG();
+      else
+	func_enter_call = Create_Profile_Func_Enter_Call();
+
       if (func_enter_call) {	// possible that we won't create call yet
 	WN_Set_Linenum (func_enter_call, current_srcpos);
 	WN_INSERT_BlockLast(new_block, func_enter_call);
@@ -16348,7 +16372,12 @@ static WN *lower_return(WN *block, WN *tree, LOWER_ACTIONS actions)
   // [CG] support for -finstrument-function
   if (Instrument_Function_Enabled()) {
     WN *new_block = WN_CreateBlock();
-    WN *func_exit_call = Create_Profile_Func_Exit_Call();
+    WN *func_exit_call;
+    if (Instrument_Functions_Enabled_For_PG)
+      func_exit_call = Create_Profile_Func_Exit_Call_For_PG();
+    else
+      func_exit_call = Create_Profile_Func_Exit_Call();
+      
     if (func_exit_call) { // possible that we won't create call yet
       WN_Set_Linenum (func_exit_call, current_srcpos);
       WN_INSERT_BlockFirst(new_block, func_exit_call);

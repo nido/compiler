@@ -1644,6 +1644,19 @@ add_file_args (string_list_t *args, phases_t index)
 	  }
 	  if (deadcode == TRUE) {
 	    add_string(args, "--deadcode");
+#ifdef TARG_STxP70
+	    add_string(args, "--preserved");
+	    add_string(args, "_start");
+	    add_string(args, "--ignore-start");
+#else
+#ifdef TARG_ST200
+	    add_string(args, "--preserved");
+	    add_string(args, "__start");
+	    add_string(args, "--ignore-start");
+#else
+#error "Unknowm start point for binopt/deadcode"
+#endif
+#endif
 	    if (dynamic == TRUE) {
 	      add_string(args, "--dynamic");
 	    }
@@ -1795,12 +1808,10 @@ add_final_ld_args (string_list_t *args)
 #endif
       
 #ifdef TARG_ST
-#ifndef TARG_STxP70
       /* [TB]: with -pg add lib gprof to link */
       if (option_was_seen(O_pg) || option_was_seen(O_p)) {
 	add_string(args, "-lgprof");
       }
-#endif
 #endif
       
 #ifdef TARG_ST

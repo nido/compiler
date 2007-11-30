@@ -190,8 +190,14 @@
 	NA__"show default values"
 % gcc has -v show version as well as phases, so take that meaning
 #ifdef BCO_ENABLED
+#ifdef TARG_STxP70
+% Thierry: transmit also -v to icache optim 
+% STxP70: do not pass to ld that do not support these options.
+-v	{show_flag = TRUE; show_version = TRUE;} ALL	cpp,binopt	self "-show"
+#else
 % Thierry: transmit also -v to icache optim 
 -v	{show_flag = TRUE; show_version = TRUE;} ALL	cpp,ld,binopt	self "-show"
+#endif
 #else
 #ifdef TARG_STxP70
 % STxP70: do not pass to ld that do not support these options.
@@ -449,9 +455,9 @@ I-cpp_pic	;		ALL	NONE	"-D_PIC -D__DSO__"
 -fprofile-arcs-cgir	;        ALL	NONE	self "-TENV:profile_arcs_cgir"
         NA__"Create data files for the `gcov' code-coverage utility and instrument code in the backend"
 -fprofile-arcs	;        ALL	NONE	self "-TENV:profile_arcs"
-   NA__STxP70__"Create data files for branch probabilities feedback option. Instrument code."
+   "Create data files for branch probabilities feedback option. Instrument code."
 -ftest-coverage	;        ALL	NONE	self "-TENV:test_coverage"
-   NA__STxP70__"Create data files for the `gcov' code-coverage utility with line information. To be used with -fprofile-arcs"
+   "Create data files for the `gcov' code-coverage utility with line information. To be used with -fprofile-arcs"
 -fcoverage-counter64	;        ALL	NONE	self "-TENV:coverage_counter64"
    NA__STxP70__"Use 64 bits coverage counters instead of 32"
 -fbranch-probabilities	;        ALL	NONE	self "-TENV:branch_probabilities"
@@ -632,9 +638,10 @@ I-fini%s		;		CC	ld	"-fini %s"
 #else
 #ifdef TARG_STxP70
 -p	;		NONE	NONE	"" ""
-	""
--pg	;		NONE	NONE	"" ""
-	""
+	""	
+-pg	;        ALL	NONE	self "-TENV:instrument_functions_for_pg -D__LIBGPROF_CYCLE_PROFILING__ -D__LIBGPROF_GRAPH_PROFILING__"
+   "Intruments code for profiling. Generates gmon/gprof and stprof data."
+
 #else
 -p	;		ALL	NONE	self "-TENV:call_mcount"
 	""
