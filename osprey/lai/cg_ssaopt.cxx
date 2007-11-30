@@ -98,7 +98,12 @@
 static BOOL
 Retrieve_Base_Offset(OP* op, TN*& tn_base, TN*& tn_offset);
 
+static TN *
+Get_Addr_Exp(TN *tn, INT64 *offset_value);
+
 static BOOL Trace_SSA_CBPO = 0;
+
+static BOOL g_factorizeCstPhase = FALSE;
 
 #if 0
 #define SIGNED_BITS 9
@@ -177,6 +182,9 @@ typedef std::vector<base_ops> vec_base_ops;
 #define VEC_BASE_ops(bv)  (bv).second
 
 static void
+Generate_Common_Base(vec_base_ops& Base_Ops_List);
+
+static void
 Print_base_ops(FILE *file, base_ops &base_list) {
   int i;
   vec_bo_info& op_offset = *VEC_BASE_ops(base_list);
@@ -219,6 +227,28 @@ BB_get_common_dom(BB *dom, BB* bb) {
   }
 
   return dom;
+}
+
+static vec_bo_info*
+Lookup_Ops_List_For_Imm(vec_base_ops& Base_Ops_List, TN *tn_base,
+                        TN* tn_offset, INT64 base_dist) {
+  TN* tn_offset_base = NULL;
+  INT64 offset_value = 0;
+  if(tn_offset) {
+      tn_offset_base = Get_Addr_Exp(tn_offset, &offset_value);
+  }
+  for (int i = 0; i < Base_Ops_List.size(); i++) {
+    base_ops& base_list = Base_Ops_List[i];
+    INT64 base_offset_value;
+    TN* tn_base_base = Get_Addr_Exp(BO_offset_tn((*VEC_BASE_ops(base_list))[0]),
+                                    &base_offset_value);
+    if (VEC_BASE_base(base_list) == tn_base &&
+        (tn_offset_base == NULL ||
+         (tn_offset_base == tn_base_base && offset_value == base_offset_value))
+        && BO_addr_dist((*VEC_BASE_ops(base_list))[0]) == base_dist)
+      return VEC_BASE_ops(base_list);
+  }
+  return NULL;
 }
 
 /* ====================================================================
@@ -295,21 +325,38 @@ Use_TN(const OPS& ops, TN *tn)
 static BOOL
 Set_Remat(TN* result_tn, TN* oldBase)
 {
-  BOOL result = !TN_is_dedicated(result_tn);
-  if(result && !TN_is_rematerializable(result_tn)) {
-    if(TN_is_symbol(oldBase))	{
-      // Pointer are seen as unsigned int
-      CGSPILL_Attach_Lda_Remat(result_tn, MTYPE_U4,
-			       TN_offset(oldBase),
-			       TN_var(oldBase));
-    } else if(TN_has_value(oldBase)) {
-      CGSPILL_Attach_Intconst_Remat(result_tn, MTYPE_I4,
-				    TN_value(oldBase));
-    } else {
-      result = FALSE;
-    }
-  }
-  return result;
+    BOOL result = !TN_is_dedicated(result_tn);
+    if(result && !TN_is_rematerializable(result_tn))
+        {
+            if(TN_is_symbol(oldBase))
+                {
+                    // [CQ1] I do not know a way to specify that result_tn will
+                    // containt the constant which represents the address
+                    // of TN_var(oldBase) + TN_offset(oldBase).
+                    // CGSPILL_Attach_Lda_Remat represents the load result of
+                    // that address
+
+                    // Pointer are seen as unsigned int
+                    // CGSPILL_Attach_Lda_Remat(result_tn, MTYPE_U4,
+                    //                          TN_offset(oldBase),
+                    //                          TN_var(oldBase));
+                }
+            else if(TN_has_value(oldBase))
+                {
+                    // [CQ1] Does not set the rematerialization flag because,
+                    // conditions used in GRA are bugged. Hence, it exists a
+                    // path where TN_home (WN type) is used as a ST!
+                    // E.g. orginal tn is rematerializable and spill tn is not
+
+                    // CGSPILL_Attach_Intconst_Remat(result_tn, MTYPE_I4,
+                    //                               TN_value(oldBase));
+                }
+            else
+                {
+                    result = FALSE;
+                }
+        }
+    return result;
 }
 
 static BOOL
@@ -328,38 +375,38 @@ Update_Expensive_Load_Im(OP *&op, INT index, INT64 offset_val, TN *new_base_tn,
     {
       BB_Remove_Op(OP_bb(op), op);
       if(offset_val < 0)
-	{
-	  Exp_SUB(MTYPE_I4, result_tn, new_base_tn,
-		  Gen_Literal_TN(-offset_val, 4), &ops);
-	}
+          {
+              Exp_SUB(MTYPE_I4, result_tn, new_base_tn,
+                      Gen_Literal_TN(-offset_val, 4), &ops);
+          }
       else if(offset_val > 0)
-	{
-	  Exp_ADD(MTYPE_I4, result_tn, new_base_tn,
-		  new_offset_tn, &ops);
-	}
+          {
+              Exp_ADD(MTYPE_I4, result_tn, new_base_tn,
+                      new_offset_tn, &ops);
+          }
       else
-	{
-	  Expand_Copy(result_tn, True_TN, new_base_tn, &ops);
-	}
+          {
+              Expand_Copy(result_tn, True_TN, new_base_tn, &ops);
+          }
       if(!CGTARG_sequence_is_cheaper_than_load_imm(&ops, op))
-	{
-	  result = FALSE;
-	  OPS_Remove_All(&ops);
-	  OPS_Append_Op(&ops, op);
-	  if(!tnIsRemat)
-	    {
-	      Reset_TN_is_rematerializable(result_tn);
-	    }
-	}
+          {
+              result = FALSE;
+              OPS_Remove_All(&ops);
+              OPS_Append_Op(&ops, op);
+              if(!tnIsRemat)
+                  {
+                      Reset_TN_is_rematerializable(result_tn);
+                  }
+          }
       if(point)
-	{
-	  BB_Insert_Ops(bb, point, &ops, TRUE);
-	}
+          {
+              BB_Insert_Ops(bb, point, &ops, TRUE);
+          }
       else
-	{
-	  // else op was the last instruction of the basic block
-	  BB_Append_Ops(bb, &ops);
-	}
+          {
+              // else op was the last instruction of the basic block
+              BB_Append_Ops(bb, &ops);
+          }
       op = ops.last;
     }
   return result;
@@ -374,7 +421,7 @@ Update_Op_With_New_Base(OP *&op, TN *new_base_tn, INT64 base_offset, INT64 addr_
   TN *offset_tn = NULL;
   BOOL result = Retrieve_Base_Offset(op, base_tn, offset_tn);
   DevAssert(result, ("We should not be here if Retrieve_Base_Offset returns "
-		     "false!!!"));
+                     "false!!!"));
     
   TN *new_offset_tn;
     
@@ -402,12 +449,12 @@ Update_Op_With_New_Base(OP *&op, TN *new_base_tn, INT64 base_offset, INT64 addr_
     INT index = CGTARG_expensive_load_imm_immediate_index(op);
     if(index >= 0) {
       if(!Update_Expensive_Load_Im(op, index, offset_val, new_base_tn,
-				   new_offset_tn)) {
-	if(Trace_SSA_CBPO) {
-	  fprintf(TFile, "Do not update expensive load\n");
-	}
+                                   new_offset_tn)) {
+          if(Trace_SSA_CBPO) {
+              fprintf(TFile, "Do not update expensive load\n");
+          }
       } else {
-	++nbDone;
+          ++nbDone;
       }
     }
   } else {
@@ -431,14 +478,14 @@ Update_Op_With_New_Base(OP *&op, TN *new_base_tn, INT64 base_offset, INT64 addr_
   BB *common_dom_new = BB_get_common_dom(common_dom, bb);
   if(Trace_SSA_CBPO) {
     fprintf(TFile, "BB%d frequency: %f\nDominator (BB%d) frequency: %f\n",
-	    BB_id(bb), BB_freq(bb), BB_id(common_dom_new),
-	    BB_freq(common_dom_new));
+            BB_id(bb), BB_freq(bb), BB_id(common_dom_new),
+            BB_freq(common_dom_new));
   }
 
   if(alreadyDone.find(BB_id(bb)) == alreadyDone.end()) {
     sum += BB_freq(bb);
   }
-  // Here we check that the frequency of the basic block, that will receive
+  // CQ1 Here we check that the frequency of the basic block, that will receive
   // the initialization of the new base, does not have a too big difference
   // with the source one. Moreover, if frequencies are too different but we
   // do not change the dominator and we have already had to emit the new base
@@ -452,12 +499,12 @@ Update_Op_With_New_Base(OP *&op, TN *new_base_tn, INT64 base_offset, INT64 addr_
       ((sum / BB_freq(common_dom_new)) > min_frequency_ratio) ||
       (common_dom_new == common_dom && nbDone) || common_dom_new == bb)) {
     result = Update_Op_With_New_Base(op, new_base_tn, base_offset,
-				     addr_dist, nbDone);
+                                     addr_dist, nbDone);
   } else {
     if(Trace_SSA_CBPO) {
       fprintf(TFile, "Do not update load: Frequencies are too "
-	      "different: Sum %f\tDominator %f\n", sum,
-	      BB_freq(common_dom_new));
+              "different: Sum %f\tDominator %f\n", sum,
+              BB_freq(common_dom_new));
     }
   }
   return result;
@@ -492,12 +539,12 @@ Check_And_Update_Ops_With_New_Base(BB *&common_dom, TN* new_base_tn,
   if(CG_cbpo_block_method & CBPO_BLOCK_GLOBAL) {
     if((sum / BB_freq(tmp_dom)) < min_frequency_ratio) {
       if(Trace_SSA_CBPO) {
-	fprintf(TFile, "Do not globaly optimize: Sum %f\tDominator "
-		"(BB%d) %f\n",
-		sum, BB_id(tmp_dom), BB_freq(tmp_dom));
+        fprintf(TFile, "Do not globaly optimize: Sum %f\tDominator "
+                "(BB%d) %f\n",
+                sum, BB_id(tmp_dom), BB_freq(tmp_dom));
       }
       if(CG_cbpo_block_method == CBPO_BLOCK_GLOBAL) {
-	return 0;
+        return 0;
       }
       // Else: Global has failed, but user set method global then local, so
       // continue
@@ -510,7 +557,7 @@ Check_And_Update_Ops_With_New_Base(BB *&common_dom, TN* new_base_tn,
   alreadyDone.clear();
   sum = 0.0;
 
-  // We perform the update of the operation while we have rejected
+  // [CQ1] We perform the update of the operation while we have rejected
   // transformation and the number of rejected transformation is lower than the
   // previous iteration. The purpose is to miss not optimization opportunity,
   // since dominator may change and the evaluation of the frequency condition
@@ -527,18 +574,18 @@ Check_And_Update_Ops_With_New_Base(BB *&common_dom, TN* new_base_tn,
                               BO_addr_dist(op_offset[*it]), common_dom, sum,
                               nbDone, alreadyDone);
       if(nbDone != nbDoneOld) {
-	if(Trace_SSA_CBPO) {
-	  fprintf(TFile, "Update dominator (%d)\n", nbPhase);
-	}
-	// Increase the sum for this group of operations unless it has been
-	// done
-	if(alreadyDone.find(BB_id(OP_bb(op))) == alreadyDone.end()) {
-	  alreadyDone.insert(BB_id(OP_bb(op)));
-	  sum += BB_freq(OP_bb(op));
-	}
-	common_dom = BB_get_common_dom(common_dom, OP_bb(op));
+        if(Trace_SSA_CBPO) {
+          fprintf(TFile, "Update dominator (%d)\n", nbPhase);
+        }
+        // Increase the sum for this group of operations unless it has been
+        // done
+        if(alreadyDone.find(BB_id(OP_bb(op))) == alreadyDone.end()) {
+          alreadyDone.insert(BB_id(OP_bb(op)));
+          sum += BB_freq(OP_bb(op));
+        }
+        common_dom = BB_get_common_dom(common_dom, OP_bb(op));
       } else {
-	tmp.push_back(*it);
+        tmp.push_back(*it);
       }
     }
     ++nbPhase;
@@ -550,8 +597,18 @@ Check_And_Update_Ops_With_New_Base(BB *&common_dom, TN* new_base_tn,
   return nbDone;
 }
 
-static void
+static OPS
 Update_Ops_With_New_Base(TN *base_tn, INT64 base_adjust, TN *remat_base, INT64 remat_adjust, vec_bo_info& op_offset, int first, int last) {
+
+  if(Trace_SSA_CBPO) {
+    fprintf(TFile, "%s: Considered operations:\n", __FUNCTION__);
+    int idx;
+    for(idx = first; idx <= last; ++idx) {
+        Print_OP_No_SrcLine(BO_op(op_offset[idx]));
+    }
+    fprintf(TFile, "-------------------\n");
+  }
+
   // Compute a new base_offset, such that positive offsets are
   // preferred, and alignment is kept if possible.
   int width = BO_addr_dist(op_offset[last]) - BO_addr_dist(op_offset[first]);
@@ -571,11 +628,18 @@ Update_Ops_With_New_Base(TN *base_tn, INT64 base_adjust, TN *remat_base, INT64 r
   int biggest_offset_alignment = min_offset_alignment;
   int dist_to_next_align = (-base_offset)&(biggest_offset_alignment-1);
   FmtAssert(MIN_OFFSET<0,("This algorithm works only with MIN_OFFSET < 0"));
-  while ((min_offset - dist_to_next_align) >= MIN_OFFSET && biggest_offset_alignment < MAX_OFFSET) {
-    min_offset -= dist_to_next_align;
-    base_offset += dist_to_next_align;
-    biggest_offset_alignment *= 2;
-    dist_to_next_align = (-base_offset)&(biggest_offset_alignment-1);
+
+  // [CQ1] Do not maximize offset alignment when all commonalized addresses are
+  // representable (min_offset == 0) and first instruction is a load imm.
+  // The purpose is to generate move instead of add/sub instruction for
+  // immediate loading
+  if(!CGTARG_is_expensive_load_imm(BO_op(op_offset[first])) || min_offset) {
+    while ((min_offset - dist_to_next_align) >= MIN_OFFSET && biggest_offset_alignment < MAX_OFFSET) {
+      min_offset -= dist_to_next_align;
+      base_offset += dist_to_next_align;
+      biggest_offset_alignment *= 2;
+      dist_to_next_align = (-base_offset)&(biggest_offset_alignment-1);
+    }
   }
 
   // In case the original base_tn is rematerializable, new_base_tn can
@@ -612,6 +676,17 @@ Update_Ops_With_New_Base(TN *base_tn, INT64 base_adjust, TN *remat_base, INT64 r
       Exp_SUB(MTYPE_I4, new_base_tn, base_tn, Gen_Literal_TN(-init_adjust, 4), &ops);
     else if (init_adjust > 0)
       Exp_ADD(MTYPE_I4, new_base_tn, base_tn, Gen_Literal_TN(init_adjust, 4), &ops);
+    else if(BO_offset_tn(op_offset[first]) &&
+            !TN_has_value(BO_offset_tn(op_offset[first])) &&
+            g_factorizeCstPhase) {
+      DevAssert(BO_addr_dist(op_offset[first]) == 0,
+                ("Do not know how to create the new base"));
+      OP* op = Dup_OP(BO_op(op_offset[first]));
+      OPS_Append_Op(&ops, op);
+      DevAssert(OP_results(op) == 1,
+                ("Do not know where to set the new base"));
+      Set_OP_result(op, 0, new_base_tn);
+    }
     else {
       Expand_Copy(new_base_tn, True_TN, base_tn, &ops);
     }
@@ -632,20 +707,20 @@ Update_Ops_With_New_Base(TN *base_tn, INT64 base_adjust, TN *remat_base, INT64 r
     // This is not true with other load operations, since new_base_tn is
     // defined from base_tn, that is why we check base_tn usage.
     OP *op_base = (base_tn && TN_is_register(base_tn) &&
-		   Use_TN(ops, base_tn))? TN_ssa_def(base_tn): NULL;
+                   Use_TN(ops, base_tn))? TN_ssa_def(base_tn): NULL;
     OP *point = (op_base && (common_dom == OP_bb(op_base)))? OP_next(op_base):
       BB_first_op(common_dom);
 
     // FdF 20061124: Be careful not to insert code before spadjust
     while (point && (OP_code(point) == TOP_phi ||
-		     point == BB_entry_sp_adj_op(OP_bb(point)))) {
+                     point == BB_entry_sp_adj_op(OP_bb(point)))) {
       point = OP_next(point);
     }
 
     OP* sp_adjust;
     if ((point != NULL) &&
-	!(op_base && common_dom == OP_bb(op_base)) && // In this case, insertion point is after op_base. So necessary after sp_adjust.
-	( ( sp_adjust = BB_entry_sp_adj_op(OP_bb(point)) ) != NULL))  {
+        !(op_base && common_dom == OP_bb(op_base)) && // In this case, insertion point is after op_base. So necessary after sp_adjust.
+        ( ( sp_adjust = BB_entry_sp_adj_op(OP_bb(point)) ) != NULL))  {
       // [JV] In case of double sp_adjust, the last one is marked
       // sp_adjust.
       point = OP_next(sp_adjust);
@@ -655,6 +730,7 @@ Update_Ops_With_New_Base(TN *base_tn, INT64 base_adjust, TN *remat_base, INT64 r
       
     Optimized_Extended_Immediate = TRUE;
   }
+  return ops;
 }
 
 /* ====================================================================
@@ -778,10 +854,10 @@ Get_TN_Distance(TN *common_tn, TN *base_tn) {
      may actually be the same. (codex bug #20430) */
 
   else if ((common_tn != NULL) && (base_tn != NULL) &&
-	   TN_is_symbol(common_tn) && TN_is_symbol(base_tn) &&
-	   (TN_var(common_tn) == TN_var(base_tn)) &&
-	   (TN_offset(common_tn) == TN_offset(base_tn)) &&
-	   (TN_relocs(common_tn) == TN_relocs(base_tn)))
+           TN_is_symbol(common_tn) && TN_is_symbol(base_tn) &&
+           (TN_var(common_tn) == TN_var(base_tn)) &&
+           (TN_offset(common_tn) == TN_offset(base_tn)) &&
+           (TN_relocs(common_tn) == TN_relocs(base_tn)))
     return base_adjust;
 
   FmtAssert (FALSE, ("Get_TN_Distance: No distance between TNs"));
@@ -801,59 +877,59 @@ Propagate_Base_Offset( void ) {
       /* Constant propagation */
       INT copy_operand_idx;
       if( (copy_operand_idx = OP_Copy_Operand(op)) != -1 ) {
-	TN *constant = OP_opnd(op,copy_operand_idx);
-	TN *result = OP_result(op,0);
+        TN *constant = OP_opnd(op,copy_operand_idx);
+        TN *result = OP_result(op,0);
 
-	if (TN_is_dedicated(result)) continue;
+        if (TN_is_dedicated(result)) continue;
 
-	// FdF 20060918: Consider that a symbol requires an extended immediate
-	// FdF 20061205: At this time, propagate all values, the
-	// extended offset values will be checked later.
-	if (TN_has_value(constant) || TN_is_symbol(constant)) {
+        // FdF 20060918: Consider that a symbol requires an extended immediate
+        // FdF 20061205: At this time, propagate all values, the
+        // extended offset values will be checked later.
+        if (TN_has_value(constant) || TN_is_symbol(constant)) {
 
-	  if (Trace_SSA_CBPO) {
-	    fprintf(TFile, "%s: Propagate constant from OP:\n", __FUNCTION__);
-	    Print_OP_No_SrcLine(op);
-	  }
-	    
-	  TN_MAP_Set(constant_map, result, constant);
-	}
+            if (Trace_SSA_CBPO) {
+                fprintf(TFile, "%s: Propagate constant from OP:\n", __FUNCTION__);
+                Print_OP_No_SrcLine(op);
+            }
+            
+            TN_MAP_Set(constant_map, result, constant);
+        }
       }
 
       if(OP_iadd(op) || OP_isub(op)) {
-	/* Suppose that base is in opnd1 and offset in opnd2 */
-	TN *base = OP_opnd(op,OP_find_opnd_use(op, OU_opnd1));
-	TN *offset = OP_opnd(op,OP_find_opnd_use(op, OU_opnd2));
-	TN *result = OP_result(op,0);
+        /* Suppose that base is in opnd1 and offset in opnd2 */
+        TN *base = OP_opnd(op,OP_find_opnd_use(op, OU_opnd1));
+        TN *offset = OP_opnd(op,OP_find_opnd_use(op, OU_opnd2));
+        TN *result = OP_result(op,0);
 
-	if(TN_is_dedicated(result)) { continue; }
+        if(TN_is_dedicated(result)) { continue; }
 
-	Addr_Exp_Info addr_exp;
-	if (!Compute_Addr_Exp(addr_exp, base, offset, TRUE, OP_isub(op)))
-	  continue;
+        Addr_Exp_Info addr_exp;
+        if (!Compute_Addr_Exp(addr_exp, base, offset, TRUE, OP_isub(op)))
+          continue;
 
-	if (addr_exp.base_reg == NULL) {
+        if (addr_exp.base_reg == NULL) {
 
-	  if (Trace_SSA_CBPO) {
-	    fprintf(TFile, "%s: Propagate constant from OP:\n", __FUNCTION__);
-	    Print_OP_No_SrcLine(op);
-	  }
+          if (Trace_SSA_CBPO) {
+            fprintf(TFile, "%s: Propagate constant from OP:\n", __FUNCTION__);
+            Print_OP_No_SrcLine(op);
+          }
 
-	  TN_MAP_Set(constant_map, result, addr_exp.offset_tn);
-	}
-	else {
+          TN_MAP_Set(constant_map, result, addr_exp.offset_tn);
+        }
+        else {
 
-	  if (Trace_SSA_CBPO) {
-	    fprintf(TFile, "%s: Propagate base/offset from OP:\n", __FUNCTION__);
-	    Print_OP_No_SrcLine(op);
-	  }
+          if (Trace_SSA_CBPO) {
+              fprintf(TFile, "%s: Propagate base/offset from OP:\n", __FUNCTION__);
+              Print_OP_No_SrcLine(op);
+          }
 
-	  Addr_Exp_Info *tn_info = CXX_NEW (Addr_Exp_Info, &base_offset_pool);
-	  memset(tn_info, 0, sizeof(Addr_Exp_Info));
-	  Addr_base_reg(*tn_info) = addr_exp.base_reg;
-	  Addr_offset_tn(*tn_info) = addr_exp.offset_tn;
-	  TN_MAP_Set(base_offset_map, result, tn_info);
-	}
+          Addr_Exp_Info *tn_info = CXX_NEW (Addr_Exp_Info, &base_offset_pool);
+          memset(tn_info, 0, sizeof(Addr_Exp_Info));
+          Addr_base_reg(*tn_info) = addr_exp.base_reg;
+          Addr_offset_tn(*tn_info) = addr_exp.offset_tn;
+          TN_MAP_Set(base_offset_map, result, tn_info);
+        }
       }
     }
   }
@@ -863,40 +939,236 @@ Propagate_Base_Offset( void ) {
 static BOOL
 Retrieve_Base_Offset(OP* op, TN*& tn_base, TN*& tn_offset)
 {
-  INT base_idx = OP_find_opnd_use(op, OU_base);
-  INT offset_idx = OP_find_opnd_use(op, OU_offset);
-  BOOL result = FALSE;
+    INT base_idx = OP_find_opnd_use(op, OU_base);
+    INT offset_idx = OP_find_opnd_use(op, OU_offset);
+    BOOL result = FALSE;
 
-  if (base_idx < 0 || offset_idx < 0)
-    {
-      INT index;
-      if((index = CGTARG_expensive_load_imm_immediate_index(op)) >= 0 &&
-	 CG_cbpo_optimize_load_imm)
-	{
-	  TN* tn = OP_opnd(op, index);
-	  result = TRUE;
-	  if(TN_is_symbol(tn))
-	    {
-	      tn_base = Gen_Symbol_TN(TN_var(tn), 0,
-				      TN_relocs(tn));
-	      tn_offset = Gen_Literal_TN(TN_offset(tn), 4);
-	    }
-	  else
-	    {
-	      tn_base = tn;
-	      tn_offset = Gen_Literal_TN(0, 4);
-	      // Currently, we do not optimize known constant
-	      result = FALSE;
-	    }
-	}
+    if(base_idx < 0 || offset_idx < 0)
+        {
+            INT index;
+            if((index = CGTARG_expensive_load_imm_immediate_index(op)) >= 0 &&
+               CG_cbpo_optimize_load_imm)
+                {
+                    TN* tn = OP_opnd(op, index);
+                    result = TRUE;
+                    if((index = CGTARG_expensive_load_imm_base_index(op)) >= 0)
+                        {
+                            tn_base = OP_opnd(op, index);
+                            tn_offset = tn;
+                        }
+                    else
+                        {
+                            if(TN_is_symbol(tn))
+                                {
+                                    tn_base = Gen_Symbol_TN(TN_var(tn), 0,
+                                                            TN_relocs(tn));
+                                    tn_offset = Gen_Literal_TN(TN_offset(tn),
+                                                               4);
+                                }
+                            else
+                                {
+                                    tn_base = tn;
+                                    tn_offset = Gen_Literal_TN(0, 4);
+                                    // Currently, we do not optimize known
+                                    // constant
+                                    result = CG_cbpo_optimize_load_imm_cst &&
+                                        g_factorizeCstPhase;
+                                }
+                        }
+                }
+        }
+    else
+        {
+            tn_base = OP_opnd(op, base_idx);
+            tn_offset = OP_opnd(op, offset_idx);
+            result = TRUE;
+        }
+    return result;
+}
+
+static void
+Commonalize_Load_Imm(TN *base_tn, vec_bo_info& op_offset, int first, int last) 
+{
+    int i;
+    INT64 cst = BO_addr_dist(op_offset[first]);
+    for(i = first; i <= last; ++i)
+        {
+            BO_addr_dist(op_offset[i]) -= cst;
+        }
+    if(TN_has_value(base_tn))
+        {
+            // For constant base, cst contains the value of the base, thus
+            // we will add TN_value(base_tn) two times without this setting
+            cst = cst - TN_value(base_tn);
+        }
+    Update_Ops_With_New_Base(base_tn, -cst, NULL,
+                             0, op_offset, first, last);
+}
+
+static BOOL
+Is_Cheaper_If_Commonalized(Base_Offset_Info& first, Base_Offset_Info& last)
+{
+    return CGTARG_is_expensive_load_imm(BO_op(first)) &&
+        CGTARG_is_expensive_load_imm(BO_op(last)) &&
+        (BO_addr_dist(last) - BO_addr_dist(first) <
+         (MAX_WIDTH-(min_offset_alignment-1))) &&
+        (BO_addr_dist(last) - BO_addr_dist(first) == 0||
+         CGTARG_should_factorize(BO_op(first), BO_op(last)));
+}
+
+static void
+Generate_Tmp(vec_bo_info& op_offset)
+{
+    int j, j_first;
+    TN* base_tn = BO_base_tn(op_offset[0]);
+
+    for(j = j_first = 0; j < op_offset.size(); j++)
+        {
+            if(!Is_Cheaper_If_Commonalized(op_offset[j_first], op_offset[j]))
+                {
+                    if(j - j_first >= 2)
+                        {
+                            Commonalize_Load_Imm(base_tn, op_offset, j_first,
+                                                 j-1);
+                        }
+                    j_first = j;
+                    base_tn = BO_base_tn(op_offset[j_first]);
+                }
+        }
+    if(j - j_first >= 2 && Is_Cheaper_If_Commonalized(op_offset[j_first],
+                                                      op_offset[j-1]))
+        {
+            Commonalize_Load_Imm(base_tn, op_offset, j_first, j-1);
+        }
+}
+
+static void
+Collect_Load_Imm_Base_Offset(vec_base_ops& Base_Ops_List)
+{
+    for(BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb))
+        {
+            OP *op;
+            FOR_ALL_BB_OPs(bb, op)
+            {
+                TN *tn_base = NULL;
+                TN *tn_offset = NULL;
+                Addr_Exp_Info addr_exp;
+
+                if(CGTARG_is_expensive_load_imm(op) &&
+                   Retrieve_Base_Offset(op, tn_base, tn_offset) &&
+                   Compute_Addr_Exp(addr_exp, tn_base, tn_offset, FALSE,
+                                    FALSE))
+                    {
+                        INT64 base_adjust = 0;
+                        TN* tmp_offset = NULL;
+                        if(addr_exp.base_reg == NULL)
+                            {
+                                tn_base = Get_Addr_Exp(addr_exp.offset_tn,
+                                                       &base_adjust);
+                            }
+                        else
+                            {
+                                tmp_offset = tn_offset;
+                            }
+
+                        vec_bo_info *oplist = 
+                            Lookup_Ops_List_For_Imm(Base_Ops_List,
+                                                    tn_base, tmp_offset,
+                                                    base_adjust);
+                        if(!oplist)
+                            {
+                                oplist = CXX_NEW(vec_bo_info,
+                                                 &extended_offset_pool);
+                                Base_Ops_List.
+                                    push_back(std::make_pair(tn_base,
+                                                             oplist));
+                            }
+                        oplist->push_back(Base_Offset_Info(op, tn_base,
+                                                           tn_offset,
+                                                           base_adjust,
+                                                           base_adjust));
+                    }
+            }
+        }
+}
+
+static void
+Collect_Op_Base_Offset(vec_base_ops& Base_Ops_List, OP* op)
+{
+    TN *tn_base = NULL;
+    TN *tn_offset = NULL;
+    if(!Retrieve_Base_Offset(op, tn_base, tn_offset)) return;
+
+    Addr_Exp_Info addr_exp;
+    if (!Compute_Addr_Exp(addr_exp, tn_base, tn_offset, FALSE, FALSE))
+        return;
+
+    INT64 base_dist, addr_dist;
+    TN *common_tn = NULL;
+    INT64 offset_init;
+    
+    if ((addr_exp.base_reg == NULL) && (TN_is_symbol(addr_exp.offset_tn))) {
+        common_tn = Gen_Symbol_TN(TN_var(addr_exp.offset_tn), 0, TN_relocs(addr_exp.offset_tn));
+        addr_dist = TN_offset(addr_exp.offset_tn);
     }
-  else
-    {
-      tn_base = OP_opnd(op, base_idx);
-      tn_offset = OP_opnd(op, offset_idx);
-      result = TRUE;
+    else if ((addr_exp.base_reg == NULL) && TN_has_value(addr_exp.offset_tn)) {
+        common_tn = NULL;
+        addr_dist = TN_value(addr_exp.offset_tn);
     }
-  return result;
+    else if ((addr_exp.base_reg != NULL) && TN_has_value(addr_exp.offset_tn)) {
+        common_tn = addr_exp.base_reg;
+        addr_dist = TN_value(addr_exp.offset_tn);
+    }
+    else
+        return;
+
+    base_dist = Get_TN_Distance(common_tn, tn_base);
+
+    /* Then, add the operation in the list associated with
+       common_tn. Each element contains (op, tn_base, val) */
+    vec_bo_info *oplist;
+    if ((oplist = Lookup_Ops_List(Base_Ops_List, common_tn)) == NULL) {
+        oplist = CXX_NEW (vec_bo_info, &extended_offset_pool);
+        Base_Ops_List.push_back(std::make_pair(common_tn, oplist));
+    }
+    oplist->push_back(Base_Offset_Info(op, tn_base, tn_offset, base_dist, addr_dist));
+}
+
+static void
+Generate_Load_Imm_Common_Base(vec_base_ops& Base_Ops_List)
+{
+    int i, j;
+    vec_base_ops Imm_Base_Ops_List;
+
+    for (i = 0; i < Base_Ops_List.size(); i++)
+        {
+            base_ops& base_list = Base_Ops_List[i];
+            vec_bo_info& op_offset = *VEC_BASE_ops(base_list);
+            if(op_offset.size() >= 2)
+                {
+                    TN* base_tn = BO_base_tn(op_offset[0]);
+                    OPS ops = Update_Ops_With_New_Base(base_tn, 0, NULL, 0,
+                                                       op_offset, 0,
+                                                       op_offset.size() - 1);
+                    if(OPS_first(&ops) != NULL &&
+                       OPS_first(&ops) == OPS_last(&ops))
+                        {
+                            Collect_Op_Base_Offset(Imm_Base_Ops_List,
+                                                   OPS_first(&ops));
+                        }
+                }
+            else
+                {
+                    Collect_Op_Base_Offset(Imm_Base_Ops_List,
+                                           BO_op(op_offset[0]));
+                }
+        }
+    for(i = 0; i < Imm_Base_Ops_List.size(); ++i)
+        {
+            vec_bo_info& op_offset = *VEC_BASE_ops(Imm_Base_Ops_List[i]);
+            stable_sort(op_offset.begin(), op_offset.end(), offset_lt);
+            Generate_Tmp(op_offset);
+        }
 }
 
 /* ====================================================================
@@ -912,47 +1184,7 @@ Collect_Base_Offset(vec_base_ops& Base_Ops_List) {
 
     OP *op;
     FOR_ALL_BB_OPs(bb, op) {
-
-      TN *tn_base = NULL;
-      TN *tn_offset = NULL;
-      if(!Retrieve_Base_Offset(op, tn_base, tn_offset)) continue;
-
-      Addr_Exp_Info addr_exp;
-      if (!Compute_Addr_Exp(addr_exp, tn_base, tn_offset, FALSE, FALSE))
-	continue;
-
-      INT64 base_dist, addr_dist;
-      TN *common_tn = NULL;
-      INT64 offset_init;
-
-      if ((addr_exp.base_reg == NULL) && (TN_is_symbol(addr_exp.offset_tn))) {
-	common_tn = Gen_Symbol_TN(TN_var(addr_exp.offset_tn), 0, TN_relocs(addr_exp.offset_tn));
-	addr_dist = TN_offset(addr_exp.offset_tn);
-      }
-
-      else if ((addr_exp.base_reg == NULL) && TN_has_value(addr_exp.offset_tn)) {
-	common_tn = NULL;
-	addr_dist = TN_value(addr_exp.offset_tn);
-      }
-
-      else if ((addr_exp.base_reg != NULL) && TN_has_value(addr_exp.offset_tn)) {
-	common_tn = addr_exp.base_reg;
-	addr_dist = TN_value(addr_exp.offset_tn);
-      }
-
-      else
-	continue;
-
-      base_dist = Get_TN_Distance(common_tn, tn_base);
-
-      /* Then, add the operation in the list associated with
-	 common_tn. Each element contains (op, tn_base, val) */
-      vec_bo_info *oplist;
-      if ((oplist = Lookup_Ops_List(Base_Ops_List, common_tn)) == NULL) {
-	oplist = CXX_NEW (vec_bo_info, &extended_offset_pool);
-	Base_Ops_List.push_back(std::make_pair(common_tn, oplist));
-      }
-      oplist->push_back(Base_Offset_Info(op, tn_base, tn_offset, base_dist, addr_dist));
+        Collect_Op_Base_Offset(Base_Ops_List, op);
     }
   }
 }
@@ -968,7 +1200,7 @@ Collect_Base_Offset(vec_base_ops& Base_Ops_List) {
  */
 
 static void
-Generate_Common_Base(vec_base_ops Base_Ops_List) {
+Generate_Common_Base(vec_base_ops& Base_Ops_List) {
   int i, j;
 
   for (i = 0; i < Base_Ops_List.size(); i++) {
@@ -990,13 +1222,13 @@ Generate_Common_Base(vec_base_ops Base_Ops_List) {
 
     for (j = 0; j < op_offset.size(); j++) {
       if (BO_base_tn(op_offset[j]) != base_tn)
-	all_same_base = FALSE;
+        all_same_base = FALSE;
       if (register_base_idx == -1 && TN_is_register(BO_base_tn(op_offset[j])))
-	register_base_idx = j;
+        register_base_idx = j;
       TN *tn_offset = BO_offset_tn(op_offset[j]);
       INT64 val;
       if (!TN_is_constant(tn_offset) || CGTARG_offset_is_extended(tn_offset, &val))
-	extended_count ++;
+        extended_count ++;
     }
 
     if (all_same_base && (extended_count <= 2))
@@ -1025,16 +1257,16 @@ Generate_Common_Base(vec_base_ops Base_Ops_List) {
       // a register contains this symbol or value, use it to get
       // information for rematerialization.
       if (((common_base_tn == NULL) || (!TN_is_register(common_base_tn))) &&
-	  (register_base_idx != -1)) {
-	remat_base = BO_base_tn(op_offset[register_base_idx]);
-	remat_adjust = BO_base_dist(op_offset[register_base_idx]);
+          (register_base_idx != -1)) {
+        remat_base = BO_base_tn(op_offset[register_base_idx]);
+        remat_adjust = BO_base_dist(op_offset[register_base_idx]);
       }
     }
 
     if ((common_base_tn != NULL) && TN_is_dedicated(common_base_tn) && !TN_is_const_reg(common_base_tn)) {
       if (Trace_SSA_CBPO) {
-	fPrint_TN(TFile, "Generate_Common_Base: %s is not optimized", VEC_BASE_base(base_list));
-	fprintf(TFile, " (gain would be at most %d bytes)\n", (op_offset.size()-2)*4);
+          fPrint_TN(TFile, "Generate_Common_Base: %s is not optimized", VEC_BASE_base(base_list));
+          fprintf(TFile, " (gain would be at most %d bytes)\n", (op_offset.size()-2)*4);
       }
       continue;
     }
@@ -1056,22 +1288,22 @@ Generate_Common_Base(vec_base_ops Base_Ops_List) {
 
     for (j = j_first = 0; j < op_offset.size(); j++) {
       if ((BO_addr_dist(op_offset[j]) - BO_addr_dist(op_offset[j_first])) >= (MAX_WIDTH-(min_offset_alignment-1))) {
-	if ((j - j_first > 2) &&
-	    (!all_same_base || (extended_count > 2)))
-	  Update_Ops_With_New_Base(common_base_tn, common_adjust, remat_base, remat_adjust, op_offset, j_first, j-1);
-	j_first = j;
-	base_tn = BO_base_tn(op_offset[j_first]);
-	all_same_base = TRUE;
-	extended_count = 0;
+        if ((j - j_first > 2) &&
+            (!all_same_base || (extended_count > 2)))
+            Update_Ops_With_New_Base(common_base_tn, common_adjust, remat_base, remat_adjust, op_offset, j_first, j-1);
+        j_first = j;
+        base_tn = BO_base_tn(op_offset[j_first]);
+        all_same_base = TRUE;
+        extended_count = 0;
       }
       if (BO_base_tn(op_offset[j]) != base_tn)
-	all_same_base = FALSE;
+        all_same_base = FALSE;
       if (!TN_is_constant(BO_offset_tn(op_offset[j])) || CGTARG_offset_is_extended(BO_offset_tn(op_offset[j]), &val))
-	extended_count ++;
+        extended_count ++;
     }
     if ((j - j_first > 2) &&
-	(!all_same_base || (extended_count > 2)))
-      Update_Ops_With_New_Base(common_base_tn, common_adjust, remat_base, remat_adjust, op_offset, j_first, j-1);
+        (!all_same_base || (extended_count > 2)))
+        Update_Ops_With_New_Base(common_base_tn, common_adjust, remat_base, remat_adjust, op_offset, j_first, j-1);
   }
 }
 
@@ -1114,6 +1346,18 @@ Optimize_Extended_Offset()
   Collect_Base_Offset(Base_Ops_List);
   
   Generate_Common_Base(Base_Ops_List);
+  Base_Ops_List.clear();
+
+  if(CG_cbpo_facto_cst)
+      {
+          g_factorizeCstPhase = TRUE;
+
+          Collect_Load_Imm_Base_Offset(Base_Ops_List);
+          Generate_Load_Imm_Common_Base(Base_Ops_List);
+
+          g_factorizeCstPhase = FALSE;
+      }
+
 
 #ifdef TARG_ST
   // Resize instructions, otherwise EBO sees no penalty at inlining
@@ -1150,7 +1394,7 @@ static void
 Trace_Op_Removal (OP *op, BOOL replace_with_noop)
 {
   fprintf (TFile, "SSA_DeadCode: %s ",
-	   (replace_with_noop ? "Replace " : "Remove "));
+           (replace_with_noop ? "Replace " : "Remove "));
   Print_OP_No_SrcLine (op);
   if (replace_with_noop)
     fputs (" ==> noop", TFile);
@@ -1272,14 +1516,15 @@ SSA_DeadCode ()
     for (op = BB_first_op (bb); op != NULL; op = next) {
       next = OP_next (op);
       if (! dc_analysis.Op_Marked_Useful (op)) {
-	if (tracing) Trace_Op_Removal (op, in_delay_slot);
-	if (in_delay_slot) {
-	  OP_Change_To_Noop (op);
-	} else {
-	  BB_Remove_Op (bb, op);
-	}
+        if (tracing) Trace_Op_Removal (op, in_delay_slot);
+        if (in_delay_slot) {
+          OP_Change_To_Noop (op);
+        } else {
+          BB_Remove_Op (bb, op);
+        }
       }
       if (OP_xfer (op)) in_delay_slot = TRUE;
     }
   }
 }
+

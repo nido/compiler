@@ -443,6 +443,9 @@ enum CBPO_BLOCK_METHOD
         CBPO_BLOCK_GLOBAL = 2,
         CBPO_BLOCK_GLOBAL_THEN_LOCAL = 3
     };
+
+extern BOOL CG_cbpo_facto_cst;
+extern BOOL CG_cbpo_optimize_load_imm_cst;
 #endif
 
 /*

@@ -899,9 +899,11 @@ extern BOOL CGTARG_offset_is_extended(TN *offset, INT64 *val);
 extern BOOL CGTARG_need_extended_Opcode(OP *op, TOP *etop);
 extern BOOL CGTARG_is_expensive_load_imm(OP* op);
 extern INT CGTARG_expensive_load_imm_immediate_index(OP* op);
+extern INT CGTARG_expensive_load_imm_base_index(OP* op);
 extern BOOL CGTARG_sequence_is_cheaper_than_load_imm(OPS* ops, OP* op);
 extern TOP CGTARG_TOP_To_Multi(TOP top);
 extern TOP CGTARG_TOP_From_Multi(TOP top);
+extern BOOL CGTARG_should_factorize(OP* first, OP* last);
 #endif
 
 // Checks to see if <stop> bit is available at <slot> position in the

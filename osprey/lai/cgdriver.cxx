@@ -225,12 +225,17 @@ INT32 CG_cbpo_ratio = 50;
 static BOOL CG_cbpo_ratio_overridden = FALSE;
 INT CG_cbpo_block_method = CBPO_BLOCK_NONE;
 static BOOL CG_cbpo_block_method_overridden = FALSE;
+BOOL CG_cbpo_optimize_load_imm_cst = FALSE;
+static BOOL CG_cbpo_optimize_load_imm_cst_overridden = FALSE;
+BOOL CG_cbpo_facto_cst = FALSE;
+static BOOL CG_cbpo_facto_cst_overridden = FALSE;
 
 
 #   ifdef TARG_STxP70
 #      define DEFAULT_LOAD_IMM(opt_level, opt_space) TRUE
 #      define DEFAULT_RATIO(opt_level, opt_space) opt_level <= 2? 50: 100;
 #      define DEFAULT_BLOCK_METHOD(opt_level, opt_space) opt_space? CBPO_BLOCK_NONE: CBPO_BLOCK_GLOBAL_THEN_LOCAL;
+#      define DEFAULT_FACTO_CST(opt_level, opt_space) opt_level >= 2? TRUE: FALSE;
 // No else case, since currently not used for other targets.
 #   endif
 
@@ -631,6 +636,15 @@ static OPTION_DESC Options_CG[] = {
     "base, when sum(freq(all sources bb)) / freq(global dominator) < "
     "cbpo_ratio. Finally, the both method try the global estimation and if "
     "it fails, it tries the local."},
+  { OVK_BOOL, OV_INTERNAL,	FALSE, "cbpo_optimize_load_imm_cst", "", 
+    0, 0, 0,	&CG_cbpo_optimize_load_imm_cst,
+    &CG_cbpo_optimize_load_imm_cst_overridden,
+    "activate commonalization of load immediate constant (vs symbol) in common"
+    " base pointer optimization. Unless cbpo_optimize_load_imm cbpo_facto_cst "
+    " are set, it has no effect" },
+  { OVK_BOOL, OV_INTERNAL,	FALSE, "cbpo_facto_cst", "", 
+    0, 0, 0,	&CG_cbpo_facto_cst, &CG_cbpo_facto_cst_overridden,
+    "activate special phase of load immediat commonalization" },
   { OVK_BOOL, 	OV_INTERNAL, TRUE, "automod", "",
     TRUE, 0, 0, &CG_AutoMod, &CG_AutoMod_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "tailmerge", "", 
@@ -1387,6 +1401,9 @@ Configure_CG_Options(void)
   }
   if(!CG_cbpo_ratio_overridden) {
       CG_cbpo_ratio = DEFAULT_RATIO(CG_opt_level, OPT_Space);
+  }
+  if(!CG_cbpo_facto_cst_overridden) {
+      CG_cbpo_facto_cst = DEFAULT_FACTO_CST(CG_opt_level, OPT_Space);
   }
 
   if(CG_opt_level >= 2 && !CG_tailmerge_overridden) {

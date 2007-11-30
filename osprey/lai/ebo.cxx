@@ -4269,6 +4269,26 @@ Constant_Created:
     return FALSE;
   }
 
+#ifdef TARG_ST
+  if(OPS_first(&ops) == OPS_last(&ops) &&
+     CGTARG_is_expensive_load_imm(OPS_first(&ops))) {
+      OPS tmpOps = OPS_EMPTY;
+      OP* prev = OP_prev(op);
+      OP* next = OP_next(op);
+      OPS_Append_Op(&tmpOps, op);
+      op->next = next;
+      op->prev = prev;
+      if(CGTARG_sequence_is_cheaper_than_load_imm(&tmpOps, OPS_first(&ops))) {
+          if (EBO_Trace_Execution) {
+              fprintf(TFile,"<ebo> %s: ops are more expensive -> do nothing:\n",
+                      __FUNCTION__);
+              Print_OPS_No_SrcLines(&ops);
+          }
+          return FALSE;
+      }
+  }
+#endif
+
   if (EBO_in_loop) EBO_OPS_omega (&ops, 
 				  (OP_has_predicate(op)? OP_opnd(op,OP_find_opnd_use(op, OU_predicate)):NULL),
 				  (OP_has_predicate(op) ? opnd_tninfo[OP_find_opnd_use(op, OU_predicate)] : NULL));

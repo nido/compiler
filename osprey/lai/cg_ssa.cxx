@@ -1073,6 +1073,8 @@ OP_Make_movc (
     Is_True(OPS_length(&cmov_ops) == 1, ("Make_movc: Expand_Select produced more than a single operation"));
   return OPS_first(&cmov_ops);
 #endif
+#elif defined TARG_STxP70
+  Expand_Copy(dst, guard, src, cmov_ops);
 #else
   Expand_Copy(dst, guard, src, cmov_ops);
 #endif
@@ -3288,7 +3290,7 @@ map_phi_resources_to_new_names()
 	  tn = OP_opnd(op,i);
 	  if (TN_is_ssa_reg(tn) && (phiCongruenceClass(tn) != NULL)) {
 	    if (TN_new_name(tn) == NULL) {
-	      new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
+          new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
 	      Set_TN_new_name(tn, new_tn);
 
 	      if (Trace_SSA_Out) {
@@ -3326,7 +3328,7 @@ map_phi_resources_to_new_names()
 
 	  if (TN_is_ssa_reg(tn) && (phiCongruenceClass(tn) != NULL)) {
 	    if (TN_new_name(tn) == NULL) {
-	      new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
+          new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
 	      Set_TN_new_name(tn, new_tn);
 
 	      if (Trace_SSA_Out) {

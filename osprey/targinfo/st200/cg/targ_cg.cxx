@@ -3126,10 +3126,20 @@ INT CGTARG_expensive_load_imm_immediate_index(OP* op)
     return -1;
 }
 
+INT CGTARG_expensive_load_imm_base_index(OP* op)
+{
+    return -1;
+}
+
 
 BOOL CGTARG_sequence_is_cheaper_than_load_imm(OPS* ops, OP* op)
 {
     return ops && OPS_length(ops) <= 1;
+}
+
+BOOL CGTARG_should_factorize(OP* first, OP* last)
+{
+    return FALSE;
 }
 
 /**********************************************************************
