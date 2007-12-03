@@ -234,6 +234,9 @@ BE_EXPORTED extern INT32 WOPT_Enable_Verify;	/* verify data structures */
 BE_EXPORTED extern BOOL WOPT_Enable_Vsym_Unique;
 BE_EXPORTED extern BOOL WOPT_Enable_VN_Full;	/* full value number for ivars */
 BE_EXPORTED extern BOOL WOPT_Enable_While_Loop;	/* cvt while-do to do-loop */
+//TB
+BE_EXPORTED extern BOOL  WOPT_Enable_While_Loop;
+
 BE_EXPORTED extern BOOL WOPT_Enable_Worklist_Pruning;
 BE_EXPORTED extern BOOL WOPT_Enable_Zero_Version;
 BE_EXPORTED extern BOOL WOPT_Enable_Strong_Barrier; /* disallow any memop motion across a barrier */

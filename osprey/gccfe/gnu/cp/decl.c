@@ -3921,6 +3921,15 @@ duplicate_decls (newdecl, olddecl)
   /* [TB] handle 'used' attribute */
   DECL_IS_USED (newdecl) |= DECL_IS_USED (olddecl);
 #endif
+#ifdef TARG_ST
+  if (TREE_CODE (newdecl) == FUNCTION_DECL) {
+    /* [TB] handle optimization function level attributes */
+    if (DECL_OPTSIZE (newdecl) == OPTLEVEL_UNDEF)
+      DECL_OPTSIZE (newdecl) = DECL_OPTSIZE (olddecl);
+    if (DECL_OPTPERF (newdecl) == OPTLEVEL_UNDEF)
+      DECL_OPTPERF (newdecl) = DECL_OPTPERF (olddecl);
+  }
+#endif
 
   DECL_ONE_ONLY (newdecl) |= DECL_ONE_ONLY (olddecl);
   DECL_DEFER_OUTPUT (newdecl) |= DECL_DEFER_OUTPUT (olddecl);

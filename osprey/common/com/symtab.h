@@ -264,6 +264,10 @@ PU_Init (PU& pu, TY_IDX prototype, SYMTAB_IDX level)
     pu.stkaln = Target_Stack_Alignment;
     pu.unused = 0;
     pu.flags = 0;
+#ifdef TARG_ST
+  //TB" Add size optimization level for this PU
+    pu.size_opt = PU_OPTLEVEL_UNDEF;
+#endif
 }
 
 inline UINT

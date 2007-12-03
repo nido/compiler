@@ -3670,7 +3670,7 @@ Can_Append_Succ(
      * block or modify the BBINFO for calls to allow an arbitrary successor
      * for the fall through like LOGIF does.
      */
-      if (OPT_Space) {
+      if (CFLOW_Space) {
 	/* TB: Authorized CALL BB to be merged, for codesize.*/
       } else {
 	if (nsuccs && suc != BB_next(b)) {
@@ -4851,7 +4851,7 @@ Compare_Edges(const void *p1, const void *p2)
   double weight2 = e2->weight;
 
 #ifdef TARG_ST
-  if (OPT_Space) {
+  if (CFLOW_Space) {
     /* TB: in order to avoid adding goto blocks, we put first edges
        with only one successor. We want these edges to be treated
        first and belong to the chain */
@@ -7425,7 +7425,7 @@ nothing:
 
   ScheduleBBs();
 
-  if (OPT_Space && merge_change && (current_flags & CFLOW_MERGE)) {
+  if (CFLOW_Space && merge_change && (current_flags & CFLOW_MERGE)) {
     // TB: For code size, make a several passes CFLOW_MERGE
     // Optim We hope to catch more opportunities to remove unuseful
     // GOTO BB Need to be done after Finalize_All_BBs, because some

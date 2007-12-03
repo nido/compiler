@@ -762,6 +762,16 @@ static tree handle_tls_model_attribute	PARAMS ((tree *, tree, tree, int,
 static tree handle_no_instrument_function_attribute PARAMS ((tree *, tree,
 							     tree, int,
 							     bool *));
+#ifdef TARG_ST
+  //TB Handle __attribute((opt[size|perf](x)): set the size/perf
+  //optimization for the function
+static tree handle_optsize_attribute PARAMS ((tree *, tree,
+					      tree, int,
+					      bool *));
+static tree handle_optperf_attribute PARAMS ((tree *, tree,
+					      tree, int,
+					      bool *));
+#endif
 static tree handle_malloc_attribute	PARAMS ((tree *, tree, tree, int,
 						 bool *));
 static tree handle_no_limit_stack_attribute PARAMS ((tree *, tree, tree, int,
@@ -847,6 +857,14 @@ const struct attribute_spec c_common_attribute_table[] =
 			      handle_alias_attribute },
   { "no_instrument_function", 0, 0, true,  false, false,
 			      handle_no_instrument_function_attribute },
+#ifdef TARG_ST
+  //TB Handle __attribute((opt[size|perf](x)): set the size/perf
+  //optimization for the function
+  { "optsize", 		      1, 1, true,  false, false,
+			      handle_optsize_attribute },
+/*   { "optperf", 		      1, 1, true,  false, false, */
+/* 			      handle_optperf_attribute }, */
+#endif
   { "malloc",                 0, 0, true,  false, false,
 			      handle_malloc_attribute },
   { "no_stack_limit",         0, 0, true,  false, false,
@@ -5529,6 +5547,103 @@ handle_unused_attribute (node, name, args, flags, no_add_attrs)
   return NULL_TREE;
 }
 
+
+#ifdef TARG_ST
+/* TB:Handle a "optsize" attribute; arguments as in
+   struct attribute_spec.handler.  */
+
+static tree
+handle_optsize_attribute (node, name, args, flags, no_add_attrs)
+     tree *node;
+     tree name;
+     tree args;
+     int flags ATTRIBUTE_UNUSED;
+     bool *no_add_attrs;
+{
+  tree decl = *node;
+  unsigned HOST_WIDE_INT level;
+
+  if (TREE_CODE (decl) != FUNCTION_DECL)
+    {
+      error_with_decl (decl,
+		       "`%s' optsize attribute applies only to functions",
+		       IDENTIFIER_POINTER (name));
+      *no_add_attrs = true;
+    }
+  else {
+    if (! host_integerp (TREE_VALUE (args), 1))
+      {
+	error_with_decl (decl,
+			 "can't set `%s' optsize attribute: not an integer",
+			 IDENTIFIER_POINTER (name));
+	*no_add_attrs = true;
+	return NULL_TREE;
+      }
+    /* Get the opt level.  */
+    level = tree_low_cst (TREE_VALUE (args), 1);
+    if (level > 2 || level < 0) {
+      error_with_decl (decl,
+		       "can't set optsize attribute: level is out of bounds [0-2]");
+      *no_add_attrs = true;
+      return NULL_TREE;
+    }
+    if (level == 2) {
+      warning ("level 2 of optsize attribute is not yet implemented. Set level to 1.");
+      level = 1;
+    }
+    DECL_OPTSIZE (decl) = (enum optlevel_t) level;
+  }
+  return NULL_TREE;
+}
+/* TB:Handle a "optperf" attribute; arguments as in
+   struct attribute_spec.handler.  */
+
+static tree
+handle_optperf_attribute (node, name, args, flags, no_add_attrs)
+     tree *node;
+     tree name;
+     tree args;
+     int flags ATTRIBUTE_UNUSED;
+     bool *no_add_attrs;
+{
+  tree decl = *node;
+  unsigned HOST_WIDE_INT level;
+
+  // For the moment this attribute is not supported
+  error_with_decl (decl,
+		   "`%s' attribute not yet supported",
+		   IDENTIFIER_POINTER (name));
+  *no_add_attrs = true;
+  if (TREE_CODE (decl) != FUNCTION_DECL)
+    {
+      error_with_decl (decl,
+		       "`%s' attribute applies only to functions",
+		       IDENTIFIER_POINTER (name));
+      *no_add_attrs = true;
+    }
+  else {
+    if (! host_integerp (TREE_VALUE (args), 1))
+      {
+	error_with_decl (decl,
+			 "can't set `%s' attribute: not an integer",
+			 IDENTIFIER_POINTER (name));
+	*no_add_attrs = true;
+	return NULL_TREE;
+      }
+    /* Get the opt level.  */
+    level = tree_low_cst (TREE_VALUE (args), 1);
+    if (level > 3 || level < 0) {
+      error_with_decl (decl,
+		       "can't set `%s' attribute: level is out of bounds [0-3]",
+		       IDENTIFIER_POINTER (name));
+      *no_add_attrs = true;
+      return NULL_TREE;
+    }
+    DECL_OPTPERF (decl) = (enum optlevel_t) level;
+  }
+  return NULL_TREE;
+}
+#endif
 /* Handle a "const" attribute; arguments as in
    struct attribute_spec.handler.  */
 

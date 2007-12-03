@@ -203,6 +203,8 @@ const char *CFLOW_cold_threshold;
 #ifdef TARG_ST
 // [CL]
 BOOL CFLOW_Enable_Favor_Branches_Condition = FALSE;
+// [TB]
+BOOL CFLOW_Space = FALSE;
 #endif
 
 // ====================================================================
@@ -305,6 +307,13 @@ BOOL GRA_spill_to_caller_save = TRUE;
 BOOL GRA_preference_subclass = TRUE;
 BOOL GRA_use_subclass_register_request = TRUE;
 const char *GRA_local_spill_multiplier_string = "1.0";
+//TB: export variables
+BOOL GRA_spill_count_factor_for_size = FALSE;
+BOOL GRA_spill_count_factor_for_size_set = FALSE;
+BOOL GRA_split_for_size = FALSE;
+BOOL GRA_split_for_size_set = FALSE;
+BOOL GRA_spill_count_min = FALSE;
+BOOL GRA_spill_count_min_set = FALSE;
 BOOL GRA_overlay_spills = TRUE;
 #endif
 INT32 GRA_non_home_hi = -1;
@@ -348,6 +357,9 @@ BOOL EMIT_stop_bits_for_asm = TRUE;
 BOOL EMIT_stop_bits_for_volatile_asm = TRUE;
 BOOL EMIT_explicit_bundles = FALSE;
 INT32 EMIT_Long_Branch_Limit = DEFAULT_LONG_BRANCH_LIMIT;
+#ifdef TARG_ST
+BOOL EMIT_space = FALSE;
+#endif
 
 BOOL CG_emit_asm_dwarf    = FALSE;
 #ifdef TARG_ST // [CL] do not emit unwind info by default
@@ -362,6 +374,9 @@ BOOL CG_emit_unwind_directives = FALSE;
 // ====================================================================
 
 INT32 CGEXP_expandconstant = DEFAULT_CGEXP_CONSTANT;
+#ifdef TARG_ST
+BOOL CGEXP_expandconstant_set = FALSE;
+#endif
 BOOL CGEXP_use_copyfcc = TRUE;
 BOOL CGEXP_normalize_logical = FALSE;
 BOOL CGEXP_gp_prolog_call_shared = TRUE;

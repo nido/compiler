@@ -320,7 +320,7 @@ public:
     return FB_FREQ( type, freq1._value * freq2._value );
   }
 
-  // All scale factors are assumed to be guesses
+  // All scale factors are assumed to be guessed
   friend FB_FREQ operator* ( const FB_FREQ freq, const float scale ) {
     Is_True ( scale >= 0.0, ( "FB_FREQ: negative scale %f", scale ) );
     return ( freq * FB_FREQ( FB_FREQ_TYPE_GUESS, scale ) );

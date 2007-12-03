@@ -568,8 +568,14 @@ BE_EXPORTED extern BOOL  OPT_Cnst_DivRem;
 BE_EXPORTED extern BOOL  OPT_Cnst_DivRem_Set;
 BE_EXPORTED extern BOOL  OPT_Cnst_Mul;
 BE_EXPORTED extern BOOL  OPT_Cnst_Mul_Set;
+BE_EXPORTED extern BOOL OPT_Mul_by_cst_threshold_Set;
+BE_EXPORTED extern UINT32 OPT_Mul_by_cst_threshold;
+BE_EXPORTED extern BOOL OPT_Lower_While_Do_For_Space_Set;
+BE_EXPORTED extern BOOL OPT_Lower_While_Do_For_Space;
+BE_EXPORTED extern BOOL OPT_Expand_Switch_For_Space_Set;
+BE_EXPORTED extern BOOL OPT_Expand_Switch_For_Space;
 #endif
-BE_EXPORTED extern BOOL  OPT_Space;
+BE_EXPORTED extern INT32  OPTION_Space;
 BE_EXPORTED extern INT32 Olimit; /* stop optimization or use regions at this limit */
 /* FALSE => stop optimization if Olimit reached;
  * TRUE  => use regions to optimize if Olimit reached */
@@ -670,7 +676,7 @@ BE_EXPORTED extern BOOL Profile_Arcs_Enabled_Cgir; /* Create data files for the 
 BE_EXPORTED extern BOOL Profile_Arcs_Enabled; /* Create data files for the `gcov' code-coverage utility and instrument code. */
 BE_EXPORTED extern BOOL Test_Coverage_Enabled; /* Create data files for the `gcov' code-coverage utility and instrument code. */
 BE_EXPORTED extern BOOL Coverage_Counter64; /* Use 64 bits counters instead of 32. */
-BE_EXPORTED extern BOOL Branch_Probabilities; /* Use .gcda file ad feedback. */
+BE_EXPORTED extern BOOL Branch_Probabilities; /* Use .gcda file as feedback. */
 #endif
 BE_EXPORTED extern BOOL  Gen_GP_Relative;    /* generate GP-relative addressing ? */
 BE_EXPORTED extern BOOL  GP_Is_Preserved;	/* GP is neither caller or callee-save */
@@ -1071,6 +1077,14 @@ BE_EXPORTED extern BOOL Emulate_Double_Float_Type_Set;
 /* Does target support integer division and modulus operations */
 BE_EXPORTED extern BOOL Emulate_DivRem_Integer_Ops;
 BE_EXPORTED extern BOOL Emulate_DivRem_Integer_Ops_Set;
+  // TB: Reset the common default options.
+  BE_EXPORTED void Reset_Default_Options(void);
+  // TB: Save current values for the common  options.
+  BE_EXPORTED void Save_Default_Options(void);
+  // TB: set option for size.
+  BE_EXPORTED void Apply_Opt_Size_For_Common(UINT32 level);
+  // TB: set option for optimization level.
+  BE_EXPORTED void Apply_Opt_Level_For_Common(UINT32 level);
 #endif
 
 #ifdef TARG_ST
@@ -1113,8 +1127,12 @@ BE_EXPORTED extern BOOL Use_Load_Store_Offset;
 /* Configuration prior to flag processing: */
 BE_EXPORTED extern void Preconfigure_Target (void);
 
+#ifdef TARG_ST
+/* Switch targinfo internal var for code size : */
+BE_EXPORTED extern void Apply_Opt_Size_Target (UINT32);
+#endif
 /* Configuration after flag processing: */
-BE_EXPORTED extern void Configure_Target (void);
+BE_EXPORTED extern void Configure_Target ();
 BE_EXPORTED extern void IPA_Configure_Target (void);
 
 /* Reconfiguration for each source file: */
@@ -1122,6 +1140,17 @@ BE_EXPORTED extern void Configure_Source_Target ( char *filename );
 
 /* return FALSE if abi mismatch */
 BE_EXPORTED extern BOOL Set_Target_ABI (BOOL is_64bit, INT isa);
+
+#ifdef TARG_ST
+  //Option tuning at function level
+  //TB: Save options that are now default values for the PUs.  Each PU
+  //can overridden these to get its own compiler option
+  BE_EXPORTED extern void Save_Default_Options();
+  //TB: Restore default options
+  BE_EXPORTED extern void Restore_Default_Options();
+  //TB: Change options for code size
+  BE_EXPORTED extern void Adjust_Options_for_Space();
+#endif
 
 #ifdef FRONT_END
 //TB: Targinfo ABI initialization:for GCC

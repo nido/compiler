@@ -120,6 +120,11 @@ BE_EXPORTED extern UINT32 Div_Exe_Candidates; /* The top entries that will be ta
 BE_EXPORTED extern UINT32 Mpy_Exe_Counter;	/* Change a*b to a if b==N or 0.0 if b == 0.0 */
 BE_EXPORTED extern UINT32 Mpy_Exe_Ratio;	/* Change a*b to a if b==N or 0.0 if b == 0.0 */
 #endif
+#ifdef TARG_ST
+BE_EXPORTED extern UINT32 Freq_Threshold_For_Space;      /* If the PU is executed less than this, OPT_Space is set to true. */
+BE_EXPORTED extern UINT32 Size_Threshold_For_Space;      /* If the PU is bigger than this, OPT_Space is set to true. */
+BE_EXPORTED extern BOOL FB_CodeSize_Perf_Ratio;	 /* Optimize for size when freq < Freq_Threshold_For_Space or when size > Size_Threshold_For_Space */
+#endif
 BE_EXPORTED extern BOOL Fast_Exp_Allowed;	/* Avoid exp() calls? */
 BE_EXPORTED extern BOOL Fast_IO_Allowed;	/* Fast printf/scanf/printw */
 BE_EXPORTED extern BOOL Fast_Sqrt_Allowed;	/* Change sqrt(x) --> x * rsqrt(x) ? */

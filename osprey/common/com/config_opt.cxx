@@ -235,8 +235,18 @@ BOOL  OPT_Cnst_Mul = FALSE;		/* Optimize mul by a constant.
 					   Should be set in config_target.cxx
 					   if usefull for the target. */
 BOOL  OPT_Cnst_Mul_Set;
+//TB" New options to mange opt_size
+BOOL OPT_Mul_by_cst_threshold_Set = FALSE;
+UINT32 OPT_Mul_by_cst_threshold = 0;
+
+BOOL OPT_Lower_While_Do_For_Space_Set = FALSE;
+BOOL OPT_Lower_While_Do_For_Space = FALSE;
+
+BOOL OPT_Expand_Switch_For_Space_Set = FALSE;
+BOOL OPT_Expand_Switch_For_Space = FALSE;
+
 #endif
-BOOL OPT_Space = FALSE;			/* various text space optimizations */
+INT32 OPTION_Space = 0;			/* level of various text space optimizations */
 BOOL Early_MP_Processing = FALSE; /* Do mp lowerering before lno/preopt */
 BOOL Implied_Do_Io_Opt = TRUE;	/* Do implied-do loop opt for I/O */
 BOOL Cray_Ivdep=FALSE;		/* Use Cray meaning for Ivdep */
@@ -291,6 +301,11 @@ UINT32 Div_Exe_Candidates = 2;  /* The top entries that will be considered. */
 UINT32 Mpy_Exe_Counter = 1000; // Nb of loop iteration to do float mpy
 			       // specialization with feedback info
 UINT32 Mpy_Exe_Ratio = 12;      /* A cut-off percentage for value profiling. */
+
+UINT32 Freq_Threshold_For_Space = 100;      /* If the PU is executed less than this, OPT_Space is set to true. */
+UINT32 Size_Threshold_For_Space = 100;      /* If the PU is bigger than this, OPT_Space is set to true. */
+BOOL FB_CodeSize_Perf_Ratio = FALSE;		/* Optimize for size when freq < Freq_Threshold_For_Space or when size > Size_Threshold_For_Space */
+
 #endif
 
 /***** Obsolete options *****/
@@ -394,7 +409,17 @@ static OPTION_DESC Options_OPT[] = {
     0, 0, 100,	&Mpy_Exe_Ratio, NULL ,
     "Restrict mpy optimization via value profiling" },
 #endif
-
+#ifdef TARG_ST
+  { OVK_UINT32,	OV_INTERNAL,	TRUE, "freq_threshold_space",	"",
+    0, 0, 1000000000,	&Freq_Threshold_For_Space, NULL ,
+    "If the PU is executed less than this, code size optimization is set to true" },
+  { OVK_UINT32,	OV_INTERNAL,	TRUE, "size_threshold_space",	"",
+    0, 0, 1000000000,	&Size_Threshold_For_Space, NULL ,
+    "If the PU is bigger than this, code size optimization is set to true" },
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "fb_codesize_perf_ratio",	"",
+    0, 0, 0,	&FB_CodeSize_Perf_Ratio, NULL ,
+    "Decide to optimize for code size for unfrequent function or big function" },
+#endif
   { OVK_BOOL,	OV_INTERNAL,	TRUE, "early_mp",		"early_mp",
     0, 0, 0,	&Early_MP_Processing, NULL,
     "Lower before LNO" },
@@ -616,9 +641,10 @@ static OPTION_DESC Options_OPT[] = {
     0, 0, 4096,	&Opt_Skip,	NULL,
     "Skip optimization of subprograms after this one" },
 
-  { OVK_BOOL,	OV_VISIBLE,	FALSE, "space",		"sp",
-    0, 0, 0,    &OPT_Space,	NULL,
-    "Bias optimizations to minimize code space" },
+  //TB: Now option_space is an int
+  { OVK_INT32,	OV_VISIBLE,	FALSE, "space",		"sp",
+    0, 0, 0,    &OPTION_Space,	NULL,
+    "level of optimization to minimize code space" },
 
   { OVK_BOOL,	OV_INTERNAL,	TRUE, "speculate",		"",
     0, 0, 0,	&OPT_Lower_Speculate, NULL,
@@ -776,6 +802,18 @@ static OPTION_DESC Options_OPT[] = {
   { OVK_BOOL,	OV_INTERNAL,	TRUE, "cnst_mul",		"",
     0, 0, 0,	&OPT_Cnst_Mul, &OPT_Cnst_Mul_Set,
     "Optimizes multiplication by constant if possible" },
+
+  { OVK_UINT32,	OV_INTERNAL,	TRUE, "mul_by_cst_threshold",		"",
+    0, 0, 0,	&OPT_Mul_by_cst_threshold, &OPT_Mul_by_cst_threshold_Set,
+    "Should do multiplication by constant threshold: from 0 (code size heuristic) to 3 (performance heuristic)" },
+
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "lower_code_size",		"",
+    0, 0, 0,	&OPT_Lower_While_Do_For_Space, &OPT_Lower_While_Do_For_Space_Set,
+    "Tune while do lowering for code size" },
+
+  { OVK_BOOL,   OV_INTERNAL,    TRUE, "expand_switch_code_size",                "",
+    0, 0, 0,    &OPT_Expand_Switch_For_Space, &OPT_Expand_Switch_For_Space_Set,
+    "Tune switch expansion for code size" },
 #endif
 
   { OVK_COUNT }		/* List terminator -- must be last */

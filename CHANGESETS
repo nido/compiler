@@ -1,6 +1,81 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Dec  3 09:57:38 CET 2007
+	Author:    bidaultt
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bidaultt/dev-FunctionLevelOptim
+
+Description:
+------------
+	*  [trunk] Deliver bidaultt/dev-FunctionLevelOptim with authorization branch #34759
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_ehoist.cxx
+	M      osprey/be/be/driver.cxx
+	M      osprey/be/be/be.Exported
+	M      osprey/be/be/driver_util.cxx
+	M      osprey/be/vho/vho_lower.cxx
+	M      osprey/be/com/weak.cxx
+	M      osprey/be/com/wn_lower.cxx
+	M      osprey/be/com/wn_lower_mul.cxx
+	M      osprey/lai/cgdriver.h
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/cg_select.h
+	M      osprey/lai/init.cxx
+	M      osprey/lai/igls.cxx
+	M      osprey/lai/cgexp.cxx
+	M      osprey/lai/cg_select.cxx
+	M      osprey/lai/Exported
+	M      osprey/lai/cg_flags.cxx
+	M      osprey/lai/gra_mon/gra_split.cxx
+	M      osprey/lai/gra_mon/gra_spill.cxx
+	M      osprey/lai/gra_mon/gra_bb.h
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/cg_flags.h
+	M      osprey/gccfe/tree_symtab.cxx
+	M      osprey/gccfe/gnu/tree.c
+	M      osprey/gccfe/gnu/tree.h
+	M      osprey/gccfe/gnu/cp/decl.c
+	M      osprey/gccfe/gnu/c-common.c
+	M      osprey/gccfe/gnu/c-decl.c
+	M      osprey/g++fe/tree_symtab.cxx
+	M      osprey/g++fe/tree_symtab.h
+	M      osprey/common/util/flags.c
+	M      osprey/common/util/flags.h
+	M      osprey/common/com/fb_freq.h
+	M      osprey/common/com/config_opt.h
+	M      osprey/common/com/config_ipa.cxx
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/config_ipa.h
+	M      osprey/common/com/symtab.h
+	M      osprey/common/com/config_opt.cxx
+	M      osprey/common/com/symtab_access.h
+	M      osprey/common/com/config_wopt.cxx
+	M      osprey/common/com/symtab_defs.h
+	M      osprey/common/com/config.h
+	M      osprey/common/com/config_wopt.h
+	M      osprey/ipa/main/analyze/ipa_cg.cxx
+	M      osprey/targinfo/stxp70/config/config_TARG.cxx
+	M      osprey/targinfo/stxp70/config/targ_sim.cxx
+	M      osprey/targinfo/stxp70/config/config_TARG.h
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+	M      osprey/targinfo/stxp70/be/betarget.cxx
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+	M      osprey/targinfo/st200/config/config_TARG.cxx
+	M      osprey/targinfo/st200/config/targ_sim.cxx
+	M      osprey/targinfo/st200/config/config_TARG.h
+	M      osprey/targinfo/st200/config/config_target.cxx
+	M      osprey/targinfo/st200/be/betarget.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Nov 30 14:38:24 CET 2007
 	Author:    bidaultt
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

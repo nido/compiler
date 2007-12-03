@@ -623,7 +623,7 @@ Configure_Target ()
        specified. */
     /* Otherwise, disable loop unrolling under option
        -fno-unroll-loops. */
-    if ((OPT_Space && !(UnrollLoops_Set && UnrollLoops)) ||
+    if ((Tune_Unrolling_For_Size && !(UnrollLoops_Set && UnrollLoops)) ||
 	(UnrollLoops_Set && !UnrollLoops)) {
       OPT_unroll_times = 0;
     }
@@ -636,7 +636,7 @@ Configure_Target ()
 
   if (OPT_unroll_size > 0 && !OPT_unroll_size_overridden) {
     if (Opt_Level == 2) {
-      OPT_unroll_size = OPT_Space ? 20 : 64;
+      OPT_unroll_size = Tune_Unrolling_For_Size ? 20 : 64;
     } else if (Opt_Level > 2) {
       OPT_unroll_size = 64;
     }
@@ -937,5 +937,28 @@ GCC_Configure_ABI (void)
     FmtAssert(FALSE, ("targinfo for gcc doesn't handle abi: %d\n", Target_ABI));
   }
 }
-
 #endif
+
+/* ====================================================================
+ *   Apply_Opt_Size_Target
+ *
+ *   Set target options for size.
+ * ====================================================================
+ */
+void
+Apply_Opt_Size_Target(UINT32 level)
+{
+  //level = 0 means no size opt
+  if (level == PU_OPTLEVEL_0 || level == PU_OPTLEVEL_UNDEF) return;
+
+  FmtAssert(level == PU_OPTLEVEL_1,
+	    ("Apply_Opt_Size_Target: only level 1 is implemented (asked was %d)",level));
+
+  //Target specific flags
+  if (!Tune_Unrolling_For_Size_Set)
+    Tune_Unrolling_For_Size = TRUE;
+  
+  if (!Fast_Mult_For_Size_Set)
+    Fast_Mult_For_Size = TRUE;
+}
+

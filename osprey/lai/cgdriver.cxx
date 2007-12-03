@@ -174,7 +174,15 @@ static BOOL clone_min_incr_overridden = FALSE;
 static BOOL clone_max_incr_overridden = FALSE;
 static BOOL CFLOW_Enable_Clone_overridden = FALSE;
 #ifdef TARG_ST
+//TB
 static BOOL CFLOW_Enable_Favor_Branches_Condition_overridden = FALSE;
+static BOOL CFLOW_Space_overridden = FALSE;
+static BOOL EMIT_space_overridden = FALSE;
+static BOOL CG_select_freq_overriden = FALSE;
+static BOOL CG_select_cycles_overridden = FALSE;
+static BOOL CG_select_space_overridden = FALSE;
+static BOOL CG_select_spec_stores_overridden = FALSE;
+static BOOL CG_enable_thr_overridden = FALSE;
 #endif
 
 static BOOL CG_enable_ssa_overridden = FALSE;
@@ -416,6 +424,19 @@ static OPTION_DESC Options_GRA[] = {
     "Factor by which count of spills affects the priority of a split.  Only valid under OPT:space [Default 0.5]"
   },    
 #ifdef TARG_ST
+  //TB:
+  { OVK_BOOL,   OV_INTERNAL, TRUE,"size_spill_count_factor", "",
+    0, 0, 0,    &GRA_spill_count_factor_for_size, &GRA_spill_count_factor_for_size_set,
+    "Affects the priority of a split by count of spills . Default is true in Os",
+  },
+  { OVK_BOOL,   OV_INTERNAL, TRUE,"split_for_size", "",
+    0, 0, 0,    &GRA_split_for_size, &GRA_split_for_size_set,
+    "Take into account code size when choosing the best split in the GRA ",
+  },
+  { OVK_BOOL,   OV_INTERNAL, TRUE,"spill_min", "",
+    0, 0, 0,    &GRA_spill_count_min, &GRA_spill_count_min_set,
+    "Don't increase spill count ",
+  },
   { OVK_BOOL,   OV_INTERNAL, TRUE,"use_rn_spill_metric", "",
     0, 0, 0,    &GRA_use_runeson_nystrom_spill_metric, NULL,
     "Use Runeson/Nystrom spill metric during simplify (only applicable when Runeson/Nystrom local colorability test is selected)",
@@ -722,6 +743,9 @@ static OPTION_DESC Options_CG[] = {
   // [CL]
   { OVK_BOOL,	OV_INTERNAL, FALSE,"cflow_favor_branches_condition", "",
     0, 0, 0, &CFLOW_Enable_Favor_Branches_Condition, &CFLOW_Enable_Favor_Branches_Condition_overridden },
+  // [TB]
+  { OVK_BOOL,	OV_INTERNAL, FALSE,"cflow_space", "",
+    0, 0, 0, &CFLOW_Space, &CFLOW_Space_overridden },
 #endif
 
   // Frequency heuristic/feedback options.
@@ -744,7 +768,7 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE,"use_copyfcc", "",
     0, 0, 0, &CGEXP_use_copyfcc, NULL },
   { OVK_INT32,	OV_INTERNAL, TRUE,"expconst", "",
-    DEFAULT_CGEXP_CONSTANT, 0, INT32_MAX, &CGEXP_expandconstant, NULL },
+    DEFAULT_CGEXP_CONSTANT, 0, INT32_MAX, &CGEXP_expandconstant, &CGEXP_expandconstant_set },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"normalize_logical", "normalize",
     0, 0, 0, &CGEXP_normalize_logical, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"gp_prolog_call_shared", "gp_prolog",
@@ -982,7 +1006,12 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0, &EMIT_stop_bits_for_asm, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"emit_explicit_bundles", "",
     0, 0, 0, &EMIT_explicit_bundles, NULL },
-
+#ifdef TARG_ST
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"emit_space", "",
+    0, 0, 0, &EMIT_space, &EMIT_space_overridden,
+    "Emit with code size constraint (alignment constraint) "
+  },
+#endif
   // Misc:
   { OVK_BOOL,	OV_INTERNAL, TRUE,  "gra_live_predicate_aware", "",
     0,0,0,      &GRA_LIVE_Predicate_Aware, NULL,
@@ -1008,7 +1037,7 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32, OV_INTERNAL, TRUE, "mispredict_factor", "",
     0, 0, INT32_MAX, &CG_branch_mispredict_factor, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"enable_thr", "",
-    0, 0, 0,	&CG_enable_thr, NULL },
+    0, 0, 0,	&CG_enable_thr, &CG_enable_thr_overridden },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"reverse_if_conversion", "",
     0, 0, 0,	&CG_enable_reverse_if_conversion,
 	       	&CG_enable_reverse_if_conversion_overridden },
@@ -1151,13 +1180,25 @@ static OPTION_DESC Options_CG[] = {
     "Allow load speculation for select if conversion"},
 
   { OVK_BOOL,	OV_INTERNAL, TRUE, "select_spec_stores", "",
-    0, 0, 0,	&CG_select_spec_stores, NULL,
+    0, 0, 0,	&CG_select_spec_stores, &CG_select_spec_stores_overridden,
     "Allow store speculation using black holes stack slots"},
 
   { OVK_NAME,	OV_INTERNAL, TRUE, "select_factor", "",
     0, 0, 0,	&CG_select_factor, NULL,
     "Extra gain in cycles for flattening a branch"},
 
+  //TB: Export variable for cg_select.cxx
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_freq", "",
+    0, 0, 0,	&CG_select_freq, &CG_select_freq_overriden,
+    "Use frequecies and probabilities to determine if if conversion is profitable"},
+
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_cycles", "",
+    0, 0, 0,	&CG_select_cycles, &CG_select_cycles_overridden,
+    "Use performance heuristic to determine if if conversion is profitable"},
+  
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_space", "",
+    0, 0, 0,	&CG_select_space, &CG_select_space_overridden,
+    "Take into account code size for if convertion"},
 #endif /* TARG_ST (SSA) */
 
 #ifdef TARG_ST
@@ -1393,6 +1434,8 @@ Configure_CG_Options(void)
 #endif
 
 #ifdef TARG_STxP70
+#ifndef TARG_ST
+  //TB: no more OPT_Space
   if(CG_opt_level >= 2 && !CG_cbpo_optimize_load_imm_overridden) {
       CG_cbpo_optimize_load_imm = DEFAULT_LOAD_IMM(CG_opt_level, OPT_Space);
   }
@@ -1405,13 +1448,13 @@ Configure_CG_Options(void)
   if(!CG_cbpo_facto_cst_overridden) {
       CG_cbpo_facto_cst = DEFAULT_FACTO_CST(CG_opt_level, OPT_Space);
   }
-
   if(CG_opt_level >= 2 && !CG_tailmerge_overridden) {
       CG_tailmerge = DEFAULT_TAILMERGE(CG_opt_level, OPT_Space);
   }
   if(CG_opt_level >= 2 && !CG_simp_flow_in_tailmerge_overridden) {
       CG_simp_flow_in_tailmerge = DEFAULT_SIMP_FLOW_TAILMERGE(CG_opt_level, OPT_Space);
   }
+#endif
 #endif
 
   if ( OPT_Unroll_Analysis_Set )
@@ -1423,11 +1466,14 @@ Configure_CG_Options(void)
 
   CG_LOOP_ooo_unroll_heuristics = PROC_is_out_of_order();
 
+#ifndef TARG_ST
+  //TB: no more OPT_Space
   if (OPT_Space)
   {
     CGEXP_expandconstant = 2;
-  }
-
+  } else
+    CGEXP_expandconstant = DEFAULT_CGEXP_CONSTANT;
+#endif
 #if 0
   if (!Integer_Divide_By_Constant_overridden) {
     CGEXP_cvrt_int_div_to_mult = (!OPT_Space) && (CG_opt_level > 0);
@@ -1618,14 +1664,26 @@ Configure_CG_Options(void)
     // if kernel code then want really minimal space,
     // so turn off cloning altogether
     CFLOW_Enable_Clone = FALSE;
-  } else if (OPT_Space) {
+  }
+#ifndef TARG_ST
+  //TB: no more OPT_Space
+  else if (OPT_Space) {
 #ifdef TARG_STxP70
     if (!CFLOW_Enable_Clone_overridden) CFLOW_Enable_Clone = FALSE;
 #endif
     if (!clone_incr_overridden) CFLOW_clone_incr = 1;
-    if (!clone_min_incr_overridden) CFLOW_clone_min_incr = 1;
-    if (!clone_max_incr_overridden) CFLOW_clone_max_incr = 3;
-  }
+   if (!clone_min_incr_overridden) CFLOW_clone_min_incr = 1;
+  if (!clone_max_incr_overridden) CFLOW_clone_max_incr = 3;
+    } else {
+      //TB:Set default value
+      if (!clone_incr_overridden) CFLOW_clone_incr = 10;
+      if (!clone_min_incr_overridden) CFLOW_clone_min_incr = 15;
+      if (!clone_max_incr_overridden) CFLOW_clone_max_incr = 100;
+  #ifdef TARG_STxP70
+     if (!CFLOW_Enable_Clone_overridden) CFLOW_Enable_Clone = TRUE;
+  #endif
+    }
+#endif
 
 #ifdef TARG_ST
   // [CG] Initialize default max_issue width
@@ -1669,18 +1727,18 @@ CG_Configure_Opt_Level (
   INT opt_level 
 )
 {
-  static BOOL opt_level_configured = FALSE;
+//   static BOOL opt_level_configured = FALSE;
 
-  if ( opt_level_configured && opt_level == CG_opt_level )
-    return;
+//   if ( opt_level_configured && opt_level == CG_opt_level )
+//     return;
 
-  if ( opt_level_configured && cg_opt_level_overridden ) {
-    /* forget it */
-    DevWarn("Attempt to override CG:opt_level=%d flag. Ignored.",CG_opt_level);
-    return;
-  }
+//   if ( opt_level_configured && cg_opt_level_overridden ) {
+//     /* forget it */
+//     DevWarn("Attempt to override CG:opt_level=%d flag. Ignored.",CG_opt_level);
+//     return;
+//   }
 
-  opt_level_configured = TRUE;
+//   opt_level_configured = TRUE;
 
   if ( ! cg_opt_level_overridden )
     CG_opt_level = opt_level;
@@ -1882,6 +1940,142 @@ Prepare_Source (void)
   return;
 }
 
+#ifdef TARG_ST
+//TB
+/* ====================================================================
+ *   CG_Save_Default_Options(void)
+ *
+ *   Save the current values for CG options.
+ * ====================================================================
+ */
+void
+CG_Save_Default_Options(void)
+{
+  Save_Option_Groups(CG_Option_Groups);
+}
+/* ====================================================================
+ *   CG_Reset_Default_Options(void)
+ *
+ *   Reset the default options.
+ * ====================================================================
+ */
+void
+CG_Reset_Default_Options(void)
+{
+  Reset_Option_Groups(CG_Option_Groups);
+}
+
+/* ====================================================================
+ *   CG_Apply_Opt_Level
+ *
+ *   Set options for a level of optimization.
+ * ====================================================================
+ */
+void
+CG_Apply_Opt_Level(UINT32 level)
+{
+#ifdef TARG_STxP70
+  if(level >= 2 && !CG_cbpo_optimize_load_imm_overridden) {
+    CG_cbpo_optimize_load_imm = DEFAULT_LOAD_IMM(level, FALSE);
+  }
+  if(!CG_cbpo_block_method_overridden) {
+    CG_cbpo_block_method = DEFAULT_BLOCK_METHOD(level, FALSE);
+  }
+  if(!CG_cbpo_ratio_overridden) {
+    CG_cbpo_ratio = DEFAULT_RATIO(level, FALSE);
+  }
+  if(!CG_cbpo_facto_cst_overridden) {
+    CG_cbpo_facto_cst = DEFAULT_FACTO_CST(level, FALSE);
+  }
+  if(level >= 2 && !CG_tailmerge_overridden) {
+    CG_tailmerge = DEFAULT_TAILMERGE(level, FALSE);
+  }
+  if(level >= 2 && !CG_simp_flow_in_tailmerge_overridden) {
+    CG_simp_flow_in_tailmerge = DEFAULT_SIMP_FLOW_TAILMERGE(level, FALSE);
+  }
+#endif
+}
+
+/* ====================================================================
+ *   CG_Apply_Opt_Size
+ *
+ *   Set options for size.
+ * ====================================================================
+ */
+void
+CG_Apply_Opt_Size(UINT32 level)
+{
+  //level = 0 means no size opt
+  if (level == PU_OPTLEVEL_0 || level == PU_OPTLEVEL_UNDEF) return;
+
+  FmtAssert(level == PU_OPTLEVEL_1,
+	    ("CG_Apply_Opt_Size: only level 1 is implemented (asked was %d)",level));
+
+  if (!CGEXP_expandconstant_set)
+    CGEXP_expandconstant = 2;
+
+  if (!clone_incr_overridden) 
+    CFLOW_clone_incr = 1;
+
+  if (!clone_min_incr_overridden) 
+    CFLOW_clone_min_incr = 1;
+
+  if (!clone_max_incr_overridden) 
+    CFLOW_clone_max_incr = 3;
+
+  if (!CFLOW_Space_overridden)
+    CFLOW_Space = TRUE;
+
+#ifdef TARG_STxP70
+  if (!CFLOW_Enable_Clone_overridden) 
+    CFLOW_Enable_Clone = FALSE;
+#endif
+  if (!EMIT_space_overridden)
+    EMIT_space = TRUE;
+
+  //cg_select
+  if (!CG_select_freq_overriden)
+    CG_select_freq = FALSE;
+  if (!CG_select_cycles_overridden)
+    CG_select_cycles = FALSE;
+  if (!CG_select_spec_stores_overridden)
+    CG_select_spec_stores = PROC_has_predicate_stores() && Enable_Conditional_Store;
+  if (!CG_select_space_overridden)
+    CG_select_space = TRUE;
+  //Integrated Global and Local Scheduling Framework
+  if (!CG_enable_thr_overridden)
+    CG_enable_thr = FALSE;
+  //GRA
+  if (!GRA_spill_count_factor_for_size_set)
+    GRA_spill_count_factor_for_size = TRUE;
+  if (!GRA_split_for_size_set)
+    GRA_split_for_size = TRUE;
+  if (!GRA_spill_count_min_set)
+    GRA_spill_count_min= TRUE;
+
+#ifdef TARG_STxP70
+  //common base pointer optimization
+  if(!CG_cbpo_optimize_load_imm_overridden) {
+    CG_cbpo_optimize_load_imm = DEFAULT_LOAD_IMM(CG_opt_level, TRUE);
+  }
+  if(!CG_cbpo_block_method_overridden) {
+    CG_cbpo_block_method = DEFAULT_BLOCK_METHOD(CG_opt_level, TRUE);
+  }
+  if(!CG_cbpo_ratio_overridden) {
+    CG_cbpo_ratio = DEFAULT_RATIO(CG_opt_level, TRUE);
+  }
+  if(!CG_cbpo_facto_cst_overridden) {
+    CG_cbpo_facto_cst = DEFAULT_FACTO_CST(CG_opt_level, TRUE);
+  }
+  if(!CG_tailmerge_overridden) {
+    CG_tailmerge = DEFAULT_TAILMERGE(CG_opt_level, TRUE);
+  }
+  if(!CG_simp_flow_in_tailmerge_overridden) {
+    CG_simp_flow_in_tailmerge = DEFAULT_SIMP_FLOW_TAILMERGE(CG_opt_level, TRUE);
+  }
+#endif
+}
+#endif
 /* ====================================================================
  *   CG_Process_Command_Line (cg_argc, cg_argv, be_argc, be_argv)
  *

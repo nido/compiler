@@ -285,6 +285,10 @@ BE_EXPORTED extern BOOL	INLINE_Sort_PU_Order;	/* Sort input PU order? */
 #endif
 BE_EXPORTED extern BOOL	INLINE_List_Actions;	/* List inline actions? */
 BE_EXPORTED extern UINT32   INLINE_Max_Pu_Size;      /* Max size of pu : default 5000 */
+#ifdef TARG_ST
+  //TB
+BE_EXPORTED extern BOOL    INLINE_Max_Pu_Size_Set;	/* ... explicitly set? */
+#endif
 BE_EXPORTED extern BOOL	INLINE_Preemptible;	/* Inline preemptible PUs? */
 BE_EXPORTED extern BOOL	INLINE_Static;		/* Inline static fns? */
 BE_EXPORTED extern BOOL	INLINE_Static_Set;	/* explicitly set */

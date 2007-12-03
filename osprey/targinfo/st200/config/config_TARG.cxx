@@ -155,6 +155,12 @@ BOOL Enable_AddPC_Set;
 BOOL Enable_Sh1AddS = TRUE;
 BOOL Enable_Sh1AddS_Set;
 
+BOOL Tune_Unrolling_For_Size = FALSE;
+BOOL Tune_Unrolling_For_Size_Set = FALSE;
+
+BOOL Fast_Mult_For_Size = FALSE;
+BOOL Fast_Mult_For_Size_Set = FALSE;
+
 BOOL Enable_Speculate_DivRem = FALSE;
 BOOL Enable_Speculate_DivRem_Set;
 
@@ -281,6 +287,13 @@ static OPTION_DESC Options_TARG[] = {
     "Enable generation of sh1adds and sh1subs" },
   { OVK_INT32,	OV_INTERNAL,	FALSE, "packing_level", NULL,
     2, 0, 2,	&CG_LOOP_Packing_level, NULL },
+  //TB: export new variables for OPT_Space
+  { OVK_BOOL,   OV_VISIBLE,    FALSE, "tune_unroll_size", "",
+    0, 0, 0,    &Tune_Unrolling_For_Size, &Tune_Unrolling_For_Size,
+    "Enable the loop unrolling tuning for code size" },
+  { OVK_BOOL,   OV_VISIBLE,    FALSE, "fast_mult_size", "",
+    0, 0, 0,    &Fast_Mult_For_Size, &Fast_Mult_For_Size_Set,
+    "Take into account code size consideration when deciding for fast multiplication " },
 #endif
 
   /* Unimplemented options: */

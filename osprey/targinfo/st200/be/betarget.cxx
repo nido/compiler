@@ -411,7 +411,7 @@ Can_Do_Fast_Multiply (TYPE_ID mtype, INT64 val)
   // 9,10     - 8/4  (do as group of 6 and 4 combine with shladd)
   // 11-16    - 16/5 (do as two groups of 8, combine with pair of shladds)
   //
-  if (OPT_Space) return FALSE;  // These may eat up a bunch of instructions
+  if (Fast_Mult_For_Size) return FALSE;  // These may eat up a bunch of instructions
   if (uc <= 65535) return TRUE;
   return FALSE;
 }

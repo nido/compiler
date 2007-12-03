@@ -1439,6 +1439,13 @@ duplicate_decls (newdecl, olddecl, different_binding_level)
 	  DECL_SYSCALL_LINKAGE(newdecl) |= DECL_SYSCALL_LINKAGE(olddecl);
 	  DECL_WIDEN_RETVAL(newdecl) |= DECL_WIDEN_RETVAL(olddecl);
 #endif /* SGI_MONGOOSE */
+#ifdef TARG_ST
+	  /* [TB] handle optimization function level attributes */
+	  if (DECL_OPTSIZE (newdecl) == OPTLEVEL_UNDEF)
+	    DECL_OPTSIZE (newdecl) = DECL_OPTSIZE (olddecl);
+	  if (DECL_OPTPERF (newdecl) == OPTLEVEL_UNDEF)
+	    DECL_OPTPERF (newdecl) = DECL_OPTPERF (olddecl);
+#endif
 	}
     }
   /* If cannot merge, then use the new type and qualifiers,

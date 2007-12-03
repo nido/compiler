@@ -53,6 +53,13 @@ extern BOOL CG_select_allow_dup;
 extern BOOL CG_select_promote_mem;
 extern const char* CG_select_factor;
 
+#ifdef TARG_ST
+//TB: Export variable
+extern BOOL CG_select_freq; 
+extern BOOL CG_select_cycles; 
+extern BOOL CG_select_space;
+#endif
+
 extern void Optimize_Conditional_Branches();
 extern void Convert_Select(RID *, const BB_REGION&);
 extern void Select_Init(void);

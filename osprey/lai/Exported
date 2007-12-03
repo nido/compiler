@@ -1,4 +1,8 @@
 CG_Process_Command_Line
+CG_Reset_Default_Options
+CG_Save_Default_Options
+CG_Apply_Opt_Size
+CG_Apply_Opt_Level
 CG_Init
 CG_Fini
 CG_Dump_Region

@@ -949,7 +949,7 @@ VHO_Lower_Switch ( WN * wn )
   // To address art #26891 and limit size expansion in -Os we precompute 
   // actual switch density. Currently enabled on STxP70 only until a full
   // evaluation is acrried out on ST200.
-  if(OPT_Space) {
+  if(OPT_Expand_Switch_For_Space) {
 
     for ( i = 0,  case_goto = WN_first(block); 
           i < VHO_Switch_Ncases; 
@@ -972,16 +972,16 @@ VHO_Lower_Switch ( WN * wn )
                 switch_density, VHO_Switch_Density_Limit_Space);
 #endif // VHO_DEBUG
 
-  } // End if OPT_Space
+  } // End if OPT_Expand_Switch_For_Space
 
   // VL: If code is optimized for space, we prefer If-Else expansion, 
   // except if density and number of cases are high, in which case we 
   // expand the switch as CompGoto.
-  if ( (OPT_Space && 
+  if ( (OPT_Expand_Switch_For_Space && 
          (switch_density < VHO_Switch_Density_Limit_Space || 
           VHO_Switch_Ncases < VHO_Switch_If_Else_Limit_Space)) 
        ||
-       (!OPT_Space && 
+       (!OPT_Expand_Switch_For_Space && 
          (VHO_Switch_Ncases <= VHO_Switch_If_Else_Limit)) ) {
 #else
   if ( (VHO_Switch_Ncases <= VHO_Switch_If_Else_Limit) ) {
@@ -1004,7 +1004,7 @@ VHO_Lower_Switch ( WN * wn )
     // as CompGoto - We avoid binary search trees that are space consuming
     // Enabled on STxP70 only until evaluation on ST200. To be modified if
     // first stage of the fix for #26891 is enabled on ST200.
-    if ( OPT_Space || VHO_Switch_Nclusters == 1 ) {
+    if ( OPT_Expand_Switch_For_Space || VHO_Switch_Nclusters == 1 ) {
 #else
     if ( VHO_Switch_Nclusters == 1 ) {
 #endif

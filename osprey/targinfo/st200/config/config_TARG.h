@@ -158,6 +158,13 @@ BE_EXPORTED extern BOOL Enable_AddPC_Set;
 BE_EXPORTED extern BOOL Enable_Sh1AddS;
 BE_EXPORTED extern BOOL Enable_Sh1AddS_Set;
 
+  //TB:Make OPT_Space a specific user visible option
+BE_EXPORTED extern BOOL Tune_Unrolling_For_Size;
+BE_EXPORTED extern BOOL Tune_Unrolling_For_Size_Set;
+
+BE_EXPORTED extern BOOL Fast_Mult_For_Size;
+BE_EXPORTED extern BOOL Fast_Mult_For_Size_Set;
+
 BE_EXPORTED extern BOOL Enable_Speculate_DivRem;
 BE_EXPORTED extern BOOL Enable_Speculate_DivRem_Set;
 

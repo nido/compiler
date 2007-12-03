@@ -55,6 +55,12 @@
 BE_EXPORTED extern void (*CG_Init_p) ();
 BE_EXPORTED extern void (*CG_Fini_p) ();
 BE_EXPORTED extern void (*CG_Process_Command_Line_p) (INT, char **, INT, char **);
+#ifdef TARG_ST
+BE_EXPORTED extern void (*CG_Reset_Default_Options_p) (void); /*TB: Reset the default options */
+BE_EXPORTED extern void (*CG_Save_Default_Options_p) (void); /*TB: Save values for the options */
+BE_EXPORTED extern void (*CG_Apply_Opt_Size_p) (UINT32); /* TB:Set CG internal options for code size */
+BE_EXPORTED extern void (*CG_Apply_Opt_Level_p) (UINT32); /* TB:Set CG internal options for a given optim level */
+#endif
 
 // from be/lai/cg.cxx
 BE_EXPORTED extern void (*CG_PU_Initialize_p) (WN*);
@@ -79,6 +85,13 @@ struct LAI_INIT {
     CG_Init_p = CG_Init;
     CG_Fini_p = CG_Fini;
     CG_Process_Command_Line_p = CG_Process_Command_Line;
+#ifdef TARG_ST
+    //TB
+    CG_Reset_Default_Options_p = CG_Reset_Default_Options;
+    CG_Save_Default_Options_p = CG_Save_Default_Options;
+    CG_Apply_Opt_Size_p = CG_Apply_Opt_Size;
+    CG_Apply_Opt_Level_p = CG_Apply_Opt_Level;
+#endif
     CG_PU_Initialize_p = CG_PU_Initialize;
     CG_PU_Finalize_p = CG_PU_Finalize;
     CG_Change_Elf_Symbol_To_Undefined_p = CG_Change_Elf_Symbol_To_Undefined;

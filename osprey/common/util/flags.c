@@ -586,6 +586,96 @@ Initialize_Option_Groups ( OPTION_GROUP *ogroups )
     if ( OGROUP_name(group) == NULL ) break;
   }
 }
+
+#ifdef TARG_ST
+
+static void
+Save_Option ( OPTION_DESC *odesc )
+{
+  //  void *var = ODESC_variable(odesc);
+  ODESC_AUX *aux = ODESC_aux(odesc);
+  Duplicate_Value(odesc, &ODA_last(aux));;
+  //  ODA_last_i(aux) = *(INT64*)var;
+}
+
+static void
+Save_Option_Group ( OPTION_GROUP *ogroup )
+{
+  OPTION_DESC *odesc;
+  /* Save the option descriptors: */
+  for ( odesc = OGROUP_options(ogroup);
+	ODESC_kind(odesc) != OVK_COUNT
+     && ODESC_kind(odesc) != OVK_OLD_COUNT;
+	++odesc ) {
+    Save_Option(odesc);
+  }
+}
+
+void
+Save_Option_Groups(OPTION_GROUP *ogroups)
+{
+  OPTION_GROUP *group;
+  
+  for (group = ogroups; group && OGROUP_options(group); group++) {
+    Save_Option_Group ( group );
+    
+    /* We may terminate with an null name list of dummy options: */
+    if ( OGROUP_name(group) == NULL ) break;
+  }
+}
+
+static void Update_Scalar_Value ( OPTION_DESC *odesc, UINT64 val );
+static void Update_Pointer_Value ( OPTION_DESC *odesc, void *val );
+//TB: Reset the default value for each option
+static void
+Reset_Option ( OPTION_DESC *odesc )
+{
+  ODESC_AUX *aux = ODESC_aux(odesc);
+  switch ( ODESC_kind(odesc) ) {
+    case OVK_NONE:
+    case OVK_BOOL:
+    case OVK_INT32:
+    case OVK_UINT32:
+    case OVK_INT64:
+    case OVK_UINT64:
+      Update_Scalar_Value ( odesc, ODA_last_i(aux));
+      break;
+    case OVK_NAME:
+    case OVK_SELF:
+    case OVK_LIST:
+      Update_Pointer_Value ( odesc, ODA_last_p(aux));
+    default:
+      break;
+  }
+}
+
+static void
+Reset_Option_Group ( OPTION_GROUP *ogroup )
+{
+  OPTION_DESC *odesc;
+  /* Reset the option descriptors: */
+  for ( odesc = OGROUP_options(ogroup);
+	ODESC_kind(odesc) != OVK_COUNT
+     && ODESC_kind(odesc) != OVK_OLD_COUNT;
+	++odesc ) {
+    Reset_Option(odesc);
+  }
+}
+
+void
+Reset_Option_Groups(OPTION_GROUP *ogroups)
+{
+  OPTION_GROUP *group;
+  
+  for (group = ogroups; group && OGROUP_options(group); group++) {
+    Reset_Option_Group ( group );
+    
+    /* We may terminate with an null name list of dummy options: */
+    if ( OGROUP_name(group) == NULL ) break;
+  }
+}
+#endif
+
 
 /* ====================================================================
  *

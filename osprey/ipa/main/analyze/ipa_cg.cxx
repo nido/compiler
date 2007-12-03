@@ -1302,7 +1302,6 @@ static void Convert_Icall( IPA_CALL_GRAPH* cg, IPA_NODE* node )
       /* Perform icall to call conversion here.
        */
 
-      fprintf(stdout,"Coucou Convert_Icall Perform icall to call conversion here\n");
       WN* tmpkid0 = WN_CreateLda( Use_32_Bit_Pointers ? OPC_U4LDA : OPC_U8LDA,
 				  0, Make_Pointer_Type(ty_callee),st_callee );
       WN* tmpkid1 = WN_COPY_Tree_With_Map( WN_kid(wn,WN_kid_count(wn)-1) );

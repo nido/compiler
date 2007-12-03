@@ -1459,7 +1459,7 @@ Move_Restore_Out_Of_LRANGE( LUNIT* lunit , SPILL_LIST** spill_list)
   if ( do_move == FALSE )
     return FALSE;
 
-  if (load_count > 0 && OPT_Space) {
+  if (load_count > 0 && GRA_spill_count_min) {
     // Don't increase spill count under opt space
     return FALSE;
   }
@@ -1656,7 +1656,7 @@ Move_Spill_Out_Of_LRANGE( LUNIT* lunit , SPILL_LIST** spill_list)
   if ( ! has_successor_not_needing_spill )
     return FALSE;
 
-  if (spill_count > 1 && OPT_Space) {
+  if (spill_count > 1 && GRA_spill_count_min) {
     //
     // Don't increase spill count under OPT_Space.
     //

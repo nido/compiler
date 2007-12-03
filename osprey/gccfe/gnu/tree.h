@@ -39,7 +39,7 @@ enum tree_code {
 
 #undef DEFTREECODE
 
-#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
+#if defined (SGI_MONGOOSE) //remove: && defined (FRONT_END_C) : TB: make common to C and C++ tree definition otherwise C++ translator compiled without FRONT_END_C defined does not see the same tree.h as the libgfecc.a compiled with -DFRONT_END_C
 typedef unsigned int LABEL_IDX;
 struct mongoose_gcc_DST_IDX {unsigned int block; unsigned int offset; };
 #if defined(__cplusplus)
@@ -798,7 +798,7 @@ struct tree_real_cst GTY(())
 #define TREE_STRING_POINTER(NODE) (STRING_CST_CHECK (NODE)->string.pointer)
 #endif
 // (cbr) XXX try to cleanup that.
-#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
+#if defined (SGI_MONGOOSE) //remove: && defined (FRONT_END_C) : TB: make common to C and C++ tree definition otherwise C++ translator compiled without FRONT_END_C defined does not see the same tree.h as the libgfecc.a compiled with -DFRONT_END_C
 #define TREE_STRING_ST(NODE) (STRING_CST_CHECK (NODE)->string.st)
 #endif /* SGI_MONGOOSE */
 
@@ -808,7 +808,7 @@ struct tree_string GTY(())
   rtx rtl;	/* acts as link to register transfer language (rtl) info */
   int length;
   const char *pointer;
-#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
+#if defined (SGI_MONGOOSE) //remove: && defined (FRONT_END_C) : TB: make common to C and C++ tree definition otherwise C++ translator compiled without FRONT_END_C defined does not see the same tree.h as the libgfecc.a compiled with -DFRONT_END_C
   ST *st;     /* for storing whirl symtab idx */
 #endif /* SGI_MONGOOSE */
 };
@@ -1085,7 +1085,7 @@ struct tree_block GTY(())
 #define TYPE_BINFO(NODE) (TYPE_CHECK (NODE)->type.binfo)
 
 // (cbr) XXX try to cleanup that.
-#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
+#if defined (SGI_MONGOOSE) //remove: && defined (FRONT_END_C) : TB: make common to C and C++ tree definition otherwise C++ translator compiled without FRONT_END_C defined does not see the same tree.h as the libgfecc.a compiled with -DFRONT_END_C
 /* WHIRL TY idx */
 #define TYPE_TY_IDX(NODE) (TYPE_CHECK (NODE)->type.ty_idx)
 #define TYPE_FIELD_IDS_USED(NODE) (TYPE_CHECK (NODE)->type.field_ids_used)
@@ -1349,7 +1349,7 @@ struct tree_type GTY(())
   /* Points to a structure whose details depend on the language in use.  */
   struct lang_type *lang_specific;
 // (cbr) XXX try to cleanup that.
-#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
+#if defined (SGI_MONGOOSE) //remove: && defined (FRONT_END_C) : TB: make common to C and C++ tree definition otherwise C++ translator compiled without FRONT_END_C defined does not see the same tree.h as the libgfecc.a compiled with -DFRONT_END_C
   unsigned int ty_idx;  /* whirl type idx */
   unsigned int field_ids_used;  /* for structs and unions only; 0 otherwise */
   struct mongoose_gcc_DST_IDX dst_id; /* whirl DST */
@@ -1668,7 +1668,7 @@ struct tree_type GTY(())
 /* Language-specific decl information.  */
 #define DECL_LANG_SPECIFIC(NODE) (DECL_CHECK (NODE)->decl.lang_specific)
 
-#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
+#if defined (SGI_MONGOOSE) //remove: && defined (FRONT_END_C) : TB: make common to C and C++ tree definition otherwise C++ translator compiled without FRONT_END_C defined does not see the same tree.h as the libgfecc.a compiled with -DFRONT_END_C
 /* field number within the enclosing struct */
 #define DECL_FIELD_ID(NODE) (DECL_CHECK (NODE)->decl.sgi_u1.field_id)
 #ifdef TARG_ST
@@ -1762,6 +1762,21 @@ struct tree_type GTY(())
 #ifdef TARG_ST
 /* (cbr) this is needed to pass info the the open64 back end */
 #define DECL_IS_USED(NODE) (DECL_CHECK (NODE)->decl.no_delete)
+#endif
+
+#ifdef TARG_ST
+//TB: Add optsize and optperf on 8 bits
+/*this is needed to pass info the the open64 back end */
+enum optlevel_t
+{
+  OPTLEVEL_0 = 0,
+  OPTLEVEL_1 = 1,
+  OPTLEVEL_2 = 2,
+  OPTLEVEL_3 = 3,
+  OPTLEVEL_UNDEF = 4
+};
+#define DECL_OPTSIZE(NODE) (DECL_CHECK (NODE)->decl.optsize)
+#define DECL_OPTPERF(NODE) (DECL_CHECK (NODE)->decl.optperf)
 #endif
 
 /* Nonzero in a FUNCTION_DECL means this function should be treated
@@ -1882,7 +1897,7 @@ struct tree_type GTY(())
    argument's depth.  */
 #define DECL_POINTER_DEPTH(DECL) (DECL_CHECK (DECL)->decl.pointer_depth)
 
-#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
+#if defined (SGI_MONGOOSE) //remove: && defined (FRONT_END_C) : TB: make common to C and C++ tree definition otherwise C++ translator compiled without FRONT_END_C defined does not see the same tree.h as the libgfecc.a compiled with -DFRONT_END_C
 /* Used to indicate that this FUNCTION_DECL has syscall_linkage */
 #define DECL_SYSCALL_LINKAGE(NODE) (DECL_CHECK (NODE)->decl.syscall_linkage_flag)
 
@@ -1939,6 +1954,7 @@ struct tree_decl GTY(())
   unsigned always_inline : 1;
      /* (cbr) support for used attribute */
   unsigned no_delete : 1;
+
 #endif
 
   unsigned lang_flag_0 : 1;
@@ -1950,7 +1966,7 @@ struct tree_decl GTY(())
   unsigned lang_flag_6 : 1;
   unsigned lang_flag_7 : 1;
 
-#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
+#if defined (SGI_MONGOOSE) //remove: && defined (FRONT_END_C) : TB: make common to C and C++ tree definition otherwise C++ translator compiled without FRONT_END_C defined does not see the same tree.h as the libgfecc.a compiled with -DFRONT_END_C
   unsigned syscall_linkage_flag : 1;    /* has syscall_linkage attribute */
   unsigned widen_retval_flag : 1;       /* widen return value attribute */
 #endif /* SGI_MONGOOSE */
@@ -2007,7 +2023,7 @@ struct tree_decl GTY(())
   /* Points to a structure whose details depend on the language in use.  */
   struct lang_decl *lang_specific;
 
-#if defined (SGI_MONGOOSE) && defined (FRONT_END_C)
+#if defined (SGI_MONGOOSE) //remove: && defined (FRONT_END_C) : TB: make common to C and C++ tree definition otherwise C++ translator compiled without FRONT_END_C defined does not see the same tree.h as the libgfecc.a compiled with -DFRONT_END_C
 #ifndef TARG_ST
   // [SC] Remove use of this field since it is not always set
   // correctly for symbols inside nested functions.
@@ -2025,6 +2041,11 @@ struct tree_decl GTY(())
   } sgi_u2;
   struct mongoose_gcc_DST_IDX decl_dst_id; /* whirl DST */
 #endif /* SGI_MONGOOSE */
+#ifdef TARG_ST
+  //TB: Add optsize and optperf on 8 bits
+  ENUM_BITFIELD(optlevel_t) optsize:4;
+  ENUM_BITFIELD(optlevel_t) optperf:4;
+#endif
 };
 
 enum tree_node_structure_enum {

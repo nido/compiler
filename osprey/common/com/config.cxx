@@ -206,6 +206,7 @@ INT8 Debug_Level = DEF_DEBUG_LEVEL;     /* -gn: debug level */
 BOOL	UseAlignedCopyForStructs = FALSE;	/* control aggregrate copy */
 INT32	MinStructCopyLoopSize =    16;		/* 0 = always expand */
 INT32	MinStructCopyMemIntrSize=  0;		/* generate bcopy */
+BOOL MinStructCopyMemIntrSize_Set = FALSE;
 INT32	Aggregate_Alignment = -1;		/* This alignment for aggregate layout */
 #ifdef TARG_ST
 static BOOL	UseMemcpy = FALSE;			/* Use memcpy instead of inlined copy */
@@ -561,7 +562,7 @@ static OPTION_DESC Options_TENV[] = {
   { OVK_INT32,	OV_INTERNAL,	FALSE, "struct_copy_loop_size", "struct_copy_loop",
     -1, 0, 4096,	&MinStructCopyLoopSize, NULL },
   { OVK_INT32,	OV_INTERNAL,	FALSE, "struct_copy_mem_intr_size", "struct_copy_mem",
-    -1, 0, 4096,	&MinStructCopyMemIntrSize, NULL },
+    -1, 0, 4096,	&MinStructCopyMemIntrSize, &MinStructCopyMemIntrSize_Set },
 #ifdef TARG_ST
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "use_memcpy", 	"",
     0, 0, 0,	&UseMemcpy, &UseMemcpy_Set },
@@ -1136,6 +1137,113 @@ Preconfigure (void)
 
 #endif /* BACK_END */
 }
+
+#ifdef TARG_ST
+/* ====================================================================
+ *
+ * Save_Default_Options
+ *
+ * Save the current values for common options.
+ *
+ * ====================================================================
+ */
+
+BE_EXPORTED void
+Save_Default_Options(void)
+{
+  Save_Option_Groups(Common_Option_Groups);
+}
+/* ====================================================================
+ *
+ * Reset_Default_Options
+ *
+ * Reset the common default options.
+ *
+ * ====================================================================
+ */
+
+BE_EXPORTED void
+Reset_Default_Options(void)
+{
+  Reset_Option_Groups(Common_Option_Groups);
+}
+
+/* ====================================================================
+ *
+ * Apply_Opt_Level_For_Common
+ *
+ * Set options for optimization level .
+ *
+ * ====================================================================
+ */
+
+BE_EXPORTED void
+Apply_Opt_Level_For_Common(UINT32 level)
+{
+  if (!OPT_Mul_by_cst_threshold_Set)
+    OPT_Mul_by_cst_threshold = level;
+
+}
+/* ====================================================================
+ *
+ * Apply_Opt_Size_For_Common
+ *
+ * Set options for code size .
+ *
+ * ====================================================================
+ */
+
+BE_EXPORTED void
+Apply_Opt_Size_For_Common(UINT32 level)
+{
+  //level = 0 means no size opt
+  if (level == PU_OPTLEVEL_0 || level == PU_OPTLEVEL_UNDEF) return;
+  
+  FmtAssert(level == PU_OPTLEVEL_1,
+	    ("Apply_Opt_Size_For_Common: only level 1 is implemented (asked was %d)",level));
+
+  if (!CG_memmove_inst_count_overridden)
+    CG_memmove_inst_count = 8;
+  if (! OPT_unroll_size_overridden)
+    OPT_unroll_size = 20;
+    /* reduce caller+callee "size" limit for inlining */
+  if (!INLINE_Max_Pu_Size_Set)
+    INLINE_Max_Pu_Size=1000;
+#if 0 /* not ready for this yet. */
+  /* don't inline divide expansions */
+  if (!OPT_Inline_Divide_Set) OPT_Inline_Divide = FALSE;
+#endif
+  
+#if 0 //def BACK_END
+  /* LNO options to be turned off for SPACE */
+  LNO_Outer_Unroll = 1;
+  LNO_Split_Tiles = FALSE;
+#endif /* BACK_END */
+
+  if (!WOPT_Enable_CFG_Opt_Limit_Set)
+    WOPT_Enable_CFG_Opt_Limit = 5;
+
+  if (!WOPT_Enable_While_Loop_Set)
+    WOPT_Enable_While_Loop = FALSE;
+
+  if (!UseMemcpy_Set) {
+    /* In -Os, do not inline copies, unless -mno-mempcy is passed. */
+    if (!MinStructCopyMemIntrSize_Set)
+      MinStructCopyMemIntrSize = 7;
+  }
+
+  if (!OPT_Mul_by_cst_threshold_Set)
+    OPT_Mul_by_cst_threshold = 0;
+
+  if (!OPT_Lower_While_Do_For_Space_Set)
+    OPT_Lower_While_Do_For_Space = TRUE;
+
+  if (!OPT_Expand_Switch_For_Space_Set)
+    OPT_Expand_Switch_For_Space = TRUE;
+
+}
+#endif
+
 
 /* ====================================================================
  *
@@ -1492,37 +1600,57 @@ Configure_Source ( char	*filename )
   /* Force formal parameters to memory? */
   Force_Mem_Formals = ( Opt_Level < 1 );
 
+  // TB: now done in a specific function apply_opt_space(level).
+  // I leave here the code to fix some eventual issues
   /* Optimize for space */
-  if ( OPT_Space ) {
+//   if ( OPT_Space ) {
 
-    /* TODO:  Other space optimizations to force? */
-    if (!CG_memmove_inst_count_overridden)
-      CG_memmove_inst_count = 8;
-    if (! OPT_unroll_size_overridden)
-      OPT_unroll_size = 20;
-    /* reduce caller+callee "size" limit for inlining */
-    INLINE_Max_Pu_Size=1000;
-#if 0 /* not ready for this yet. */
-    /* don't inline divide expansions */
-    if (!OPT_Inline_Divide_Set) OPT_Inline_Divide = FALSE;
-#endif
+//     /* TODO:  Other space optimizations to force? */
+//     if (!CG_memmove_inst_count_overridden)
+//       CG_memmove_inst_count = 8;
+//     if (! OPT_unroll_size_overridden)
+//       OPT_unroll_size = 20;
+//     /* reduce caller+callee "size" limit for inlining */
+//     INLINE_Max_Pu_Size=1000;
+// #if 0 /* not ready for this yet. */
+//     /* don't inline divide expansions */
+//     if (!OPT_Inline_Divide_Set) OPT_Inline_Divide = FALSE;
+// #endif
 
-#ifdef BACK_END
-    /* LNO options to be turned off for SPACE */
-    LNO_Outer_Unroll = 1;
-    LNO_Split_Tiles = FALSE;
-#endif /* BACK_END */
+// #ifdef BACK_END
+//     /* LNO options to be turned off for SPACE */
+//     LNO_Outer_Unroll = 1;
+//     LNO_Split_Tiles = FALSE;
+// #endif /* BACK_END */
 
-#ifdef TARG_ST
-    // FdF 06/10/2004: Reduce the code duplication in
-    // CFG_Transformation (be/opt/opt_cfg_trans.cxx)
-    if (!WOPT_Enable_CFG_Opt_Limit_Set)
-      WOPT_Enable_CFG_Opt_Limit = 5;
+// #ifdef TARG_ST
+//     // FdF 06/10/2004: Reduce the code duplication in
+//     // CFG_Transformation (be/opt/opt_cfg_trans.cxx)
+//     if (!WOPT_Enable_CFG_Opt_Limit_Set)
+//       WOPT_Enable_CFG_Opt_Limit = 5;
 
-    // FdF 20050411: Reduce loop body duplication
-    WOPT_Enable_While_Loop = FALSE;
-#endif
-  }
+//     // FdF 20050411: Reduce loop body duplication
+//     WOPT_Enable_While_Loop = FALSE;
+// #endif
+// #if 0 
+//   } else {
+//     //TB: Set default value
+//     /* TODO:  Other space optimizations to force? */
+//     if (!CG_memmove_inst_count_overridden)
+//       CG_memmove_inst_count = 16;
+//     if (! OPT_unroll_size_overridden)
+//      OPT_unroll_size = 64;
+//     /* reduce caller+callee "size" limit for inlining */
+//     INLINE_Max_Pu_Size=DEFAULT_INLINE_Max_Pu_Size;
+// +    // FdF 06/10/2004: Reduce the code duplication in
+//     // CFG_Transformation (be/opt/opt_cfg_trans.cxx)
+//     if (!WOPT_Enable_CFG_Opt_Limit_Set)
+//       WOPT_Enable_CFG_Opt_Limit = 10;
+
+//     // FdF 20050411: Reduce loop body duplication
+//     WOPT_Enable_While_Loop = TRUE;
+// #endif
+//   }
 
 #ifdef TARG_ST
   /* -mmemcpy forces to call mempcy, -mno-memcopy forces to always
@@ -1530,17 +1658,19 @@ Configure_Source ( char	*filename )
 
   if (UseMemcpy_Set) {
     if (UseMemcpy) {
-      if (!MinStructCopyMemIntrSize)
+      if (!MinStructCopyMemIntrSize_Set)
 	MinStructCopyMemIntrSize = 7;
     }
     else
       MinStructCopyMemIntrSize = 0;
   }
-  else if (OPT_Space) {
-    /* In -Os, do not inline copies, unless -mno-mempcy is passed. */
-    if (!MinStructCopyMemIntrSize)
-      MinStructCopyMemIntrSize = 7;
-  }
+//   else if (OPT_Space) {
+//     /* In -Os, do not inline copies, unless -mno-mempcy is passed. */
+//     if (!MinStructCopyMemIntrSize)
+//       MinStructCopyMemIntrSize = 7;
+//   } 
+  // else
+  //  MinStructCopyMemIntrSize = 0;
   if (Opt_Level > 2) {
     MinStructCopyLoopSize = 32;
     MinStructCopyParallel = 3;
@@ -2262,8 +2392,8 @@ List_Compile_Options (
 	    pfx, Targ_Name (Target), Isa_Name (Target_ISA),
 	    (Use_32_Bit_Pointers ? 32 : 64) );
 #ifdef TARG_ST
-  if (OPT_Space)
-    fprintf ( f, "%s  -Os\t(Optimization level)\n", pfx );
+  if (OPTION_Space)
+    fprintf ( f, "%s  -Os\t(Optimization level: %d)\n", pfx, OPTION_Space);
   else
 #endif
   fprintf ( f, "%s  -O%d\t(Optimization level)\n", pfx, Opt_Level );

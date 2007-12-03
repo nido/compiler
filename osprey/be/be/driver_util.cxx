@@ -339,7 +339,7 @@ Process_Command_Line (INT argc, char **argv)
 	
  	    case 'O':		    /* Optimization level: */
 #ifdef TARG_ST
-	        OPT_Space = !strcmp( cp, "s" );
+	        OPTION_Space = !strcmp( cp, "s" );
 #endif
 		Opt_Level = Get_Numeric_Flag (&cp, 0, MAX_OPT_LEVEL,
 					      DEF_O_LEVEL, argv[i] ); 

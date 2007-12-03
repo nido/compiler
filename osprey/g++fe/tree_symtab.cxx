@@ -1509,6 +1509,9 @@ Create_ST_For_Tree (tree decl_node)
 	  Set_PU_no_delete (Pu_Table [ST_pu (st)]);            
 	  Set_ST_is_used(st);
 	}
+	/* [TB] handle optimization function level attributes */
+	Set_PU_size_opt (Pu_Table [ST_pu (st)], (enum PU_OPTLEVEL) DECL_OPTSIZE(decl_node));
+// 	Set_PU_perf_opt (Pu_Table [ST_pu (st)], DECL_OPTPERF(decl_node));
 #endif
 
       }

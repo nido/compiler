@@ -66,23 +66,42 @@ extern "C" ST* Create_ST_For_Tree (tree);
 
 #else /* EXTRA_WORD_IN_TREE_NODES */
 
+//TB: Add undef of these dumy declaration to get think to compile with
+//common tree.h (remove all defined(FRONT_END_C) in tree.h)
+#undef TYPE_TY_IDX
 TY_IDX& TYPE_TY_IDX(tree);
+#undef DECL_ST
 ST*& DECL_ST(tree);
+#undef DECL_SYMTAB_IDX
 SYMTAB_IDX& DECL_SYMTAB_IDX(tree);
+#undef DECL_LABEL_IDX
 LABEL_IDX& DECL_LABEL_IDX(tree);
+#undef TREE_STRING_ST
 ST*& TREE_STRING_ST(tree);
+#undef DECL_LABEL_DEFINED
 BOOL& DECL_LABEL_DEFINED(tree);
+#undef DECL_FIELD_ID
 INT32& DECL_FIELD_ID(tree);
+#undef TYPE_FIELD_IDS_USED
 INT32& TYPE_FIELD_IDS_USED(tree);
+#undef SCOPE_NUMBER
 INT32& SCOPE_NUMBER(tree);
+#undef LABEL_SCOPE
 tree& LABEL_SCOPE(tree);
+#undef DECL_DST_IDX
 DST_INFO_IDX& DECL_DST_IDX(tree);
+#undef DECL_DST_FIELD_IDX
 DST_INFO_IDX& DECL_DST_FIELD_IDX(tree);
+#undef TYPE_DST_IDX
 DST_INFO_IDX& TYPE_DST_IDX(tree);
+#undef DECL_DST_SPECIFICATION_IDX
 DST_INFO_IDX& DECL_DST_SPECIFICATION_IDX(tree);
+#undef DECL_DST_ABSTRACT_ROOT_IDX
 DST_INFO_IDX& DECL_DST_ABSTRACT_ROOT_IDX(tree);
+#undef HANDLER_LABEL
 LABEL_IDX& HANDLER_LABEL(tree);
 #ifdef KEY
+#undef PARENT_SCOPE
 tree& PARENT_SCOPE(tree);
 #endif
 

@@ -458,7 +458,7 @@ Init_Section (
     int text_align;
     if (Align_Instructions) 
       text_align = Align_Instructions;
-    else if (OPT_Space)
+    else if (EMIT_space)
       text_align = DEFAULT_TEXT_ALIGNMENT;
     else 
       text_align = CGTARG_Text_Alignment();
@@ -469,7 +469,7 @@ Init_Section (
   if (Is_Text_Section(st)) {
     if (Align_Instructions) 
       Set_STB_align(st, Align_Instructions);
-    else if (OPT_Space)
+    else if (EMIT_space)
       Set_STB_align(st, ISA_INST_BYTES);
     else
       Set_STB_align(st, CGTARG_Text_Alignment());
@@ -3070,7 +3070,7 @@ Check_If_Should_Align_BB (
   BOOL bb_is_loop = FALSE;
   BOOL bb_has_jump_to = FALSE;
 
-  if (OPT_Space) return 0;
+  if (EMIT_space) return 0;
 
   /* Detect bbs that are loop head. */
   if (BB_loop_head_bb(bb) == bb &&
@@ -3131,7 +3131,7 @@ Check_If_Should_Align_BB (
    * check frequency of block (in case doesn't look like proper loop,
    * but still has high-frequency).
    */
-  if (OPT_Space)
+  if (EMIT_space)
     return 0;	/* don't align */
   if (BB_freq(bb) <= 1.0)
     return 0;	/* not frequent enough, so don't align */
@@ -3226,7 +3226,7 @@ Check_If_Should_Align_PU (
 {
   INT align;
 
-  if (OPT_Space) return 0;
+  if (EMIT_space) return 0;
 
   if (Align_Functions)
     align = Align_Functions;
@@ -3251,7 +3251,7 @@ Check_If_Should_Align_PU (
   if (Align_Instructions) {
     q = Align_Instructions;
   }
-  else if (OPT_Space) {
+  else if (EMIT_space) {
     return 0;
   }
   else {
@@ -6781,6 +6781,12 @@ EMT_Emit_PU (
         fprintf ( Asm_File, "\n\t%s Program Unit: %s\n", ASM_CMNT, ST_name(pu) );
     }
 #ifdef TARG_ST
+    //[TB] Add optimization level info
+    if (PU_size_opt(Get_Current_PU()) != PU_OPTLEVEL_UNDEF)
+        fprintf ( Asm_File, "\t%s Size optimization level: %d\n", ASM_CMNT, PU_size_opt(Get_Current_PU()) );
+//     if (PU_perf_opt(Get_Current_PU()) != PU_OPTLEVEL_UNDEF)
+//         fprintf ( Asm_File, "\n\t%s Performance optimization level: %d\n", ASM_CMNT, PU_perf_opt(Get_Current_PU()) );
+
     // [CL] force alignment when starting a new function
     // (as alignment constraints in hb_hazards.cxx:Make_Bundles()
     // are reset for each new PU, we must reset alignment here)

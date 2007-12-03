@@ -235,7 +235,10 @@ SIM SIM_Info[] = {
 static void
 Init_Sim_Info( void ) {
 
-  /* [JV] I am not happy with this ... perhaps it should be generated */
+  static BOOL sim_info_initialized = FALSE;
+  if (sim_info_initialized) return;
+  sim_info_initialized = TRUE;
+    /* [JV] I am not happy with this ... perhaps it should be generated */
   if(Int_Preg_Min_Offset < Int_Preg_Max_Offset) {
     PR_first_reg(SIM_INFO.int_args) += I0;
     PR_last_reg(SIM_INFO.int_args) += I0;

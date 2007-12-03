@@ -278,6 +278,8 @@ extern UINT32 CFLOW_clone_min_incr;
 extern const char *CFLOW_cold_threshold;
 #ifdef TARG_ST
 extern BOOL CFLOW_Enable_Favor_Branches_Condition;
+// TB
+extern BOOL CFLOW_Space;
 #endif
 
 /* FREQ: */
@@ -379,6 +381,12 @@ extern BOOL GRA_spill_to_caller_save;
 extern BOOL GRA_preference_subclass;
 extern BOOL GRA_use_subclass_register_request;
 extern const char* GRA_local_spill_multiplier_string;
+extern BOOL GRA_spill_count_factor_for_size;
+extern BOOL GRA_spill_count_factor_for_size_set;
+extern BOOL GRA_split_for_size;
+extern BOOL GRA_split_for_size_set;
+extern BOOL GRA_spill_count_min;
+extern BOOL GRA_spill_count_min_set;
 extern BOOL GRA_overlay_spills;
 #endif
 extern INT32 GRA_non_home_hi;
@@ -425,6 +433,9 @@ extern INT32 EMIT_Long_Branch_Limit;    /* max distance (in bytes) for branches 
 extern BOOL EMIT_stop_bits_for_asm;
 extern BOOL EMIT_stop_bits_for_volatile_asm;
 extern BOOL EMIT_explicit_bundles;
+#ifdef TARG_ST
+extern BOOL EMIT_space;
+#endif
 
 extern BOOL CG_emit_asm_dwarf;
 extern BOOL CG_emit_unwind_info;
@@ -452,6 +463,7 @@ extern BOOL CG_cbpo_optimize_load_imm_cst;
  * CGEXPand flags 
  */
 extern INT32 CGEXP_expandconstant;	/* maximum # instructions to expand constants */
+extern BOOL CGEXP_expandconstant_set;	/* user set? */
 #define DEFAULT_CGEXP_CONSTANT	3
 
 extern BOOL CGEXP_use_copyfcc;

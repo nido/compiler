@@ -603,6 +603,14 @@ PU_gp_group (const PU& pu)		{ return pu.gp_group; }
 inline void
 Set_PU_gp_group (PU& pu, mUINT8 grp)	{ pu.gp_group = grp; }
 
+#ifdef TARG_ST
+//TB" Add size optimization level for this PU
+inline UINT8
+PU_size_opt (const PU& pu)		{ return pu.size_opt; }
+inline void
+Set_PU_size_opt (PU& pu, enum PU_OPTLEVEL sizeopt)	{ pu.size_opt = sizeopt; }
+#endif
+
 inline SYMTAB_IDX
 PU_lexical_level (const PU& pu)		{ return pu.lexical_level; }
 inline void

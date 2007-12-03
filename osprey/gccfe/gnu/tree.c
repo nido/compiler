@@ -327,6 +327,14 @@ make_node (code)
           t->decl.symtab_idx = Current_scope;
         }
 #endif
+#ifdef TARG_ST
+      //TB: By default size/perf optimization is not set
+      if (code == FUNCTION_DECL)
+        {
+	  DECL_OPTSIZE(t) = OPTLEVEL_UNDEF;
+	  DECL_OPTPERF(t) = OPTLEVEL_UNDEF;
+	}
+#endif
       {
       static struct mongoose_gcc_DST_IDX de = {-1,-1};
       DECL_DST_IDX(t) = de;

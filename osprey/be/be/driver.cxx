@@ -141,7 +141,20 @@ extern void* Initialize_Targ_Info(void);
 
 BE_EXPORTED extern void (*CG_Process_Command_Line_p) (INT, char **, INT, char **);
 #define CG_Process_Command_Line (*CG_Process_Command_Line_p)
-
+#ifdef TARG_ST
+//TB: Add reset option at source level
+BE_EXPORTED extern void (*CG_Reset_Default_Options_p) (void);
+#define CG_Reset_Default_Options (*CG_Reset_Default_Options_p)
+//TB: Add save option at source level
+BE_EXPORTED extern void (*CG_Save_Default_Options_p) (void);
+#define CG_Save_Default_Options (*CG_Save_Default_Options_p)
+//TB: set size option for CG
+BE_EXPORTED extern void (*CG_Apply_Opt_Size_p) (UINT32);
+#define CG_Apply_Opt_Size (*CG_Apply_Opt_Size_p)
+//TB: set optim options for CG
+BE_EXPORTED extern void (*CG_Apply_Opt_Level_p) (UINT32);
+#define CG_Apply_Opt_Level (*CG_Apply_Opt_Level_p)
+#endif
 BE_EXPORTED extern void (*CG_Init_p) ();
 #define CG_Init (*CG_Init_p)
 
@@ -162,6 +175,13 @@ BE_EXPORTED extern void (*EH_Generate_Range_List_p) (WN *);
 
 #else
 #pragma weak CG_Process_Command_Line
+#ifdef TARG_ST
+//TB
+#pragma weak CG_Reset_Default_Options
+#pragma weak CG_Save_Default_Options
+#pragma weak CG_Apply_Opt_Size
+#pragma weak CG_Apply_Opt_Level
+#endif
 #pragma weak CG_Init
 #pragma weak CG_Fini
 #pragma weak CG_PU_Finalize
@@ -403,6 +423,8 @@ static BOOL Saved_run_w2c = FALSE;        /* TODO: Remove */
 static BOOL Saved_run_w2f = FALSE;        /* TODO: Remove */
 static BOOL Saved_run_w2fc_early = FALSE; /* TODO: Remove */
 static BOOL saved_Instrumentatin_Enabled = FALSE; /* Saved Instrumentation to restore it for next function */
+
+static void Apply_Opt_Size(int level); //Apply size optim level on all modules
 
 BE_EXPORTED extern WN_MAP Prompf_Id_Map; /* Maps WN constructs to unique identifiers */
 
@@ -754,7 +776,6 @@ Save_Cur_PU_Name (char *name, INT rid_id)
     }
 }
 
-
 //  Adjust/Lower optimization level based on
 //   1. size of PU and Olimit
 //   2. existence of non-ANSI setjmp calls
@@ -829,7 +850,33 @@ Adjust_Opt_Level (PU_Info* current_pu, WN *pu, char *pu_name)
 	  ErrMsg(EC_LNO_Backoff, pu_name, LNO_Outer_Unroll, LNO_Fusion);
       }
     }
-
+#if 0 //def TARG_ST: //TB: not active for the moment
+    //TB: With feedback, adapt level of optim
+    int nb_invoke=-1;
+    if (FB_CodeSize_Perf_Ratio) {
+      if (Cur_PU_Feedback ) {
+	FB_Info_Invoke info_invoke = Cur_PU_Feedback->Query_invoke(pu);
+	FB_FREQ freq_count = info_invoke.freq_invoke;
+	nb_invoke = (int)freq_count.Value();
+	printf("Freq:%d\n",nb_invoke);
+	
+	if (nb_invoke <= Freq_Threshold_For_Space)
+	  Adjust_Options_for_Space();
+	if (PU_Olimit >= Size_Threshold_For_Space)
+	  Adjust_Options_for_Space();
+      } else {
+	nb_invoke = 0;
+	// feedback info might not be always available
+	// (e.g., function never called)
+	if (Feedback_Enabled[PROFILE_PHASE_BEFORE_VHO])
+	  Adjust_Options_for_Space();
+	printf("Freq:%d\n",0);
+      }
+      printf("PU_Olimit:%d\n",PU_Olimit);
+    }
+    if (OPT_Space)
+      printf("Optimize for size: invoke:%d, limit: %d, size:%d, limit:%d\n", nb_invoke, Freq_Threshold_For_Space, PU_Olimit, Size_Threshold_For_Space);
+#endif
     return pu;
 } /* Adjust_Opt_Level */
 
@@ -2029,6 +2076,73 @@ Process_Feedback_Options (OPTION_LIST* olist)
   }
 } // Process_Feedback_Options
 
+#ifdef TARG_ST
+//TB: This function process all OPTION_DESC from all modules and save the current
+// values
+static void 
+Save_Options_For_File()
+{
+  //Process common options
+  Save_Default_Options();
+
+  //Process module options
+    if (Run_cg) {
+      CG_Save_Default_Options();
+    }
+
+}//Set_Options_For_File
+//TB: This function process all OPTION_DESC from all modules and reset
+//the default value
+static void 
+Set_Options_For_File()
+{
+  //Process common options
+  Reset_Default_Options();
+
+  //Process module options
+    if (Run_cg) {
+      CG_Reset_Default_Options();
+    }
+
+}//Set_Options_For_File
+//TB: This function process all OPTION_DESC from all modules and set
+//the needed value for a given optimization level
+static void 
+Apply_Opt_Level(UINT32 level)
+{
+  //Process common options
+  Apply_Opt_Level_For_Common(level);
+
+  //Process module options
+    if (Run_cg) {
+      CG_Apply_Opt_Level(level);
+    }
+}//Apply_Opt_Level
+//TB: This function process all OPTION_DESC from all modules and reset
+//the default value
+// THis function muste be called after Apply_Opt_Level
+static void 
+Apply_Opt_Size(int level)
+{
+  //level = 0 means no size opt
+  if (level == PU_OPTLEVEL_0 || level == PU_OPTLEVEL_UNDEF) return;
+
+  FmtAssert(level == PU_OPTLEVEL_1,
+	    ("Apply_Opt_Size: only level 1 is implemented (asked was %d)",level));
+
+  //Process common options
+  Apply_Opt_Size_For_Common(level);
+
+  //Process module options
+  if (Run_cg) {
+    CG_Apply_Opt_Size(level);
+  }
+  
+  //Apply target options
+  Apply_Opt_Size_Target(level);
+
+}//Set_Options_For_File
+#endif //TARG_ST
 
 // Provide a place to stop after components are loaded
 extern "C" {
@@ -2228,9 +2342,29 @@ main (INT argc, char **argv)
   }
 #endif
 
+#ifdef TARG_ST
+  //TB: Save current values for all options
+  Save_Options_For_File();
+#endif
   for (PU_Info *current_pu = pu_tree;
        current_pu != NULL;
        current_pu = PU_Info_next(current_pu)) {
+#ifdef TARG_ST
+    //TB: Set the defaultt option
+    Set_Options_For_File();
+    Apply_Opt_Level(Opt_Level);
+    //opt_size must be called after.
+    // Set PU size_opt field if -OS/-OS2 has been asked
+    if (OPTION_Space && (PU_size_opt (PU_Info_pu(current_pu)) == PU_OPTLEVEL_UNDEF))
+      Set_PU_size_opt (PU_Info_pu(current_pu), PU_OPTLEVEL_1);
+
+    //Now Apply opt_size
+    Apply_Opt_Size(PU_size_opt (PU_Info_pu(current_pu)));
+
+    //Reset variabke dependances on OPT_Space...
+    Configure ();
+    Configure_Source(NULL);
+#endif //TARG_ST
     Preorder_Process_PUs(current_pu);
   }
 

@@ -140,6 +140,10 @@ BE_EXPORTED void (*CG_Init_p) ();
 BE_EXPORTED void (*CG_Fini_p) ();
 BE_EXPORTED void (*CG_foo_p) ();
 BE_EXPORTED void (*CG_Process_Command_Line_p) (INT, char **, INT, char **);
+BE_EXPORTED void (*CG_Reset_Default_Options_p) (void);
+BE_EXPORTED void (*CG_Save_Default_Options_p) (void);
+BE_EXPORTED void (*CG_Apply_Opt_Size_p) (void);
+BE_EXPORTED void (*CG_Apply_Opt_Level_p) (UINT32);
 
 // from be/cg/cg.h
 BE_EXPORTED void (*CG_PU_Initialize_p) (WN*);

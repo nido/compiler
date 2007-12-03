@@ -162,6 +162,10 @@ const char* CG_select_factor = "1.1";
 static float select_factor;
 static int branch_penalty;
 
+#ifdef TARG_ST
+//TB:
+BOOL CG_select_space = FALSE;
+#endif
 /* ================================================================
  *
  *   Traces
@@ -1223,7 +1227,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
 
     // allow removing of side entries only on one of targets.
     if (BB_preds_len (bb) > 1 &&
-        (!allow_dup || BB_loophead(bb) || (OPT_Space && BB_length(bb) > 1))) {
+        (!allow_dup || BB_loophead(bb) || (CG_select_space && BB_length(bb) > 1))) {
       if (Trace_Select_Candidates) 
         fprintf(Select_TFile, "<select> Would duplicate more than 1 side block. reject.\n");
       return FALSE; 
@@ -1245,7 +1249,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
     DevAssert(bb, ("Invalid BB chain in hammock"));
 
     if (BB_preds_len (bb) > 1 &&
-        (!allow_dup || BB_loophead(bb) || (OPT_Space && BB_length(bb) > 1))) {
+        (!allow_dup || BB_loophead(bb) || (CG_select_space && BB_length(bb) > 1))) {
       if (Trace_Select_Candidates) 
         fprintf(Select_TFile, "<select> Would duplicate more than 1 side block. reject.\n");
       return FALSE; 
@@ -3013,11 +3017,14 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
   Set_Error_Phase ("Select Region Formation");
 
+#ifndef TARG_ST
+  //TB: no more OPT_SPACE. This is done in a centralized function
   if (OPT_Space) {
-      CG_select_freq = FALSE;
-      CG_select_cycles = FALSE;
-      CG_select_spec_stores = PROC_has_predicate_stores() && Enable_Conditional_Store;
+    CG_select_freq = FALSE;
+    CG_select_cycles = FALSE;
+    CG_select_spec_stores = PROC_has_predicate_stores() && Enable_Conditional_Store;
   }
+#endif
 
   // higher select_factor means ifc more aggressive.
   select_factor = atof(CG_select_factor);

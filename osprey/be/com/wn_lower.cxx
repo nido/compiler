@@ -15522,7 +15522,7 @@ static WN *lower_while_do(WN *block, WN *tree, LOWER_ACTIONS actions)
     *	(GOTO <top_lbl>)
     *  (LABEL <cont_lbl>)
     */
-    if (OPT_Space && !Loop_Pragma_Nz_Trip(tree)) {
+    if (OPT_Lower_While_Do_For_Space && !Loop_Pragma_Nz_Trip(tree)) {
 #if 1
       LABEL_IDX top_lbl, cont_lbl;
       top_lbl  = NewLabel();

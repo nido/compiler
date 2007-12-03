@@ -666,7 +666,19 @@ enum PU_SRC_LANG_FLAGS
     PU_F90_LANG		= 0x10,	// F90
     PU_JAVA_LANG	= 0x20	// JAVA
 };
-
+#ifdef TARG_ST
+//TB" Add size optimization level for this PU
+//This has to be in the same order than the corresponding gcc flags
+//(see optlevl_t type in gccfe/gnu/tree.h)
+enum PU_OPTLEVEL
+{
+  PU_OPTLEVEL_0 = 0,
+  PU_OPTLEVEL_1 = 1,
+  PU_OPTLEVEL_2 = 2,
+  PU_OPTLEVEL_3 = 3,
+  PU_OPTLEVEL_UNDEF = 4
+};
+#endif
 struct PU
 {
     TARGET_INFO_IDX target_idx;		// idx to table for target-specific 
@@ -679,9 +691,15 @@ struct PU
     mUINT64 stkaln;                     // stack alignment (0 or >8 && <=256)
 // TODO:  can put flags in 40-bit unused field and remove 64-bit flag field.
 // TODO:  do this when can make incompatible change.
+#ifdef TARG_ST
+  //TB" Add size optimization level for this PU
+  mUINT8 size_opt;
+  mUINT64 unused : 32;		// for alignment for flags
+#else
     mUINT64 unused : 40;		// for alignment for flags
+#endif
     mUINT64 flags;			// misc. attributes about this func.
-
+    
     // operations
 
     PU ();

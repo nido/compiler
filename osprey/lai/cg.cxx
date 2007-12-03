@@ -939,7 +939,7 @@ CG_Generate_Code(
   Tailmerge(1);
 #endif
 
-  if (OPT_Space)
+  if (CFLOW_Space)
     CFLOW_Optimize(CFLOW_MERGE_OPS|CFLOW_MERGE_EMPTY, "CFLOW (merge ops)");
 
   if (CG_enable_peephole) {

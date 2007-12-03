@@ -1850,7 +1850,7 @@ Choose_Best_Split(INT count)
     // FdF: Fix floating point difference between SunOS and Linux/Cygwin
 #ifdef TARG_ST
     if ((max_priority < 0.0 && !Compare_Float_Nearly_Equal(0.0, max_priority)) &&
-	(!TN_is_save_reg(split_lrange->Tn()) ||	OPT_Space))
+	(!TN_is_save_reg(split_lrange->Tn()) ||	GRA_split_for_size))
 #else
     if (max_priority < 0.0 && (!TN_is_save_reg(split_lrange->Tn()) ||
 	OPT_Space))

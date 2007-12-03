@@ -573,6 +573,8 @@ BOOL    INLINE_Sort_PU_Order = TRUE; /* Sort input PUs to aid code generation. *
 BOOL	INLINE_List_Actions = FALSE;	/* List inline actions? */
 UINT32	INLINE_Max_Pu_Size = DEFAULT_INLINE_Max_Pu_Size;
                                         /* Max size of pu : default 5000 */
+BOOL    INLINE_Max_Pu_Size_Set = FALSE;	/* ... explicitly set? */
+
 BOOL	INLINE_Preemptible = FALSE;	/* Inline preemptible PUs? */
 BOOL	INLINE_Static = FALSE;	        /* Inline static fns? */
 BOOL    INLINE_Static_Set = FALSE;	/* ... explicitly set? */
@@ -655,7 +657,7 @@ static OPTION_DESC Options_INLINE[] = {
 	  "Report inliner actions" },
     { OVK_UINT32, OV_VISIBLE,	FALSE, "max_pu_size_inline", "max_pu_size",
 	  DEFAULT_INLINE_Max_Pu_Size, 0, UINT32_MAX,
-	  &INLINE_Max_Pu_Size, NULL,
+	  &INLINE_Max_Pu_Size, &INLINE_Max_Pu_Size_Set,
 	  "Limit size of inlined subprograms" },
     { OVK_LIST,	OV_VISIBLE,	FALSE, "must",	"m",
 	  0, 0, 0,	&INLINE_List_Names,	NULL,

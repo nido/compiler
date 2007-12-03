@@ -756,8 +756,12 @@ IGLS_Schedule_Region (BOOL before_regalloc)
     if (PROC_has_bundles()) hbs_type |= HBS_MINIMIZE_BUNDLES;
 
     // allow data-speculation if (-O > O1) and -OPT:space is turned off.
+#ifndef TARG_ST
     should_we_do_thr = should_we_do_thr && (CG_opt_level > 1) && !OPT_Space;
-
+#else
+    // TB: When opt_space is true, CG_enable_thr is false
+    should_we_do_thr = should_we_do_thr && (CG_opt_level > 1) ;
+#endif
     if (Trace_HB) {
       #pragma mips_frequency_hint NEVER
       fprintf (TFile, "***** HYPERBLOCK SCHEDULER (after GRA) *****\n");

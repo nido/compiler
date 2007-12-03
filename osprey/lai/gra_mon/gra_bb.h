@@ -79,7 +79,9 @@
 #include "tn_set.h"
 #include "gra_loop.h"
 #include "gra_lrange_subuniverse.h"
-
+#ifdef TARG_ST
+#include "cg_flags.h"
+#endif
 class INTERFERE_DEREF;
 typedef INTERFERE_DEREF* INTERFERE;
 
@@ -277,7 +279,7 @@ public:
     // Push <new_elt> onto the the internally linked _Split_List
     // headed by <head> and return <new_elt> which will be the new_elt
     // head.  See the iterator type GRA_BB_SPLIT_LIST_ITER.
-  float Freq(void) { if (OPT_Space) 
+  float Freq(void) { if (GRA_spill_count_factor_for_size) 
 		       return BB_freq(bb) + GRA_spill_count_factor;
 		     else return BB_freq(bb); }
     // Under OPT:space=on, we adjust the frequency upward

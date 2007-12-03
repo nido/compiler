@@ -431,7 +431,7 @@ Exp_OP (
 
   if (Trace_Exp) {
     #pragma mips_frequency_hint NEVER
-    fprintf(TFile, "expand %s: ", OPCODE_name(opcode)); 
+    fprintf(TFile, "expand %s result:%p op1:%p op2:%p: ", OPCODE_name(opcode), result, op1, op2); 
     if (result) Print_TN(result,FALSE);
     fprintf(TFile, " :- ");
     if (op1) Print_TN(op1,FALSE);
