@@ -712,6 +712,7 @@ Pack32_Get_Alignment(OP *memop, INT64 offset) {
 	if (OP_isub(def_base)) val = -val;
 	base_offset += val;
 	base_sym = TN_var(base_tn);
+	base_offset += TN_offset(base_tn);
 	base_tn = NULL;
       }
       else
