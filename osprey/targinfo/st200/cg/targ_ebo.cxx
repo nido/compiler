@@ -697,7 +697,10 @@ EBO_combine_adjacent_loads(
 
     TN *t64 = Gen_Register_TN (ISA_REGISTER_CLASS_integer, 8);
     Expand_Load(OPC_I8I8LDID, t64, base_tn, offset_tn, &ops);
-    Expand_Extract(r1, r2, t64, &ops);
+    if (Target_Byte_Sex == LITTLE_ENDIAN)
+      Expand_Extract(r1, r2, t64, &ops);
+    else
+      Expand_Extract(r2, r1, t64, &ops);
   }
   
   // FdF 20070510: Do not copy the WN information, but create a map

@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Dec  7 09:10:44 CET 2007
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-36740
+
+Description:
+------------
+	* [trunk] Fix for bug #36740: Compiler generates wrong code in big endian mode for (s240, -O)
+    Deliver fixes/codex-36740 rev #14683 with authorization branch #36890
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_ivs.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Dec  3 09:57:38 CET 2007
 	Author:    bidaultt
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

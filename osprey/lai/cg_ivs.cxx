@@ -1075,7 +1075,8 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
 
     extern void Expand_Extract(TN *low_tn, TN *high_tn, TN *src_tn, OPS *ops);
 
-    if (IV_step > 0)
+    if (((IV_step > 0) && (Target_Byte_Sex == LITTLE_ENDIAN)) ||
+	((IV_step < 0) && (Target_Byte_Sex == BIG_ENDIAN)))
       Expand_Extract(t1, t2, t64, &ops_ldp);
     else
       Expand_Extract(t2, t1, t64, &ops_ldp);
@@ -1234,7 +1235,8 @@ Combine_Adjacent_Stores( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table )
 
     extern void Expand_Compose(TN *src_tn, TN *low_tn, TN *high_tn, OPS *ops);
 
-    if (IV_step > 0)
+    if (((IV_step > 0) && (Target_Byte_Sex == LITTLE_ENDIAN)) ||
+	((IV_step < 0) && (Target_Byte_Sex == BIG_ENDIAN)))
       Expand_Compose(t64, t1, t2, &ops_stp);
     else
       Expand_Compose(t64, t2, t1, &ops_stp);
