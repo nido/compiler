@@ -166,6 +166,50 @@ struct ALIAS_MANAGER *Alias_Manager;
 IPRA cg_ipra;
 #endif
 
+
+#ifdef TARG_ST
+/* ====================================================================
+ *    CGStack_Align_Check()
+ *
+ *   This function check that the alignment constraint related
+ *   to local symbols is compatible with the stack alignment. 
+ * ====================================================================
+ */
+static void CGStack_Align_Check() {
+  // [dt25] if symbol is a local defined as having an alignment 
+  // constraint > PU_aligned_stack(Get_Current_PU()) then we should force the stack allignment
+
+  INT i,Max_Stack_Align = PU_aligned_stack(Get_Current_PU());
+  bool user_stack_align = false;
+  bool Update = false;
+  ST *sym;
+
+  // We detect if the stack alignment has been set by the user
+  if (Max_Stack_Align != Target_Stack_Alignment) user_stack_align = true;
+  FOREACH_SYMBOL(CURRENT_SYMTAB,sym,i) {
+    if (ST_class(sym) == CLASS_VAR && ST_sclass(sym) == SCLASS_AUTO && TY_align(ST_type(sym))>Max_Stack_Align) {
+      Update = true;
+      Max_Stack_Align = TY_align(ST_type(sym));
+    }
+  }
+  
+  if (Update && !CG_auto_align_stack ) 
+    FmtAssert(FALSE, ("Stack Alignment of function %s is inconsistant (currentvalue is %d should be %d)",ST_name(Get_Current_PU_ST()),(int)PU_aligned_stack(Get_Current_PU()),Max_Stack_Align));
+
+
+  if (Update && CG_auto_align_stack) {
+    if (user_stack_align) {
+      ErrMsg(EC_Warn_Stack_Align,ST_name(Get_Current_PU_ST()),(int)PU_aligned_stack(Get_Current_PU()),Max_Stack_Align);
+      ErrMsg (EC_Warn_Stack_Modif,ST_name(Get_Current_PU_ST()),(int)PU_aligned_stack(Get_Current_PU()),Max_Stack_Align);
+    }
+    //ErrMsg (EC_Warn_Stack_Modif,ST_name(Get_Current_PU_ST()),(int)PU_aligned_stack(Get_Current_PU()),Max_Stack_Align);
+    Set_PU_aligned_stack(Get_Current_PU(),Max_Stack_Align);
+  }
+
+}
+#endif
+
+
 /* static BOOL Orig_Enable_SWP; */
 
 /* ====================================================================
@@ -236,6 +280,9 @@ CG_PU_Initialize (
 #ifdef TARG_ST
   /* Initialize cg_color module. */
   CGCOLOR_Initialize_For_PU();
+#endif
+#ifdef TARG_ST
+  CGStack_Align_Check();
 #endif
 
   /* Initialize global tn universe */

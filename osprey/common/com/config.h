@@ -588,6 +588,9 @@ BE_EXPORTED extern BOOL  CG_memcpy_cannot_overlap;
 BE_EXPORTED extern BOOL  CG_memmove_cannot_overlap;
 BE_EXPORTED extern BOOL  CG_memmove_nonconst;
 BE_EXPORTED extern BOOL  CG_floating_const_in_memory;
+#ifdef TARG_ST
+BE_EXPORTED extern BOOL  CG_auto_align_stack;
+#endif
 BE_EXPORTED extern BOOL  Allow_wrap_around_opt;
 #define DEF_FOLD_ARITH_MAX_INS_CNT 1000
 BE_EXPORTED extern INT32 Fold_Arith_Max_INS_CNT;

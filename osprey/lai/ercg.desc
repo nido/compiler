@@ -83,6 +83,14 @@ ERROR_DESC EDESC_CG[] = {
     "%s%s%d prefetch instruction(s) could not be analyzed for padding",
     3, ET_STRING, ET_STRING, ET_INT, 0, 0, 0 },
 
+  { EC_Warn_Stack_Align, EM_User | ES_WARNING,	RAG_EN_NONE,
+    "Stack alignment invalid in function %s, current value is %d should be %d",
+    4, ET_STRING, ET_INT, ET_INT,0,0,0 },
+
+  { EC_Warn_Stack_Modif, EM_User | ES_WARNING,	RAG_EN_NONE,
+    "Stack alignment for function %s is updated from %d to %d",
+    3, ET_STRING, ET_INT, ET_INT,0,0 },
+
   /* All error descriptor lists must end with a -1 error code: */
   { -1,	0, RAG_EN_NONE, "", 0, 0,0,0,0,0,0 }
 };

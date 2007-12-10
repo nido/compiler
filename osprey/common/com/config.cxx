@@ -972,6 +972,9 @@ BOOL CG_memcpy_cannot_overlap = FALSE;	/* for intrinsic expansion of memcpy */
 BOOL CG_memmove_cannot_overlap = FALSE;	/* for intrinsic expansion of memmove */
 BOOL CG_memmove_nonconst = FALSE;	/* expand mem intrinsics unknown size */
 BOOL CG_floating_const_in_memory = TRUE; /* keep fp constants in memory */
+#ifdef TARG_ST
+BOOL CG_auto_align_stack = FALSE;        /* Auto align stack */
+#endif
 
 /***** Miscellaneous GOPT options *****/
 INT32 Opt_Level = DEF_OPT_LEVEL;
