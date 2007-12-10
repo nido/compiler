@@ -3365,6 +3365,8 @@ Allocate_Object_Initializer (ST* parent, INITV_IDX invidx)
 #endif
     case  INITVKIND_SYMOFF:
       st = &St_Table[INITV_st(inv)];
+      /* [dt25] Bug #35818 => guard not to infinite loop when cross references*/
+      if (ST_is_initialized(st)) break;
       if (parent != st)
         Allocate_Object(st);
       break;
