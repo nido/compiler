@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Dec 11 08:42:44 CET 2007
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-35518
+
+Description:
+------------
+	* [trunk] Fix for bug #35518: Execution error on fdiag03.
+	          -> GRA: In Spill_Homeable_TN(), fix detection and handling
+		          of aliased TNs, to insure code correctness.
+	Deliver fixes/codex-35518 rev #14733 with authorization branch #35536
+
+
+Modified Files:
+---------------
+	M      osprey/lai/gra_mon/gra_spill.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Dec 11 08:32:00 CET 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

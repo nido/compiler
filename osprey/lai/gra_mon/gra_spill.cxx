@@ -514,6 +514,18 @@ Spill_Homeable_TN(
 	    if (OP_load(op)) homing_load_removed = TRUE;
 	    continue;
 	  } else if (OP_store(op)) {
+#ifdef TARG_ST
+	    // [TTh] Fix for codex bug #35518:
+	    // need_store must be cleared only when dealing with a store of the
+	    // original TN. Moreover, when the source TN is not the original TN,
+	    // the store must be seen as an aliased one.
+            if (OP_opnd(op, st_op_num) == orig_tn) {
+	      need_store = FALSE;
+	      op_is_homing_store = TRUE;
+	    } else {
+	      aliased_store_seen = TRUE;
+	    }
+#else
 	    //
 	    // won't need to store at bottom of the block unless another
 	    // def of the tn is found
@@ -521,6 +533,7 @@ Spill_Homeable_TN(
 	    need_store = FALSE;
             if (OP_opnd(op, st_op_num) == orig_tn)
 	      op_is_homing_store = TRUE;
+#endif
           } else if (OP_load(op) && OP_result(op, 0) == orig_tn) {
 	    op_is_homing_load = TRUE;
 	  }
