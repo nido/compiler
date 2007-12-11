@@ -3748,7 +3748,7 @@ Get_Intrinsic_Op_Parameters( WN *expr, TN **result, TN ***opnds, INT *numopnds, 
   TYPE_ID result_mtype = WN_rtype(expr);
   
 #ifdef TARG_ST  
-  // This function is now common to intrinsic call and intrinsic call.
+  // This function is now common to intrinsic op and intrinsic call.
   // For intrinsic call, the actual result may be void in the following cases:
   // 1. the intrinsic call is a void result
   // 2. the intrinsic call is a non-void result but the actual tree as
@@ -3801,7 +3801,10 @@ Get_Intrinsic_Op_Parameters( WN *expr, TN **result, TN ***opnds, INT *numopnds, 
            (*opnds)[in] = Expand_Expr(WN_kid(expr,in), expr, NULL);
 
            if(INTRN_is_inout_param(i,intr_call_info)) {
-            (*res)[out] = (*opnds)[in]; 
+             (*res)[out] = Get_Intrinsic_Call_Dedicated_Tn(expr,out);
+	     if(NULL==(*res)[out]) {
+	       (*res)[out] = Build_TN_Of_Mtype(intr_call_info->arg_type[i]);
+	     }
             ++out;
             }
            ++in;
