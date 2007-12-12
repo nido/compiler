@@ -320,15 +320,9 @@ EBO_Set_Predicate_omega (
   EBO_TN_INFO *pred_tninfo
 )
 {
-#ifdef TARG_ST
   if (pred_tninfo != NULL && OP_find_opnd_use(new_op,OU_predicate) >= 0) {
     Set_OP_omega (new_op, (UINT32)OP_find_opnd_use(new_op,OU_predicate), pred_tninfo->omega);
   }
-#else
-  if (pred_tninfo != NULL && OP_PREDICATE_OPND >= 0) {
-    Set_OP_omega (new_op, (UINT32)OP_PREDICATE_OPND, pred_tninfo->omega);
-  }
-#endif
   return;
 }
 
@@ -380,25 +374,114 @@ EBO_OPS_omega (
   return;
 }
 
-#endif
+/* =====================================================================
+ *   EBO_OP_predicate_dominates(op1, op1_tninfo, op2, op2_tninfo)
+ *
+ *   Check whether the execution condition p1 for op1 dominates
+ *   the execution condition p2 for op2 by checking whether
+ *   EBO_predicate_domintes(p1, p2).
+ *
+ *   EBO_OP_predicate_complements(op1, op1_tninfo, op2, op2_tninfo)
+ *
+ *   Check whether the execution condition p1 for op1 and
+ *   the execution condition p2 for op2 are complement by checking 
+ *   whether EBO_predicate_complements(p1, p2).
+ *
+ *   EBO_OP_predicate_always(op, op_tninfo)
+ *
+ *   Check whether the operation is not predicated or the 
+ *   predicate condition for the operation is such that it is always true.
+ *      	
+ *   EBO_OP_predicate_never(op, op_tninfo)
+ *
+ *   Check whether the operation is predicated and the predicate condition
+ *   for the operation is such that it is never true.
+ *      	
+ *   All functions handle the specific cases where the operations are 
+ *   not predicated considering that a non predicated op is equivalent
+ *   to an op predicated by an always true predicate.
+ *
+ *   Note that these functions consider that all side effects of
+ *   the operations are under the predicate condition given
+ *   by the OU_predicate property.
+ *   Thus the result of these queries must be used only for transformations
+ *   on the operations results actually under the OU_predicate condition.
+ *   Special cases such as automodification or hidden effect
+ *   that may be unconditional must be handled differently by the
+ *   client of this function.
+ *   
+ *   Note that the implementation may change or be improved by the
+ *   use of the PQS queries when available.
+ * =====================================================================  
+ */
+static BOOL
+EBO_OP_predicate_always(OP *op, EBO_TN_INFO **op_opnd_tninfo)
+{
+  INT p_idx = OP_find_opnd_use(op, OU_predicate);
+  return !OP_has_predicate(op) ||
+    (True_TN != NULL && OP_opnd(op, p_idx) == True_TN);
+}
 
-#ifdef TARG_ST
-// [CG] some helper functions
-static INT64 sext(INT64 value, int bits)
+static BOOL
+EBO_OP_predicate_never(OP *op, EBO_TN_INFO **op_opnd_tninfo)
+{
+  INT p_idx = OP_find_opnd_use(op, OU_predicate);
+  return OP_has_predicate(op) &&
+    Zero_TN != NULL && OP_opnd(op, p_idx) == Zero_TN;
+}
+
+static BOOL
+EBO_OP_predicate_dominates(OP *op1, EBO_TN_INFO **op1_opnd_tninfo,
+			   OP *op2, EBO_TN_INFO **op2_opnd_tninfo)
+{
+  INT p1_idx = OP_find_opnd_use(op1, OU_predicate);
+  INT p2_idx = OP_find_opnd_use(op2, OU_predicate);
+  return 
+    EBO_OP_predicate_always(op1, op1_opnd_tninfo) || 
+    (OP_has_predicate(op2) && OP_has_predicate(op1) && 
+     EBO_predicate_dominates(OP_opnd(op1, p1_idx), op1_opnd_tninfo[p1_idx],
+			     OP_opnd(op2, p2_idx), op2_opnd_tninfo[p2_idx]));
+}
+
+static BOOL
+EBO_OP_predicate_complements(OP *op1, EBO_TN_INFO **op1_opnd_tninfo,
+			     OP *op2, EBO_TN_INFO **op2_opnd_tninfo)
+{
+  INT p1_idx = OP_find_opnd_use(op1, OU_predicate);
+  INT p2_idx = OP_find_opnd_use(op2, OU_predicate);
+  return 
+    (EBO_OP_predicate_always(op1, op1_opnd_tninfo) &&
+     EBO_OP_predicate_never(op1, op1_opnd_tninfo)) ||
+    (EBO_OP_predicate_never(op1, op1_opnd_tninfo) &&
+     EBO_OP_predicate_always(op1, op1_opnd_tninfo)) ||
+    (OP_has_predicate(op1) && OP_has_predicate(op2) &&
+     EBO_predicate_complements(OP_opnd(op1, p1_idx), op1_opnd_tninfo[p1_idx],
+			       OP_opnd(op2, p2_idx), op2_opnd_tninfo[p2_idx]));
+}
+
+/* =====================================================================
+ * Additional helper functions
+ * =====================================================================
+ */
+static INT64 
+sext(INT64 value, int bits)
 {
   return (value << 64-bits) >> 64-bits;
 }
 
-static INT64 zext(INT64 value, int bits)
+static INT64 
+zext(INT64 value, int bits)
 {
   return (UINT64)(value << 64-bits) >> 64-bits;
 }
 
-static TN **OP_opnds_ptr(OP *op) {
+static TN **
+OP_opnds_ptr(OP *op)
+{
   return &op->res_opnd[OP_opnd_offset(op)];
 }
 
-#endif
+#endif //TARG_ST
 
 /* ===================================================================== */
 /* Local Data:								 */
@@ -1214,6 +1297,20 @@ merge_memory_offsets (
 
 /* =====================================================================
  *   EBO_delete_subset_mem_op
+ *
+ *   For a (store|load) / load sequence, attempt to simplify the 
+ *   load if redundant.
+ *   Handle the case where the load is a subset of the first memory op.
+ *   Return TRUE if the load has been simplified.
+ *
+ *   On a predicated architecture, the transformation looks like
+ *     1: pA? X = load @A   or  1: store @A, X
+ *     2: pC? Y = load @A
+ *
+ *   if pA DOM pC, it can be transformed into:
+ *     1: pA? X = load @A   or  1: store @A, X
+ *     2: pC? Y = extract_subset X
+ *
  * =====================================================================
  */
 BOOL
@@ -1260,6 +1357,17 @@ EBO_delete_subset_mem_op(
       #pragma mips_frequency_hint NEVER
       fprintf(TFile,"%sShouldn't move dedicated register references across blocks.\n",
               EBO_trace_pfx);
+    }
+    return FALSE;
+  }
+
+  // Here we test the predicate preconditions for the transformation.
+  if (!(EBO_OP_predicate_dominates(pred_op, opinfo->optimal_opnd,
+				   op, opnd_tninfo))) {
+    if (EBO_Trace_Hash_Search) {
+      #pragma mips_frequency_hint NEVER
+      fprintf(TFile,"%sDelet subset memop predicates do not match\n\t", EBO_trace_pfx);
+      Print_OP_No_SrcLine(pred_op);
     }
     return FALSE;
   }
@@ -1596,6 +1704,17 @@ if (EBO_Trace_Optimization) fprintf(TFile,"hoist predicate for complementary ope
  *   For a given load or store and one it matches, attempt to replace 
  *   one of them.
  *   Return TRUE if this op is no longer needed.
+ *
+ *   On a predicated architecture, the transformation looks like
+ *     1: pA? X = load @A   or  1: store @A, X
+ *     2: pB? store @B = Z
+ *     3: pC? Y = load @A
+ *
+ *   if pA DOM pC and pB DOM pC, it can be transformed into:
+ *     1: pA? X = load @A   or  1: store @A, X
+ *     2: pB? store @B = Z
+ *     3: pC? Y = (A == B ? Z: X)
+ *
  * =====================================================================
  */
 BOOL
@@ -1677,26 +1796,13 @@ EBO_delete_reload_across_dependency (
   size_intervening = OP_Mem_Ref_Bytes(intervening_op);
 
 
-
 #ifdef TARG_ST
-  // [CG] We stop here if the intervening op predicate
-  // does not dominate the previous predicate op.
-  // This case appear for instance in:
-  //  true_p? X = load @A
-  //  p1?     store @A = Z
-  //  p1?     Y = load @A
-  // We do not want to replace the Y = load @A if
-  // we have no guarantee that the store is always executed if
-  // the X = load is executed
-  INT pred_predicate_idx = OP_find_opnd_use(pred_op, OU_predicate);
-  INT intervening_predicate_idx =  OP_find_opnd_use(intervening_op, OU_predicate);
-  if (OP_has_predicate(intervening_op) && 
-      OP_opnd(intervening_op,intervening_predicate_idx) != True_TN &&
-      (!OP_has_predicate(pred_op) ||
-       !EBO_predicate_dominates(OP_opnd(intervening_op,intervening_predicate_idx),
-				intervening_opinfo->optimal_opnd[intervening_predicate_idx],
-				OP_opnd(pred_op,pred_predicate_idx),
-				opinfo->optimal_opnd[pred_predicate_idx]))) {
+  // Here we test the condition for the transformatiuon done in
+  // EBO_select_value().
+  if (!(EBO_OP_predicate_dominates(pred_op, opinfo->optimal_opnd,
+				   op, opnd_tninfo) &&
+	EBO_OP_predicate_dominates(intervening_op, intervening_opinfo->optimal_opnd,
+				   op, opnd_tninfo))) {
     if (EBO_Trace_Hash_Search) {
       #pragma mips_frequency_hint NEVER
       fprintf(TFile,"%sRe-load intervening op predicates do not match\n\t", EBO_trace_pfx);
@@ -1838,7 +1944,6 @@ EBO_delete_reload_across_dependency (
 			  intervening_offset,
 			  size_succ);
 
-  return TRUE;
 }
 
 /* =====================================================================
@@ -1858,6 +1963,7 @@ delete_memory_op (
   INT i;
   OPS ops = OPS_EMPTY;
   TOP opcode = OP_code(op);
+  OP *pred_op = opinfo->in_op;
 
   INT size_pred;
   INT size_succ;
@@ -1919,6 +2025,18 @@ delete_memory_op (
       return FALSE;
     }
 
+#ifdef TARG_ST
+    // Predicate preconditions. The last op must be redundant.
+    if (!EBO_OP_predicate_dominates(pred_op, opinfo->optimal_opnd,
+				    op, opnd_tninfo)) {
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sPredicate mismatch for  Load for Load combination\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+#endif
+    
     if ((TN_register_class(OP_result(op,0)) !=
                  TN_register_class(OP_result(opinfo->in_op, 0))) ||
         (TN_is_fpu_int(OP_result(op,0)) !=
@@ -2003,12 +2121,24 @@ delete_memory_op (
     if (TOP_Find_Operand_Use(OP_code(op), OU_postincr) >= 0) {
       /* The increment must be preserved. */
       if (EBO_Trace_Data_Flow) {
-        fprintf(TFile,"%sIncremented Load for Load - Store combination\n",
+        fprintf(TFile,"%sIncremented Load for Store - load combination\n",
                 EBO_trace_pfx);
       }
       return FALSE;
     }
 
+#ifdef TARG_ST
+    // Predicate preconditions. The last op must be redundant.
+    if (!EBO_OP_predicate_dominates(pred_op, opinfo->optimal_opnd,
+				    op, opnd_tninfo)) {
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sPredicate mismatch for  Store - Load combination\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+#endif
+    
     if ((TN_register_class(OP_result(op,0)) !=
                  TN_register_class(storeval_tn)) ||
         (TN_is_fpu_int(OP_result(op,0)) !=
@@ -2103,6 +2233,18 @@ delete_memory_op (
       return FALSE;
     }
 
+#ifdef TARG_ST
+    // Predicate preconditions. The first store must be redundant.
+    if (!EBO_OP_predicate_dominates(op, opnd_tninfo,
+				    pred_op, opinfo->optimal_opnd)) {
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sPredicate mismatch for  Store - Store combination\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+#endif
+
     if (EBO_Trace_Optimization) {
       fprintf(TFile,"%sRemove Store - Store combination\n",EBO_trace_pfx);
     }
@@ -2141,6 +2283,18 @@ delete_memory_op (
       }
       return FALSE;
     }
+
+#ifdef TARG_ST
+    // Predicate preconditions. The last op must be redundant.
+    if (!EBO_OP_predicate_dominates(pred_op, opinfo->optimal_opnd,
+				    op, opnd_tninfo)) {
+      if (EBO_Trace_Data_Flow) {
+        fprintf(TFile,"%sPredicate mismatch for  Store - Store combination\n",
+                EBO_trace_pfx);
+      }
+      return FALSE;
+    }
+#endif
 
     if (!EBO_in_peep &&
         (OP_bb(op) != OP_bb(opinfo->in_op)) &&
@@ -2197,6 +2351,7 @@ EBO_delete_duplicate_op (
   INT resnum;
   TOP opcode = OP_code(op);
   OPS ops = OPS_EMPTY;
+  OP *pred_op = opinfo->in_op;
 
   if (EBO_Trace_Data_Flow) {
     fprintf(TFile,"%sDuplicate OP in BB:%d    ",EBO_trace_pfx,BB_id(OP_bb(op)));
@@ -2210,6 +2365,61 @@ EBO_delete_duplicate_op (
     return FALSE;
   }
 
+#ifdef TARG_ST
+  // [CG] Predicate preconditions checks.
+  // Note that the former code used opinfo->actual_opnd while
+  // we now use opinfo->optimal_opnd.
+
+  // Complement case, for stores:
+  // pA ? store @P, X
+  // pB ? store @P, Y
+  // and there exist pC such that pA and pB are complement 
+  // under predicate condition pC. Transformed into: 
+  // pA ? t = X
+  // pB ? t = Y
+  // pC ? store @P, t
+  // Complement case, otherwise:
+  // pA ? X = exp 
+  // pB ? Y = exp
+  // and there exist pC such that that pA and pB are complement 
+  // under predicate condition pC. Transformed into: 
+  // pC ? X = exp
+  // pB ? Y = X
+  if (OP_code(op) == OP_code(pred_op) &&
+      EBO_OP_predicate_complements(op, opnd_tninfo,
+				   pred_op, opinfo->optimal_opnd)) {
+    return hoist_predicate_of_duplicate_complement (op, opnd_tninfo, opinfo);
+  } 
+  
+  // Store - Store case:
+  // pA? store @P, X
+  // pB? store @P, Y
+  // where pB DOM pA. Transformed into:
+  // pB? store @P, Y
+  if (OP_store(pred_op) && OP_store(op) &&
+      !EBO_OP_predicate_dominates(op, opnd_tninfo,
+				  pred_op, opinfo->optimal_opnd)) {
+    if (EBO_Trace_Data_Flow) {
+      fprintf(TFile,"%sStores can not be combined because predicates do not match\n",EBO_trace_pfx);
+    }
+    return FALSE;
+  }
+
+  // Other cases, for instance:
+  // pA? X = load @P or store @P, X
+  // pB? Y = load @P
+  // where pA DOM pB. Transformed into:
+  // pA? X = load @P or store @P, X
+  // pB? Y = X
+  if (!EBO_OP_predicate_dominates(pred_op, opinfo->optimal_opnd,
+				  op, opnd_tninfo)) {
+    if (EBO_Trace_Data_Flow) {
+      fprintf(TFile,"%sExpressions can not be combined because predicates do not match\n",EBO_trace_pfx);
+    }
+    return FALSE;
+  }
+
+#else // !TARG_ST
   if (OP_has_predicate(op) &&
 #ifdef TARG_ST
       /* (cbr) predicate operand # is not necessary constant */
@@ -2258,6 +2468,7 @@ EBO_delete_duplicate_op (
       }
     }
   }
+#endif // !TARG_ST
 
   if (OP_memory(op)) {
    /* 
@@ -4535,18 +4746,10 @@ find_duplicate_mem_op (BB *bb,
 
       if (OP_store(op) && OP_store(pred_op)) {
 #ifdef TARG_ST
-        /* (cbr) predicate operand # is not necessary constant */
-        int pidx = OP_find_opnd_use(pred_op, OU_predicate);
-        int pidx2 = OP_find_opnd_use(op, OU_predicate);
-
-        if (!EBO_predicate_dominates(OP_opnd(op,pidx2),
-                                     actual_tninfo[pidx2],
-                                     OP_opnd(pred_op,pidx),
-                                     opinfo->optimal_opnd[pidx]) &&
-            !EBO_predicate_complements(OP_opnd(op,pidx2),
-                                       actual_tninfo[pidx2],
-                                       OP_opnd(pred_op,pidx),
-                                       opinfo->optimal_opnd[pidx])) {
+        if (!EBO_OP_predicate_dominates(op, actual_tninfo,
+					pred_op, opinfo->optimal_opnd) &&
+            !EBO_OP_predicate_complements(op, actual_tninfo,
+					  pred_op, opinfo->optimal_opnd))
 #else
         if (!EBO_predicate_dominates(OP_opnd(op,OP_PREDICATE_OPND),
 				       actual_tninfo[OP_PREDICATE_OPND],
@@ -4555,9 +4758,9 @@ find_duplicate_mem_op (BB *bb,
             !EBO_predicate_complements(OP_opnd(op,OP_PREDICATE_OPND),
                                        actual_tninfo[OP_PREDICATE_OPND],
                                        OP_opnd(pred_op,OP_PREDICATE_OPND),
-                                       opinfo->optimal_opnd[OP_PREDICATE_OPND])) {
+                                       opinfo->optimal_opnd[OP_PREDICATE_OPND]))
 #endif
-
+	{
           if (EBO_Trace_Hash_Search) {
             #pragma mips_frequency_hint NEVER
             fprintf(TFile,"%sStore predicates do not match\n\t", EBO_trace_pfx);
@@ -4569,24 +4772,19 @@ find_duplicate_mem_op (BB *bb,
           break;
         }
       } else if (!OP_store(op) && !OP_store(pred_op)) {
+        if (intervening_opinfo != NULL &&
 #ifdef TARG_ST
-        /* (cbr) predicate operand # is not necessary constant */
-        int pidx = OP_find_opnd_use(pred_op, OU_predicate);
-        int pidx2 = OP_find_opnd_use(op, OU_predicate);
-#endif
-        if ((intervening_opinfo != NULL) &&
-#ifdef TARG_ST
-            !EBO_predicate_dominates(OP_opnd(pred_op,pidx),
-                                     opinfo->optimal_opnd[pidx],
-                                     OP_opnd(op,pidx2),
-                                     actual_tninfo[pidx2])) {
+            !EBO_OP_predicate_dominates(pred_op,
+					opinfo->optimal_opnd,
+					op,
+					actual_tninfo))
 #else
             !EBO_predicate_dominates(OP_opnd(pred_op,OP_PREDICATE_OPND),
                                      opinfo->optimal_opnd[OP_PREDICATE_OPND],
                                      OP_opnd(op,OP_PREDICATE_OPND),
-                                     actual_tninfo[OP_PREDICATE_OPND])) {
+                                     actual_tninfo[OP_PREDICATE_OPND]))
 #endif
-
+	{
           if (EBO_Trace_Hash_Search) {
             #pragma mips_frequency_hint NEVER
             fprintf(TFile,"%sRe-load predicates do not match\n\t", EBO_trace_pfx);
@@ -4598,25 +4796,25 @@ find_duplicate_mem_op (BB *bb,
           break;
         }
 #ifdef TARG_ST
-        if (!EBO_predicate_dominates(OP_opnd(pred_op,pidx),
-                                     opinfo->optimal_opnd[pidx],
-                                     OP_opnd(op,pidx2),
-                                     actual_tninfo[pidx2]) &&
-            !EBO_predicate_complements(OP_opnd(op,pidx2),
-                                       actual_tninfo[pidx2],
-                                       OP_opnd(pred_op,pidx),
-                                       opinfo->optimal_opnd[pidx])) {
+        if (!EBO_OP_predicate_dominates(pred_op,
+					opinfo->optimal_opnd,
+					op,
+					actual_tninfo) &&
+            !EBO_OP_predicate_complements(op,
+					  actual_tninfo,
+					  pred_op,
+					  opinfo->optimal_opnd))
 #else
-          if (!EBO_predicate_dominates(OP_opnd(pred_op,OP_PREDICATE_OPND),
-                                       opinfo->optimal_opnd[OP_PREDICATE_OPND],
-                                       OP_opnd(op,OP_PREDICATE_OPND),
-                                       actual_tninfo[OP_PREDICATE_OPND]) &&
-              !EBO_predicate_complements(OP_opnd(op,OP_PREDICATE_OPND),
-                                         actual_tninfo[OP_PREDICATE_OPND],
-                                         OP_opnd(pred_op,OP_PREDICATE_OPND),
-                                         opinfo->optimal_opnd[OP_PREDICATE_OPND])) {
+        if (!EBO_predicate_dominates(OP_opnd(pred_op,OP_PREDICATE_OPND),
+				     opinfo->optimal_opnd[OP_PREDICATE_OPND],
+				     OP_opnd(op,OP_PREDICATE_OPND),
+				     actual_tninfo[OP_PREDICATE_OPND]) &&
+            !EBO_predicate_complements(OP_opnd(op,OP_PREDICATE_OPND),
+				       actual_tninfo[OP_PREDICATE_OPND],
+				       OP_opnd(pred_op,OP_PREDICATE_OPND),
+				       opinfo->optimal_opnd[OP_PREDICATE_OPND]))
 #endif
-
+	{
           if (EBO_Trace_Hash_Search) {
             #pragma mips_frequency_hint NEVER
             fprintf(TFile,"%sLoad predicates do not match\n\t", EBO_trace_pfx);
@@ -4629,17 +4827,14 @@ find_duplicate_mem_op (BB *bb,
         }
       } else if (!OP_store(op) && OP_store(pred_op)) {
 #ifdef TARG_ST
-        /* (cbr) predicate operand # is not necessary constant */
-        int pidx = OP_find_opnd_use(pred_op, OU_predicate);
-        int pidx2 = OP_find_opnd_use(op, OU_predicate);
-        if (!EBO_predicate_dominates(OP_opnd(pred_op,pidx),
-                                     opinfo->optimal_opnd[pidx],
-                                     OP_opnd(op,pidx2),
-                                     actual_tninfo[pidx2]) &&
-            !EBO_predicate_complements(OP_opnd(op,pidx2),
-                                       actual_tninfo[pidx2],
-                                       OP_opnd(pred_op,pidx),
-                                       opinfo->optimal_opnd[pidx])) {
+        if (!EBO_OP_predicate_dominates(pred_op,
+					opinfo->optimal_opnd,
+					op,
+					actual_tninfo) &&
+            !EBO_OP_predicate_complements(op,
+					  actual_tninfo,
+					  pred_op,
+					  opinfo->optimal_opnd))
 #else
         if (!EBO_predicate_dominates(OP_opnd(pred_op,OP_PREDICATE_OPND),
                                      opinfo->optimal_opnd[OP_PREDICATE_OPND],
@@ -4648,8 +4843,9 @@ find_duplicate_mem_op (BB *bb,
             !EBO_predicate_complements(OP_opnd(op,OP_PREDICATE_OPND),
                                        actual_tninfo[OP_PREDICATE_OPND],
                                        OP_opnd(pred_op,OP_PREDICATE_OPND),
-                                       opinfo->optimal_opnd[OP_PREDICATE_OPND])) {
+                                       opinfo->optimal_opnd[OP_PREDICATE_OPND]))
 #endif
+	{
           if (EBO_Trace_Hash_Search) {
             #pragma mips_frequency_hint NEVER
             fprintf(TFile,"%sStore/load predicates do not match\n\t", EBO_trace_pfx);
@@ -4857,9 +5053,23 @@ find_duplicate_mem_op (BB *bb,
       }
 
 #ifdef TARG_ST
+      // [CG]: At the end, this conservative check should be removed.
+      // In particular, the functions:
+      // - EBO_delete_reload_across_dependency(),
+      // - EBO_delete_subset_mem_op(),
+      // - EBO_delete_duplicate_op()
+      // now handle correctly the case where pred_op is predicated.
+      // The predicate preconditions have been reported into these functions
+      
       // (cbr) pred_op not always defined.
-      if (OP_has_predicate(pred_op) && (OP_opnd(pred_op, OP_find_opnd_use(pred_op, OU_predicate)) != True_TN))
-        break;
+      if (OP_has_predicate(pred_op) && (OP_opnd(pred_op, OP_find_opnd_use(pred_op, OU_predicate)) != True_TN)) {
+	if (EBO_Trace_Hash_Search) {
+          #pragma mips_frequency_hint NEVER
+	  fprintf(TFile,"%sMemory match found, but preceding op is predicated\n",
+		  EBO_trace_pfx);
+	  break;
+	}
+      }
 #endif
 
       if (EBO_Trace_Hash_Search) {
@@ -5064,23 +5274,23 @@ find_duplicate_op (BB *bb,
     }
 
     if (hash_op_matches && OP_has_predicate(op)) {
-     /* Check predicates for safety. */
-
+      /* Check predicates for safety. */
+      /* We check that either:
+       * - pred_op predicate dominates the current op predicate, such that
+       *   the current op can be replaced by the preceding op,
+       * - or both predicates are complement under some predicate, such that both ops can
+       *   be replaced by a single op with some conditional move.
+       * Thus the function EBO_delete_duplicate_op() must handle both cases.
+       */
 #ifdef TARG_ST
-        /* (cbr) predicate operand # is not necessary constant */
-        int pidx = OP_find_opnd_use(pred_op, OU_predicate);
-        int pidx2 = OP_find_opnd_use(op, OU_predicate);
-#endif
-
-#ifdef TARG_ST
-        if (!EBO_predicate_dominates(OP_opnd(pred_op,pidx),
-                                     opinfo->optimal_opnd[pidx],
-                                     OP_opnd(op,pidx2),
-                                     actual_tninfo[pidx2]) &&
-            !EBO_predicate_complements(OP_opnd(pred_op,pidx),
-                                       opinfo->optimal_opnd[pidx],
-                                       OP_opnd(op,pidx2),
-                                       actual_tninfo[pidx2])) {
+        if (!EBO_OP_predicate_dominates(pred_op,
+					opinfo->optimal_opnd,
+					op,
+					actual_tninfo) &&
+            !EBO_OP_predicate_complements(pred_op,
+					  opinfo->optimal_opnd,
+					  op,
+					  actual_tninfo))
 #else
         if (!EBO_predicate_dominates(OP_opnd(pred_op,OP_PREDICATE_OPND),
                                      opinfo->optimal_opnd[OP_PREDICATE_OPND],
@@ -5089,9 +5299,9 @@ find_duplicate_op (BB *bb,
             !EBO_predicate_complements(OP_opnd(pred_op,OP_PREDICATE_OPND),
                                        opinfo->optimal_opnd[OP_PREDICATE_OPND],
                                        OP_opnd(op,OP_PREDICATE_OPND),
-                                       actual_tninfo[OP_PREDICATE_OPND])) {
+                                       actual_tninfo[OP_PREDICATE_OPND]))
 #endif
-
+	{
           hash_op_matches = FALSE;
 
           if (EBO_Trace_Hash_Search) {
@@ -5173,27 +5383,21 @@ find_previous_constant (OP *op,
         continue;
       }
 
-      if ((pred_op != NULL) && OP_has_predicate(op) && OP_has_predicate(pred_op)) {
+      if (pred_op != NULL && OP_has_predicate(op) && OP_has_predicate(pred_op)) {
        /* Check predicates for safety. */
         EBO_OP_INFO *opinfo = locate_opinfo_entry(check_tninfo);
 #ifdef TARG_ST
-        /* (cbr) predicate operand # is not necessary constant */
-        int pidx = OP_find_opnd_use(pred_op, OU_predicate);
-        int pidx2 = OP_find_opnd_use(op, OU_predicate);
-#endif
-
-#ifdef TARG_ST
-        if ((opinfo == NULL) ||
-            !EBO_predicate_dominates(OP_opnd(pred_op,pidx),
-                                     opinfo->optimal_opnd[pidx],
-                                     OP_opnd(op,pidx2),
-                                     predicate_tninfo)) {
-          if ((OP_code(op) == OP_code(pred_op)) &&
-              EBO_predicate_complements(OP_opnd(pred_op,pidx),
-                                     opinfo->optimal_opnd[pidx],
-                                     OP_opnd(op,pidx2),
-                                     predicate_tninfo) &&
-              EBO_delete_duplicate_op (op, actual_tninfo, opinfo)) {
+        if (opinfo == NULL ||
+            !EBO_OP_predicate_dominates(pred_op,
+					opinfo->optimal_opnd,
+					op,
+					actual_tninfo)) {
+          if (OP_code(op) == OP_code(pred_op) &&
+              EBO_OP_predicate_complements(pred_op,
+					   opinfo->optimal_opnd,
+					   op,
+					   actual_tninfo) &&
+              EBO_delete_duplicate_op (op, actual_tninfo, opinfo))
 #else
         if ((opinfo == NULL) ||
             !EBO_predicate_dominates(OP_opnd(pred_op,OP_PREDICATE_OPND),
@@ -5205,8 +5409,9 @@ find_previous_constant (OP *op,
                                      opinfo->optimal_opnd[OP_PREDICATE_OPND],
                                      OP_opnd(op,OP_PREDICATE_OPND),
                                      predicate_tninfo) &&
-              EBO_delete_duplicate_op (op, actual_tninfo, opinfo)) {
+              EBO_delete_duplicate_op (op, actual_tninfo, opinfo))
 #endif
+	  {
             return TRUE;
           }
 
@@ -5230,13 +5435,11 @@ find_previous_constant (OP *op,
           if (EBO_in_loop) {
             CG_LOOP_Init_Op(OPS_first(&ops));
 #ifdef TARG_ST
-	    // Can't pass the PREDICATE_OPND if no predication
-#ifdef SUPPORTS_PREDICATION
-	    Set_OP_omega (OPS_first(&ops),
-			  OP_find_opnd_use(OPS_first(&ops), OU_predicate),
-			  (predicate_tninfo != NULL)?predicate_tninfo->omega:0);
-#endif
-	    // IA64 always does this.
+	    if (OP_has_predicate(OPS_first(&ops))) {
+	      Set_OP_omega (OPS_first(&ops),
+			    OP_find_opnd_use(OPS_first(&ops), OU_predicate),
+			    (predicate_tninfo != NULL)?predicate_tninfo->omega:0);
+	    }
 #else
 	    Set_OP_omega (OPS_first(&ops),
                           OP_PREDICATE_OPND,

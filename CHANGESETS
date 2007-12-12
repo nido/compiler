@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Dec 12 14:22:44 CET 2007
+	Author:    guillon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/guillon/dev-ebo-reload
+
+Description:
+------------
+	* Deliver guillon/dev-ebo-reload at rev #14756 with approval art #35197.
+Fix problem and factorized predicate conditions in the EBO redundancy elimination phase.
+
+
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo_info.h
+	M      osprey/lai/ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Dec 11 08:42:44 CET 2007
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

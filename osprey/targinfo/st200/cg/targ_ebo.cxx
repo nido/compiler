@@ -872,13 +872,14 @@ EBO_copy_value (
  *   Compare the reload address with the intervening store address.
  *   Select the stored value if the address are the same,
  *   and resuse the predecesor value if they are not the same.
+ *
  * =====================================================================
  */
 BOOL
 EBO_select_value (
   OP *op,
-  TN *pred_result,         // preceeding store's result
-  TN *pred_base,           // preceeding store's base
+  TN *pred_result,         // preceding store's result
+  TN *pred_base,           // preceding store's base
   TN *pred_offset,
   TN *intervening_result,
   TN *intervening_base,
@@ -887,7 +888,15 @@ EBO_select_value (
 )
 {
   OPS ops = OPS_EMPTY;
-
+  TN *result_predicate = NULL;
+  
+  /* Check whether we need to predicate the definition. If so
+   * we will use the current predicate of the operation.
+   */
+  if (OP_cond_def (op)) {
+    result_predicate = OP_opnd(op, OP_find_opnd_use(op,OU_predicate));
+  }
+  
   /* 
    * Unsigned Store - Load sequence for small integers will strip off 
    * sign bit. Does it make sense to use bit-extract sequence to 
@@ -915,17 +924,15 @@ EBO_select_value (
   else if (TN_is_symbol(pred_offset)) {
     // Both must be symbols
     ST *pred_st = TN_var(pred_offset);
-    ST *inrevening_st = TN_var(intervening_offset);
+    ST *intervening_st = TN_var(intervening_offset);
     OPS ops1 = OPS_EMPTY;
 
     // FdF 20070525: Use Expand_Copy to support 8 bytes types
-    if (pred_st == inrevening_st) {
-      // Build_OP(TOP_mov_r_r, OP_result(op, 0), intervening_result, &ops1);
-      Expand_Copy(OP_result(op, 0), NULL, intervening_result, &ops1);
+    if (pred_st == intervening_st) {
+      Expand_Copy(OP_result(op, 0), result_predicate, intervening_result, &ops1);
     }
     else {
-      // Build_OP(TOP_mov_r_r, OP_result(op, 0), pred_result, &ops1);
-      Expand_Copy(OP_result(op, 0), NULL, pred_result, &ops1);
+      Expand_Copy(OP_result(op, 0), result_predicate, pred_result, &ops1);
     }
     Set_OP_copy(OPS_last(&ops1));
     OP_srcpos(OPS_last(&ops1)) = OP_srcpos(op);
@@ -945,6 +952,7 @@ EBO_select_value (
       return FALSE;
     }
 
+    
     /* 
      * Compare the base addresses. 
      * Arthur: if comparison is redundant it will be cleaned up.
@@ -956,26 +964,27 @@ EBO_select_value (
 
     OPS ops1 = OPS_EMPTY;
 
-    /* Copy the "address not equal value". */
-    // FdF 20070515: Use Expand_Select to support 8 bytes types
-#if 0
-    Build_OP(TOP_targ_slct_r_r_b_r, 
-	     OP_result(op, 0), 
-	     predicate, 
-	     intervening_result,
-	     pred_result, 
-	     &ops1);
-#endif
-    TYPE_ID mtype = (size == 4) ? MTYPE_I4 : MTYPE_I8;
-    Expand_Select(OP_result(op, 0),
-		  predicate,
-		  intervening_result,
-		  pred_result,
-		  mtype,
-		  FALSE,
-		  &ops1);
-    OP_srcpos(OPS_last(&ops1)) = OP_srcpos(op);
-    OPS_Append_Ops(&ops, &ops1);
+    if (result_predicate != NULL) {
+      /* If predicated, we must generate a predicated select. On
+	 ST200 family this means a select followed by a conditional
+	 copy.
+      */
+      TN *tmp_tn = Build_TN_Like(OP_result(op, 0));
+      TYPE_ID mtype = TN_size(OP_result(op, 0)) == 8 ? MTYPE_I8 : MTYPE_I4;
+
+      /* Copy the "address not equal value". */
+      Expand_Select(tmp_tn, predicate, intervening_result, pred_result, mtype, FALSE, &ops);
+      OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
+      
+      /* If predicated, move conditionally into the result. */
+      Expand_Copy (OP_result(op, 0), result_predicate, tmp_tn, &ops);
+      OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
+    } else {
+      /* Copy the "address not equal value". */
+      TYPE_ID mtype = TN_size(OP_result(op, 0)) == 8 ? MTYPE_I8 : MTYPE_I4;
+      Expand_Select(OP_result(op, 0), predicate, intervening_result, pred_result, mtype, FALSE, &ops);
+      OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
+    }
   }
 
   if (!EBO_Verify_Ops(&ops)) return FALSE;

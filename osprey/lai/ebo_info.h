@@ -401,7 +401,22 @@ EBO_predicate_dominates (TN *pred1, EBO_TN_INFO *info1,
   return FALSE;
 }
 
-
+#ifdef TARG_ST
+/*
+ * EBO_predicate_equivalent
+ *
+ * Return TRUE if the first predicate is TRUE if and only if
+ * the second predicate is TRUE.
+ *
+ */
+inline BOOL
+EBO_predicate_equivalent (TN *pred1, EBO_TN_INFO *info1,
+			  TN *pred2, EBO_TN_INFO *info2)
+{
+  return EBO_predicate_dominates(pred1, info1, pred2, info2) &&
+    EBO_predicate_dominates(pred2, info2, pred1, info1);
+}
+#endif
 
 /*
  * EBO_predicate_complements
@@ -431,7 +446,6 @@ EBO_predicate_complements (TN *pred1, EBO_TN_INFO *info1,
  /* Until we can resolve subsets, assume a problem. */
   return FALSE;
 }
-
 
 
 inline EBO_TN_INFO *
