@@ -648,6 +648,8 @@ public:
 #ifdef TARG_ST
   void Determine_Sched_Est_Unroll_Factor();
   void Unroll_Specialize_Loop();
+  void Undo_Specialize_Loop(BB *loop_prolog, BB *loop_epilog);
+  void Undo_Peel_Loop(BB *loop_prolog);
 #endif
   void Determine_Unroll_Factor();
   void Determine_SWP_Unroll_Factor();

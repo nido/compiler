@@ -1590,7 +1590,8 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
 
   // Now, look for a sequence of load or store operations that can be
   // packed.
-  if (Candidate_count <= 1) return FALSE;
+  if (Candidate_count <= 1)
+    return FALSE;
 
   //  Trace_Pack32_Entries(pack32_table, pack32_count, "Before main loop");
 
@@ -1626,32 +1627,6 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
       && (mem_cnt < resource_II)) {
     if (trace_packing_verbose) {
       fprintf(stdout, "  <packing> Packing not performed because loop is not memory bounded\n");
-    }
-    // In case of loop peeling or specialization, discard the
-    // additional code. Only the effect of remainder_after will be
-    // left.
-    if (cg_loop.Peel_stream()) {
-    }
-    else if (cg_loop.Specialize_streams()) {
-      BB *check_align_bb = BB_Unique_Predecessor(CG_LOOP_prolog);
-      BB *other_bb = BB_Other_Successor(check_align_bb, CG_LOOP_prolog);
-      OP *br_op = BB_branch_op(check_align_bb);
-      TN *lab_tn = OP_opnd(br_op, OP_find_opnd_use(br_op, OU_target));
-      Is_True(Is_Label_For_BB(TN_label(lab_tn), other_bb),
-			      ("BB:%d should be labelled %s", BB_id(other_bb), ST_name(TN_label(lab_tn))));
-
-      OPS ops = OPS_EMPTY;
-
-      BB_Remove_Op(check_align_bb, br_op);
-      Unlink_Pred_Succ(check_align_bb, CG_LOOP_prolog);
-      Exp_OP1(OPC_GOTO, NULL, lab_tn, &ops);
-      BB_Append_Ops(check_align_bb, &ops);
-      Change_Succ_Prob(check_align_bb, other_bb, 1.0);
-
-      br_op = BB_branch_op(CG_LOOP_epilog);
-      if (br_op)
-	BB_Remove_Op(CG_LOOP_epilog, br_op);
-      Unlink_Pred_Succ(CG_LOOP_epilog, BB_Unique_Successor(CG_LOOP_epilog));
     }
     return FALSE;
   }
@@ -2099,6 +2074,26 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop )
   return TRUE;
 }
 
+static BOOL
+LoadStore_Packing_Discard_Peeling_Specialization(CG_LOOP &cg_loop) {
+
+  // In case of loop peeling or specialization, discard the
+  // additional code. Only the effect of remainder_after will be
+  // left.
+
+  if (cg_loop.Peel_stream()) {
+    cg_loop.Undo_Peel_Loop(CG_LOOP_prolog);
+    return TRUE;
+  }
+
+  else if (cg_loop.Specialize_streams()) {
+    cg_loop.Undo_Specialize_Loop(CG_LOOP_prolog, CG_LOOP_epilog);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
 BOOL IVS_Perform_Load_Store_Packing( CG_LOOP &cg_loop )
 {
   extern BOOL Enable_64_Bits_Ops;
@@ -2133,6 +2128,8 @@ BOOL IVS_Perform_Load_Store_Packing( CG_LOOP &cg_loop )
 
     LOOP_IVS loop_ivs( &local_mem_pool );
     changed_loop = LoadStore_Packing( &loop_ivs, cg_loop );
+    if (!changed_loop) 
+      changed_loop = LoadStore_Packing_Discard_Peeling_Specialization(cg_loop);
 
     CG_DEP_Addr_Analysis = save_CG_DEP_Addr_Analysis;
     CG_DEP_Delete_Graph( head );

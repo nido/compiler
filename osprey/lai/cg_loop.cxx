@@ -3773,6 +3773,42 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
 }
 
 #ifdef TARG_ST
+static BOOL
+Get_pragma_LoopMod(LOOP_DESCR *loop, int *modulus, int *residue)
+{
+  *modulus = 1;
+  *residue = 0;
+
+  if (!CG_LOOP_ignore_pragmas) {
+    BB *head = LOOP_DESCR_loophead(loop);
+    ANNOTATION *loopmod_ant = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
+    while (loopmod_ant && WN_pragma(ANNOT_pragma(loopmod_ant)) != WN_PRAGMA_LOOPMOD)
+      loopmod_ant = ANNOT_Get(ANNOT_next(loopmod_ant), ANNOT_PRAGMA);
+    if (loopmod_ant) {
+      WN *wn = ANNOT_pragma(loopmod_ant);
+      *modulus = MAX(1, WN_pragma_arg1(wn));
+      *residue = MAX(0, WN_pragma_arg2(wn));
+    }
+  }
+  return (*modulus > 1);
+}
+
+static void
+Set_pragma_LoopMod(LOOP_DESCR *loop, int modulus, int residue)
+{
+  if (!CG_LOOP_ignore_pragmas) {
+    BB *head = LOOP_DESCR_loophead(loop);
+    ANNOTATION *loopmod_ant = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
+    while (loopmod_ant && WN_pragma(ANNOT_pragma(loopmod_ant)) != WN_PRAGMA_LOOPMOD)
+      loopmod_ant = ANNOT_Get(ANNOT_next(loopmod_ant), ANNOT_PRAGMA);
+    if (loopmod_ant) {
+      WN *wn = ANNOT_pragma(loopmod_ant);
+      WN_pragma_arg1(wn) = modulus;
+      WN_pragma_arg2(wn) = residue;
+    }
+  }
+}
+
 /* Create a primary induction variable and use it on the loop exit
    test. */
 static void
@@ -3880,17 +3916,14 @@ Unroll_Peel_Loop(CG_LOOP &cl) {
   WN *wn = WN_COPY_Tree(LOOPINFO_wn(info));
   TN *trip_count_tn = LOOPINFO_primary_trip_count_tn(info);
 
-  /* Check if a zero-trip guard around the peel code is needed. */
-  BOOL nz_trip_guard = !TN_is_constant(trip_count_tn) && !WN_Loop_Nz_Trip(LOOPINFO_wn(info));
-  BB *cond_bb = NULL;
+  // FdF 20071206: Do not check for the loop trip count, at this point
+  // it has already been checked that the loop will be executed at
+  // least once.
 
-  // Insert a BB if a branch around the peel BB is needed
-  // - Because Peel_tn is already aligned
-  // - Because loop trip count <= 0
-  if (nz_trip_guard || cl.Peel_cond()) {
-    cond_bb = CG_LOOP_prolog;
-    extend_prolog();
-  }
+  // To ease the undo of loop peeling, in case loop packing cannot be
+  // performed for example, always insert the cond_bb.
+  BB *cond_bb = CG_LOOP_prolog;
+  extend_prolog();
 
   /* Generate the BB for the peel code. */
   BB *peel_bb = CG_LOOP_prolog;
@@ -3900,66 +3933,40 @@ Unroll_Peel_Loop(CG_LOOP &cl) {
   LABEL_IDX continuation_lbl;
   continuation_lbl = Gen_Label_For_BB(CG_LOOP_prolog);
 
-  if (cond_bb) {
-    OPS cond_ops = OPS_EMPTY;
-    TN *and_tn = NULL;
-    float fall_prob = 1.0;
-
-    // Check if trip count is <= 0 
-
-    if (nz_trip_guard) {
-      TN *zero_trip_tn = Build_TN_Like(trip_count_tn);
-      Exp_Select_And_Condition(OPCODE_make_op(OPR_SELECT, MTYPE_I4, MTYPE_V), zero_trip_tn, Gen_Literal_TN(1,4), Zero_TN,
-			       OPCODE_make_op(OPR_GT, MTYPE_I4, MTYPE_I4), trip_count_tn, Zero_TN, V_BR_I4GT, &cond_ops); 
-      and_tn = Build_TN_Of_Mtype(MTYPE_I4);
-      Exp_COPY(and_tn, zero_trip_tn, &cond_ops);
-
-      INT64 trip_est = WN_loop_trip_est(LOOPINFO_wn(info));
-      float ztrip_prob = 1.0 / MAX(trip_est, 1);
-      fall_prob *= (1-ztrip_prob);
-    }
-
+  if (cl.Peel_cond()) {
     // Check if Peel_tn is aligned on 0%8
 
-    if (cl.Peel_cond()) {
-      /* Requires a check to detect the alignment. */
-      TN *base_align = Build_TN_Like(cl.Peel_tn());
-      TN *peel_tn = cl.Peel_tn();
-      if (cl.Peel_align() == 4) {
-	Exp_OP2(OPC_I4ADD,
-		base_align,
-		peel_tn,
-		Gen_Literal_TN(4, 4),
-		&cond_ops);
-	peel_tn = base_align;
-      }
-      Exp_OP2(OPC_U4BAND,
+    OPS cond_ops = OPS_EMPTY;
+    TN *base_align = Build_TN_Like(cl.Peel_tn());
+    TN *peel_tn = cl.Peel_tn();
+
+    if (cl.Peel_align() == 4) {
+      Exp_OP2(OPC_I4ADD,
 	      base_align,
 	      peel_tn,
-	      Gen_Literal_TN(7, TN_size(base_align)),
+	      Gen_Literal_TN(4, 4),
 	      &cond_ops);
-      if (and_tn == NULL) {
-	and_tn = Build_TN_Of_Mtype(MTYPE_I4);
-	Exp_COPY(and_tn, base_align, &cond_ops);
-      }
-      else
-	Exp_OP2(OPC_I4LAND, and_tn, and_tn, base_align, &cond_ops);
-      fall_prob *= 0.5;
+      peel_tn = base_align;
     }
+    Exp_OP2(OPC_U4BAND,
+	    base_align,
+	    peel_tn,
+	    Gen_Literal_TN(7, TN_size(base_align)),
+	    &cond_ops);
 
-    // Generate a branch if needed.
+    // Generate a branch
 
     Exp_OP3v(OPC_TRUEBR,
 	     NULL,
 	     Gen_Label_TN(continuation_lbl,0),
-	     and_tn,
+	     base_align,
 	     Gen_Literal_TN(0, 4),
 	     V_BR_I4EQ,
 	     &cond_ops);
     BB_Append_Ops(cond_bb, &cond_ops);
 
-    Link_Pred_Succ_with_Prob(cond_bb, CG_LOOP_prolog, 1-fall_prob);
-    Change_Succ_Prob(cond_bb, BB_next(cond_bb), fall_prob);
+    Link_Pred_Succ_with_Prob(cond_bb, CG_LOOP_prolog, 0.5);
+    Change_Succ_Prob(cond_bb, peel_bb, 0.5);
   }
 
   /* Then, replicate one iteration of the loop, and fall-thru to the
@@ -3982,35 +3989,58 @@ Unroll_Peel_Loop(CG_LOOP &cl) {
   /* Then update the trip_count_tn. This will turn a constant
      trip_count_tn into a non constant value if a check for dynamic
      alignment was needed. */
+
   TN *new_trip_count_tn;
+  OPS ops_copy = OPS_EMPTY;
 
-  if (TN_is_constant(trip_count_tn) && !cl.Peel_cond()) 
-    new_trip_count_tn = Gen_Literal_TN(TN_value(trip_count_tn)-1, TN_size(trip_count_tn));
-
+  if (TN_is_constant(trip_count_tn)) {
+    new_trip_count_tn = CGTARG_gen_trip_count_TN(TN_size(trip_count_tn));
+    Exp_Immediate(new_trip_count_tn, trip_count_tn, TRUE, &ops_copy);
+  }
   else {
-    OPS ops_copy = OPS_EMPTY;
-    if (TN_is_constant(trip_count_tn)) {
-      new_trip_count_tn = CGTARG_gen_trip_count_TN(TN_size(trip_count_tn));
-      Exp_Immediate(new_trip_count_tn, trip_count_tn, TRUE, &ops_copy);
-    }
-    else {
-      new_trip_count_tn = Dup_TN(trip_count_tn);
-      Exp_COPY(new_trip_count_tn, trip_count_tn, &ops_copy);
-    }
+    new_trip_count_tn = Dup_TN(trip_count_tn);
+    Exp_COPY(new_trip_count_tn, trip_count_tn, &ops_copy);
+  }
 
-    if (cond_bb != NULL)
-      BB_Prepend_Ops(cond_bb, &ops_copy);
-    else
-      BB_Prepend_Ops(peel_bb, &ops_copy);
+  BB_Prepend_Ops(cond_bb, &ops_copy);
 
-    OPS ops_sub = OPS_EMPTY;
-    INT32 trip_size = TN_size(new_trip_count_tn);
-    Exp_OP2(trip_size == 4 ? OPC_U4SUB : OPC_U8SUB,
-	    new_trip_count_tn,
-	    new_trip_count_tn,
-	    Gen_Literal_TN(1, trip_size),
-	    &ops_sub);
-    BB_Append_Ops(peel_bb, &ops_sub);
+  OPS ops_sub = OPS_EMPTY;
+  INT32 trip_size = TN_size(new_trip_count_tn);
+  Exp_OP2(trip_size == 4 ? OPC_U4SUB : OPC_U8SUB,
+	  new_trip_count_tn,
+	  new_trip_count_tn,
+	  Gen_Literal_TN(1, trip_size),
+	  &ops_sub);
+  BB_Append_Ops(peel_bb, &ops_sub);
+
+  // FdF 20071206: Check if the loop trip count may now null, in which
+  // case the loop body must be skipped.
+
+  if ((LOOPINFO_trip_min(info) <= 1) &&
+      (!TN_is_constant(trip_count_tn) || (TN_value(trip_count_tn) <= 1))) {
+    OPS ztrip_ops = OPS_EMPTY;
+    TN *ztrip_tn = Build_TN_Like(trip_count_tn);
+    Exp_Select_And_Condition(OPCODE_make_op(OPR_SELECT, MTYPE_I4, MTYPE_V), ztrip_tn, Gen_Literal_TN(1,4), Zero_TN,
+			     OPCODE_make_op(OPR_GT, MTYPE_I4, MTYPE_I4), new_trip_count_tn, Zero_TN,
+			     V_BR_I4GT, &ztrip_ops);
+
+    LABEL_IDX ztrip_lbl;
+    ztrip_lbl = Gen_Label_For_BB(CG_LOOP_epilog);
+
+    Exp_OP3v(OPC_TRUEBR,
+	     NULL,
+	     Gen_Label_TN(ztrip_lbl,0),
+	     ztrip_tn,
+	     Gen_Literal_TN(0, 4),
+	     V_BR_I4EQ,
+	     &ztrip_ops);
+    BB_Append_Ops(peel_bb, &ztrip_ops);
+
+    INT64 trip_est = WN_loop_trip_est(LOOPINFO_wn(info));
+    float ztrip_prob = 1.0 / MAX(trip_est, 1);
+
+    Link_Pred_Succ_with_Prob(peel_bb, CG_LOOP_epilog, ztrip_prob);
+    Change_Succ_Prob(peel_bb, CG_LOOP_prolog, 1-ztrip_prob);
   }
 
   /* Then, regenerate the test at the end of the loop body. */
@@ -4022,30 +4052,51 @@ Unroll_Peel_Loop(CG_LOOP &cl) {
     WN_Reset_Loop_Nz_Trip(LOOPINFO_wn(info));
 
   /* Update loopmod pragma information after this peeling. */
-  ANNOTATION *loopmod_ant = ANNOT_Get(BB_annotations(body), ANNOT_PRAGMA);
-  while (loopmod_ant && WN_pragma(ANNOT_pragma(loopmod_ant)) != WN_PRAGMA_LOOPMOD)
-    loopmod_ant = ANNOT_Get(ANNOT_next(loopmod_ant), ANNOT_PRAGMA);
-  if (loopmod_ant) {
+  int modulus, residue;
+  if (Get_pragma_LoopMod(loop, &modulus, &residue)) {
     if (cl.Peel_cond()) {
-      WN *wn = ANNOT_pragma(loopmod_ant);
-      WN_pragma_arg1(wn) = 1;
-      WN_pragma_arg2(wn) = 0;
+      modulus = 1;
+      residue = 0;
     }
-    else {
-      int modulus = WN_pragma_arg1(wn);
-      if (modulus > 1) {
-	int residue = WN_pragma_arg2(wn);
-	residue = (residue == 0) ? (modulus - 1) : (residue - 1);
-	WN_pragma_arg2(wn) = residue;
-      }
-    }
+    else if (modulus > 1)
+      residue = (residue == 0) ? (modulus - 1) : (residue - 1);
+    Set_pragma_LoopMod(loop, modulus, residue);
   }
+
+  if (LOOPINFO_trip_min(info) > 0)
+    LOOPINFO_trip_min(info) = LOOPINFO_trip_min(info)-1;
 
   if (Get_Trace(TP_CGLOOP, 0x20)) {
     fprintf(stdout, "  <packing> Peeling done\n");
   }
 }
-#endif
+
+void
+CG_LOOP::Undo_Peel_Loop(BB *loop_prolog) {
+  
+  BB *peel_bb = BB_Fall_Thru_Predecessor(loop_prolog);
+  BB *cond_bb = BB_Fall_Thru_Predecessor(peel_bb);
+
+  if (!BB_Is_Unique_Successor(cond_bb, peel_bb)) {
+    // Remove the conditional branch at the end of cond_bb.
+    OP *br_op = BB_branch_op(cond_bb);
+    BB_Remove_Op(cond_bb, br_op);
+  }
+  else {
+    Link_Pred_Succ(cond_bb, loop_prolog);
+  }
+
+  LABEL_IDX lab_idx = Gen_Label_For_BB(loop_prolog);
+  TN *lab_tn = Gen_Label_TN(lab_idx, 0);
+
+  OPS ops = OPS_EMPTY;
+  Unlink_Pred_Succ(cond_bb, peel_bb);
+  Exp_OP1(OPC_GOTO, NULL, lab_tn, &ops);
+  BB_Append_Ops(cond_bb, &ops);
+  Change_Succ_Prob(cond_bb, loop_prolog, 1.0);
+
+  Reset_special_stream();
+}
 
 void
 CG_LOOP::Unroll_Specialize_Loop() {
@@ -4062,11 +4113,7 @@ CG_LOOP::Unroll_Specialize_Loop() {
   ANNOTATION *annot = ANNOT_Get(BB_annotations(body), ANNOT_LOOPINFO);
   LOOPINFO *info = ANNOT_loopinfo(annot);
   WN *wn = LOOPINFO_wn(info);
-#ifdef TARG_ST
   TN *trip_count_tn = LOOPINFO_exact_trip_count_tn(info);
-#else
-  TN *trip_count_tn = LOOPINFO_trip_count_tn(info);
-#endif
 
   /* Insert a BB for alignement check before the loop */
 
@@ -4175,7 +4222,32 @@ CG_LOOP::Unroll_Specialize_Loop() {
   }
 }
 
+void
+CG_LOOP::Undo_Specialize_Loop(BB *loop_prolog, BB *loop_epilog) {
 
+  BB *check_align_bb = BB_Unique_Predecessor(loop_prolog);
+  BB *other_bb = BB_Other_Successor(check_align_bb, loop_prolog);
+  OP *br_op = BB_branch_op(check_align_bb);
+  TN *lab_tn = OP_opnd(br_op, OP_find_opnd_use(br_op, OU_target));
+  Is_True(Is_Label_For_BB(TN_label(lab_tn), other_bb),
+	  ("BB:%d should be labelled %s", BB_id(other_bb), ST_name(TN_label(lab_tn))));
+
+  OPS ops = OPS_EMPTY;
+
+  BB_Remove_Op(check_align_bb, br_op);
+  Unlink_Pred_Succ(check_align_bb, loop_prolog);
+  Exp_OP1(OPC_GOTO, NULL, lab_tn, &ops);
+  BB_Append_Ops(check_align_bb, &ops);
+  Change_Succ_Prob(check_align_bb, other_bb, 1.0);
+
+  br_op = BB_branch_op(loop_epilog);
+  if (br_op)
+    BB_Remove_Op(loop_epilog, br_op);
+  Unlink_Pred_Succ(loop_epilog, BB_Unique_Successor(loop_epilog));
+
+  Reset_special_stream();
+}
+#endif
 
 void unroll_rename_backpatches(CG_LOOP_BACKPATCH *bpatches, UINT16 n,
 			       UINT16 ntimes)
@@ -4275,29 +4347,6 @@ void unroll_remove_notations(BB *fully_unrolled_body)
     bp = next;
   }
 }
-
-#ifdef TARG_ST
-static BOOL
-Get_pragma_LoopMod(LOOP_DESCR *loop, int *modulus, int *residue)
-{
-  *modulus = 1;
-  *residue = 0;
-
-  if (!CG_LOOP_ignore_pragmas) {
-    BB *head = LOOP_DESCR_loophead(loop);
-    ANNOTATION *loopmod_ant = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
-    while (loopmod_ant && WN_pragma(ANNOT_pragma(loopmod_ant)) != WN_PRAGMA_LOOPMOD)
-      loopmod_ant = ANNOT_Get(ANNOT_next(loopmod_ant), ANNOT_PRAGMA);
-    if (loopmod_ant) {
-      WN *wn = ANNOT_pragma(loopmod_ant);
-      *modulus = MAX(1, WN_pragma_arg1(wn));
-      *residue = MAX(0, WN_pragma_arg2(wn));
-    }
-  }
-  return (*modulus > 1);
-}
-#endif
-
 
 static void trace_loop_cflow(LOOP_DESCR *loop, const char *prefix)
 {
@@ -5186,15 +5235,7 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
 	}
       }
 
-      ANNOTATION *loopmod_ant = ANNOT_Get(BB_annotations(&replicas[0]), ANNOT_PRAGMA);
-      while (loopmod_ant && WN_pragma(ANNOT_pragma(loopmod_ant)) != WN_PRAGMA_LOOPMOD)
-	loopmod_ant = ANNOT_Get(ANNOT_next(loopmod_ant), ANNOT_PRAGMA);
-      if (loopmod_ant) {
-	WN *wn = ANNOT_pragma(loopmod_ant);
-	Is_True(WN_pragma_arg1(wn) == modulus && WN_pragma_arg2(wn) == residue, ("CG_LOOP: Inconsistent #pragma loopmod"));
-	WN_pragma_arg1(wn) = new_modulus;
-	WN_pragma_arg2(wn) = new_residue;
-      }
+      Set_pragma_LoopMod(loop, new_modulus, new_residue);
     }
 #endif
 
@@ -5737,15 +5778,7 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 	}
       }
 
-      ANNOTATION *loopmod_ant = ANNOT_Get(BB_annotations(unrolled_body), ANNOT_PRAGMA);
-      while (loopmod_ant && WN_pragma(ANNOT_pragma(loopmod_ant)) != WN_PRAGMA_LOOPMOD)
-	loopmod_ant = ANNOT_Get(ANNOT_next(loopmod_ant), ANNOT_PRAGMA);
-      if (loopmod_ant) {
-	WN *wn = ANNOT_pragma(loopmod_ant);
-	Is_True(WN_pragma_arg1(wn) == modulus && WN_pragma_arg2(wn) == residue, ("CG_LOOP: Inconsistent #pragma loopmod"));
-	WN_pragma_arg1(wn) = new_modulus;
-	WN_pragma_arg2(wn) = new_residue;
-      }
+      Set_pragma_LoopMod(loop, new_modulus, new_residue);
     }
 #endif
 
@@ -6084,15 +6117,7 @@ void Unroll_Dowhile_Loop(LOOP_DESCR *loop, UINT32 ntimes)
 	}
       }
 
-      ANNOTATION *loopmod_ant = ANNOT_Get(BB_annotations(&replicas[0]), ANNOT_PRAGMA);
-      while (loopmod_ant && WN_pragma(ANNOT_pragma(loopmod_ant)) != WN_PRAGMA_LOOPMOD)
-	loopmod_ant = ANNOT_Get(ANNOT_next(loopmod_ant), ANNOT_PRAGMA);
-      if (loopmod_ant) {
-	WN *wn = ANNOT_pragma(loopmod_ant);
-	Is_True(WN_pragma_arg1(wn) == modulus && WN_pragma_arg2(wn) == residue, ("CG_LOOP: Inconsistent #pragma loopmod"));
-	WN_pragma_arg1(wn) = new_modulus;
-	WN_pragma_arg2(wn) = new_residue;
-      }
+      Set_pragma_LoopMod(loop, new_modulus, new_residue);
     }
 #endif
 
