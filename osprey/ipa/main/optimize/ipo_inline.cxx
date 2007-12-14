@@ -1742,14 +1742,31 @@ IPO_INLINE::Clone_Callee(BOOL same_file)
 	  FB_FREQ callee_freq = Callee_node ()->Has_frequency () ?
 	      Callee_node()->Get_frequency() : FB_FREQ_UNKNOWN;
 	  FB_FREQ scale (FB_FREQ_ZERO);
+#ifdef TARG_ST
+	  //Sometimes call_freq is > to the frequency of the callee.
+	  //This is due to feedback accumulation algorithm. For
+	  //instance if main.o is linked with file1.o (defining func1)
+	  //in appli1 and with this file2.o (func2) in appli2.o then
+	  //appli1 and appli2 are run.  By accumulating feedback, main
+	  //will be called 2 times, func1 in appli1 is called 1 time
+	  //and func2 in appli2 1 time.  So the call_edge freq between
+	  //main and func1 is 2 whereas func1 is only called once...
+	  FB_FREQ new_callee_freq = callee_freq - call_freq;
+	  if (! callee_freq.Known () || !new_callee_freq.Known()) {
+#else
 	  if (! callee_freq.Known ()) {
+#endif
 	      DevWarn ("Inconsistent freq. count between callsite in %s and"
 		       " callee %s",  Caller_node()->Name (),
 		       Callee_node()->Name ());
 	  } else {
 	      scale = call_freq / callee_freq;
 	      SUMMARY_FEEDBACK* fb = Callee_node ()->Get_feedback ();
-	      fb->Set_frequency_count (callee_freq - call_freq);
+#ifdef TARG_ST
+	      fb->Set_frequency_count (new_callee_freq);
+#else
+             fb->Set_frequency_count (callee_freq - call_freq);
+#endif
 	  }
 	  
 #ifdef _DEBUG_TEST

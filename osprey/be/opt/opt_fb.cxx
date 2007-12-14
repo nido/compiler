@@ -795,32 +795,6 @@ OPT_FEEDBACK::OPT_FEEDBACK( CFG *cfg, MEM_POOL *pool )
     } else {
       OPERATOR opr = WN_operator( wn_last );
 
-#ifdef KEY
-      //TB: ICALL node
-      node.orig_wn = NULL;
-
-      if( opr == OPR_ICALL ){
-	node.orig_wn = wn_last;
-
-      } else if( !cfg->Calls_break() ){
-	STMT_ITER stmt_iter;
-	WN* wn = NULL;
-	int num_icalls = 0;
-	FOR_ALL_ELEM ( wn, stmt_iter, Init( bb->Firststmt(), bb->Laststmt() ) ) {
-	  if( WN_operator( wn ) == OPR_ICALL ){
-	    node.orig_wn = wn;
-	    num_icalls++;
-	  }
-	}
-
-	if( num_icalls > 1 ){
-	  //FmtAssert( false, ("more than one icall") );
-	  DevWarn( "OPT_FEEDBACK::OPT_FEEDBACK(ICALL) more than one icall in a bb" );
-	  node.orig_wn = NULL;
-	}
-      }
-#endif
-
       switch ( opr ) {
 
       case OPR_PRAGMA:
@@ -1018,7 +992,14 @@ OPT_FEEDBACK::~OPT_FEEDBACK()
 // ====================================================================
 
 void
+#ifdef TARG_ST
+//TB: orig_wn is the original WN (before WOPT cfg construction).
+//The WN is used to retrieve feedback info that are not carried by
+//the OPT FEEDBACK CFG (icall specific info).
+OPT_FEEDBACK::Emit_feedback( WN *wn, BB_NODE *bb, WN *orig_wn ) const
+#else
 OPT_FEEDBACK::Emit_feedback( WN *wn, BB_NODE *bb ) const
+#endif
 {
   IDTYPE nx = bb->Id();
   const OPT_FB_NODE& node = _fb_opt_nodes[nx];
@@ -1182,11 +1163,12 @@ OPT_FEEDBACK::Emit_feedback( WN *wn, BB_NODE *bb ) const
     // Cur_PU_Feedback->Annot(wn, FB_EDGE_CALL_OUTGOING, node.freq_total_in );
     // Cur_PU_Feedback->Annot(wn, FB_EDGE_CALL_INCOMING, node.freq_total_out);
     }
-#ifdef KEY
-    //TB: ICALL nodes
-    if( opr == OPR_ICALL &&
-	node.orig_wn != NULL ){
-      FB_Info_Icall fb_info_icall = Cur_PU_Feedback->Query_icall(node.orig_wn);
+#ifdef TARG_ST
+    //TB: ICALL nodes: get feedback info from original wn
+    if( opr == OPR_ICALL ){
+      FmtAssert( orig_wn != NULL,
+		 ("WOPT Feedback emitter: unknown original whirl node to retrieve feedback info") );
+      FB_Info_Icall fb_info_icall = Cur_PU_Feedback->Query_icall(orig_wn);
       Cur_PU_Feedback->Annot_icall( wn, fb_info_icall );
 
       if( !fb_info_icall.Is_uninit() ){
@@ -1195,24 +1177,30 @@ OPT_FEEDBACK::Emit_feedback( WN *wn, BB_NODE *bb ) const
 	//TB: fix: when orig_wn has been split into 2 nodes, icall fb
 	//info for the wn is not the same has for the original one.
 	FB_Info_Call fb_info_call = Cur_PU_Feedback->Query_call(wn);
-	if (fb_info_icall.tnv._exec_counter != fb_info_call.freq_entry._value){
+	if (!fb_info_call.freq_entry.Uninitialized() && !fb_info_call.freq_exit.Uninitialized() && 
+	    fb_info_call.freq_entry._value == fb_info_call.freq_exit._value && 
+	    fb_info_icall.tnv._exec_counter != 0 && fb_info_icall.tnv._exec_counter != fb_info_call.freq_entry._value){
 	  //  Re-emit fb_info_icall with adequate values:
 	  // rescale fb_info_icall with the scale factor got with fb_info_call
 	  float scale = (float)fb_info_call.freq_entry._value / (float)fb_info_icall.tnv._exec_counter;
-	  UINT64 total = 0;
+	  float total = 0.0;
 	  int i;
 	  for(i = 0; i < FB_TNV_SIZE; i ++ ){
 	    if( fb_info_icall.tnv._values[i] == 0 )
 	      break;
 	    fb_info_icall.tnv._counters[i] =
-	      (UINT64)(fb_info_icall.tnv._counters[i] * scale);
+	      (fb_info_icall.tnv._counters[i] * scale);
 	    total += fb_info_icall.tnv._counters[i];
 	  }
-	  fb_info_icall.tnv._exec_counter = (UINT64)(fb_info_icall.tnv._exec_counter * scale);
+	  fb_info_icall.tnv._exec_counter = (fb_info_icall.tnv._exec_counter * scale);
 // 	  FmtAssert( total  == fb_info_icall.tnv._exec_counter,
 // 		     ("icall total exec counters don't match sum of sub counters") );
 	  if (total != fb_info_icall.tnv._exec_counter)
 	    fb_info_icall.tnv._counters[0] = fb_info_icall.tnv._counters[0] + (fb_info_icall.tnv._exec_counter - total); 
+	} else if (fb_info_icall.tnv._exec_counter == 0.0 ) {
+	  FB_Info_Call new_fb_info_call(FB_FREQ(0.0));
+	  Cur_PU_Feedback->Annot_call( wn, new_fb_info_call );
+	  fb_info_call = Cur_PU_Feedback->Query_call(wn);
 	}
 	Cur_PU_Feedback->Annot_icall( wn, fb_info_icall );
 #ifdef TARG_ST

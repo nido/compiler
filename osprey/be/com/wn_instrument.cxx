@@ -149,9 +149,6 @@ static WN* pu_wn = NULL;
 #endif
 
 
-#ifdef TARG_ST
-#define TNV_N 10
-#endif
 class WN_INSTRUMENT_WALKER {
 private:
 
@@ -1971,20 +1968,27 @@ WN_INSTRUMENT_WALKER::Merge_Icall_Feedback()
 		return;
 		}
 
-	UINT64 * values = TYPE_MEM_POOL_ALLOC_N(UINT64, _mempool, TNV_N*fb_handle_num);
-	UINT64 * counters = TYPE_MEM_POOL_ALLOC_N(UINT64, _mempool, TNV_N*fb_handle_num);
+	UINT64 * values = TYPE_MEM_POOL_ALLOC_N(UINT64, _mempool, FB_TNV_SIZE*fb_handle_num);
+	float * counters = TYPE_MEM_POOL_ALLOC_N(float, _mempool, FB_TNV_SIZE*fb_handle_num);
 	INT i, j, k, m, n;
 	for ( i=0; i<_fb_count_icall; i++ )
 	{
-		memset(values, 0, TNV_N*fb_handle_num*sizeof(UINT64));
-		memset(counters, 0, TNV_N*fb_handle_num*sizeof(UINT64));
+		memset(values, 0, FB_TNV_SIZE*fb_handle_num*sizeof(UINT64));
+#ifdef TARG_ST
+		// TB: Now counters are float
+		for( int ii = 0; ii < FB_TNV_SIZE*fb_handle_num; ii ++ ){
+		  counters[ii] = 0.0;
+		}
+#else
+		memset(counters, 0, FB_TNV_SIZE*fb_handle_num*sizeof(UINT64));
+#endif
 		INT32 cur_id = the_largest_fb->Icall_Profile_Table[i].tnv._id;
 		if (cur_id != i)
 		{
 			Is_True( cur_id == 0, ("cur_id should either be 0(means not executed) or i"));
 			cur_id = i;
 		}
-		UINT64 cur_exec_counter = 0;
+		float cur_exec_counter = 0.0;
 		INT cur_flag = the_largest_fb->Icall_Profile_Table[i].tnv._flag;
 		for (pu_prof_itr = _fb_handle.begin(); pu_prof_itr != _fb_handle.end (); ++pu_prof_itr)
 		{
@@ -2000,13 +2004,13 @@ WN_INSTRUMENT_WALKER::Merge_Icall_Feedback()
 			}	
 			cur_exec_counter += fb_info_value.tnv._exec_counter;
 			Is_True(fb_info_value.tnv._flag == cur_flag,("_flag not consitent between feedback files"));
-			for ( j=0; j<TNV_N; j++ )
+			for ( j=0; j<FB_TNV_SIZE; j++ )
 			{
 				if ( fb_info_value.tnv._counters[j] == 0 )
 					break;
-				for ( m=0;m<TNV_N*fb_handle_num;m++)
+				for ( m=0;m<FB_TNV_SIZE*fb_handle_num;m++)
 				{
-					if (counters[m] == 0)
+					if (counters[m] == 0.0)
 					{
 						values[m] = fb_info_value.tnv._values[j];
 						counters[m] += fb_info_value.tnv._counters[j];
@@ -2020,12 +2024,12 @@ WN_INSTRUMENT_WALKER::Merge_Icall_Feedback()
 				}
 			}
 		}
-		for ( m=0; m<TNV_N*fb_handle_num; m++ )
-			for ( n=m+1; n<TNV_N*fb_handle_num; n++)
+		for ( m=0; m<FB_TNV_SIZE*fb_handle_num; m++ )
+			for ( n=m+1; n<FB_TNV_SIZE*fb_handle_num; n++)
 			{
 				if (counters[m] < counters[n])
 				{
-					INT tmp;
+					float tmp;
 					tmp = counters[m];
 					counters[m] = counters[n];
 					counters[n] = tmp;
@@ -2034,7 +2038,7 @@ WN_INSTRUMENT_WALKER::Merge_Icall_Feedback()
 		fb_merged_value_vector[i].tnv._id = cur_id;
 		fb_merged_value_vector[i].tnv._exec_counter = cur_exec_counter;
 		fb_merged_value_vector[i].tnv._flag = cur_flag;
-		for ( m=0; m<TNV_N; m++ )
+		for ( m=0; m<FB_TNV_SIZE; m++ )
 		{
 			fb_merged_value_vector[i].tnv._values[m] = values[m];
 			fb_merged_value_vector[i].tnv._counters[m] = counters[m];

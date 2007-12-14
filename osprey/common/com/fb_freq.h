@@ -207,6 +207,15 @@ public:
     return FB_FREQ_TYPE_BETTER( _type, freq._type );
   }
 
+#ifdef TARG_ST
+  //TB: Test in value is within [min,max] range
+  bool InRange( float min, float max ) const {
+    if (Known() &&
+	Value() >= min - FB_FREQ_EPSILON && Value() <= max + FB_FREQ_EPSILON)
+      return true;
+    return false;
+  }
+#endif
   // Operators
 
   FB_FREQ operator+= ( const FB_FREQ freq ) {

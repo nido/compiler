@@ -248,6 +248,10 @@ BE_EXPORTED extern UINT32 IPA_Max_Clone_Bloat;
 /* Max. "size" of each output file */
 BE_EXPORTED extern UINT32 IPA_Max_Output_File_Size;
 
+#ifdef TARG_ST
+BE_EXPORTED extern UINT32 IPA_Icall_Opt_Freq;
+#endif
+
 /* percentage change of the max. output file size */
 BE_EXPORTED extern INT32 IPA_Output_File_Size;
 

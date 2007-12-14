@@ -1645,9 +1645,15 @@ SUMMARIZE<program>::Process_procedure (WN* w)
     FmtAssert( icall_cnt < sizeof(icall_site) / sizeof(icall_site[0]),
 	       ("icall array is too small.") );
     for( int i = 0; i < icall_cnt; i++ ){
+#ifdef TARG_ST
+      //TB: fix: New_callsite might realloc the memory of _icallsite
+      //array. So first realloc and then get the new pointer address
+      SUMMARY_CALLSITE* callsite = New_callsite ();
+      SUMMARY_CALLSITE* icall_info = Get_callsite (icall_site[i]);
+#else
       SUMMARY_CALLSITE* icall_info = Get_callsite (icall_site[i]);
       SUMMARY_CALLSITE* callsite = New_callsite ();
-
+#endif
       callsite->Set_callsite_id( proc->Get_callsite_count()  );
       callsite->Set_icall_slot();
 

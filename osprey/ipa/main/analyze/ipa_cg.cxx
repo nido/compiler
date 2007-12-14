@@ -1020,7 +1020,7 @@ static BOOL Is_Return_Store_Stmt( WN *wn )
 
 static bool Check_Heuristic( IPA_NODE* caller,
 			     IPA_NODE* callee,
-			     INT64     edge_freq,
+			     float     edge_freq,
 			     IPA_CALL_GRAPH* cg )
 {
   /* Check whether inlining <callee> is allowed.
@@ -1172,8 +1172,12 @@ static void Convert_Icall( IPA_CALL_GRAPH* cg, IPA_NODE* node )
       break;
     }
   }
-
-  const int freq_threshold = 200;
+#ifdef TARG_ST
+  //TB: add a specific option
+  const int freq_threshold = IPA_Icall_Opt_Freq; 
+#else
+  const int freq_threshold = 200; 
+#endif
   const int orig_call_count = node_summary->Get_call_count();
 
   for( WN_ITER* wni = WN_WALK_SCFIter(node->Whirl_Tree(FALSE)); 
@@ -1209,18 +1213,18 @@ static void Convert_Icall( IPA_CALL_GRAPH* cg, IPA_NODE* node )
       */
 
       if( info_icall.tnv._exec_counter < info_call.freq_entry.Value() ){
-	const UINT64 gap = (UINT64)info_call.freq_entry.Value() -
+	const float gap = info_call.freq_entry.Value() -
 	  info_icall.tnv._exec_counter;
 	info_icall.tnv._exec_counter += gap;
 	info_icall.tnv._counters[0] += gap;
 	Cur_PU_Feedback->Annot_icall( wn, info_icall );
       }
 
-      const UINT64 exec_counter   = info_icall.tnv._exec_counter;
-      const UINT64 callee_counter = info_icall.tnv._counters[0];
+      const float exec_counter   = info_icall.tnv._exec_counter;
+      const float callee_counter = info_icall.tnv._counters[0];
       const UINT64 callee_addr    = info_icall.tnv._values[0];
 
-      if( exec_counter == 0 || callee_counter == 0 ){
+      if( exec_counter == 0.0 || callee_counter == 0.0 ){
 	continue;
       }
 
@@ -1264,7 +1268,7 @@ static void Convert_Icall( IPA_CALL_GRAPH* cg, IPA_NODE* node )
 
       if( Trace_IPA || Trace_Perf ){
 	fprintf( TFile,
-		 "map addr 0x%llx to func %s (freq:%llu/%llu)\n",
+		 "map addr 0x%llx to func %s (freq:%f/%f)\n",
 		 callee_addr, callee_name, callee_counter, exec_counter);
       }
 
@@ -1312,8 +1316,17 @@ static void Convert_Icall( IPA_CALL_GRAPH* cg, IPA_NODE* node )
 
       WN* if_then = WN_Create(WN_opcode(wn),WN_kid_count(wn)-1);
       WN* if_then_block = WN_CreateBlock();
+#ifdef TARG_ST
+      //Add a comment in the whirl.
+      //Allocate enough memory
+      int size = 80 + strlen(callee_name) + strlen(node->Name()); //computation of upper bound for buffer length including trailing '\0'
+      char *str = (char *)alloca(size); // allocate upperbound string length + trailing '\0'
+      snprintf(str, size, "feedback:icall to call opt %s into %s ((freq:%.4e/%.4e))\n",
+	      callee_name, node->Name(), callee_counter, exec_counter); // ensure that no more than size bytes are written
+      WN *comment = WN_CreateComment(str);
+      WN_INSERT_BlockFirst(if_then_block, comment);
+#endif
       WN_set_operator( if_then, OPR_CALL );
-
       edge->Set_Whirl_Node( if_then );
 
       for( int i = 0; i < WN_kid_count(if_then); i++ ){
@@ -1322,6 +1335,7 @@ static void Convert_Icall( IPA_CALL_GRAPH* cg, IPA_NODE* node )
 
       WN_st_idx(if_then) = ST_st_idx(st_callee);
 
+      //Set parent block for the new call
       WN_Set_Parent( if_then, if_then_block,
 		     node->Parent_Map(), node->Map_Table() );
       WN_INSERT_BlockLast( if_then_block, if_then );
@@ -1331,6 +1345,16 @@ static void Convert_Icall( IPA_CALL_GRAPH* cg, IPA_NODE* node )
       WN* if_else_block = WN_CreateBlock();
       WN_INSERT_BlockLast(if_else_block,if_else);
 
+#ifdef TARG_ST
+      // TB: Set parent block for the icall
+      //Fix a bug: You have to reset the parent of the icall
+      //otherwise inlining is doing wrong things if the parent is not
+      //the good one
+      WN_Set_Parent( if_else, if_else_block,
+		     node->Parent_Map(), node->Map_Table() );
+      //Recursively set parent for all nodes
+      WN_Parentize( if_else, node->Parent_Map(), node->Map_Table() );
+#endif
       for( WN* stmt = WN_next(wn);
 	   stmt != NULL && Is_Return_Store_Stmt( stmt ); ){
 	WN_INSERT_BlockLast( if_then_block, WN_COPY_Tree(stmt) );
@@ -1346,6 +1370,12 @@ static void Convert_Icall( IPA_CALL_GRAPH* cg, IPA_NODE* node )
       WN* wn_if = WN_CreateIf( test, if_then_block, if_else_block );
       Cur_PU_Feedback->FB_lower_icall( wn, if_else, if_then, wn_if );
 
+#ifdef TARG_ST
+      //Improve line numbering
+      WN_Set_Linenum (if_then, WN_Get_Linenum (wn));
+      WN_Set_Linenum (if_else, WN_Get_Linenum (wn));
+      WN_Set_Linenum (wn_if, WN_Get_Linenum (wn));
+#endif
       // Delete the map info. We delete it from <Cur_PU_Feedback>
       Cur_PU_Feedback->Delete(wn);
 
@@ -1430,7 +1460,12 @@ static void Convert_Icall( IPA_CALL_GRAPH* cg, IPA_NODE* node )
     const INT32 callee_sym_index = callsite_array[j].Get_symbol_index();
     ST* callee_st = callee_sym_index == 0
       ? aux_st_map[j] : ST_ptr(symbol_array[callee_sym_index].St_idx());
-    
+
+#ifdef TARG_ST
+    //TB: Sometimes the callee_st is NULL because callee_sym_index ==
+    //0 but callee_sym_index == 0 is a good index in symbol_array
+    callee_st = (callee_st != NULL) ? callee_st : ST_ptr(symbol_array[callee_sym_index].St_idx());
+#endif
     FmtAssert( callee_st != NULL, ("Unknown callee") );
     
     // if it is a weak symbol, find the corresponding strong

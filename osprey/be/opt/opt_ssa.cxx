@@ -1194,7 +1194,13 @@ void SSA::Value_number(CODEMAP *htable, OPT_STAB *opt_stab, BB_NODE *bb,
     INT32 linenum = Srcpos_To_Line(stmt->Linenum());	// for debugging
 
     // should no longer need the Wn
-    stmt->Set_wn(NULL);
+#ifdef TARG_ST
+    // [TB]: For ICALL nodes we need to keep orig_wn for a longer time
+    // (until feedback emition). This WN is used to retrive icall
+    // feedback specific info when reemitting the whirl
+    if (WN_operator(wn) != OPR_ICALL)
+#endif
+      stmt->Set_wn(NULL);
 
     BOOL set_dont_prop = TRUE;	// control whether to set any dont_prop flag
     if (WN_operator(wn) == OPR_CALL && WN_Call_Does_Mem_Free(wn)) {

@@ -90,7 +90,10 @@ const float DEFAULT_MIN_PROBABILITY = 0.20;
 						SAVE_SPACE option  
 					      */
 #define DEFAULT_OUTPUT_FILE_SIZE	100000
-
+#ifdef TARG_ST
+//Threshold for icall to call opt
+#define DEFAULT_ICALL_OPT_FREQ          200
+#endif
 #define DEFAULT_MAX_DENSITY		11 // INLINING_TUNINING
 
 /* #define DEFAULT_GSPACE	65535	-- from config.c */
@@ -267,7 +270,9 @@ UINT32 IPA_Max_Clone_Bloat = DEFAULT_CLONE_BLOAT_FACTOR;
 
 /* Max. "size" of each output file */
 UINT32 IPA_Max_Output_File_Size = DEFAULT_OUTPUT_FILE_SIZE;
-
+#ifdef TARG_ST
+UINT32 IPA_Icall_Opt_Freq = DEFAULT_ICALL_OPT_FREQ;
+#endif
 /* percentage change of the max. output file size */
 INT32 IPA_Output_File_Size = 0;
 
@@ -528,6 +533,11 @@ static OPTION_DESC Options_IPA[] = {
     { OVK_BOOL, OV_INTERNAL,	FALSE, "icall_opt",	"",
 	  0, 0, 0,		&IPA_Enable_Icall_Opt,	NULL,
 	  "Enable conversion of icall to call"},
+#ifdef TARG_ST
+    { OVK_INT32, OV_INTERNAL,	FALSE, "freq_icall_opt", "",
+      DEFAULT_ICALL_OPT_FREQ, 0, INT32_MAX,	&IPA_Icall_Opt_Freq, NULL,
+          "Minimun number of time an indirect call is executed to be candidate for icall to call opt" },
+#endif
     { OVK_BOOL, OV_INTERNAL,	FALSE, "branch",	"",
 	  0, 0, 0,		&IPA_Enable_Branch_Heuristic,	NULL,
 	  "Enable use of branch probabilities for inlining"},

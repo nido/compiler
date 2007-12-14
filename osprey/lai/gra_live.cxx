@@ -872,10 +872,37 @@ Detect_Multiply_Defined_GTNs (GTN_SET *multiple_defined_set, MEM_POOL *pool)
   TN_MAP op_for_tn = TN_MAP_Create ();  // used for detecting GTNs.
   BB *bb;
 
+
+#ifdef TARG_ST
+  OP virtual_defop;
+#endif
+
   for (bb= REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
     OP *op;
     INT i;
-    FOR_ALL_BB_OPs_FWD (bb, op) {
+#ifdef TARG_ST
+    // FdF 20071126: Fix to prevent Rename_TNs_For_BB from removing
+    // the global property on a TN that is used before any definition,
+    // and later defined only once and used locally.
+    if (BB_entry(bb)) {
+      // Look for live-in TNs, set multiple_defined_set for
+      // these. This adds a virtual definition for virtual TNs that
+      // are used before being defined.
+      for (TN *tn = GTN_SET_Choose(BB_live_in(bb));
+       tn != GTN_SET_CHOOSE_FAILURE;
+       tn = GTN_SET_Choose_Next(BB_live_in(bb), tn)) {
+    if (!TN_is_dedicated(tn)) {
+      OP *op_tn = (OP *) TN_MAP_Get (op_for_tn, tn);
+      if (op_tn && op_tn != &virtual_defop) {
+        multiple_defined_set = GTN_SET_Union1D (multiple_defined_set, tn, pool);
+      } else {
+        TN_MAP_Set (op_for_tn, tn, &virtual_defop);
+      }
+    }
+      }
+    }
+#endif
+     FOR_ALL_BB_OPs_FWD (bb, op) {
       for (i = 0; i < OP_results(op); i++) {
         TN *tn = OP_result(op, i);
 

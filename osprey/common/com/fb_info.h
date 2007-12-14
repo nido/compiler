@@ -426,13 +426,20 @@ struct FB_Info_Icall{
 	    tnv._id = lib_tnv._id; 
 	    tnv._flag = lib_tnv._flag; 
 	    tnv._address = lib_tnv._address; 
-	    tnv._exec_counter = lib_tnv._exec_counter; 
+	    tnv._exec_counter = (float)lib_tnv._exec_counter; 
 	    tnv._clear_counter = lib_tnv._clear_counter;
 	    tnv._sample_counter = lib_tnv._sample_counter; 
 	    tnv._stride_steps = lib_tnv._stride_steps;
 	    tnv._zero_std_counter = lib_tnv._zero_std_counter;
 	    memcpy(tnv._values, lib_tnv._values, sizeof(tnv._values)); 
+#ifdef TARG_ST
+  // TB: Now counters are float
+	    for( int i = 0; i < FB_TNV_SIZE; i ++ ){
+	      tnv._counters[i] = (float)lib_tnv._counters[i];
+	    }	    
+#else
 	    memcpy(tnv._counters, lib_tnv._counters, sizeof(tnv._counters)); 
+#endif
 	  }
 #endif
 	  BOOL Is_uninit() const
@@ -547,13 +554,20 @@ struct FB_Info_Stride{
     tnv._id = lib_tnv._id; 
     tnv._flag = lib_tnv._flag; 
     tnv._address = lib_tnv._address; 
-    tnv._exec_counter = lib_tnv._exec_counter; 
+    tnv._exec_counter = (float)lib_tnv._exec_counter; 
     tnv._clear_counter = lib_tnv._clear_counter;
     tnv._sample_counter = lib_tnv._sample_counter; 
     tnv._stride_steps = lib_tnv._stride_steps;
     tnv._zero_std_counter = lib_tnv._zero_std_counter;
     memcpy(tnv._values, lib_tnv._values, sizeof(tnv._values)); 
+#ifdef TARG_ST
+  // TB: Now counters are float
+    for( int i = 0; i < FB_TNV_SIZE; i ++ ){
+      tnv._counters[i] = (float)lib_tnv._counters[i];
+    }	    
+#else
     memcpy(tnv._counters, lib_tnv._counters, sizeof(tnv._counters)); 
+#endif
   }
 #endif
 };

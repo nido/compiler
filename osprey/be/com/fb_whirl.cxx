@@ -1811,7 +1811,8 @@ FEEDBACK::FB_lower_icall( WN *wn_icall, WN *wn_new_icall, WN * wn_new_call, WN *
 
 #ifdef KEY
   FB_Info_Icall info_new_icall = info_icall;
-  const UINT64 taken = (UINT64)freq_taken.Value();
+  //TB: move to float
+  const float taken = freq_taken.Value();
 
   info_new_icall.tnv._exec_counter -= taken;
   info_new_icall.tnv._counters[0]  -= taken;
@@ -2277,10 +2278,16 @@ FEEDBACK::FB_set_unknown( WN *wn )
 void
 FEEDBACK::FB_scale_node( WN *wn, FB_FREQ freq_scale )
 {
+#ifdef TARG_ST
+  //TB: test in range [0.0 - epsilon, 1.0 + epsilon] 
+  Is_True( freq_scale.InRange(0.0, 1.0),
+	   ( "FEEDBACK::FB_scale: freq_scale == %f",
+	     freq_scale.Value() ) );
+#else
   Is_True( freq_scale.Known() &&
 	   freq_scale.Value() >= 0.0 && freq_scale.Value() <= 1.0,
 	   ( "FEEDBACK::FB_scale: freq_scale == %f", freq_scale.Value() ) );
-
+#endif
   switch( WN_operator( wn ) ) {
 
   case OPR_PRAGMA:
@@ -2339,13 +2346,13 @@ FEEDBACK::FB_scale_node( WN *wn, FB_FREQ freq_scale )
 	FB_Info_Icall fb_icall_info = Query_icall( wn );
 	const float scale = freq_scale.Value();
 	fb_icall_info.tnv._exec_counter =
-	  (UINT64)(fb_icall_info.tnv._exec_counter * scale);
+	  (fb_icall_info.tnv._exec_counter * scale);
 
 	for( int i = 0; i < FB_TNV_SIZE; i ++ ){
 	  if( fb_icall_info.tnv._values[i] == 0 )
 	    break;
 	  fb_icall_info.tnv._counters[i] =
-	    (UINT64)(fb_icall_info.tnv._counters[i] * scale);
+	    (fb_icall_info.tnv._counters[i] * scale);
 	}
 	
 	Annot_icall( wn, fb_icall_info );
@@ -2664,10 +2671,16 @@ FEEDBACK::FB_recombine( WN *wn_origl, WN *wn_extra )
 void
 FEEDBACK::FB_clone_node( WN *wn_origl, WN *wn_clone, FB_FREQ freq_scale )
 {
+#ifdef TARG_ST
+  //TB: test in range [0.0 - epsilon, 1.0 + epsilon] 
+  Is_True( freq_scale.InRange(0.0, 1.0),
+	   ( "FEEDBACK::FB_clone_node: freq_scale == %f",
+	     freq_scale.Value() ) );
+#else
   Is_True( freq_scale.Known() &&
 	   freq_scale.Value() >= 0.0 && freq_scale.Value() <= 1.0,
 	   ( "FEEDBACK::FB_scale: freq_scale == %f", freq_scale.Value() ) );
-
+#endif
   switch( WN_operator( wn_origl ) ) {
 
   case OPR_PRAGMA:
@@ -2748,18 +2761,18 @@ FEEDBACK::FB_clone_node( WN *wn_origl, WN *wn_clone, FB_FREQ freq_scale )
 	FB_Info_Icall fb_info_clone = fb_info_origl;
 
 	fb_info_clone.tnv._exec_counter =
-	  (UINT64)(fb_info_origl.tnv._exec_counter * scale);
+	  (fb_info_origl.tnv._exec_counter * scale);
 	fb_info_origl.tnv._exec_counter -= fb_info_clone.tnv._exec_counter;
 
 	for( int i = 0; i < FB_TNV_SIZE; i ++ ){
 	  if( fb_info_origl.tnv._values[i] == 0 )
 	    break;
 	  fb_info_clone.tnv._counters[i] =
-	    (UINT64)(fb_info_origl.tnv._counters[i] * scale);
+	    (fb_info_origl.tnv._counters[i] * scale);
 	  if( fb_info_origl.tnv._counters[i] > fb_info_clone.tnv._counters[i] )
 	    fb_info_origl.tnv._counters[i] -= fb_info_clone.tnv._counters[i];
 	  else
-	    fb_info_origl.tnv._counters[i] = 0;
+	    fb_info_origl.tnv._counters[i] = 0.0;
 	}
 
 	Annot_icall( wn_origl, fb_info_origl );
@@ -3049,11 +3062,17 @@ FB_IPA_Clone_node( FEEDBACK *feedback_origl, FEEDBACK *feedback_clone,
 		   WN             *wn_origl, WN             *wn_clone,
 		   FB_FREQ freq_scale )
 {
+#ifdef TARG_ST
+  //TB: test in range [0.0 - epsilon, 1.0 + epsilon] 
+  Is_True( freq_scale.InRange(0.0, 1.0),
+	   ( "FEEDBACK::FB_IPA_Clone_node: freq_scale == %f",
+	     freq_scale.Value() ) );
+#else
   Is_True( freq_scale.Known() &&
 	   freq_scale.Value() >= 0.0 && freq_scale.Value() <= 1.0,
 	   ( "FEEDBACK::FB_IPA_Clone_node: freq_scale == %f",
 	     freq_scale.Value() ) );
-
+#endif
   Is_True( feedback_origl != NULL,
 	   ( "FEEDBACK::FB_IPA_Clone_node: feedback_origl == NULL" ) );
 
@@ -3128,6 +3147,15 @@ FB_IPA_Clone_node( FEEDBACK *feedback_origl, FEEDBACK *feedback_clone,
       FB_Info_Call fb_info_origl = feedback_origl->Query_call( wn_origl );
       FB_Info_Call fb_info_clone( fb_info_origl.freq_entry * freq_scale,
 				  fb_info_origl.freq_exit  * freq_scale );
+#ifdef TARG_ST
+      if( WN_operator(wn_origl) == OPR_ICALL ){
+	FB_Info_Icall fbi_info_origl = feedback_origl->Query_icall( wn_origl );
+	//TB: Do some checks: 	  
+	FmtAssert( fabs((float)fbi_info_origl.tnv._exec_counter - (float)fb_info_origl.freq_entry._value) < 1.0 ,
+		   ("icall and call exec counters don't match1") );
+	
+      } 
+#endif
       fb_info_origl.freq_entry -= fb_info_clone.freq_entry;
       fb_info_origl.freq_exit  -= fb_info_clone.freq_exit;
       feedback_origl->Annot_call( wn_origl, fb_info_origl );
@@ -3135,27 +3163,34 @@ FB_IPA_Clone_node( FEEDBACK *feedback_origl, FEEDBACK *feedback_clone,
 
 #ifdef KEY
       if( WN_operator(wn_origl) == OPR_ICALL ){
-	FB_Info_Icall fb_info_origl = feedback_origl->Query_icall( wn_origl );
+	FB_Info_Icall fbi_info_origl = feedback_origl->Query_icall( wn_origl );
 	const float scale = freq_scale.Value();
-	FB_Info_Icall fb_info_clone = fb_info_origl;
+	FB_Info_Icall fbi_info_clone = fbi_info_origl;
 
-	fb_info_clone.tnv._exec_counter =
-	  (UINT64)(fb_info_origl.tnv._exec_counter * scale);
-	fb_info_origl.tnv._exec_counter -= fb_info_clone.tnv._exec_counter;
+	fbi_info_clone.tnv._exec_counter =
+	  (fbi_info_origl.tnv._exec_counter * scale);
+	fbi_info_origl.tnv._exec_counter -= fbi_info_clone.tnv._exec_counter;
 
 	for( int i = 0; i < FB_TNV_SIZE; i ++ ){
-	  if( fb_info_origl.tnv._values[i] == 0 )
+	  if( fbi_info_origl.tnv._values[i] == 0 )
 	    break;
-	  fb_info_clone.tnv._counters[i] =
-	    (UINT64)(fb_info_origl.tnv._counters[i] * scale);
-	  if( fb_info_origl.tnv._counters[i] > fb_info_clone.tnv._counters[i] )
-	    fb_info_origl.tnv._counters[i] -= fb_info_clone.tnv._counters[i];
+	  fbi_info_clone.tnv._counters[i] =
+	    (fbi_info_origl.tnv._counters[i] * scale);
+	  if( fbi_info_origl.tnv._counters[i] > fbi_info_clone.tnv._counters[i] )
+	    fbi_info_origl.tnv._counters[i] -= fbi_info_clone.tnv._counters[i];
 	  else
-	    fb_info_origl.tnv._counters[i] = 0;
+	    fbi_info_origl.tnv._counters[i] = 0.0;
 	}
 
-	feedback_origl->Annot_icall( wn_origl, fb_info_origl );
-	feedback_clone->Annot_icall( wn_clone, fb_info_clone );
+	//TB: Do some checks: 	  
+	FmtAssert( fabs((float)fbi_info_clone.tnv._exec_counter - (float)fb_info_clone.freq_entry._value) < 1.0 ,
+		   ("icall and call exec counters don't match for clone") );
+	FmtAssert( fabs((float)fbi_info_origl.tnv._exec_counter - (float)fb_info_origl.freq_entry._value) < 1.0 ,
+		   ("icall and call exec counters don't match for original") );
+	FmtAssert( fabs((float)fbi_info_clone.tnv._exec_counter + (float)fbi_info_origl.tnv._exec_counter - (float)fb_info_clone.freq_entry._value - (float)fb_info_origl.freq_entry._value) < 0.1 ,
+		   ("icall and call exec counters don't match for clone + original") );
+	feedback_origl->Annot_icall( wn_origl, fbi_info_origl );
+	feedback_clone->Annot_icall( wn_clone, fbi_info_clone );
       }
 #endif // KEY
     }
@@ -3229,11 +3264,17 @@ FB_IPA_Clone( FEEDBACK *feedback_origl, FEEDBACK *feedback_clone,
 	      WN             *wn_origl, WN             *wn_clone,
 	      FB_FREQ freq_scale )
 {
+#ifdef TARG_ST
+  //TB: test in range [0.0 - epsilon, 1.0 + epsilon] 
+  Is_True( freq_scale.InRange(0.0, 1.0),
+	   ( "FEEDBACK::FB_IPA_Clone: freq_scale == %f",
+	     freq_scale.Value() ) );
+#else
   Is_True( freq_scale.Known() &&
 	   freq_scale.Value() >= 0.0 && freq_scale.Value() <= 1.0,
 	   ( "FEEDBACK::FB_IPA_Clone: freq_scale == %f",
 	     freq_scale.Value() ) );
-
+#endif
   if ( feedback_origl == NULL ) {
 #ifdef KEY
     if ( freq_scale.Exact() && freq_scale.Zero() ){

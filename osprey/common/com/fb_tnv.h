@@ -41,18 +41,23 @@ struct FB_TNV{
   INT32 _flag; //0 for integer type, 1 for float type.
   //Note: for "float" type, we just put it here as an "integer". Because they have same size.
   UINT64 _address; //record previous address
+#ifdef TARG_ST
+  // TB: Now counters are float
+  float _exec_counter; // how many times does this instruction executed.
+#else
   UINT64 _exec_counter; // how many times does this instruction executed.
+#endif
   UINT64 _clear_counter;
   UINT64 _sample_counter; //do stride profile sample 
   UINT64 _stride_steps;
   UINT64 _zero_std_counter;
   UINT64 _values[FB_TNV_SIZE]; //top 10 values. 
-  UINT64 _counters[FB_TNV_SIZE]; //counters for top 10 values.
+  float _counters[FB_TNV_SIZE]; //counters for top 10 values.
 
   FB_TNV():_address(0),_sample_counter(0),_zero_std_counter(0),_stride_steps(0){}
     
   void Print( FILE *fp ) const {
-    fprintf(fp, "id(%u), exec_counter(%llu), flag(%d), zero_std_counter(%llu), (values(counters)=( %lld(%llu), %lld(%llu), %lld(%llu), %lld(%llu), %lld(%llu), %lld(%llu), %lld(%llu), %lld(%llu), %lld(%llu), %lld(%llu) ) )\n",
+    fprintf(fp, "id(%u), exec_counter(%e), flag(%d), zero_std_counter(%llu), (values(counters)=( %lld(%e), %lld(%e), %lld(%e), %lld(%e), %lld(%e), %lld(%e), %lld(%e), %lld(%e), %lld(%e), %lld(%e) ) )\n",
 	    _id, _exec_counter, _flag, _zero_std_counter,
 	    _values[0], _counters[0] , _values[1], _counters[1], 
 	    _values[2], _counters[2], _values[3], _counters[3], _values[4], _counters[4], 
