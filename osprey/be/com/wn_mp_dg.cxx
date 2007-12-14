@@ -438,7 +438,7 @@ static WN * Copy_Non_MP_Tree_Rec ( WN * tree , V_STACK *mp_vertices,
       next_kid = WN_next(kid);
       if (((WN_opcode(kid) == OPC_PRAGMA) ||
 	   (WN_opcode(kid) == OPC_XPRAGMA)) &&
-	  (WN_pragmas[WN_pragma(kid)].users & PUSER_MP)) {
+	  (WN_Pragma_Users(WN_pragma(kid)) & PUSER_MP)) {
 	/* translate critical section begin & end nodes, ignore all other mp
 	   pragma nodes */
 	if (WN_pragma(kid) == WN_PRAGMA_CRITICAL_SECTION_BEGIN) {
@@ -482,7 +482,7 @@ static WN * Copy_Non_MP_Tree_Rec ( WN * tree , V_STACK *mp_vertices,
       } // if (((WN_opcode(kid) == OPC_PRAGMA) ...
       else if ((WN_opcode(kid) == OPC_REGION) &&
 		 WN_first(WN_region_pragmas(kid)) &&
-		 (WN_pragmas[WN_pragma(WN_first(WN_region_pragmas(kid)))].users
+		 (WN_Pragma_Users(WN_pragma(WN_first(WN_region_pragmas(kid))))
 								& PUSER_MP)) {
 
         WN_PRAGMA_ID pragma =

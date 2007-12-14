@@ -42,6 +42,31 @@
 *** 
 *** Description:
 *** 
+*** ifdef TARG_ST
+***   The interface to this module has been changed as now it is mor general
+***   than the handling of fission/fusion loop pragmas.
+***
+***   The principle is that before LNO processing, any pragma will be either
+***   converted to a LNO specific information or stored as is in the corresponding
+***   structure control flow node.
+***   Then on LNO exit, the pragmas are reconstructed and attached to the correct
+***   WHIRL structured control flow or block.
+***
+*** void LWN_Process_Pragmas(WN* func_nd);
+***
+***   Process the WHIRL tree on entry an create LNO specific information or
+***   attach non-LNO pragmas to loop structures.
+***
+***
+*** void LWN_Reconstruct_Pragmas(WN* func_nd);
+***
+***   Re-emit unmodified or modified pragmas into the WHIRL tree on exit.
+***
+*** Note: the former interface described below is now obsolete
+***
+*** endif TARG_ST
+***
+***
 *** extern void LWN_Process_FF_Pragmas(WN* func_nd);
 ***
 ***   Scan for fission/fusion pragmas in the source and either insert proper
@@ -75,8 +100,13 @@
 
 #include "wn.h"
 
+#ifdef TARG_ST
+extern void LWN_Process_Pragmas(WN* func_nd);
+extern void LWN_Reconstruct_Pragmas(WN* func_nd);
+#else
 extern void LWN_Process_FF_Pragmas(WN* func_nd);
 extern void  LNO_Insert_Pragmas(WN* func_nd);
+#endif
 
 #endif // ff_pragmas_INCLUDED
 

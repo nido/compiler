@@ -836,7 +836,7 @@ static void Error_Check_MP_Pragmas (WN* wn) {
              WN_pragma_arg1(pwn) == WN_PRAGMA_SCHEDTYPE_RUNTIME)) {
           /* these schedtypes not allowed with nested parallelism */
           ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(pwn),
-                WN_pragmas[WN_pragma(pwn)].name,
+                WN_Pragma_Name(WN_pragma(pwn)),
                 "currently not supported with nested parallelism (ignoring).");
           WN_pragma_arg1(pwn) = WN_PRAGMA_SCHEDTYPE_SIMPLE;
         }
@@ -851,7 +851,7 @@ static void Error_Check_MP_Pragmas (WN* wn) {
     /* cannot have both onto and affinity */
     if (onto_wn && aff_wn) {
       ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(onto_wn),
-                   WN_pragmas[WN_pragma(onto_wn)].name,
+                   WN_Pragma_Name(WN_pragma(onto_wn)),
                    "not allowed with affinity (ignoring).");
       /* delete the ONTO nodes */
       while (onto_wn &&
@@ -878,7 +878,7 @@ static void Error_Check_MP_Pragmas (WN* wn) {
 
       if (WN_pragma(tmp_wn) == WN_PRAGMA_THREAD_AFFINITY) {
         ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(tmp_wn),
-                     WN_pragmas[WN_pragma(tmp_wn)].name,
+                     WN_Pragma_Name(WN_pragma(tmp_wn)),
                      "not supported with nested parallelism (ignoring).");
         /* delete the affinity nodes */
         while (aff_wn &&

@@ -735,7 +735,11 @@ extern WN * Lnoptimizer(PU_Info* current_pu,
     }
   
     if (!LNO_enabled && (Run_autopar && LNO_Run_AP > 0)) {
+#ifdef TARG_ST
+      LWN_Process_Pragmas(func_nd); 
+#else
       LWN_Process_FF_Pragmas(func_nd); 
+#endif
       Parallel_And_Padding_Phase(current_pu, func_nd); 
       goto return_point; 
     } 
@@ -778,7 +782,11 @@ extern WN * Lnoptimizer(PU_Info* current_pu,
     if (!LNO_Ignore_Pragmas) {
       Fission_Init();
       Fusion_Init();
+#ifdef TARG_ST
+      LWN_Process_Pragmas(func_nd); 
+#else
       LWN_Process_FF_Pragmas(func_nd);
+#endif
     }
   
     Canonicalize_Unsigned_Loops(func_nd); 
@@ -808,9 +816,8 @@ extern WN * Lnoptimizer(PU_Info* current_pu,
      I am not fully sure Current_Dep_Graph is correct at this point.
      Why don't they build it in case early_exit is true? */ 
     if (Opt_Level <= 2) {
-      // FdF: ReInsert pragmas (UNROLL) that were removed but not consumed
-      if (!LNO_Ignore_Pragmas)
-	LNO_Insert_Pragmas(func_nd);
+      // Re construct loop related information
+      LWN_Reconstruct_Pragmas(func_nd);
       Build_CG_Dependence_Graph (Array_Dependence_Graph);
       goto return_point;
     }
@@ -840,9 +847,8 @@ extern WN * Lnoptimizer(PU_Info* current_pu,
 
     if (early_exit) {
 #ifdef TARG_ST
-      // FdF: ReInsert pragmas (UNROLL) that were removed but not consumed
-      if (!LNO_Ignore_Pragmas)
-	LNO_Insert_Pragmas(func_nd);
+      // Re construct loop related information
+      LWN_Reconstruct_Pragmas(func_nd);
 #endif
       goto return_point;
     }
@@ -866,10 +872,18 @@ extern WN * Lnoptimizer(PU_Info* current_pu,
         Minvariant_Removal(func_nd, Array_Dependence_Graph);
       }
     }
-    
+
+#ifdef TARG_ST
+    // Re construct loop related information.
+    // Consists mainly in reinserting pragmas that are not consummed by LNO.
+    // This is more general now than before as LNO can now ignore
+    // the semantic of some pragmas.
+    LWN_Reconstruct_Pragmas(func_nd);
+#else
     if (!LNO_Ignore_Pragmas) {
       LNO_Insert_Pragmas(func_nd);
     }
+#endif
     
 #ifdef Is_True_On
     MP_Sanity_Check_Func(func_nd);
@@ -1517,6 +1531,10 @@ DO_LOOP_INFO::DO_LOOP_INFO(MEM_POOL *pool, ACCESS_ARRAY *lb, ACCESS_ARRAY *ub,
     Lego_Info = NULL; 
     Mp_Info = NULL; 
     ARA_Info = NULL; 
+#ifdef TARG_ST
+    // Create annotation block
+    annotation_block = WN_CreateBlock();
+#endif
 }
 
 // Until 7.3, when we create a copy constructor for the ARA_LOOP_INFO, 
@@ -1637,6 +1655,11 @@ DO_LOOP_INFO::DO_LOOP_INFO(DO_LOOP_INFO *dli, MEM_POOL *pool) {
       else 
         DevWarn("No copy constructor for ARA_Info"); 
     } 
+#ifdef TARG_ST
+    // Annotation block is deeply copied. 
+    annotation_block = WN_COPY_Tree(dli->annotation_block);
+#endif
+
 }
 
 void REGION_INFO::Print(FILE* fp)

@@ -1006,7 +1006,7 @@ static const char* Whirl_Symbol_Type(WN* wn)
   OPCODE opc = WN_opcode(wn);
   OPERATOR opr = OPCODE_operator(opc);
   if (opc == OPC_PRAGMA || opc == OPC_XPRAGMA)
-    return WN_pragmas[WN_pragma(wn)].name;
+    return WN_Pragma_Name(WN_pragma(wn));
   wn_symbol = (opc == OPC_DO_LOOP) ? WN_index(wn) : (OPCODE_has_sym(opc))
     ? wn : NULL;
   if (wn_symbol == NULL)

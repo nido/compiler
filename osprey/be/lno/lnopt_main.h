@@ -76,6 +76,20 @@
 //
 //		Hold information about DO loops
 //
+//#ifdef TARG_ST
+//      WN *annotation_block
+//
+//              This block is used to attach any WN in the input code
+//              to the loop structure. This annotations are then re-emitted
+//              when reconstructing the WHIRL level loops on exit to LNO.
+//              In particular all loop scope pragmas that must be preserved through
+//              LNO transformations and that are not known to LNO 
+//              can be attached there (ref. to ff_pragmas.cxx).
+//		Note that in case of loop duplication, the annotation block
+//		content is deeply copied. Thus the annotations are re-emitted
+//              as is in all loop duplicates.
+//#endif
+//
 //	ACCESS_ARRAY *LB
 //
 //		The lower bound is the max of all the access vectors in LB
@@ -825,7 +839,9 @@ private:
   BOOL Get_Flag(DLI_FLAG flag) const {
     return (_wind_down_flags & flag) != 0;
   }
-
+#ifdef TARG_ST
+  WN *annotation_block;
+#endif
 public:
   ACCESS_ARRAY *LB;
   ACCESS_ARRAY *UB;
@@ -921,6 +937,9 @@ public:
 	BOOL has_unsummarized_call_cost, BOOL has_gotos, 
 	BOOL has_gotos_this_level,BOOL has_exits, BOOL is_inner); 
   DO_LOOP_INFO(DO_LOOP_INFO *dli, MEM_POOL *pool);
+#ifdef TARG_ST
+  WN *Get_Annotation_Block() const { return annotation_block; }
+#endif
 
   void Print(FILE *fp, INT = 0);
   ~DO_LOOP_INFO() {

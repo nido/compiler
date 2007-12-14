@@ -1,6 +1,54 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Dec 14 10:17:46 CET 2007
+	Author:    guillon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/guillon/dev-loop-pragmas
+
+Description:
+------------
+	* Deliver branch guillon/dev-loop-pragmas at revision rev #14788. With authorization artifact #36723.
+Factorization and fix of loop scope pragmas handling.
+1. Additional support in LNO loop descriptor to store WN pragma nodes that are not used by LNO but must be kept attached to the loop structure.
+2. Factorization of all code for identification of pragmas that must be attached to loop pre-headers by adding a new pragma scope WN_PRAGMA_SCOPE_LOOP defined for sich pragmas.
+3. functional interface to WN_pragma properties instead of direct access to pragma descriptor that is now kept private to the implementation.
+
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_whirlview.cxx
+	M      osprey/be/opt/opt_dce.cxx
+	M      osprey/be/opt/opt_emit.cxx
+	M      osprey/be/opt/opt_cfg.cxx
+	M      osprey/be/be/fill_align.cxx
+	M      osprey/be/lno/debug.cxx
+	M      osprey/be/lno/lnopt_main.cxx
+	M      osprey/be/lno/lnoutils.cxx
+	M      osprey/be/lno/ff_pragmas.cxx
+	M      osprey/be/lno/lego.cxx
+	M      osprey/be/lno/tile.cxx
+	M      osprey/be/lno/ff_pragmas.h
+	M      osprey/be/lno/can.cxx
+	M      osprey/be/lno/lnopt_main.h
+	M      osprey/be/lno/lego_pragma.cxx
+	M      osprey/be/lno/cond.cxx
+	M      osprey/be/com/wn_mp_dg.cxx
+	M      osprey/be/com/wn_mp.cxx
+	M      osprey/be/com/wn_lower.cxx
+	M      osprey/be/com/wb_util.cxx
+	M      osprey/be/com/prompf.cxx
+	M      osprey/lai/bbutil.cxx
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/common/com/wn_pragmas.h
+	M      osprey/common/com/ir_reader.cxx
+	M      osprey/common/com/wn_pragmas.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Dec 13 12:17:40 CET 2007
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

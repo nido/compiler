@@ -691,7 +691,7 @@ void Verify_MP_Lowered::Verify_No_MP(WN *tree)
     OPERATOR opr = WN_operator(wn);
 
     if ((opr == OPR_PRAGMA || opr == OPR_XPRAGMA) &&
-        WN_pragmas[WN_pragma(wn)].users & PUSER_MP)
+        WN_Pragma_Users(WN_pragma(wn)) & PUSER_MP)
       Fail_FmtAssertion("Verify_MP_Lowered: unlowered MP pragma %d, "
           "node %#lx, tree %#lx", WN_pragma(wn), (unsigned long) wn,
           (unsigned long) tree);
@@ -5328,7 +5328,7 @@ static void Strip_Nested_MP ( WN * tree, BOOL pcf_ok )
       next_kid = WN_next(kid);
       if (((WN_opcode(kid) == OPC_PRAGMA) ||
 	   (WN_opcode(kid) == OPC_XPRAGMA)) &&
-	  (WN_pragmas[WN_pragma(kid)].users & PUSER_MP)) {
+	  (WN_Pragma_Users(WN_pragma(kid)) & PUSER_MP)) {
 	if (WN_pragma(kid) == WN_PRAGMA_CRITICAL_SECTION_BEGIN) {
 	  /* always translate critical section begin nodes */
 	  ++pcf_nest;
@@ -5436,7 +5436,7 @@ static void Strip_Nested_MP ( WN * tree, BOOL pcf_ok )
 	}
       } else if ((WN_opcode(kid) == OPC_REGION) &&
 		 WN_first(WN_region_pragmas(kid)) &&
-		 (WN_pragmas[WN_pragma(WN_first(WN_region_pragmas(kid)))].users
+		 (WN_Pragma_Users(WN_pragma(WN_first(WN_region_pragmas(kid))))
 								& PUSER_MP)) {
 	WN_PRAGMA_ID region_type = (WN_PRAGMA_ID)
 	    WN_pragma(WN_first(WN_region_pragmas(kid)));
@@ -5943,7 +5943,7 @@ static WN * Transform_PDO ( WN * tree )
 
     if (((WN_opcode(cur_node) == OPC_PRAGMA) ||
 	 (WN_opcode(cur_node) == OPC_XPRAGMA)) &&
-	(WN_pragmas[WN_pragma(cur_node)].users & PUSER_MP)) {
+	(WN_Pragma_Users(WN_pragma(cur_node)) & PUSER_MP)) {
 
       switch (WN_pragma(cur_node)) {
 
@@ -6083,7 +6083,7 @@ static WN * Transform_PDO ( WN * tree )
 	default:
 	  Fail_FmtAssertion (
 		  "out of context pragma (%s) in MP {region pragma} processing",
-		  WN_pragmas[WN_pragma(cur_node)].name);
+		  WN_Pragma_Name(WN_pragma(cur_node)));
 
       }
 
@@ -6625,7 +6625,7 @@ static void Transform_Parallel_Block ( WN * tree )
 
     if (((WN_opcode(cur_node) == OPC_PRAGMA) ||
          (WN_opcode(cur_node) == OPC_XPRAGMA)) &&
-        (WN_pragmas[WN_pragma(cur_node)].users & PUSER_MP)) {
+        (WN_Pragma_Users(WN_pragma(cur_node)) & PUSER_MP)) {
 
       switch (cur_id = (WN_PRAGMA_ID) WN_pragma(cur_node)) {
 
@@ -6809,7 +6809,7 @@ static void Transform_Parallel_Block ( WN * tree )
 	default:
 	  Fail_FmtAssertion (
 	      "out of context pragma (%s) in MP {parallel region} processing",
-	      WN_pragmas[WN_pragma(cur_node)].name);
+	      WN_Pragma_Name(WN_pragma(cur_node)));
 
       }
 
@@ -7446,7 +7446,7 @@ WN * lower_mp ( WN * block, WN * node, INT32 actions )
 
       Fail_FmtAssertion (
 	      "out of context pragma (%s) in MP {standalone pragma} processing",
-	      WN_pragmas[WN_pragma(node)].name);
+	      WN_Pragma_Name(WN_pragma(node)));
 
   } else if ((WN_opcode(node) == OPC_REGION) &&
 	     WN_first(WN_region_pragmas(node)) &&
@@ -7493,7 +7493,7 @@ WN * lower_mp ( WN * block, WN * node, INT32 actions )
     default:
       Fail_FmtAssertion (
 		 "out of context pragma (%s) in MP {primary pragma} processing",
-		 WN_pragmas[wid].name);
+		 WN_Pragma_Name(wid));
     }
 
     next_node = WN_next(wtmp);
@@ -7558,7 +7558,7 @@ WN * lower_mp ( WN * block, WN * node, INT32 actions )
 
     if (((WN_opcode(cur_node) == OPC_PRAGMA) ||
          (WN_opcode(cur_node) == OPC_XPRAGMA)) &&
-        (WN_pragmas[WN_pragma(cur_node)].users & PUSER_MP)) {
+        (WN_Pragma_Users(WN_pragma(cur_node)) & PUSER_MP)) {
 
       if (mpt == MPP_COPYIN) {
 
@@ -7756,7 +7756,7 @@ WN * lower_mp ( WN * block, WN * node, INT32 actions )
 	  default:
 	    Fail_FmtAssertion (
 	       "out of context pragma (%s) in MP {top-level pragma} processing",
-	       WN_pragmas[WN_pragma(cur_node)].name);
+	       WN_Pragma_Name(WN_pragma(cur_node)));
 
 	}
 

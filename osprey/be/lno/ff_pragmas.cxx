@@ -197,7 +197,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
           WN_opcode(next_non_prag_stid) != OPC_DO_LOOP) {
 	if (!FF_Pragma_Seen_Before(wn))
 	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn),
-		       WN_pragmas[pragma_id].name,
+		       WN_Pragma_Name(pragma_id),
 		       "not followed by a loop, ignored");
 	break;
       }
@@ -230,7 +230,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
 	        interchange_vector[count++] = sdo_no;
 	      } else {
 	        ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(p),
-	                    WN_pragmas[pragma_id].name,"loop must follow");
+	                    WN_Pragma_Name(pragma_id),"loop must follow");
 	        error = TRUE;
 	        break;
 	      }
@@ -239,7 +239,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
           if (error == FALSE) {
             if (!Is_Permutation_Vector(interchange_vector, count)) {
               ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(p),
-                           WN_pragmas[pragma_id].name,
+                           WN_Pragma_Name(pragma_id),
                            "incomplete index specification");
             }
             else {
@@ -265,7 +265,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
           WN_opcode(next_non_prag_stid) != OPC_DO_LOOP) {
 	if (!FF_Pragma_Seen_Before(wn))
 	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn),
-		       WN_pragmas[pragma_id].name,
+		       WN_Pragma_Name(pragma_id),
 		       "not followed by a loop, ignored");
 	break;
       }
@@ -278,7 +278,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
           WN_opcode(next_non_prag_stid) != OPC_DO_LOOP) {
 	if (!FF_Pragma_Seen_Before(wn))
 	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn),
-		       WN_pragmas[pragma_id].name,
+		       WN_Pragma_Name(pragma_id),
 		       "not followed by a loop, ignored");
 	break;
       }
@@ -287,12 +287,12 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
         dli->Required_Blocksize[0] = prag_arg1;
       else if (!FF_Pragma_Seen_Before(wn))
 	ErrMsgSrcpos(EC_LNO_Bad_Pragma_Int, WN_Get_Linenum(wn),
-		     WN_pragmas[pragma_id].name, prag_arg1);
+		     WN_Pragma_Name(pragma_id), prag_arg1);
       if (prag_arg1 >= -1)
         dli->Required_Blocksize[1] = prag_arg2;
       else if (!FF_Pragma_Seen_Before(wn))
         ErrMsgSrcpos(EC_LNO_Bad_Pragma_Int,  WN_Get_Linenum(wn),
-                     WN_pragmas[pragma_id].name, prag_arg2);
+                     WN_Pragma_Name(pragma_id), prag_arg2);
       break;
 
      case WN_PRAGMA_NO_BLOCKING:
@@ -301,7 +301,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
           WN_opcode(next_non_prag_stid) != OPC_DO_LOOP) {
 	if (!FF_Pragma_Seen_Before(wn))
 	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn),
-		       WN_pragmas[pragma_id].name,
+		       WN_Pragma_Name(pragma_id),
 		       "not followed by a loop, ignored");
 	break;
       }
@@ -321,7 +321,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
 #else
 	if (!FF_Pragma_Seen_Before(wn))
 	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn),
-		       WN_pragmas[pragma_id].name,
+		       WN_Pragma_Name(pragma_id),
 		       "not followed by a loop, ignored");
 #endif
 	break;
@@ -336,7 +336,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
 #endif
       else if (!FF_Pragma_Seen_Before(wn))
         ErrMsgSrcpos(EC_LNO_Bad_Pragma_Int, WN_Get_Linenum(wn),
-                     WN_pragmas[pragma_id].name, prag_arg1);
+                     WN_Pragma_Name(pragma_id), prag_arg1);
       break;
 
 #ifdef TARG_ST
@@ -349,7 +349,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
 	/*
 	  if (!FF_Pragma_Seen_Before(wn))
 	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn),
-	  WN_pragmas[pragma_id].name,
+	  WN_Pragma_Name(pragma_id),
 	  "not followed by a loop, ignored");
 	*/
 	break;
@@ -357,7 +357,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
       if (prag_arg1 > 1) {
 	if ((prag_arg2 >= prag_arg1) || (prag_arg2 < 0))
 	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_Int, WN_Get_Linenum(wn),
-                     WN_pragmas[pragma_id].name, prag_arg2);
+                     WN_Pragma_Name(pragma_id), prag_arg2);
 	else {
 	  Get_Do_Loop_Info(next_non_prag_stid)->Pragma_Modulus = prag_arg1;
 	  Get_Do_Loop_Info(next_non_prag_stid)->Pragma_Residue = prag_arg2;
@@ -375,12 +375,12 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
       }
       if (prag_arg1 < 0) {
 	ErrMsgSrcpos(EC_LNO_Bad_Pragma_Int, WN_Get_Linenum(wn),
-                     WN_pragmas[pragma_id].name, prag_arg1);
+                     WN_Pragma_Name(pragma_id), prag_arg1);
       }
       else if (!Get_Do_Loop_Info(next_non_prag_stid)->Num_Iterations_Symbolic) {
 	if (Get_Do_Loop_Info(next_non_prag_stid)->Est_Num_Iterations != prag_arg1)
 	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn),
-		       WN_pragmas[pragma_id].name,
+		       WN_Pragma_Name(pragma_id),
 		       "inconsistent with computed value, ignored");
       }
       else
@@ -424,7 +424,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
           WN_opcode(next_non_prag_stid) != OPC_DO_LOOP) {
 	if (!FF_Pragma_Seen_Before(wn))
 	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn),
-		       WN_pragmas[pragma_id].name,
+		       WN_Pragma_Name(pragma_id),
 		       "not followed by a loop, ignored");
 	break;
       }
@@ -441,7 +441,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
         remove = TRUE;
         if (Good_Do_Depth(wn)+1 < level) {
 	    ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn),
-		         WN_pragmas[pragma_id].name,
+		         WN_Pragma_Name(pragma_id),
 		         "does not have enough enclosing loops");
           break;
         }
@@ -637,7 +637,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
           WN_opcode(next_non_prag_stid) != OPC_DO_LOOP) {
 	if (!FF_Pragma_Seen_Before(wn))
 	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn),
-		       WN_pragmas[pragma_id].name,
+		       WN_Pragma_Name(pragma_id),
 		       "not followed by a loop, ignored");
 	break;
       }
@@ -651,7 +651,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
           WN_opcode(next_non_prag_stid) != OPC_DO_LOOP) {
 	if (!FF_Pragma_Seen_Before(wn))
 	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn),
-		       WN_pragmas[pragma_id].name,
+		       WN_Pragma_Name(pragma_id),
 		       "not followed by a loop, ignored");
 	break;
       }
@@ -665,7 +665,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
           WN_opcode(next_non_prag_stid) != OPC_DO_LOOP) {
 	if (!FF_Pragma_Seen_Before(wn))
 	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn),
-		       WN_pragmas[pragma_id].name,
+		       WN_Pragma_Name(pragma_id),
 		       "not followed by a loop, ignored");
 	break;
       }
@@ -678,7 +678,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
           WN_opcode(next_non_prag_stid) != OPC_DO_LOOP) {
 	if (!FF_Pragma_Seen_Before(wn))
 	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn),
-		       WN_pragmas[pragma_id].name,
+		       WN_Pragma_Name(pragma_id),
 		       "not followed by a loop, ignored");
 	break;
       }
@@ -698,7 +698,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
           WN_opcode(next_non_prag_stid) != OPC_DO_LOOP) {
 	if (!FF_Pragma_Seen_Before(wn))
 	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn),
-		       WN_pragmas[pragma_id].name,
+		       WN_Pragma_Name(pragma_id),
 		       "not followed by a loop, ignored");
 	break;
       }
@@ -713,6 +713,20 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
       } 
       break;
 
+#ifdef TARG_ST
+    default:
+      /* Any other pragma that is a a loop scope pragma must be
+	 kept attached to the do_loop structure and removed from the
+	 code. They will be reattached after LNO transformations.
+      */
+      if (WN_Pragma_Scope(pragma_id) == WN_PRAGMA_SCOPE_LOOP) {
+	if (next_non_prag_stid != NULL && 
+	    WN_opcode(next_non_prag_stid) == OPC_DO_LOOP) {
+	  WN_INSERT_BlockLast(Get_Do_Loop_Info(next_non_prag_stid)->Get_Annotation_Block(), wn);
+	}
+      }
+      break;
+#endif
     }
 
     if (remove) {
@@ -742,7 +756,14 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
 }
 
 
-extern void LWN_Process_FF_Pragmas(WN* func_nd) {
+#ifdef TARG_ST
+void
+LWN_Process_Pragmas(WN* func_nd)
+#else
+void
+LWN_Process_FF_Pragmas(WN* func_nd)
+#endif
+{
 
   MEM_POOL_Initialize(&FF_PRAGMA_default_pool,"FF_PRAGMA_default_pool",FALSE);
 
@@ -752,72 +773,87 @@ extern void LWN_Process_FF_Pragmas(WN* func_nd) {
 }
 
 
-extern void  LNO_Insert_Pragmas(WN* wn)
+#ifdef TARG_ST
+void
+LWN_Reconstruct_Pragmas(WN *wn)
+#else
+void
+LNO_Insert_Pragmas(WN* wn)
+#endif
 {
   OPCODE  opc = WN_opcode(wn);
   
   if (opc == OPC_DO_LOOP) {
     DO_LOOP_INFO* dli = Get_Do_Loop_Info(wn);
 #ifdef TARG_ST
-    if (dli->Pragma_Modulus > 1) {
-      WN* pragma = WN_CreatePragma(WN_PRAGMA_LOOPMOD, (ST_IDX) NULL,
+    if (!LNO_Ignore_Pragmas) {
+      if (dli->Pragma_Modulus > 1) {
+	WN* pragma = WN_CreatePragma(WN_PRAGMA_LOOPMOD, (ST_IDX) NULL,
 				   dli->Pragma_Modulus, dli->Pragma_Residue);
-      WN_set_pragma_compiler_generated(pragma);
-      LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
-    }
-    if (dli->Min_Iterations >= 0) {
-      WN* pragma = WN_CreatePragma(WN_PRAGMA_LOOPMINITERCOUNT, (ST_IDX) NULL,
-				   dli->Min_Iterations, 0);
-      WN_set_pragma_compiler_generated(pragma);
-      LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
-    }
-    if (dli->Max_Iterations >= 0) {
-      WN* pragma = WN_CreatePragma(WN_PRAGMA_LOOPMAXITERCOUNT, (ST_IDX) NULL,
-				   dli->Max_Iterations, 0);
-      WN_set_pragma_compiler_generated(pragma);
-      LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
-    }
-    if (dli->Packing_Level >= 0) {
-      WN* pragma = WN_CreatePragma(WN_PRAGMA_LOOPPACK, (ST_IDX) NULL,
-				   dli->Packing_Level, 0);
-      WN_set_pragma_compiler_generated(pragma);
-      LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
-    }
-#endif
-    if (dli->Is_Inner) {
-      if (dli->Required_Unroll > 0) {
-        WN* pragma = WN_CreatePragma(WN_PRAGMA_UNROLL, (ST_IDX) NULL,
-	                             dli->Required_Unroll, 0);
-        WN_set_pragma_compiler_generated(pragma);
+	WN_set_pragma_compiler_generated(pragma);
 	LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
+      }
+      if (dli->Min_Iterations >= 0) {
+	WN* pragma = WN_CreatePragma(WN_PRAGMA_LOOPMINITERCOUNT, (ST_IDX) NULL,
+				     dli->Min_Iterations, 0);
+	WN_set_pragma_compiler_generated(pragma);
+	LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
+      }
+      if (dli->Max_Iterations >= 0) {
+	WN* pragma = WN_CreatePragma(WN_PRAGMA_LOOPMAXITERCOUNT, (ST_IDX) NULL,
+				     dli->Max_Iterations, 0);
+	WN_set_pragma_compiler_generated(pragma);
+	LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
+      }
+      if (dli->Packing_Level >= 0) {
+	WN* pragma = WN_CreatePragma(WN_PRAGMA_LOOPPACK, (ST_IDX) NULL,
+				     dli->Packing_Level, 0);
+	WN_set_pragma_compiler_generated(pragma);
+	LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
+      }
+#endif
+      if (dli->Is_Inner) {
+	if (dli->Required_Unroll > 0) {
+	  WN* pragma = WN_CreatePragma(WN_PRAGMA_UNROLL, (ST_IDX) NULL,
+				       dli->Required_Unroll, 0);
+	  WN_set_pragma_compiler_generated(pragma);
+	  LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
+	}
+      }
+#ifdef TARG_ST
+      // [CG]: Reinsert ivdep pragmas for the cg
+      if (dli->Is_Ivdep > 0) {
+	WN_PRAGMA_ID id;
+	int kind;
+	switch (dli->Is_Ivdep) {
+	case IVDEP_DEFAULT: id = WN_PRAGMA_IVDEP; kind = 0; break;
+	case IVDEP_VECTOR: id = WN_PRAGMA_LOOPDEP; kind = (int)LOOPDEP_VECTOR; break;
+	case IVDEP_PARALLEL: id = WN_PRAGMA_LOOPDEP; kind = (int)LOOPDEP_PARALLEL; break;
+	case IVDEP_LIBERAL: id = WN_PRAGMA_LOOPDEP; kind = (int)LOOPDEP_LIBERAL; break;
+	default: FmtAssert(FALSE, ("Wrong LNO ivdep kind %d", (int)dli->Is_Ivdep));
+	}
+	WN* pragma = WN_CreatePragma(id, (ST_IDX) NULL,
+				     kind, 0);
+	WN_set_pragma_compiler_generated(pragma);
+	LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
+      }
+#endif
+      if (dli->Is_Inner) {
+	return;				// no need to go inside
       }
     }
 #ifdef TARG_ST
-    // [CG]: Reinsert ivdep pragmas for the cg
-    if (dli->Is_Ivdep > 0) {
-      WN_PRAGMA_ID id;
-      int kind;
-      switch (dli->Is_Ivdep) {
-      case IVDEP_DEFAULT: id = WN_PRAGMA_IVDEP; kind = 0; break;
-      case IVDEP_VECTOR: id = WN_PRAGMA_LOOPDEP; kind = (int)LOOPDEP_VECTOR; break;
-      case IVDEP_PARALLEL: id = WN_PRAGMA_LOOPDEP; kind = (int)LOOPDEP_PARALLEL; break;
-      case IVDEP_LIBERAL: id = WN_PRAGMA_LOOPDEP; kind = (int)LOOPDEP_LIBERAL; break;
-      default: FmtAssert(FALSE, ("Wrong LNO ivdep kind %d", (int)dli->Is_Ivdep));
-      }
-      WN* pragma = WN_CreatePragma(id, (ST_IDX) NULL,
-				   kind, 0);
-      WN_set_pragma_compiler_generated(pragma);
-      LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
-    }
+    LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, dli->Get_Annotation_Block());
 #endif
-    if (dli->Is_Inner) {
-      return;				// no need to go inside
-    }
   }
 
   if (opc==OPC_BLOCK) {
     for (WN* kid = WN_first(wn); kid; kid = WN_next(kid)) {
+#ifdef TARG_ST
+      LWN_Reconstruct_Pragmas(kid);
+#else
       LNO_Insert_Pragmas(kid);
+#endif
     }
     return;
   }
@@ -825,6 +861,10 @@ extern void  LNO_Insert_Pragmas(WN* wn)
   for (UINT kidno = 0; kidno < WN_kid_count(wn); kidno++) {
     WN* kid=WN_kid(wn,kidno);
     if (!OPCODE_is_expression(WN_opcode(kid)))
+#ifdef TARG_ST
+      LWN_Reconstruct_Pragmas(kid);
+#else
       LNO_Insert_Pragmas(kid);
+#endif
   }
 }

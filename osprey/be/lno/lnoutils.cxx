@@ -4007,10 +4007,10 @@ void Add_Pragma_To_MP_Region (const WN* cwn,
           Is_True ((new_is_local && orig_is_local) ||
                    (new_is_shared && orig_is_shared),
                    ("Add_Pragma_To_MP_Region: adding %s (%s,%s), already in %s list\n",
-                    WN_pragmas[pragma_id].name,
+                    WN_Pragma_Name(pragma_id),
                     ST_name(st),
                     (ST_class(st) == CLASS_PREG ? Preg_Name(offset) : ""),
-                    WN_pragmas[orig_pragma_id].name));
+                    WN_Pragma_Name(orig_pragma_id)));
         }
         orig_wn = WN_next(orig_wn);
       }

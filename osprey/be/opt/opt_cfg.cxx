@@ -779,26 +779,11 @@ Move_Loop_Pragma(CFG *cfg, BB_NODE *from_bb, BB_NODE *to_bb)
   for (wn = from_bb->Firststmt(); wn; wn = next_wn) {
     next_wn = WN_next(wn);
     if (WN_operator(wn) == OPR_PRAGMA) {
-      WN_PRAGMA_ID pragma = (WN_PRAGMA_ID)WN_pragma(wn);
-      switch (pragma) {
-      case WN_PRAGMA_IVDEP:
-      case WN_PRAGMA_UNROLL:
-      case WN_PRAGMA_LOOPDEP:
-      case WN_PRAGMA_LOOPMOD:
-      case WN_PRAGMA_LOOPTRIP:
-      case WN_PRAGMA_PIPELINE:
-      case WN_PRAGMA_LOOPSEQ:
-      case WN_PRAGMA_STREAM_ALIGNMENT:
-      case WN_PRAGMA_HWLOOP:
-      case WN_PRAGMA_LOOPMINITERCOUNT:
-      case WN_PRAGMA_LOOPMAXITERCOUNT:
-      case WN_PRAGMA_LOOPPACK:
+      if (WN_Pragma_Scope(WN_pragma(wn)) == WN_PRAGMA_SCOPE_LOOP) {
 	Remove_wn_in(from_bb, wn);
 	cfg->Append_wn_in(to_bb, wn);
 	to_bb->Set_haspragma();
-	break;
-
-      default:
+      } else {
 	remove_all_pragmas = FALSE;
       }
     }
@@ -806,7 +791,7 @@ Move_Loop_Pragma(CFG *cfg, BB_NODE *from_bb, BB_NODE *to_bb)
   if (remove_all_pragmas)
     from_bb->Reset_haspragma();
 }
-#endif
+#endif /* TARG_ST */
 
 // ====================================================================
 // fully lower DO_LOOP statements

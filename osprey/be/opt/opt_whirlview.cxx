@@ -265,7 +265,7 @@ static void sir_put_wn(WN *wn)
 
     if (opcode == OPC_PRAGMA) {
 	SPRINTF_ADV(ir_oidx,
-		    (ir_oidx, " # %s", WN_pragmas[WN_offset(wn)].name));
+		    (ir_oidx, " # %s", WN_Pragma_Name(WN_offset(wn))));
     }
 
     SPRINTF_ADV(ir_oidx,

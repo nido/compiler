@@ -311,7 +311,7 @@ static void Fill_Align_Symbol (WN* wn, WN* func_wn) {
                                       Global_Variable(st) ||
                                       Common_Variable(st)))) {
     ErrMsgSrcpos (EC_Bad_Pragma_Abort, WN_Get_Linenum(wn),
-                  WN_pragmas[WN_pragma(wn)].name,
+                  WN_Pragma_Name(WN_pragma(wn)),
                   ST_name(st),
                   "must be supplied a variable");
   }
@@ -320,7 +320,7 @@ static void Fill_Align_Symbol (WN* wn, WN* func_wn) {
   /* global variables must be completely specified */
   if  (Global_Variable(st) && !Known_Size(st)) {
     ErrMsgSrcpos (EC_Bad_Pragma_Abort, WN_Get_Linenum(wn),
-                  WN_pragmas[WN_pragma(wn)].name,
+                  WN_Pragma_Name(WN_pragma(wn)),
                   ST_name(st),
                   "global variable must be completely specified");
   }
@@ -329,7 +329,7 @@ static void Fill_Align_Symbol (WN* wn, WN* func_wn) {
   /* cannot align local fixed-size variables to greater than 16 bytes */
   if (Local_Variable(st) && Known_Size(st) && !is_fill && fa_value > 16) {
     ErrMsgSrcpos (EC_Bad_Pragma_Abort, WN_Get_Linenum(wn),
-                  WN_pragmas[WN_pragma(wn)].name,
+                  WN_Pragma_Name(WN_pragma(wn)),
                   ST_name(st),
                   "cannot align automatic variables to greater than 16 bytes");
   }
@@ -418,7 +418,7 @@ static void Fill_Align_Symbol (WN* wn, WN* func_wn) {
 
     /*
      * printf ("%s (%s): glob/fixed-local. oldsize %d, new_size %d, pad %lld ofst %d\n",
-     *            WN_pragmas[WN_pragma(wn)].name, ST_name(st),
+     *            WN_Pragma_Name(WN_pragma(wn)), ST_name(st),
      *            orig_size, new_size, pad, new_ofst);
      */
     
@@ -473,7 +473,7 @@ static void Fill_Align_Symbol (WN* wn, WN* func_wn) {
     INT tmp;
 
     /*
-     * printf ("%s (%s): VLA\n", WN_pragmas[WN_pragma(wn)].name, ST_name(st));
+     * printf ("%s (%s): VLA\n", WN_Pragma_Name(WN_pragma(wn)), ST_name(st));
      */
 
     /* find the alloca */
@@ -561,7 +561,7 @@ static void Fill_Align_Symbol (WN* wn, WN* func_wn) {
 
 
     /*
-     * printf ("%s (%s): Common\n",WN_pragmas[WN_pragma(wn)].name,ST_name(st));
+     * printf ("%s (%s): Common\n",WN_Pragma_Name(WN_pragma(wn)),ST_name(st));
      */
 
     /* The common block needs expansion if the size has changed,
@@ -653,7 +653,7 @@ static void Fill_Align_Symbol (WN* wn, WN* func_wn) {
   else {
     /* error */
     ErrMsgSrcpos (EC_Bad_Pragma_Abort, WN_Get_Linenum(wn),
-                  WN_pragmas[WN_pragma(wn)].name,
+                  WN_Pragma_Name(WN_pragma(wn)),
                   ST_name(st),
                   "variable must be local, global, or common");
   }

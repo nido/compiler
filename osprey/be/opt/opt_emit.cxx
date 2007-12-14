@@ -1104,25 +1104,8 @@ Move_wn_before(BB_NODE *from, BB_NODE *to, WN* point, WN *wn)
 
 static BOOL
 is_loop_pragma(WN *wn) {
-  if (WN_operator(wn) == OPR_PRAGMA) {
-    WN_PRAGMA_ID pragma = (WN_PRAGMA_ID)WN_pragma(wn);
-    switch (pragma) {
-    case WN_PRAGMA_IVDEP:
-    case WN_PRAGMA_UNROLL:
-    case WN_PRAGMA_LOOPDEP:
-    case WN_PRAGMA_LOOPMOD:
-    case WN_PRAGMA_LOOPTRIP:
-    case WN_PRAGMA_PIPELINE:
-    case WN_PRAGMA_LOOPSEQ:
-    case WN_PRAGMA_STREAM_ALIGNMENT:
-    case WN_PRAGMA_HWLOOP:
-    case WN_PRAGMA_LOOPMINITERCOUNT:
-    case WN_PRAGMA_LOOPMAXITERCOUNT:
-    case WN_PRAGMA_LOOPPACK:
-      return TRUE;
-    }
-  }
-  return FALSE;
+  return WN_operator(wn) == OPR_PRAGMA &&
+    WN_Pragma_Scope(WN_pragma(wn)) == WN_PRAGMA_SCOPE_LOOP;
 }
 #endif
 

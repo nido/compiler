@@ -1099,7 +1099,7 @@ Print_BB_Pragmas( BB *bp )
       if ((UINT32)pragma >= (UINT32)MAX_WN_PRAGMA) {
 	fprintf(TFile, "%d", pragma);
       } else {
-	fprintf(TFile, WN_pragmas[WN_pragma(wn)].name);
+	fprintf(TFile, WN_Pragma_Name(WN_pragma(wn)));
       }
       switch (pragma) {
       case WN_PRAGMA_MIPS_FREQUENCY_HINT:

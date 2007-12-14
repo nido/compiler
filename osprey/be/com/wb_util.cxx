@@ -93,7 +93,7 @@ extern const char* WB_Whirl_Symbol(WN* wn)
   OPCODE opc = WN_opcode(wn);
   OPERATOR opr = OPCODE_operator(opc);
   if (opc == OPC_PRAGMA || opc == OPC_XPRAGMA)
-    return WN_pragmas[WN_pragma(wn)].name;
+    return WN_Pragma_Name(WN_pragma(wn));
   if (opr == OPR_INTRINSIC_CALL)
     return INTRINSIC_name((INTRINSIC) WN_intrinsic(wn));
   wn_symbol = (opc == OPC_DO_LOOP) ? WN_index(wn) : (OPCODE_has_sym(opc))

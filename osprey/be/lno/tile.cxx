@@ -1711,7 +1711,7 @@ static void Mp_Extract_Parallel_Directives(WN* wn_tree,
   }  
 
   if ((WN_opcode(wn_tree) == OPC_PRAGMA || WN_opcode(wn_tree) == OPC_XPRAGMA)
-      && (WN_pragmas[WN_pragma(wn_tree)].users & PUSER_MP)
+      && (WN_Pragma_Users(WN_pragma(wn_tree)) & PUSER_MP)
       && !Mp_Retained_Pragma(wn_tree, auto_parallel)) {
     if (Prompf_Info != NULL && Prompf_Info->Is_Enabled()) { 
       INT old_id = WN_MAP32_Get(Prompf_Id_Map, wn_tree); 

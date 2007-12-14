@@ -383,6 +383,10 @@ typedef enum {
   WN_PRAGMA_SCOPE_ON,		/* Start of affected scope */
   WN_PRAGMA_SCOPE_OFF,		/* End of affected scope */
 
+#ifdef TARG_ST
+  WN_PRAGMA_SCOPE_LOOP,		/* Loop scope pragma, must be located into loop pre-header. */
+#endif
+
   WN_PRAGMA_SCOPE_SPECIAL,	/* pragma-specific rule for scope */
 
   MAX_SCOPE_PRAGMA		/* last one in enum */
@@ -484,6 +488,38 @@ enum {
   ASSERT_FREQUENCY_USUALLY	= -1
 };
 
+#ifdef TARG_ST
+/* ====================================================================
+ *
+ * Pragmas properties interface
+ *
+ * These describe the characteristics of the WHIRL pragmas.
+ *
+ *  WN_PRAGMA_USERS WN_Pragma_Users(WN_PRAGMA_ID pragma_id)
+ *   Returns the mask of WN_PRAGMA_USERS phases using this pragma.
+ *
+ *  WN_PRAGMA_SCOPE WN_Pragma_Users(WN_PRAGMA_ID pragma_id)
+ *   Returns the scope (WN_PRAGMA_SCOPE) of the pragma.
+ *  
+ *  const char *WN_Pragma_Name(INT pragma_id)
+ *   Returns the printable name of the pragma. 
+ *
+ * Note: the pragma_id identifier passed is a INT type and not
+ * a WN_PRAGMA_ID as it allows to hide the actual enumeration to
+ * some C++ clients without requiring a type cast.
+ * For instance WN_Pragma_Name(WN_pragma(x)) is possible even if
+ * WN_Pragma() return a INT instead of a WN_PRAGMA_ID.
+ * 
+ * Note: the WN_PRAGMA_DESC descriptor is now hidden to the clients
+ * of this interface and as been moved to wn_pragmas.cxx.
+ * ====================================================================
+ */
+BE_EXPORTED extern WN_PRAGMA_USERS WN_Pragma_Users(INT pragma_id);
+BE_EXPORTED extern WN_PRAGMA_SCOPE WN_Pragma_Scope(INT pragma_id);
+BE_EXPORTED extern const char *WN_Pragma_Name(INT pragma_id);
+
+#else /* if !TARG_ST */
+
 /* ====================================================================
  *
  * WN_PRAGMA_DESC:  Pragma descriptors
@@ -501,6 +537,8 @@ typedef struct wn_pragma_desc {
 } WN_PRAGMA_DESC;
 
 BE_EXPORTED extern WN_PRAGMA_DESC WN_pragmas[];
+
+#endif /* !TARG_ST */
 
 /* I suspect this is not needed anymore, so set it to NULL
  * for now for testing.

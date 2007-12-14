@@ -319,7 +319,11 @@ extern void Lego_OZero_Driver(PU_Info* current_pu,
       fprintf(TFile, "%s", DBar);
     }
     if (Run_autopar) { 
+#ifdef TARG_ST
+      LWN_Process_Pragmas(func_nd); 
+#else
       LWN_Process_FF_Pragmas(func_nd); 
+#endif
       Parallel_And_Padding_Phase(current_pu, func_nd); 
     } 
     Build_CG_Dependence_Graph (Array_Dependence_Graph);

@@ -267,7 +267,7 @@ void DISTR_DIM::Init_Cyclic_Const (DISTRIBUTE_TYPE dt,
   _chunksize.const_val = const_val;
   if (const_val < 1) {
     ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(pwn),
-                 WN_pragmas[WN_PRAGMA_DISTRIBUTE].name,
+                 WN_Pragma_Name(WN_PRAGMA_DISTRIBUTE),
                  "chunksize is 0 or -ve, assuming 1");
     _chunksize.const_val = 1;
   }
@@ -2689,7 +2689,7 @@ static void Read_Pragma_Data_Affinity (WN* do_wn, WN* rwn) {
   // it otherwise.
   if (!Loop_Bounds_Simple(do_wn)) {
     ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(rwn),
-                 WN_pragmas[WN_pragma(rwn)].name,
+                 WN_Pragma_Name(WN_pragma(rwn)),
                  "step-size of loop must be 1 (ignoring).");
     return;
   }
@@ -2707,28 +2707,28 @@ static void Read_Pragma_Data_Affinity (WN* do_wn, WN* rwn) {
       (mpi->Nest_Index() != 0) ||
       (mpi->Nest_Total() != nest_count)) {
     ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(rwn),
-                 WN_pragmas[WN_pragma(rwn)].name,
+                 WN_Pragma_Name(WN_pragma(rwn)),
                  "mismatch in data-affinity clause and nesting of doacross (ignoring).");
     return;
   }
   if ((WN_opcode(array_wn) != OPC_XPRAGMA) ||
       (WN_pragma(array_wn) != WN_PRAGMA_DATA_AFFINITY)) {
     ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(rwn),
-                 WN_pragmas[WN_pragma(rwn)].name,
+                 WN_Pragma_Name(WN_pragma(rwn)),
                  "missing reference in data-affinity clause (ignoring).");
     return;
   }
   array_wn = WN_kid0(array_wn);
   if (WN_operator(array_wn) != OPR_ILOAD) {
     ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(rwn),
-                 WN_pragmas[WN_pragma(rwn)].name,
+                 WN_Pragma_Name(WN_pragma(rwn)),
                  "affinity must be for an array reference (ignoring).");
     return;
   }
   array_wn = WN_kid0(array_wn);
   if (WN_operator(array_wn) != OPR_ARRAY) {
     ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(rwn),
-                 WN_pragmas[WN_pragma(rwn)].name,
+                 WN_Pragma_Name(WN_pragma(rwn)),
                  "affinity must be for an array reference (ignoring).");
     return;
   }
@@ -2755,7 +2755,7 @@ static void Read_Pragma_Data_Affinity (WN* do_wn, WN* rwn) {
                       &index_sym,&tmp_coeff,&tmp_constant)) {
         if (dimnum != -1) {
           ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(rwn),
-                       WN_pragmas[WN_pragma(rwn)].name,
+                       WN_Pragma_Name(WN_pragma(rwn)),
                        "cannot have coupled subscripts (ignoring).");
           goto cleanup;
         }
@@ -2767,7 +2767,7 @@ static void Read_Pragma_Data_Affinity (WN* do_wn, WN* rwn) {
     }
     if (dimnum == -1) {
       ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(rwn),
-                   WN_pragmas[WN_pragma(rwn)].name,
+                   WN_Pragma_Name(WN_pragma(rwn)),
                    "bad array subscripts (ignoring).");
       goto cleanup;
     }
@@ -2776,7 +2776,7 @@ static void Read_Pragma_Data_Affinity (WN* do_wn, WN* rwn) {
     if ((WN_operator(base) != OPR_LDA) &&
         (WN_operator(base) != OPR_LDID)) {
       ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(rwn),
-                   WN_pragmas[WN_pragma(rwn)].name,
+                   WN_Pragma_Name(WN_pragma(rwn)),
                    "must have an array reference (ignoring).");
       goto cleanup;
     }
@@ -2792,7 +2792,7 @@ static void Read_Pragma_Data_Affinity (WN* do_wn, WN* rwn) {
         DISTRIBUTE_TYPE dt=dinfo->Get_Dact(0)->Get_Dim(dimnum)->Distr_Type ();
         if (dt == DISTRIBUTE_STAR) {
           ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(rwn),
-                       WN_pragmas[WN_pragma(rwn)].name,
+                       WN_Pragma_Name(WN_pragma(rwn)),
                        "has a non-distributed array (ignoring).");
           goto cleanup;
         }
@@ -2804,13 +2804,13 @@ static void Read_Pragma_Data_Affinity (WN* do_wn, WN* rwn) {
         }
         if (num_distr_dim == 0) {
           ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(rwn),
-                       WN_pragmas[WN_pragma(rwn)].name,
+                       WN_Pragma_Name(WN_pragma(rwn)),
                        "has a non-distributed array (ignoring).");
           goto cleanup;
         }
         if (num_distr_dim != nest_count) {
           ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(rwn),
-                       WN_pragmas[WN_pragma(rwn)].name,
+                       WN_Pragma_Name(WN_pragma(rwn)),
                        "array has multiple distributed dimensions, may get poor load-balancing");
         }
       }
@@ -2822,7 +2822,7 @@ static void Read_Pragma_Data_Affinity (WN* do_wn, WN* rwn) {
       DISTR_ARRAY* dact = Lookup_DACT (WN_st(base));
       if (dact && dact->Get_Dim(dimnum)->Distr_Type() != DISTRIBUTE_BLOCK) {
         ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(rwn),
-                 WN_pragmas[WN_pragma(rwn)].name,
+                 WN_Pragma_Name(WN_pragma(rwn)),
                  "-ve stride allowed only on BLOCK distribution (ignoring).");
         goto cleanup;
       }
@@ -3359,7 +3359,7 @@ static WN* Read_Pragma_Page_Place (WN* pwn) {
   if ((WN_opcode(pwn) != OPC_XPRAGMA) ||
       (WN_pragma(pwn) != WN_PRAGMA_PAGE_PLACE)) {
     ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(pwn),
-                 WN_pragmas[WN_pragma(pwn)].name,
+                 WN_Pragma_Name(WN_pragma(pwn)),
                  "Missing address expression (ignoring).");
     return pwn;
   }
@@ -3368,7 +3368,7 @@ static WN* Read_Pragma_Page_Place (WN* pwn) {
   if ((WN_opcode(pwn) != OPC_XPRAGMA) ||
       (WN_pragma(pwn) != WN_PRAGMA_PAGE_PLACE)) {
     ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(pwn),
-                 WN_pragmas[WN_pragma(pwn)].name,
+                 WN_Pragma_Name(WN_pragma(pwn)),
                  "Missing size expression (ignoring).");
     LWN_Delete_Tree_From_Block (addr_xpwn);
     return pwn;
@@ -3378,7 +3378,7 @@ static WN* Read_Pragma_Page_Place (WN* pwn) {
   if ((WN_opcode(pwn) != OPC_XPRAGMA) ||
       (WN_pragma(pwn) != WN_PRAGMA_PAGE_PLACE)) {
     ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(pwn),
-                 WN_pragmas[WN_pragma(pwn)].name,
+                 WN_Pragma_Name(WN_pragma(pwn)),
                  "Missing thread-num expression (ignoring).");
     LWN_Delete_Tree_From_Block (addr_xpwn);
     LWN_Delete_Tree_From_Block (size_xpwn);
@@ -3491,7 +3491,7 @@ WN* Read_Pragma_Distribute (WN* pwn) {
 
   if (!Array_TY_OK (array_ty)) {
     ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(pwn),
-                 WN_pragmas[WN_pragma(pwn)].name,
+                 WN_Pragma_Name(WN_pragma(pwn)),
                  "Bad array type, ignoring.");
     WN* retval = LWN_Get_Next_Stmt_Node(pwn);
     LWN_Delete_Tree_From_Block (pwn);
@@ -3624,7 +3624,7 @@ static WN* Read_Pragma_Distribute_Reshape (WN* pwn) {
 
   if (!Array_TY_OK (array_ty)) {
     ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(pwn),
-                 WN_pragmas[WN_pragma(pwn)].name,
+                 WN_Pragma_Name(WN_pragma(pwn)),
                  "Bad array type, ignoring.");
     FmtAssert (FALSE, ("Cannot reshape array %s\n",
                        ST_name(array_st)));
@@ -3709,7 +3709,7 @@ extern WN* Read_Pragma_Redistribute (WN* pwn, BOOL gen_phase) {
 
   if (!Array_TY_OK (array_ty)) {
     ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(pwn),
-                 WN_pragmas[WN_pragma(pwn)].name,
+                 WN_Pragma_Name(WN_pragma(pwn)),
                  "Bad array type, ignoring.");
     WN* retval = LWN_Get_Next_Stmt_Node(pwn);
     LWN_Delete_Tree_From_Block (pwn);
@@ -3873,7 +3873,7 @@ static DISTR_ARRAY* New_DACT (WN** pwn_addr, ST* array_st, INT ndims) {
         WN_operator(WN_kid0(pwn)) != OPR_INTCONST) {
       ErrMsgSrcpos(EC_DRA_unsupported_type, 
                    WN_Get_Linenum(pwn),
-                   WN_pragmas[WN_pragma(pwn)].name,
+                   WN_Pragma_Name(WN_pragma(pwn)),
                    ST_name(array_st),
                    "Distribution of adjustable size arrays in functions with alternate entry points is currently not supported");
     }

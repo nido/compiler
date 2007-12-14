@@ -202,7 +202,7 @@ static INT   region_stack_size;
 static BB_NUM min_bb_id;
 
 #ifdef TARG_ST
-BB_MAP loop_pragma_map;
+static BB_MAP loop_pragma_map;
 #else
 static WN *last_loop_pragma;
 #endif
@@ -5848,19 +5848,8 @@ Expand_Statement (
   case OPC_PRAGMA:
   case OPC_XPRAGMA:
 #ifdef TARG_ST
-    if (WN_pragmas[WN_pragma(stmt)].users & PUSER_CG) {
-      if ((WN_pragma(stmt) == WN_PRAGMA_UNROLL) ||
-	  (WN_pragma(stmt) == WN_PRAGMA_LOOPMOD) ||
-	  (WN_pragma(stmt) == WN_PRAGMA_PIPELINE) ||
-	  (WN_pragma(stmt) == WN_PRAGMA_IVDEP) ||
-	  (WN_pragma(stmt) == WN_PRAGMA_LOOPTRIP) ||
-	  (WN_pragma(stmt) == WN_PRAGMA_LOOPSEQ) ||
-	  (WN_pragma(stmt) == WN_PRAGMA_LOOPDEP) ||
-	  (WN_pragma(stmt) == WN_PRAGMA_STREAM_ALIGNMENT) ||
-	  (WN_pragma(stmt) == WN_PRAGMA_HWLOOP) ||
-	  (WN_pragma(stmt) == WN_PRAGMA_LOOPMINITERCOUNT) ||
-	  (WN_pragma(stmt) == WN_PRAGMA_LOOPMAXITERCOUNT) ||
-	  (WN_pragma(stmt) == WN_PRAGMA_LOOPPACK)) {
+    if (WN_Pragma_Users(WN_pragma(stmt)) & PUSER_CG) {
+      if (WN_Pragma_Scope(WN_pragma(stmt)) == WN_PRAGMA_SCOPE_LOOP) {
 	ANNOTATION *loop_pragmas = (ANNOTATION *)BB_MAP_Get(loop_pragma_map, Cur_BB);
 	loop_pragmas = ANNOT_Add(loop_pragmas, ANNOT_PRAGMA, (void *)stmt, &MEM_pu_pool);
 	BB_MAP_Set(loop_pragma_map, Cur_BB, loop_pragmas);
@@ -5873,7 +5862,7 @@ Expand_Statement (
 	}
       }
 #else
-    if (WN_pragmas[WN_pragma(stmt)].users == PUSER_CG) {
+    if (WN_Pragma_Users(WN_pragma(stmt)) & PUSER_CG) {
       if (WN_pragma(stmt) == WN_PRAGMA_UNROLL)
 	/*
 	 * Will place loop pragmas on loop head BB.  Currently we
@@ -6376,7 +6365,7 @@ Convert_WHIRL_To_OPs (
       if (loop_head == NULL) {
 	if (CG_opt_level > 1)
 	  ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum((WN *)ANNOT_info(ANNOT_First(loop_pragmas, ANNOT_PRAGMA))),
-		       WN_pragmas[WN_pragma((WN *)ANNOT_info(ANNOT_First(loop_pragmas, ANNOT_PRAGMA)))].name,
+		       WN_Pragma_Name(WN_pragma((WN *)ANNOT_info(ANNOT_First(loop_pragmas, ANNOT_PRAGMA)))),
 		       "not followed by a loop, ignored");
 	continue;
       }
@@ -6416,7 +6405,7 @@ Convert_WHIRL_To_OPs (
 #endif
 	  if (trip_count && TN_is_constant(trip_count)) {
 	    if (TN_value(trip_count) !=  WN_pragma_arg1(wn))
-	      ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn), WN_pragmas[WN_pragma(wn)].name,
+	      ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(wn), WN_Pragma_Name(WN_pragma(wn)),
 			   "inconsistent with computed value, ignored");
 	  }
 	  else 
@@ -6575,7 +6564,7 @@ Whirl2ops_Finalize (void)
       !WN_pragma_compiler_generated(last_loop_pragma) &&
       CG_opt_level > 1) {
     ErrMsgSrcpos(EC_LNO_Bad_Pragma_String, WN_Get_Linenum(last_loop_pragma),
-		 WN_pragmas[WN_pragma(last_loop_pragma)].name,
+		 WN_Pragma_Name(WN_pragma(last_loop_pragma)),
 		 "not followed by a loop, ignored");
   }
 #endif

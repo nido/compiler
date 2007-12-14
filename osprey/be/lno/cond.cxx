@@ -778,7 +778,7 @@ static void Delete_MP_Region (WN* do_wn,
   while (tmp) {
     next_tmp = WN_next(tmp);
     if ((WN_opcode(tmp) != OPC_PRAGMA) ||
-        !(WN_pragmas[WN_pragma(tmp)].users & PUSER_MP)) {
+        !(WN_Pragma_Users(WN_pragma(tmp)) & PUSER_MP)) {
       LWN_Insert_Block_Before(region_parent,region,
                               LWN_Extract_From_Block(tmp));
     }
@@ -1162,51 +1162,7 @@ static void Guard_Dos_Rec(WN *wn, HASH_TABLE<WN *,BOOL> *htable)
     }
   }
 }
-#ifdef TARG_ST
-//TB: Fix a bug: pragma preamble_end was moved in a wrong place.
-//Need to differenciate llop pragma from others
-//Return True for loop pragma
-static BOOL
-Loop_Pragma(WN_PRAGMA_ID pragma)
-{
-  switch (pragma) {
-    case WN_PRAGMA_AGGRESSIVE_INNER_LOOP_FISSION:
-    case WN_PRAGMA_BLOCKABLE:
-    case WN_PRAGMA_BLOCKING_SIZE:
-    case WN_PRAGMA_CRI_CNCALL:
-    case WN_PRAGMA_FISSION:
-    case WN_PRAGMA_FISSIONABLE:
-    case WN_PRAGMA_FUSE:
-    case WN_PRAGMA_FUSEABLE:
-    case WN_PRAGMA_INTERCHANGE:
-    case WN_PRAGMA_IVDEP:
-    case WN_PRAGMA_KAP_ASSERT_CONCURRENT_CALL:
-    case WN_PRAGMA_KAP_ASSERT_DO:
-    case WN_PRAGMA_KAP_ASSERT_DOPREFER:
-    case WN_PRAGMA_NEXT_SCALAR:
-    case WN_PRAGMA_NORECURRENCE:
-    case WN_PRAGMA_NO_BLOCKING:
-    case WN_PRAGMA_NO_FISSION:
-    case WN_PRAGMA_NO_FUSION:
-    case WN_PRAGMA_NO_INTERCHANGE:
-    case WN_PRAGMA_UNROLL:
-#ifdef TARG_ST
-    /* FdF 23/04/2004 */
-    case WN_PRAGMA_LOOPDEP:
-    case WN_PRAGMA_LOOPMOD:
-    /* FdF 30/09/2004 */
-    case WN_PRAGMA_LOOPTRIP:
-    case WN_PRAGMA_LOOPSEQ:
-    /* FdF 07/04/2006 */
-    case WN_PRAGMA_STREAM_ALIGNMENT:
-    /* FdF 20070927 */
-    case WN_PRAGMA_LOOPPACK:
-#endif
-      return TRUE;
-  }
-  return FALSE;
-}
-#endif
+
 // Guard a particular do
 extern WN* Guard_A_Do(WN *do_wn)
 {
@@ -1295,8 +1251,8 @@ extern WN* Guard_A_Do(WN *do_wn)
       wn = WN_prev(wn);
 #ifdef TARG_ST
     //TB: Fix a bug: pragma preamble_end was moved in a wrong place.
-    //Need to differenciate loop pragmas from others
-    while (wn && WN_operator(wn) == OPR_PRAGMA && Loop_Pragma((WN_PRAGMA_ID)WN_pragma(wn))) {
+    //Need to differenciate loop scope pragmas from others
+    while (wn && WN_operator(wn) == OPR_PRAGMA && WN_Pragma_Scope(WN_pragma(wn)) == WN_PRAGMA_SCOPE_LOOP) {
 #else
     while (wn && WN_operator(wn) == OPR_PRAGMA) {
 #endif

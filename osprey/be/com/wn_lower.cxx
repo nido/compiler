@@ -14265,11 +14265,11 @@ WN *lower_block(WN *tree, LOWER_ACTIONS actions)
 
     while (Action(LOWER_MP) && node &&
       ((((WN_opcode(node) == OPC_PRAGMA) || (WN_opcode(node) == OPC_XPRAGMA))
-	&& (WN_pragmas[WN_pragma(node)].users & PUSER_MP)) ||
+	&& (WN_Pragma_Users(WN_pragma(node)) & PUSER_MP)) ||
        ((WN_opcode(node) == OPC_REGION) && WN_first(WN_region_pragmas(node)) &&
         ((WN_opcode(WN_first(WN_region_pragmas(node))) == OPC_PRAGMA) ||
 	 (WN_opcode(WN_first(WN_region_pragmas(node))) == OPC_XPRAGMA)) &&
-        (WN_pragmas[WN_pragma(WN_first(WN_region_pragmas(node)))].users &
+        (WN_Pragma_Users(WN_pragma(WN_first(WN_region_pragmas(node)))) &
 	 PUSER_MP))))
 	node = lower_mp(out, node, actions);
     if (node == NULL) break;
@@ -15438,24 +15438,10 @@ Move_Loop_Pragmas(WN *wn_orig, WN *block_orig, WN *block_dest)
   for (wn = WN_prev(wn_orig); wn; wn = prev_wn) {
     prev_wn = WN_prev(wn);
     if (WN_operator(wn) == OPR_PRAGMA) {
-      WN_PRAGMA_ID pragma = (WN_PRAGMA_ID)WN_pragma(wn);
-      switch (pragma) {
-      case WN_PRAGMA_IVDEP:
-      case WN_PRAGMA_UNROLL:
-      case WN_PRAGMA_LOOPDEP:
-      case WN_PRAGMA_LOOPMOD:
-      case WN_PRAGMA_LOOPTRIP:
-      case WN_PRAGMA_PIPELINE:
-      case WN_PRAGMA_LOOPSEQ:
-      case WN_PRAGMA_STREAM_ALIGNMENT:
-      case WN_PRAGMA_HWLOOP:
-      case WN_PRAGMA_LOOPMINITERCOUNT:
-      case WN_PRAGMA_LOOPMAXITERCOUNT:
-      case WN_PRAGMA_LOOPPACK:
+      if (WN_Pragma_Scope(WN_pragma(wn)) == WN_PRAGMA_SCOPE_LOOP) {
 	WN_EXTRACT_FromBlock(block_orig, wn);
 	WN_INSERT_BlockLast(block_dest, wn);
-	break;
-      }
+      } 
     }
     else
       break;
@@ -16727,7 +16713,7 @@ static WN *lower_entry(WN *tree, LOWER_ACTIONS actions)
       WN *wn;
       for (wn = WN_first(WN_func_pragmas(tree)); wn; wn = WN_next(wn)) {
 	if (((WN_opcode(wn) == OPC_PRAGMA) || (WN_opcode(wn) == OPC_XPRAGMA))
-	    && (WN_pragmas[WN_pragma(wn)].users & PUSER_MP)) {
+	    && (WN_Pragma_Users(WN_pragma(wn)) & PUSER_MP)) {
 	  (void) lower_mp(NULL, wn, actions);
 	}
       }

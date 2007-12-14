@@ -1137,7 +1137,7 @@ static void ir_put_wn(WN * wn, INT indent)
 	}
 
     if (opcode == OPC_XPRAGMA) {
-	fprintf(ir_ofile, " # %s", WN_pragmas[WN_pragma(wn)].name);
+	fprintf(ir_ofile, " # %s", WN_Pragma_Name(WN_pragma(wn)));
     }
 
     if (OPCODE_operator(opcode) == OPR_ASM_INPUT) {
@@ -1145,7 +1145,7 @@ static void ir_put_wn(WN * wn, INT indent)
     }
 
     if (opcode == OPC_PRAGMA) {
-	fprintf(ir_ofile, " # %s", WN_pragmas[WN_pragma(wn)].name);
+	fprintf(ir_ofile, " # %s", WN_Pragma_Name(WN_pragma(wn)));
 	switch(WN_pragma(wn)) {
 	case WN_PRAGMA_DISTRIBUTE:
 	case WN_PRAGMA_REDISTRIBUTE:

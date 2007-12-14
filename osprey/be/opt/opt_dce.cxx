@@ -1995,7 +1995,9 @@ DCE::Loop_pragma(WN_PRAGMA_ID pragma) const
     case WN_PRAGMA_FUSE:
     case WN_PRAGMA_FUSEABLE:
     case WN_PRAGMA_INTERCHANGE:
+#ifndef TARG_ST
     case WN_PRAGMA_IVDEP:
+#endif
     case WN_PRAGMA_KAP_ASSERT_CONCURRENT_CALL:
     case WN_PRAGMA_KAP_ASSERT_DO:
     case WN_PRAGMA_KAP_ASSERT_DOPREFER:
@@ -2005,24 +2007,17 @@ DCE::Loop_pragma(WN_PRAGMA_ID pragma) const
     case WN_PRAGMA_NO_FISSION:
     case WN_PRAGMA_NO_FUSION:
     case WN_PRAGMA_NO_INTERCHANGE:
+#ifndef TARG_ST
     case WN_PRAGMA_UNROLL:
-#ifdef TARG_ST
-    /* FdF 23/04/2004 */
-    case WN_PRAGMA_LOOPDEP:
-    case WN_PRAGMA_LOOPMOD:
-    /* FdF 30/09/2004 */
-    case WN_PRAGMA_LOOPTRIP:
-    case WN_PRAGMA_LOOPSEQ:
-    /* FdF 07/04/2006 */
-    case WN_PRAGMA_STREAM_ALIGNMENT:
-    /* FdF 30/08/2007 */
-    case WN_PRAGMA_HWLOOP:
-    case WN_PRAGMA_LOOPMINITERCOUNT:
-    case WN_PRAGMA_LOOPMAXITERCOUNT:
-    /* FdF 20070927 */
-    case WN_PRAGMA_LOOPPACK:
 #endif
       return TRUE;
+  default:
+#ifdef TARG_ST
+    /* All loop scope pragmas must be removed also. */
+    if (WN_Pragma_Scope(pragma) == WN_PRAGMA_SCOPE_LOOP)
+      return TRUE;
+#endif
+    break;
   }
   return FALSE;
 }
@@ -4519,7 +4514,7 @@ DCE::Remove_dead_statements( void ) const
 #ifdef TARG_ST
 	  if ( stmt->Opr() == OPR_PRAGMA &&
 	       Loop_pragma( (WN_PRAGMA_ID)WN_pragma(stmt->Orig_wn()) ) ) {
-	    DevWarn( "BB:%d Loop pragma (%s) deleted", bb->Id(), WN_pragmas[WN_pragma(stmt->Orig_wn())].name);
+	    DevWarn( "BB:%d Loop pragma (%s) deleted", bb->Id(), WN_Pragma_Name(WN_pragma(stmt->Orig_wn())));
 	  }
 #endif
 	  bb->Remove_stmtrep(stmt);
