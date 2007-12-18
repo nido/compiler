@@ -200,10 +200,6 @@ static BOOL EBO_Extract_Compose_Sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opn
 #ifdef TARG_ST
 // [CG] Use alias information from cg_dep
 #define CG_DEP_ALIAS
-// [CG] Update gra live information for better dead code
-#define UPDATE_GRA_LIVE
-// [CG] Update reg live (in peep) information for better dead code
-#define UPDATE_REG_LIVE
 #endif
 
 #ifdef TARG_ST
@@ -766,26 +762,41 @@ inline BOOL op_is_needed_globally(OP *op)
 
 #ifdef TARG_ST
 /* 
+ * [CG]: Live analysis is now incrementally updated to enabled better dead code.
+ * It is also required for redundancy and dead code elimination correctness
+ * as soon as redundancy elimination applies to global TNs.
+ *
+ * For instance:
+ * X = opA
+ * --- end of block (X is not liveout, as it is dead)
+ * X = opA
+ * Will be tranformed by the forward pass into
+ * X = opA
+ * --- end of block (X must now be liveout, otherwise the operation will be removed)
+ * nop
+ * 
+ * Thus in the backward pass, the livein of the second block and the livout
+ * of the first block must be updated for correctness
+ * Ref codex bug #37014.
+ */
+
+/* 
  * EBO_Update_Livein(BB *bb)
  *
- * [CG]: Live analysis is incrementally updated to enabled better dead code.
- * This function do the update of the live in for the current bb given the
+ * This function does the update of the live in for the current bb given the
  * current live out set.
- * It must be called after the bottom up pass over the bb.
+ * This function must be called in the backward pass on the extended blocks.
  */
 static void
 EBO_Update_Livein(BB *bb)
 {
   if (EBO_in_peep) {
-#ifdef UPDATE_REG_LIVE
     if (EBO_Trace_Data_Flow) {
 #pragma mips_frequency_hint NEVER
       fprintf(TFile,"EBO_Update_Livein REG_LIVE for BB:%d\n", BB_id(bb));
     }
     REG_LIVE_Update_Livein_From_Liveout(bb);
-#endif
   } else {
-#ifdef UPDATE_GRA_LIVE
     if (!CG_localize_tns) {
       if (EBO_Trace_Data_Flow) {
 #pragma mips_frequency_hint NEVER
@@ -793,7 +804,35 @@ EBO_Update_Livein(BB *bb)
       }
       GRA_LIVE_Compute_Liveness_For_BB(bb);
     }
-#endif
+  }
+}
+
+/* 
+ * EBO_Update_Liveout(BB *bb)
+ *
+ * This function updates the livout set from the existing livein sets of the successors.
+ * This function must be called in the backward pass on the extended blocks.
+ */
+static void
+EBO_Update_Liveout(BB *bb)
+{
+  if (EBO_in_peep) {
+    if (EBO_Trace_Data_Flow) {
+      fprintf(TFile,"EBO_Update_Liveout REG_LIVE for BB:%d\n", BB_id(bb));
+    }
+    // In Peep, there is no need to update live out as the liveout
+    // information is not stored.
+    // The query REG_LIVE_Outof_BB() recomputes it each time it is called.
+  } else {
+    if (EBO_Trace_Data_Flow) {
+#pragma mips_frequency_hint NEVER
+      fprintf(TFile,"EBO_Update_Liveout GRA_LIVE for BB:%d\n", BB_id(bb));
+    }
+    if (!CG_localize_tns) {
+      // Before allocation in global tn mode, the liveout
+      // is stored. Thus, it must be recomputed.
+      GRA_LIVE_Compute_Liveness_For_BB(bb);
+    }
   }
 }
 #endif
@@ -6934,6 +6973,12 @@ EBO_Add_BB_to_EB (BB * bb)
     #pragma mips_frequency_hint NEVER
     fprintf(TFile,"%sEBO optimization at BB:%d\n",EBO_trace_pfx,BB_id(bb));
   }
+
+#ifdef TARG_ST
+  // [CG]: Update live out information that may have change due to redundancy 
+  // elimination. See comments in  EBO_Update_Liveout().
+  EBO_Update_Liveout(bb);
+#endif
 
 #ifdef TARG_ST
   /* [CG]: Now done in four passes:
