@@ -2774,7 +2774,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 #endif
 
 #ifdef TARG_STxP70
-%-mfpx   ;         ALL     be,as     "-TARG:enable_fpx=on -TARG:proc=stxp70_ext -TARG:isa=stxp70_ext -TARG:abi=stxp70-fpx -fpx-abi-variant"
+%-mfpx   ;         ALL     be,as     "-TARG:enable_fpx=on -TARG:abi=stxp70-fpx -fpx-abi-variant"
 %   NA__STxP70__"Enable fpX extension for floating point support"
 -mfpx*   ;         ALL     be,as     ""
    NA__STxP70__"Enable fpX extension for floating point support"

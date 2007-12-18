@@ -639,11 +639,19 @@ extern BOOL OP_has_implicit_interactions(OP*);
  * OP semantics in alphabetical order. Corresponding TOP_is_xxx
  * macroes are generated form isa_properties description file.
  */
+#ifdef TARG_ST
+#define OP_access_reg_bank(o)	(0) /*Temporary to lower properties number. */
+#else
 #define OP_access_reg_bank(o)	(TOP_is_access_reg_bank(OP_code(o)))
+#endif
 #ifdef TARG_ST200
 #define OP_address(o)		(TOP_is_address(OP_code(o)))
 #endif
+#ifdef TARG_ST
+#define OP_branch_predict(o)	(0) /*Temporary to lower properties number. */
+#else
 #define OP_branch_predict(o)	(TOP_is_branch_predict(OP_code(o)))
+#endif
 #define OP_call(o)		(TOP_is_call(OP_code(o)))
 #ifdef TARG_STxP70
 #define OP_cond(o)		(TOP_is_cond(OP_code(o)) && \
@@ -702,10 +710,18 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_has_predicate(o)	(TOP_is_predicated(OP_code(o)))
 #define OP_ijump(o)		(TOP_is_ijump(OP_code(o)))
 #define OP_jump(o)		(TOP_is_jump(OP_code(o)))
+#ifdef TARG_ST
+#define OP_likely(o)		(0) /*Temporary to lower properties number. */
+#else
 #define OP_likely(o)		(TOP_is_likely(OP_code(o)))
+#endif
 #define OP_load(o)		(TOP_is_load(OP_code(o)))
 #define OP_madd(o)		(TOP_is_madd(OP_code(o)))
+#ifdef TARG_ST
+#define OP_mem_fill_type(o)	(0) /*Temporary to lower properties number. */
+#else
 #define OP_mem_fill_type(o)     (TOP_is_mem_fill_type(OP_code(o)))
+#endif
 #define OP_mmalu(o)		(TOP_is_mmalu(OP_code(o)))
 #define OP_mmmul(o)		(TOP_is_mmmul(OP_code(o)))
 #define OP_mmshf(o)		(TOP_is_mmshf(OP_code(o)))

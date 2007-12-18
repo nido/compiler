@@ -548,7 +548,7 @@ match_shl_mullh_sequence (const RangeAnalysis &range_analysis,
   TN *opnd1, *opnd2, *result;
   INT shiftcount;
 
-  if (!ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mulhs_r_r_r))
+  if (!ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_mulhs_r_r_r))
     return FALSE;
 
   TOP opcode = OP_code(l1_op);
@@ -635,7 +635,7 @@ match_zeroextend_sequence (const RangeAnalysis &range_analysis,
   INT shiftcount;
   INT bits;
 
-  if (!ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_zxt_r_r_r))
+  if (!ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_zxt_r_r_r))
     return FALSE;
 
   TOP opcode = OP_code(l1_op);
@@ -706,8 +706,8 @@ match_extend_sequence (const RangeAnalysis &range_analysis,
   INT shiftcount;
   BOOL is_signed;
 
-  if (!ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_zxt_r_r_r) || 
-      !ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sxt_r_r_r))
+  if (!ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_zxt_r_r_r) || 
+      !ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_sxt_r_r_r))
     return FALSE;
 
   TOP opcode = OP_code(l1_op);
@@ -867,7 +867,7 @@ match_rotl_sequence (const RangeAnalysis &range_analysis,
   TN *opnd1, *opnd2, *result;
   INT64 shiftcount1, shiftcount2, rotcount;
 
-  if (!ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_rotl_i_r_r))
+  if (!ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_rotl_i_r_r))
     return FALSE;
 
   TOP opcode = OP_code(l1_op);
@@ -932,7 +932,7 @@ match_swapbh_sequence (const RangeAnalysis &range_analysis,
   INT64 shiftcount1, shiftcount2;
   LRange_p r1, rushort;
 
-  if (!ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_perm_pb_i_r_r))
+  if (!ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_perm_pb_i_r_r))
     return FALSE;
 
   TOP opcode = OP_code(l1_op);

@@ -129,7 +129,7 @@ Expand___st200abss_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_abss_ph_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_abss_ph_r_r)) {
     Build_OP( TOP_abss_ph_r_r,	o0,	i0,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_abss_ph_r_r, ops);
@@ -145,7 +145,7 @@ Expand___st200absubu_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_absubu_pb_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_absubu_pb_r_r_r)) {
     Build_OP( TOP_absubu_pb_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_absubu_pb_r_r_r, ops);
@@ -161,7 +161,7 @@ Expand___st200addso(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_addso_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_addso_r_r_r)) {
     Build_OP( TOP_addso_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_addso_r_r_r, ops);
@@ -177,7 +177,7 @@ Expand___st200adds_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_adds_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_adds_ph_r_r_r)) {
     Build_OP( TOP_adds_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_adds_ph_r_r_r, ops);
@@ -193,7 +193,7 @@ Expand___st200add_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_add_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_add_ph_r_r_r)) {
     Build_OP( TOP_add_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_add_ph_r_r_r, ops);
@@ -210,7 +210,7 @@ Expand___st200avg4u_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_avg4u_pb_r_r_b_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_avg4u_pb_r_r_b_r)) {
     Build_OP( TOP_avg4u_pb_r_r_b_r,	o0,	i0,	i1,	i2,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_avg4u_pb_r_r_b_r, ops);
@@ -227,7 +227,7 @@ Expand___st200avgu_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_avgu_pb_r_r_b_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_avgu_pb_r_r_b_r)) {
     Build_OP( TOP_avgu_pb_r_r_b_r,	o0,	i0,	i1,	i2,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_avgu_pb_r_r_b_r, ops);
@@ -243,7 +243,7 @@ Expand___st200cmpeq_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_cmpeq_pb_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_cmpeq_pb_r_r_r)) {
     Build_OP( TOP_cmpeq_pb_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_cmpeq_pb_r_r_r, ops);
@@ -259,7 +259,7 @@ Expand___st200cmpeq_pb_bdest(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_cmpeq_pb_r_r_b)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_cmpeq_pb_r_r_b)) {
     Build_OP( TOP_cmpeq_pb_r_r_b,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_cmpeq_pb_r_r_b, ops);
@@ -275,7 +275,7 @@ Expand___st200cmpeq_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_cmpeq_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_cmpeq_ph_r_r_r)) {
     Build_OP( TOP_cmpeq_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_cmpeq_ph_r_r_r, ops);
@@ -291,7 +291,7 @@ Expand___st200cmpeq_ph_bdest(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_cmpeq_ph_r_r_b)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_cmpeq_ph_r_r_b)) {
     Build_OP( TOP_cmpeq_ph_r_r_b,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_cmpeq_ph_r_r_b, ops);
@@ -307,7 +307,7 @@ Expand___st200cmpgtu_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_cmpgtu_pb_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_cmpgtu_pb_r_r_r)) {
     Build_OP( TOP_cmpgtu_pb_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_cmpgtu_pb_r_r_r, ops);
@@ -323,7 +323,7 @@ Expand___st200cmpgtu_pb_bdest(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_cmpgtu_pb_r_r_b)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_cmpgtu_pb_r_r_b)) {
     Build_OP( TOP_cmpgtu_pb_r_r_b,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_cmpgtu_pb_r_r_b, ops);
@@ -339,7 +339,7 @@ Expand___st200cmpgt_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_cmpgt_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_cmpgt_ph_r_r_r)) {
     Build_OP( TOP_cmpgt_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_cmpgt_ph_r_r_r, ops);
@@ -355,7 +355,7 @@ Expand___st200cmpgt_ph_bdest(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_cmpgt_ph_r_r_b)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_cmpgt_ph_r_r_b)) {
     Build_OP( TOP_cmpgt_ph_r_r_b,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_cmpgt_ph_r_r_b, ops);
@@ -368,7 +368,7 @@ Expand___st200dib(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_dib)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_dib)) {
     Build_OP( TOP_dib,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_dib, ops);
@@ -384,7 +384,7 @@ Expand___st200ext1_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_ext1_pb_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_ext1_pb_r_r_r)) {
     Build_OP( TOP_ext1_pb_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_ext1_pb_r_r_r, ops);
@@ -400,7 +400,7 @@ Expand___st200ext2_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_ext2_pb_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_ext2_pb_r_r_r)) {
     Build_OP( TOP_ext2_pb_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_ext2_pb_r_r_r, ops);
@@ -416,7 +416,7 @@ Expand___st200ext3_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_ext3_pb_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_ext3_pb_r_r_r)) {
     Build_OP( TOP_ext3_pb_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_ext3_pb_r_r_r, ops);
@@ -433,7 +433,7 @@ Expand___st200extl_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_extl_pb_r_r_b_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_extl_pb_r_r_b_r)) {
     Build_OP( TOP_extl_pb_r_r_b_r,	o0,	i0,	i1,	i2,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_extl_pb_r_r_b_r, ops);
@@ -450,7 +450,7 @@ Expand___st200extr_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_extr_pb_r_r_b_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_extr_pb_r_r_b_r)) {
     Build_OP( TOP_extr_pb_r_r_b_r,	o0,	i0,	i1,	i2,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_extr_pb_r_r_b_r, ops);
@@ -465,7 +465,7 @@ Expand___st200flushadd(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_flushadd_r_ii)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_flushadd_r_ii)) {
     Build_OP( TOP_flushadd_r_ii,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_flushadd_r_ii, ops);
@@ -480,7 +480,7 @@ Expand___st200flushadd_l1(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_flushadd_l1_r_ii)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_flushadd_l1_r_ii)) {
     Build_OP( TOP_flushadd_l1_r_ii,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_flushadd_l1_r_ii, ops);
@@ -495,7 +495,7 @@ Expand___st200invadd(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_invadd_r_ii)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_invadd_r_ii)) {
     Build_OP( TOP_invadd_r_ii,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_invadd_r_ii, ops);
@@ -510,7 +510,7 @@ Expand___st200invadd_l1(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_invadd_l1_r_ii)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_invadd_l1_r_ii)) {
     Build_OP( TOP_invadd_l1_r_ii,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_invadd_l1_r_ii, ops);
@@ -525,7 +525,7 @@ Expand___st200ldwl(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_ldwl_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_ldwl_r_r)) {
     Build_OP( TOP_ldwl_r_r,	o0,	i0,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_ldwl_r_r, ops);
@@ -541,7 +541,7 @@ Expand___maxuw(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_maxu_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_maxu_r_r_r)) {
     Build_OP( TOP_maxu_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_maxu_r_r_r, ops);
@@ -557,7 +557,7 @@ Expand___maxw(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_max_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_max_r_r_r)) {
     Build_OP( TOP_max_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_max_r_r_r, ops);
@@ -573,7 +573,7 @@ Expand___st200max_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_max_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_max_ph_r_r_r)) {
     Build_OP( TOP_max_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_max_ph_r_r_r, ops);
@@ -589,7 +589,7 @@ Expand___minuw(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_minu_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_minu_r_r_r)) {
     Build_OP( TOP_minu_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_minu_r_r_r, ops);
@@ -605,7 +605,7 @@ Expand___minw(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_min_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_min_r_r_r)) {
     Build_OP( TOP_min_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_min_r_r_r, ops);
@@ -621,7 +621,7 @@ Expand___st200min_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_min_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_min_ph_r_r_r)) {
     Build_OP( TOP_min_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_min_ph_r_r_r, ops);
@@ -637,7 +637,7 @@ Expand___st200muladdus_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_muladdus_pb_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_muladdus_pb_r_r_r)) {
     Build_OP( TOP_muladdus_pb_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_muladdus_pb_r_r_r, ops);
@@ -653,7 +653,7 @@ Expand___st200muladd_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_muladd_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_muladd_ph_r_r_r)) {
     Build_OP( TOP_muladd_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_muladd_ph_r_r_r, ops);
@@ -669,7 +669,7 @@ Expand___st200mulfracadds_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mulfracadds_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_mulfracadds_ph_r_r_r)) {
     Build_OP( TOP_mulfracadds_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_mulfracadds_ph_r_r_r, ops);
@@ -685,7 +685,7 @@ Expand___st200mulfracrm_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mulfracrm_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_mulfracrm_ph_r_r_r)) {
     Build_OP( TOP_mulfracrm_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_mulfracrm_ph_r_r_r, ops);
@@ -701,7 +701,7 @@ Expand___st200mulfracrne_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mulfracrne_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_mulfracrne_ph_r_r_r)) {
     Build_OP( TOP_mulfracrne_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_mulfracrne_ph_r_r_r, ops);
@@ -717,7 +717,7 @@ Expand___st200mul_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_mul_ph_r_r_r)) {
     Build_OP( TOP_mul_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_mul_ph_r_r_r, ops);
@@ -733,7 +733,7 @@ Expand___st200packrnp_phh(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_packrnp_phh_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_packrnp_phh_r_r_r)) {
     Build_OP( TOP_packrnp_phh_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_packrnp_phh_r_r_r, ops);
@@ -749,7 +749,7 @@ Expand___st200packsu_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_packsu_pb_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_packsu_pb_r_r_r)) {
     Build_OP( TOP_packsu_pb_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_packsu_pb_r_r_r, ops);
@@ -765,7 +765,7 @@ Expand___st200packs_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_packs_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_packs_ph_r_r_r)) {
     Build_OP( TOP_packs_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_packs_ph_r_r_r, ops);
@@ -781,7 +781,7 @@ Expand___st200pack_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_pack_pb_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_pack_pb_r_r_r)) {
     Build_OP( TOP_pack_pb_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_pack_pb_r_r_r, ops);
@@ -797,7 +797,7 @@ Expand___st200pack_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_pack_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_pack_ph_r_r_r)) {
     Build_OP( TOP_pack_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_pack_ph_r_r_r, ops);
@@ -813,7 +813,7 @@ Expand___st200perm_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_perm_pb_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_perm_pb_r_r_r)) {
     Build_OP( TOP_perm_pb_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_perm_pb_r_r_r, ops);
@@ -828,7 +828,7 @@ Expand___st220prgadd_l1(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prgadd_l1_r_ii)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_prgadd_l1_r_ii)) {
     Build_OP( TOP_prgadd_l1_r_ii,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_prgadd_l1_r_ii, ops);
@@ -843,7 +843,7 @@ Expand___st200prgadd_l1(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prgadd_l1_r_ii)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_prgadd_l1_r_ii)) {
     Build_OP( TOP_prgadd_l1_r_ii,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_prgadd_l1_r_ii, ops);
@@ -856,7 +856,7 @@ Expand___st220prgins(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prgins)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_prgins)) {
     Build_OP( TOP_prgins,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_prgins, ops);
@@ -869,7 +869,7 @@ Expand___st200prgins(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prgins)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_prgins)) {
     Build_OP( TOP_prgins,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_prgins, ops);
@@ -884,7 +884,7 @@ Expand___st200prginsadd(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prginsadd_r_ii)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_prginsadd_r_ii)) {
     Build_OP( TOP_prginsadd_r_ii,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_prginsadd_r_ii, ops);
@@ -899,7 +899,7 @@ Expand___st200prginsadd_l1(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prginsadd_l1_r_ii)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_prginsadd_l1_r_ii)) {
     Build_OP( TOP_prginsadd_l1_r_ii,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_prginsadd_l1_r_ii, ops);
@@ -914,7 +914,7 @@ Expand___st200prginsset(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prginsset_r_ii)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_prginsset_r_ii)) {
     Build_OP( TOP_prginsset_r_ii,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_prginsset_r_ii, ops);
@@ -929,7 +929,7 @@ Expand___st200prginsset_l1(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prginsset_l1_r_ii)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_prginsset_l1_r_ii)) {
     Build_OP( TOP_prginsset_l1_r_ii,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_prginsset_l1_r_ii, ops);
@@ -944,7 +944,7 @@ Expand___st200prgset_l1(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prgset_l1_r_ii)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_prgset_l1_r_ii)) {
     Build_OP( TOP_prgset_l1_r_ii,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_prgset_l1_r_ii, ops);
@@ -958,7 +958,7 @@ Expand___st200pswclr(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_pswclr_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_pswclr_r)) {
     Build_OP( TOP_pswclr_r,	i0,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_pswclr_r, ops);
@@ -974,7 +974,7 @@ Expand___st200pswmask(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_pswmask_ii_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_pswmask_ii_r_r)) {
     Build_OP( TOP_pswmask_ii_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_pswmask_ii_r_r, ops);
@@ -988,7 +988,7 @@ Expand___st200pswset(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_pswset_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_pswset_r)) {
     Build_OP( TOP_pswset_r,	i0,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_pswset_r, ops);
@@ -1001,7 +1001,7 @@ Expand___st200retention(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_retention)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_retention)) {
     Build_OP( TOP_retention,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_retention, ops);
@@ -1017,7 +1017,7 @@ Expand___st200sadu_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sadu_pb_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_sadu_pb_r_r_r)) {
     Build_OP( TOP_sadu_pb_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_sadu_pb_r_r_r, ops);
@@ -1032,7 +1032,7 @@ Expand___st200satso(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_satso_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_satso_r_r)) {
     Build_OP( TOP_satso_r_r,	o0,	i0,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_satso_r_r, ops);
@@ -1048,7 +1048,7 @@ Expand___st200sh1addso(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sh1addso_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_sh1addso_r_r_r)) {
     Build_OP( TOP_sh1addso_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_sh1addso_r_r_r, ops);
@@ -1064,7 +1064,7 @@ Expand___st200sh1subso(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sh1subso_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_sh1subso_r_r_r)) {
     Build_OP( TOP_sh1subso_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_sh1subso_r_r_r, ops);
@@ -1080,7 +1080,7 @@ Expand___st200shlso(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shlso_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shlso_r_r_r)) {
     Build_OP( TOP_shlso_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_shlso_r_r_r, ops);
@@ -1096,7 +1096,7 @@ Expand___st200shls(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shls_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shls_r_r_r)) {
     Build_OP( TOP_shls_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_shls_r_r_r, ops);
@@ -1112,7 +1112,7 @@ Expand___st200shls_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shls_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shls_ph_r_r_r)) {
     Build_OP( TOP_shls_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_shls_ph_r_r_r, ops);
@@ -1128,7 +1128,7 @@ Expand___st200shl_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shl_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shl_ph_r_r_r)) {
     Build_OP( TOP_shl_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_shl_ph_r_r_r, ops);
@@ -1144,7 +1144,7 @@ Expand___st200shrrne_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shrrne_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shrrne_ph_r_r_r)) {
     Build_OP( TOP_shrrne_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_shrrne_ph_r_r_r, ops);
@@ -1160,7 +1160,7 @@ Expand___st200shrrnp(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shrrnp_ii_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shrrnp_ii_r_r)) {
     Build_OP( TOP_shrrnp_ii_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_shrrnp_ii_r_r, ops);
@@ -1176,7 +1176,7 @@ Expand___st200shrrnp_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shrrnp_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shrrnp_ph_r_r_r)) {
     Build_OP( TOP_shrrnp_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_shrrnp_ph_r_r_r, ops);
@@ -1192,7 +1192,7 @@ Expand___st200shr_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shr_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shr_ph_r_r_r)) {
     Build_OP( TOP_shr_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_shr_ph_r_r_r, ops);
@@ -1208,7 +1208,7 @@ Expand___st200shuffeve_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shuffeve_pb_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shuffeve_pb_r_r_r)) {
     Build_OP( TOP_shuffeve_pb_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_shuffeve_pb_r_r_r, ops);
@@ -1224,7 +1224,7 @@ Expand___st200shuffodd_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shuffodd_pb_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shuffodd_pb_r_r_r)) {
     Build_OP( TOP_shuffodd_pb_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_shuffodd_pb_r_r_r, ops);
@@ -1240,7 +1240,7 @@ Expand___st200shuff_pbh(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shuff_pbh_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shuff_pbh_r_r_r)) {
     Build_OP( TOP_shuff_pbh_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_shuff_pbh_r_r_r, ops);
@@ -1256,7 +1256,7 @@ Expand___st200shuff_pbl(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shuff_pbl_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shuff_pbl_r_r_r)) {
     Build_OP( TOP_shuff_pbl_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_shuff_pbl_r_r_r, ops);
@@ -1272,7 +1272,7 @@ Expand___st200shuff_phh(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shuff_phh_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shuff_phh_r_r_r)) {
     Build_OP( TOP_shuff_phh_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_shuff_phh_r_r_r, ops);
@@ -1288,7 +1288,7 @@ Expand___st200shuff_phl(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shuff_phl_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shuff_phl_r_r_r)) {
     Build_OP( TOP_shuff_phl_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_shuff_phl_r_r_r, ops);
@@ -1305,7 +1305,7 @@ Expand___st200slct_pb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_slct_pb_r_r_b_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_slct_pb_r_r_b_r)) {
     Build_OP( TOP_slct_pb_r_r_b_r,	o0,	i0,	i1,	i2,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_slct_pb_r_r_b_r, ops);
@@ -1321,7 +1321,7 @@ Expand___st200stwl(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_stwl_r_r_b)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_stwl_r_r_b)) {
     Build_OP( TOP_stwl_r_r_b,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_stwl_r_r_b, ops);
@@ -1337,7 +1337,7 @@ Expand___st200subso(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_subso_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_subso_r_r_r)) {
     Build_OP( TOP_subso_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_subso_r_r_r, ops);
@@ -1353,7 +1353,7 @@ Expand___st200subs_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_subs_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_subs_ph_r_r_r)) {
     Build_OP( TOP_subs_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_subs_ph_r_r_r, ops);
@@ -1369,7 +1369,7 @@ Expand___st200sub_ph(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sub_ph_r_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_sub_ph_r_r_r)) {
     Build_OP( TOP_sub_ph_r_r_r,	o0,	i0,	i1,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_sub_ph_r_r_r, ops);
@@ -1382,7 +1382,7 @@ Expand___st220sync(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sync)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_sync)) {
     Build_OP( TOP_sync,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_sync, ops);
@@ -1395,7 +1395,7 @@ Expand___st200sync(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sync)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_sync)) {
     Build_OP( TOP_sync,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_sync, ops);
@@ -1408,7 +1408,7 @@ Expand___st220syncins(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syncins)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_syncins)) {
     Build_OP( TOP_syncins,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_syncins, ops);
@@ -1421,7 +1421,7 @@ Expand___st200syncins(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syncins)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_syncins)) {
     Build_OP( TOP_syncins,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_syncins, ops);
@@ -1436,7 +1436,7 @@ Expand___st200unpacku_pbh(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_unpacku_pbh_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_unpacku_pbh_r_r)) {
     Build_OP( TOP_unpacku_pbh_r_r,	o0,	i0,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_unpacku_pbh_r_r, ops);
@@ -1451,7 +1451,7 @@ Expand___st200unpacku_pbl(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_unpacku_pbl_r_r)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_unpacku_pbl_r_r)) {
     Build_OP( TOP_unpacku_pbl_r_r,	o0,	i0,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_unpacku_pbl_r_r, ops);
@@ -1464,7 +1464,7 @@ Expand___st200waitl(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_waitl)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_waitl)) {
     Build_OP( TOP_waitl,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_waitl, ops);
@@ -1477,7 +1477,7 @@ Expand___st200wmb(
  OPS *ops
 )
 {
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_wmb)) {
+  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_wmb)) {
     Build_OP( TOP_wmb,	ops);
   } else {
     Expand_Unimplemented_Intrinsic ( TOP_wmb, ops);

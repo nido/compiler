@@ -341,8 +341,8 @@ BE_EXPORTED extern BOOL FP_packed_arithmetic;
 #define TOP_targ_mov_r_b (Is_Target_st240() ? TOP_st240_mov_r_b : TOP_convib_r_b)
 #define TOP_targ_mov_b_r (Is_Target_st240() ? TOP_st240_mov_b_r : TOP_convbi_b_r)
 
-#define TOP_targ_form(top)  (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_##top) ? TOP_##top : TOP_st240_##top)
-#define TOP_targ_form2(top)  (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_##top) ? TOP_##top : TOP_UNDEFINED)
+#define TOP_targ_form(top)  (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_##top) ? TOP_##top : TOP_st240_##top)
+#define TOP_targ_form2(top)  (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_##top) ? TOP_##top : TOP_UNDEFINED)
 
 #define TOP_targ_addcg_b_r_r_b_r TOP_addcg_b_r_r_b_r
 #define TOP_targ_slct_r_r_b_r TOP_targ_form(slct_r_r_b_r)

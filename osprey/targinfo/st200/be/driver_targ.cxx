@@ -96,7 +96,7 @@ Initialize_Targ_Info (void)
     FmtAssert(FALSE, ("targinfo doesn't handle target: %s\n", Targ_Name(Target)));
   }
 
-  result = TI_Initialize(abi, isa, proc, Targ_Path);
+  result = TI_Initialize(abi, isa, proc, 0, NULL, Targ_Path);
 
   if (result) {
     // [SC] Handle scheduler cycle time overrides.

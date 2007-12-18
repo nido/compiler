@@ -1,6 +1,90 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Dec 18 16:42:01 CET 2007
+	Author:    guillon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/guillon/dev-subsets
+
+Description:
+------------
+	*  Add support for multiple subsets.
+	Deliver with branch tracker approval art #31867.
+	Deliver branch guillon/dev-subsets at rev #14831.
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo_ext/stxp70_ext/vx/proc/vx_si.cxx
+	M      osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_registers.cxx
+	M      osprey/targinfo_ext/template/Makefile.gbase.ext
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/objects.c
+	M      osprey/driver/special_options.c
+	M      osprey/driver/config_platform.h
+	M      osprey/driver/stxp70_options.i
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/lao/st200/lao_cgir.cxx
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/op.h
+	M      osprey/lai/oputil.cxx
+	A  +   osprey/make/platforms/linux-cygwin-stxp70
+	A  +   osprey/make/platforms/linux-cygwin-stxp70/Makefile.platforms
+	A  +   osprey/make/platforms/cygwin-stxp70
+	A  +   osprey/make/platforms/cygwin-stxp70/Makefile.platforms
+	M      osprey/common/rcparser/utils_filesystem.h
+	M      osprey/common/rcparser/utils_path.h
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/loader.cxx
+	A  +   osprey/targCygwin_stxp70
+	A  +   osprey/targCygwin_stxp70/configure
+	M      osprey/targinfo/access/ti_init.c
+	M      osprey/targinfo/access/ti_init.h
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/stxp70/expand/exp_divrem.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_si.cxx
+	M      osprey/targinfo/stxp70/config/config_TARG.cxx
+	M      osprey/targinfo/stxp70/config/gen_intrinsics.inc
+	M      osprey/targinfo/stxp70/config/config_target.h
+	M      osprey/targinfo/stxp70/config/config_cache_targ.cxx
+	M      osprey/targinfo/stxp70/config/config_TARG.h
+	M      osprey/targinfo/stxp70/config/config_elf_targ.cxx
+	M      osprey/targinfo/stxp70/config/targ_elf.h
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+	M      osprey/targinfo/stxp70/be/driver_targ.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/isa/isa_decode.cxx
+	M      osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M      osprey/targinfo/stxp70/isa/isa_registers.cxx
+	M      osprey/targinfo/st200/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/st200/expand/exp_divrem.cxx
+	M      osprey/targinfo/st200/expand/exp_memrf.cxx
+	M      osprey/targinfo/st200/expand/exp_pred.cxx
+	M      osprey/targinfo/st200/expand/exp_targ.cxx
+	M      osprey/targinfo/st200/config/gen_intrinsics.inc
+	M      osprey/targinfo/st200/config/config_target.h
+	M      osprey/targinfo/st200/be/driver_targ.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+	M      osprey/targinfo/st200/cg/targ_op.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_range_prop.cxx
+	M      osprey/targinfo/generate/isa_subset_gen.cxx
+	M      osprey/targinfo/generate/isa_registers_gen.cxx
+	M      osprey/targinfo/generate/si_gen.cxx
+	M      osprey/targinfo/generate/isa_hazards_gen.cxx
+	M      osprey/targinfo/generate/dyn/dyn_stub3.cxx
+	M      osprey/targinfo/generate/si_gen.h
+	M      osprey/targinfo/Makefile.gbase
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Dec 18 13:26:08 CET 2007
 	Author:    guillon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -46,11 +46,13 @@
  *
  *	Misc. functions:
  *
- *	    void TI_Initialize( ABI_PROPERTIES_ABI, ISA_SUBSET, PROCESSOR, target-path)
+ *	    void TI_Initialize( ABI_PROPERTIES_ABI, ISA_SUBSET, PROCESSOR, INT opt_subsets_count, const ISA_SUBSET *opt_subsets, target-path)
  *
  *		Initialize the package.  Needs to be called once per run
  *		of the backend, before any other operations in the
  *		targ-info package are used.
+ *              A list of additional ISA subsets can be passed with 
+ *		opt_subsets_count and opt_subsets.
  *
  * ====================================================================
  * ====================================================================
@@ -71,7 +73,7 @@ extern "C" {
 #endif
 
 extern void*
-TI_Initialize (ABI_PROPERTIES_ABI, ISA_SUBSET, PROCESSOR, char *tpath);
+TI_Initialize (ABI_PROPERTIES_ABI, ISA_SUBSET, PROCESSOR, INT, const ISA_SUBSET *, char *tpath);
 
 #ifdef __cplusplus
 }

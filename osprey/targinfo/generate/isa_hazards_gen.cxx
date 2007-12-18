@@ -90,7 +90,7 @@ struct haz_desc {
   int data;
   int pre_ops;
   int post_ops;
-  int subsets[ISA_SUBSET_MAX+1];
+  UINT32 subsets[ISA_SUBSET_MIN+ISA_SUBSET_COUNT_MAX];
 };
 
 struct op_haz {
@@ -106,6 +106,14 @@ struct op_haz {
 static mUINT32 TOP_count_limit = TOP_static_count;
 #else
 static mUINT32 TOP_count_limit = TOP_dyn_count;
+#endif
+
+// ISA_SUBSETS iterators overrides.
+#ifndef DYNAMIC_CODE_GEN
+#define LOCAL_ISA_SUBSET_MAX (ISA_SUBSET_MAX)
+#else
+// For extension generatores, we allow only the use of static subsets.
+#define LOCAL_ISA_SUBSET_MAX (ISA_SUBSET_MIN+ISA_SUBSET_static_count-1)
 #endif
 
 
@@ -331,9 +339,9 @@ void Hazard_ISA( ISA_SUBSET isa )
     exit(EXIT_FAILURE);
    }
 
-  if ((unsigned)isa > (unsigned)ISA_SUBSET_MAX) {
-    fprintf(stderr, "### Error: isa value (%d) out of range (%d..%d)\n",
-	(int)isa, ISA_SUBSET_MIN, ISA_SUBSET_MAX);
+  if ((unsigned)isa > (unsigned)LOCAL_ISA_SUBSET_MAX) {
+    fprintf(stderr, "### Error: isa value (%d) out of static isa subsets range (%d..%d)\n",
+	(int)isa, ISA_SUBSET_MIN, LOCAL_ISA_SUBSET_MAX);
     exit(EXIT_FAILURE);
   }
 
@@ -417,7 +425,7 @@ void ISA_Hazards_End(void)
                    "  mUINT16 data;\n"
                    "  mUINT16 pre_ops;\n"
                    "  mUINT16 post_ops;\n"
-                   "  mUINT8 isa_mask;\n"
+                   "  mUINT32 isa_mask;\n"
                    "  mUINT8 next;\n"
                    "} ISA_HAZARD_INFO;\n"
                    "\n");
@@ -452,7 +460,7 @@ void ISA_Hazards_End(void)
 	ophaz_iter != op_hazards_list.end();
 	++ophaz_iter
   ) {
-    int mask;
+    UINT32 mask;
     ISA_SUBSET subset;
     op_haz *op_hazard = *ophaz_iter;
     haz_desc *haz = op_hazard->desc;
@@ -460,10 +468,10 @@ void ISA_Hazards_End(void)
 
     mask = 0;
     for (subset = ISA_SUBSET_MIN;
-	 subset <= ISA_SUBSET_MAX; 
+	 subset <= LOCAL_ISA_SUBSET_MAX; 
 	 subset = (ISA_SUBSET)((int)subset + 1)
     ) {
-      if ( haz->subsets[(int)subset] ) mask |= 1 << (int)subset;
+      if ( haz->subsets[(int)subset] ) mask |= (UINT32)1 << (int)subset;
     }
 
     fprintf(cfile, isa_hazard_info_format,
@@ -586,7 +594,7 @@ void ISA_Hazards_End(void)
      "\nvoid ISA_HAZARD_Initialize(void)\n"
      "{\n"
      "  INT top;\n"
-     "  INT mask = 1 << (INT)ISA_SUBSET_Value;\n"
+     "  UINT32 mask = ISA_SUBSET_LIST_Mask(ISA_SUBSET_List);\n"
      "  for ( top = 0; top < TOP_count; ++top ) {\n"
      "    INT j, k;\n"
      "    INT i = ISA_HAZARD_hazard_index[top];\n"

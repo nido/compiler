@@ -653,14 +653,14 @@ TOP_opnd_immediate_variant_default(TOP regform, int opnd, INT64 imm)
 {
   TOP immform;
   // Check if it is already an immediate form
-  if (ISA_SUBSET_Member (ISA_SUBSET_Value, regform)) {
+  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, regform)) {
     const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info (regform);
     const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
     if (ISA_OPERAND_VALTYP_Is_Literal(otype)) {
       immform = regform;
       // Get to the first immediate variant.
       TOP prevform = TOP_get_variant(immform, VARATT_prev_immediate);
-      while (prevform != TOP_UNDEFINED && ISA_SUBSET_Member (ISA_SUBSET_Value, prevform)) {
+      while (prevform != TOP_UNDEFINED && ISA_SUBSET_LIST_Member(ISA_SUBSET_List, prevform)) {
 	immform = prevform;
 	prevform = TOP_get_variant(prevform, VARATT_prev_immediate);
       }
@@ -670,7 +670,7 @@ TOP_opnd_immediate_variant_default(TOP regform, int opnd, INT64 imm)
   }  
   
   // Get the first immediate form that fits the operand
-  while (immform != TOP_UNDEFINED && ISA_SUBSET_Member (ISA_SUBSET_Value, immform)) {
+  while (immform != TOP_UNDEFINED && ISA_SUBSET_LIST_Member(ISA_SUBSET_List, immform)) {
     const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info (immform);
     const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
     if (ISA_OPERAND_VALTYP_Is_Literal(otype)) {
@@ -704,7 +704,7 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
   if (opnd == 1
       && (regform == TOP_mull_r_r_r || regform == TOP_mull_i_r_r || regform == TOP_mull_ii_r_r)) {
     int s9 = (imm >= -(1<<8) && imm < (1<<8)) ? 1 : 0;
-    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_i_r_r)) {
+    if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul32_i_r_r)) {
       return s9 ? TOP_mul32_i_r_r : TOP_mul32_ii_r_r;
     } else {
       return s9 ? TOP_mull_i_r_r : TOP_mull_ii_r_r;
@@ -732,7 +732,7 @@ TOP_opnd_immediate_variant(TOP regform, int opnd, INT64 imm)
     }
     if (ISA_OPERAND_VALTYP_Is_Literal(otype)
 	&& ((osize == 32) || (imm >= minval && imm <= maxval))
-	&& ISA_SUBSET_Member (ISA_SUBSET_Value, immform))
+	&& ISA_SUBSET_LIST_Member(ISA_SUBSET_List, immform))
       break;
     immform = TOP_get_variant(immform, VARATT_next_immediate);
   }
@@ -769,7 +769,7 @@ TOP_opnd_register_variant_default(TOP op, int opnd, ISA_REGISTER_CLASS cl)
     if (ISA_OPERAND_VALTYP_Is_Register (otype)
 	&& (cl == ISA_REGISTER_CLASS_UNDEFINED
 	    || cl == ISA_OPERAND_VALTYP_Register_Class(otype))
-	&& ISA_SUBSET_Member (ISA_SUBSET_Value, regform))
+	&& ISA_SUBSET_LIST_Member(ISA_SUBSET_List, regform))
       return regform;
   }
   return TOP_UNDEFINED;
@@ -980,7 +980,7 @@ TOP_result_register_variant(TOP regform, int rslt, ISA_REGISTER_CLASS regclass)
       break;
     }
   }
-  if (top == TOP_UNDEFINED || !ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
+  if (top == TOP_UNDEFINED || !ISA_SUBSET_LIST_Member(ISA_SUBSET_List, top)) {
     top = TOP_UNDEFINED;
   }
   return top;
@@ -1258,7 +1258,7 @@ targ_cg_find_mul_with_properties (const TN *opnd1, const TN *opnd2,
 	  else
 	    FmtAssert (TN_is_register (o2),
 		       ("make_mul_from_properties unexpected opnd2"));
-	  if (ISA_SUBSET_Member (ISA_SUBSET_Value, new_opcode)) {
+	  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, new_opcode)) {
 	    swap_operands = swap ? TRUE : FALSE;
 	    return new_opcode;
 	  }
@@ -1277,35 +1277,35 @@ targ_cg_init_targ_op ()
   INT i;
   for (i = 0; i < TOP_count; i++) {
     TOP top = (TOP)i;
-    if (ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
+    if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, top)) {
       printf ("TOP_opnd_swapped_variant(%s, 0, 1) = %s\n",
 	      TOP_Name (top), TOP_Name(TOP_opnd_swapped_variant (top, 0, 1)));
     }
   }
   for (i = 0; i < TOP_count; i++) {
     TOP top = (TOP)i;
-    if (ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
+    if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, top)) {
       printf ("TOP_opnd_swapped_variant(%s, 1, 2) = %s\n",
 	      TOP_Name (top), TOP_Name(TOP_opnd_swapped_variant (top, 1, 2)));
     }
   }
   for (i = 0; i < TOP_count; i++) {
     TOP top = (TOP)i;
-    if (ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
+    if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, top)) {
       printf ("TOP_result_register_variant(%s, 0, ISA_REGISTER_CLASS_integer) = %s\n",
 	      TOP_Name (top), TOP_Name(TOP_result_register_variant (top, 0, ISA_REGISTER_CLASS_integer)));
     }
   }
   for (i = 0; i < TOP_count; i++) {
     TOP top = (TOP)i;
-    if (ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
+    if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, top)) {
       printf ("TOP_result_register_variant(%s, 0, ISA_REGISTER_CLASS_branch) = %s\n",
 	      TOP_Name (top), TOP_Name(TOP_result_register_variant (top, 0, ISA_REGISTER_CLASS_branch)));
     }
   }
   for (i = 0; i < TOP_count; i++) {
     TOP top = (TOP)i;
-    if (ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
+    if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, top)) {
       const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(top);
       for (INT j = 0; j < ISA_OPERAND_INFO_Operands(oinfo); j++) {
 	printf ("TOP_opnd_use_bits(%s, %d) = %d\n",
@@ -1315,7 +1315,7 @@ targ_cg_init_targ_op ()
   }
   for (i = 0; i < TOP_count; i++) {
     TOP top = (TOP)i;
-    if (ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
+    if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, top)) {
       const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(top);
       for (INT j = 0; j < ISA_OPERAND_INFO_Operands(oinfo); j++) {
 	printf ("TOP_opnd_immediate_variant(%s, %d, 0) = %s\n",

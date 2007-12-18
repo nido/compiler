@@ -85,6 +85,23 @@ using std::less;
 
 static ISA_SUBSET machine_isa;
 
+/* 
+ * Handling of optional subsets lists
+ */
+#define MAX_OPTS_SUBSETS 128	// local implementation limit
+static INT machine_opt_subsets_count;
+static ISA_SUBSET machine_opt_subsets[MAX_OPTS_SUBSETS];
+static bool
+machine_subsets_member(TOP opcode)
+{
+  int i;
+  if (ISA_SUBSET_Member(machine_isa, opcode)) return true;
+  for (i = 0; i < machine_opt_subsets_count; i++) {
+    if (ISA_SUBSET_Member(machine_opt_subsets[i], opcode)) return true;
+  }
+  return false;
+}
+
 // Parameters:
 const int bits_per_long = 32;
 const int bits_per_long_long = 64;
@@ -1593,8 +1610,9 @@ void TOP_SCHED_INFO_MAP::Output( FILE* fd )
     // For extensions, we define only one (sub)set
     // for extensions. As a result, the ISA_SUBSET_member()
     // test is always true.
+    // TODO SUBSETS: revisit?
     bool isa_member = gen_static_code ?
-                       ISA_SUBSET_Member(machine_isa, (TOP)i): true;
+                       machine_subsets_member((TOP)i): true;
     bool is_dummy = TOP_is_dummy((TOP)i);
 #ifdef TARG_ST
     // Arthur: Simulated shouldn't have any scheduling info either ?
@@ -1682,6 +1700,14 @@ void Machine(ISA_SUBSET isa)
 {
    Machine(static_cast<char*>(NULL),isa,0,static_cast<char**>(NULL));
    return;
+}
+
+/*
+ * Support for optional additional subsets.
+ */
+void Machine_Add_Subset(ISA_SUBSET opt_subset)
+{
+  machine_opt_subsets[machine_opt_subsets_count++] = opt_subset;
 }
 
 RESOURCE RESOURCE_Create(char* name, int count)

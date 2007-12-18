@@ -107,7 +107,6 @@ typedef enum {
   PROC_ST231    = 44,
   PROC_ST240    = 46,
   PROC_stxp70    = 47,
-  PROC_stxp70_ext= 48,
 } PROCESSOR;
 
 extern PLATFORM Platform;	/* Target platform */
@@ -162,7 +161,6 @@ typedef enum {
   ISA_ST210     = 15,
   ISA_ST220     = 16,
   ISA_stxp70 = 17,
-  ISA_stxp70_ext = 18,
 } ISA;
 
 #ifdef MUMBLE_ST200_BSP

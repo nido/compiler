@@ -811,7 +811,7 @@ Update_SI_Resource_Count(void)
  * ====================================================================
  */
 void*
-TI_Initialize(ABI_PROPERTIES_ABI tabi, ISA_SUBSET tisa, PROCESSOR tproc, char *tpath)
+TI_Initialize(ABI_PROPERTIES_ABI tabi, ISA_SUBSET tisa, PROCESSOR tproc, INT opt_subsets_count, const ISA_SUBSET *opt_subsets, char *tpath)
 {
   static BOOL initialized;
 
@@ -832,7 +832,10 @@ TI_Initialize(ABI_PROPERTIES_ABI tabi, ISA_SUBSET tisa, PROCESSOR tproc, char *t
     // Retrieve SI_resource_count value from library
     Update_SI_Resource_Count();
     
-    ISA_SUBSET_Value = tisa;
+    ISA_SUBSET_LIST_Add(ISA_SUBSET_List, tisa);
+    for (i = 0; i < opt_subsets_count; i++) {
+      ISA_SUBSET_LIST_Add(ISA_SUBSET_List, opt_subsets[i]);
+    }
     PROCESSOR_Value = tproc;
     ABI_PROPERTIES_ABI_Value = tabi;
 
