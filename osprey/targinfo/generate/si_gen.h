@@ -58,17 +58,6 @@
 //		<argv> are the command line arguments passed to main.  
 //		After this call, machine description can begin.
 //
-//          void Machine(ISA_SUBSET isa)
-//              New form for declaring the principal subset for the machine.
-//		
-//          void Machine_Add_Subset(ISA_SUBSET opt_subset)
-//              Add an optional subset to the described processor.
-//		Generally, the Machine() calls specify the principal processor
-//		subset. 
-//		Then any additional coprocessor, when described as a subset in the
-//		isa must be added with Machine_Add_Subset().
-//		
-//
 //  2. Describe the fundamental resources
 //  =====================================
 //
@@ -233,7 +222,6 @@ typedef class ISLOT* ISSUE_SLOT;
 
 extern void Machine( char* name, ISA_SUBSET isa, int argc, char** argv );
 extern void Machine( ISA_SUBSET isa );
-extern void Machine_Add_Subset( ISA_SUBSET opt_subset );
 
 extern RESOURCE RESOURCE_Create( char* name, int count );
 extern ISSUE_SLOT ISSUE_SLOT_Create( char* name, int skew, int count );

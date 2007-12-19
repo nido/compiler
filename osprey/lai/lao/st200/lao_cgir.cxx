@@ -20,7 +20,7 @@ extern "C" {
 /*-------------------- Maps for CGIR <-> LIR Conversions ------------------*/
 
 // Map CGIR ISA_SUBSET to LIR Processor.
-static O64_Processor IS__Processor[ISA_SUBSET_COUNT_MAX];
+static O64_Processor IS__Processor[ISA_SUBSET_MAX+1];
 
 // Map CGIR TOP to LIR Operator.
 static O64_Operator *TOP__Operator;

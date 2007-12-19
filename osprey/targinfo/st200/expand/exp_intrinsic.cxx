@@ -38,7 +38,7 @@ Expand__builtin__divh(
  OPS* ops
 )
 {  
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_div_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_div_r_r_r)) {
     Build_OP (    TOP_div_r_r_r,        o0,     i0,     i1,     ops) ;
   } else {
     TN *b0_0_10 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -196,7 +196,7 @@ Expand__builtin__divuh(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_divu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_divu_r_r_r)) {
     Build_OP (    TOP_divu_r_r_r,        o0,     i0,     i1,     ops) ;
   } else {
     TN *b0_0_10 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -336,7 +336,7 @@ Expand__builtin__modh(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_rem_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_rem_r_r_r)) {
     Build_OP (    TOP_rem_r_r_r,        o0,     i0,     i1,     ops) ;
   } else {
     TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -483,7 +483,7 @@ Expand__builtin__moduh(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_remu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_remu_r_r_r)) {
     Build_OP (    TOP_remu_r_r_r,        o0,     i0,     i1,     ops) ;
   } else {
     TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -617,7 +617,7 @@ Expand__builtin__divuw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_divu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_divu_r_r_r)) {
       Build_OP (	TOP_divu_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
       TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -857,7 +857,7 @@ Expand__builtin__divw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_div_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_div_r_r_r)) {
       Build_OP (	TOP_div_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
       TN *b0_0_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -1108,7 +1108,7 @@ Expand__builtin__moduw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_remu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_remu_r_r_r)) {
       Build_OP (	TOP_remu_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
       TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -1346,7 +1346,7 @@ Expand__builtin__modw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_rem_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_rem_r_r_r)) {
       Build_OP (	TOP_rem_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
       TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -1585,7 +1585,7 @@ Expand__st200mul32(
  OPS* ops
 )
 {
-    if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul32_r_r_r)) {
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r_r_r)) {
 	Build_OP (	TOP_mul32_r_r_r,	o0,	i0,	i1,	ops) ;
     } else {
 	/* Emulated by __mulw */
@@ -1605,7 +1605,7 @@ Expand__st200mul64h(
  OPS* ops
 )
 {
-    if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul64h_r_r_r)) {
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64h_r_r_r)) {
 	Build_OP (	TOP_mul64h_r_r_r,	o0,	i0,	i1,	ops) ;
     } else {
 	/* Emulated by __mulhw */
@@ -1635,7 +1635,7 @@ Expand__st200mul64hu(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul64hu_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r_r_r)) { 
       Build_OP (	TOP_mul64hu_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
       /* Emulated by __mulhuw */
@@ -1677,7 +1677,7 @@ Expand__st200mulfrac(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mulfrac_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mulfrac_r_r_r)) { 
       Build_OP (	TOP_mulfrac_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
       TN *b0_0_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -1733,7 +1733,7 @@ Expand__st200prginspg(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_prginspg_r_i)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prginspg_r_i)) { 
       TN *c0 = Gen_Literal_TN(0LL, 4) ;
       Build_OP (	TOP_add_r_r_r,	o0,	i0,	i1,	ops) ;
       Build_OP (	TOP_prginspg_r_i,	c0, 	o0,	ops) ;
@@ -1782,7 +1782,7 @@ Expand__st220divs(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_divs_b_r_r_b_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_divs_b_r_r_b_r)) {
     TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
     TN *b0_0_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
     Build_OP (    TOP_convib_r_b,        b0_0_0, i2,     ops) ;
@@ -1811,7 +1811,7 @@ Expand__st220mulhhs(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mulhhs_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mulhhs_r_r_r)) {
     Build_OP (	TOP_mulhhs_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
     TN *r0_17_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -1842,7 +1842,7 @@ Expand__st220mulhs(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mulhs_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mulhs_r_r_r)) {
     Build_OP (	TOP_mulhs_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
     TN *r0_8_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -1873,7 +1873,7 @@ Expand__st220mullhus(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mullhus_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mullhus_r_r_r)) {
     Build_OP (	TOP_mullhus_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
     TN *r0_17_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -1899,7 +1899,7 @@ Expand__st220mullu(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mullu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mullu_r_r_r)) {
     Build_OP (	TOP_mullu_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
     TN *r0_17_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -2006,9 +2006,9 @@ Expand__st220syscall(
       The case value is written but does not seem to be triggered
     */
     TOP top = TOP_UNDEFINED;
-    if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_syscall_i)) {
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_syscall_i)) {
       top = TOP_syscall_i;
-    } else if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_st240_syscall_i)) {
+    } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_st240_syscall_i)) {
       top = TOP_st240_syscall_i;
     }
     if (TN_is_rematerializable(i0)) {
@@ -2047,7 +2047,7 @@ Expand__absch(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_subs_ph_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_subs_ph_r_r_r)) { 
     TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
     TN *r0_20_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *r0_20_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -2146,7 +2146,7 @@ Expand__abscw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_subs_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_subs_r_r_r)) { 
     TN *b0_1_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
     TN *r0_20_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     Build_OP (	TOP_cmplt_r_r_b,	b0_1_0,	i0,	Zero_TN,	ops) ;
@@ -2273,7 +2273,7 @@ Expand__addch(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_adds_ph_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_adds_ph_r_r_r)) { 
     TN *r0_16_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     Build_OP (	TOP_adds_ph_r_r_r,	r0_16_0,	i0,	i1,	ops) ;
     Build_OP (	TOP_sxth_r_r,	o0,	r0_16_0,	ops) ;
@@ -2364,7 +2364,7 @@ Expand__addcw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_adds_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_adds_r_r_r)) { 
     Build_OP (    TOP_adds_r_r_r,     o0,     i0,     i1,     ops) ;
   } else {
     TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -2933,7 +2933,7 @@ Expand__clampwh(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_sats_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sats_r_r)) { 
     Build_OP (	TOP_sats_r_r,	o0,	i0,	ops) ;
   } else {
     TN *r0_16_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -4192,7 +4192,7 @@ Expand__mpfcw(
     }
   }
 
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_adds_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_adds_r_r_r)) { 
     TN *r0_16_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     Build_OP (	TOP_mulll_r_r_r,	r0_16_2,	i0,	i1,	ops) ;
     Build_OP (	TOP_adds_r_r_r,	o0,	r0_16_2,	r0_16_2,	ops) ;
@@ -4201,7 +4201,7 @@ Expand__mpfcw(
     TN *c1 = Gen_Literal_TN(1, 4) ;
     Build_OP (	TOP_mulll_r_r_r,	r0_26_2,	i0,	i1,	ops) ;
     Build_OP (	TOP_shl_i_r_r,	o0,	r0_26_2,	c1,	ops) ;
-  } else if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mulfrac_r_r_r)) { 
+  } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mulfrac_r_r_r)) { 
     TN *r0_20_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *r0_21_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
@@ -4248,8 +4248,8 @@ Expand__mpfcwl(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul32_r_r_r)
-      && ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul64hu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r_r_r)
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r_r_r)) {
       TN *b0_0_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
       TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *r0_16_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -4347,8 +4347,8 @@ Expand__mpfml(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul32_r_r_r)
-      && ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul64hu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r_r_r)
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r_r_r)) {
       TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *r0_17_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *r0_20_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -4410,7 +4410,7 @@ Expand__mpfrch(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_adds_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_adds_r_r_r)) {
     TN *r0_21_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *r0_21_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
@@ -4470,8 +4470,8 @@ Expand__mpml(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul32_r_r_r)
-      && ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul64hu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r_r_r)
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r_r_r)) {
       Build_OP (    TOP_mul32_r_r_r,    ol0,    i0,     i1,     ops) ;
       Build_OP (    TOP_mul64h_r_r_r,   oh0,    i0,     i1,     ops) ;
   } else { 
@@ -4510,8 +4510,8 @@ Expand__mpuml(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul64hu_r_r_r)
-      && ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul32_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r_r_r)
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r_r_r)) {
     Build_OP (	TOP_mul32_r_r_r,	ol0,	i0,	i1,	ops) ;
     Build_OP (	TOP_mul64hu_r_r_r,	oh0,	i0,	i1,	ops) ;
   } else {
@@ -4545,11 +4545,11 @@ Expand__mulfch(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mulfracrm_ph_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mulfracrm_ph_r_r_r)) { 
     TN *r0_16_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     Build_OP (    TOP_mulfracrm_ph_r_r_r, r0_16_2,        i0,     i1,     ops) ;
     Build_OP (    TOP_sxth_r_r,   o0,     r0_16_2,        ops) ;
-  } else if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_adds_r_r_r)) { 
+  } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_adds_r_r_r)) { 
     TN *r0_16_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
@@ -4557,7 +4557,7 @@ Expand__mulfch(
     Build_OP (	TOP_mulll_r_r_r,	o0,	i0,	i1,	ops) ;
     Build_OP (	TOP_adds_r_r_r,	r0_16_1,	o0,	o0,	ops) ;
     Build_OP (	TOP_shr_i_r_r,	o0,	r0_16_1,	c16,	ops) ;
-  } else if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mulfrac_r_r_r)) { 
+  } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mulfrac_r_r_r)) { 
     TN *r0_16_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *r0_17_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -4609,8 +4609,8 @@ Expand__mulfcm(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul32_r_r_r)
-      && ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul64hu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r_r_r)
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r_r_r)) {
       TN *b0_0_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
       TN *r0_16_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *r0_16_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -4693,8 +4693,8 @@ Expand__mulfcw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul32_r_r_r)
-      && ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul64hu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r_r_r)
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r_r_r)) {
       TN *b0_0_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
       TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *r0_17_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -4848,7 +4848,7 @@ Expand__mulhuw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul64hu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r_r_r)) {
       Build_OP (	TOP_mul64hu_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
       TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -4898,7 +4898,7 @@ Expand__mulhw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul64h_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64h_r_r_r)) {
       Build_OP (	TOP_mul64h_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
       TN *b0_2_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -4939,8 +4939,8 @@ Expand__mull(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul32_r_r_r)
-      && ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul64hu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r_r_r)
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r_r_r)) {
       TN *r0_17_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *r0_20_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *r0_20_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -5035,8 +5035,8 @@ Expand__muln(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul32_r_r_r)
-      && ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul64hu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r_r_r)
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r_r_r)) {
       Build_OP (    TOP_mul32_r_r_r,    ol0,    i0,     i1,     ops) ;
       Build_OP (    TOP_mul64h_r_r_r,   oh0,    i0,     i1,     ops) ;
   } else { 
@@ -5097,8 +5097,8 @@ Expand__mulul(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul32_r_r_r)
-      && ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul64hu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r_r_r)
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r_r_r)) {
       TN *r0_17_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *r0_20_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *r0_20_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -5175,7 +5175,7 @@ Expand__mulum(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mullu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mullu_r_r_r)) {
     Build_OP (	TOP_mullu_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
     TN *r0_17_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -5202,8 +5202,8 @@ Expand__mulun(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul32_r_r_r)
-      && ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul64hu_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r_r_r)
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul64hu_r_r_r)) {
       Build_OP (    TOP_mul32_r_r_r,    ol0,    i0,     i1,     ops) ;
       Build_OP (    TOP_mul64hu_r_r_r,   oh0,    i0,     i1,     ops) ;
   } else {
@@ -5253,7 +5253,7 @@ Expand__muluw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul32_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r_r_r)) {
       Build_OP (	TOP_mul32_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
       TN *r0_24_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -5281,7 +5281,7 @@ Expand__mulw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul32_r_r_r)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r_r_r)) {
       Build_OP (	TOP_mul32_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
       TN *r0_24_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
@@ -5460,7 +5460,7 @@ Expand__negch(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_subs_ph_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_subs_ph_r_r_r)) { 
     TN *r0_16_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     Build_OP (	TOP_subs_ph_r_r_r,	r0_16_0,	Zero_TN,	i0,	ops) ;
     Build_OP (	TOP_sxth_r_r,	o0,	r0_16_0,	ops) ;
@@ -5544,7 +5544,7 @@ Expand__negcw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_subs_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_subs_r_r_r)) { 
     Build_OP (	TOP_subs_r_r_r,	o0,	Zero_TN,	i0,	ops) ;
   } else {
     TN *b0_0_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -6055,7 +6055,7 @@ Expand__roundclw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_adds_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_adds_r_r_r)) { 
     TN *r0_21_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
@@ -6095,7 +6095,7 @@ Expand__roundcwh(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_adds_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_adds_r_r_r)) { 
     TN *r0_16_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *r0_20_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
@@ -6198,11 +6198,11 @@ Expand__shlch(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_shls_ph_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shls_ph_r_r_r)) { 
     TN *r0_16_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     Build_OP (    TOP_shls_ph_r_r_r,      r0_16_0,        i0,     i1,     ops) ;
     Build_OP (    TOP_sxth_r_r,   o0,     r0_16_0,        ops) ;
-  } else if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_sats_r_r)) { 
+  } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sats_r_r)) { 
     TN *r0_16_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     Build_OP (	TOP_shl_r_r_r,	r0_16_0,	i0,	i1,	ops) ;
     Build_OP (	TOP_sats_r_r,	o0,	r0_16_0,	ops) ;
@@ -6241,7 +6241,7 @@ Expand__shlcw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_shls_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_shls_r_r_r)) { 
     Build_OP (    TOP_shls_r_r_r,      o0,        i0,     i1,     ops) ;
     return ;
   }
@@ -6250,7 +6250,7 @@ Expand__shlcw(
     WN *wn = TN_remat (i1);
     if (WN_operator_is (wn, OPR_INTCONST)) {
       INT64 co1 = WN_const_val (wn);
-      if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_adds_r_r_r)
+      if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_adds_r_r_r)
 	  && co1 > 0
 	  && co1 <= 3) {
 	// Expand a small constant clamped left-shift as
@@ -6553,7 +6553,7 @@ Expand__subch(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_subs_ph_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_subs_ph_r_r_r)) { 
     TN *r0_16_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     Build_OP (	TOP_subs_ph_r_r_r,	r0_16_0,	i0,	i1,	ops) ;
     Build_OP (	TOP_sxth_r_r,	o0,	r0_16_0,	ops) ;
@@ -6643,7 +6643,7 @@ Expand__subcw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_subs_r_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_subs_r_r_r)) { 
     Build_OP (	TOP_subs_r_r_r,	o0,	i0,	i1,	ops) ;
   } else {
     TN *b0_0_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
@@ -6743,7 +6743,7 @@ Expand__swapbh(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_perm_pb_i_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_perm_pb_i_r_r)) { 
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c225 = Gen_Literal_TN(__EXTS32TOS64(225), 4) ;
 #undef __EXTS32TOS64
@@ -6794,7 +6794,7 @@ Expand__swaphw(
  OPS* ops
 )
 {
-  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_rotl_i_r_r)) { 
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_rotl_i_r_r)) { 
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
 #undef __EXTS32TOS64
@@ -6974,7 +6974,7 @@ Expand__asm_n(
        Since we detect the situation quite late, we choose to emit a TOP_sbreak
        This is similar to the handling of other bizarre cases (: see prginspg, )
      */
-    if (!ISA_SUBSET_LIST_Member(ISA_SUBSET_List, top)) { 
+    if (!ISA_SUBSET_Member (ISA_SUBSET_Value, top)) { 
         Expand_Unimplemented_Intrinsic (top, ops);
     } else {
 	/* Can we produce the immediates ? */
@@ -7021,9 +7021,9 @@ Expand__trap(
 )
 {
   TOP top = TOP_UNDEFINED;
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_sbrk_i)) {
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sbrk_i)) {
     top = TOP_sbrk_i;
-  } else if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_st240_sbrk_i)) {
+  } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_st240_sbrk_i)) {
     top = TOP_st240_sbrk_i;
   }
   /* The representation of such a trap is 1 */

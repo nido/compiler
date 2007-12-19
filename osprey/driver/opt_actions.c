@@ -820,6 +820,16 @@ Check_Target ( void )
     if (!already_provided(flag)) {
       prepend_option_seen (flag);
     }
+    toggle(&proc, PROC_stxp70_ext);
+  }
+
+  /*
+   * [TTh] Force processor type in presence of user
+   * defined extensions
+   */
+  extern int UserDefinedExtensionSeen;
+  if (UserDefinedExtensionSeen) {
+    toggle(&proc, PROC_stxp70_ext);
   }
 
   switch (proc) {
@@ -828,6 +838,9 @@ Check_Target ( void )
     /* fallthru stxp70 default. */
   case PROC_stxp70:
     flag = add_new_option("-TARG:proc=stxp70");
+    break;
+  case PROC_stxp70_ext:
+    flag = add_new_option("-TARG:proc=stxp70_ext");
     break;
   }
 
@@ -1048,7 +1061,7 @@ Check_Target ( void )
 	toggle ( &isa, opt_val );
 	break;
       case ABI_STxP70_fpx:
-	opt_val = ISA_stxp70;
+	opt_val = ISA_stxp70_ext;
 	toggle ( &isa, opt_val );
 	break;
       case ABI_IA32:

@@ -1115,7 +1115,7 @@ Exp_Extract_Bits (
   FmtAssert(MTYPE_is_class_integer(rtype) && MTYPE_bit_size(rtype) == 32,
 	    ("can't handle"));
 
-  if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_extract_i_r_r) && Enable_extract){
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_extract_i_r_r) && Enable_extract){
 
     FmtAssert(bit_size <= 32 && bit_offset < 32,
 	    ("can't handle bit_size > 32 or bit_offset > 31"));  
@@ -1242,7 +1242,7 @@ Exp_LRotate (
 
   FmtAssert(MTYPE_bit_size(rtype) == 32, ("size of bit field must be 32"));
 
-  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_rotl_r_r_r) && Enable_Rotate){
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_rotl_r_r_r) && Enable_Rotate){
     TOP top = TOP_rotl_r_r_r;
     if (TN_Has_Value(src2_tn)){
       if ((TN_Value(src2_tn) & 0x1F) == 0) {
@@ -1276,7 +1276,7 @@ Exp_RRotate (
 
   FmtAssert(MTYPE_bit_size(rtype) == 32, ("size of bit field must be 32"));
 
-  if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_rotl_r_r_r) && Enable_Rotate){
+  if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_rotl_r_r_r) && Enable_Rotate){
     TOP top = TOP_rotl_r_r_r;
     if (TN_Has_Value(src2_tn)){
       if ((TN_Value(src2_tn) & 0x1F) == 0) {

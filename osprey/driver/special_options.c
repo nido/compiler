@@ -1124,7 +1124,7 @@ add_special_options (void)
 	  }
 
 	  if (!is_toggled(cppundef)) {
-	    if (proc == PROC_stxp70) {
+	    if (proc == PROC_stxp70 || proc == PROC_stxp70_ext) {
               flag = add_string_option(O_D, "__stxp70__");
 	      prepend_option_seen (flag);
  	      flag = add_string_option(O_D, "__STXP70__");
@@ -1133,12 +1133,8 @@ add_special_options (void)
 	      prepend_option_seen (flag);
 	      flag = add_string_option(O_D, "__SX");
 	      prepend_option_seen (flag);
-	      // [CG] X3 extension is always forced for STxP70.
 	      flag = add_string_option(O_D, "__X3");
 	      prepend_option_seen (flag);
-	      flag = add_string_option(O_TARG_, "enable_x3=on");
-	      prepend_option_seen(flag);
-
 	    }
 	    
 	    flag = add_string_option(O_D, "__open64__");

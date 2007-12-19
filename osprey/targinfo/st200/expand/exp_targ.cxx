@@ -345,7 +345,7 @@ Expand_Copy (
       if (guard != True_TN) goto unsupported;
 
       if (tgt_rc == ISA_REGISTER_CLASS_branch) {
-	if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_mov_b_b)) {
+	if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mov_b_b)) {
 	  Build_OP(TOP_mov_b_b, tgt_tn, src_tn, ops);
 	  Set_OP_copy (OPS_last(ops));
 	} else 
@@ -1154,7 +1154,7 @@ Expand_Shift_Multiply (
     opcode = TOP_sh3add_r_r_r;
     break;
   case 17:
-    if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_sh4add_r_r_r)) {
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sh4add_r_r_r)) {
       opcode = TOP_sh4add_r_r_r;
     } else {
       opcode = TOP_UNDEFINED;
@@ -1253,18 +1253,18 @@ Expand_Multiply (
   else if (s1mtype == MTYPE_I2 && s2mtype == MTYPE_I2) 
     opcode = TOP_mulll_r_r_r;
   else if (s2mtype == MTYPE_U2
-	   && ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_mullu_r_r_r))
+	   && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mullu_r_r_r))
     opcode = TOP_mullu_r_r_r;
   else if (s2mtype == MTYPE_I2) 
     opcode = TOP_mull_r_r_r;
   else if (!TN_has_value(src2) && s1mtype == MTYPE_U2
-	   && ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mullu_r_r_r)) { 
+	   && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mullu_r_r_r)) { 
     opcode = TOP_mullu_r_r_r; swapped = TRUE; 
   } else if (!TN_has_value(src2) && s1mtype == MTYPE_I2) {
     opcode = TOP_mull_r_r_r; swapped = TRUE; 
   } else {
     // 32x32 multiply
-    if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_mul32_r_r_r)) {
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mul32_r_r_r)) {
 	opcode = TOP_mul32_r_r_r ;
     } else {
 	TN *tmp1 = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
@@ -3454,7 +3454,7 @@ Exp_Intrinsic_Call (
     switch(id) {    
     case INTRN___ST220PRGINS:
     case INTRN___ST200PRGINS:
-      if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_prgins)) {
+      if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_prgins)) {
 	    /* We fall back to the usual intrinsic generation */
 	    Exp_Intrinsic_Op(id, 0, 0, NULL, NULL, ops, srcpos) ;
       } else {
@@ -3681,7 +3681,7 @@ Exp_GP_Init (
   ST *st = New_ST (CURRENT_SYMTAB);
 
   if (Enable_AddPC
-      && ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_addpc_i_r)) {
+      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_addpc_i_r)) {
     ST_Init (st, Save_Str ("."), CLASS_NAME, SCLASS_UNKNOWN, EXPORT_LOCAL,
 	     ST_pu (fn_st));
     neg_gprel_tn = Gen_Symbol_TN (st, 0, TN_RELOC_NEG_GOT_DISP);

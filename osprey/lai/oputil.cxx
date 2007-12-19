@@ -859,7 +859,7 @@ Mk_OP(TOP opr, ...)
   FmtAssert(!TOP_is_var_opnds(opr), ("Mk_OP not allowed with variable operands"));
 
 #ifdef TARG_ST
-  FmtAssert(ISA_SUBSET_LIST_Member (ISA_SUBSET_List, opr),
+  FmtAssert(ISA_SUBSET_Member (ISA_SUBSET_Value, opr),
 	    ("Mk_OP: op not supported on target (%s)", TOP_Name(opr)));
 #endif
   Set_OP_code(op, opr);
@@ -895,7 +895,7 @@ Mk_VarOP(TOP opr, INT results, INT opnds, TN **res_tn, TN **opnd_tn)
     FmtAssert(TOP_is_var_opnds(opr) && opnds > ISA_OPERAND_INFO_Operands(ISA_OPERAND_Info(opr)),
 	      ("%d is not enough operands for %s", opnds, TOP_Name(opr)));
   }
-  FmtAssert(ISA_SUBSET_LIST_Member (ISA_SUBSET_List, opr),
+  FmtAssert(ISA_SUBSET_Member (ISA_SUBSET_Value, opr),
 	    ("Mk_OP: op not supported on target (%s)", TOP_Name(opr)));
 #else
   if (results != TOP_fixed_results(opr)) {

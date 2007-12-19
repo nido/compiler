@@ -694,7 +694,7 @@ TOP
 CGTARG_Invert(TOP opr)
 {
   TOP top = CGTARG_Invert_Table[(INT)opr];
-  if (! ISA_SUBSET_LIST_Member(ISA_SUBSET_List, top)) {
+  if (! ISA_SUBSET_Member (ISA_SUBSET_Value, top)) {
     top = TOP_UNDEFINED;
   }
 
@@ -1548,7 +1548,7 @@ init_register_use (void)
   // earliest_regclass_use and earliest_regsubclass use
   // to the minimum operand access times found.
   for (i = 0; i < TOP_count; i++) {
-    if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, (TOP)i)
+    if (ISA_SUBSET_Member (ISA_SUBSET_Value, (TOP)i)
 	&& !TOP_is_dummy ((TOP)i)) {
       const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info ((TOP)i);
       const INT n_opnds = ISA_OPERAND_INFO_Operands (oinfo);

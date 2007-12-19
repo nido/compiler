@@ -76,7 +76,6 @@ extern "C" {
 };
 #if defined(BACK_END) 
 #include "targ_isa_registers.h"
-#include "targ_isa_subset.h"
 #endif
 
 // Variables common to gcc and lai loader
@@ -735,15 +734,6 @@ void Initialize_ISA_RegisterClasses(Lai_Loader_Info_t &ext_info) {
       memcpy(&rc_tab[ext_info.base_REGISTER_CLASS[ext]],
 	     ext_info.ISA_tab[ext]->get_ISA_REGISTER_CLASS_tab(),
 	     rc_in_ext * sizeof(ISA_REGISTER_CLASS_INFO));
-
-      /* Backward compatibility. We ignore the subset mask (isa_mask) for the register class.
-	 Actually, we force it to be the principal currently active subset, such that the register
-	 calss is always activated.
-	 Anyway any loaded register class is active as soon as the extensiojn is active, 
-	 i.e. this information is not used.
-	 For instance on stxp70, the stxp70 RTK may generate either the mask (1<<ISA_SUBSET_stxp70) or
-	 the mask (1<<ISA_SUBSET_stxp70_ext) while ISA_SUBSET_stxp70_ext is now obsolete. */
-      rc_tab[ext_info.base_REGISTER_CLASS[ext]].isa_mask = (1<<*(ISA_SUBSET_LIST_First(ISA_SUBSET_List)));
 
       //TB: Update PREG with regclass
       for (int regcl = ext_info.base_REGISTER_CLASS[ext]; 

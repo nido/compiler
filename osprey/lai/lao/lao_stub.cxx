@@ -121,8 +121,7 @@ lao_init(void)
     LIR_CGIR_callback_init(callback);
     // Initialize the target dependent LIR<->CGIR interface
     CGIR_LAO_Init();
-    // We take the first subset of the subset list which must be the base ISA subset.
-    O64_Processor processor = CGIR_IS_to_Processor(*ISA_SUBSET_LIST_First(ISA_SUBSET_List));
+    O64_Processor processor = CGIR_IS_to_Processor(ISA_SUBSET_Value);
     // Patch the MaxIssue and MinTaken values.
     int maxIssue = CGTARG_Max_Issue_Width();
     int minTaken = CGTARG_Branch_Taken_Penalty();
@@ -132,7 +131,7 @@ lao_init(void)
     for (int op = 0; op < TOP_UNDEFINED; op++) {
       TOP top = (TOP)op;
       if (TOP_is_dummy(top) || TOP_is_var_opnds(top)) continue;
-      if (!ISA_SUBSET_LIST_Member(ISA_SUBSET_List, top)) continue;
+      if (!ISA_SUBSET_Member(ISA_SUBSET_Value, top)) continue;
       O64_Operator o64operator = CGIR_TOP_to_Operator(top);
       if (TSI_Operand_Access_Times_Overridden (top)) {
 	int opnds = TOP_fixed_opnds(top);
@@ -593,7 +592,7 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb)
               ("BB has more than MAX_OPERATION_COUNT operations"));
       operations[operationCount++] = CGIR_OP_to_Operation(cgir_op);
     }
-    O64_Processor processor = CGIR_IS_to_Processor(*ISA_SUBSET_LIST_First(ISA_SUBSET_List));
+    O64_Processor processor = CGIR_IS_to_Processor(ISA_SUBSET_Value);
     int unrolled = BB_unrollings(cgir_bb);
     intptr_t regionId = (intptr_t)BB_rid(cgir_bb);
     float frequency = BB_freq(cgir_bb);

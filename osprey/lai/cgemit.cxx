@@ -4508,9 +4508,10 @@ Verify_Instruction (
 
   // ??? check for valid topcode?
 
-  FmtAssert(ISA_SUBSET_LIST_Member(ISA_SUBSET_List, top),
-	    ("%s is a member of available ISA subsets", 
-	     TOP_Name(top)));
+  FmtAssert(ISA_SUBSET_Member(ISA_SUBSET_Value, top),
+	    ("%s is a member of ISA %s", 
+	     TOP_Name(top), 
+	     ISA_SUBSET_Name(ISA_SUBSET_Value)));
 
   oinfo = ISA_OPERAND_Info(top);
 

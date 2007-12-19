@@ -434,6 +434,7 @@ add_library_options (void)
 #ifdef COSY_LIB /* [HC] Architecture is managed at toolset level. Keep for CoSy Lib compat. */
 	switch (proc) {
 	case PROC_stxp70:
+	case PROC_stxp70_ext:
 	  append_phase_dir(P_library, "/stxp70");
 	  append_phase_dir(P_startup, "/stxp70");
 	  break;
@@ -688,7 +689,7 @@ add_library_options (void)
 
 	  if (stxp70_soc && is_directory (stxp70_soc)) {
 	    stxp70_soc = concat_path (stxp70_soc, 
-				      concat_path((proc == PROC_stxp70) ? "stxp70" :  "unknown",
+				      concat_path((proc == PROC_stxp70 || proc == PROC_stxp70_ext) ? "stxp70" :  "unknown",
 						  concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 							      stxp70_runtime == RUNTIME_NONE ? "none" : "unknown")));
 	    flag = add_string_option(O_L__, stxp70_soc);
@@ -697,7 +698,7 @@ add_library_options (void)
 
 	  if (stxp70_board && is_directory (stxp70_board)) {
 	    stxp70_board = concat_path (stxp70_board, 
-					concat_path((proc == PROC_stxp70) ? "stxp70" :  "unknown",
+					concat_path((proc == PROC_stxp70 || proc ==PROC_stxp70_ext) ? "stxp70" :  "unknown",
 						    
 						    concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 								stxp70_runtime == RUNTIME_NONE ? "none" : "unknown")));
@@ -709,7 +710,7 @@ add_library_options (void)
 	
 	if (stxp70_libdir) {
 	  stxp70_libdir = concat_path (stxp70_libdir, 
-				       concat_path((proc == PROC_stxp70) ? "stxp70" :  "unknown",
+				       concat_path((proc == PROC_stxp70 || proc == PROC_stxp70_ext) ? "stxp70" :  "unknown",
 						   concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 							       stxp70_runtime == RUNTIME_NONE ? "none" : "unknown")));
 	  add_library_dir (stxp70_libdir);

@@ -111,107 +111,23 @@ static const char * const interface[] = {
   " *",
   " * Description:",
   " *",
-  " *   A description of the ISA subset hierarchy.  ",
-  " *   The original implementation allowed only one active subset at",
-  " *   a time. This restriction has beeen removed, as there is a need",
-  " *   to be able to represent optional parts of an architecture and",
-  " *   not only architecture evolutions.",
-  " *   For this the subset has been generalized to represent both:",
-  " *   - growing set of opcodes along architecture evolution,",
-  " *   - optional parts of an architecture that can be activated",
-  " *     or not,",
-  " *   - in addition note that reconfigurability is added to this,",
-  " *     and an extension may also declare a set of additional subsets and ",
-  " *     activate some.",
+  " *   A description of the ISA subset hierarchy.  The description",
+  " *   exports the following:",
   " *",
-  " *   In all cases the abstraction is kept very simple, i.e.:",
-  " *   - an ISA_SUBSET is simply a subset of the available isa opcodes,",
-  " *   - for a given core+options+extensions correspond a list of ISA_SUBSET",
-  " *     that must be available and activated.",
-  " *   - a subset can be available (in the ISA) but not activated for the",
-  " *     given configuration.",
+  " *   typedef (enum) ISA_SUBSET",
+  " *       An enumberated type of the different subsets.",
   " *",
-  " *   For cores where only one subset was active, the list simply contains",
-  " *   one SUBSET.",
-  " *   For cores with options, the list should contain the minimal core SUBSET",
-  " *   plus one subset for each option.",
-  " *   For extensions, in addition to the above, each extension provides a new",
-  " *   set of subsets. One can activate some or all of the extension subsets.",
+  " *   const ISA_SUBSET ISA_SUBSET_UNDEFINED",
+  " *       Useful value guaranteed not to be a valid ISA_SUBSET.",
   " *",
-  " *   Resources that depend on subsets are for instance register files. We",
-  " *   declare in the register description the activating subsets, i.e. the set",
-  " *   of subsets that will activate the register file.",
-  " *   These resources are active as soon as the one of the activating subset is",
-  " *   active.",
+  " *   extern ISA_SUBSET ISA_SUBSET_Value",
+  " *       A variable containing the current subset value.",
   " *",
-  " *   The description exports the following:",
-  " *",
-  " *   UINT32 ISA_SUBSET",
-  " *       A unique id for the different subsets.",
-  " *",
-  " *   ISA_SUBSET_count",
-  " *	 The total count of available subsets (static ISA + extensions ISAs). ",
-  " *       Note that an available subset is not necessarily activated. To find",
-  " *       the activated subsets use the ISA_SUBSET_List variable and the",
-  " *       corresponding ISA_SUBSET_LIST functions. ",
-  " *",
-  " *   ISA_SUBSET_static_count",
-  " *	 The total number of available subsets in the static ISA only.",
-  " *",
-  " *   ISA_SUBSET_MIN",
-  " *   ISA_SUBSET_MAX",
-  " *   ISA_SUBSET_UNDEFINED",
-  " *       ISA_SUBSET_MIN and ISA_SUBSET_MAX can be used as iterators over the available",
-  " *       subsets (static ISA + extensions ISA).",
-  " *       ISA_SUBSET_UNDEFINED, is unique and unmatched ISA_SUBSET id.",
-  " *",
-  " *   ISA_SUBSET_LIST *ISA_SUBSET_List",
-  " *       A globally available variable containing the current list of active",
-  " *       subsets. It is invalid to generate an opcode that is not a member of",
-  " *       this subset list.",
-  " *",
-  " *   const char* ISA_SUBSET_Name(ISA_SUBSET subset)",
+  " *   const char* ISA_SUBSET_Name( ISA_SUBSET subset )",
   " *       Returns a name suitable for printing.",
   " *",
-  " *   ISA_SUBSET ISA_SUBSET_From_Name(const char *name)",
-  " *       Returns the subset id from the given subset name.",
-  " *",
   " *   int ISA_SUBSET_Member( ISA_SUBSET subset, TOP opcode )",
-  " *       Returns true iif the given <opcode> a member of the given <subset>.",
-  " *",
-  " *   int ISA_SUBSET_LIST_Member( ISA_SUBSET_LIST *list, TOP opcode )",
-  " *       Returns true iif the given <opcode> is a member of the given active subset <list>.",
-  " *",
-  " *   void ISA_SUBSET_LIST_Add( ISA_SUBSET_LIST *list, ISA_SUBSET subset )",
-  " *       Adds the subset to the <list> of active subsets.",
-  " *",
-  " *   INT ISA_SUBSET_LIST_Count( ISA_SUBSET_LIST *list )",
-  " *   ISA_SUBSET *ISA_SUBSET_LIST_First( ISA_SUBSET_LIST *list)",
-  " *   ISA_SUBSET *ISA_SUBSET_LIST_Past( ISA_SUBSET_LIST *list)",
-  " *       Respectively count, pointer to first and pointer past last (for iteration) subset",
-  " *       of the given active subset <list>",
-  " *",
-  " *   UINT32  ISA_SUBSET_LIST_Mask( ISA_SUBSET_LIST *list )",
-  " *       Helper function to create a mask (1 bit for each subset) of axtive subsets from ",
-  " *       the given active subsets <list>.",
-  " *",
-  " *",
-  " *   The support for extensions requires the additional interface below which is",
-  " *   available only from the static part of the compiler and not generated in the extension DLLs:",
-  " *",
-  " *   ISA_SUBSET EXTENSION_ISA_SUBSET_New(const char *subsetname)",
-  " *       Declare a new available subset. Note that this is not sufficient to activate the ",
-  " *       subset. Invoke ISA_SUBSET_LIST_Add(ISA_SUBSET_List, new_subset) to actually activate",
-  " *       the subset once declared.",
-  " *",
-  " *   void EXTENSION_ISA_SUBSET_Set_Members(ISA_SUBSET subset, int base_top, int top_count,",
-  " *					   const unsigned char *ext_top_members)",
-  " *	 Declare the opcode members that are included into the new subset.",
-  " *	 The <base_top> must be the base opcode for the extension, the <top_count>",
-  " *	 must be the count of opcodes in the extension ISA. The <ext_top_members>",
-  " *	 is an array of boolean values, one for each extension ISA opcode id (indexed by the",
-  " *	 opcode index in the extension). Each boolean is 1 iif the <subset> contains the",
-  " *	 corresponding extension opcode.",
+  " *       Is the given <opcode> a member of the given <subset>?",
   " *",
   " * ====================================================================",
   " * ====================================================================",
@@ -341,98 +257,112 @@ void ISA_Subset_End(void)
      efile     = Gen_Open_File_Handle(efilename, "w");
    }
 
-  if(gen_static_code) {
-    fprintf(cfile,"#include <string.h>\n");
-    fprintf(cfile,"#include \"%s.h\"\n", bname);
-  } else {
-    char *static_name;
-    
-    static_name = Gen_Build_Filename(bname,NULL,gen_util_file_type_hfile);
-    
-    fprintf(cfile,"#include \"%s\"\n",static_name);
-    fprintf(cfile,"#include \"%s\"\n\n",hfilename);
-    
-    Gen_Free_Filename(static_name);
-  }
+  if(gen_static_code)
+   {fprintf(cfile,"#include \"%s.h\"\n", bname);
+   }
+  else
+   { char *static_name;
+
+     static_name = Gen_Build_Filename(bname,NULL,gen_util_file_type_hfile);
+
+     fprintf(cfile,"#include \"%s\"\n",static_name);
+     fprintf(cfile,"#include \"%s\"\n\n",hfilename);
+
+     Gen_Free_Filename(static_name);
+   }
 
   Emit_Header (hfile, bname, interface,extname);
   fprintf(hfile,"#include \"topcode.h\"\n");
 
-  if (gen_static_code) { 
-    fprintf(hfile,"\ntypedef UINT32 ISA_SUBSET;\n");
-    fprintf(hfile,"\nBE_EXPORTED extern INT ISA_SUBSET_count;\n");
-    fprintf(efile,"ISA_SUBSET_count\n");
-    fprintf(hfile,"\n#define ISA_SUBSET_MIN ((ISA_SUBSET)0)\n");
-    fprintf(hfile,"#define ISA_SUBSET_MAX (ISA_SUBSET_MIN+ISA_SUBSET_count-1)\n");
-    fprintf(hfile,"#define ISA_SUBSET_UNDEFINED	(ISA_SUBSET_MIN+ISA_SUBSET_count)\n");
-    fprintf(hfile,"#define ISA_SUBSET_COUNT_MAX (32) /* At most sizeof(UINT32) for masks of subsets. */\n");
-  }
+  if(gen_static_code)
+   { fprintf(hfile,"\ntypedef enum {\n");
+   }
 
-  if (gen_static_code) {
-    fprintf(hfile,"\n");
-  }
-  for ( k = 0, isi = subsets.begin(); isi != subsets.end(); ++isi, ++k ) {
-    ISA_SUBSET subset = *isi;
-    if (gen_static_code) {
-      fprintf(hfile,"#define ISA_SUBSET_%s ISA_SUBSET_MIN+%d\n", 
-	      subset->name, k);
-    }
-  }
-  if (gen_static_code) {
-    fprintf(hfile, "#define ISA_SUBSET_static_count (%d)\n", isa_subset_count);
-    fprintf(hfile, "\n");
-  }
+  // For dynamic code, check that we have one and only one
+  // subset.
+  if(!gen_static_code)
+   { if(isa_subset_count!=1)
+      { fprintf(stderr,
+        " ### Dynamic extensions: can only define one subset currently.\n");
+        exit(EXIT_FAILURE);
+      }
+   }
 
-  if (gen_static_code) {
-    fprintf(cfile,"\nINT ISA_SUBSET_count = ISA_SUBSET_static_count;\n");
-  } else {
-    fprintf(cfile,"\n#define ISA_SUBSET_COUNT (%d)\n", isa_subset_count);
-  }
-  fprintf(cfile,"\nstatic const char* isa_subset_names[%s] = {\n",
-          gen_static_code ? "ISA_SUBSET_COUNT_MAX":"ISA_SUBSET_COUNT");
+  fprintf(cfile,"\nstatic const char* const isa_subset_names[%d] = {\n",
+          gen_static_code ? isa_subset_count+1:isa_subset_count);
 
   for ( isi = subsets.begin(); isi != subsets.end(); ++isi ) {
     ISA_SUBSET subset = *isi;
+    if(gen_static_code)
+     { fprintf(hfile,"  ISA_SUBSET_%s,\n", subset->name);
+     }
     fprintf(cfile,"  \"%s\",", subset->name);
   }
-  fprintf(cfile,"\n};\n");
+
+  // For dynamic extensions, we assume that the
+  // number of subsets is not modified. More
+  // precisely, dynamic instructions extend
+  // the instruction subsets that have been
+  // marked as accepting dynamic extensions. At load time,
+  // dynamic TOPs and static TOPs belonging to the
+  // extensible subsets are merged in a coherent
+  // representation.
+  if(gen_static_code)
+   { fprintf(hfile,"  ISA_SUBSET_UNDEFINED,\n"
+		"  ISA_SUBSET_MIN=ISA_SUBSET_%s,\n"
+		"  ISA_SUBSET_MAX=ISA_SUBSET_%s\n"
+		"} ISA_SUBSET;\n",
+		(*subsets.begin())->name,
+		(*subsets.rbegin())->name);
+   }
+
+  if(gen_static_code)
+    fprintf(cfile,"  \"UNDEFINED\"\n"
+                  "};\n\n");
+  else
+    fprintf(cfile,"\n};\n\n");
+
+  if(gen_static_code)
+   { fprintf(cfile,
+             "\nstatic const int isa_subset_is_extensible [ %d ] = {\n",
+             isa_subset_count+1);
+
+     const char * const str_template = "  %d, /* %-25s */\n";
+
+     for ( isi = subsets.begin(); isi != subsets.end(); ++isi )
+        fprintf(cfile,str_template,
+                (*isi)->is_dyn_extensible? 1 : 0, 
+                (*isi)->name);
+
+     fprintf(cfile,str_template,0,"UNDEFINED"); 
+     fprintf(cfile,"};\n\n");
+   }
 
   if(gen_static_code) {
-    fprintf(cfile,"#define ISA_SUBSET_UNDEFINED_Name \"UNDEFINED\"\n\n");
-  }
+    fprintf(hfile,"BE_EXPORTED extern ISA_SUBSET ISA_SUBSET_Value;\n\n");
+    fprintf(efile,"ISA_SUBSET_Value\n");
+    fprintf(cfile,"ISA_SUBSET ISA_SUBSET_Value = ISA_SUBSET_UNDEFINED;\n\n");
 
-  if(gen_static_code) {
     fprintf(hfile,"BE_EXPORTED extern const char* ISA_SUBSET_Name( ISA_SUBSET subset );\n");
     fprintf(efile,"ISA_SUBSET_Name\n");
-    fprintf(cfile, "const char*\n");
-    fprintf(cfile, "ISA_SUBSET_Name( ISA_SUBSET subset ) {\n");
-    fprintf(cfile, "  if (subset == ISA_SUBSET_UNDEFINED) return ISA_SUBSET_UNDEFINED_Name;\n");
-    fprintf(cfile, "  return isa_subset_names[(INT)subset];\n");
-    fprintf(cfile, "}\n");
-    fprintf(cfile, "\n");
+    fprintf(cfile,"const char* ISA_SUBSET_Name( ISA_SUBSET subset ) {\n");
+    fprintf(cfile,"  return isa_subset_names[(INT)subset];\n");
+    fprintf(cfile,"}\n\n");
 
-    fprintf(hfile,"BE_EXPORTED extern ISA_SUBSET ISA_SUBSET_From_Name( const char *subset_name );\n");
-    fprintf(efile,"ISA_SUBSET_From_Name\n");
-    fprintf(cfile, "ISA_SUBSET\n");
-    fprintf(cfile, "ISA_SUBSET_From_Name(const char *subsetname)\n");
-    fprintf(cfile, "{\n");
-    fprintf(cfile, "  ISA_SUBSET i;\n");
-    fprintf(cfile, "  for (i = ISA_SUBSET_MIN; i <= ISA_SUBSET_MAX; i++) {\n");
-    fprintf(cfile, "    if (strcmp(isa_subset_names[i], subsetname) == 0)\n");
-    fprintf(cfile, "      return i;\n");
-    fprintf(cfile, "  }\n");
-    fprintf(cfile, "  return ISA_SUBSET_UNDEFINED;\n");
-    fprintf(cfile, "}\n");
-    fprintf(cfile, "\n");
-  }    // gen_static_code
-  
+    fprintf(hfile,"BE_EXPORTED extern int ISA_SUBSET_Is_Extensible( ISA_SUBSET subset );\n");
+    fprintf(efile,"ISA_SUBSET_Is_Extensible");
+    fprintf(cfile,"int ISA_SUBSET_Is_Extensible( ISA_SUBSET subset ) {\n"
+                  "  return  isa_subset_is_extensible[(INT)subset];\n"
+                  "}\n\n");
+   }    // gen_static_code
+
 
   for ( isi = subsets.begin(),k=0; isi != subsets.end(); ++isi,++k ) {
     ISA_SUBSET subset = *isi;
 
     fprintf(cfile,
             "static const unsigned char isa_subset_%d_opcode_table[%d] =\n",
-            k, TOP_count_limit);
+            k,TOP_count_limit);
 
     fprintf(cfile,"  { /* %s */\n", subset->name);
     for ( unsigned int i = 0; i < TOP_count_limit; ++i ) {
@@ -443,167 +373,51 @@ void ISA_Subset_End(void)
     fprintf(cfile,"};\n\n");
   }
 
+  if(gen_static_code)
+   { fprintf(cfile,
+             "static const unsigned char isa_subset_%s_opcode_table[%d] = {\n",
+             "undefined",TOP_count_limit);
+     for(unsigned int i = 0 ; i<TOP_count_limit; ++i)
+       fprintf(cfile,"   %d,\n",0);
+     fprintf(cfile,"};\n");
+   }
+
   /* 
    * Now generate the global table.
    * Number of entries in table depends on
-   * the number of subsets. 
+   * the number of subsets. For static code generation.
+   * don't forget entry for last "undefined" subset!
    */
   if(gen_static_code) {
-    fprintf(cfile,"\n\n");
-    fprintf(cfile, "typedef struct \n");
-    fprintf(cfile, "{\n");
-    fprintf(cfile, "  UINT32 base_opcode;\n");
-    fprintf(cfile, "  UINT32 count;\n");
-    fprintf(cfile, "  const unsigned char *members;  \n");
-    fprintf(cfile, "} ISA_SUBSET_MEMBERS;\n");
-    fprintf(cfile, "\n");
-    fprintf(cfile, "static ISA_SUBSET_MEMBERS empty_members = { 0, 0, (void *)0 };\n");
-    fprintf(cfile, "\n");
-    fprintf(cfile, "static ISA_SUBSET_MEMBERS isa_subset_members[ISA_SUBSET_COUNT_MAX] = {\n");
-    for(k=0; k < isa_subset_count; k++) { 
-      fprintf(cfile, "   { %d, %d, isa_subset_%d_opcode_table} ,\n", 0, TOP_count_limit, k);
-    }
-    fprintf(cfile,"};\n\n\n");
+  fprintf(cfile,
+          "\n\n"
+          "const unsigned char *ISA_SUBSET_opcode_table[%d] = {\n",
+          isa_subset_count+1);
   }
   else {
-    fprintf(cfile,
-	    "\n\n"
-	    "static const unsigned char *ISA_SUBSET_dyn_opcode_table[%d] = {\n",
-	    isa_subset_count);
-    for(k=0;k<isa_subset_count;k++) {
-      fprintf(cfile,"isa_subset_%d_opcode_table,\n",k);
-    }
-    fprintf(cfile,"};\n\n\n");
+  fprintf(cfile,
+          "\n\n"
+          "static const unsigned char *ISA_SUBSET_dyn_opcode_table[%d] = {\n",
+          isa_subset_count);
   }
-  
+  for(k=0;k<isa_subset_count;k++)
+   { fprintf(cfile,"isa_subset_%d_opcode_table,\n",k);
+   }
+  if(gen_static_code)                                 /* Add undefined entry */
+   fprintf(cfile,"isa_subset_%s_opcode_table,\n","undefined");
+  fprintf(cfile,"};\n\n\n");                          /* End of global table */
+
   if(gen_static_code) {
-    fprintf(hfile,"BE_EXPORTED extern INT ISA_SUBSET_Member( ISA_SUBSET subset,\n"
-	    "                              TOP opcode );\n");
-    fprintf(efile,"ISA_SUBSET_Member\n");
-    fprintf(cfile, "int\n");
-    fprintf(cfile, "ISA_SUBSET_Member(ISA_SUBSET subset, TOP opcode)\n");
-    fprintf(cfile, "{\n");
-    fprintf(cfile, "  ISA_SUBSET_MEMBERS *members;\n");
-    fprintf(cfile, "  if (subset == ISA_SUBSET_UNDEFINED) return 0;\n");
-    fprintf(cfile, "  members = &isa_subset_members[subset-ISA_SUBSET_MIN];\n");
-    fprintf(cfile, "  if (opcode < members->base_opcode || opcode >= members->base_opcode + members->count) return 0;\n");
-    fprintf(cfile, "  return members->members[opcode-members->base_opcode];\n");
-    fprintf(cfile, "}\n");
-    fprintf(cfile, "\n");
-
-    fprintf(hfile,"\nstruct ISA_SUBSET_LIST;\n");
-    fprintf(cfile, "typedef struct ISA_SUBSET_LIST {\n");
-    fprintf(cfile, "  INT count;\n");
-    fprintf(cfile, "  ISA_SUBSET *first;\n");
-    fprintf(cfile, "} ISA_SUBSET_LIST;\n");
-    fprintf(cfile, "\n");
-
-    fprintf(hfile,"BE_EXPORTED extern struct ISA_SUBSET_LIST *ISA_SUBSET_List;\n");
-    fprintf(efile,"ISA_SUBSET_List\n");
-    fprintf(cfile, "static ISA_SUBSET ISA_SUBSET_List__[ISA_SUBSET_COUNT_MAX];\n");
-    fprintf(cfile, "static ISA_SUBSET_LIST ISA_SUBSET_List_ = { 0, &ISA_SUBSET_List__[0] };\n");
-    fprintf(cfile, "ISA_SUBSET_LIST *ISA_SUBSET_List = &ISA_SUBSET_List_;\n");
-    fprintf(cfile, "\n");
-
-    fprintf(hfile,"BE_EXPORTED extern void ISA_SUBSET_LIST_Add(struct ISA_SUBSET_LIST *,  ISA_SUBSET subset);\n");
-    fprintf(efile,"ISA_SUBSET_LIST_Add\n");
-    fprintf(cfile, "void\n");
-    fprintf(cfile, "ISA_SUBSET_LIST_Add(ISA_SUBSET_LIST *list, ISA_SUBSET subset)\n");
-    fprintf(cfile, "{ \n");
-    fprintf(cfile, "  list->first[list->count++] = subset;\n");
-    fprintf(cfile, "}\n");
-
-    fprintf(hfile,"BE_EXPORTED extern INT ISA_SUBSET_LIST_Contains(struct ISA_SUBSET_LIST *, ISA_SUBSET subset);\n");
-    fprintf(efile,"ISA_SUBSET_LIST_Contains\n");
-    fprintf(cfile, "INT\n");
-    fprintf(cfile, "ISA_SUBSET_LIST_Contains(ISA_SUBSET_LIST *list, ISA_SUBSET subset)\n");
-    fprintf(cfile, "{ \n");
-    fprintf(cfile, "  ISA_SUBSET *it;\n");
-    fprintf(cfile, "  for (it = ISA_SUBSET_LIST_First(list); it != ISA_SUBSET_LIST_Past(list); it++) {\n");
-    fprintf(cfile, "    if (*it == subset) return TRUE;\n");
-    fprintf(cfile, "  }\n");
-    fprintf(cfile, "  return FALSE;\n");
-    fprintf(cfile, "}\n");
-    fprintf(cfile, "\n");
-
-    fprintf(hfile,"BE_EXPORTED extern INT ISA_SUBSET_LIST_Member(struct ISA_SUBSET_LIST *, TOP opcode);\n");
-    fprintf(efile,"ISA_SUBSET_LIST_Member\n");
-    fprintf(cfile, "INT\n");
-    fprintf(cfile, "ISA_SUBSET_LIST_Member(ISA_SUBSET_LIST *list,TOP opcode)\n");
-    fprintf(cfile, "{ \n");
-    fprintf(cfile, "  ISA_SUBSET *it;\n");
-    fprintf(cfile, "  for (it = ISA_SUBSET_LIST_First(list); it != ISA_SUBSET_LIST_Past(list); it++) {\n");
-    fprintf(cfile, "    if (ISA_SUBSET_Member(*it, opcode)) return TRUE;\n");
-    fprintf(cfile, "  }\n");
-    fprintf(cfile, "  return FALSE;\n");
-    fprintf(cfile, "}\n");
-    fprintf(cfile, "\n");
-
-    fprintf(hfile,"BE_EXPORTED extern ISA_SUBSET *ISA_SUBSET_LIST_First(struct ISA_SUBSET_LIST *);\n");
-    fprintf(efile,"*ISA_SUBSET_LIST_First\n");
-    fprintf(cfile, "ISA_SUBSET *\n");
-    fprintf(cfile, "ISA_SUBSET_LIST_First(ISA_SUBSET_LIST *list)\n");
-    fprintf(cfile, "{\n");
-    fprintf(cfile, "  return list->first;\n");
-    fprintf(cfile, "}\n");
-    fprintf(cfile, "\n");
-
-    fprintf(hfile,"BE_EXPORTED extern ISA_SUBSET *ISA_SUBSET_LIST_Past(struct ISA_SUBSET_LIST *);\n");
-    fprintf(efile,"*ISA_SUBSET_LIST_Past\n");
-    fprintf(cfile, "ISA_SUBSET *\n");
-    fprintf(cfile, "ISA_SUBSET_LIST_Past(ISA_SUBSET_LIST *list)\n");
-    fprintf(cfile, "{\n");
-    fprintf(cfile, "  return list->first + list->count;\n");
-    fprintf(cfile, "}\n");
-    fprintf(cfile, "\n");
-
-    fprintf(hfile,"BE_EXPORTED extern INT ISA_SUBSET_LIST_Count(struct ISA_SUBSET_LIST *);\n");
-    fprintf(efile,"ISA_SUBSET_LIST_Count\n");
-    fprintf(cfile, "INT\n");
-    fprintf(cfile, "ISA_SUBSET_LIST_Count(ISA_SUBSET_LIST *list)\n");
-    fprintf(cfile, "{\n");
-    fprintf(cfile, "  return list->count;\n");
-    fprintf(cfile, "}\n");
-    fprintf(cfile, "\n");
-
-    fprintf(hfile,"BE_EXPORTED extern UINT32 ISA_SUBSET_LIST_Mask(struct ISA_SUBSET_LIST *);\n");
-    fprintf(efile,"ISA_SUBSET_LIST_Mask\n");
-    fprintf(cfile, "UINT32\n");
-    fprintf(cfile, "ISA_SUBSET_LIST_Mask(ISA_SUBSET_LIST *list)\n");
-    fprintf(cfile, "{ \n");
-    fprintf(cfile, "  UINT32 mask = 0;\n");
-    fprintf(cfile, "  ISA_SUBSET *it;\n");
-    fprintf(cfile, "  for (it = ISA_SUBSET_LIST_First(list); it != ISA_SUBSET_LIST_Past(list); it++) {\n");
-    fprintf(cfile, "    mask |= (UINT32)1 << *it;\n");
-    fprintf(cfile, "  }\n");
-    fprintf(cfile, "  return mask;\n");
-    fprintf(cfile, "}\n");
-    fprintf(cfile, "\n");
-
-    // Interface for reconfigurability support.
-    fprintf(hfile,"\nBE_EXPORTED extern ISA_SUBSET EXTENSION_ISA_SUBSET_New(const char *subsetname);\n");
-    fprintf(efile,"EXTENSION_ISA_SUBSET_New\n");
-    fprintf(cfile, "ISA_SUBSET\n");
-    fprintf(cfile, "EXTENSION_ISA_SUBSET_New(const char *subsetname)\n");
-    fprintf(cfile, "{\n");
-    fprintf(cfile, "  isa_subset_names[ISA_SUBSET_count] = subsetname;\n");
-    fprintf(cfile, "  isa_subset_members[ISA_SUBSET_count] = empty_members;\n");
-    fprintf(cfile, "  return ISA_SUBSET_count++;\n");
-    fprintf(cfile, "}\n");
-    fprintf(cfile, "\n");
-
-    fprintf(hfile,"BE_EXPORTED extern void EXTENSION_ISA_SUBSET_Set_Members(ISA_SUBSET subset, int base_top, int top_count, const unsigned char *ext_top_members);\n");
-    fprintf(efile,"EXTENSION_ISA_SUBSET_Set_Members\n");
-    fprintf(cfile, "void \n");
-    fprintf(cfile, "EXTENSION_ISA_SUBSET_Set_Members(ISA_SUBSET subset, int base_top, int top_count, const unsigned char *ext_top_members)\n");
-    fprintf(cfile, "{\n");
-    fprintf(cfile, "  ISA_SUBSET_MEMBERS *members = &isa_subset_members[subset];\n");
-    fprintf(cfile, "  members->base_opcode = base_top;\n");
-    fprintf(cfile, "  members->count = top_count;\n");
-    fprintf(cfile, "  members->members = ext_top_members;\n");
-    fprintf(cfile, "}\n");
-    fprintf(cfile, "\n");
-
+  fprintf(hfile, "\nBE_EXPORTED extern const unsigned char *ISA_SUBSET_opcode_table[%d];\n\n",
+	  isa_subset_count+1);
+  fprintf(efile,"ISA_SUBSET_opcode_table\n");
+  fprintf(hfile,"BE_EXPORTED extern INT ISA_SUBSET_Member( ISA_SUBSET subset,\n"
+                "                              TOP opcode );\n");
+  fprintf(efile,"ISA_SUBSET_Member\n");
+  fprintf(cfile,
+	  "int ISA_SUBSET_Member( ISA_SUBSET subset, TOP opcode )\n"
+	  "{ return ISA_SUBSET_opcode_table[(mUINT32)subset][(mUINT32)opcode];\n"
+          "}\n");
   }
   else {
   const char * const fct1_name = "dyn_get_ISA_SUBSET_tab";
