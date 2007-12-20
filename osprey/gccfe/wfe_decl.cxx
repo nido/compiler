@@ -1810,7 +1810,7 @@ Traverse_Aggregate_Array (
 #ifdef TARG_ST
         /* (cbr) handle indexed initialization */
         if (TREE_PURPOSE(init)) {
-          INT pos = Get_Integer_Value(TREE_PURPOSE(init))*esize;
+          INT pos = Get_Integer_Value(TREE_PURPOSE(init))*TY_size(Get_TY(TREE_TYPE(type)));
 	  // FdF 20050916: changed to take into account fix for bug 180B/22
           if (pos > emitted_bytes) {
             pad = pos - emitted_bytes;
@@ -1862,7 +1862,7 @@ Traverse_Aggregate_Array (
 #ifdef TARG_ST
         /* (cbr) handle indexed initialization */
         if (TREE_PURPOSE(init)) {
-          INT pos = Get_Integer_Value(TREE_PURPOSE(init))*esize;
+          INT pos = Get_Integer_Value(TREE_PURPOSE(init))*TY_size(Get_TY(TREE_TYPE(type)));
 	  // FdF 20050916: changed to take into account fix for bug 180B/22
           if (pos > emitted_bytes) {
             pad = pos - emitted_bytes;
@@ -2108,6 +2108,8 @@ Traverse_Aggregate_Constructor (
   TY_IDX ty = Get_TY(type);
 
 #ifdef TARG_ST
+  INITV_IDX block_body_initv;
+
   /* (cbr) if forward declaration reset the proper ty */
   if (ST_type (st) && ST_type(st) != ty && !TY_size(ST_type(st))) {
     Set_ST_type (st, ty);
@@ -2129,6 +2131,9 @@ Traverse_Aggregate_Constructor (
 
     WFE_Add_Init_Block();
     INITV_Init_Block(last_aggregate_initv, INITV_Next_Idx());
+#ifdef TARG_ST
+    block_body_initv = INITV_Next_Idx ();
+#endif
     not_at_root = TRUE;
     last_aggregate_initv_save = last_aggregate_initv;
     last_aggregate_initv = 0;
@@ -2159,7 +2164,15 @@ Traverse_Aggregate_Constructor (
 
 #ifdef TARG_ST
 /* (cbr) ddts 24482 can have 0 size and initializer */
-  if (!field_id && gen_initv && last_aggregate_initv == 0) 
+/* [SC] Rework the test for whether we actually created the block we
+   inserted a reference to above.  Note: we can have a zero-sized struct
+   with several (zero-sized) fields, so field_id == 0 is not a good test
+   here.  Similarly, we can have a multi-dimensional array such that we
+   get here with last_aggregate_initv == 0 even if we generated initv
+   records. */
+  if (block_body_initv != 0 && block_body_initv == INITV_Next_Idx ()) 
+    // Overwrite the reference, since it turned out we did not create
+    // any initializers for the block.
     INITV_Init_Block(last_aggregate_initv_save, INITV_IDX_ZERO);
 #endif
 

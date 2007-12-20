@@ -16583,17 +16583,7 @@ static WN *lower_entry(WN *tree, LOWER_ACTIONS actions)
       */
       TYPE_ID	type = Def_Int_Mtype;
       
-#if 0
-      if (PLOC_is_nonempty(ploc) && !PLOC_on_stack(ploc)) {
-#else
-      // [JV] With multiple register files and stxp ABI, it is 
-      // possible to be in stack and to have register to save
-      // in vararg case.
-      if (PLOC_is_nonempty(ploc)) {
-#endif
-	/* don't do if already reached stack params */
-        ploc = Get_Vararg_Input_Parameter_Location (ploc);
-      }
+      ploc = Get_Vararg_Input_Parameter_Location (ploc);
 
       while (!PLOC_on_stack(ploc))
       {

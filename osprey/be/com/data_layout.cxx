@@ -1879,6 +1879,8 @@ Allocate_Vararg_Formals (WN *pu)
   INT float_slot_size = 0;
   INT num_int_slots = 0;
   INT num_float_slots = 0;
+  BOOL start_int_offset_set = FALSE;
+  BOOL start_float_offset_set = FALSE;
   INT start_int_offset = 0;
   INT start_float_offset = 0;
   INT next_int_offset = 0;
@@ -1887,50 +1889,43 @@ Allocate_Vararg_Formals (WN *pu)
   PREG_NUM start_float_preg = First_Float_Preg_Param_Offset;
   
   /* don't do if already reached stack params */
-#if 0
-  if (PLOC_is_nonempty(ploc) && !PLOC_on_stack(ploc)) {
-#else
-  // [JV] With multiple register files and stxp ABI, it is 
-  // possible to be in stack and to have register to save
-  // in vararg case.
-  if (PLOC_is_nonempty(ploc)) {
-#endif
-    ploc = Get_Vararg_Input_Parameter_Location (ploc);
-    while (!PLOC_on_stack(ploc)) {
-      num_var_plocs++;
-      PREG_NUM preg = PLOC_reg(ploc);
-      if (Preg_Offset_Is_Int(preg)) {
-	if (start_int_offset == 0) {
-	  start_int_offset = PLOC_formal_offset(ploc);
-	  start_int_preg = preg;
-	}
-	int_slot_size = PLOC_size(ploc);
-	num_int_slots++;
-	next_int_offset = PLOC_formal_offset(ploc) + PLOC_size(ploc) + PLOC_rpad(ploc);
-      } else if (Preg_Offset_Is_Float(preg)) {
-	if (start_float_offset == 0) {
-	  start_float_offset = PLOC_formal_offset(ploc);
-	  start_float_preg = preg;
-	}
-	float_slot_size = PLOC_size(ploc);
-	num_float_slots++;
-	next_float_offset = PLOC_formal_offset(ploc) + PLOC_size(ploc) + PLOC_rpad(ploc);
-      } else {
-	DevAssert(0, ("PLOC type not supported for varargs"));
+  ploc = Get_Vararg_Input_Parameter_Location (ploc);
+  while (!PLOC_on_stack(ploc)) {
+    num_var_plocs++;
+    PREG_NUM preg = PLOC_reg(ploc);
+    if (Preg_Offset_Is_Int(preg)) {
+      if (! start_int_offset_set) {
+	start_int_offset_set = TRUE;
+	start_int_offset = PLOC_formal_offset(ploc);
+	start_int_preg = preg;
       }
-      DevAssert(PLOC_lpad(ploc) == 0 && PLOC_rpad(ploc) == 0, 
-		("Unexpected padding for vararg parameters"));
-
-      if (Trace_Frame) {
-	fprintf(TFile, "<lay> %s(): vararg slot in register [preg %d] %s.\n",
-		__FUNCTION__,
-		preg,
-		Preg_Offset_Is_Int(preg) ? "is_int":
-		Preg_Offset_Is_Float(preg) ? "is_float": "is_other");
+      int_slot_size = PLOC_size(ploc);
+      num_int_slots++;
+      next_int_offset = PLOC_formal_offset(ploc) + PLOC_size(ploc) + PLOC_rpad(ploc);
+    } else if (Preg_Offset_Is_Float(preg)) {
+      if (! start_float_offset_set) {
+	start_float_offset_set = TRUE;
+	start_float_offset = PLOC_formal_offset(ploc);
+	start_float_preg = preg;
       }
-
-      ploc = Get_Vararg_Input_Parameter_Location (ploc);
+      float_slot_size = PLOC_size(ploc);
+      num_float_slots++;
+      next_float_offset = PLOC_formal_offset(ploc) + PLOC_size(ploc) + PLOC_rpad(ploc);
+    } else {
+      DevAssert(0, ("PLOC type not supported for varargs"));
     }
+    DevAssert(PLOC_lpad(ploc) == 0 && PLOC_rpad(ploc) == 0, 
+	      ("Unexpected padding for vararg parameters"));
+    
+    if (Trace_Frame) {
+      fprintf(TFile, "<lay> %s(): vararg slot in register [preg %d] %s.\n",
+	      __FUNCTION__,
+	      preg,
+	      Preg_Offset_Is_Int(preg) ? "is_int":
+	      Preg_Offset_Is_Float(preg) ? "is_float": "is_other");
+    }
+    
+    ploc = Get_Vararg_Input_Parameter_Location (ploc);
   }
   
   if (num_var_plocs > 0) {

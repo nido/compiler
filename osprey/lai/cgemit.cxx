@@ -2924,6 +2924,9 @@ Process_Bss_Data (
 #endif
 
 #ifdef TARG_ST
+    BOOL last_in_section = (bssp+1 == bss_list.end ()
+			    || Base_Symbol (*(bssp+1)) != base);
+
     // [CG]: Ensure section is initialized
     Init_Section(base); 
 #endif
@@ -2967,7 +2970,9 @@ Process_Bss_Data (
 #ifdef TARG_ST
       // assume here that if multiple symbols with same offset,
       // are sorted so that largest size is last.
-      if (size > 0) {
+      // [SC] Care: we can have genuinely zero-sized symbols, and
+      // there may be one at the end of a section.
+      if (size > 0 || last_in_section) {
 #ifdef TARG_ST
 	// [CG]: Don't emit alignement, the padding was already inserted
 	// by the Change_Section_Origin()

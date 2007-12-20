@@ -1206,9 +1206,17 @@ VHO_Get_Field_List ( WN_OFFSET offset, TY_IDX sty_idx )
 	TY_IDX  ety_idx;
 		  
         ety_idx = Ty_Table [fty_idx].Etype();
-        Is_True (TY_size(Ty_Table [fty_idx])%TY_size(Ty_Table [ety_idx]) == 0,
-                       ("unexpected array type"));
+#ifdef KEY // bug 5273: array element size can be zero
+	if (TY_size(Ty_Table[ety_idx]) == 0)
+	  array_elem_num = 0;
+	else {
+#endif
+	Is_True (TY_size(Ty_Table [fty_idx])%TY_size(Ty_Table [ety_idx]) == 0,
+		 ("unexpected array type"));
         array_elem_num = TY_size(Ty_Table [fty_idx])/TY_size(Ty_Table [ety_idx]);
+#ifdef KEY // bug 5273
+	}
+#endif
         // Is_True (VHO_Struct_Nfields + array_elem_num < 255,
         //            ("number of flattened fields exceeds limit");
         if (VHO_Struct_Nfields + array_elem_num >= 255) {
