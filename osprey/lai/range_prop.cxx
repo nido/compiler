@@ -574,6 +574,9 @@ RangePropagateOp (RangeAnalysis &range_analysis,
     // when range of result of a logical operator is less than 9-bit
     if (OP_ior(op) || OP_iand(op) || OP_ixor(op)){
       LRange_p rres = range_analysis.Get_Value_Backward(result);
+      // if the range of the result is Top, the transformation does not apply
+      if (rres->isTop())
+	return FALSE;
       TN *opnd = NULL;
       UINT64 val;
       if (TN_Has_Value (opnd2)) {
