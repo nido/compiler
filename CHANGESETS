@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Dec 21 15:10:29 CET 2007
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-33585
+
+Description:
+------------
+	* [trunk] Fix for bug #33585: [MP2x] Compiler does not use core register efficiently in little complex code
+	  Deliver fixes/codex-33585 rev #14903 with authorization branch #36789
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_eocc.cxx
+	M      osprey/common/com/config_wopt.cxx
+	M      osprey/common/com/config_wopt.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Dec 21 14:54:19 CET 2007
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

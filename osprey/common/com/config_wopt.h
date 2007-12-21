@@ -281,6 +281,8 @@ enum DOWHILE_CONV {
 BE_EXPORTED extern INT32 WOPT_Enable_DoWhile_Conversion;   // enable warning for detected uninitialized locals
 BE_EXPORTED extern BOOL WOPT_Enable_DoWhile_Conversion_Set;
 BE_EXPORTED extern BOOL WOPT_Enable_Flow_Simplification_In_Tailmerge;   // enable flow simplification in tailmerge optimization
+BE_EXPORTED extern INT32 WOPT_Pre_Small_Immediate; // Simple expressions derived from an IV with a
+                                                   // small immediate offset are not subject to PRE
 #endif
 #endif /* config_wopt_INCLUDED */
 

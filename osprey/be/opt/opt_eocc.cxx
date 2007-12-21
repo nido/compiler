@@ -69,6 +69,9 @@
 #endif
 #include "opt_mu_chi.h"
 #include "opt_cvtl_rule.h"
+#ifdef TARG_ST
+#include "config_wopt.h"
+#endif
 
 // ====================================================================
 //
@@ -529,6 +532,70 @@ EXP_WORKLST::Insert_exp_phi(ETABLE *etable)
   if (Real_occurs().Head() == Real_occurs().Tail() &&
       !Real_occurs().Head()->Mult_real() &&
       Real_occurs().Head()->Bb()->Dom_frontier()->EmptyP()) return FALSE;
+
+#ifdef TARG_ST
+  // FdF 20071129: Fix for enhancement #33585. Do not create a new
+  // variable for an expression that is only an increment with a small
+  // value, and is used only once.
+  if ((Real_occurs().Head() == Real_occurs().Tail()) &&
+      !Real_occurs().Head()->Mult_real()) {
+    CODEREP *occur = Real_occurs().Head()->Occurrence();
+    BOOL cost_is_low = (occur->Kind() == CK_OP) && (occur->Opr() == OPR_ADD || occur->Opr() == OPR_SUB);
+
+    // Must be used directly on an STID statement that is not an
+    // IV_update
+    if (cost_is_low) {
+      STMTREP *stmt = Real_occurs().Head()->Stmt();
+      if (!(OPERATOR_is_scalar_store(stmt->Opr()) &&
+	    !stmt->Iv_update() &&
+	    (stmt->Rhs() == occur))) {
+	cost_is_low = FALSE;
+      }
+    }
+
+    if (cost_is_low) {
+      CODEREP *kid0 = occur->Opnd(0);
+      CODEREP *kid1 = occur->Opnd(1);
+
+      if ((kid0->Kind() == CK_CONST) && (kid1->Kind() == CK_VAR)) {
+	CODEREP *tmp_cr = kid0;
+	kid0 = kid1;
+	kid1 = tmp_cr;
+      }
+
+      // Must be an ADD/SUB between a variable and an immediate value
+      // in the range ]-16,16[. This range has been choosen because
+      // such an immediate should not require an extra instruction
+      if (!((kid0->Kind() == CK_VAR) && (kid1->Kind() == CK_CONST) &&
+	    (kid0->Usecnt() > 2) &&
+	    (kid1->Const_val() > -WOPT_Pre_Small_Immediate ) &&
+	    (kid1->Const_val() < WOPT_Pre_Small_Immediate))) {
+	cost_is_low = FALSE;
+      }
+
+      // The variable must be an induction variable
+      if (cost_is_low) {
+	if (kid0->Is_flag_set(CF_DEF_BY_PHI)) {
+	  PHI_NODE *defphi = kid0->Defphi();
+	  if ((defphi == NULL) || !defphi->Opnd_iv_update())
+	    cost_is_low = FALSE;
+	}
+	else if (!kid0->Is_flag_set((CR_FLAG)(CF_DEF_BY_PHI|CF_DEF_BY_CHI|CF_IS_ZERO_VERSION))) {
+	  STMTREP *defstmt = kid0->Defstmt();
+	  if ((defstmt == NULL) || !defstmt->Iv_update())
+	    cost_is_low = FALSE;
+	}
+	else
+	  cost_is_low = FALSE;
+      }
+    }
+
+    if (cost_is_low) {
+      // No gain expected by optimizing this expression, skip it.
+      return FALSE;
+    }
+  }
+#endif
 
   BB_NODE_SET        &phi_list = etable->Phi_work_set();
   BB_NODE_SET        &var_phi_list = etable->Var_phi_set();
