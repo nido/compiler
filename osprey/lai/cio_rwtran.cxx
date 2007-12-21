@@ -2037,6 +2037,7 @@ struct CICSE_entry {
 // -> okay == TRUE iff the transformation is still viable
 // -> Within each set of viable CICSE_changes that share the same source,
 //    exactly one of them has duplicate_source == FALSE.
+//    FdF 20071204: Unless a repair is needed on a duplicate
 // -> op is the OP to be eliminated
 // -> souce is the OP that will generate the values instead of op
 // -> omega equals the number of iterations ago that source matches op
@@ -2832,20 +2833,27 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
 	    change.new_tns[res] == tn_result /* Fix for pv779607 */ );
 #ifdef TARG_ST
 	// FdF 20050228: Imported from PathScale
-	/* A copy is needed if <tn_result> is exposed. */
+	/* A copy is needed if <tn_result> is exposed (bug 160B/35) */
 	if( !change.need_copy[res] ){
 	  for( index_dup = oppor_index - 2; index_dup >= 0; index_dup-- ){
 	    if( tn_result == opportunities[index_dup].new_tns[res] ){
 	      change.new_tns[res] = Build_TN_Like( tn_result );
 	      change.need_copy[res] = TRUE;
+	      // FdF 20071204: For further processing (codex #35792)
+	      change.duplicate_source = FALSE;
 	      break;
 	    }
 	    // FdF 20060126: Need also to check that there is no two
 	    // identicals new_tns.
 	    if ((change.new_tns[res] == opportunities[index_dup].new_tns[res]) &&
-		(change.omega == opportunities[index_dup].omega)) {
+		(change.omega == opportunities[index_dup].omega) &&
+		// FdF 20071112: But no copy if one is a duplicate of
+		// the other (codex #35792)
+		(change.source != opportunities[index_dup].source)) {
 	      change.new_tns[res] = Build_TN_Like( change.new_tns[res] );
 	      change.need_copy[res] = TRUE;
+	      // FdF 20071204: For further processing (codex #35792)
+	      change.duplicate_source = FALSE;
 	      break;
 	    }
 	  }

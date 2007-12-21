@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Dec 21 14:54:19 CET 2007
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-35792
+
+Description:
+------------
+	* [trunk] Fix for bug #35792: Assertion raised (O2) or segfault (O3) in CGLOOP while disabling PRE
+	  Deliver fixes/codex-35792 rev #14893 with authorization branch #35844
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_bdce.cxx
+	M      osprey/lai/cio_rwtran.cxx
+	M      osprey/lai/loop_invar_hoist.cxx
+	M      osprey/lai/cg_select.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Dec 21 09:27:44 CET 2007
 	Author:    knochelh
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

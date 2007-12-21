@@ -2301,6 +2301,12 @@ LOOP_INVAR_CODE_MOTION :: Perform_Scalarization (LI_MEMORY_INFO *memory) {
 	    scalar = Dup_TN(OP_result(memoryOP, 0));
 	else
 	    scalar = Dup_TN_Even_If_Dedicated(OP_opnd(memoryOP, OP_find_opnd_use(memoryOP, OU_storeval)));
+	// FdF 20071113: The new TN should not inherit the
+	// rematerializable from memoryOP.
+	if (TN_is_rematerializable(scalar)) {
+	  Reset_TN_is_rematerializable(scalar);
+	  Set_TN_remat(scalar, NULL);
+	}
 	memory->Set_Scalar(scalar);
     }
 

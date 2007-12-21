@@ -2294,12 +2294,31 @@ Optimize_Spec_Stores(BB *bb)
 	  for (OP *iop = OP_next(first);
 	       iop!= NULL && iop != last;
 	       iop = OP_next(iop)) {
-	    if (OP_memory (iop) && !Are_Not_Aliased (first, iop)) {
-	      i_iter++;
-	      goto next_store;
-	    }
+	    if (OP_memory (iop)) {
+              if (!Are_Not_Aliased (first, iop)) {
+                i_iter++;
+                goto next_store;
+              }
+
+              // this fixes conflicts introduced when disabling the pre. see #35792
+              // Check now that we don't write into the address that we speculate.
+              if (OP_store (iop)) {
+                TN *base1, *offset1;
+                (void) OP_Base_Offset_TNs (first, &base1, &offset1);
+                
+                if (TN_is_register (base1)) {
+                  OP *op_def = TN_ssa_def(base1);
+
+                  if (TN_is_zero (offset1) && op_def &&
+                      !Are_Not_Aliased (iop, op_def)) {
+                    i_iter++;
+                    goto next_store;
+                  }
+                }
+              }
+            }              
 	  }
-	  
+
           Expand_Cond_Store (tn1, op1, op2, OP_find_opnd_use(op1, OU_storeval),
                              &ops);
           

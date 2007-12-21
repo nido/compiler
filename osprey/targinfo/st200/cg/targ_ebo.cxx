@@ -728,30 +728,9 @@ EBO_combine_adjacent_loads(
     OP *ld64_op = OPS_first(&ops);
     if (OP_no_alias(op) && OP_no_alias(pred_op)) Set_OP_no_alias(ld64_op);
     if (OP_spill(op) || OP_spill(pred_op)) Set_OP_spill(ld64_op);
-    // FdF 20070402
-    add_to_hash_table (FALSE, ld64_op, NULL, opnd_tninfo, opnd_tninfo);
-    EBO_OP_INFO *ld64_opinfo = EBO_opinfo_table[EBO_hash_op(ld64_op, opnd_tninfo)];
-    // FdF 20061027: No need to do this since we did not call
-    // remove_op
-#if 0
-    for (int idx = 0; idx < OP_opnds(op); idx++)
-      if (opnd_tninfo[idx])
-	inc_ref_count(opnd_tninfo[idx]);
-#endif
-
-    OP *extract_op = OPS_last(&ops);
-    EBO_TN_INFO *tninfo[OP_MAX_FIXED_OPNDS];
-    tninfo[0] = ld64_opinfo->actual_rslt[0];
-    inc_ref_count(tninfo[0]);
-    // FdF 20070402
-    add_to_hash_table (FALSE, extract_op, NULL, tninfo, tninfo);
-
-    // FdF 20070417: Also, set the ref_count for the result of extract op
-    if (opinfo->actual_rslt[0]->reference_count != 0) {
-      EBO_OP_INFO *extract_opinfo = EBO_opinfo_table[EBO_hash_op(extract_op, tninfo)];
-      EBO_TN_INFO *tninfo = extract_opinfo->actual_rslt[(offset_pred < offset_succ) ? 0 : 1];
-      tninfo->reference_count = opinfo->actual_rslt[0]->reference_count;
-    }
+    // FdF 20071130: Forget information from the original ldw
+    // operation
+    EBO_opinfo_table[EBO_hash_op(ld64_op, opnd_tninfo)] = NULL;
   }
 
   opinfo->in_op = NULL;

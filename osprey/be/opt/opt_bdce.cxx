@@ -1147,15 +1147,30 @@ BITWISE_DCE::Copy_propagate(CODEREP *cr, STMTREP *use_stmt) {
     return NULL;
   }
 
+  // FdF 20071116: Old code cannot be removed if there are live chis
+  // (codex #35792). This also prevent copy propagation, because this
+  // would otherwise create non-conventional SSA.
+  CHI_LIST_ITER chi_iter;
+  CHI_NODE *chi;
+  FOR_ALL_NODE(chi, chi_iter, Init(cr->Defstmt()->Chi_list())) {
+    if (chi->Live() &&
+	!chi->RESULT()->Is_flag_set(CF_IS_ZERO_VERSION) &&
+	Livebits(chi->RESULT()) != 0) {
+      return NULL;
+    }
+  }
+
   if (Tracing()) {
     fprintf(TFile, "BDCE copying:\n");
     cr->Defstmt()->Print(TFile);
     fprintf(TFile, "to:\n");
     use_stmt->Print(TFile);
   }
+
   // Propage copy and delete old code
   new_expr->IncUsecnt_rec();
   use_stmt->Bb()->Remove_stmtrep(cr->Defstmt());
+
   return new_expr;
 }
 
