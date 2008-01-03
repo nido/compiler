@@ -45,7 +45,7 @@
  *                              1 = speculate safe loads (default)
  *                              2 = speculate all loads 
  *
- * -CG:select_factor="1.1"      factor to reduce the cost of the 
+ * -CG:select_factor="1.05"      factor to reduce the cost of the 
  *                              ifconverted region
  *
  * -CG:select_promote_mem=false  base or offset memory load promotion
@@ -158,7 +158,7 @@ BOOL CG_select_promote_mem = FALSE;
 INT32 CG_select_spec_loads = 1;
 BOOL CG_select_freq = TRUE;
 BOOL CG_select_cycles = TRUE;
-const char* CG_select_factor = "1.1";
+const char* CG_select_factor = "1.05";
 static float select_factor;
 static int branch_penalty;
 
@@ -900,12 +900,10 @@ Are_Same_Location(OP* op1, OP* op2)
     WN *wn2 = Get_WN_From_Memory_OP(op2);
     if (wn1 != NULL && wn2 != NULL) {
       ALIAS_RESULT alias = Aliased(Alias_Manager, wn1, wn2);
-#ifdef TARG_ST
       // [CG] Check that ops are not black_hole
       if (!OP_black_hole(op1) && !OP_black_hole(op2))
-#endif
-      if (alias == SAME_LOCATION)
-        return TRUE;
+        if (alias == SAME_LOCATION)
+          return TRUE;
       
       // alias analyser doesn't seem to be able to detect obvious cases like
       // if (a) pt = tab1 else pt = tab2;
@@ -951,6 +949,9 @@ static BOOL
 Are_Not_Aliased(OP* op1, OP* op2)
 {
   if (OP_memory(op1) && OP_memory(op2)) {
+    if (OP_black_hole(op1) || OP_black_hole(op2))
+      return TRUE;
+
     WN *wn1 = Get_WN_From_Memory_OP(op1);
     WN *wn2 = Get_WN_From_Memory_OP(op2);
     if (wn1 != NULL && wn2 != NULL) {
@@ -2600,23 +2601,26 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   // prob(bb1->else) = prob(bb1->bb2) * prob(bb2->else)
   // Note that for the other edge, we have:
   // prob(bb1->joint) = 1 - prob(bb1->else)
-  float prob1 = 0.0, prob2 = 0.0;
+  float prob = 0.0;
+  float prob2 = 0.0;
+
   BBLIST *bblist;
   FOR_ALL_BB_SUCCS(bb1, bblist) {
     BB *succ = BBLIST_item(bblist);
-    if (succ == bb2) {
-      prob1 = BBLIST_prob(bblist);
-      break;
-    }
+    if (succ == joint_block) 
+      prob += BBLIST_prob(bblist);
+    else 
+      prob2 += BBLIST_prob(bblist); 
   }
   FOR_ALL_BB_SUCCS(bb2, bblist) {
     BB *succ = BBLIST_item(bblist);
-    if (succ == else_block) {
-      prob2 = BBLIST_prob(bblist);
+    if (succ == joint_block) {
+      prob2 *= BBLIST_prob(bblist);
       break;
     }
   }
-  prob1 *= prob2;
+  
+  prob += prob2;
 
   if (Trace_Select_Gen) {
     fprintf (Select_TFile, "Convert if BB%d BB%d BB%d BB%d BB%d BB%d\n",
@@ -2715,7 +2719,6 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     not_taken_bb = joint_block;
   }
   else {
-    prob1 = 1.0 - prob1;
     taken_bb = joint_block;
     not_taken_bb = else_block;
   }
@@ -2723,10 +2726,10 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   if (invert_branch) {
     br1_op = BB_branch_op(bb1);
     Negate_Branch_BB (br1_op);
-    Target_Logif_BB(bb1, not_taken_bb, 1.0 - prob1, taken_bb);
+    Target_Logif_BB(bb1, not_taken_bb, 1.0F - prob, taken_bb);
   }
   else
-    Target_Logif_BB(bb1, taken_bb, prob1, not_taken_bb);
+    Target_Logif_BB(bb1, taken_bb, prob, not_taken_bb);
 
   BB_MAP_Set(if_bb_map, bb1, NULL);
   BB_MAP_Set(if_bb_map, bb2, NULL);

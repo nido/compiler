@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jan  3 14:32:32 CET 2008
+	Author:    bruel
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-37334
+
+Description:
+------------
+	* [trunk] Fix for bug #37334: Store merging no longer performed in if-conversion.
+	Deliver fixes/codex-37334 rev #14908 with authorization branch #37589
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_select.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Dec 21 15:10:29 CET 2007
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
