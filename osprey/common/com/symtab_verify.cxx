@@ -502,10 +502,18 @@ ST_Verify_Fields(const ST &s)
     INT64 ofst;
     ST *sb;
     ST *snon_const = (ST *) &s;
+#ifdef TARG_ST
+    sb = Base_Symbol (snon_const);
+    if (Base_Offset_Is_Known (snon_const)) {
+      ofst = Base_Offset (snon_const);
+    } else {
+      ofst = 0;
+    }
+#else
     // casting away const is bAAAAD, but can't change Base_Symbol_And_Offset
 
     Base_Symbol_And_Offset ( snon_const, &sb, &ofst );
-
+#endif
     // Property 1a.
     if ( ST_storage_class (*sb) != SCLASS_UNKNOWN) {
 

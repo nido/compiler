@@ -68,10 +68,12 @@ BE_EXPORTED extern void St_Block_Union(ST *blk1, ST *blk2);
 BE_EXPORTED extern ST *New_ST_Block (STR_IDX name, BOOL is_global, ST_SCLASS sclass, UINT16 align, INT64 size);
 BE_EXPORTED extern ST* Copy_ST_Block (ST *orig_blk); /* return copy of class_block st */
 
+#ifndef TARG_ST
 BE_EXPORTED extern ST *Base_Symbol (ST *st);	/* return root block symbol */
 
 /* return offset from base */
 BE_EXPORTED extern INT64 Offset_From_Base_Symbol ( ST *st );
+#endif
 
 /* Get the base symbol and the offset from base that should be used 
  * for addressing. */

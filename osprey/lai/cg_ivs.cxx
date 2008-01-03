@@ -579,7 +579,12 @@ Packing_Store_Candidate_Arc( ARC *arc )
 static void
 Analyse_Offset_TN(TN *offset_tn, ST **st, INT *relocs, INT64 *val) {
 
+#ifdef TARG_ST
+  if (TN_is_symbol(offset_tn)
+      && Base_Offset_Is_Known (TN_var(offset_tn))) {
+#else
   if (TN_is_symbol(offset_tn)) {
+#endif
     ST *symbol = TN_var(offset_tn);
     Base_Symbol_And_Offset (symbol, st, val);
     *relocs = TN_relocs(offset_tn);
@@ -598,7 +603,12 @@ Adjust_Offset_TN(TN *offset_tn, INT64 adjust) {
 
   TN *new_offset_tn = NULL;
 
+#ifdef TARG_ST
+  if (TN_is_symbol(offset_tn)
+      && Base_Offset_Is_Known (TN_var(offset_tn))) {
+#else
   if (TN_is_symbol(offset_tn)) {
+#endif
     ST *st = TN_var(offset_tn), *symbol;
     INT64 offset_val;
     Base_Symbol_And_Offset (st, &symbol, &offset_val);

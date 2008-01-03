@@ -3621,14 +3621,14 @@ iadd_special_case (
       !TN_has_spill(tn) &&
       TN_is_symbol(tn)) {
     ST *st = TN_var(tn);
-    ST *base_st;
-    INT64 base_ofst;
-    INT64 val = TN_offset(tn);
 
-    Base_Symbol_And_Offset (st, &base_st, &base_ofst);
     if (ST_on_stack(st) &&
         ((ST_sclass(st) == SCLASS_AUTO) ||
          (EBO_in_peep && (ST_sclass(st) == SCLASS_FORMAL)))) {
+      ST *base_st;
+      INT64 base_ofst;
+      INT64 val = TN_offset(tn);
+      Base_Symbol_And_Offset (st, &base_st, &base_ofst);
       val += base_ofst;
       if (val == 0) {
         OPS ops = OPS_EMPTY;

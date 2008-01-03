@@ -4710,14 +4710,14 @@ find_duplicate_mem_op (BB *bb,
 
 #ifdef TARG_ST
       // FdF 20070418: Use the base symbol and offset for comparison
-      if (symbol_pred != NULL) {
+      if (symbol_pred != NULL && Base_Offset_Is_Known (symbol_pred)) {
 	ST *base_st;
 	INT64 base_offset;
 	Base_Symbol_And_Offset(symbol_pred, &base_st, &base_offset);
 	symbol_pred = base_st;
 	offset_pred += base_offset;
       }
-      if (symbol_succ != NULL) {
+      if (symbol_succ != NULL && Base_Offset_Is_Known (symbol_succ)) {
 	ST *base_st;
 	INT64 base_offset;
 	Base_Symbol_And_Offset(symbol_succ, &base_st, &base_offset);

@@ -503,8 +503,10 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
     ST *base_st;
     INT64 base_ofst;
 
-    Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+    base_st = Base_Symbol (st);
     if (base_st != SP_Sym) return FALSE;
+    FmtAssert (Base_Offset_Is_Known (st), ("unknown offset in Is_Ldst_Addiu_Pair"));
+    base_ofst = Base_Offset (st);
     ldst_const = CGTARG_TN_Value (old_ofst_tn, base_ofst);
     if (ldst_const + addiu_const*multiplier < 0)
       return FALSE;

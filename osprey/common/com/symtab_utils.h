@@ -285,6 +285,23 @@ BE_EXPORTED extern void  Base_Symbol_And_Offset (
   INT64  *offset_from_base  // Result: offset from primary base
 );
 
+#ifdef TARG_ST
+// Get the base symbol from a ST
+BE_EXPORTED extern ST *  Base_Symbol (
+  ST     *st                // Symbol to analyze
+);
+
+// Get the base symbol offset from a ST
+BE_EXPORTED extern INT64  Base_Offset (
+  ST     *st                // Symbol to analyze
+);
+
+// TRUE if the offset from the base symbol is known
+BE_EXPORTED extern BOOL  Base_Offset_Is_Known (
+  ST     *st                // Symbol to analyze
+);
+#endif
+
 //----------------------------------------------------------------------
 // Printing routines
 //----------------------------------------------------------------------

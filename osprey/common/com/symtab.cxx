@@ -1365,15 +1365,75 @@ Base_Symbol_And_Offset (ST     *st,
   INT64 ofst = 0;
   ST *base = st;
 
+  if (offset_from_base) {
+    FmtAssert (Base_Offset_Is_Known (st), 
+	       ("Base_Symbol_And_Offset uknown offset"));
+  }
   while ( ST_base(base) != base  ) {
-      ofst += ST_ofst(base);
-      base = ST_base(base);
+    ofst += ST_ofst(base);
+    base = ST_base(base);
   }
 
-  *base_symbol      = base;
-  *offset_from_base = ofst;
+  if (base_symbol) *base_symbol      = base;
+  if (offset_from_base) *offset_from_base = ofst;
+}
+#ifdef TARG_ST
+/* ====================================================================
+ *
+ * Base_Symbol
+ *      Input:  ST *st                   Symbol to analyze
+ *      Result:                          primary base of st
+ *
+ *
+ * ====================================================================
+ */
+ST *
+Base_Symbol (ST     *st)
+{
+  ST *base;
+  Base_Symbol_And_Offset (st, &base, NULL);
+  return base;
 }
 
+/* ====================================================================
+ *
+ * Base_Offset
+ *      Input:  ST *st                   Symbol to analyze
+ *      Result:                          offset from primary base
+ *
+ *
+ * ====================================================================
+ */
+INT64
+Base_Offset (ST     *st)
+{
+  INT64 ofst;
+  Base_Symbol_And_Offset (st, NULL, &ofst);
+  return ofst;
+}
+
+/* ====================================================================
+ *
+ * Base_Offset_Is_Known
+ *      Input:  ST *st                   Symbol to analyze
+ *      Result:                          TRUE if the offset from
+ *                                       Base_Symbol(st) is known.
+ *
+ *
+ * ====================================================================
+ */
+BOOL
+Base_Offset_Is_Known (ST     *st)
+{
+  ST *base = st;
+  while (ST_base (base) != base) {
+    if (ST_sclass (base) == SCLASS_TEXT)
+      return FALSE;
+    base = ST_base (base);
+  }
+  return TRUE;
+}
+#endif
 
 //----------------------------------------------------------------------
 // Printing routines

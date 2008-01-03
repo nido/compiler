@@ -988,7 +988,15 @@ Print_Label (
     EMT_Write_Qualified_Name(pfile, st);
     fprintf (pfile, ", %d\n", size);
   }
+#ifdef TARG_ST
+  if (Base_Offset_Is_Known (st)) {
+    Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+  } else {
+    base_st = st; base_ofst = 0;
+  }
+#else
   Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+#endif
   EMT_Write_Qualified_Name (pfile, st);
 #ifdef TARG_ST
   if (List_Notes) {
@@ -1013,9 +1021,13 @@ Print_Common (
 )
 {
   ST    *base_st;
+#ifdef TARG_ST
+  base_st = Base_Symbol (st);
+#else
   INT64  base_ofst;
 
   Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+#endif
   if (st != base_st && ST_sclass(base_st) == SCLASS_COMMON) {
     // use base common
     if (ST_elf_index(base_st) == 0) {
@@ -1175,7 +1187,14 @@ EMT_Put_Elf_Symbol (
   }
 
   symother = st_other_for_sym (sym);
+#ifdef TARG_ST
+  base_st = Base_Symbol (sym);
+  if (Base_Offset_Is_Known (sym)) {
+    base_ofst = Base_Offset (sym);
+  }
+#else  
   Base_Symbol_And_Offset (sym, &base_st, &base_ofst);
+#endif
   // check if base is new section symbol that is not initialized yet
   if (ST_class(base_st) == CLASS_BLOCK && STB_section(base_st)
 	&& ST_elf_index(base_st) == 0)
@@ -1532,6 +1551,9 @@ Write_Symbol (
   basesym = sym;
   if (Has_Base_Block(sym) && 
       ST_is_export_local(sym) && 
+#ifdef TARG_ST
+      Base_Offset_Is_Known (sym) &&
+#endif
       ST_class(sym) != CLASS_FUNC) {
     Base_Symbol_And_Offset (sym, &basesym, &base_ofst);
   }
@@ -1706,6 +1728,11 @@ Write_Symdiff (
   BB *labb = Get_Label_BB(lab1);
   basesym1 = BB_cold(Get_Label_BB(lab1)) ? cold_base : text_base;
   base1_ofst = Get_Label_Offset(lab1);
+#ifdef TARG_ST
+  if (Object_Code) {
+    FmtAssert (Base_Offset_Is_Known (sym2), ("Unknown offset in Write_Symdiff"));
+    
+#endif
   Base_Symbol_And_Offset (sym2, &basesym2, &base2_ofst);
   if (Use_Separate_PU_Section(current_pu,basesym2)) {
 	/* use PU text section rather than generic one */
@@ -1721,7 +1748,9 @@ Write_Symdiff (
 	}
 	val = val << 16;	/* for Add_Bytes */
   }
-
+#ifdef TARG_ST
+  } /* Object_Code */
+#endif
   for ( i = 0; i < repeat; i++ ) {
     if (Assembly) {
 #ifdef KEY
@@ -2432,7 +2461,11 @@ inline bool section_lt (ST *s1, ST* s2)
  */
 inline bool offset_lt (ST *s1, ST* s2) 
 { 
+#ifdef TARG_ST
+  return Base_Offset (s1) < Base_Offset (s2);
+#else
   return Offset_From_Base_Symbol(s1) < Offset_From_Base_Symbol(s2); 
+#endif
 }
 
 /* ====================================================================
@@ -2572,9 +2605,13 @@ Process_Initos_And_Literals (
   for (i = 1; i < ST_Table_Size(GLOBAL_SYMTAB); ++i) {
     ST* st = &St_Table(GLOBAL_SYMTAB,i);
     if (ST_class(st) == CLASS_CONST && !st_processed[ST_index(st)]) {
+#ifdef TARG_ST
+      ST *base = Base_Symbol (st);
+#else
       INT64 ofst;
       ST* base;
       Base_Symbol_And_Offset(st, &base, &ofst);
+#endif
       if (ST_class(base) != CLASS_BLOCK || !STB_section(base)) {
         continue; // not allocated
       }
@@ -3750,8 +3787,15 @@ r_apply_l_const (
     INT64 base_ofst;
 
     st = TN_var(t);
+#ifdef TARG_ST
+    base_st = Base_Symbol (st);
+#else
     Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+#endif
     if (base_st == SP_Sym || base_st == FP_Sym) {
+#ifdef TARG_ST
+      base_ofst = Base_Offset (st);
+#endif
         if (Pointer_Size <= 4) {
             INT32 val32 = CGTARG_TN_Value (t, base_ofst);
             vstr_sprintf (buf, 

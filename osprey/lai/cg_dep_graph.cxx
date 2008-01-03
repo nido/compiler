@@ -1941,12 +1941,20 @@ static OP *addr_base_offset(OP *op, ST **initial_sym, ST **sym, TN **base_tn, IN
         defop_base_tn = NULL;
 
         ST *root_sym;
+#ifdef TARG_ST
+	root_sym = Base_Symbol (*sym);
+	if (*sym != root_sym && Base_Offset_Is_Known (*sym)) {
+	  *sym = root_sym;
+	  *offset += Base_Offset (*sym);
+	}
+#else
         INT64 root_offset;
         Base_Symbol_And_Offset( *sym, &root_sym, &root_offset);
         if (*sym != root_sym) {
           *sym = root_sym;
           *offset += root_offset;
         }
+#endif
       } else if (TN_has_value(defop_offset_tn)) {
         *offset += TN_value(defop_offset_tn);
       }

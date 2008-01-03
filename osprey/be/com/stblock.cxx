@@ -226,7 +226,12 @@ INT32 ST_alignment(ST *sym)
 
   if (ST_pu_defined(sym))
   {
+#ifdef TARG_ST
+    if (Is_Allocated(sym)
+	&& Base_Offset_Is_Known (sym))
+#else
     if (Is_Allocated(sym))
+#endif
     {
       ST	*base;
       INT64	ofst;
@@ -422,6 +427,7 @@ void St_Block_Union(ST *blk1, ST *blk2)
 }
 
 
+#ifndef TARG_ST
 /* ====================================================================
  *
  * Offset_From_Base_Symbol
@@ -461,6 +467,7 @@ Base_Symbol (ST *st)
 }
 
 
+#endif
 // Create slink symbol in current PU
 BE_EXPORTED void
 Create_Slink_Symbol (void)
@@ -626,6 +633,7 @@ Base_Symbol_And_Offset_For_Addressing (
   while ( (ST_base(base) != base  ) 
 	&& (ST_sclass(base) != SCLASS_TEXT) 
 #ifdef TARG_ST
+       && Base_Offset_Is_Known (base)
        && !((Gen_PIC_Shared || Gen_PIC_Call_Shared)
             && (ST_is_preemptible(base)
                 || ST_is_preemptible(ST_base(base)))) )

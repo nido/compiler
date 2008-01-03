@@ -1686,7 +1686,11 @@ Get_TN_Range (
 {
   ST *st;
   ST *base_st;
+#ifdef TARG_ST
+  INT64 ofst;
+#else
   INT64 ofst, base_ofst;
+#endif
 
   /* For non-constant TNs, return a value range which won't fit
    * anywhere:
@@ -1723,13 +1727,20 @@ Get_TN_Range (
   /* Now we have a symbol TN: */
   st = TN_var(tn);
   ofst = TN_offset(tn);
-  Base_Symbol_And_Offset (st, &base_st, &base_ofst);
-
+#ifdef TARG_ST
+  base_st = Base_Symbol (st);
+  if ((base_st == SP_Sym || base_st == FP_Sym)
+      && Base_Offset_Is_Known (st)) {
+    *minval = *maxval = Base_Offset (st) + ofst;
+    return TRUE;
+  }
+#else
   if ( base_st == SP_Sym || base_st == FP_Sym ) {
     *minval = *maxval = base_ofst + ofst;
     return TRUE;
   } 
-  
+#endif
+
   /* shouldn't get this far */
   /* Return a value range which won't fit anywhere: */
   *minval = HUGE_MIN;

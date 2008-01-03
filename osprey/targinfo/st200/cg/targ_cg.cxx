@@ -1914,9 +1914,10 @@ CGTARG_offset_is_extended(TN *offset, INT64 *val) {
     INT64 base_ofst;
 
     st = TN_var(offset);
-    Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+    base_st = Base_Symbol (st);
     // SP/FP relative may actually fit into 9-bits
     if (base_st == SP_Sym || base_st == FP_Sym) {
+      base_ofst = Base_Offset (st);
       *val = CGTARG_TN_Value (offset, base_ofst);
       if (!ISA_LC_Value_In_Class(*val, LC_isrc2)) {
 	return TRUE;
@@ -1958,9 +1959,10 @@ CGTARG_need_extended_Opcode(OP *op, TOP *etop) {
 	INT64 base_ofst;
 
 	st = TN_var(opnd);
-	Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+	base_st = Base_Symbol (st);
 	// SP/FP relative may actually fit into 9-bits
 	if (base_st == SP_Sym || base_st == FP_Sym) {
+	  base_ofst = Base_Offset (st);
 	  val = CGTARG_TN_Value (opnd, base_ofst);
 	  if (!ISA_LC_Value_In_Class(val, LC_isrc2)) {
 	    extra_slot_reqd = TRUE;

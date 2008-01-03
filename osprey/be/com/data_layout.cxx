@@ -454,8 +454,12 @@ extern BOOL
 Is_Allocated (ST *st)
 {
   ST *base;
+#ifdef TARG_ST
+  base = Base_Symbol (st);
+#else
   INT64 ofst;
   Base_Symbol_And_Offset(st, &base, &ofst);
+#endif
   // formals may be allocated to block, but not root_block
   if (ST_sclass(st) == SCLASS_FORMAL && ST_class(base) == CLASS_BLOCK) 
 	return TRUE;

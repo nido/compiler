@@ -727,7 +727,9 @@ put_location (
   Dwarf_P_Expr expr;
   ST *st;
   ST *base_st;
+#ifndef TARG_ST
   INT64 base_ofst;
+#endif
   BOOL deref;
 
   st = Get_ST_From_DST (assoc_info);
@@ -736,7 +738,11 @@ put_location (
   if (st == NULL) return;
   if (ST_is_not_used(st)) return;
 
+#ifdef TARG_ST
+  base_st = Base_Symbol (st);
+#else
   Base_Symbol_And_Offset (st, &base_st, &base_ofst);
+#endif
 
   if (ST_is_not_used(base_st)) return;	/* For fixing undefined refernece bug, Added By: Mike Murphy, 22 Apr 2001 */
 
