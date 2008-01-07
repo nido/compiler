@@ -585,21 +585,16 @@ REG_LIVE_Compute_Local_Livein_Kill(BB *bb, REGSET livein, REGSET kill)
 	TN *opnd_tn = OP_opnd(op,i);
 	if (TN_is_register(opnd_tn)) {
 	  ISA_REGISTER_CLASS cl = TN_register_class(opnd_tn);
-	  REGISTER reg = TN_register(opnd_tn);
-	  if ((reg != REGISTER_UNDEFINED) &&
-	      (!REGISTER_SET_MemberP (kill[cl], reg))) {
-	    livein[cl] = REGISTER_SET_Union1 (livein[cl], reg);
-	  }
+	  REGISTER_SET gen = REGISTER_SET_Difference (TN_registers (opnd_tn), kill[cl]);
+	  livein[cl] = REGISTER_SET_Union (livein[cl], gen);
 	}
       }
       // Assume that conditional ops don't kill their definitions.
       if (!OP_cond_def(op)) {
 	for (i = 0; i < OP_results(op); i++) {
 	  TN *result_tn = OP_result(op,i);
-	  if (TN_register(result_tn) != REGISTER_UNDEFINED) {
-	    ISA_REGISTER_CLASS cl = TN_register_class(result_tn);
-	    kill[cl] = REGISTER_SET_Union1 (kill[cl], TN_register(result_tn));
-	  }
+	  ISA_REGISTER_CLASS cl = TN_register_class(result_tn);
+	  kill[cl] = REGISTER_SET_Union (kill[cl], TN_registers (result_tn));
 	}
       }
     }
@@ -776,7 +771,12 @@ REG_LIVE_Prolog_Temps(
       FmtAssert(TN_is_global_reg(tn),("TN%d is not global",TN_number(tn)));
       if (TN_register(tn) != REGISTER_UNDEFINED) {
 	cl = TN_register_class(tn);
+#ifdef TARG_ST
+	/* [TTh] Support for multi-register TNs */
+	live[cl] = REGISTER_SET_Union(live[cl], TN_registers(tn));
+#else
 	live[cl] = REGISTER_SET_Union1(live[cl], TN_register(tn));
+#endif
       }
     }
   }
@@ -792,7 +792,12 @@ REG_LIVE_Prolog_Temps(
       tn = OP_result(op,k);
       if (TN_register(tn) != REGISTER_UNDEFINED) {
 	cl = TN_register_class(tn);
+#ifdef TARG_ST
+	/* [TTh] Support for multi-register TNs */
+	live[cl] = REGISTER_SET_Difference(live[cl], TN_registers(tn));
+#else
 	live[cl] = REGISTER_SET_Difference1(live[cl], TN_register(tn));
+#endif
       }
     }
 
@@ -800,7 +805,12 @@ REG_LIVE_Prolog_Temps(
       tn = OP_opnd(op,k);
       if ((TN_is_register(tn)) && (TN_register(tn) != REGISTER_UNDEFINED)) {
 	cl = TN_register_class(tn);
+#ifdef TARG_ST
+	/* [TTh] Support for multi-register TNs */
+	live[cl] = REGISTER_SET_Union(live[cl], TN_registers(tn));
+#else
 	live[cl] = REGISTER_SET_Union1(live[cl], TN_register(tn));
+#endif
       }
     }
 
@@ -841,7 +851,12 @@ REG_LIVE_Prolog_Temps(
       tn = OP_result(op,k);
       if (TN_register(tn) != REGISTER_UNDEFINED) {
 	cl = TN_register_class(tn);
+#ifdef TARG_ST
+	/* [TTh] Support for multi-register TNs */
+	temps[cl] = REGISTER_SET_Difference(temps[cl], TN_registers(tn));
+#else
 	temps[cl] = REGISTER_SET_Difference1(temps[cl], TN_register(tn));
+#endif
       }
     }
 
@@ -849,7 +864,12 @@ REG_LIVE_Prolog_Temps(
       tn = OP_opnd(op,k);
       if ((TN_is_register(tn)) && (TN_register(tn) != REGISTER_UNDEFINED)) {
 	cl = TN_register_class(tn);
+#ifdef TARG_ST
+	/* [TTh] Support for multi-register TNs */
+	temps[cl] = REGISTER_SET_Difference(temps[cl], TN_registers(tn));
+#else
 	temps[cl] = REGISTER_SET_Difference1(temps[cl], TN_register(tn));
+#endif
       }
     }
   }
@@ -913,7 +933,12 @@ REG_LIVE_Epilog_Temps(
       tn = OP_result(op,k);
       if (TN_register(tn) != REGISTER_UNDEFINED) {
 	cl = TN_register_class(tn);
+#ifdef TARG_ST
+	/* [TTh] Support for multi-register TNs */
+	temps[cl] = REGISTER_SET_Union(temps[cl], TN_registers(tn));
+#else
 	temps[cl] = REGISTER_SET_Union1(temps[cl], TN_register(tn));
+#endif
       }
     }
 
@@ -921,7 +946,12 @@ REG_LIVE_Epilog_Temps(
       tn = OP_opnd(op,k);
       if ((TN_is_register(tn)) && (TN_register(tn) != REGISTER_UNDEFINED)) {
 	cl = TN_register_class(tn);
+#ifdef TARG_ST
+	/* [TTh] Support for multi-register TNs */
+	temps[cl] = REGISTER_SET_Difference(temps[cl], TN_registers(tn));
+#else
 	temps[cl] = REGISTER_SET_Difference1(temps[cl], TN_register(tn));
+#endif
       }
     }
   }

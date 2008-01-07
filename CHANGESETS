@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jan  7 17:29:59 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-36602
+
+Description:
+------------
+	* [trunk] Fix for bug #36602: Incorrect register liveness calculation.
+	          --> Fix in liveness computation to take into account composite dedicated registers.
+	Deliver fixes/codex-36602 rev #14952 with authorization branch #37124
+
+
+Modified Files:
+---------------
+	M      osprey/lai/register.h
+	M      osprey/lai/reg_live.cxx
+	M      osprey/lai/register.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jan  3 15:21:18 CET 2008
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -205,6 +205,18 @@
  *          The empty REGISTER_SET.
  *
  *
+#ifdef TARG_ST
+ *	REGISTER_SET REGISTER_SET_Union_Range(
+ *          REGISTER_SET  set,
+ *          REGISTER      low,
+ *          REGISTER      high
+ *      )
+ *
+ *          Return Union('set',{'low':'high'}).  In other words,
+ *	    'set', with the elements low..high added if they were not present.
+#endif
+ *
+ *
  *	REGISTER_SET REGISTER_SET_Difference_Range(
  *          REGISTER_SET  set,
  *          REGISTER      low,
@@ -1219,6 +1231,13 @@ REGISTER_SET_MembersP(
   return REGISTER_SET_ContainsP (set,
 				 REGISTER_SET_Range (reg, reg+nregs-1));
 }
+
+extern REGISTER_SET
+REGISTER_SET_Union_Range(
+  REGISTER_SET   set,
+  REGISTER       low,
+  REGISTER       high
+);
 #endif
 
 extern REGISTER_SET

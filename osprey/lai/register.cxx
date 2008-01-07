@@ -778,6 +778,29 @@ REGISTER_Reset_FP (void)
  */
 
 
+#ifdef TARG_ST
+/* ====================================================================
+ *
+ *  REGISTER_SET_Union_Range
+ *
+ *  See interface description
+ *
+ * ====================================================================
+ */
+REGISTER_SET
+REGISTER_SET_Union_Range(
+  REGISTER_SET   set,
+  REGISTER       low,
+  REGISTER       high
+)
+{
+  FmtAssert ((INT)high >= (INT)low,
+	     ("REGISTER_SET_Union_Range: high < low"));
+  return REGISTER_SET_Union(set, REGISTER_SET_Range(low, high));
+}
+#endif
+
+
 /* ====================================================================
  *
  *  REGISTER_SET_Difference_Range
