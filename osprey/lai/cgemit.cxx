@@ -3010,13 +3010,8 @@ Process_Bss_Data (
       // [SC] Care: we can have genuinely zero-sized symbols, and
       // there may be one at the end of a section.
       if (size > 0 || last_in_section) {
-#ifdef TARG_ST
 	// [CG]: Don't emit alignement, the padding was already inserted
 	// by the Change_Section_Origin()
-#else
-	// Time to print out the alignment and the labels
-	fprintf(Output_File, "\t%s %d\n", AS_ALIGN, align);
-#endif
 	std::list<ST*>::iterator esyms;
 	// Print the previously eqivalenced symbols
 	for (esyms = equivalenced_symbols.begin();
@@ -3033,11 +3028,12 @@ Process_Bss_Data (
 	equivalenced_symbols.clear();
 	// reset align
 	align = 0;
-
-#else
+      }
+#endif
       // assume here that if multiple symbols with same offset,
       // are sorted so that largest size is last.
       if (size > 0) {
+#ifndef TARG_ST
 	fprintf(Output_File, "\t%s %d\n", AS_ALIGN, TY_align(ST_type(sym)));
 #endif
 	if (Assembly)
