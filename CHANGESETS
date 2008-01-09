@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jan  9 15:50:34 CET 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-36327
+
+Description:
+------------
+	* [trunk] Fix for bug #36327: [ISP] Restrict has no effect on a relevant sub-optimal scheduling caused by aliasing.
+	Deliver fixes/codex-36327 rev #14991 with authorization branch #36375
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_dep_graph.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jan  8 13:19:35 CET 2008
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

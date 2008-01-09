@@ -1165,6 +1165,10 @@ inline INT16 get_cycle(TOP opcode, INT16 ckind, UINT8 opnd)
   case CYC_READ:
     return TI_LATENCY_Operand_Access_Cycle(opcode, opnd);
   case CYC_WRITE:
+#ifdef TARG_ST
+    //[dt]: For multiple output instruction (i.e. post_inc inst ...) , we should select the correct target
+    return TI_LATENCY_Result_Available_Cycle(opcode, opnd);
+#endif
     return TI_LATENCY_Result_Available_Cycle(opcode, 0 /*???*/);
   }
 
@@ -1179,6 +1183,10 @@ inline INT16 get_cycle(TOP opcode, INT16 ckind, UINT8 opnd)
 INT16 
 CG_DEP_Oper_Latency(TOP pred_oper, TOP succ_oper, CG_DEP_KIND kind, UINT8 opnd)
 {
+#ifdef TARG_ST
+// [dt] Use CG_DEP_Op_Latency instead
+  DevAssert(FALSE, ("We should not get here %s %d", __FILE__,__LINE__));
+#endif
   // Initialize the dep_info table.
   INT i;
   for (i = 0; i < sizeof(dep_info_data) / sizeof(dep_info_data[0]); i++) {
@@ -1221,6 +1229,80 @@ CG_DEP_Oper_Latency(TOP pred_oper, TOP succ_oper, CG_DEP_KIND kind, UINT8 opnd)
   return latency;
 }
 
+#ifdef TARG_ST
+// [dt] This is an equivalent function to CG_DEP_Oper_Latency but it takes into account
+// the fact that a def of an operand is not always the result operand 0 (i.e. post inc of a pointer)
+// This issue is exposed by bug #36327
+// In this version we check (for the WRITE case) which result operand in pred is linked to opnd (in succ)  
+static INT16 
+CG_DEP_Op_Latency(OP *pred_op ,OP* succ_op, CG_DEP_KIND kind, UINT8 opnd) {
+  // Initialize the dep_info table.
+  INT i;
+  TOP pred_oper = OP_code(pred_op);
+  TOP succ_oper = OP_code(succ_op);
+   for (i = 0; i < sizeof(dep_info_data) / sizeof(dep_info_data[0]); i++) {
+    CG_DEP_KIND kind = dep_info_data[i].kind;
+    dep_info[kind] = dep_info_data + i;
+  }
+
+  /* The operator latency is the sum of the following parts:
+   *
+   *  1)  The difference in the referenced cycles (succ minus pred).
+   *  2)  The kind-specific adjustment in the TDT dependency info table.
+   *
+   * The referenced cycles are identified as follows:
+   *
+   *  1)  The TDT dependency info table specifies a cycle kind relevant
+   *      to each node (pred and succ).
+   *
+   *  2)  The TDT operator descriptor table specifies the cycle number
+   *	  associated with each relevant cycle kind.
+   */
+
+  UINT8 opndout;
+  INT16 cyc_pred, cyc_succ, latency, found;
+  opndout=opnd;
+  if (DEP_INFO_tail(kind)==CYC_WRITE) {
+    found=-1;
+    for (i = 0; i < OP_results(pred_op); i++) {
+      if(TNs_Are_Equivalent(OP_result(pred_op,i),OP_opnd(succ_op,opnd))) {
+	found=i; 
+	break;
+      }
+    }
+/*
+  if(found == -1) {
+  fprintf(TFile,"Operand match failed in CG_DEP_Op_Latency :");
+  Print_TN(OP_opnd(succ_op,opnd),FALSE);
+  Print_OP_No_SrcLine(pred_op);
+  Print_OP_No_SrcLine(succ_op);
+  }
+*/
+    if (found != -1) opndout = found;
+    else return 0;
+  }
+
+  /* Get the referenced pred cycle: */
+  cyc_pred = get_cycle(pred_oper, DEP_INFO_tail(kind), opndout);
+
+  /* Get the referenced succ cycle: */
+  cyc_succ = get_cycle(succ_oper, DEP_INFO_head(kind), opnd);
+
+  latency = (cyc_pred - cyc_succ) + DEP_INFO_adjust(kind);
+
+  /* register latencies must be non-negative */
+  if (latency < 0 &&
+      (kind == CG_DEP_REGIN || kind == CG_DEP_REGOUT ||
+       kind == CG_DEP_REGANTI || kind == CG_DEP_MEMIN ||
+       kind == CG_DEP_SPILLIN || kind == CG_DEP_MEMOUT ||
+       kind == CG_DEP_MEMANTI || kind == CG_DEP_MEMVOL))
+    latency = 0;
+
+  return latency;
+}
+
+#endif
+
 //
 // -----------------------------------------------------------------------
 // See "cg_dep_graph.h" for interface description.
@@ -1229,9 +1311,14 @@ CG_DEP_Oper_Latency(TOP pred_oper, TOP succ_oper, CG_DEP_KIND kind, UINT8 opnd)
 INT16 
 CG_DEP_Latency(OP *pred, OP *succ, CG_DEP_KIND kind, UINT8 opnd)
 {
+#ifdef TARG_ST
+//[dt] compute the latency taking into account operand match
+  INT16 latency = CG_DEP_Op_Latency(pred, succ, kind, opnd);
+#else
   TOP popcode = OP_code(pred);
   TOP sopcode = OP_code(succ);
   INT16 latency = CG_DEP_Oper_Latency(popcode, sopcode, kind, opnd);
+#endif
 
   if (OP_load(pred) && kind == CG_DEP_REGIN) {
     INT32 ld_latency_adjust = 0;
