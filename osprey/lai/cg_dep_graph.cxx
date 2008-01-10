@@ -1183,7 +1183,7 @@ inline INT16 get_cycle(TOP opcode, INT16 ckind, UINT8 opnd)
 INT16 
 CG_DEP_Oper_Latency(TOP pred_oper, TOP succ_oper, CG_DEP_KIND kind, UINT8 opnd)
 {
-#ifdef TARG_ST
+#ifdef TARG_STxP70
 // [dt] Use CG_DEP_Op_Latency instead
   DevAssert(FALSE, ("We should not get here %s %d", __FILE__,__LINE__));
 #endif
@@ -1229,7 +1229,7 @@ CG_DEP_Oper_Latency(TOP pred_oper, TOP succ_oper, CG_DEP_KIND kind, UINT8 opnd)
   return latency;
 }
 
-#ifdef TARG_ST
+#ifdef TARG_STxP70
 // [dt] This is an equivalent function to CG_DEP_Oper_Latency but it takes into account
 // the fact that a def of an operand is not always the result operand 0 (i.e. post inc of a pointer)
 // This issue is exposed by bug #36327
@@ -1311,7 +1311,7 @@ CG_DEP_Op_Latency(OP *pred_op ,OP* succ_op, CG_DEP_KIND kind, UINT8 opnd) {
 INT16 
 CG_DEP_Latency(OP *pred, OP *succ, CG_DEP_KIND kind, UINT8 opnd)
 {
-#ifdef TARG_ST
+#ifdef TARG_STxP70
 //[dt] compute the latency taking into account operand match
   INT16 latency = CG_DEP_Op_Latency(pred, succ, kind, opnd);
 #else
