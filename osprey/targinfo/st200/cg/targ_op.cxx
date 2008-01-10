@@ -55,6 +55,7 @@
 #include "targ_cg_private.h"
 #include "targ_isa_variants.h"
 #include "config_TARG.h"
+#include "cgtarget.h"
 
 #include "stblock.h" // for ST_alignment
 
@@ -88,6 +89,16 @@ BOOL
 OP_Is_Counted_Loop(OP *op) 
 {
   return FALSE;
+}
+
+/* ====================================================================
+ *   OP_Has_Latency
+ * ====================================================================
+ */
+BOOL 
+OP_Has_Latency(OP *op) 
+{
+  return (CGTARG_Max_OP_Latency (op)>1);
 }
 
 /* ====================================================================

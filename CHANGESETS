@@ -1,6 +1,37 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jan 10 11:30:13 CET 2008
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-34647
+
+Description:
+------------
+	Called the function Copy_WN_For_Memory_OP after Dup_OP 
+	in the two following functions:
+	- generate_add_load_store_sequence (targ_ebo.cxx)
+	- BaseOffset_Combine(cg_automod.cxx)
+	in order to remove some dependences in the dependence graph.
+	Modified the function "List_Based_Fwd::Is_OP_Better" (hb_sched.cxx) 
+	in order to improve forward scheduling based on critical path.
+	* [trunk] Fix for bug #34647: [UNIMAC] Non optimal scheduling.
+	Deliver fixes/codex-34647 rev #15006 with authorization branch #34663
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_automod.cxx
+	M      osprey/lai/hb_sched.cxx
+	M      osprey/lai/op.h
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/st200/cg/targ_op.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jan  9 15:50:34 CET 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

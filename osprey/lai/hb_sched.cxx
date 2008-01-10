@@ -1714,9 +1714,70 @@ List_Based_Fwd::Is_OP_Better (OP *cur_op, OP *best_op)
     INT cur_slack, best_slack;
     cur_slack = OPSCH_lstart(cur_opsch) - OPSCH_estart(cur_opsch);
     best_slack = OPSCH_lstart(best_opsch) - OPSCH_estart(best_opsch);
+
+#ifdef TARG_ST
+  // [VB] Best operation between two:
+  // - If only one is on the critical path (that is lstart-estart=0),
+  //   the one on the critical path except if it has no successor
+  //   (because it can be scheduled everywhere until the end of the bb)
+  //   and if it is not an instruction with a latency (such as a load,
+  //   a compare or a setle (for stxp70)) (because if an instruction has a
+  //   latency, it is better that it does not appear at the end of a bb
+  //   else it can introduce a latency with an instruction at the beginning
+  //   of the following bb).
+  // - If both are on critical path, the one with the biggest estart if any.
+  // - Else the one with the smallest lstart, that is the one which has the
+  //   longest path after it so that is the most urgent to schedule,
+  //   except if the other one is an instruction with a latency
+  //   (such as a load, a compare or a setle (for stxp70)), in order to
+  //   avoid such instructions to be scheduled lately in a bb.
+  // - Else the one with the smallest difference between its lstart and
+  //   its estart (smallest freedom degree).
+  // - Else the one with the biggest estart.
+  // - Else the first one in the list.
+    
+    if ((best_slack == 0) && (cur_slack !=0)) {
+      if (OPSCH_num_succs(best_opsch) != 0) {
+	return FALSE;
+      }
+      else {
+	if (OP_Has_Latency(best_op)) {
+	  return FALSE;
+	}
+	else {
+	  return TRUE;
+	}
+      }
+    }
+    if ((best_slack != 0) && (cur_slack ==0)) {
+      if (OPSCH_num_succs(cur_opsch) != 0) {
+	return TRUE;
+      }
+      else {
+	if (OP_Has_Latency(cur_op)) {
+	  return TRUE;
+	}
+	else {
+	  return FALSE;
+	}
+      }
+    }
+    if ((best_slack == 0) && (cur_slack ==0)) {
+      if (OPSCH_estart(cur_opsch) > OPSCH_estart(best_opsch)) return TRUE;
+      if (OPSCH_estart(cur_opsch) < OPSCH_estart(best_opsch)) return FALSE;
+    }
+
+    if ((OPSCH_lstart(cur_opsch) < OPSCH_lstart(best_opsch)) &&
+	!(OP_Has_Latency(best_op)))
+      return TRUE;
+    if (OPSCH_lstart(cur_opsch) > OPSCH_lstart(best_opsch) &&
+	!(OP_Has_Latency(cur_op)))
+      return FALSE;
+#endif
+
     if (cur_slack < best_slack) return TRUE;
     if (cur_slack > best_slack) return FALSE;
-
+    
     if (OPSCH_estart(cur_opsch) > OPSCH_estart(best_opsch)) return TRUE;
     if (OPSCH_estart(cur_opsch) < OPSCH_estart(best_opsch)) return FALSE;
   }
