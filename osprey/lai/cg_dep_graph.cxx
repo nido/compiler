@@ -1265,7 +1265,7 @@ CG_DEP_Op_Latency(OP *pred_op ,OP* succ_op, CG_DEP_KIND kind, UINT8 opnd) {
   if (DEP_INFO_tail(kind)==CYC_WRITE) {
     found=-1;
     for (i = 0; i < OP_results(pred_op); i++) {
-      if(TNs_Are_Equivalent(OP_result(pred_op,i),OP_opnd(succ_op,opnd))) {
+      if(TN_is_register(OP_result(pred_op,i)) && TN_is_register(OP_opnd(succ_op,opnd)) && TNs_Are_Equivalent(OP_result(pred_op,i),OP_opnd(succ_op,opnd))) {      
 	found=i; 
 	break;
       }
