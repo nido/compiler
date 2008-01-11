@@ -1165,7 +1165,7 @@ inline INT16 get_cycle(TOP opcode, INT16 ckind, UINT8 opnd)
   case CYC_READ:
     return TI_LATENCY_Operand_Access_Cycle(opcode, opnd);
   case CYC_WRITE:
-#ifdef TARG_ST
+#ifdef TARG_STxP70
     //[dt]: For multiple output instruction (i.e. post_inc inst ...) , we should select the correct target
     return TI_LATENCY_Result_Available_Cycle(opcode, opnd);
 #endif
