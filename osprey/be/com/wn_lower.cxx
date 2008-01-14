@@ -5985,7 +5985,12 @@ lower_store_bits (WN* block, WN* wn, LOWER_ACTIONS actions)
   INT shift = Target_Byte_Sex == BIG_ENDIAN ?
       MTYPE_bit_size (WN_desc (wn)) - bit_ofst - bit_size :
       bit_ofst;
+#ifdef TARG_ST
+  mUINT64 mask = ~((bit_size ? (~((mUINT64)0) >> (64 - bit_size)) : (mUINT64)0)
+		   << shift);
+#else
   mUINT64 mask = ~((~((mUINT64)0) >> (64 - bit_size)) << shift);
+#endif
   orig_value = WN_Band (cmp_type, orig_value, WN_Intconst (cmp_type, mask));
 
   WN* new_value = WN_kid0 (wn);
@@ -6000,7 +6005,11 @@ lower_store_bits (WN* block, WN* wn, LOWER_ACTIONS actions)
 		     new_value);
   
   // now, truncate to the right bit size for store
+#ifdef TARG_ST
+  mask = bit_size ? (~((mUINT64)0) >> (64 - bit_size)) : (mUINT64)0;
+#else
   mask = ~((mUINT64)0) >> (64 - bit_size);
+#endif
   new_value =
     WN_Band (cmp_type, new_value,
 	     WN_Intconst (Mtype_TransferSize (WN_rtype (new_value), cmp_type),
@@ -6193,6 +6202,9 @@ static void lower_bit_field_id(WN *wn)
   // when crossing the Max_Int_Mtype size as
   // it would necessitate a CVT operator.
   if ((bsize & 7) == 0 && 		   // field size multiple of bytes
+#ifdef KEY // bug 11076
+      bsize &&                             // field size non-zero
+#endif
       (bytes_accessed * 8 % bsize) == 0 && // bytes_accessed multiple of bsize
       (bofst % bsize) == 0 &&		   // bofst multiple of bsize
       // avoid CVT generation
@@ -6200,6 +6212,9 @@ static void lower_bit_field_id(WN *wn)
 	bsize <= MTYPE_bit_size(Max_Int_Mtype)))
 #else
   if ((bsize & 7) == 0 && 		   // field size multiple of bytes
+#ifdef KEY // bug 11076
+      bsize &&                             // field size non-zero
+#endif
       (bytes_accessed * 8 % bsize) == 0 && // bytes_accessed multiple of bsize
       (bofst % bsize) == 0) 		   // bofst multiple of bsize
 #endif 
