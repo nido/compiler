@@ -232,6 +232,10 @@ extern "C" {
 #define EC_Bad_Scope	EC_Undef_Code+150	/* int, str */
 #define EC_Inv_Slink	EC_Undef_Code+151	/* sym, str */
 
+#ifdef TARG_ST
+#define EC_Bad_Align	EC_Undef_Code+152	/* int */
+#endif
+
 /* BB/INS/TN support errors: */
 #define EC_Ill_BB_Kind	EC_Undef_Code+170	/* int, int */
 #define EC_Ill_BB_Cond	EC_Undef_Code+171	/* int, int, str */

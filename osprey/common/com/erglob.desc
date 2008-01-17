@@ -438,6 +438,11 @@ ERROR_DESC EDESC_Globals[] = {
   { EC_Excess_Count,	EM_Compiler | ES_ERRPHASE,	RAG_EN_NONE,
     "Too many %s in %s: limit is %d",
     3, ET_SYMTAB, ET_STRING, ET_INT, 0, 0, 0 },
+#ifdef TARG_ST
+  { EC_Bad_Align,	EM_User | ES_ERRABORT ,	RAG_EN_NONE,
+    "Illegal operand access, access must be aligned on %d",
+    1, ET_INT, 0, 0, 0, 0, 0 },
+#endif
 
   /* BB/INS/TN support: */
   { EC_Ill_BB_Kind,	EM_Compiler | ES_ERRPHASE,	RAG_EN_NONE,
