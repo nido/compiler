@@ -722,6 +722,7 @@ static void LWN_Process_FF_Pragmas_Walk_r(WN* wn)
       if (WN_Pragma_Scope(pragma_id) == WN_PRAGMA_SCOPE_LOOP) {
 	if (next_non_prag_stid != NULL && 
 	    WN_opcode(next_non_prag_stid) == OPC_DO_LOOP) {
+	  LWN_Extract_From_Block(wn);
 	  WN_INSERT_BlockLast(Get_Do_Loop_Info(next_non_prag_stid)->Get_Annotation_Block(), wn);
 	}
       }
@@ -838,13 +839,13 @@ LNO_Insert_Pragmas(WN* wn)
 	LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, pragma);
       }
 #endif
+#ifdef TARG_ST
+      LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, dli->Get_Annotation_Block());
+#endif
       if (dli->Is_Inner) {
 	return;				// no need to go inside
       }
     }
-#ifdef TARG_ST
-    LWN_Insert_Block_Before(LWN_Get_Parent(wn), wn, dli->Get_Annotation_Block());
-#endif
   }
 
   if (opc==OPC_BLOCK) {
