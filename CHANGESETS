@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jan 18 16:04:30 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-37568
+
+Description:
+------------
+	* [trunk] Fix for bug #37568: [MP1x] Unary operator on MP1x_VX generates a segfault
+	    Deliver fixes/codex-37568 rev #15205 with authorization branch #37760
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/wfe_expr.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jan 18 13:45:56 CET 2008
 	Author:    bd3
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

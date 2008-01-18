@@ -2963,6 +2963,14 @@ WFE_Expand_Expr (tree exp,
     case REALPART_EXPR:
     case IMAGPART_EXPR:
       {
+#ifdef TARG_ST
+	// [TTh] Expressions with extension related types cannot be used with unary operators
+	TYPE_ID etype = TY_mtype(Get_TY(TREE_TYPE(exp)));
+	if (MTYPE_is_dynamic(etype)) {
+	  error("extension type '%s' cannot be used with unary operator", MTYPE_name(etype));
+	  exit (RC_USER_ERROR); // Early exit required as WN will have incorrect type
+	}
+#endif
         wn0 = WFE_Expand_Expr (TREE_OPERAND (exp, 0));
         wn  = WN_Unary (Operator_From_Tree [code].opr,
                         Widen_Mtype(TY_mtype(Get_TY(TREE_TYPE(exp)))), wn0);
@@ -3423,6 +3431,13 @@ WFE_Expand_Expr (tree exp,
     case CEIL_DIV_EXPR:
       {
 	TYPE_ID etype = TY_mtype(Get_TY(TREE_TYPE(exp)));
+#ifdef TARG_ST
+	// [TTh] Expressions with extension related types cannot be used with binary operators
+	if (MTYPE_is_dynamic(etype)) {
+	  error("extension type '%s' cannot be used with binary operator", MTYPE_name(etype));
+	  exit (RC_USER_ERROR); // Early exit required as WN will have incorrect type
+	}
+#endif
         wn0 = WFE_Expand_Expr (TREE_OPERAND (exp, 0));
         wn1 = WFE_Expand_Expr (TREE_OPERAND (exp, 1));
         wn  = WN_Binary (Operator_From_Tree [code].opr, Widen_Mtype(etype), wn0, wn1);
