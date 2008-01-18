@@ -5583,6 +5583,7 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
     gen_unrolled_loop_guard = FALSE;  // because unrolling is disabled for 0-trip loops
 #ifdef TARG_ST
     remainder_trip_count_val = TN_value(trip_count_tn) % ntimes;
+    unrolled_trip_count = Gen_Literal_TN(TN_value(trip_count_tn) / ntimes, 4);
 #endif
     if (TN_value(trip_count_tn) % ntimes == 0)
       gen_remainder_loop = FALSE;
@@ -5743,10 +5744,13 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
    * until remainder loop has been placed in prolog before doing this.
    * This also creates a new trip count TN for <unrolled_info>.
    */
-  if (gen_unrolled_loop_guard)
 #ifdef TARG_ST
+  if (gen_unrolled_loop_guard)
     Unroll_Do_Loop_guard(loop, unrolled_info, old_prolog, unrolled_trip_count, trip_count_tn, ntimes);
+  else  // Update trip count information since Unroll_Do_Loop_guard is not called.
+    LOOPINFO_primary_trip_count_tn(unrolled_info) = unrolled_trip_count;
 #else
+  if (gen_unrolled_loop_guard)
     Unroll_Do_Loop_guard(loop, unrolled_info, unrolled_trip_count);
 #endif
 
