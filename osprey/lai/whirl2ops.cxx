@@ -3702,6 +3702,51 @@ Get_Intrinsic_Call_Dedicated_Tn( WN *intr, INT numout )
 
    return result;
 }
+
+
+/* ======================================================================
+ *   Is_Intrinsic_InOut_Param_Single_TN
+ *
+ *   Return TRUE if the specified in/out parameter of the multi-result 
+ *   intrinsic call <intrn_expr> uses the same TN as input and output.
+ *   The input TN is specified <source_tn>, as well as the index
+ *   in the output parameter list (<result_idx>).
+ * ======================================================================
+ */
+static BOOL
+Is_Intrinsic_InOut_Param_Single_TN(WN *intrn_expr, INT result_idx, TN *source_tn) {
+  // For multi-result intrinsic call, the effective call is 
+  // followed by a list of load/store statements that walk
+  // through all result subparts.
+  WN *next_expr = WN_next(intrn_expr);
+  while (next_expr) {
+    OPERATOR opr = WN_operator(next_expr);
+    if (opr == OPR_INTRINSIC_CALL) {
+      return (FALSE); // Found another intrinsic call, break the walk.
+    }
+    else if (opr == OPR_STID) {
+      WN *stid = next_expr;
+      if (WN_operator(WN_kid0(stid)) == OPR_SUBPART) {
+	WN       *subpart     = WN_kid0(stid);
+	WN       *kid0        = WN_kid0(subpart);
+	WN_OFFSET subpart_idx = WN_subpart_index(subpart);
+	
+	if (subpart_idx == result_idx) {
+	  // OK, found access to expected result subpart
+	  if (WN_class(stid) == CLASS_PREG) {
+	    TN *result_tn = PREG_To_TN (WN_st(stid), WN_store_offset(stid), stid);
+	    if (result_tn != source_tn) {
+	      return (FALSE);
+	    }
+	  }
+	  return (TRUE);
+	}
+      }
+    }
+    next_expr = WN_next(next_expr);
+  }
+  return (FALSE);
+}
 #endif                    /* TARG_ST */
 
 /* ======================================================================
@@ -3791,10 +3836,12 @@ Get_Intrinsic_Op_Parameters( WN *expr, TN **result, TN ***opnds, INT *numopnds, 
      CHECK_OPNDS(*numopnds);
 
      // If an in/out *real* parameter is described as consisting
-     // of two parameters (one IN and one OUT), we generate two
-     // TNs. In a following step, the Expand_Intrinsic will be able
+     // of two parameters (one IN and one OUT), we either use the
+     // same TN (if both parameter correspond to the same data)
+     // or 2 differents TNs.
+     // In a following step, the Expand_Intrinsic will be able
      // to detect the "same_res" constraint and generate a copy
-     // if necessary.
+     // if necessary (so if 2 TNs were generated).
      for(i=0;i<intr_call_info->argument_count;++i) {
 
         if(INTRN_is_in_param(i,intr_call_info)) {
@@ -3803,7 +3850,13 @@ Get_Intrinsic_Op_Parameters( WN *expr, TN **result, TN ***opnds, INT *numopnds, 
            if(INTRN_is_inout_param(i,intr_call_info)) {
              (*res)[out] = Get_Intrinsic_Call_Dedicated_Tn(expr,out);
 	     if(NULL==(*res)[out]) {
-	       (*res)[out] = Build_TN_Of_Mtype(intr_call_info->arg_type[i]);
+	       if (Is_Intrinsic_InOut_Param_Single_TN(expr, out, (*opnds)[in])) {
+		 // Use same TN for both input and output
+		 (*res)[out] = (*opnds)[in];
+	       } else {
+		 // Insure that source TN will not be modified
+		 (*res)[out] = Build_TN_Of_Mtype(intr_call_info->arg_type[i]);
+	       }
 	     }
             ++out;
             }
