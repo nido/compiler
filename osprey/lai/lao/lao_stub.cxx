@@ -127,6 +127,10 @@ lao_init(void)
     int minTaken = CGTARG_Branch_Taken_Penalty();
     O64_Interface_setMaxIssue(interface, processor, maxIssue);
     O64_Interface_setMinTaken(interface, processor, minTaken);
+    if (Gen_GP_Relative) {
+      O64_Register registre = CGIR_CRP_to_Register(TN_class_reg(GP_TN));
+      O64_Interface_setReserved(interface, (Target_ABI - 1)/*FIXME!*/, registre);
+    }
     // Initialize the LAO register latencies with Open64 values.
     for (int op = 0; op < TOP_UNDEFINED; op++) {
       TOP top = (TOP)op;
@@ -554,7 +558,9 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op)
     if (OP_prefetch(cgir_op)) O64_Interface_Operation_setPrefetch(interface, operation);
     if (OP_preload(cgir_op)) O64_Interface_Operation_setPreload(interface, operation);
     if (OP_barrier(cgir_op)) O64_Interface_Operation_setBarrier(interface, operation);
-    if (OP_Performance_Effects (cgir_op) && OP_Safe_Effects (cgir_op)) O64_Interface_Operation_setSafePerfs (interface, operation);
+    if (OP_Performance_Effects(cgir_op) && OP_Safe_Effects(cgir_op)) {
+      O64_Interface_Operation_setSafePerfs(interface, operation);
+    }
     ST *spill_st = CGSPILL_OP_Spill_Location(cgir_op);
     if (spill_st != NULL && OP_spill(cgir_op)) {
       Symbol symbol = CGIR_SYM_to_Symbol(ST_st_idx(*spill_st));
@@ -630,11 +636,14 @@ CGIR_LD_to_LoopScope(CGIR_LD cgir_ld)
     int pipelining = CG_LAO_pipelining;
     int renaming = CG_LAO_renaming;
     int boosting = CG_LAO_boosting;
-    int unroll_times = CG_LOOP_unroll_times_max;
-    ANNOTATION *annot_pipeline = NULL;
-    ANNOTATION *annot_unroll = NULL;
+    int preloading = CG_LAO_preloading;
+    int l1missextra = CG_LAO_l1missextra;
     ANNOTATION *annot_remainder = ANNOT_Get(BB_annotations(head_bb), ANNOT_REMAINDERINFO);
     if (annot_remainder == NULL) {
+      int unroll_times = CG_LOOP_unroll_times_max;
+      ANNOTATION *annot_pipeline = NULL;
+      ANNOTATION *annot_unroll = NULL;
+      ANNOTATION *annot_preload = NULL;
       // Try to access the #pragma pipeline or #pragma unroll arguments if any.
       ANNOTATION *annot_pragma = ANNOT_Get(BB_annotations(head_bb), ANNOT_PRAGMA);
       while (annot_pragma != NULL) {
@@ -642,7 +651,14 @@ CGIR_LD_to_LoopScope(CGIR_LD cgir_ld)
 	if (WN_pragma(wn) == WN_PRAGMA_PIPELINE) {
           pipelining = WN_pragma_arg1(wn);
           renaming = WN_pragma_arg2(wn);
+//fprintf(stderr, "*** PIPELINE(%d,%d)\n", pipelining, renaming);
           annot_pipeline = annot_pragma;
+        }
+        if (WN_pragma(wn) == WN_PRAGMA_PRELOAD) {
+          preloading = WN_pragma_arg1(wn);
+          l1missextra = WN_pragma_arg2(wn);
+//fprintf(stderr, "*** PRELOAD(%d,%d)\n", preloading, l1missextra);
+          annot_preload = annot_pragma;
         }
         if (WN_pragma(wn) == WN_PRAGMA_UNROLL) {
           unroll_times = WN_pragma_arg1(wn);
@@ -658,6 +674,7 @@ CGIR_LD_to_LoopScope(CGIR_LD cgir_ld)
         renaming = 1;
       }
     } else pipelining = renaming = 0;
+//fprintf(stderr, "*** LOOP_PRELOAD(%d,%d)\n", preloading, l1missextra);
     BasicBlock head_block = CGIR_BB_to_BasicBlock(head_bb);
     LOOPINFO *cgir_li = LOOP_DESCR_loopinfo(cgir_ld);
     if (cgir_li != NULL) {
@@ -674,6 +691,8 @@ CGIR_LD_to_LoopScope(CGIR_LD cgir_ld)
 	    ConfigureItem_Pipelining, pipelining,
 	    ConfigureItem_Renaming, renaming,
 	    ConfigureItem_Boosting, boosting,
+	    ConfigureItem_PreLoading, preloading,
+            ConfigureItem_L1MissExtra, l1missextra,
 	    //ConfigureItem_TripMinCount, min_trip_count,
 	    ConfigureItem_TripModulus, min_trip_factor,
 	    ConfigureItem_TripResidue, 0,
@@ -684,6 +703,8 @@ CGIR_LD_to_LoopScope(CGIR_LD cgir_ld)
 	    ConfigureItem_Pipelining, pipelining,
 	    ConfigureItem_Renaming, renaming,
 	    ConfigureItem_Boosting, boosting,
+	    ConfigureItem_PreLoading, preloading,
+            ConfigureItem_L1MissExtra, l1missextra,
 	    ConfigureItem__);
       }
     } else {
@@ -692,6 +713,8 @@ CGIR_LD_to_LoopScope(CGIR_LD cgir_ld)
 	  ConfigureItem_Pipelining, pipelining,
 	  ConfigureItem_Renaming, renaming,
           ConfigureItem_Boosting, boosting,
+	  ConfigureItem_PreLoading, preloading,
+          ConfigureItem_L1MissExtra, l1missextra,
 	  ConfigureItem__);
     }
     // Fill the LoopScope dependence table.
@@ -1225,6 +1248,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, unsigned act
   //
   // Open interface.
   const char *name = ST_name(Get_Current_PU_ST());
+//fprintf(stderr, "*** FUNC_PRELOAD(%d,%d)\n", CG_LAO_preloading, CG_LAO_l1missextra);
   O64_Interface_open(interface, name,
       ConfigureItem_Compensation, CG_LAO_compensation,
       ConfigureItem_Speculation, CG_LAO_speculation,
@@ -1234,6 +1258,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, unsigned act
       ConfigureItem_Boosting, CG_LAO_boosting,
       ConfigureItem_Aliasing, CG_LAO_aliasing,
       ConfigureItem_PreLoading, CG_LAO_preloading,
+      ConfigureItem_L1MissExtra, CG_LAO_l1missextra,
       ConfigureItem__);
   //
   // Create the LAO BasicBlocks.
@@ -1304,6 +1329,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, unsigned act
   unsigned optimizations =
       O64_Interface_optimize(interface,
                              OptimizeItem_Activation, activation,
+                             OptimizeItem_Convention, (Target_ABI - 1),	/*FIXME!*/
                              //OptimizeItem_StackModel, stackModel,
                              OptimizeItem_RegionType, CG_LAO_regiontype,
                              OptimizeItem_Conversion, CG_LAO_conversion,
@@ -1312,7 +1338,6 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, unsigned act
                              OptimizeItem_Formulation, CG_LAO_formulation,
                              OptimizeItem_PrePadding, CG_LAO_prepadding,
                              OptimizeItem_PostPadding, CG_LAO_postpadding,
-                             OptimizeItem_L1MissExtra, CG_LAO_l1missextra,
                              OptimizeItem__);
   //
   if (activation & OptimizeActivation_PrePass) Stop_Timer( T_LAO_PRE_CU );
@@ -1544,8 +1569,21 @@ CGIR_OP_print ( const OP *op, bool bb_scheduled, FILE *file)
     if (OP_Defs_TN(op, tn)) fprintf(file, "<def>");
   }
   //if (bb_scheduled)
-    fprintf(file, "\tscycle = %d", OP_scycle(op));
+    fprintf(file, "\tscycle=%d", OP_scycle(op));
+  WN *wn = Get_WN_From_Memory_OP(op);
+  if (wn) {
+    fprintf(file, " wn=0x%x", wn);
+    if (Alias_Manager && Safe_to_speculate (Alias_Manager, wn)) {
+      fprintf(file, "(safe_to_speculate)");
+    }
+  }
   // TBD: Print other attributes on operations.
+  fprintf(file, " bb=%d unroll_bb=%x unrolling=%d",
+          OP_bb(op)? BB_id(OP_bb(op)): 0,
+          OP_unroll_bb(op)? BB_id(OP_unroll_bb(op)): 0,
+          OP_unrolling(op));
+  fprintf(file, " map_idx=%d orig_idx=%d",
+          OP_map_idx(op), OP_orig_idx(op));
 }
 
 static void
@@ -1554,8 +1592,7 @@ CGIR_OPS_print ( const OPS *ops , bool bb_scheduled, FILE *file)
   for (OP *op = OPS_first(ops) ; op; op = OP_next(op)) {
     fprintf(file, "\t");
     CGIR_OP_print(op, bb_scheduled, file);
-    fprintf(file, "       \t#line[%4d]", Srcpos_To_Line(OP_srcpos(op)));
-    fprintf(file, "\n");
+    fprintf(file, "\t#line[%4d]\n", Srcpos_To_Line(OP_srcpos(op)));
   }
 }
 
@@ -1770,8 +1807,8 @@ CGIR_print(FILE *file)
     fprintf ( file,"\n" );
   }
   //
-  //CGIR_Alias_print(file);
   fprintf(file, "-------- CFG End --------\n");
+  //CGIR_Alias_print(file);
 }
 
 #endif // Is_True_On

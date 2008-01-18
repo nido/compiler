@@ -20,7 +20,7 @@ typedef struct LoopScope_ *LoopScope;
 
 
 /*
- * CGIR.xcc
+ * !!!!	CGIR.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  * Christophe Guillon (Christophe.Guillon@st.com).
@@ -64,6 +64,7 @@ typedef int O64_DependenceKind;
 typedef int O64_Immediate;
 typedef int O64_Processor;
 typedef int O64_NativeType;
+typedef int O64_Convention;
 typedef int O64_Operator;
 typedef int O64_RegFile;
 typedef int O64_Register;
@@ -383,6 +384,8 @@ struct O64_Interface_ {
                                 int maxIssue);
   void (*Interface_setMinTaken)(struct Interface_* this, O64_Processor processor,
                                 int minTaken);
+  void (*Interface_setReserved)(struct Interface_* this, O64_Convention convention,
+                                O64_Register reserved);
   bool (*Interface_setArgStage)(struct Interface_* this, O64_Processor processor,
                                 O64_Operator operator, int index, int stage);
   bool (*Interface_setResStage)(struct Interface_* this, O64_Processor processor,
@@ -412,9 +415,9 @@ struct O64_Interface_ {
   void (*Interface_Temporary_setWidth)(struct Interface_* this, Temporary temporary,
                                        unsigned width);
   void (*Interface_Temporary_setRemater)(struct Interface_* this, Temporary temporary,
-                                         Temporary rematerializableValue);
+                                         Temporary value);
   void (*Interface_Temporary_setHomeable)(struct Interface_* this, Temporary temporary,
-                                          Temporary HOMELOC);
+                                          Temporary location);
   void (*Interface_Temporary_setDedicated)(struct Interface_* this, Temporary temporary);
   Temporary (*Interface_findTemporary)(struct Interface_* this, CGIR_TN cgir_tn);
   uint32_t (*Interface_Temporary_identity)(Temporary temporary);
@@ -504,6 +507,8 @@ typedef struct O64_Interface_ * restrict_O64_Interface;
 #define O64_Interface__Interface_setMaxIssue(this) (&(this)->Interface_setMaxIssue)
 #define O64_Interface_Interface_setMinTaken(this) ((this)->Interface_setMinTaken)
 #define O64_Interface__Interface_setMinTaken(this) (&(this)->Interface_setMinTaken)
+#define O64_Interface_Interface_setReserved(this) ((this)->Interface_setReserved)
+#define O64_Interface__Interface_setReserved(this) (&(this)->Interface_setReserved)
 #define O64_Interface_Interface_setArgStage(this) ((this)->Interface_setArgStage)
 #define O64_Interface__Interface_setArgStage(this) (&(this)->Interface_setArgStage)
 #define O64_Interface_Interface_setResStage(this) ((this)->Interface_setResStage)
@@ -669,6 +674,7 @@ O64_getInstance(void);
 #define O64_Interface_getInstance (*O64_instance->Interface_getInstance)
 #define O64_Interface_setMaxIssue (*O64_instance->Interface_setMaxIssue)
 #define O64_Interface_setMinTaken (*O64_instance->Interface_setMinTaken)
+#define O64_Interface_setReserved (*O64_instance->Interface_setReserved)
 #define O64_Interface_setArgStage (*O64_instance->Interface_setArgStage)
 #define O64_Interface_setResStage (*O64_instance->Interface_setResStage)
 #define O64_Interface_makeLabel (*O64_instance->Interface_makeLabel)
@@ -750,7 +756,7 @@ O64_getInstance(void);
 
 
 /*
- * Interface.xcc
+ * !!!!	Interface.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  * Francois de Ferriere (Francois.de-Ferriere@st.com).
@@ -882,10 +888,17 @@ Interface_setMaxIssue(Interface this, O64_Processor processor, int maxIssue);
 
 
 /*
- * Interface_setMinTaken --	Set the processor max issue (override MDS information).
+ * Interface_setMinTaken --	Set the processor min taken (override MDS information).
  */
 void
 Interface_setMinTaken(Interface this, O64_Processor processor, int minTaken);
+
+
+/*
+ * Interface_setReserved --	Set a register as reserved (override MDS information).
+ */
+void
+Interface_setReserved(Interface this, O64_Convention convention, O64_Register reserved);
 
 
 /*
@@ -992,14 +1005,14 @@ Interface_Temporary_setWidth(Interface this, Temporary temporary, unsigned width
  * Interface_Temporary_setRemater --	Set an Temporary as remat.
  */
 void
-Interface_Temporary_setRemater(Interface this, Temporary temporary, Temporary rematerializableValue);
+Interface_Temporary_setRemater(Interface this, Temporary temporary, Temporary value);
 
 
 /*
- * Interface_Temporary_setHomeable --	Set an Temporary as homeable.
+ * Interface_Temporary_setHomeable --	Set an Temporary as homeable to location.
  */
 void
-Interface_Temporary_setHomeable(Interface this, Temporary temporary, Temporary HOMELOC);
+Interface_Temporary_setHomeable(Interface this, Temporary temporary, Temporary location);
 
 
 /*
@@ -1162,7 +1175,7 @@ Interface_Operation_setPrefetch(Interface this, Operation operation);
 
 
 /*
- * Interface_Operation_setPreload --	Set an Operation as memory prefetch.
+ * Interface_Operation_setPreload --	Set an Operation as memory preload.
  */
 void
 Interface_Operation_setPreload(Interface this, Operation operation);

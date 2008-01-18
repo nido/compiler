@@ -1,6 +1,36 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jan 18 13:45:56 CET 2008
+	Author:    bd3
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bd3/dev-lao
+
+Description:
+------------
+	*  Extended the lao interface with Interface_setReserved, in order to reserve
+           registers in the current ABI.
+        *  Added #pragma preload to control the experimental pre-loading feature at
+        loop level (previously was a compilation unit levet using command-line options).
+
+
+Modified Files:
+---------------
+	M      osprey/lai/lao/lao_interface.h
+	M      osprey/lai/lao/st200/lao_target.h
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/lao/lao_stub.h
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/gccfe/wfe_pragmas.def
+	M      osprey/gccfe/wfe_pragmas.cxx
+	M      osprey/common/com/wn_pragmas.h
+	M      osprey/common/com/wn_pragmas.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jan 18 13:28:36 CET 2008
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

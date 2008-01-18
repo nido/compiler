@@ -210,7 +210,6 @@ typedef enum {
   OptimizeItem_WindowSize, // Scoreboarder window size
   OptimizeItem_PrePadding, // See OptimizePrePadding.
   OptimizeItem_PostPadding, // See OptimizePostPadding.
-  OptimizeItem_L1MissExtra, // Extra latency of L1 miss.
   OptimizeItem__
 } OptimizeItem;
 typedef uint8_t short_OptimizeItem;
@@ -330,7 +329,9 @@ ConfigureAliasing_NAME_[];
 typedef enum {
   ConfigurePreLoading_, // Disable pre-loading.
   ConfigurePreLoading_Simple, // Pre-loading of simple induction LOADs.
-  ConfigurePreLoading_Strided, // Pre-loading of strided induction LOADs.
+  ConfigurePreLoading_Variant, // Pre-loading of variant address LOADs.
+  ConfigurePreLoading_Indirect, // Pre-loading of indirect LOADs.
+  ConfigurePreLoading_NonSpill, // Pre-loading of non-spill LOADs.
   ConfigurePreLoading__
 } ConfigurePreLoading;
 typedef uint8_t short_ConfigurePreLoading;
@@ -354,12 +355,12 @@ typedef enum {
   ConfigureItem_Aliasing, // See ConfigureAliasing.
   ConfigureItem_TripModulus, // Modulus of loop trip count.
   ConfigureItem_TripResidue, // Residue of loop trip count.
-  ConfigureItem_TripOverRun, // OverRun of loop trip count.
   ConfigureItem_Pipelining, // Software pipelining level.
     // 0 => cyclic instruction schedule,
     // 1 => software pipelining with overlap 1,
     // n => software pipelining with overlap (1<<n)-1.
   ConfigureItem_PreLoading, // See ConfigurePreLoading.
+  ConfigureItem_L1MissExtra, // Extra latency of L1 miss.
   ConfigureItem__
 } ConfigureItem;
 typedef uint8_t short_ConfigureItem;
@@ -396,10 +397,6 @@ DependenceKind_NAME_[];
 #define DependenceKind_NAME_(kind) DependenceKind_NAME_[(kind)]
 #define DependenceKind_mayAdjust(kind) ((kind) <= DependenceKind_WAW)
 #define DependenceKind_mayRefine(kind) ((kind) <= DependenceKind_Spill)
-#define DependenceKind_isActive(kind) ( (kind) >= DependenceKind_RAW && (kind) <= DependenceKind_Link )
-
-
-
 
 extern void lao_init(void);
 extern void lao_fini(void);

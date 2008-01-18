@@ -473,6 +473,14 @@ void WFE_Expand_Pragma(tree stmt)
       args[1] = -1;
     break;
 
+  case  WFE_PRAGMA_PRELOAD:
+    args[0] = Get_Integer_Value(TREE_VALUE(pragma_args));
+    if (TREE_CHAIN(pragma_args))
+      args[1] = Get_Integer_Value(TREE_VALUE(TREE_CHAIN(pragma_args)));
+    else
+      args[1] = -1;
+    break;
+
   case  WFE_PRAGMA_IVDEP:
     break;
 
@@ -790,6 +798,7 @@ is_pragma_loop(WN *wn) {
   case WN_PRAGMA_LOOPMOD:
   case WN_PRAGMA_LOOPTRIP:
   case WN_PRAGMA_PIPELINE:
+  case WN_PRAGMA_PRELOAD:
   case WN_PRAGMA_LOOPSEQ:
   case WN_PRAGMA_STREAM_ALIGNMENT:
   case WN_PRAGMA_HWLOOP:

@@ -13,7 +13,7 @@
 
 
 /*
- * MDS.xcc
+ * !!!!	MDS.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -6647,7 +6647,6 @@ typedef enum Convention {
 
 
 
-
 /*
   st200/Convention.enum --
   Automatically generated from the Machine Description System (MDS).
@@ -6707,7 +6706,7 @@ extern Instance Decode_Encoding_st240_ANYX(const void *buffer);
 
 
 /*
- * Platform.xcc
+ * !!!!	Platform.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -6788,7 +6787,7 @@ Platform_endian(Platform this)
 
 
 /*
- * Resource.xcc
+ * !!!!	Resource.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -6833,7 +6832,7 @@ ResourceVector_clear(ResourceVector this) {
 
 
 /*
- * ResourceVector_accumulate --	Accumulate +that+ ResourceVector to +this+ ResourceVector.
+ * ResourceVector_accumulate --	Accumulate =that= ResourceVector to =this= ResourceVector.
  */
 
 
@@ -6848,7 +6847,7 @@ ResourceVector_accumulate(ResourceVector this, const_ResourceVector that)
 
 
 /*
- * ResourceVector_mayIncrease --	True if +this+ + +increase+ <= +limit+.
+ * ResourceVector_mayIncrease --	True if =this= + =increase= <= =limit=.
  */
 
 
@@ -6873,9 +6872,9 @@ ResourceVector_mayIncrease(const_ResourceVector this,
 
 
 /*
- * ResourceVector_maxMerge --	Max-merge +that+ ResourceVector into +this+ ResourceVector.
+ * ResourceVector_maxMerge --	Max-merge =that= ResourceVector into =this= ResourceVector.
  *
- * Return:	true if the merge changed +this+ else false.
+ * Return:	true if the merge changed =this= else false.
  */
 
 
@@ -6912,7 +6911,7 @@ extern const char *Resource_NAME_[];
 
 
 /*
- * Processor.xcc
+ * !!!!	Processor.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -6987,7 +6986,7 @@ Processor_availability(Processor this)
 
 
 /*
- * Encoding.xcc
+ * !!!!	Encoding.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -7075,7 +7074,7 @@ Encoding_decode(Encoding this)
 
 
 /*
- * NativeType.xcc
+ * !!!!	NativeType.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -7180,7 +7179,7 @@ NativeType_slice(NativeType this)
 
 
 /*
- * Storage.xcc
+ * !!!!	Storage.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -7206,7 +7205,7 @@ extern const char *StorageCell_NAME_[];
 
 
 /*
- * Register.xcc
+ * !!!!	Register.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -7531,6 +7530,13 @@ RegisterSet_isEmpty(const_RegisterSet this);
  */
 int
 RegisterSet_count(const_RegisterSet this);
+
+
+/*
+ * RegisterSet_first --	First Register in this RegisterSet.
+ */
+Register
+RegisterSet_first(const_RegisterSet this);
 
 
 /*
@@ -7875,7 +7881,7 @@ RegisterActionArray_items(const_RegisterActionArray this)
 
 
 /*
- * RegFile.xcc
+ * !!!!	RegFile.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -7988,7 +7994,7 @@ RegFile_registerSet(RegFile this)
 
 
 /*
- * RegClass.xcc
+ * !!!!	RegClass.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -8076,7 +8082,7 @@ RegClass_minReadStage(RegClass this, Processor processor)
 
 
 /*
- * RegMask.xcc
+ * !!!!	RegMask.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -8150,7 +8156,7 @@ RegMask_registerSet(RegMask this)
 
 
 /*
- * Modifier.xcc
+ * !!!!	Modifier.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  * Stefan Freudenberger (Stefan.Freudenberger@st.com)
@@ -8209,7 +8215,7 @@ Modifier_complement(Operator this);
 
 
 /*
- * Modifier.xcc
+ * !!!!	Modifier.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  * Stefan Freudenberger (Stefan.Freudenberger@st.com).
@@ -8232,7 +8238,7 @@ Modifier_complement(Operator this);
 
 
 /*
- * Relocation.xcc
+ * !!!!	Relocation.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -8291,7 +8297,7 @@ Relocation_relative(Relocation this)
 
 
 /*
- * Immediate.xcc
+ * !!!!	Immediate.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -8466,7 +8472,7 @@ Immediate_canEncode(Immediate this, int64_t value);
 
 
 /*
- * Operand.xcc
+ * !!!!	Operand.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -9386,7 +9392,7 @@ Decode_Operands__(const void *opcodes, OperandsBuffer buffer);
 
 
 /*
- * Format.xcc
+ * !!!!	Format.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -9411,7 +9417,7 @@ extern const char *Format_NAME_[];
 
 
 /*
- * Syntax.xcc
+ * !!!!	Syntax.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -9436,7 +9442,7 @@ extern const char *Syntax_NAME_[];
 
 
 /*
- * Instance.xcc
+ * !!!!	Instance.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -9655,7 +9661,7 @@ Instance_latencyRAW(Instance this, Instance that, StorageCell cell);
 
 
 /*
- * Operator.xcc
+ * !!!!	Operator.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -9784,7 +9790,7 @@ OperatorParameter_same(const_OperatorParameter this)
  * conflicting OperatorParameter indices .  These Parameters must get different
  * encodings (e.g., different Registers).  The indices are listed in increasing
  * order.
- * Continuing with +continue+, and exiting with +break+ or +return+ are allowed.
+ * Continuing with =continue=, and exiting with =break= or =return= are allowed.
  */
 #define OperatorParameter_FOREACH_ConflictIndex(this,index) { const int8_t* OperatorParameter_ITER = OperatorParameter_CONFLICTS(this); const int8_t* OperatorParameter_FENCE = OperatorParameter_ITER + OperatorParameter_COUNT(this); for (; OperatorParameter_ITER < OperatorParameter_FENCE; ++OperatorParameter_ITER) { const int index = *OperatorParameter_ITER;
 
@@ -10103,6 +10109,7 @@ Operator_memoryAccessSize(Operator this);
 #define Operator_isPhi(this) ((this) == Operator_PHI)
 #define Operator_isPsi(this) ((this) == Operator_PSI)
 #define Operator_isSigma(this) ((this) == Operator_SIGMA)
+#define Operator_isSsa(this) ((this) >= Operator_PHI && (this) <= Operator_SIGMA)
 #define Operator_isKill(this) ((this) == Operator_KILL)
 #define Operator_isPseudo(this) (Operator_attributes(this)>>OperatorAttribute_Pseudo & 1)
 
@@ -10397,7 +10404,7 @@ Operator_isHWLPseudo(Operator this)
 
 
 /*
- * Operator.xcc
+ * !!!!	st200-Operator.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -10419,7 +10426,7 @@ Operator_isHWLPseudo(Operator this)
 
 
 /*
- * Bundling.xcc
+ * !!!!	Bundling.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -10468,7 +10475,7 @@ typedef struct BundlingBuffer_ * restrict_BundlingBuffer;
 /*
  * BundlingBuffer_sort --	Sort the BUNDLINGS array and fill the PERMUTE array.
  *
- * Return:	hash value suitable for use by +BundleMatch_FindBundle+.
+ * Return:	hash value suitable for use by =BundleMatch_FindBundle=.
  *
  * The hash value is computed as follows:
  *
@@ -10490,7 +10497,7 @@ BundlingBuffer_sort(BundlingBuffer this, int count);
 
 
 /*
- * Template.xcc
+ * !!!!	Template.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -10577,7 +10584,7 @@ Template_encode(Template this)
 
 
 /*
- * Bundle.xcc
+ * !!!!	Bundle.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -10738,7 +10745,7 @@ BundleMatch_FindBundle(uint32_t hash, PlatformUInt nativePC);
 
 
 /*
- * Reservation.xcc
+ * !!!!	Reservation.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -10826,7 +10833,7 @@ Reservation_odot(Reservation this, Reservation that, Processor processor)
 
 
 /*
- * Scheduling.xcc
+ * !!!!	Scheduling.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -10900,7 +10907,7 @@ Scheduling_reservation(Scheduling this)
 
 
 /*
- * Convention.xcc
+ * !!!!	Convention.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -10916,6 +10923,34 @@ Scheduling_reservation(Scheduling this)
 
 
 /*
+ * ConventionRole --	Enumerate the Convention Register roles.
+ */
+typedef enum {
+  ConventionRole_Reserved, // Reserved (non allocatable) Register(s).
+  ConventionRole_Argument, // Function call argument Register(s).
+  ConventionRole_Result, // Function call result Register(s).
+  ConventionRole_Struct, // Pointer to result structure Register(s).
+  ConventionRole_Caller, // Caller saved (scratch) Register(s).
+  ConventionRole_Callee, // Callee saved (preserved) Register(s).
+  ConventionRole_Program, // Program counter Register(s).
+  ConventionRole_Return, // Return address (link) Register(s).
+  ConventionRole_Stack, // Stack pointer Register(s)
+  ConventionRole_Static, // Static link pointer Register(s).
+  ConventionRole_Frame, // Frame pointer Register(s).
+  ConventionRole_Global, // Global data or GOT pointer Register(s).
+  ConventionRole_Local, // Local data or TLS pointer Register(s).
+  ConventionRole_Wired, // Wired (constant or bucket) Register(s).
+  ConventionRole_Zero, // Constant zero value Register(s).
+  ConventionRole_One, // Constant one value Register(s).
+  ConventionRole__
+} ConventionRole;
+typedef uint8_t short_ConventionRole;
+extern const char *
+ConventionRole_NAME_[];
+#define ConventionRole_NAME_(type) ConventionRole_NAME_[type]
+
+
+/*
  * Convention_NAME_ --	NAME array for the Convention enumeration.
  */
 extern const char *Convention_NAME_[];
@@ -10927,499 +10962,69 @@ extern const char *Convention_NAME_[];
 
 
 /*
- * Convention_reservedRegisterList --	List of reserved (non allocatable) REGISTER(s).
+ * Convention_roleRegisterSets --	RegisterSet(s) indexed by ConventionRole(s).
  */
-extern const RegisterList_
-Convention_ReservedRegisterList[];
-static inline const_RegisterList
-Convention_reservedRegisterList(Convention this)
-{
-  ;
-  return &Convention_ReservedRegisterList[this];
-}
-
-
-/*
- * Convention_reservedRegisterSet --	This Convention reserved RegisterSet.
- */
-extern const RegisterSet_
-Convention_ReservedRegisterSet[Convention__];
+extern RegisterSet_
+Convention_RoleRegisterSets[Convention__+1][ConventionRole__+1];
 static inline const_RegisterSet
-Convention_reservedRegisterSet(Convention convention)
+Convention_roleRegisterSets(Convention this, ConventionRole role)
 {
   ;
-  return &Convention_ReservedRegisterSet[convention];
-}
-
-
-//
-#define Convention_isReservedRegister(convention,registre) RegisterList_contains(Convention_reservedRegisterList(convention), registre)
-
-
-
-/*
- * Convention_argumentRegisterList --	List of function argument REGISTER(s).
- */
-extern const RegisterList_
-Convention_ArgumentRegisterList[];
-static inline const_RegisterList
-Convention_argumentRegisterList(Convention this)
-{
   ;
-  return &Convention_ArgumentRegisterList[this];
+  return &Convention_RoleRegisterSets[this][role];
 }
 
 
 /*
- * Convention_argumentRegisterSet --	This Convention argument RegisterSet.
+ * Convention_stackRegister --	This Convention Stack pointer Register.
  */
-extern const RegisterSet_
-Convention_ArgumentRegisterSet[Convention__];
-static inline const_RegisterSet
-Convention_argumentRegisterSet(Convention convention)
+extern short_Register
+Convention_StackRegister[Convention__+1];
+static inline Register
+Convention_stackRegister(Convention this)
 {
   ;
-  return &Convention_ArgumentRegisterSet[convention];
-}
-
-
-//
-#define Convention_isArgumentRegister(convention,registre) RegisterList_contains(Convention_argumentRegisterList(convention), registre)
-
-
-
-/*
- * Convention_resultRegisterList --	List of function result REGISTER(s).
- */
-extern const RegisterList_
-Convention_ResultRegisterList[];
-static inline const_RegisterList
-Convention_resultRegisterList(Convention this)
-{
-  ;
-  return &Convention_ResultRegisterList[this];
+  return (Register)Convention_StackRegister[this];
 }
 
 
 /*
- * Convention_resultRegisterSet --	This Convention result RegisterSet.
+ * Convention_frameRegister --	This Convention Frame pointer Register.
  */
-extern const RegisterSet_
-Convention_ResultRegisterSet[Convention__];
-static inline const_RegisterSet
-Convention_resultRegisterSet(Convention convention)
+extern short_Register
+Convention_FrameRegister[Convention__+1];
+static inline Register
+Convention_frameRegister(Convention this)
 {
   ;
-  return &Convention_ResultRegisterSet[convention];
-}
-
-
-//
-#define Convention_isResultRegister(convention,registre) RegisterList_contains(Convention_resultRegisterList(convention), registre)
-
-
-
-/*
- * Convention_structRegisterList --	List of struct result pointer REGISTER(s).
- */
-extern const RegisterList_
-Convention_StructRegisterList[];
-static inline const_RegisterList
-Convention_structRegisterList(Convention this)
-{
-  ;
-  return &Convention_StructRegisterList[this];
+  return (Register)Convention_FrameRegister[this];
 }
 
 
 /*
- * Convention_structRegisterSet --	This Convention struct RegisterSet.
+ * Convention_globalRegister --	This Convention Global pointer Register.
  */
-extern const RegisterSet_
-Convention_StructRegisterSet[Convention__];
-static inline const_RegisterSet
-Convention_structRegisterSet(Convention convention)
+extern short_Register
+Convention_GlobalRegister[Convention__+1];
+static inline Register
+Convention_globalRegister(Convention this)
 {
   ;
-  return &Convention_StructRegisterSet[convention];
-}
-
-
-//
-#define Convention_isStructRegister(convention,registre) RegisterList_contains(Convention_structRegisterList(convention), registre)
-
-
-
-/*
- * Convention_callerRegisterList --	List of caller saved (scratch) REGISTER(s).
- */
-extern const RegisterList_
-Convention_CallerRegisterList[];
-static inline const_RegisterList
-Convention_callerRegisterList(Convention this)
-{
-  ;
-  return &Convention_CallerRegisterList[this];
+  return (Register)Convention_GlobalRegister[this];
 }
 
 
 /*
- * Convention_callerRegisterSet --	This Convention caller RegisterSet.
+ * Convention_localRegister --	This Convention Local pointer Register.
  */
-extern const RegisterSet_
-Convention_CallerRegisterSet[Convention__];
-static inline const_RegisterSet
-Convention_callerRegisterSet(Convention convention)
+extern short_Register
+Convention_LocalRegister[Convention__+1];
+static inline Register
+Convention_localRegister(Convention this)
 {
   ;
-  return &Convention_CallerRegisterSet[convention];
+  return (Register)Convention_LocalRegister[this];
 }
-
-
-//
-#define Convention_isCallerRegister(convention,registre) RegisterList_contains(Convention_callerRegisterList(convention), registre)
-
-
-
-/*
- * Convention_calleeRegisterList --	List of callee saved (preserved) REGISTER(s).
- */
-extern const RegisterList_
-Convention_CalleeRegisterList[];
-static inline const_RegisterList
-Convention_calleeRegisterList(Convention this)
-{
-  ;
-  return &Convention_CalleeRegisterList[this];
-}
-
-
-/*
- * Convention_calleeRegisterSet --	This Convention callee RegisterSet.
- */
-extern const RegisterSet_
-Convention_CalleeRegisterSet[Convention__];
-static inline const_RegisterSet
-Convention_calleeRegisterSet(Convention convention)
-{
-  ;
-  return &Convention_CalleeRegisterSet[convention];
-}
-
-
-//
-#define Convention_isCalleeRegister(convention,registre) RegisterList_contains(Convention_calleeRegisterList(convention), registre)
-
-
-
-/*
- * Convention_programRegisterList --	List of program counter REGISTER(s).
- */
-extern const RegisterList_
-Convention_ProgramRegisterList[];
-static inline const_RegisterList
-Convention_programRegisterList(Convention this)
-{
-  ;
-  return &Convention_ProgramRegisterList[this];
-}
-
-
-/*
- * Convention_programRegisterSet --	This Convention program counter RegisterSet.
- */
-extern const RegisterSet_
-Convention_ProgramRegisterSet[Convention__];
-static inline const_RegisterSet
-Convention_programRegisterSet(Convention convention)
-{
-  ;
-  return &Convention_ProgramRegisterSet[convention];
-}
-
-
-//
-#define Convention_isProgramRegister(convention,registre) RegisterList_contains(Convention_programRegisterList(convention), registre)
-
-
-
-/*
- * Convention_returnRegisterList --	List of return address REGISTER(s).
- */
-extern const RegisterList_
-Convention_ReturnRegisterList[];
-static inline const_RegisterList
-Convention_returnRegisterList(Convention this)
-{
-  ;
-  return &Convention_ReturnRegisterList[this];
-}
-
-
-/*
- * Convention_returnRegisterSet --	This Convention return RegisterSet.
- */
-extern const RegisterSet_
-Convention_ReturnRegisterSet[Convention__];
-static inline const_RegisterSet
-Convention_returnRegisterSet(Convention convention)
-{
-  ;
-  return &Convention_ReturnRegisterSet[convention];
-}
-
-
-//
-#define Convention_isReturnRegister(convention,registre) RegisterList_contains(Convention_returnRegisterList(convention), registre)
-
-
-
-/*
- * Convention_stackRegisterList --	List of stack pointer REGISTER(s).
- */
-extern const RegisterList_
-Convention_StackRegisterList[];
-static inline const_RegisterList
-Convention_stackRegisterList(Convention this)
-{
-  ;
-  return &Convention_StackRegisterList[this];
-}
-
-
-/*
- * Convention_stackRegisterSet --	This Convention stack RegisterSet.
- */
-extern const RegisterSet_
-Convention_StackRegisterSet[Convention__];
-static inline const_RegisterSet
-Convention_stackRegisterSet(Convention convention)
-{
-  ;
-  return &Convention_StackRegisterSet[convention];
-}
-
-
-//
-#define Convention_isStackRegister(convention,registre) RegisterList_contains(Convention_stackRegisterList(convention), registre)
-
-
-
-/*
- * Convention_staticRegisterList --	List of static link pointer REGISTER(s).
- */
-extern const RegisterList_
-Convention_StaticRegisterList[];
-static inline const_RegisterList
-Convention_staticRegisterList(Convention this)
-{
-  ;
-  return &Convention_StaticRegisterList[this];
-}
-
-
-/*
- * Convention_staticRegisterSet --	This Convention static RegisterSet.
- */
-extern const RegisterSet_
-Convention_StaticRegisterSet[Convention__];
-static inline const_RegisterSet
-Convention_staticRegisterSet(Convention convention)
-{
-  ;
-  return &Convention_StaticRegisterSet[convention];
-}
-
-
-//
-#define Convention_isStaticRegister(convention,registre) RegisterList_contains(Convention_staticRegisterList(convention), registre)
-
-
-
-/*
- * Convention_frameRegisterList --	List of frame pointer REGISTER(s).
- */
-extern const RegisterList_
-Convention_FrameRegisterList[];
-static inline const_RegisterList
-Convention_frameRegisterList(Convention this)
-{
-  ;
-  return &Convention_FrameRegisterList[this];
-}
-
-
-/*
- * Convention_frameRegisterSet --	This Convention frame RegisterSet.
- */
-extern const RegisterSet_
-Convention_FrameRegisterSet[Convention__];
-static inline const_RegisterSet
-Convention_frameRegisterSet(Convention convention)
-{
-  ;
-  return &Convention_FrameRegisterSet[convention];
-}
-
-
-//
-#define Convention_isFrameRegister(convention,registre) RegisterList_contains(Convention_frameRegisterList(convention), registre)
-
-
-
-/*
- * Convention_globalRegisterList --	List of global data or GOT pointer REGISTER(s).
- */
-extern const RegisterList_
-Convention_GlobalRegisterList[];
-static inline const_RegisterList
-Convention_globalRegisterList(Convention this)
-{
-  ;
-  return &Convention_GlobalRegisterList[this];
-}
-
-
-/*
- * Convention_globalRegisterSet --	This Convention global RegisterSet.
- */
-extern const RegisterSet_
-Convention_GlobalRegisterSet[Convention__];
-static inline const_RegisterSet
-Convention_globalRegisterSet(Convention convention)
-{
-  ;
-  return &Convention_GlobalRegisterSet[convention];
-}
-
-
-//
-#define Convention_isGlobalRegister(convention,registre) RegisterList_contains(Convention_globalRegisterList(convention), registre)
-
-
-
-/*
- * Convention_localRegisterList --	List of local data or TLS pointer REGISTER(s).
- */
-extern const RegisterList_
-Convention_LocalRegisterList[];
-static inline const_RegisterList
-Convention_localRegisterList(Convention this)
-{
-  ;
-  return &Convention_LocalRegisterList[this];
-}
-
-
-/*
- * Convention_localRegisterSet --	This Convention local RegisterSet.
- */
-extern const RegisterSet_
-Convention_LocalRegisterSet[Convention__];
-static inline const_RegisterSet
-Convention_localRegisterSet(Convention convention)
-{
-  ;
-  return &Convention_LocalRegisterSet[convention];
-}
-
-
-//
-#define Convention_isLocalRegister(convention,registre) RegisterList_contains(Convention_localRegisterList(convention), registre)
-
-
-
-/*
- * Convention_wiredRegisterList --	List of wired REGISTER(s).
- */
-extern const RegisterList_
-Convention_WiredRegisterList[];
-static inline const_RegisterList
-Convention_wiredRegisterList(Convention this)
-{
-  ;
-  return &Convention_WiredRegisterList[this];
-}
-
-
-/*
- * Convention_wiredRegisterSet --	This Convention wired RegisterSet.
- */
-extern const RegisterSet_
-Convention_WiredRegisterSet[Convention__];
-static inline const_RegisterSet
-Convention_wiredRegisterSet(Convention convention)
-{
-  ;
-  return &Convention_WiredRegisterSet[convention];
-}
-
-
-//
-#define Convention_isWiredRegister(convention,registre) RegisterList_contains(Convention_wiredRegisterList(convention), registre)
-
-
-
-/*
- * Convention_zeroRegisterList --	List of zero value REGISTER(s).
- */
-extern const RegisterList_
-Convention_ZeroRegisterList[];
-static inline const_RegisterList
-Convention_zeroRegisterList(Convention this)
-{
-  ;
-  return &Convention_ZeroRegisterList[this];
-}
-
-
-/*
- * Convention_zeroRegisterSet --	This Convention zero RegisterSet.
- */
-extern const RegisterSet_
-Convention_ZeroRegisterSet[Convention__];
-static inline const_RegisterSet
-Convention_zeroRegisterSet(Convention convention)
-{
-  ;
-  return &Convention_ZeroRegisterSet[convention];
-}
-
-
-//
-#define Convention_isZeroRegister(convention,registre) RegisterList_contains(Convention_zeroRegisterList(convention), registre)
-
-
-
-/*
- * Convention_oneRegisterList --	List of one value REGISTER(s).
- */
-extern const RegisterList_
-Convention_OneRegisterList[];
-static inline const_RegisterList
-Convention_oneRegisterList(Convention this)
-{
-  ;
-  return &Convention_OneRegisterList[this];
-}
-
-
-/*
- * Convention_oneRegisterSet --	This Convention one RegisterSet.
- */
-extern const RegisterSet_
-Convention_OneRegisterSet[Convention__];
-static inline const_RegisterSet
-Convention_oneRegisterSet(Convention convention)
-{
-  ;
-  return &Convention_OneRegisterSet[convention];
-}
-
-
-//
-#define Convention_isOneRegister(convention,registre) RegisterList_contains(Convention_oneRegisterList(convention), registre)
-
 
 
 /*
@@ -11533,7 +11138,7 @@ Convention_nativePtr(Convention this)
 
 
 /*
- * Decode.xcc
+ * !!!!	Decode.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
  *
@@ -11619,12 +11224,17 @@ extern int FORCE_MINTAKEN;
 
 //
 void
-MDS_setMaxIssue(int maxIssue);
+MDS_setMaxIssue(Processor processor, int maxIssue);
 
 
 //
 void
-MDS_setMinTaken(int minTaken);
+MDS_setMinTaken(Processor processor, int minTaken);
+
+
+//
+void
+MDS_setReserved(Convention convention, Register registre);
 
 
 /*

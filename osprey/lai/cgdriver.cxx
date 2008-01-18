@@ -1100,9 +1100,9 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_formulation", "",
     0, 0, 65536,	&CG_LAO_formulation, &CG_LAO_formulation_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_preloading", "",
-    0, 0, 65536,	&CG_LAO_preloading, &CG_LAO_preloading_overridden },
+    0, 0, 4,	&CG_LAO_preloading, &CG_LAO_preloading_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_l1missextra", "",
-    7, 0, 255,	&CG_LAO_l1missextra, &CG_LAO_l1missextra_overridden },
+    0, 0, 255,	&CG_LAO_l1missextra, &CG_LAO_l1missextra_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_compensation", "",
     0, 0, 2,	&CG_LAO_compensation, &CG_LAO_compensation_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_speculation", "",
@@ -2169,7 +2169,7 @@ CG_Init (void)
     if (!CG_LAO_allocation_overridden) CG_LAO_allocation = 2;
     if (!CG_LAO_formulation_overridden) CG_LAO_formulation = 0;
     if (!CG_LAO_preloading_overridden) CG_LAO_preloading = 0;
-    if (!CG_LAO_l1missextra_overridden) CG_LAO_l1missextra = 7;
+    if (!CG_LAO_l1missextra_overridden) CG_LAO_l1missextra = 0;
     if (!CG_LAO_compensation_overridden) CG_LAO_compensation = 0;
     if (!CG_LAO_speculation_overridden) {
       if (Eager_Level == EAGER_NONE) CG_LAO_speculation = 0;
