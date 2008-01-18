@@ -1829,7 +1829,13 @@ Merge_Global_Initv(UINT                  initv_idx,
 	 
     case INITVKIND_BLOCK:
 	{ 
-	  INITV_IDX nested_initv_idx = 
+	  INITV_IDX nested_initv_idx;
+#ifdef KEY // fixes bug 1010
+        if (INITV_block_first(original_initv) == INITV_IDX_ZERO)
+	  nested_initv_idx = INITV_IDX_ZERO;
+	else
+#endif
+	  nested_initv_idx = 
 	    Merge_Global_Initv(INITV_block_first(original_initv), 
 			       original_tabs, initv_map);
 	  Set_INITV_block_first(new_initv, nested_initv_idx);
@@ -1942,6 +1948,11 @@ Merge_Global_Initv(UINT                  initv_idx,
 	break;
 	 
     case INITVKIND_BLOCK:
+#ifdef KEY // fixes bug 1010
+        if (INITV_block_first(original_initv) == INITV_IDX_ZERO)
+	  nested_initv_idx = INITV_IDX_ZERO;
+	else
+#endif
 	nested_initv_idx = 
 	    Merge_Global_Initv(INITV_block_first(original_initv), 
 			       original_tabs, initv_map);
