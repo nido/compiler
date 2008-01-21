@@ -230,6 +230,10 @@ struct TN_LIST;
 /* Target-specific TN info */
 #include "targ_tn.h"
 
+#ifdef TARG_ST
+#include "pixel_mtypes.h"
+#endif
+
 class WN;
 
 /* Define the TN number type: */
@@ -590,6 +594,13 @@ inline TN *Build_TN_Of_Mtype(TYPE_ID mtype)
   // while size is expected to be > 0.
   INT size = MTYPE_RegisterSize(mtype);
   if (size == 0) size = 1;
+
+  // [VCdV] For extension mtypes of type pixel, the corresponding
+  // register size is doubled compared to the mtype.
+  if (MTYPE_pixel_size(mtype) &&
+      (rc > ISA_REGISTER_CLASS_STATIC_MAX)) {
+    size*=2;
+  }
   return Gen_Register_TN (rc, size);
 #else
   return Gen_Register_TN (rc, MTYPE_RegisterSize(mtype) );

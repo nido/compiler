@@ -371,26 +371,29 @@ CGSPILL_Initialize_For_PU(void)
   // Spill type for extension registers (reconfigurability)
   TYPE_ID mty;
   for (mty = MTYPE_STATIC_LAST+1; mty <= MTYPE_LAST; ++mty) {
-    TY_IDX ty = MTYPE_To_TY (mty);
-    if (!MTYPE_is_composed(mty)) {
-      // [SC] Adjust alignment for extension register spill types.
-      // [TTh] Use the highest spill alignment based on constraint
-      // of available instructions and current alignment of the stack.
-      if (DEFAULT_STACK_ALIGNMENT > TY_align(ty)) {
-	ISA_REGISTER_CLASS cl = EXTENSION_MTYPE_to_REGISTER_CLASS (mty);
-	UINT64 size = MTYPE_RegisterSize (mty);
-	INT optimal_align = EXTENSION_Get_REGISTER_CLASS_Optimal_Alignment (cl, size);
-	if (optimal_align > DEFAULT_STACK_ALIGNMENT) {
-	  Set_TY_align (ty, DEFAULT_STACK_ALIGNMENT);
-	}
-	else if (optimal_align > TY_align (ty)) {
-	  Set_TY_align (ty, optimal_align);
-	}
+    /* [vcdv] no spill on pixel types */
+    if (MTYPE_pixel_size(mty)==0) { 
+      TY_IDX ty = MTYPE_To_TY (mty);
+      if (!MTYPE_is_composed(mty)) {
+        // [SC] Adjust alignment for extension register spill types.
+        // [TTh] Use the highest spill alignment based on constraint
+        // of available instructions and current alignment of the stack.
+        if (DEFAULT_STACK_ALIGNMENT > TY_align(ty)) {
+          ISA_REGISTER_CLASS cl = EXTENSION_MTYPE_to_REGISTER_CLASS (mty);
+          UINT64 size = MTYPE_RegisterSize (mty);
+          INT optimal_align = EXTENSION_Get_REGISTER_CLASS_Optimal_Alignment (cl, size);
+          if (optimal_align > DEFAULT_STACK_ALIGNMENT) {
+            Set_TY_align (ty, DEFAULT_STACK_ALIGNMENT);
+          }
+          else if (optimal_align > TY_align (ty)) {
+            Set_TY_align (ty, optimal_align);
+          }
+        }
       }
+      CGTARG_Spill_Type [CGTARG_NUM_SPILL_TYPES] = ty;
+      CGTARG_Spill_Mtype[CGTARG_NUM_SPILL_TYPES] = mty;
+      CGTARG_NUM_SPILL_TYPES++;
     }
-    CGTARG_Spill_Type [CGTARG_NUM_SPILL_TYPES] = ty;
-    CGTARG_Spill_Mtype[CGTARG_NUM_SPILL_TYPES] = mty;
-    CGTARG_NUM_SPILL_TYPES++;
   }
   INT i;
   for (i = 0; i < CGTARG_NUM_SPILL_TYPES; i++) {

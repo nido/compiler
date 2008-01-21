@@ -61,6 +61,7 @@ extern "C" { extern const ISA_EXT_Interface_t* get_ISA_extension_instance();};
 
 #include "loader.h"
 #include "lai_loader_api.h"
+#include "pixel_mtypes.h"
 
 /* Include local helpers. */
 #include "attribute_map_template.cxx"
@@ -96,9 +97,14 @@ static Extension_dll_t *extension_tab = (Extension_dll_t*)NULL;
 static int extension_count = 0;
 
 
+mUINT8 pixel_size_per_type[MTYPE_MAX_LIMIT+1];
+
+
 static void Add_Mtype(machine_mode_t mmode, const char *name, 
 		      enum mode_class mclass, unsigned short mbitsize, 
 		      unsigned char msize, unsigned char munitsize,
+                      /* [vcdv] add pixel_size info to mtype */
+                      unsigned char pixel_size,
 		      unsigned char mwidermode, machine_mode_t innermode, 
 		      TYPE_ID mtype, unsigned short alignement) 
 {
@@ -122,6 +128,11 @@ static void Add_Mtype(machine_mode_t mmode, const char *name,
   Machine_Types[MTYPE_COUNT].float_type = 0;
   Machine_Types[MTYPE_COUNT].dummy4 = 0;
   Machine_Types[MTYPE_COUNT].name = (char*)name;
+
+  /* [vcdv] add pixel_size info to mtype */
+  if (MTYPE_COUNT>MTYPE_STATIC_LAST)
+    MTYPE_pixel_size(MTYPE_COUNT) = pixel_size;
+   
   // MMODE=>MTYPE mapping
   // Set the associated MTYPE
   if (mmode != -1)
@@ -196,6 +207,10 @@ TYPE_ID Add_MTypes(const Extension_dll_t *dll_instance, int **mtype_to_locrclass
 	      modes[i].mbitsize,
 	      modes[i].msize,
 	      modes[i].munitsize,
+#ifdef TARG_ST
+              /* [vcdv] add pixel_size info to mtype */
+              modes[i].mpixelsize,
+#endif
 	      modes[i].mwidermode, 
 	      modes[i].innermode,
 	      new_mtype,
@@ -205,6 +220,11 @@ TYPE_ID Add_MTypes(const Extension_dll_t *dll_instance, int **mtype_to_locrclass
     if (mtype_to_locrclass)
       mtype_to_local_rclass[i] = modes[i].local_REGISTER_CLASS_id;
   }
+  /* [VCdV] reset pixel_size to zero for all static types */
+  for (i=0; i<=MTYPE_STATIC_LAST; i++) {
+    MTYPE_pixel_size(i)=0;
+  }
+  
   if (mtype_to_locrclass)
     *mtype_to_locrclass = mtype_to_local_rclass;
   if (mtype_count)
@@ -331,7 +351,12 @@ void Add_Composed_Mtype() {
       Add_Mtype(/*machine_mode_t*/ -1 , newmtype_name, 
 		/*enum mode_class*/ MODE_RANDOM, /* mbitsize*/ 0, 
 		/*msize*/ 0,  /*munitsize*/ 0,
-		/*mwidermode*/ 0,/*innermode*/-1, 
+		/*mwidermode*/ 0,
+#ifdef TARG_ST
+                /* [vcdv] add pixel_size info to mtype */
+                /*mpixelsize*/ 0,
+#endif
+                /*innermode*/-1, 
 		/* mtype*/ MTYPE_COUNT+1, /*alignement*/TARG_NONE_ALIGN);
 
       //Set return kind
