@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jan 21 15:31:47 CET 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-38451
+
+Description:
+------------
+	* [trunk] Fix for bug #38451: #pragma forcehwloop <id> does not force loop <id>
+	  Deliver fixes/codex-38451 rev #15240 with authorization branch #38491
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/wfe_pragmas.def
+	M      osprey/gccfe/wfe_pragmas.cxx
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jan 21 13:09:48 CET 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -166,7 +166,7 @@ WFE_PragmaArgs_HWLOOP (const char *what, int *args)
     return 1;
   if (strcmp (what, "none") == 0) {
     args[0] = 0;
-  } else if (strcmp (what, "forcehw") == 0) {
+  } else if (strcmp (what, "forcehwloop") == 0) {
     args[0] = 1;
   } else if (strcmp (what, "forcejrgtudec") == 0) {
     args[0] = 2;
