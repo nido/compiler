@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jan 22 17:45:58 CET 2008
+	Author:    knochelh
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-38449
+
+Description:
+------------
+	* [trunk] Fix for bug #38449: Incorrect code generation in DVD_ACC mp3 encoder.
+	Deliver fixes/codex-38449 rev #15271 with authorization branch #38513
+
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jan 22 10:40:19 CET 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

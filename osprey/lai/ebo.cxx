@@ -3468,10 +3468,8 @@ EBO_Simplify_Special_Compare (
   /* Currently only handle integer compares. */
   if (!OP_icmp(op)) return FALSE;
 
-#ifdef TARG_ST
   if (OP_has_implicit_interactions(op)) return FALSE;
   if (OP_results(op) > 1) return FALSE;
-#endif
 
   op1_idx = OP_find_opnd_use(op, OU_opnd1);
   op2_idx = OP_find_opnd_use(op, OU_opnd2);
@@ -3601,10 +3599,8 @@ EBO_Simplify_Compare_Sequence (
   /* Currently only handle integer compares. */
   if (!OP_icmp(op)) return FALSE;
 
-#ifdef TARG_ST
   if (OP_has_implicit_interactions(op)) return FALSE;
   if (OP_results(op) > 1) return FALSE;
-#endif
 
   tnr = OP_result(op,0);
 
@@ -3635,14 +3631,18 @@ EBO_Simplify_Compare_Sequence (
        (in_op2 == NULL)))
     return FALSE;
   */
-  if ((TN_has_value(tn1) || (tn1 == Zero_TN)) && in_op2 && (OP_icmp(in_op2))){
-    const_val = (tn1 == Zero_TN) ? 0 : TN_Value (tn1);
+  if (TN_Has_Value(tn1) && in_op2 && OP_icmp(in_op2)){
+    const_val = TN_Value (tn1);
     in_op = in_op2;
     in_opcode = in_opcode2;
     cmp_tninfo = cmp_tninfo2;
+    // fix for codex bug #38449
+    // if the constant is on the left-hand side
+    // the compare variant has to be inverted
+    opcode = TOP_opnd_swapped_variant(opcode, op1_idx, op2_idx);
   }
-  else if ((TN_has_value(tn2) || (tn2 == Zero_TN)) && in_op1 && (OP_icmp(in_op1))){
-    const_val = (tn2 == Zero_TN) ? 0 : TN_Value (tn2);
+  else if (TN_Has_Value(tn2) && in_op1 && OP_icmp(in_op1)){
+    const_val = TN_Value (tn2);
     in_op = in_op1;
     in_opcode = in_opcode1;
     cmp_tninfo = cmp_tninfo1;
@@ -4012,6 +4012,10 @@ EBO_Simplify_Compare_MinMaxSequence (
     in_op = in_op2;
     in_opcode = in_opcode2;
     minmax_tninfo = minmax_tninfo2;
+    // fix for codex bug #38449
+    // if the constant is on the left-hand side
+    // the compare variant has to be inverted
+    opcode = TOP_opnd_swapped_variant(opcode, op1_idx, op2_idx);
   }
   else if (TN_Has_Value(tn2) && in_op1 
 	   && (OP_imax(in_op1) || OP_imin(in_op1))){
