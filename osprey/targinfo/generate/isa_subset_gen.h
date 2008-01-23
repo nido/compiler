@@ -63,6 +63,12 @@
 //      Complete processing.
 //
 //
+//  TARG_ST NOTE 2008/01/22: Due to implementation of isa_registers_gen.h ISA_SUBSET mask
+//  on 8 byte, the maximum number of static ISA_SUBSET is currently limited to 8.
+//  This limit can be removed, but it will be at the price of a compatibility problem 
+//  with dynamic extension (on stxp70 for instance).
+//  See equivalent note in isa_registers_gen.h.
+//
 /////////////////////////////////////
 
 

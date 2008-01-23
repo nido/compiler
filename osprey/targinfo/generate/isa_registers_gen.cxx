@@ -78,6 +78,13 @@ using std::list;
  */
 #include "isa_ext_limits.h"
 
+/* Local implementation limit for the number of static isa subsets.
+ * This limit is due to the use of mUINT8 for the isa_mask in
+ * the generated ISA_REGISTER_CLASS_INFO structure.
+ * See the related note in isa_registers_gen.h.
+ */
+#define LOCAL_SUBSET_COUNT_MAX 8
+
 typedef struct isa_register_set {
   UINT32 isa_mask;
   int min_regnum;
@@ -390,6 +397,16 @@ void ISA_Register_Set(
 //  See interface description.
 /////////////////////////////////////
 {
+  // Ensure that isa_mask will fit the local subset count maximum (implementation limit).
+  if ((unsigned int)isa_mask >> LOCAL_SUBSET_COUNT_MAX != 0) {
+    fprintf(stderr,
+	    "### Error: currently we only support up to %d static isa subsets.\n"
+	    "### See implementation note in osprey/targinfo/generate/isa_registers_gen.h.\n"
+	    "### ISA subsets mask (%d) passed to class %s does not respect this rule.\n",
+	    LOCAL_SUBSET_COUNT_MAX, isa_mask, rclass->name);
+      exit(EXIT_FAILURE);
+  }
+	 
   ISA_REGISTER_SET regset = new isa_register_set;
 
   regset->min_regnum = min_regnum;
@@ -678,7 +695,7 @@ void ISA_Registers_End(void)
 		 "\t     cl = (ISA_REGISTER_CLASS)(cl - 1))\n");
 
   fprintf(hfile, "\ntypedef struct {\n"
-		 "  mUINT32 isa_mask;\n"
+		 "  mUINT8 isa_mask;\n"
 		 "  mUINT8 min_regnum;\n"
 		 "  mUINT8 max_regnum;\n"
 		 "  mUINT16 bit_size;\n"
