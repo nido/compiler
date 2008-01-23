@@ -221,6 +221,18 @@ ifeq (MINGW,$(HOST_OS))
   WIN32_CORE_CFLAGS =
   HOSTDEFS += -DDLL_EXPORTED=$(DLLEXPORT)
 else
+ifeq (CYGWIN_NT,$(HOST_OS))
+  BDLL              = dll
+  BOBJ              = o
+  OUTOBJFLAG        = -o
+  OUTEXEFLAG        = -o
+  COMPFLAG          = -c
+  LDDSOOPTS         = --shared $(TARG_TARGINFO_DIR)/libtarginfo_dll.a
+  DELETE            = \rm
+  REM_WIN32         =
+  WIN32_CORE_CFLAGS =
+  HOSTDEFS += -DDLL_EXPORTED=$(DLLEXPORT)
+else
 ifeq (WINNATIVE,$(HOST_OS))
   BDLL              = dll
   BOBJ              = obj
@@ -236,6 +248,7 @@ ifeq (WINNATIVE,$(HOST_OS))
   HOSTDEFS += -DDLL_EXPORTED=$(DLLEXPORT)
 else
   $(error "host operating system $(HOST_OS) is not managed yet, please adapt makefile")
+endif
 endif
 endif
 endif

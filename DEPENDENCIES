@@ -1,18 +1,18 @@
 # Revision file that references all dependencies of the project.
-# A dependency is a tuplet: dependency_name,type,revision,location
-# Dependening on the dpendency type, the revision and location may have
+# A dependency is a 4-uplet: dependency_name,type,revision,location
+# Dependening on the dependency type, the revision and location may have
 # different form.
 # The following types are defined:
 # svn: revision is a <branch>@<rev> svn revision identifier and location 
 #      is a reference svn <url>. 
 #      The command svn co -r <rev> <url>/<branch> should be sufficient to 
-#      retrieve see all sources of the dependency.
+#      retrieve all sources of the dependency.
 #
 # file: revision is the <file> name without directory specification.
 #       location is the <directory> path of the dependency.
-#       The path <directory>/<file> should be sificient to identify the
+#       The path <directory>/<file> should be sufficient to identify the
 #       dependency source uniquely.
 #
 stxp70-binutils,svn,trunk@2305,https://codex.cro.st.com/svnroot/stxp70cc/stxp70-binutils
 ecc,svn,trunk@2479,https://codex.cro.st.com/svnroot/ecc
-mds,svn,trunk@812,https://codex.cro.st.com/svnroot/mds
+mds,svn,trunk@873,https://codex.cro.st.com/svnroot/mds

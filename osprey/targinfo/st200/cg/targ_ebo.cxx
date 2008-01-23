@@ -182,10 +182,9 @@ inline_operand_profitable(OP *op, EBO_TN_INFO *tninfo)
 static BOOL
 EBO_Verify_Operand(OP *op, INT opnd, BOOL is_result)
 {
-  FmtAssert(ISA_SUBSET_Member(ISA_SUBSET_Value, OP_code(op)),
-	    ("%s is a member of ISA %s", 
-	     TOP_Name(OP_code(op)), 
-	     ISA_SUBSET_Name(ISA_SUBSET_Value)));
+  FmtAssert(ISA_SUBSET_LIST_Member(ISA_SUBSET_List, OP_code(op)),
+	    ("%s is a member of available ISA subsets", 
+	     TOP_Name(OP_code(op))));
 
   const ISA_OPERAND_INFO *oinfo  = ISA_OPERAND_Info(OP_code(op));
   const ISA_OPERAND_VALTYP *vtype = is_result 
@@ -2825,7 +2824,7 @@ get_mul_opcode(SIGNDNESS signed0, BITS_POS bits0, SIGNDNESS signed1, BITS_POS bi
     opcode = TOP_UNDEFINED;
 
   if (opcode != TOP_UNDEFINED
-      && ! ISA_SUBSET_Member (ISA_SUBSET_Value, opcode))
+      && ! ISA_SUBSET_LIST_Member (ISA_SUBSET_List, opcode))
     opcode = TOP_UNDEFINED;
 
   if (EBO_Trace_Optimization && opcode != TOP_UNDEFINED) 
@@ -3281,7 +3280,7 @@ add_shl_sequence (
   if (l3_val1 == 1) new_topcode = TOP_sh1add_r_r_r;
   else if (l3_val1 == 2) new_topcode = TOP_sh2add_r_r_r;
   else if (l3_val1 == 3) new_topcode = TOP_sh3add_r_r_r;
-  else if (l3_val1 == 4 && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sh4add_r_r_r)) {
+  else if (l3_val1 == 4 && ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_sh4add_r_r_r)) {
     new_topcode = TOP_sh4add_r_r_r;
   }
   else return FALSE;
@@ -4060,7 +4059,7 @@ shl_mulhs_sequence (
     FmtAssert(FALSE, (" wrong opcode %s\n", TOP_Name(OP_code(l2_op))));
   }
 
-  if (! ISA_SUBSET_Member (ISA_SUBSET_Value, new_opcode))
+  if (! ISA_SUBSET_LIST_Member (ISA_SUBSET_List, new_opcode))
     return FALSE;
 
   // Replace the current instruction:
@@ -5017,7 +5016,7 @@ minmax_sats_sequence (OP *l1_op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   EBO_OP_INFO *minmax_opinfo;
 
   // Check if the target has a sats instruction
-  if (!ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_sats_r_r))
+  if (!ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_sats_r_r))
     return FALSE;
 
   TOP opcode = OP_code(l1_op);
@@ -5866,7 +5865,7 @@ copy_r_b_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   }
 
   if (OP_code(def_opinfo->in_op) == TOP_targ_mov_b_r
-      && ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_mov_b_b) &&
+      && ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_mov_b_b) &&
       EBO_tn_available(OP_bb(op), lhs_tninfo)) {
     OPS ops = OPS_EMPTY;
     Exp_COPY(OP_result(op, 0), lhs_tn, &ops);
@@ -6347,7 +6346,7 @@ andl_orl_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
       case TOP_norl_r_r_b:  new_top = TOP_norl_b_b_b;  break;
       default: new_top = TOP_UNDEFINED;                break;
       }
-      if (!ISA_SUBSET_Member (ISA_SUBSET_Value, new_top)) {
+      if (!ISA_SUBSET_LIST_Member(ISA_SUBSET_List, new_top)) {
 	new_top = TOP_UNDEFINED;
       }
     }

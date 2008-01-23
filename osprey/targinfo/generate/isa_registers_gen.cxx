@@ -79,7 +79,7 @@ using std::list;
 #include "isa_ext_limits.h"
 
 typedef struct isa_register_set {
-  int isa_mask;
+  UINT32 isa_mask;
   int min_regnum;
   int max_regnum;
   const char *def_name_format;
@@ -307,7 +307,7 @@ static const char * const interface[] = {
   " *",
   " *   void ISA_REGISTER_Initialize(void)",
   " *       Initialize the register package for use with the ISA specified",
-  " *       by ISA_SUBSET_Value.",
+  " *       by the subset list in ISA_SUBSET_List.",
   " *",
   " *   void ISA_REGISTER_CLASS_Set_Bit_Size(ISA_REGISTER_CLASS cl, INT bit_size)",
   " *       Override the bit size for register class cl with bit_size.",
@@ -678,7 +678,7 @@ void ISA_Registers_End(void)
 		 "\t     cl = (ISA_REGISTER_CLASS)(cl - 1))\n");
 
   fprintf(hfile, "\ntypedef struct {\n"
-		 "  mUINT8 isa_mask;\n"
+		 "  mUINT32 isa_mask;\n"
 		 "  mUINT8 min_regnum;\n"
 		 "  mUINT8 max_regnum;\n"
 		 "  mUINT16 bit_size;\n"
@@ -1118,7 +1118,7 @@ void ISA_Registers_End(void)
   fprintf(cfile, "\nvoid ISA_REGISTER_Initialize(void)\n"
 		 "{\n"
 		 "  INT rc;\n"
-		 "  INT mask = 1 << (INT)ISA_SUBSET_Value;\n"
+		 "  UINT32 mask = ISA_SUBSET_LIST_Mask(ISA_SUBSET_List);\n"
 		 "  for (rc = ISA_REGISTER_CLASS_MIN; "
 			 "rc <= ISA_REGISTER_CLASS_STATIC_MAX; ++rc) {\n"
 		 "    INT i = ISA_REGISTER_CLASS_info_index[rc];\n"

@@ -159,7 +159,7 @@ Exp_Pred_Complement (
   if (opb && OP_code(opb) == TOP_convib_r_b) {
     ptn = OP_opnd(opb, 0);
     Build_OP(TOP_cmpeq_r_r_b, dest, ptn, Zero_TN, ops);
-  } else if (ISA_SUBSET_Member (ISA_SUBSET_Value, TOP_norl_b_b_b)) {
+  } else if (ISA_SUBSET_LIST_Member(ISA_SUBSET_List, TOP_norl_b_b_b)) {
     Build_OP(TOP_norl_b_b_b, dest, src, src, ops);
   } else {
     ptn = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
