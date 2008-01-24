@@ -446,7 +446,7 @@ Always_Locally_Defined (TN *tn, BB *bb)
     return FALSE;
 
   for (INT i = 0; i < OP_opnds(op_def); i++) {  
-    if (! Always_Localy_Defined (OP_opnd (op_def, i), bb))
+    if (! Always_Locally_Defined (OP_opnd (op_def, i), bb))
       return FALSE;
   }
 
@@ -807,7 +807,7 @@ Can_Speculate_BB(BB *bb)
         TN *base   = OP_opnd(op, OP_find_opnd_use(op, OU_base));
         bool can_speculate=true;
 
-        if (!Always_Localy_Defined (base, OP_bb (op)) ||
+        if (!Always_Locally_Defined (base, OP_bb (op)) ||
             OP_volatile (op))
           can_speculate=false;
 
