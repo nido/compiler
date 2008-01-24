@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jan 24 10:52:03 CET 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-34321
+
+Description:
+------------
+	* [trunk] Fix for bug #34321: [QMx] data alignment lost in RVI.
+	Deliver fixes/codex-34321 rev #15296 with authorization branch #37391
+
+
+Modified Files:
+---------------
+	M      osprey/common/com/wn_simp.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jan 22 17:45:58 CET 2008
 	Author:    knochelh
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -337,7 +337,19 @@ WN *WN_Simplify_Rebuild_Expr_Tree(WN *t,ALIAS_MANAGER *alias_manager)
 
    if (opr == OPR_ILOAD) {
       k0 = WN_kid0(t);
-      r = WN_SimplifyIload(op,WN_load_offset(t),WN_ty(t),WN_field_id(t),WN_load_addr_ty(t),k0);
+#ifdef TARG_ST
+      /*[DT] When we have a pointer to an operand, we should propagate information on
+	the pointed element */
+      if (OPCODE_has_2ty(op) && (WN_load_addr_ty(t) != (TY_IDX) 0)) {
+	   TY_IDX pointed = TY_pointed(WN_load_addr_ty(t));
+	   if (pointed != (TY_IDX) 0)
+	     r = WN_SimplifyIload(op,WN_load_offset(t),pointed,WN_field_id(t),WN_load_addr_ty(t),k0);
+	   else
+	     r = WN_SimplifyIload(op,WN_load_offset(t),WN_ty(t),WN_field_id(t),WN_load_addr_ty(t),k0);
+      }
+      else	     
+#endif
+	r = WN_SimplifyIload(op,WN_load_offset(t),WN_ty(t),WN_field_id(t),WN_load_addr_ty(t),k0);
       if (r) {
 #ifdef BACK_END
 	 if (alias_manager) {
