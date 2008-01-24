@@ -1185,6 +1185,10 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0,	&CG_select_spec_stores, &CG_select_spec_stores_overridden,
     "Allow store speculation using black holes stack slots"},
 
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_merge_stores", "",
+    0, 0, 0,	&CG_select_merge_stores, NULL,
+    "Allow store merging using select instruction"},
+
   { OVK_NAME,	OV_INTERNAL, TRUE, "select_factor", "",
     0, 0, 0,	&CG_select_factor, NULL,
     "Extra gain in cycles for flattening a branch"},

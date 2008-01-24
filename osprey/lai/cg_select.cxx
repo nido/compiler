@@ -35,6 +35,7 @@
  * General Flags are:
  * -CG:select_if_convert=TRUE    enable if conversion
  * -CG:select_spec_stores=TRUE   enable conditional or blackhole stores
+ * -CG:select_merge_stores=TRUE  enable store merging optimisation
  *
  * The following flags to drive the algorithm and heuristics.
  * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
@@ -153,6 +154,7 @@ static PredOp_Map_Iter pred_erase(PredOp_Map_Iter i_iter)
  * ====================================================================
  */
 BOOL CG_select_spec_stores = TRUE;
+BOOL CG_select_merge_stores = TRUE;
 BOOL CG_select_allow_dup = TRUE;
 BOOL CG_select_promote_mem = FALSE;
 INT32 CG_select_spec_loads = 1;
@@ -807,8 +809,7 @@ Can_Speculate_BB(BB *bb)
         TN *base   = OP_opnd(op, OP_find_opnd_use(op, OU_base));
         bool can_speculate=true;
 
-        if (!Always_Locally_Defined (base, OP_bb (op)) ||
-            OP_volatile (op))
+        if (!Always_Locally_Defined (base, OP_bb (op)) || OP_volatile (op))
           can_speculate=false;
 
         if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn) &&
@@ -968,19 +969,17 @@ static BOOL
 Are_Not_Aliased(OP* op1, OP* op2)
 {
   if (OP_memory(op1) && OP_memory(op2)) {
-    if (OP_black_hole(op1) || OP_black_hole(op2))
-      return TRUE;
-
     WN *wn1 = Get_WN_From_Memory_OP(op1);
     WN *wn2 = Get_WN_From_Memory_OP(op2);
+
     if (wn1 != NULL && wn2 != NULL) {
       ALIAS_RESULT alias = Aliased(Alias_Manager, wn1, wn2);
       // OK only if we can prove that addresses are not aliases.
-      if (alias == NOT_ALIASED)
+        if (alias == NOT_ALIASED)
         return TRUE;
     }
   }
-
+  
   return FALSE;
 }
 
@@ -2311,6 +2310,12 @@ Optimize_Spec_Stores(BB *bb)
 	    last = op1;
 	  }
 
+          // address from op1 will be used for merge stores. Check that it is always
+          // defined inside the considered region.
+          TN *base1, *offset1;
+          (void) OP_Base_Offset_TNs (op1, &base1, &offset1);
+
+          // This optimisation implies to move the first store down to the last one.
 	  for (OP *iop = OP_next(first);
 	       iop!= NULL && iop != last;
 	       iop = OP_next(iop)) {
@@ -2319,25 +2324,17 @@ Optimize_Spec_Stores(BB *bb)
                 i_iter++;
                 goto next_store;
               }
+            }
 
-              // this fixes conflicts introduced when disabling the pre. see #35792
-              // Check now that we don't write into the address that we speculate.
-              if (OP_store (iop)) {
-                TN *base1, *offset1;
-                (void) OP_Base_Offset_TNs (first, &base1, &offset1);
-                
-                if (TN_is_register (base1)) {
-                  OP *op_def = TN_ssa_def(base1);
-
-                  if (TN_is_zero (offset1) && op_def &&
-                      !Are_Not_Aliased (iop, op_def)) {
-                    i_iter++;
-                    goto next_store;
-                  }
-                }
-              }
-            }              
-	  }
+            // this fixes conflicts introduced when disabling the pre. see #35792
+            // Check now that we are not inserting a store for which the base is 
+            // conditionally defined.
+            if (!Always_Locally_Defined (base1, bb) ||
+                !Always_Locally_Defined (offset1, bb)) {
+                i_iter++;
+                goto next_store;
+            }
+          }
 
           Expand_Cond_Store (tn1, op1, op2, OP_find_opnd_use(op1, OU_storeval),
                              &ops);
@@ -2359,14 +2356,8 @@ Optimize_Spec_Stores(BB *bb)
             Print_TN (True_TN, FALSE);
           }
 
-          if (OP_Follows(op2, op1)) {
-            BB_Replace_Op (op2, &ops);
-            BB_Remove_Op (bb, op1);
-          }
-          else {
-            BB_Replace_Op (op1, &ops);
-            BB_Remove_Op (bb, op2);
-          }
+          BB_Replace_Op (last, &ops);
+          BB_Remove_Op (bb, first);
 
           i_iter2 = pred_erase(i_iter2);
           i_iter = pred_erase(i_iter);
@@ -2383,7 +2374,8 @@ Optimize_Spec_Stores(BB *bb)
 static void
 BB_Fix_Spec_Stores (BB *bb)
 {
-  Optimize_Spec_Stores (bb);
+  if (CG_select_merge_stores)
+    Optimize_Spec_Stores (bb);
 
   PredOp_Map_ConstIter i_iter;
   PredOp_Map_ConstIter i_end;
@@ -3392,6 +3384,25 @@ draw_CFG(void)
 
   dv.Event_Loop (NULL);
 }
+
+static void dump_pred_cands()
+{
+  PredOp_Map_Iter i_iter;
+  PredOp_Map_Iter i_end;
+
+  i_iter = pred_i.begin();
+  i_end = pred_i.end();
+
+  while(i_iter != i_end) {
+    OP* op = (*i_iter).first;
+    TN *pred = (*i_iter).second;
+    Print_OP (op);
+    Print_TN (pred, FALSE);    
+    fprintf (Select_TFile, "\n");    
+    i_iter++;
+  }
+}
+
 
 #endif /* SUPPORTS_SELECT */
 
