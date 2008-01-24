@@ -421,14 +421,36 @@ Can_Predicate_Op (OP *op)
 static bool
 Need_Predicate_Op (OP *op)
 {
-  if (OP_Can_Be_Speculative(op))
+  if (Can_Predicate_Op (op)) {
+    if (pred_i.find(op) != pred_i.end()) {
+      // check that we don't want the dismissible load.
+      return !OP_load (op) || !PROC_has_dismissible_load();
+    }
+  }
+
+  return FALSE;
+}
+
+// Check than the tn doesn't depend on an instruction that is beeing predicated.
+static bool
+Always_Locally_Defined (TN *tn, BB *bb)
+{
+  if (!TN_is_register (tn))
+    return TRUE;
+
+  OP *op_def = TN_ssa_def(tn);
+  if (!op_def || OP_phi (op_def) || OP_bb (op_def) != bb)
+    return TRUE;
+
+  if (Need_Predicate_Op(op_def))
     return FALSE;
 
-  if (Can_Predicate_Op (op)) {
-    if (pred_i.find(op) != pred_i.end())
-      return !OP_has_predicate(op);
+  for (INT i = 0; i < OP_opnds(op_def); i++) {  
+    if (! Always_Localy_Defined (OP_opnd (op_def, i), bb))
+      return FALSE;
   }
-  return FALSE;
+
+  return TRUE;
 }
 
 static void
@@ -452,7 +474,9 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
   OP *opt = TN_ssa_def(true_tn);
   OP *opf = TN_ssa_def(false_tn);
 
-  if (!opt || !opf || (!Need_Predicate_Op (opt) && !Need_Predicate_Op (opf))) {
+  if (!opt || !opf ||
+      (OP_Can_Be_Speculative (opt) || !Need_Predicate_Op (opt)) &&
+      (OP_Can_Be_Speculative (opf) || !Need_Predicate_Op (opf))) {
 #if 1
     /* transform region guarded by p
        (p)  ? tn1 = psi(T:x, p0:b) 
@@ -783,13 +807,8 @@ Can_Speculate_BB(BB *bb)
         TN *base   = OP_opnd(op, OP_find_opnd_use(op, OU_base));
         bool can_speculate=true;
 
-        if (TN_is_register (base)) {
-          OP *op_def = TN_ssa_def(base);
-          if (op_def && Need_Predicate_Op(op_def))
-            can_speculate=false;
-        }
-
-        if (OP_volatile(op))
+        if (!Always_Localy_Defined (base, OP_bb (op)) ||
+            OP_volatile (op))
           can_speculate=false;
 
         if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn) &&
