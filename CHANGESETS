@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jan 25 16:26:34 CET 2008
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lv21/dev-switch-option-2
+
+Description:
+------------
+	* [/trunk] Added new option -VHO:switch_old_control_space to go back to former expansion of switches in Os. Delivered lv21/dev-switch-option-2 at rev #15372 with authorization art #35991
+
+
+Modified Files:
+---------------
+	M      osprey/be/vho/vho_lower.cxx
+	M      osprey/common/com/config_vho.cxx
+	M      osprey/common/com/config_vho.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jan 25 12:39:04 CET 2008
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

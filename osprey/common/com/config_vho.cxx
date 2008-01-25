@@ -71,6 +71,7 @@ BOOL    VHO_Switch_Opt                  = FALSE;
 #ifdef TARG_ST
 INT32   VHO_Switch_If_Else_Limit_Space  = 7;
 INT32   VHO_Switch_Density_Limit_Space  = 98; 
+INT32   VHO_Switch_Old_Control_Space    = FALSE;
 #endif
 BOOL    VHO_Cselect_Opt                 = FALSE;
 BOOL    VHO_Iload_Opt                   = FALSE;
@@ -123,6 +124,8 @@ static OPTION_DESC Options_VHO[] = {
     7, 1,  INT32_MAX,   &VHO_Switch_If_Else_Limit_Space,   NULL },
   { OVK_INT32,  OV_INTERNAL,    FALSE, "switch_density_space", "switch_density_space",
     98, 1, INT32_MAX,   &VHO_Switch_Density_Limit_Space,   NULL },
+  { OVK_BOOL,   OV_INTERNAL,    FALSE, "switch_old_control_space", "switch_old_control_space",
+    FALSE, 0, 0,  &VHO_Switch_Old_Control_Space, NULL },
 #endif
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "switch_opt",         "switch",
     TRUE, 0, 0,  &VHO_Switch_Opt,      NULL },

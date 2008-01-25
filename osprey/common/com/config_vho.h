@@ -65,6 +65,7 @@ extern BOOL  VHO_Switch_Opt;
 #ifdef TARG_ST
 extern INT32 VHO_Switch_If_Else_Limit_Space;
 extern INT32 VHO_Switch_Density_Limit_Space;
+extern BOOL  VHO_Switch_Old_Control_Space;
 #endif
 extern BOOL  VHO_Cselect_Opt;
 extern BOOL  VHO_Iload_Opt;
