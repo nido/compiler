@@ -1,6 +1,52 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jan 25 12:39:04 CET 2008
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/clarkes/dev-pqs
+
+Description:
+------------
+	*  Development of Predicate Query System.
+	Delivered clarkes/dev-pqs rev #15365 with authorization art #37612.
+
+
+Modified Files:
+---------------
+	D      osprey/lai/pqs_cg_stubs.h
+	M      osprey/lai/variants.cxx
+	A  +   osprey/lai/pqs_target.h
+	M      osprey/lai/ebo_util.h
+	M      osprey/lai/ebo_info.h
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/pqs_cg.cxx
+	M      osprey/lai/gra_live.cxx
+	M      osprey/lai/pqs_defs.h
+	M      osprey/lai/tnutil.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/pqs.h
+	M      osprey/lai/pqs_cg.h
+	M      osprey/lai/cg_dep_graph.cxx
+	M      osprey/lai/op.h
+	M      osprey/lai/variants.h
+	M      osprey/lai/cgtarget.h
+	M      osprey/lai/Makefile.gbase
+	M      osprey/lai/pqs.cxx
+	M      osprey/targinfo/stxp70/cg/targ_pqs.cxx
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	D      osprey/targinfo/stxp70/cg/targ_pqs.h
+	M      osprey/targinfo/st200/cg/targ_pqs.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+	M      osprey/targinfo/st200/cg/targ_cg_private.h
+	M      osprey/targinfo/st200/cg/targ_op.cxx
+	D      osprey/targinfo/st200/cg/targ_pqs.h
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jan 24 15:49:30 CET 2008
 	Author:    bruel
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

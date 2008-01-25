@@ -50,85 +50,15 @@
 #include <vector.h>
 #endif //  __GNUC__ >= 3
 
+
+// Trace flags:
+// -Wb,-ttpqs:flags
+#define PQS_ENTRY     1
+#define PQS_HASH      2
+
 // Forward references
-class PQS_MANAGER;
-struct op;
-struct tn;
-typedef struct tn TN;
-typedef struct op OP;
 
 // Aliases
-typedef OP * PQS_OP;
-typedef TN * PQS_TN;
-
-// Instruction classes. All predicate result generating things fit into one of these
-// classes.
-enum PQS_ITYPE {
-   PQS_ITYPE_INVALID,
-   PQS_ITYPE_NOPREDICATES,
-   PQS_ITYPE_NORM,
-   PQS_ITYPE_UNC,
-   PQS_ITYPE_OR,
-   PQS_ITYPE_AND,
-   PQS_ITYPE_ORANDCM,
-   PQS_ITYPE_ORCM,
-   PQS_ITYPE_ANDCM,
-   PQS_ITYPE_ANDORCM,
-   PQS_ITYPE_DIVSQRT,
-   PQS_ITYPE_LAST
-};
-
-
-// Relational operators on the compares
-enum PQS_RELOPTYPE {
-   PQS_RELOPTYPE_OTHER,
-   PQS_RELOPTYPE_EQ,
-   PQS_RELOPTYPE_NE
-};
-
-
-typedef INT32 PQS_NODE_FLAGS;
-
-#define PQS_FLAG_CONDITION_TRUE  1       // The compare condition is always TRUE
-#define PQS_FLAG_CONDITION_FALSE 2       // The compare condition is always FALSE
-
-// Should be large enough to never be reused during a compilation
-typedef INT32 PQS_MARKER_TYPE;
-
-// Indices into PQS information arrays
-typedef INT32 PQS_NODE_IDX;
-
-#define PQS_IDX_NONE 0
-#define PQS_IDX_TRUE -1
-#define PQS_IDX_FALSE -2
-#define PQS_IDX_INVALID -3
-#define PQS_Is_Real_Idx(x) ((x)>0)
-
-// enum for possible compare types
-enum PQS_TRUTH {
-   PQS_TRUTH_NEVER,
-   PQS_TRUTH_ALWAYS,
-   PQS_TRUTH_POSSIBLE,
-   PQS_TRUTH_UNKNOWN
-};
-
-
-// The TN map. 
-// The BOOLS are two bits to shut the compiler up.
-struct PQS_TN_MAP_TYPE {
-  PQS_TN        tn_to_use;            // The TN used in the PQS data structures. Allows copies to be used. 
-                                      // If NULL, use the TN this map is attached to. 
-  PQS_NODE_IDX  last_def;           // PQS_NODE_IDX of the last definition of the TN
-  BOOL          used_as_qual_pred;  // has this been seen as a qualifying predicate?
-  BOOL          no_query;           // Does this pass the rules required for sucessful use in the PQS?
-  
-  inline PQS_TN_MAP_TYPE() {
-    last_def = PQS_IDX_INVALID;
-    used_as_qual_pred = FALSE;
-    no_query = FALSE;
-    tn_to_use = NULL;
-  }
-};
 
 //
 // Set class template. Based on the STL set with some additional syntactic to make it 
@@ -219,7 +149,6 @@ public:
 
    void Print(FILE *f=stdout,BOOL newline=TRUE);
 };
-
 
 #endif
 

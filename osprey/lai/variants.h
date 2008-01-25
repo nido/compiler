@@ -438,6 +438,21 @@ inline UINT Compute_alignment_exponent(INT align) {
 #define V_CMP_ORL	       13	/* (opnd1 != 0) || (opnd2 != 0) */
 #define V_CMP_NORL	       14	/* !((opnd1 != 0) || (opnd2 != 0)) */
 
+/*
+ * Negate a compare variant (also see Invert_CMP_Variant)
+ */
+extern VARIANT Negate_CMP_Variant(VARIANT variant);
+
+/*
+ * Invert a compare variant (also see Negate_CMP_Variant)
+ */
+extern VARIANT Invert_CMP_Variant(VARIANT variant);
+
+/*
+ * Return the name of a compare variant
+ */
+extern const char *CMP_Variant_Name(VARIANT variant);
+
 #endif /*TARG_ST*/
 
 #endif /* variants_INCLUDED */

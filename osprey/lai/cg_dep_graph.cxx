@@ -2693,6 +2693,19 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega)
     { return_value =  FALSE; goto return_point; }
       
 
+#ifdef TARG_ST
+  if (cyclic) {
+    if (OP_has_disjoint_predicate_cyclic(pred_op, succ_op)) {
+      { return_value = FALSE; goto return_point; }
+    }
+  } else {
+    if (OP_has_disjoint_predicate(pred_op, succ_op)) {
+      { return_value = FALSE; goto return_point; }
+    }
+  }
+#endif
+
+
 #ifndef TARG_ST
   // [CG]: Don't ignore spills even in cyclic world
   // We may be called for cyclic dependence out of SWP.

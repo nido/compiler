@@ -704,7 +704,7 @@ CG_Generate_Code(
       // Initialize the predicate query system in the hyperblock 
       // formation phase
       HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
-#ifdef TARG_IA64
+#if defined TARG_IA64 || (defined TARG_ST && defined SUPPORTS_PREDICATION)
       if (!PQSCG_pqs_valid()) {
 	PQSCG_reinit(REGION_First_BB);
       }
@@ -724,6 +724,9 @@ CG_Generate_Code(
       GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid(rwn) : NULL);
       Check_for_Dump(TP_SSA, NULL);
       // Postcondition: live-analysis ok, dominator freed.
+#ifdef SUPPORTS_PREDICATION
+      PQSCG_reinit(REGION_First_BB);
+#endif
     }
 #endif
 
@@ -793,7 +796,7 @@ CG_Generate_Code(
 	GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
       }
 #endif
-#ifdef TARG_IA64
+#if defined TARG_IA64 || (defined TARG_ST && defined SUPPORTS_PREDICATION)
       PQSCG_reinit(REGION_First_BB);
 #endif
       Stop_Timer ( T_EBO_CU );
@@ -869,8 +872,7 @@ CG_Generate_Code(
 
 #ifdef TARG_ST
   extern void Schedule_Prefetch_Prepass(void);
-  if (CG_opt_level >= 3)
-    Schedule_Prefetch_Prepass();
+  Schedule_Prefetch_Prepass();
 #endif
 
   // Register Allocation Phase

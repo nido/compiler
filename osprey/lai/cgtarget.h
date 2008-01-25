@@ -301,6 +301,9 @@
  *	void CGTARG_Predicate_OP(BB* bb, OP* op, TN* pred_tn)
  *	    Replace <op> with its predicated form, inserting new ops as needed.
  *
+ *      OP *CGTARG_Dup_OP_Predicate (OP* op, TN *new_pred)
+ *          Duplicate <op> and predicate the copy with <new_pred>.
+ *
  *	BOOL CGTARG_Branches_On_True(OP* br_op, OP* cmp_op)
  *	    Returns TRUE if branch executed on TRUE test of cmp_op.  Note
  *	    that it doesn't really verify that br_op is conditional, so it
@@ -678,6 +681,8 @@ extern void CGTARG_Store_To_Memory(TN *tn, ST *mem_loc, OPS *ops);
 extern TOP CGTARG_Speculative_Load (OP *op);
 extern TOP CGTARG_Predicated_Store (OP *op);
 extern TOP CGTARG_Predicated_Load (OP *op);
+
+extern OP *CGTARG_Dup_OP_Predicate (OP* op, TN *new_pred);
 
 /* ====================================================================
  *    PROC:

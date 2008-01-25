@@ -406,8 +406,17 @@ typedef struct op {
 #define OP_results(o)	((o)->results+0)
 #define OP_opnds(o)	((o)->opnds+0)
 #define OP_code(o)	((TOP)(o)->opr)
+#ifdef TARG_ST
+#define OP_result(o,n) \
+        (Is_True((n)>=0,("invalid result number")), \
+         (struct tn *)(o)->res_opnd[(n)+OP_result_offset(o)])
+#define OP_opnd(o,n) \
+  (Is_True((n)>=0,("invalid operand number (%d(%s),%d)", OP_code(o), TOP_Name (OP_code(o)),n)), \
+   (struct tn *)(o)->res_opnd[(n)+OP_opnd_offset(o)])
+#else
 #define OP_result(o,n)	((struct tn *)(o)->res_opnd[(n)+OP_result_offset(o)])
 #define OP_opnd(o,n)	((struct tn *)(o)->res_opnd[(n)+OP_opnd_offset(o)])
+#endif
 
 /* Mutators: */
 #define Set_OP_orig_idx(op,idx) ((op)->orig_idx = (idx))
@@ -633,6 +642,7 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_Storeval(op)   OP_findopnd(op,OU_storeval)
 #define OP_Base(op)       OP_findopnd(op,OU_base)
 #define OP_Offset(op)     OP_findopnd(op,OU_offset)
+#define OP_Predicate(op)  OP_findopnd(op,OU_predicate)
 #endif
 
 /*

@@ -1275,13 +1275,12 @@ CGTARG_Speculative_Load (OP *op)
 }
 
 /* ====================================================================
- *   CGTARG_Predicated_Store
+ *   CGTARG_Predicated_Store_Op
  * ====================================================================
  */
 TOP
-CGTARG_Predicated_Store (OP *op)
+st200_Predicated_Store_Op (TOP opcode)
 {
-  TOP opcode = OP_code(op);
   TOP stw = TOP_UNDEFINED;
 
   switch (opcode) {
@@ -1315,13 +1314,22 @@ CGTARG_Predicated_Store (OP *op)
 }
 
 /* ====================================================================
- *   CGTARG_Predicated_Load
+ *   CGTARG_Predicated_Store
  * ====================================================================
  */
 TOP
-CGTARG_Predicated_Load (OP *op)
+CGTARG_Predicated_Store (OP *op)
 {
-  TOP opcode = OP_code(op);
+  return st200_Predicated_Store_Op (OP_code(op));
+}
+
+/* ====================================================================
+ *   CGTARG_Predicated_Load_Op
+ * ====================================================================
+ */
+TOP
+st200_Predicated_Load_Op (TOP opcode)
+{
   TOP ld = TOP_UNDEFINED;
 
   switch (opcode) {
@@ -1370,6 +1378,16 @@ CGTARG_Predicated_Load (OP *op)
   }
 
   return ld;
+}
+
+/* ====================================================================
+ *   CGTARG_Predicated_Load
+ * ====================================================================
+ */
+TOP
+CGTARG_Predicated_Load (OP *op)
+{
+  return st200_Predicated_Load_Op (OP_code (op));
 }
 
 /* ====================================================================

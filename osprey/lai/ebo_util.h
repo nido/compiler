@@ -103,7 +103,27 @@ EBO_tn_available(BB *bb,
  /* Constants are always available. */
   if (TN_Is_Constant(tn)) return TRUE;
  /* Does a TN look-up get us back to where we start? */
+#ifdef TARG_ST
+  // [SC] We can ignore dummy entries on the tninfo same list,
+  // when trying to find a match.
+  {
+    EBO_TN_INFO *avail_tninfo;
+    for (avail_tninfo = get_tn_info (tn);
+	 avail_tninfo != NULL;
+	 avail_tninfo = avail_tninfo->same) {
+      if (avail_tninfo == tninfo) {
+	break; // found a match.
+      }
+      if (avail_tninfo->in_op != NULL) {
+	break; // found a real definition, cannot ignore
+      }
+      // Must be a dummy tninfo, so keep looking.
+    }
+    if (avail_tninfo != tninfo) return FALSE;
+  }
+#else
   if (get_tn_info(tn) != tninfo) return FALSE;
+#endif
  /* Global TN's aren't supported at low levels of optimization. */
   if ((Opt_Level < 2) && (bb != tn_bb)) return FALSE;
  /* Some forms of data movement aren't supported.
@@ -335,8 +355,22 @@ EBO_Exp_COPY(TN *predicate_tn, TN *tgt_tn, TN *src_tn, OPS *ops)
   }
 }
 
+#ifdef TARG_ST
+inline
+void
+EBO_Exp_SELECT(TN *tgt_tn, TN *predicate_tn, TN *true_tn, TN *false_tn, OPS *ops)
+{
+  TYPE_ID mtype;
+  if (TN_is_float (true_tn)) {
+    mtype = (TN_size (true_tn) == 8) ? MTYPE_F8 : MTYPE_F4;
+  } else {
+    mtype = (TN_size (true_tn) == 8) ? MTYPE_I8 : MTYPE_I4;
+  }
 
-
+  Expand_Select (tgt_tn, predicate_tn, true_tn, false_tn, mtype,
+		 TN_is_float (predicate_tn), ops);
+}
+#endif
 
 inline
 void

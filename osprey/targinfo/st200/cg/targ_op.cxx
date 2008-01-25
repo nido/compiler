@@ -51,6 +51,7 @@
 #include "whirl2ops.h"
 
 #include "cg.h"
+#include "cgtarget.h"
 #include "opt_alias_mgr.h"
 #include "targ_cg_private.h"
 #include "targ_isa_variants.h"
@@ -349,6 +350,119 @@ CGTARG_Predicate_OP (
 )
 {
   FmtAssert(FALSE,("CGTARG_Predicate_OP: target does not support predication"));
+}
+
+/* ====================================================================
+ *   Unpredicated_Op
+ * ====================================================================
+ */
+static TOP
+Unpredicated_Op (TOP opcode) {
+  static TOP *unpredicated_optable = NULL;
+  if (! unpredicated_optable) {
+    unpredicated_optable = TYPE_MEM_POOL_ALLOC_N(TOP, Malloc_Mem_Pool,
+						 (TOP_count + 1));
+    TOP i;
+    for (i = 0; i <= TOP_count; i++) {
+      unpredicated_optable[i] = TOP_UNDEFINED;
+    }
+    for (i = 0; i <= TOP_count; i++) {
+      TOP predicated_op = st200_Predicated_Load_Op (i);
+      if (predicated_op == TOP_UNDEFINED) {
+	predicated_op = st200_Predicated_Store_Op (i);
+      }
+      if (predicated_op != TOP_UNDEFINED) {
+	unpredicated_optable[predicated_op] = i;
+      }
+    }
+  }
+  return unpredicated_optable[opcode];
+}
+	 
+/* ====================================================================
+ *   Predicated_Op
+ * ====================================================================
+ */
+static TOP
+Predicated_Op (TOP opcode) {
+  static TOP *predicated_optable = NULL;
+  if (! predicated_optable) {
+    predicated_optable = TYPE_MEM_POOL_ALLOC_N(TOP, Malloc_Mem_Pool,
+					       (TOP_count + 1));
+    for (TOP i = 0; i <= TOP_count; i++) {
+      TOP predicated_op = st200_Predicated_Load_Op (i);
+      if (predicated_op == TOP_UNDEFINED) {
+	predicated_op = st200_Predicated_Store_Op (i);
+      }
+      predicated_optable[i] = predicated_op;
+    }
+  }
+  return predicated_optable[opcode];
+}
+	 
+/* ====================================================================
+ *   CGTARG_Dup_OP_Predicate
+ *
+ *     Duplicate OP and give the copy the predicate NEW_PRED.
+ *     Note that OP may be unpredicated, in which case we need to
+ *     change it to the predicated form.
+ *     Note that NEW_PRED may be True_TN, in which case we should
+ *     change OP to the unpredicated form.
+ * ====================================================================
+ */
+OP *
+CGTARG_Dup_OP_Predicate (OP *op, TN *new_pred)
+{
+  OP *new_op;
+
+  if ((OP_has_predicate (op) && new_pred != True_TN)
+      || (! OP_has_predicate (op) && new_pred == True_TN)) {
+    // No need to change between unpredicated/predicated form.
+    new_op = Dup_OP (op);
+    if (OP_has_predicate (new_op)) {
+      Set_OP_opnd (new_op, OP_find_opnd_use(new_op, OU_predicate), new_pred);
+    }
+  } else if (OP_has_predicate (op)) {
+    // new_pred == True_TN, so remove the predicate from op.
+    INT pred_opnd_idx = OP_find_opnd_use(op,OU_predicate);
+    TOP topcode = Unpredicated_Op (OP_code (op));
+    TN *new_opnds[ISA_OPERAND_max_operands];
+    TN *new_results[ISA_OPERAND_max_results];
+    INT opndnum, resnum;
+    INT new_opndnum = 0;
+
+    for (opndnum = 0; opndnum < OP_opnds (op); opndnum++) {
+      if (opndnum != pred_opnd_idx) {
+	new_opnds[new_opndnum++] = OP_opnd (op, opndnum);
+      }
+    }
+    for (resnum = 0; resnum < OP_results (op); resnum++) {
+      new_results[resnum] = OP_result (op, resnum);
+    }
+    new_op = Mk_VarOP (topcode, resnum, new_opndnum, new_results, new_opnds);
+    OP_Copy_Properties (new_op, op);
+    Set_OP_cond_def_kind (new_op, OP_UNKNOWN_DEF);
+  } else {
+    // op is not predicated, but new_pred != True_TN,
+    // so we need to create the predicated form.
+    TOP topcode = Predicated_Op (OP_code (op));
+    INT pred_opnd_idx = TOP_Find_Operand_Use (topcode, OU_predicate);
+    TN *new_opnds[ISA_OPERAND_max_operands];
+    TN *new_results[ISA_OPERAND_max_results];
+    INT opndnum = 0, resnum;
+    INT new_opndnum;
+    for (new_opndnum = 0; new_opndnum < (OP_opnds (op) + 1); new_opndnum++) {
+      TN *tn = (new_opndnum == pred_opnd_idx) ? new_pred : OP_opnd (op, opndnum++);
+      new_opnds[new_opndnum] = tn;
+    }
+    for (resnum = 0; resnum < OP_results (op); resnum++) {
+      new_results[resnum] = OP_result (op, resnum);
+    }
+    new_op = Mk_VarOP (topcode, resnum, new_opndnum, new_results, new_opnds);
+    OP_Copy_Properties (new_op, op);
+    Set_OP_cond_def_kind (new_op, OP_PREDICATED_DEF);
+  }
+  return new_op;
 }
 
 /* ====================================================================

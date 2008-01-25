@@ -940,8 +940,6 @@ EBO_select_value (
     Build_OP (TOP_cmpeq_r_r_b, predicate, pred_base, intervening_base, &ops);
     OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
 
-    OPS ops1 = OPS_EMPTY;
-
     if (result_predicate != NULL) {
       /* If predicated, we must generate a predicated select. On
 	 ST200 family this means a select followed by a conditional
@@ -964,7 +962,6 @@ EBO_select_value (
       OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
     }
   }
-
   if (!EBO_Verify_Ops(&ops)) return FALSE;
   BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
 
@@ -5375,10 +5372,13 @@ select_move_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   if (!TOP_is_select(opcode)) return FALSE;
 
   variant = TOP_cond_variant(opcode);
-  
-  if (TN_Has_Value(opnd_tn[0])) {
+  TN *selector = (opnd_tninfo[0]->replacement_tn
+		  ? opnd_tninfo[0]->replacement_tn
+		  : opnd_tn[0]);
+
+  if (TN_Has_Value(selector)) {
     INT idx;
-    if (TN_Value(opnd_tn[0]) == 0) idx = variant == V_COND_FALSE ? 1 : 2;
+    if (TN_Value(selector) == 0) idx = variant == V_COND_FALSE ? 1 : 2;
     else idx = variant == V_COND_FALSE ? 2 : 1;
     new_opcode = TOP_mov_r_r;
     if (TN_is_symbol(opnd_tn[idx])) return FALSE;
@@ -6457,6 +6457,66 @@ andl_orl_sequence_2(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
 }
 
 /*
+ * reduce_predicate_logical_sequence
+ *
+ * Convert:
+ *   x ANDL y  => y      iff x DOM y (i.e. x is true whenever y is true)
+ *   x ANDL y  => FALSE  iff x, y disjoint
+ *   x ORL  y  => x      iff x DOM y
+ *   x ORL  y  => TRUE   iff x compl y
+ *   x NANDL y => !y     iff x DOM y
+ *   x NANDL y => TRUE   iff x, y disjoint
+ *   x NORL  y => !x     iff x DOM y
+ *   x NORL  y => FALSE  iff x, compl y
+ */
+static BOOL
+reduce_predicate_logical_sequence (OP *op, TN **opnd_tn,
+				   EBO_TN_INFO **opnd_tninfo)
+{
+  VARIANT v = TOP_cmp_variant(OP_code(op));
+  BOOL negate_value = FALSE;
+  TN *result = OP_result(op, 0);
+  TN *value = NULL;
+
+  if (v == V_CMP_NANDL) {
+    negate_value = TRUE; v = V_CMP_ANDL;
+  } else if (v == V_CMP_NORL) {
+    negate_value = TRUE; v = V_CMP_ORL;
+  }
+  TN *tn1 = opnd_tn[0];
+  TN *tn2 = opnd_tn[1];
+  EBO_TN_INFO *tn1_info = opnd_tninfo[0];
+  EBO_TN_INFO *tn2_info = opnd_tninfo[1];
+  if (v == V_CMP_ANDL
+      && EBO_predicate_disjoint (tn1, tn1_info, tn2, tn2_info)) {
+    value = Gen_Literal_TN (0, 4);
+  } else if (v == V_CMP_ORL
+	     && EBO_predicate_complements (tn1, tn1_info, tn2, tn2_info)) {
+    value = Gen_Literal_TN (1, 4);
+  } else if (EBO_predicate_dominates (tn1, tn1_info, tn2, tn2_info)) {
+    value = (v == V_CMP_ANDL) ? tn2 : tn1;
+  } else if (EBO_predicate_dominates (tn2, tn2_info, tn1, tn1_info)) {
+    value = (v == V_CMP_ANDL) ? tn1 : tn2;
+  }
+  if (value) {
+    OPS ops = OPS_EMPTY;
+    if (negate_value) {
+      Expand_Logical_Not (result, value, V_NONE, &ops);
+    } else {
+      Expand_Logical_Or(OP_result(op,0), value, Zero_TN, 0, &ops);
+    }
+    OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
+    if (!EBO_Verify_Ops(&ops)) return FALSE;
+    BB_Insert_Ops_After(OP_bb(op), op, &ops);
+    if (EBO_Trace_Optimization) 
+      fprintf(TFile,"Reduce predicate logical operation\n");
+    return TRUE;
+  } else {
+    return FALSE;
+  }
+}
+
+/*
  * logical_move_sequence
  *
  * - Convert a logical operation to a logical move
@@ -6660,6 +6720,7 @@ base_offset_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   
   return TRUE;
 }
+
 
 /* ============================================================
  * EBO_literal_replacement_tn
@@ -6955,6 +7016,11 @@ EBO_Special_Sequence (
     if (andl_orl_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
     if (andl_orl_sequence_2(op, opnd_tn, opnd_tninfo)) return TRUE;
     if (cmp_subsat_to_zero(op, opnd_tn, opnd_tninfo)) return TRUE;
+    if ((TOP_cmp_variant (opcode) == V_CMP_ANDL
+	|| TOP_cmp_variant (opcode) == V_CMP_NANDL
+	|| TOP_cmp_variant (opcode) == V_CMP_ORL
+	|| TOP_cmp_variant (opcode) == V_CMP_NORL)
+	&& reduce_predicate_logical_sequence (op, opnd_tn, opnd_tninfo)) return TRUE;
   }
 
   if (opcode == TOP_convib_r_b && convib_op_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;

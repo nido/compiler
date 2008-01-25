@@ -103,4 +103,7 @@ extern UINT st200_encode_extract_mask (UINT bit_size, UINT bit_offset,
 
 extern void st200_decode_extract_mask (TOP extract_op, UINT extract_mask,
 				       UINT *bit_size, UINT *bit_offset);
+extern TOP st200_Predicated_Store_Op (TOP opcode);
+extern TOP st200_Predicated_Load_Op (TOP opcode);
+
 #endif // TARG_CG_PRIVATE_H_INCLUDED

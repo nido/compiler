@@ -2148,7 +2148,20 @@ GRA_LIVE_Compute_Local_Info(
 	  // set if the qualifying predicate is TRUE.
 	  //
 	  if (PQSCG_sets_results_if_qual_true(op)) {
+#ifdef TARG_ST
+	    if (! OP_cond_def (op) || (SSA_Active () && TN_ssa_def(result_tn) == op)) {
+	      // [SC] OP_cond_def may be false for a predicated op when the TN is
+	      // known uninitialized above the op.
+	      // Similarly, under SSA, the TN is defined only once, so we know it
+	      // is uninitialized above the op.
+	      // In these cases, we can treat the definition as a kill.
+	      def_set->Insert(True_TN);
+	    } else {
+	      def_set->Insert(pred_tn);
+	    }
+#else
 	    def_set->Insert(pred_tn);
+#endif
 	  } else {
 	    // Treat this as both a use and an unconditional def
 	    // clear both predicate sets
@@ -2181,7 +2194,12 @@ GRA_LIVE_Compute_Local_Info(
 	}
       }
 	  
-      
+#ifdef TARG_ST
+      // [SC] As for non-predicate-aware form, ignore operands of PHI-nodes
+      // because they are not considered live-in.
+      if (OP_code(op) == TOP_phi) continue;
+#endif
+
       for ( i = OP_opnds(op) - 1; i >= 0; --i ) {
 	TN *opnd_tn = OP_opnd(op, i);
 	if (TN_is_register(opnd_tn) && !TN_is_const_reg(opnd_tn)) {
