@@ -732,7 +732,12 @@ Can_Be_Tail_Call (
   INT i;
   FOREACH_SYMBOL (CURRENT_SYMTAB, st, i) {     /* all local symbols in Current_Symtab */
     if (ST_class(st) != CLASS_VAR) continue;
-    if (BE_ST_addr_used_locally(st) || BE_ST_addr_passed(st)) return NULL;
+
+    // [VL] We limit the constraint on usage of local variable address to
+    // the case where it is not declared static (defined or not). This over-
+    // comes one of the restrictions raised in art #35008
+    if ((ST_sclass(st)!=SCLASS_DGLOBAL && ST_sclass(st)!=SCLASS_PSTATIC) &&
+        (BE_ST_addr_used_locally(st) || BE_ST_addr_passed(st))) return NULL;
   }
 
   /* Make sure we don't use the stack to pass arguments to the called PU.
