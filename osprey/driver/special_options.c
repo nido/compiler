@@ -6,6 +6,7 @@
   under the terms of version 2 of the GNU General Public License as
   published by the Free Software Foundation.
 
+
   This program is distributed in the hope that it would be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
@@ -601,14 +602,15 @@ add_special_options (void)
 	  deadcode = FALSE;
 	}
 
+#ifdef TARG_STxP70 /* [HC] Old ST linker does not support binopt */
+        if (Useoldlinker == TRUE) {
+          deadcode=FALSE;
+        }
+#endif
 	if (deadcode == UNDEFINED) {
 	  maybe_dynamic();
 	  // [TB]: Activate deadcode even in dynamic mode
 	  deadcode = (olevel >= 2) ? TRUE : FALSE;
-#ifdef TARG_STxP70
-	  //[TB] For the moment deadcode is desactivated for stxp70 by default.
-	  deadcode = FALSE;
-#endif
 	  if (deadcode == TRUE) {
             prepend_option_seen (O__deadcode);
 	  }

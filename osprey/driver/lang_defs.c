@@ -579,6 +579,12 @@ get_phase_ld_library_path (phases_t index)
 extern string
 get_phase_name (phases_t index)
 {
+#ifdef TARG_STxP70
+   extern int Useoldlinker;
+   extern int deadcode;
+   if ( (!strcmp(phase_info[index].name,"stxp70-ld")) && (Useoldlinker==TRUE) && (deadcode==FALSE))
+      return "stxp70-ld-old";
+#endif
 	return phase_info[index].name;
 }
 

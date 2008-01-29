@@ -822,6 +822,17 @@ Check_Target ( void )
     }
   }
 
+  /*
+   * [VB] Force no tail recursion when -pg or -finstrument-functions
+   */
+  if (option_was_seen(O_pg) || option_was_seen(O_finstrument_functions)) {
+    flag = add_new_option("-WOPT:tail_recursion=false");
+    add_phase_for_option(flag, P_be);
+    if (!already_provided(flag)) {
+      add_option_seen (flag);
+    }
+  }
+
   switch (proc) {
   case UNDEFINED:
     toggle(&proc, PROC_stxp70);

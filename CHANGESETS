@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jan 29 15:45:37 CET 2008
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-new-ld
+
+Description:
+------------
+	* [trunk] Deliver janiny/dev-new-ld rev #15410 with authorization branch #36930
+
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/phases.c
+	M      osprey/driver/special_options.c
+	M      osprey/driver/lang_defs.c
+	M      osprey/driver/stxp70_options.i
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jan 28 15:06:16 CET 2008
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

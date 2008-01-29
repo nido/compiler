@@ -1749,28 +1749,29 @@ add_script_files_args (string_list_t *args)
 	!option_was_seen (O_T) &&
 	!option_was_seen (O_nostdlib)) {
       extern string stxp70_targetdir ;
+      extern int Useoldlinker;
+      extern int deadcode;
       string spath;
       string ofile;
       
-#if 1 /* fix #14883: stxp70-ld (not the GNU one) searchs link script  
-       * locally and if it does not exist then continues searchins 
-       * in -L library path list
-       */
-      add_string(args, "-T");
-      add_string(args, "sx_valid.ld");
-#else
-      spath = get_phase_dir(P_library);
-      spath = concat_path (spath, "ldscript");
-      ofile = concat_path (spath, "sx_valid.ld");	      
-      if (!file_exists (ofile)) {
-	spath = get_phase_dir(P_library);
-	ofile = concat_path (spath, "sx_valid.ld");   
+      if (((Useoldlinker==TRUE) && (deadcode==FALSE))) {
+         add_string(args, "-T");
+         add_string(args, "sx_valid.ld");
+      } else {
+         if (!at_least_one_icache_optim || next_ld_for_icache_is_simple != FALSE) {
+            spath = get_phase_dir(P_library);
+            spath = concat_path (spath, "ldscript");
+            ofile = concat_path (spath, "sx_valid.ld");	      
+            if (!file_exists (ofile)) {
+               spath = get_phase_dir(P_library);
+               ofile = concat_path (spath, "sx_valid.ld");   
+            }
+            if (file_exists (ofile)) {
+               add_string(args, "-T");
+               add_string(args, ofile);
+            }
+         }
       }
-      if (file_exists (ofile)) {
-	add_string(args, "-T");
-	add_string(args, ofile);
-      }
-#endif
     }
 #endif
 #endif /* TARG_STxP70 */

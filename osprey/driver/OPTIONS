@@ -3039,6 +3039,8 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
    "set stxp70extrc file directory"
 -Mfarcall   farcall=TRUE;			ALL	CMP	"-TARG:farcall=on"
 	"generates all call/jmp as absolute ones"
+-Moldlinker toggle(&Useoldlinker,TRUE);   ALL   ""
+   ""
 -Mhwloop* 	;		ALL	CMP	""
 	"-Mhwloop[=none|jrgtudeconly|hwlooponly|all]\n                    select hardware loop code generation; default is all\n    none            disable hardware loops code generation\n    jrgtudeconly    hardware loop code generation with JRGTUDEC instruction\n                    only\n    hwlooponly      hardware loop code generation with HWLOOP instructions only\n    all             enable all kinds of hardware loop code generation"
 -Mkeepasm	keep_flag=TRUE;		ALL	ipap	self
