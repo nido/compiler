@@ -2314,7 +2314,11 @@ delete_memory_op (
     * Remove the first OP for:
     *     Store - Store
     */
+#ifdef TARG_ST
+    if (size_pred > size_succ) return FALSE;
+#else
     if (size_pred != size_succ) return FALSE;
+#endif
     if (opinfo->op_must_not_be_removed) return FALSE;
     if (TOP_Find_Operand_Use(OP_code(opinfo->in_op), OU_postincr) >= 0) {
       /* The increment must be preserved. */

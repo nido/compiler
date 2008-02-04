@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Feb  4 16:29:46 CET 2008
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-38552
+
+Description:
+------------
+	*  Fix [ bug #38552 ] EBO Store merging improvements (st240)
+        Delivered fixes/codex-38552 rev #15497 with authorization art #38876.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Feb  4 10:44:29 CET 2008
 	Author:    knochelh
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
