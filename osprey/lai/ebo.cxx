@@ -2716,6 +2716,10 @@ EBO_Address_Sequence (
   if (TN_size(tn_base) != TN_size(tn_offset)) { return FALSE; }
 
   if (TN_Has_Value(tn_offset) || TN_is_symbol(tn_offset)) {
+    // [HK] TOP_fetch_opnd treats both TN_Has_Value and TN_is_symbol
+    // cases, but truncate the value according to the encoding space.
+    // Thus, it may produce an incorrect value, in the case the encoding space
+    // is too small at this time.
     offset_val = TOP_fetch_opnd(opcode, opnd_tn, l0_offset_idx);
     offset_sym = TN_is_symbol(tn_offset)? TN_var(tn_offset): NULL;
     offset_relocs = TN_is_symbol(tn_offset)? TN_relocs(tn_offset): 0;
