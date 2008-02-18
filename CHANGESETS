@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Feb 18 15:07:35 CET 2008
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-38524
+
+Description:
+------------
+	*  Deliver fix for bug #38524 (Dead function elimination removes a used function (-ipa))
+	   Deliver branch fixes/codex-38524 rev #15658 with auth #38551
+
+
+Modified Files:
+---------------
+	M      osprey/g++fe/wfe_expr.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Feb 12 13:57:47 CET 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

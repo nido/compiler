@@ -2881,7 +2881,12 @@ WFE_Expand_Expr (tree exp,
 #ifdef TARG_ST
           /* (cbr) mark symbol as addr_saved if its address is taken */
           if (TREE_CODE(t) == ADDR_EXPR &&
-              TREE_CODE (TREE_OPERAND (t, 0)) == VAR_DECL) {
+	      (
+              TREE_CODE (TREE_OPERAND (t, 0)) == VAR_DECL
+	      ||
+              TREE_CODE (TREE_OPERAND (t, 0)) == FUNCTION_DECL
+	       )
+	      ) {
             Set_ST_addr_saved(Get_ST (TREE_OPERAND (t, 0)));
           }
 #endif
