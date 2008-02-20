@@ -1625,12 +1625,14 @@ class CExtendedTailmerge : public CTailmerge<Cfg, BasicBlock, Operation>
      * @li isSimple: false
      *
      * @param  bbsSimplifyInfo [out] Will contain the added entries
+     * @param  bbs [out] Will contain the list of exit BBs
      *
      * @pre    true
      * @post   bbsSimplifyInfo contains an entry for each exit blocks of CFG()
      */
     void
-    InitSimplifyControlFlowGraph(BBsSimplifyInfo& bbsSimplifyInfo);
+    InitSimplifyControlFlowGraph(BBsSimplifyInfo& bbsSimplifyInfo,
+				 typename ExtTmNode::BasicBlocks& bbs);
 
     /**
      * Gather simplification information for all basic blocks of CFG().
@@ -1653,6 +1655,8 @@ class CExtendedTailmerge : public CTailmerge<Cfg, BasicBlock, Operation>
      *         @li out: Contains an entry for each basic blocks reached using 
      *             a recursive predecessors link from bbsSimplifyInfo@pre
      *             entries
+     * @param  bbs [in/out] Contains the list of exit BBs, and will contain
+     *             the list of all BBs of the CFG
      *
      * @pre    true
      * @post   bbsSimplifyInfo contains simplification information for all basic
@@ -1660,7 +1664,8 @@ class CExtendedTailmerge : public CTailmerge<Cfg, BasicBlock, Operation>
      *         bbsSimplifyInfo@pre entries
      */
     void
-    GatherSimplifyInfo(BBsSimplifyInfo& bbsSimplifyInfo);
+    GatherSimplifyInfo(BBsSimplifyInfo& bbsSimplifyInfo,
+		       typename ExtTmNode::BasicBlocks& bbs);
 
     /**
      * Gather simplification information for listOfPreds using succ information.
@@ -1709,13 +1714,15 @@ class CExtendedTailmerge : public CTailmerge<Cfg, BasicBlock, Operation>
      * on all basic blocks that are marked as simple
      *
      * @param  bbsSimplifyInfo Collected simplification information
+     * @param  bbs [in] contains the list of all BBS of current CFG
      *
      * @pre    bbsSimplifyInfo is compatible with CFG()
      * @post   CFG() has been simplified according to bbsSimplifyInfo
      *
      */
     void
-    DoSimplifyControlFlowGraph(const BBsSimplifyInfo& bbsSimplifyInfo);
+    DoSimplifyControlFlowGraph(const BBsSimplifyInfo& bbsSimplifyInfo,
+			       const typename ExtTmNode::BasicBlocks& bbs);
 
     /**
      * Simplify control flow paths traversing simpleBb.
@@ -2477,24 +2484,25 @@ template<typename Cfg, typename BasicBlock, typename Operation>
 void
 CExtendedTailmerge<Cfg, BasicBlock, Operation>::SimplifyControlFlowGraph()
 {
+    typename ExtTmNode::BasicBlocks bbs;
     BBsSimplifyInfo bbsSimplifyInfo;
-    InitSimplifyControlFlowGraph(bbsSimplifyInfo);
-    GatherSimplifyInfo(bbsSimplifyInfo);
-    DoSimplifyControlFlowGraph(bbsSimplifyInfo);
+    InitSimplifyControlFlowGraph(bbsSimplifyInfo, bbs);
+    GatherSimplifyInfo(bbsSimplifyInfo, bbs);
+    DoSimplifyControlFlowGraph(bbsSimplifyInfo, bbs);
 }
 
 template<typename Cfg, typename BasicBlock, typename Operation>
 void
 CExtendedTailmerge<Cfg, BasicBlock, Operation>::
- InitSimplifyControlFlowGraph(BBsSimplifyInfo& bbsSimplifyInfo)
+ InitSimplifyControlFlowGraph(BBsSimplifyInfo& bbsSimplifyInfo,
+			      typename ExtTmNode::BasicBlocks& bbs)
 {
-    typename ExtTmNode::BasicBlocks exits;
     typename ExtTmNode::CItBasicBlocks it;
     DbgPrintTailmerge((debugOutput, "*** Start %s\n", __FUNCTION__));
 
-    GetExitBasicBlocks<Cfg, BasicBlock>(exits, CFG());
+    GetExitBasicBlocks<Cfg, BasicBlock>(bbs, CFG());
 
-    for(it = exits.begin(); it != exits.end(); ++it)
+    for(it = bbs.begin(); it != bbs.end(); ++it)
         {
             bbsSimplifyInfo[*it] = SSimplifyInfo(NULL, *it, true, false);
             DbgPrintTailmerge((debugOutput, "Add exit to simplify information: "
@@ -2506,26 +2514,18 @@ CExtendedTailmerge<Cfg, BasicBlock, Operation>::
 template<typename Cfg, typename BasicBlock, typename Operation>
 void
 CExtendedTailmerge<Cfg, BasicBlock, Operation>::
- GatherSimplifyInfo(BBsSimplifyInfo& bbsSimplifyInfo)
+ GatherSimplifyInfo(BBsSimplifyInfo& bbsSimplifyInfo,
+		    typename ExtTmNode::BasicBlocks& bbs)
 {
-    typename ExtTmNode::BasicBlocks bbs;
-
-    // This piece of code can be optimized by keeping the list use in
-    // InitSimplifyControlFlowGraph. I did not do that, because I think it is
-    // less understandable
-    {
-        CItBBsSimplifyInfo itSimplifyInfo;
-        for(itSimplifyInfo = bbsSimplifyInfo.begin();
-            itSimplifyInfo != bbsSimplifyInfo.end(); ++itSimplifyInfo)
-            {
-                bbs.push_back(itSimplifyInfo->first);
-            }
-    }
-    
     // We must keep a list of basic blocks even if bbsSimplifyInfo already has
-    // this information, because using a ++it traversing method does not
-    // ensure we visit all elements of the map (elements may be inserted before
-    // current iterator position)
+    // this information, because:
+    // - using a ++it traversing method does not ensure we visit all elements
+    //   of the map (elements may be inserted before current iterator position)
+    // - it will insure that the order of the BB traversal done in
+    //   DoSimplifyControlFlowGraph() will not depends on BasicBlock addresses.
+    //   (Fix for codex bug #39102)
+    // Note: the list already contains the exit BBs, inserted in
+    //       InitSimplifyControlFlowGraph()
     typename ExtTmNode::ItBasicBlocks it;
     for(it = bbs.begin(); it != bbs.end(); ++it)
         {
@@ -2595,15 +2595,16 @@ CExtendedTailmerge<Cfg, BasicBlock, Operation>::
 template<typename Cfg, typename BasicBlock, typename Operation>
 void
 CExtendedTailmerge<Cfg, BasicBlock, Operation>::
- DoSimplifyControlFlowGraph(const BBsSimplifyInfo& bbsSimplifyInfo)
+ DoSimplifyControlFlowGraph(const BBsSimplifyInfo& bbsSimplifyInfo,
+			    const typename ExtTmNode::BasicBlocks& bbs)
 {
-    CItBBsSimplifyInfo it;
+    typename ExtTmNode::CItBasicBlocks it;
     typename ExtTmNode::BasicBlocks toBeRemoved;
-    for(it = bbsSimplifyInfo.begin(); it != bbsSimplifyInfo.end(); ++it)
+    for(it = bbs.begin(); it != bbs.end(); ++it)
         {
-            if(it->second.isSimple)
+            if((bbsSimplifyInfo.find(*it)->second).isSimple)
                 {
-                    DoSimplifyControlFlowGraphBB(*(it->first), bbsSimplifyInfo,
+                    DoSimplifyControlFlowGraphBB(**it, bbsSimplifyInfo,
                                                  toBeRemoved);
                 }
         }
