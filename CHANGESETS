@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Feb 22 15:18:30 CET 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-39679
+
+Description:
+------------
+	* [trunk] Fix for bug #39679: HwLoop_Check: No fall-thru BB for loop head BB:10 
+          Deliver fixes/codex-39679 rev #15736 with authorization branch #40083
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_loop.cxx
+	M      osprey/lai/cgtarget.h
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Feb 22 09:45:38 CET 2008
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

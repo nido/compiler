@@ -1491,8 +1491,8 @@ CGTARG_Generate_Branch_Cloop(LOOP_DESCR *loop,
                              OP *br_op,
 			     TN *trip_count_tn,
 			     TN *label_tn,
-			     OPS *prolog_ops,
-			     OPS *body_ops)
+			     BB *prolog,
+			     BB *tail)
 #else
 void
 CGTARG_Generate_Branch_Cloop(OP *br_op,

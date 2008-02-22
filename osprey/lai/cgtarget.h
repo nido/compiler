@@ -628,7 +628,7 @@ extern void CGTARG_Generate_Remainder_Branch(TN *trip_count, TN *label_tn,
 extern BOOL CGTARG_Generate_Branch_Cloop(LOOP_DESCR* cl,
                                          OP *op, TN *trip_count,
 					 TN *label_tn, 
-                                         OPS *prolog_ops, OPS *body_ops);
+                                         BB *prolog, BB *tail);
 #else
 extern void CGTARG_Generate_Branch_Cloop(OP *op, TN *unrolled_trip_count, 
                                          TN *trip_count,

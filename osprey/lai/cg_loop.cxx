@@ -7352,7 +7352,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
     }
     fprintf(stdout, "\n");
     if (has_trip_count && TN_is_constant(CG_LOOP_Trip_Count(loop)))
-      fprintf(stdout, "  <unroll> loop trip count = %d\n", TN_value(CG_LOOP_Trip_Count(loop)));
+      fprintf(stdout, "  <unroll> loop trip count = %lld\n", TN_value(CG_LOOP_Trip_Count(loop)));
   }
 #endif
 
@@ -7969,22 +7969,10 @@ void Perform_Loop_Optimizations()
 	prolog = pred;
 	tail = BB_Other_Predecessor(head, prolog);
       }
-      OPS prolog_ops = OPS_EMPTY;
-      OPS body_ops = OPS_EMPTY;
       OP *br_op = BB_branch_op(tail);
       TN *label_tn = Gen_Label_TN(Gen_Label_For_BB(head), 0);
       TN *trip_count_tn = LOOPINFO_primary_trip_count_tn(LOOP_DESCR_loopinfo(loop));
-      if (CGTARG_Generate_Branch_Cloop(loop, br_op, trip_count_tn, label_tn, &prolog_ops, &body_ops)) {
-	if (OPS_length(&body_ops) > 0) {
-	  BB_Remove_Op(tail, br_op);
-	  BB_Append_Ops(tail, &body_ops);
-	  CGPREP_Init_Op(BB_branch_op(tail));
-	}
-	if (OPS_length(&prolog_ops) > 0) {
-	  OP *point = BB_last_op(prolog);
-	  BOOL before = (point != NULL) && OP_xfer(point);
-	  BB_Insert_Ops(prolog, point, &prolog_ops, before);
-	}
+      if (CGTARG_Generate_Branch_Cloop(loop, br_op, trip_count_tn, label_tn, prolog, tail)) {
 	// FdF 20060725: Also remove the increment of the loop
 	// induction variable if no longer used.
 	Remove_IV_Cloop(loop);
@@ -8002,7 +7990,7 @@ void Perform_Loop_Optimizations()
 	    fprintf(stdout, "   <loop check> Loop head %d: ", BB_id(head));
 	    BB_SET_Print(LOOP_DESCR_bbset(loop), stdout);
 	    fprintf(stdout, "\n");
-	    fprintf(stdout, "   <loop check> BB%d: incorrect loop bb%d, (should be BB%d)\n", BB_id(bb), LOOP_DESCR_loophead(LOOP_DESCR_Find_Loop(bb)), BB_id(BB_loop_head_bb(bb)));
+	    fprintf(stdout, "   <loop check> BB%d: incorrect loop bb%d, (should be BB%d)\n", BB_id(bb), BB_id(LOOP_DESCR_loophead(LOOP_DESCR_Find_Loop(bb))), BB_id(BB_loop_head_bb(bb)));
 	  }
 	}
 	// ignore inner loops
