@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Feb 22 09:45:38 CET 2008
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-40115
+
+Description:
+------------
+	* [trunk] Fix for bug #40115: [BB] Assertion failure in EBO.
+	Deliver fixes/codex-40115 rev #15701 with authorization branch #40162
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Feb 20 13:29:01 CET 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
