@@ -5428,6 +5428,12 @@ Emit_Loop_Note (
   BOOL unroll_pragma = FALSE;
   ANNOTATION *unroll_ant = ANNOT_Get(BB_annotations(head), ANNOT_PRAGMA);
 
+#ifdef TARG_ST
+  UINT16 kunroll = info ? LOOPINFO_kunroll(info) : 0;
+  if (kunroll > 1)
+    unrollings /= kunroll;
+#endif
+
   while (unroll_ant && WN_pragma(ANNOT_pragma(unroll_ant)) != WN_PRAGMA_UNROLL)
     unroll_ant = ANNOT_Get(ANNOT_next(unroll_ant), ANNOT_PRAGMA);
   if (unroll_ant) {
@@ -5564,6 +5570,13 @@ Emit_Loop_Note (
 	      unroll_pragma ? " (pragma)" : "");
 #endif
   }
+#ifdef TARG_ST
+  if (kunroll > 1) {
+    fprintf(file, "%s<loop> kernel unrolling %d times\n",
+	    ASM_CMNT_LINE,
+	    kunroll);
+  }
+#endif
 }
 
 #ifdef BCO_ENABLED /* Thierry */

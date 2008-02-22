@@ -1123,15 +1123,19 @@ CGIR_LD_make(CGIR_LD cgir_ld, CGIR_BB head_bb, CGIR_TN trip_count_tn, int unroll
     LOOPINFO *cgir_li = LOOP_DESCR_loopinfo(cgir_ld);
     if (cgir_li != NULL) {
       LOOPINFO *new_li = TYPE_P_ALLOC(LOOPINFO);
-      LOOPINFO_wn(new_li) = LOOPINFO_wn(cgir_li);
+      *new_li = *cgir_li;
       if (LOOPINFO_wn(cgir_li) != NULL && unrolled > 1) {
 	// Code adapted from Unroll_Dowhile_Loop.
 	WN *wn = WN_COPY_Tree(LOOPINFO_wn(cgir_li));
 	WN_loop_trip_est(wn) /= unrolled;
 	WN_loop_trip_est(wn) += 1;
 	LOOPINFO_wn(new_li) = wn;
+	if (LOOPINFO_kunroll(new_li) == 0)
+	  LOOPINFO_kunroll(new_li) = unrolled;
+	else
+	  LOOPINFO_kunroll(new_li) *= unrolled;
       }
-      LOOPINFO_srcpos(new_li) = LOOPINFO_srcpos(cgir_li);
+      //      LOOPINFO_srcpos(new_li) = LOOPINFO_srcpos(cgir_li);
       BB_Add_Annotation(head_bb, ANNOT_LOOPINFO, new_li);
     }
   }

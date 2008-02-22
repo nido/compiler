@@ -5863,6 +5863,7 @@ Expand_Statement (
 #endif
 #ifdef TARG_ST
       LOOPINFO_trip_min(info) = -1;
+      LOOPINFO_kunroll(info) = 0;
 #endif
       if (!CG_PU_Has_Feedback && WN_loop_trip_est(loop_info) == 0)
 	WN_loop_trip_est(loop_info) = 100;

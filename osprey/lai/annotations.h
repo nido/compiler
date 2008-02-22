@@ -218,6 +218,7 @@ typedef struct loopinfo {
   bool is_exact_trip_count;	/* true is the tripcount is exact because the loop does not contain early exit. */
   bool is_HWLoop;		/* loop has been mapped to HW loop. */
   int trip_min;			/* estimate of min trip count or 0. */
+  int kunroll;                  /* kernel unrolling factor applied by LAO to the loop. */
 #else
   struct tn *primary_trip_count_tn;	/* TN holding trip count (if any) */
 #endif
@@ -233,6 +234,7 @@ typedef struct loopinfo {
 #define LOOPINFO_is_exact_trip_count(x)	((x)->is_exact_trip_count)
 #define LOOPINFO_is_HWLoop(x)		((x)->is_HWLoop)
 #define LOOPINFO_trip_min(x)		((x)->trip_min)
+#define LOOPINFO_kunroll(x)		((x)->kunroll)
 #else
 #define LOOPINFO_trip_count_tn(x)	((x)->trip_count_tn)
 #endif

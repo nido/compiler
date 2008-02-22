@@ -2763,6 +2763,9 @@ static BB *Unroll_Replicate_Body(LOOP_DESCR *loop, INT32 ntimes, BOOL unroll_ful
 #endif
   INT16 new_trip_count_val;
   LOOPINFO *unrolled_info = TYPE_P_ALLOC(LOOPINFO);
+#ifdef TARG_ST
+  *unrolled_info = *info;
+#endif
   WN *wn = WN_COPY_Tree(LOOPINFO_wn(info));
   TYPE_ID ttype = WN_rtype(WN_loop_trip(wn));
   OPCODE opc_intconst = OPCODE_make_op(OPR_INTCONST, ttype, MTYPE_V);
@@ -2796,10 +2799,6 @@ static BB *Unroll_Replicate_Body(LOOP_DESCR *loop, INT32 ntimes, BOOL unroll_ful
 #endif
   LOOPINFO_wn(unrolled_info) = wn;
   LOOPINFO_srcpos(unrolled_info) = LOOPINFO_srcpos(info);
-#ifdef TARG_ST
-  LOOPINFO_is_HWLoop(unrolled_info) = LOOPINFO_is_HWLoop(info);
-  LOOPINFO_is_exact_trip_count(unrolled_info) = LOOPINFO_is_exact_trip_count(info);
-#endif
   if (TN_is_constant(trip_count))
     LOOPINFO_primary_trip_count_tn(unrolled_info) =
       Gen_Literal_TN(new_trip_count_val, TN_size(trip_count));
@@ -4763,13 +4762,12 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
   if (info) {
     WN *wn = WN_COPY_Tree(LOOPINFO_wn(info));
     unrolled_info = TYPE_P_ALLOC(LOOPINFO);
+#ifdef TARG_ST
+    *unrolled_info = *info;
+#endif
     LOOPINFO_wn(unrolled_info) = wn;
     WN_loop_trip_est(wn) /= ntimes;
     LOOPINFO_srcpos(unrolled_info) = LOOPINFO_srcpos(info);
-#ifdef TARG_ST
-    LOOPINFO_is_HWLoop(unrolled_info) = LOOPINFO_is_HWLoop(info);
-    LOOPINFO_is_exact_trip_count(unrolled_info) = LOOPINFO_is_exact_trip_count(info);
-#endif
 #ifdef TARG_ST
     /* FdF 20060913: Update trip_min for multi-bb, while-loop or
        do-loop, unrolled body. */
@@ -5879,14 +5877,13 @@ void Unroll_Dowhile_Loop(LOOP_DESCR *loop, UINT32 ntimes)
   if (info) {
     WN *wn = WN_COPY_Tree(LOOPINFO_wn(info));
     unrolled_info = TYPE_P_ALLOC(LOOPINFO);
+#ifdef TARG_ST
+    *unrolled_info = *info;
+#endif
     LOOPINFO_wn(unrolled_info) = wn;
     WN_loop_trip_est(wn) /= ntimes;
     WN_loop_trip_est(wn) += 1;
     LOOPINFO_srcpos(unrolled_info) = LOOPINFO_srcpos(info);
-#ifdef TARG_ST
-    LOOPINFO_is_HWLoop(unrolled_info) = LOOPINFO_is_HWLoop(info);
-    LOOPINFO_is_exact_trip_count(unrolled_info) = LOOPINFO_is_exact_trip_count(info);
-#endif
 #ifdef TARG_ST
     /* FdF 20060913: Update trip_min for unrolled while-loop. */
     if (LOOPINFO_trip_min(info) != -1)
