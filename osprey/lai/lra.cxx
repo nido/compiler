@@ -981,18 +981,6 @@ static void Init_Avail_Set (BB *bb)
       ded_reg_non_live_out_set[cl] = REGISTER_SET_EMPTY_SET;
       ded_reg_live_out_set[cl] = REGISTER_SET_EMPTY_SET;
     }
-    // Build list of dedicated registers used by GTN that are live-in but not live-out
-    for (tn  = GTN_SET_Choose(BB_live_in(bb));
-	 tn != GTN_SET_CHOOSE_FAILURE;
-	 tn  = GTN_SET_Choose_Next(BB_live_in(bb), tn)) {
-      if (LRA_TN_register(tn) != REGISTER_UNDEFINED) {
-	if (!GTN_SET_MemberP(BB_live_out(bb), tn)) {
-	  ded_reg_non_live_out_set[TN_register_class(tn)] =
-	    REGISTER_SET_Union(ded_reg_non_live_out_set[TN_register_class(tn)],
-			       REGISTER_SET_Range(LRA_TN_register(tn), LRA_TN_register(tn) + TN_nhardregs(tn) - 1));
-	}
-      }
-    }
     // Build list of dedicated registers used by GTN that are live-out
     for (tn  = GTN_SET_Choose(BB_live_out(bb));
 	 tn != GTN_SET_CHOOSE_FAILURE;
@@ -1001,6 +989,30 @@ static void Init_Avail_Set (BB *bb)
 	ded_reg_live_out_set[TN_register_class(tn)] =
 	  REGISTER_SET_Union(ded_reg_live_out_set[TN_register_class(tn)],
 			     REGISTER_SET_Range(LRA_TN_register(tn), LRA_TN_register(tn) + TN_nhardregs(tn) - 1));
+      }
+    }
+    // Build list of dedicated registers used by GTNs that are live-in but not live-out.
+    // If current GTN contains some live-out registers (might happens when aliased),
+    // then all its registers must be considered as live-out, to avoid potential problem
+    // when inserting spill code.
+    for (tn  = GTN_SET_Choose(BB_live_in(bb));
+	 tn != GTN_SET_CHOOSE_FAILURE;
+	 tn  = GTN_SET_Choose_Next(BB_live_in(bb), tn)) {
+      if (LRA_TN_register(tn) != REGISTER_UNDEFINED) {
+	if (!GTN_SET_MemberP(BB_live_out(bb), tn)) {
+	  REGISTER_SET cur_gtn_set = REGISTER_SET_Range(LRA_TN_register(tn),
+							LRA_TN_register(tn) + TN_nhardregs(tn) - 1);
+	  cl = TN_register_class(tn);
+	  if (!REGISTER_SET_IntersectsP(cur_gtn_set,
+					ded_reg_live_out_set[cl])) {
+	    ded_reg_non_live_out_set[cl] =
+	      REGISTER_SET_Union(ded_reg_non_live_out_set[cl], cur_gtn_set);
+	  }
+	  else {
+	    ded_reg_live_out_set[cl] =
+	      REGISTER_SET_Union(ded_reg_live_out_set[cl], cur_gtn_set);
+	  }
+	}
       }
     }
     // Need to subtract live-out dedicated registers list from non-live-out registers list,

@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Feb 26 08:22:50 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-39426
+
+Description:
+------------
+	* [trunk] Fix for bug #39426: LRA internal failure
+		  --> In LRA, do not allow the reuse of registers assigned
+		      to a non live-out GTN if this GTN is aliased to
+		      another GTN that is live-out.
+	Deliver fixes/codex-39426 rev #15776 with authorization branch #39471
+
+Modified Files:
+---------------
+	M      osprey/lai/lra.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Feb 22 17:11:07 CET 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
