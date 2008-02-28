@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Feb 28 09:53:22 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-39445
+
+Description:
+------------
+	* [trunk] Fix for bug #39445: [MP2x] assertion failure in -O2, -O3, -OS.
+	          -> Fix in lower_hilo_expr(): An invalid WN pointer was accessed
+		     to retrieve the corresponding rtype, leading to potentially
+		     incorrect IR.
+	Deliver fixes/codex-39445 rev #15807 with authorization branch #39453
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/wn_lower.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Feb 28 09:40:02 CET 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

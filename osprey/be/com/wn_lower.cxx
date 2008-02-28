@@ -3323,7 +3323,9 @@ lower_hilo_expr (
       *lopart = lo;
 
       WN *hi = WN_LdidPreg(type, preg);
-      *hipart = WN_Ashr(WN_rtype(WN_kid0(tree)), 
+      // [TTh] Fix for codex bug #39445:
+      // Use shadowed type, as tree pointer and its kid0 might be invalid
+      *hipart = WN_Ashr(type, //WN_rtype(WN_kid0(tree))), 
 			hi, 
 			WN_Intconst(type,31));
 
