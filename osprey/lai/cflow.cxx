@@ -5195,8 +5195,31 @@ Init_Chains(BBCHAIN *chains)
   BBCHAIN *prev = NULL;
 
 #ifdef TARG_STxP70
-  BB *outer_HWLoop = NULL;
-#endif
+
+  /* Make initial chains for all the BBs in the region.
+   */
+  for (bb = REGION_First_BB; bb; bb = next_bb) {
+    BB *tail = bb;
+    int HWloop_count = 0;
+    BB_MAP_Set(chain_map, bb, chains);
+    Is_True(BB_rid(bb) == first_rid,  ("region nesting botched at BB:%d", BB_id(bb)));
+    next_bb = BB_next(tail);
+    
+    // Check if we are entering an hardware loop
+    if (BB_HWLoop_head(tail)) HWloop_count++;
+   
+    while (next_bb && ((BB_rid(next_bb) != first_rid) 
+                       || (BBINFO_eh_rgn(tail) && BBINFO_eh_rgn(next_bb))
+                       || HWloop_count 
+                       || BB_HWLoop_head(next_bb))) {
+        if (BB_HWLoop_tail(tail)) HWloop_count--;
+	tail = next_bb;
+	BB_MAP_Set(chain_map, tail, chains);
+	next_bb = BB_next(tail);
+        if (BB_HWLoop_head(tail)) HWloop_count++;
+    }
+    
+#else
   /* Make initial chains for all the BBs in the region.
    */
   for (bb = REGION_First_BB; bb; bb = next_bb) {
@@ -5222,44 +5245,17 @@ Init_Chains(BBCHAIN *chains)
     Is_True(BB_rid(bb) == first_rid, 
 	    ("region nesting botched at BB:%d", BB_id(bb)));
     next_bb = BB_next(tail);
-#ifdef TARG_STxP70
-    // Check if we are entering an hardware loop
-    while (   next_bb
-	   &&    ((BB_rid(next_bb) != first_rid)
-	      || (BBINFO_eh_rgn(tail) && BBINFO_eh_rgn(next_bb))
-	      || BB_HWLoop_head(next_bb))
-    ) {
-      if (BB_HWLoop_head(next_bb))
-	outer_HWLoop = next_bb;
-#else
     while (   next_bb
 	   &&    ((BB_rid(next_bb) != first_rid) 
 	      || (BBINFO_eh_rgn(tail) && BBINFO_eh_rgn(next_bb)))
     ) {
-#endif
       do {
-	// Check if we are leaving an hardware loop
-#ifdef TARG_STxP70
-	if (BB_HWLoop_tail(tail) == outer_HWLoop)
-	  outer_HWLoop = NULL;
-#endif
 	tail = next_bb;
 	BB_MAP_Set(chain_map, tail, chains);
 	next_bb = BB_next(tail);
-#ifdef TARG_STxP70
-	// Check if we are entering an hardware loop
-	if (outer_HWLoop == NULL) {
-	  if (BB_HWLoop_head(tail))
-	    outer_HWLoop = tail;
-	}
-      } while (next_bb &&
-	       ((BB_rid(tail) != first_rid) ||
-		(outer_HWLoop != NULL)));
-#else
       } while (next_bb && BB_rid(tail) != first_rid);
-#endif
     }
-
+#endif
     /* Isolate the new chain.
      */
     BB_prev(bb) = NULL;
