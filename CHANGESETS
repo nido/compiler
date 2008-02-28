@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Feb 28 09:40:02 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-39640
+
+Description:
+------------
+	* [trunk] Fix for bug #39640: Assertion failure raised after tailmerge.
+	          -> At CGIR level, do no allow tailmerge for asm statement operations.
+	Deliver fixes/codex-39640 rev #15803 with authorization branch #39644
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_tailmerge.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Feb 28 09:08:49 CET 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

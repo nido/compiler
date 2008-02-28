@@ -481,7 +481,8 @@ static bool
 AreEquivalent<OP>(OP* op1, OP* op2)
 {
     bool result = op1 == op2;
-    if(!result && op1 && op2 && OP_code(op1) == OP_code(op2))
+    if(!result && op1 && op2 && OP_code(op1) == OP_code(op2)
+       && OP_code(op1) != TOP_asm)
         {
             if(IsJump<PU, BB, OP>(op1))
                 {
