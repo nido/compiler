@@ -211,6 +211,25 @@ inline bool offset_lt (Base_Offset_Info off1, Base_Offset_Info off2)
   return (BO_addr_dist(off1) < BO_addr_dist(off2));
 }
 
+inline bool offset_lt_and_regions (Base_Offset_Info off1, Base_Offset_Info off2) 
+{ 
+  OP * op1 = BO_op(off1);
+  OP * op2 = BO_op(off2);
+  if (BB_loop_head_bb(OP_bb(op1)) == BB_loop_head_bb(OP_bb(op2)))
+    return (BO_addr_dist(off1) < BO_addr_dist(off2));
+  return (BB_loop_head_bb(OP_bb(op1)) < BB_loop_head_bb(OP_bb(op2)));
+}
+
+inline bool op_dominance (Base_Offset_Info off1, Base_Offset_Info off2)
+{
+  OP * op1 = BO_op(off1);
+  OP * op2 = BO_op(off2);
+  // If non dominnates the other, do not change the order
+  if (OP_bb(op1) != OP_bb(op2))
+    return !BB_SET_MemberP(BB_dom_set(OP_bb(op1)), OP_bb(op2));
+  return OP_Precedes(op1, op2);
+}
+
 /* ====================================================================
  * Return the common domminator of two basic blocks.
  * ====================================================================
@@ -422,7 +441,7 @@ Update_Op_With_New_Base(OP *&op, TN *new_base_tn, INT64 base_offset, INT64 addr_
   BOOL result = Retrieve_Base_Offset(op, base_tn, offset_tn);
   DevAssert(result, ("We should not be here if Retrieve_Base_Offset returns "
                      "false!!!"));
-    
+
   TN *new_offset_tn;
     
   INT64 offset_val = addr_dist - base_offset;
@@ -482,6 +501,42 @@ Update_Op_With_New_Base(OP *&op, TN *new_base_tn, INT64 base_offset, INT64 addr_
     Print_OP_No_SrcLine (op);
   }
 
+  // FdF 20080204: Perform the following transformation if allowed:
+  //
+  // X = PHI(X0,Y) --> X = PHI(X0,Y)
+  // @X+off1	   --> @X+off1
+  // Y = X+incr    --> 
+  // @Y+off2       --> @X+off2+incr
+  //               --> Y = X+incr
+  //
+  // Moving the definition of Y after, hopefully, the last use of X,
+  // will avoid creating an interference between X and Y that would
+  // otherwise introduce an additional copy during the out-of-SSA
+  // renaming phase.
+
+  if ((new_base_tn != base_tn) && (TN_ssa_def(base_tn) != NULL)) {
+    // Look for the definition of base_tn
+    OP *op_base = TN_ssa_def(base_tn);
+    if ((OP_iadd(op_base) || OP_isub(op_base)) &&
+	(OP_results(op_base) == 1) &&
+	OP_Refs_TN(op_base, new_base_tn)) {
+      // Check if op_base can be moved below op, that is, check that
+      // base_tn is not used before op
+      if (OP_bb(op_base) == OP_bb(op)) {
+	OP *point = op_base;
+	do {
+	  point = OP_next(point);
+	  if (OP_Refs_TN(point, base_tn)) {
+	    point = NULL;
+	    break;
+	  }
+	} while (point != op);
+	if (point != NULL)
+	  BB_Move_Op_After(OP_bb(point), point, OP_bb(op_base), op_base);
+      }
+    }
+  }
+    
   return new_offset_tn;
 }
 
@@ -533,6 +588,11 @@ Check_And_Update_Ops_With_New_Base(BB *&common_dom, TN* new_base_tn,
   INT nbDone = 0;
   int redoSize;
   int nbPhase = 1;
+
+  // FdF 20080204: Now sort in dominance order, so as to efficiently
+  // move increment operation between SSA variables used as base of
+  // memory accesses
+  stable_sort(op_offset.begin()+first, op_offset.begin()+last+1, op_dominance);
 
   std::list<int> shouldRedo;
   std::set<int> alreadyDone;
@@ -668,6 +728,38 @@ Update_Ops_With_New_Base(TN *base_tn, INT64 base_adjust, TN *remat_base, INT64 r
   else
     new_base_tn = Build_TN_Of_Mtype(MTYPE_I4);
 
+  // FdF 20080204: Move here the initialization of new_base_tn: When a
+  // copy would be generated, it is better to set new_base_tn to
+  // base_tn, to avoid the EBO breaking what is done here.
+
+  OPS ops = OPS_EMPTY;
+  INT64 init_adjust = base_offset - base_adjust;
+
+  if (base_tn == NULL)
+    Expand_Immediate(new_base_tn, Gen_Literal_TN(init_adjust, 4), MTYPE_I4, &ops);
+  else if (!TN_is_register(base_tn))
+    Expand_Immediate(new_base_tn, Gen_Adjusted_TN(base_tn, init_adjust), MTYPE_I4, &ops);
+  else if (init_adjust < 0)
+    Exp_SUB(MTYPE_I4, new_base_tn, base_tn, Gen_Literal_TN(-init_adjust, 4), &ops);
+  else if (init_adjust > 0)
+    Exp_ADD(MTYPE_I4, new_base_tn, base_tn, Gen_Literal_TN(init_adjust, 4), &ops);
+  else if(BO_offset_tn(op_offset[first]) &&
+	  !TN_has_value(BO_offset_tn(op_offset[first])) &&
+	  g_factorizeCstPhase) {
+    DevAssert(BO_addr_dist(op_offset[first]) == 0,
+	      ("Do not know how to create the new base"));
+    OP* op = Dup_OP(BO_op(op_offset[first]));
+    OPS_Append_Op(&ops, op);
+    DevAssert(OP_results(op) == 1,
+	      ("Do not know where to set the new base"));
+    Set_OP_result(op, 0, new_base_tn);
+  }
+  else {
+    // FdF 20080204
+    //Expand_Copy(new_base_tn, True_TN, base_tn, &ops);
+    new_base_tn = base_tn;
+  }
+      
   BB *common_dom;
   INT nbDone = Check_And_Update_Ops_With_New_Base(common_dom, new_base_tn,
                                                   base_offset, op_offset,
@@ -675,37 +767,11 @@ Update_Ops_With_New_Base(TN *base_tn, INT64 base_adjust, TN *remat_base, INT64 r
 
   // Insert the initialization of the new base in the common
   // domminator of all the operations.
-  OPS ops = OPS_EMPTY;
-  INT64 init_adjust = base_offset - base_adjust;
-
   if(Trace_SSA_CBPO) {
     fprintf(TFile,"*** nbDone %d\n", nbDone);
   }
 
   if(nbDone) {
-    if (base_tn == NULL)
-      Expand_Immediate(new_base_tn, Gen_Literal_TN(init_adjust, 4), MTYPE_I4, &ops);
-    else if (!TN_is_register(base_tn))
-      Expand_Immediate(new_base_tn, Gen_Adjusted_TN(base_tn, init_adjust), MTYPE_I4, &ops);
-    else if (init_adjust < 0)
-      Exp_SUB(MTYPE_I4, new_base_tn, base_tn, Gen_Literal_TN(-init_adjust, 4), &ops);
-    else if (init_adjust > 0)
-      Exp_ADD(MTYPE_I4, new_base_tn, base_tn, Gen_Literal_TN(init_adjust, 4), &ops);
-    else if(BO_offset_tn(op_offset[first]) &&
-            !TN_has_value(BO_offset_tn(op_offset[first])) &&
-            g_factorizeCstPhase) {
-      DevAssert(BO_addr_dist(op_offset[first]) == 0,
-                ("Do not know how to create the new base"));
-      OP* op = Dup_OP(BO_op(op_offset[first]));
-      OPS_Append_Op(&ops, op);
-      DevAssert(OP_results(op) == 1,
-                ("Do not know where to set the new base"));
-      Set_OP_result(op, 0, new_base_tn);
-    }
-    else {
-      Expand_Copy(new_base_tn, True_TN, base_tn, &ops);
-    }
-      
     if (Trace_SSA_CBPO) {
       fprintf(TFile, ">>> Inserting new OP in BB %d:\n", BB_id(common_dom));
       Print_OPS_No_SrcLines(&ops);
@@ -1292,7 +1358,8 @@ Generate_Common_Base(vec_base_ops& Base_Ops_List) {
     }
 
     // Sort according to the offsets
-    stable_sort(op_offset.begin(), op_offset.end(), offset_lt);
+    // FdF 20080204: Do not mix memory accesses from different loops.
+    stable_sort(op_offset.begin(), op_offset.end(), offset_lt_and_regions);
 
     // Now, use a greedy algorithm
     int j_first;
@@ -1300,9 +1367,12 @@ Generate_Common_Base(vec_base_ops& Base_Ops_List) {
     base_tn = BO_base_tn(op_offset[0]);
     extended_count = 0;
     INT64 val;
+    BB *cur_loop_head = BB_loop_head_bb(OP_bb(BO_op(op_offset[0])));
 
-    for (j = j_first = 0; j < op_offset.size(); j++) {
-      if ((BO_addr_dist(op_offset[j]) - BO_addr_dist(op_offset[j_first])) >= (MAX_WIDTH-(min_offset_alignment-1))) {
+    for (j_first = 0, j = 1; j < op_offset.size(); j++) {
+      if (((BO_addr_dist(op_offset[j]) - BO_addr_dist(op_offset[j_first])) >= (MAX_WIDTH-(min_offset_alignment-1))
+	   // FdF 20080204: Do not mix memory accesses from different loops.
+	   || (cur_loop_head != BB_loop_head_bb(OP_bb(BO_op(op_offset[j])))))) {
         if ((j - j_first > 2) &&
             (!all_same_base || (extended_count > 2)))
             Update_Ops_With_New_Base(common_base_tn, common_adjust, remat_base, remat_adjust, op_offset, j_first, j-1);
@@ -1310,6 +1380,7 @@ Generate_Common_Base(vec_base_ops& Base_Ops_List) {
         base_tn = BO_base_tn(op_offset[j_first]);
         all_same_base = TRUE;
         extended_count = 0;
+	cur_loop_head = BB_loop_head_bb(OP_bb(BO_op(op_offset[j_first])));
       }
       if (BO_base_tn(op_offset[j]) != base_tn)
         all_same_base = FALSE;
