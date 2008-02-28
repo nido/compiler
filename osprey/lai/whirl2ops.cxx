@@ -1771,6 +1771,14 @@ Handle_LDA (
     }
   }
 
+#ifdef TARG_ST
+  TN *tmp_tn=NULL;
+  if (TN_is_dedicated(result)) {
+    tmp_tn=result;
+    result=Build_TN_Like(tmp_tn);
+  }
+#endif
+
   Last_Mem_OP = OPS_last(&New_OPs);
   Exp_Lda (
       OPCODE_rtype(opcode),
@@ -1780,6 +1788,12 @@ Handle_LDA (
       call_op,
       &New_OPs);
   Set_OP_To_WN_Map(lda);
+  
+#ifdef TARG_ST
+  if(tmp_tn != NULL)
+    Exp_COPY (tmp_tn,result, &New_OPs);
+#endif
+
 
   return result;
 }
