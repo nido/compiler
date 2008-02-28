@@ -522,6 +522,8 @@ Spill_Homeable_TN(
             if (OP_opnd(op, st_op_num) == orig_tn) {
 	      need_store = FALSE;
 	      op_is_homing_store = TRUE;
+	      // Previous aliased store (if defined) no more meaningful
+	      aliased_store_seen = FALSE;
 	    } else {
 	      aliased_store_seen = TRUE;
 	    }
@@ -536,6 +538,10 @@ Spill_Homeable_TN(
 #endif
           } else if (OP_load(op) && OP_result(op, 0) == orig_tn) {
 	    op_is_homing_load = TRUE;
+#ifdef TARG_ST
+	    // [TTh] Previous aliased store (if defined) no more meaningful
+	    aliased_store_seen = FALSE;
+#endif
 	  }
 	} else if (alias == POSSIBLY_ALIASED && OP_store(op)) {
 	  aliased_store_seen = TRUE;

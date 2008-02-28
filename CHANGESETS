@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Feb 28 09:08:49 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-spill-homeable
+
+Description:
+------------
+	* [trunk] Deliver tt2/dev-spill-homeable rev #15798 with authorization branch #38060
+	          -> When generating spill for homeable TNs, aliased_store_seen is now reseted
+		     to FALSE when a homing load/store is seen. This can be done because that
+		     instruction makes the home location consistent again, thus canceling
+		     the effect of the aliased store.
+		     This change can expose more opportunities to remove redundant loads.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/gra_mon/gra_spill.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Feb 26 08:22:50 CET 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
