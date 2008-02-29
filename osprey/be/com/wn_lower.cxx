@@ -7306,6 +7306,8 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
     }
 #ifdef TARG_ST
     //TB: Change float cmp by an integer cmp
+    //[HK] fix for codex bug #35763, treat the case where one
+    // of the operand is +/-0.0f separately
     if  (Float_Eq_Simp && WN_desc(tree) == MTYPE_F4)
       {
 	if (Is_Const_Float(WN_kid0(tree))) {
@@ -7320,8 +7322,16 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
 	    INT32 i;
 	  } c;
 	  c.f = val;
-	  WN *value = WN_CreateIntconst(OPC_I4INTCONST, c.i);
-	  return WN_EQ(MTYPE_I4, value, WN_Tas(MTYPE_I4, Be_Type_Tbl(MTYPE_I4), WN_kid1(tree)));
+	  if ((c.i << 1) == 0) { // special treatment for +-zero cases	    
+	    WN *shiftval =  WN_CreateIntconst(OPC_I4INTCONST, 1);
+	    WN *value = WN_CreateIntconst(OPC_I4INTCONST, 0);
+	    return WN_EQ(MTYPE_I4, value, WN_Tas(MTYPE_I4, Be_Type_Tbl(MTYPE_I4), 
+						 WN_Shl(MTYPE_I4, WN_kid1(tree), shiftval)));
+	  }
+	  else { 
+	    WN *value = WN_CreateIntconst(OPC_I4INTCONST, c.i);
+	    return WN_EQ(MTYPE_I4, value, WN_Tas(MTYPE_I4, Be_Type_Tbl(MTYPE_I4), WN_kid1(tree)));
+	  }
 	} else 	if (Is_Const_Float(WN_kid1(tree))) {
 	  TCON tc;
 	  if (WN_operator(WN_kid1(tree)) == OPR_LDID ) 
@@ -7334,8 +7344,16 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
 	    INT32 i;
 	  } c;
 	  c.f = val;
-	  WN *value = WN_CreateIntconst(OPC_I4INTCONST, c.i);
-	  return WN_EQ(MTYPE_I4, WN_Tas(MTYPE_I4, Be_Type_Tbl(MTYPE_I4), WN_kid0(tree)), value);
+	  if ((c.i << 1)  == 0) { // special treatment for +-zero cases	    
+	    WN *shiftval =  WN_CreateIntconst(OPC_I4INTCONST, 1);
+	    WN *value = WN_CreateIntconst(OPC_I4INTCONST, 0);
+	    return WN_EQ(MTYPE_I4, value, WN_Tas(MTYPE_I4, Be_Type_Tbl(MTYPE_I4), 
+						 WN_Shl(MTYPE_I4, WN_kid0(tree), shiftval)));
+	  }
+	  else { 
+	    WN *value = WN_CreateIntconst(OPC_I4INTCONST, c.i);
+	    return WN_EQ(MTYPE_I4, value, WN_Tas(MTYPE_I4, Be_Type_Tbl(MTYPE_I4), WN_kid0(tree)));
+	  }
 	}
       }
 #endif //TARG_ST

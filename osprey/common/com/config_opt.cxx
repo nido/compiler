@@ -165,7 +165,7 @@ BOOL Enable_CVT_Opt_Set= FALSE;	/* ... option seen? */
 BOOL Optimize_CVTL_Exp = FALSE;	/* Optimize expansion of CVTL operators */
 BOOL Div_Split_Allowed = FALSE;		/* change a/b --> a*1/b ? */
 #ifdef TARG_ST
-BOOL Float_Eq_Simp = TRUE;		/* change a==b (float cmp) --> a==b (integer cmp if a or b is cst)) ? */
+BOOL Float_Eq_Simp = FALSE;		/* change a==b (float cmp) --> a==b (integer cmp if a or b is cst)) ? */
 #endif
 static BOOL Div_Split_Set = FALSE;	/* ... option seen? */
 BOOL Fast_Exp_Allowed = FALSE;		/* Avoid exp() calls? */
