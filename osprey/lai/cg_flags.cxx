@@ -280,6 +280,7 @@ BOOL LRA_do_reorder = FALSE;
 BOOL LRA_minregs    = FALSE;
 BOOL LRA_merge_extract = TRUE;
 BOOL LRA_resched_check = FALSE;
+BOOL LRA_overlap_coalescing = TRUE;
 #endif
 
 // ====================================================================

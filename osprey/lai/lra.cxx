@@ -46,6 +46,17 @@
  * =======================================================================
  * =======================================================================
  */
+/*
+ * [TARG_ST] Improvements:
+ * - Overlap coalescing
+ *   ------------------
+ *   Enable coalescing of overlapping live-ranges linked by extracts or moves,
+ *   as long as there is no related definition within the overlap.
+ *   Overlap coalescing is implemented as a LR tree, where:
+ *     - A parent relationship in the tree means that the child is a copy
+ *       or an extract of the parent,
+ *     - All nodes of the tree can be safely coalesced.
+ */
 
 #ifdef USE_PCH
 #include "cg_pch.h"
@@ -255,8 +266,14 @@ typedef struct live_range {
   mINT32 first_spill;    /* first spill of exposed global */
 #ifdef TARG_ST
   ISA_REGISTER_SUBCLASS sc; /* Smallest subclass used to reference the live range tn */
-  OP *extract_op;       /* If this live range is defined by an
-			   extract operation, this is the operation. */
+  OP *special_def_op;    /* If this live range is defined by an extract or copy 
+			    operation, this is the operation */
+  mINT32 ovcoal_local_rank;/* Rank of current LR within parent register hierarchy */
+  mINT32 ovcoal_init_ver;  /* Value id obtained at first definition point */
+  mINT32 ovcoal_last_ver;  /* Value id obtained at last definition point */
+  struct live_range *ovcoal_parent;  /* Parent node in overlap coalescing tree */
+  struct live_range *ovcoal_child;   /* First child node in overlap coalescing tree */
+  struct live_range *ovcoal_sibling; /* next sibling node in overlap coalescing tree */
   struct live_range *next_alias; /* Global live ranges can alias, where each
 				    alias is allocated to the same registers.
 				    We chain all aliases together in a circular
@@ -327,11 +344,19 @@ static void Set_LR_exposed_use (LIVE_RANGE *lr, INT32 v) {
     }
   }
 }
-static void Set_LR_extract_op (LIVE_RANGE *lr, OP *op)
-{
-  lr->extract_op = op;
+/* Set definer of current lr (either copy or extract) */
+static void Set_LR_special_def_op (LIVE_RANGE *lr, OP *op) {
+  lr->special_def_op = op;
 }
-inline OP *LR_extract_op (const LIVE_RANGE *lr) { return lr->extract_op; }
+inline OP *LR_special_def_op (const LIVE_RANGE *lr) {
+  return (lr->special_def_op);
+}
+inline OP *LR_extract_op (const LIVE_RANGE *lr) {
+  return ((lr->special_def_op && OP_extract(lr->special_def_op))?lr->special_def_op:NULL);
+}
+inline OP *LR_copy_op (const LIVE_RANGE *lr) {
+  return ((lr->special_def_op && OP_copy(lr->special_def_op))?lr->special_def_op:NULL);
+}
 inline LIVE_RANGE *LR_next_alias (const LIVE_RANGE *lr) { return lr->next_alias; }
 static void Set_LR_next_alias (LIVE_RANGE *lr, LIVE_RANGE *alias) {
   lr->next_alias = alias;
@@ -339,6 +364,133 @@ static void Set_LR_next_alias (LIVE_RANGE *lr, LIVE_RANGE *alias) {
 inline TN_LIST *LR_spill_tns (const LIVE_RANGE *lr) { return lr->spill_tns; }
 static void Push_LR_spill_tns (LIVE_RANGE *lr, TN *tn, MEM_POOL *pool) {
   lr->spill_tns =  TN_LIST_Push (tn, lr->spill_tns, pool);
+}
+inline mINT32 LR_ovcoal_local_rank(LIVE_RANGE *lr) {
+  return (lr->ovcoal_local_rank);
+}
+inline void Set_LR_ovcoal_local_rank(LIVE_RANGE *lr, mINT32 rank) {
+  lr->ovcoal_local_rank = rank;
+}
+inline mINT32 LR_ovcoal_init_ver(LIVE_RANGE *lr) {
+  return (lr->ovcoal_init_ver);
+}
+static void Set_LR_ovcoal_init_ver(LIVE_RANGE *lr, mINT32 v) {
+  lr->ovcoal_init_ver = v;
+}
+inline mINT32 LR_ovcoal_last_ver(LIVE_RANGE *lr) {
+  return (lr->ovcoal_last_ver);
+}
+static void Set_LR_ovcoal_last_ver(LIVE_RANGE *lr, mINT32 v) {
+  lr->ovcoal_last_ver = v;
+}
+inline LIVE_RANGE *LR_ovcoal_parent(LIVE_RANGE *lr) {
+  return (lr->ovcoal_parent);
+}
+static void Set_LR_ovcoal_parent(LIVE_RANGE *lr, LIVE_RANGE *parent_lr) {
+  lr->ovcoal_parent = parent_lr;
+}
+inline LIVE_RANGE *LR_ovcoal_child(LIVE_RANGE *lr) {
+  return (lr->ovcoal_child);
+}
+inline void Set_LR_ovcoal_child(LIVE_RANGE *lr, LIVE_RANGE *child_lr) {
+  lr->ovcoal_child = child_lr;
+}
+inline LIVE_RANGE *LR_ovcoal_sibling(LIVE_RANGE *lr) {
+  return (lr->ovcoal_sibling);
+}
+inline void Set_LR_ovcoal_sibling(LIVE_RANGE *lr, LIVE_RANGE *sibling_lr) {
+  lr->ovcoal_sibling = sibling_lr;
+}
+/* Return the rank of 'lr' within register hierarchy of the root node
+ * of its coalescing tree */
+static mINT32 LR_ovcoal_rank(LIVE_RANGE *lr) {
+  LIVE_RANGE *lr_tmp = lr;
+  mINT32 rank = 0;
+  while (lr_tmp) {
+    rank  += lr_tmp->ovcoal_local_rank;
+    lr_tmp = lr_tmp->ovcoal_parent;
+  }
+  return (rank);
+}
+/* Add 'sibling_lr' in sibling cyclic list of 'lr' */
+static void Add_LR_ovcoal_sibling(LIVE_RANGE *lr, LIVE_RANGE *sibling_lr) {
+  LIVE_RANGE *last_lr = sibling_lr;
+  while (last_lr->ovcoal_sibling != sibling_lr) {
+    last_lr = last_lr->ovcoal_sibling;
+  }
+  last_lr->ovcoal_sibling = lr->ovcoal_sibling;
+  lr->ovcoal_sibling = sibling_lr;
+}
+/* Attach 'child_lr' to 'lr' coalescing tree */
+static void Add_LR_ovcoal_child(LIVE_RANGE *lr, LIVE_RANGE *child_lr, mINT32 local_rank) {
+  if (!lr->ovcoal_child) {
+    lr->ovcoal_child = child_lr;
+  }
+  else {
+    Add_LR_ovcoal_sibling(lr->ovcoal_child, child_lr);
+  }
+  Set_LR_ovcoal_parent(child_lr, lr);
+  Set_LR_ovcoal_local_rank(child_lr, local_rank);
+}
+/* Detach 'child_lr' from 'lr' coalescing tree */
+static void Remove_LR_ovcoal_child(LIVE_RANGE *lr, LIVE_RANGE *child_lr) {
+  if (child_lr->ovcoal_sibling == child_lr) {
+    lr->ovcoal_child = NULL;
+  }
+  else {
+    LIVE_RANGE *succ_lr = child_lr->ovcoal_sibling;
+    LIVE_RANGE *pred_lr = succ_lr;
+    while (pred_lr->ovcoal_sibling != child_lr) {
+      pred_lr = pred_lr->ovcoal_sibling;
+    }
+    pred_lr->ovcoal_sibling = succ_lr;
+    child_lr->ovcoal_sibling = child_lr;
+    if (lr->ovcoal_child == child_lr) {
+      lr->ovcoal_child = pred_lr;
+    }
+  }
+  child_lr->ovcoal_parent     = NULL;
+  child_lr->special_def_op    = NULL;
+  child_lr->ovcoal_local_rank = 0;
+}
+/* Fully detach 'lr' from its overlap coalescing tree.
+ * Itself, its parent an its children will belongs to separate trees */
+static void Detach_LR_ovcoal(LIVE_RANGE *lr) {
+  LIVE_RANGE *child_lr, *next_lr;
+  if (lr->ovcoal_child) {
+    child_lr = lr->ovcoal_child;
+    do {
+      next_lr = child_lr->ovcoal_sibling;
+      child_lr->ovcoal_sibling = child_lr;
+      child_lr->ovcoal_parent  = NULL;
+      child_lr->special_def_op = NULL;
+      child_lr = next_lr;
+    } while (child_lr->ovcoal_sibling != child_lr);
+    lr->ovcoal_child = NULL;
+  }
+  if (lr->ovcoal_parent) {
+    Remove_LR_ovcoal_child(lr->ovcoal_parent, lr);
+  }
+}
+/* Return TRUE if 'is_ancestor_lr' belongs to ancestor nodes of 'lr'
+ * in the coalescing tree, FALSE otherwise */
+static BOOL LR_ovcoal_is_ancestor(LIVE_RANGE *lr, LIVE_RANGE *is_ancestor_lr) {
+  LIVE_RANGE *lr_tmp = lr->ovcoal_parent;
+  while (lr_tmp) {
+    if (lr_tmp == is_ancestor_lr) {
+      return (TRUE);
+    }
+    lr_tmp = lr_tmp->ovcoal_parent;
+  }
+  return (FALSE);
+}
+/* Return root node in overlap coalescing tree */
+static LIVE_RANGE *LR_ovcoal_root(LIVE_RANGE *lr) {
+  LIVE_RANGE *lr_tmp = lr;
+  while (lr_tmp->ovcoal_parent) {
+    lr_tmp = lr_tmp->ovcoal_parent;
+  }
+  return (lr_tmp);
 }
 #else
 #define LR_first_def(lr)        ((lr)->first_def)
@@ -348,7 +500,63 @@ static void Push_LR_spill_tns (LIVE_RANGE *lr, TN *tn, MEM_POOL *pool) {
 #define LR_def_cnt(lr)          ((lr)->def_cnt)
 #define LR_use_cnt(lr)          ((lr)->use_cnt)
 #define LR_flags(lr)            ((lr)->flags)
+#ifdef TARG_ST
+// [TTh] When using overlap coalescing, the preference might be
+// retrieved from ancestor nodes of the coalescing tree.
+// The preference is chosen by the following algorithm, which stop when
+// a valid register/preference is found (highest priority first):
+// #1 Select register(s) allocated to parent in coalescing tree,
+// #2 Select lr->prefer_reg,
+// #3 Select parent->prefer_reg.
+// #4 Select parent->parent register(s)
+// #5 Select parent->parent->prefer_reg
+// Repeat #4 and #5 until the root of the coalescing tree is reached
+// or a valid register/preference is found.
+static REGISTER LRA_TN_register(TN *tn);
+static REGISTER
+LR_prefer_reg(LIVE_RANGE *lr) {
+  mINT32 rank;
+  REGISTER parent_reg;
+  if (!LRA_overlap_coalescing) {
+    return (lr->prefer_reg);
+  }
+  else {
+    if (lr->ovcoal_parent) {
+      parent_reg = LRA_TN_register(LR_tn(lr->ovcoal_parent));
+      if ((parent_reg != REGISTER_UNDEFINED) && (parent_reg <= REGISTER_MAX)) {
+	// Select parent register(s)
+	return (parent_reg + lr->ovcoal_local_rank);
+      }
+    }
+    if (lr->prefer_reg != REGISTER_UNDEFINED) {
+      // Select lr proper preference
+      return (lr->prefer_reg);
+    }
+    if (lr->ovcoal_parent) {
+      INT rank_offset = lr->ovcoal_local_rank;
+      LIVE_RANGE *par = lr->ovcoal_parent;
+      while (par) {
+	parent_reg = LRA_TN_register(LR_tn(par));
+	if ((parent_reg != REGISTER_UNDEFINED) && (parent_reg <= REGISTER_MAX)) {
+	  // Select ancestor reg
+	  return (parent_reg + rank_offset);
+	}
+	else if (par->prefer_reg != REGISTER_UNDEFINED) {
+	  // Select ancestor preference
+	  return (par->prefer_reg + rank_offset);
+	}
+	rank_offset += par->ovcoal_local_rank;
+	par = par->ovcoal_parent;
+      }
+    }
+    // No preference found
+    return (REGISTER_UNDEFINED);
+  }
+}
+#define Set_LR_prefer_reg(lr, r) ((lr)->prefer_reg=(r))
+#else
 #define LR_prefer_reg(lr)       ((lr)->prefer_reg)
+#endif
 #define LR_first_spill(lr)	((lr)->first_spill)
 #define LR_next(lr)             ((lr)->next)
 
@@ -359,6 +567,8 @@ static void Push_LR_spill_tns (LIVE_RANGE *lr, TN *tn, MEM_POOL *pool) {
                                 // calculation
 #ifdef TARG_ST
 #define LR_EARLY_CLOBBER 0x10   // LR is written early at its first def.
+#define LR_OVCOAL_PREFER 0x20   // LR has already received a prefer through
+                                //    overlap coalescing
 #endif
 #define LR_assigned(lr)         (LR_flags(lr) & LR_ASSIGNED)
 #define Set_LR_assigned(lr)     (LR_flags(lr) |= LR_ASSIGNED)
@@ -383,6 +593,15 @@ static void Set_LR_early_clobber(LIVE_RANGE *lr) {
 static void Reset_LR_early_clobber(LIVE_RANGE *lr) {
   LR_flags(lr) &= ~LR_EARLY_CLOBBER;
 }
+inline BOOL LR_has_ovcoal_prefer(const LIVE_RANGE *lr) {
+  return (LR_flags(lr) & LR_OVCOAL_PREFER) != 0;
+}
+static void Set_LR_has_ovcoal_prefer(LIVE_RANGE *lr) {
+  LR_flags(lr) |= LR_OVCOAL_PREFER;
+}
+static void Reset_has_ovcoal_prefer(LIVE_RANGE *lr) {
+  LR_flags(lr) &= ~LR_OVCOAL_PREFER;
+}
 #endif
 
 #define LR_Is_Undefined_Local(lr) \
@@ -404,6 +623,51 @@ TNs_alias_p (TN *tn1, TN *tn2) {
 	  && TN_register (tn1) != REGISTER_UNDEFINED
 	  && TN_register (tn1) == TN_register (tn2)
 	  && TN_nhardregs (tn1) == TN_nhardregs (tn2));
+}
+#endif
+
+#ifdef TARG_ST
+/* Data structure used to keep track of the overlap coalescing class used by
+ * dedicated registers during the backward allocation. It contains the 
+ * class id (identified by the root of the correspoding tree), the rank
+ * (subpart offset, used for multi-register TNs) and the number of LRs
+ * currently using a particular dedicated register.
+ */
+#define OVCOAL_ROOT_UNDEF NULL
+#define OVCOAL_RANK_UNDEF 0
+#define OVCOAL_MSG        "OVCOAL:"
+#define OVCOAL_BASE_NAME  "OVCOAL_TN"
+static struct {
+  LIVE_RANGE* root;
+  mINT32      rank;
+  mINT32      alive_count;
+} ded_reg_ovcoal_info[ISA_REGISTER_CLASS_MAX_LIMIT+1][REGISTER_MAX+1];
+
+static inline void Set_ded_reg_ovcoal_root(ISA_REGISTER_CLASS rc, REGISTER r, LIVE_RANGE* c, INT rank) {
+  ded_reg_ovcoal_info[rc][r].root = c;
+  ded_reg_ovcoal_info[rc][r].rank = rank;
+}
+static inline void Set_ded_reg_ovcoal_alive_count(ISA_REGISTER_CLASS rc, REGISTER r, INT32 c) {
+  ded_reg_ovcoal_info[rc][r].alive_count = c;
+}
+static inline void Increment_ded_reg_ovcoal_alive_count(ISA_REGISTER_CLASS rc, REGISTER r) {
+  ded_reg_ovcoal_info[rc][r].alive_count++;
+}
+static void Decrement_ded_reg_ovcoal_alive_count(ISA_REGISTER_CLASS rc, REGISTER r) {
+  ded_reg_ovcoal_info[rc][r].alive_count--;
+  if (ded_reg_ovcoal_info[rc][r].alive_count==0) {
+    ded_reg_ovcoal_info[rc][r].root = OVCOAL_ROOT_UNDEF;
+    ded_reg_ovcoal_info[rc][r].rank = OVCOAL_RANK_UNDEF;
+  }
+}
+static inline LIVE_RANGE* ded_reg_ovcoal_root(ISA_REGISTER_CLASS rc, REGISTER r) {
+  return (ded_reg_ovcoal_info[rc][r].root);
+}
+static inline INT32 ded_reg_ovcoal_alive_count(ISA_REGISTER_CLASS rc, REGISTER r) {
+  return (ded_reg_ovcoal_info[rc][r].alive_count);
+}
+static inline INT32 ded_reg_ovcoal_rank(ISA_REGISTER_CLASS rc, REGISTER r) {
+  return (ded_reg_ovcoal_info[rc][r].rank);
 }
 #endif
 
@@ -948,6 +1212,179 @@ static void Print_Avail_Set (BB *bb)
   }
 }
 
+#ifdef TARG_ST
+/* Return a version id to uniquely identify a TN value. Several TNs might have
+ * the same version if they contain the same value (i.e. one TN is a copy/extract
+ * of the other one).
+ */
+static mINT32
+Generate_Overlap_Coalescing_Version() {
+  static mINT32 ver;
+  return (ver++);
+}
+
+/* Considering that current register class can be divided in N composite registers,
+ * each one containing exactly (multireg_size) atomic registers, this function
+ * returns TRUE only if the specified hardware register (reg) have the expected
+ * position (expected_rank) within its composite register.
+ */
+inline BOOL
+REGISTER_Has_Expected_Rank(REGISTER reg, INT multireg_size, INT expected_rank) {
+  INT real_reg_id = ((INT)reg - REGISTER_MIN);
+  INT rank_mask  = multireg_size-1;
+  return ((real_reg_id & rank_mask) == expected_rank);
+}
+
+/* Walk through all children of 'root_lr', and detach the ones that belongs to
+ * rank range [ref_rank_min, ref_rank_max] and that redefine their contents.
+ */
+static void
+Detach_Conflicting_LR_From_Overlap_Coalescing_Class(LIVE_RANGE *root_lr,
+						    INT ref_rank_min,
+						    INT ref_rank_max) {
+  LIVE_RANGE *cur_lr, *next_lr, *last_lr;
+
+  last_lr = LR_ovcoal_child(root_lr);
+  next_lr = LR_ovcoal_sibling(last_lr);
+
+  do {
+    cur_lr = next_lr;
+    next_lr = LR_ovcoal_sibling(cur_lr);
+
+    // Check if cur_lr belongs to the conflict rank range.
+    // Avoid costly computation, when dealing with coalescing tree
+    // containing only single register TNs.
+    BOOL can_conflict = (ref_rank_min == -1);
+    if (!can_conflict) {
+      INT cur_rank_min = LR_ovcoal_rank(cur_lr);
+      INT cur_rank_max = cur_rank_min + TN_nhardregs(LR_tn(cur_lr)) - 1;
+      can_conflict = !((cur_rank_min > ref_rank_max) || (cur_rank_max < ref_rank_min));
+    }
+    if (can_conflict) {
+      if ((LR_def_cnt(cur_lr) >  1) ||
+	  (LR_def_cnt(cur_lr) == 1         &&
+	   TN_is_global_reg(LR_tn(cur_lr)) &&
+	   LR_exposed_use(cur_lr) > 0)) {
+	// Current node has multiple definitions
+	if (LR_ovcoal_last_ver(cur_lr) > LR_ovcoal_last_ver(root_lr)) {
+	  
+	  // Detach current node from coalescing tree
+	  if (Do_LRA_Trace(Trace_LRA_Detail)) {
+	    fprintf (TFile, OVCOAL_MSG" Detach TN%d from its parent (redefinition)\n",
+		     TN_number(LR_tn(cur_lr)));
+	  }
+	  Remove_LR_ovcoal_child(LR_ovcoal_parent(cur_lr), cur_lr);
+	}
+      }
+      if (LR_ovcoal_parent(cur_lr) && LR_ovcoal_child(cur_lr)) {
+	// Recursive walk of the children of current one, if the latter one
+	// has not been detached
+	Detach_Conflicting_LR_From_Overlap_Coalescing_Class(cur_lr, ref_rank_min, ref_rank_max);
+      }
+    }
+  } while (cur_lr != last_lr);
+}
+
+/* This function is called during the forward walk of Setup_Live_Ranges(),
+ * when a use of LR 'clr' is found.
+ * It checks that none of the node of the coalescing tree has modified the
+ * value used by 'clr' (identified by its version). Otherwise, the redefined 
+ * nodes are removed from the coalescing tree.
+ */
+static void
+Update_Overlap_Coalescing_Info_For_Use(LIVE_RANGE *clr) {
+  LIVE_RANGE *iter_lr   = clr;
+  LIVE_RANGE *parent_lr = LR_ovcoal_parent(clr);
+  // Walk up the overlap coalescing class tree, and check at each stage if the
+  // parent has been modified since the definition of the child. In this case,
+  // the child must not be allocated to the same register as the parent, and
+  // must therefore be removed from the coalescing class.
+  while (parent_lr) {
+    if (LR_ovcoal_last_ver(parent_lr) != LR_ovcoal_init_ver(iter_lr)) {
+      // parent TN redefined since the copy/extract, no overlap coalescing possible
+      if (Do_LRA_Trace(Trace_LRA_Detail)) {
+	fprintf (TFile, OVCOAL_MSG" Detach TN%d from its parent  (redefinition)\n",
+		 TN_number(LR_tn(iter_lr)));
+      }
+      Remove_LR_ovcoal_child(parent_lr, iter_lr);
+      break;
+    }
+    else {
+      iter_lr   = parent_lr;
+      parent_lr = LR_ovcoal_parent(iter_lr);
+    }
+  }
+  // At this point, iter_lr is the root of the coalescing tree.
+  // Now iterate over the children of the root, to find child nodes that have
+  // been redefined, and must then be removed from current coalescing class.
+  if (LR_ovcoal_child(iter_lr)) {
+    // Compute range of conflict; -1 is used for single register TN tree,
+    // In order to avoid useless computation of range
+    INT clr_rank_min=-1, clr_rank_max=-1;
+    BOOL check_rank = (TN_nhardregs(LR_tn(iter_lr)) > 1);
+    if (check_rank) {
+      clr_rank_min = LR_ovcoal_rank(clr);
+      clr_rank_max = clr_rank_min + TN_nhardregs(LR_tn(clr)) - 1;
+    }
+    Detach_Conflicting_LR_From_Overlap_Coalescing_Class(iter_lr, clr_rank_min, clr_rank_max);
+  }
+}
+
+
+/* Propagate preferred register through the overlap coalescing tree,
+ * by walking up the coalescing tree and setting preference to parent
+ * based on child
+ */
+static void
+Propagate_Overlap_Coalescing_Preference_Leaf_To_Root(LIVE_RANGE *lr, REGISTER alloc_reg) {
+  LIVE_RANGE *cur_lr, *parent_lr;
+
+  if (alloc_reg > REGISTER_MAX) {
+    return; // Might happens during fat point computation 
+  }
+
+  cur_lr = lr;
+  while ((parent_lr = LR_ovcoal_parent(cur_lr)) != NULL) {
+    alloc_reg -= LR_ovcoal_local_rank(cur_lr);
+
+    if (LR_extract_op(cur_lr)) {
+      // Check if register is compatible with parent alignment
+      INT rank_mask = TN_nhardregs(LR_tn(parent_lr))-1;
+      if ((alloc_reg - REGISTER_MIN) & rank_mask != 0) {
+	break; // Stop propagation, has child register is not correctly aligned to be coalesced with parent
+      }
+    }
+    cur_lr = parent_lr;
+
+    if (LRA_TN_register(LR_tn(cur_lr)) != REGISTER_UNDEFINED) {
+      break; // TN already allocated
+    }
+    else if (cur_lr->prefer_reg != REGISTER_UNDEFINED) {
+      if (LR_has_ovcoal_prefer(cur_lr)) {
+	// TN has already received a preference through overlap coalescing.
+	break;
+      }
+      // Current node already have a preferencing, but that was propagated through
+      // standard preferencing in Setup_Live_Ranges(). We will override it with overlap
+      // coalescing preference.
+      // Note that standard preferencing remain useful for coalescing with TNs not
+      // candidate for overlap coalescing (mainly aliased GTN)
+      Set_LR_has_ovcoal_prefer(cur_lr);
+    }
+    if (Do_LRA_Trace(Trace_LRA_Detail)) {
+      fprintf (TFile, OVCOAL_MSG" preference %s to ",
+	       REGISTER_name (TN_register_class(LR_tn(cur_lr)), alloc_reg));
+      Print_TN(LR_tn(cur_lr),FALSE);
+      fprintf(TFile, " (inherited from ");
+      Print_TN(LR_tn(lr),FALSE);
+      fprintf (TFile, ")\n");
+    }
+    Set_LR_prefer_reg(cur_lr, alloc_reg);
+  }
+}
+
+#endif
+
 
 /* ======================================================================
  * Init_Avail_Set
@@ -1213,6 +1650,19 @@ Create_LR_For_TN (TN *tn, BB *bb, BOOL in_lra, MEM_POOL *pool)
 
 #ifdef TARG_ST
     Set_LR_next_alias(lr, lr);
+
+    // [TTh] Initially, each TN has its own coalescing tree and
+    // its own value version.
+    if (LRA_overlap_coalescing) {
+      mINT32 v = Generate_Overlap_Coalescing_Version();
+      Set_LR_ovcoal_init_ver(lr, v);
+      Set_LR_ovcoal_last_ver(lr, v);
+      Set_LR_prefer_reg(lr, REGISTER_UNDEFINED);
+    }
+    Set_LR_ovcoal_parent (lr, NULL);
+    Set_LR_ovcoal_child  (lr, NULL);
+    Set_LR_ovcoal_sibling(lr, lr);
+    Set_LR_ovcoal_local_rank(lr, 0);
 #endif
 
     //
@@ -1279,6 +1729,10 @@ Print_Live_Range (LIVE_RANGE *lr)
   if (LR_subclass (lr) != ISA_REGISTER_SUBCLASS_UNDEFINED) {
     fprintf (TFile, " subclass:%s", REGISTER_SUBCLASS_name (LR_subclass (lr)));
   }
+  if (LR_ovcoal_parent(lr)) {
+    fprintf(TFile, " "OVCOAL_BASE_NAME"%d (rank:%d)", TN_number(LR_tn(LR_ovcoal_parent(lr))),
+	    LR_ovcoal_local_rank(lr));
+  }
   fprintf (TFile, "\n");
 #else
   fprintf (TFile, "  %s_LR>TN%d  %3d(%d) to %3d(%d), exposed:%d \n",
@@ -1318,6 +1772,34 @@ Print_Live_Ranges (BB *bb)
 }
 
 
+#ifdef TARG_ST
+static void 
+Print_Overlap_Coalescing() {
+  fprintf (TFile, "--------------------------------------------\n");
+  fprintf (TFile, "Overlap coalescing status for live registers\n");
+  fprintf (TFile, "--------------------------------------------\n");
+  ISA_REGISTER_CLASS cl;
+  FOR_ALL_ISA_REGISTER_CLASS (cl) {
+    REGISTER r;
+    for (r = REGISTER_MIN; r <= REGISTER_CLASS_last_register(cl); r++) {
+      if (ded_reg_ovcoal_alive_count(cl, r) > 0) {
+	fprintf (TFile, "  [%s] ", REGISTER_name(cl, r));
+
+	if (ded_reg_ovcoal_root(cl, r) == OVCOAL_ROOT_UNDEF) {
+	  fprintf (TFile, "class:UNDEF rank:UNDEF use_count:%d\n",
+		   ded_reg_ovcoal_alive_count(cl, r));
+	} else {
+	  fprintf (TFile, "class:"OVCOAL_BASE_NAME"%d rank:%d use_count:%d\n",
+		   TN_number(LR_tn(ded_reg_ovcoal_root(cl, r))),
+		   ded_reg_ovcoal_rank(cl, r),
+		   ded_reg_ovcoal_alive_count(cl, r));
+	}
+      }
+    }
+  }
+}
+#endif
+
 
 /* ======================================================================
  * Create the live ranges for all the local TNs in the basic block.
@@ -1351,6 +1833,9 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
        Set_ded_reg_first_def (cl, r, INT32_MAX);
        Set_ded_reg_last_use (cl, r, 0);
        Set_ded_reg_exposed_use (cl, r, 0);
+       // [TTh] Initialize overlap coalescing infos
+       Set_ded_reg_ovcoal_root(cl, r, OVCOAL_ROOT_UNDEF, OVCOAL_RANK_UNDEF);
+       Set_ded_reg_ovcoal_alive_count(cl, r, 0);
      }
    }
  }
@@ -1417,6 +1902,14 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
         LR_last_use(clr) = opnum;
 #endif
         LR_use_cnt(clr)++;
+#ifdef TARG_ST
+	if (LRA_overlap_coalescing) {
+	  // [TTh] Check that no LR from the overlap coalescing class 
+	  // has been redefined since the definition of current LR.
+	  // otherwise it is require to split the coalescing class.
+	  Update_Overlap_Coalescing_Info_For_Use(clr);
+	}
+#endif
       }
     }
 
@@ -1479,12 +1972,111 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 	  && subclass_size[subclass] < subclass_size [LR_subclass(clr)]) {
 	Set_LR_subclass (clr, subclass);
       }
-      if (OP_extract(op)) {
-        // [SC] This result is defined by an extract.
-        // Keep a note of the extract source.
-        Set_LR_extract_op (clr, op);
+      if (LRA_overlap_coalescing) {
+	// [TTh] If overlap coalescing is enabled, check if current LR is
+	// defined by a special OP (copy, extract) and if so, insert it
+	// with the source TN coalescing tree.
+	if (OP_cond_def(op) || LR_early_clobber(clr)) {
+	  if (Do_LRA_Trace(Trace_LRA_Detail)) {
+	    fprintf (TFile, OVCOAL_MSG" Detach TN%d from its tree (conditional def or early clobbered)\n",
+		     TN_number(tn));
+	  }
+	  Detach_LR_ovcoal(clr);
+	}
+	else if (LR_def_cnt(clr) == 1 && (TN_is_local_reg(tn) || LR_exposed_use(clr)==0)) {
+	  LIVE_RANGE *src_lr = NULL;
+	  if (OP_extract(op)) {
+	    src_lr = LR_For_TN(OP_opnd(op, OP_is_predicated(op)?1:0));
+	  }
+	  else if (OP_Is_Preference_Copy(op)) {
+	    src_lr = LR_For_TN(OP_opnd(op, OP_Copy_Operand(op)));
+	  }
+	  if (src_lr && !LR_early_clobber(src_lr)) {
+	    // This result is defined by an extract or copy,
+	    // Update overlap coalescing info.
+	    Set_LR_special_def_op (clr, op);
+	    if (LR_ovcoal_is_ancestor(src_lr, clr)) {
+	      // Cyclic dependency not supported:
+	      // A TN cannot be both defined by and the definer of another TN.
+	      if (Do_LRA_Trace(Trace_LRA_Detail)) {
+		fprintf (TFile, OVCOAL_MSG" Detach TN%d from its tree (possible cyclic definition)\n",
+			 TN_number(LR_tn(src_lr)));
+	      }
+	      Detach_LR_ovcoal(src_lr);
+	    }
+	    else {
+	      // Current LR is an exact (partial) copy of the source,
+	      // we must check that it is either not allocated or it is
+	      // allocated to a register compatible with the existing
+	      // coalescing tree.
+	      BOOL compatible = TRUE;
+	      INT  local_rank = 0;
+	      if (OP_extract(op) && resnum!=0) {
+		local_rank = resnum*TN_nhardregs(tn);
+	      }
+	      if (LRA_TN_register(tn) != REGISTER_UNDEFINED) {
+		LIVE_RANGE *iter_lr = src_lr;
+		REGISTER iter_reg;
+		INT rank = local_rank;
+		while (iter_lr) {
+		  iter_reg = LRA_TN_register(LR_tn(iter_lr));
+		  if (iter_reg != REGISTER_UNDEFINED) {
+		    break;
+		  }
+		  rank   += LR_ovcoal_local_rank(iter_lr);
+		  iter_lr = LR_ovcoal_parent(iter_lr);
+		}
+		compatible = ((iter_reg == REGISTER_UNDEFINED) ||
+			      (LRA_TN_register(tn) == iter_reg+rank));
+	      }
+	      if (compatible) {
+		if (Do_LRA_Trace(Trace_LRA_Detail)) {
+		  fprintf (TFile, OVCOAL_MSG" Attach TN%d to parent TN%d\n",
+			   TN_number(tn), TN_number(LR_tn(src_lr)));
+		}
+		Add_LR_ovcoal_child(src_lr, clr, local_rank);
+		Set_LR_ovcoal_init_ver(clr, LR_ovcoal_last_ver(src_lr));
+	      }
+	    }
+	  }
+	}
+	else {
+	  // LR potentially redefined, increment its version
+	  Set_LR_ovcoal_last_ver(clr, Generate_Overlap_Coalescing_Version());
+	}
+	
+	// It is not allowed to have several LRs of the same coal class
+	// to be written by the same instruction (except for extract op).
+	if (LR_ovcoal_parent(clr) && OP_results(op) > 1 && !OP_extract(op)) {
+	  LIVE_RANGE *clr_root = LR_ovcoal_root(clr);
+	  INT resnum2;
+	  for (resnum2 = 0; resnum2 < OP_results(op); ++resnum2) {
+	    if (resnum2 != resnum) {
+	      TN *tn2 = OP_result(op, resnum2);
+	      if (TN_register_class(tn2) == TN_register_class(tn)) {
+		LIVE_RANGE *clr2 = LR_For_TN(tn2);
+		if (LR_ovcoal_root(clr2) == clr_root) {
+		  // Same coalescing class, need to detach one of them
+		  if (LR_ovcoal_is_ancestor(clr2, clr)) {
+		    Remove_LR_ovcoal_child(LR_ovcoal_parent(clr2), clr2);
+		  } else {
+		    Remove_LR_ovcoal_child(LR_ovcoal_parent(clr), clr);
+		    break;
+		  }
+		}
+	      }
+	    }
+	  }
+	}
       }
-#endif 
+      else {
+	if (OP_extract(op)) {
+	  // [SC] This result is defined by an extract.
+	  // Keep a note of the extract source.
+	  Set_LR_special_def_op (clr, op);
+	}
+      }
+#endif
       if (TN_is_local_reg(tn)) {
         LRA_TN_Allocate_Register (tn, REGISTER_UNDEFINED);
 #ifdef TARG_ST
@@ -1493,11 +2085,12 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
         LR_last_use(clr) = opnum;
 #endif
 #ifdef TARG_ST
+	  // Default copy/extract preferencing used
         if (OP_Is_Preference_Copy(op)) {
           TN *src_tn = OP_opnd(op, OP_Copy_Operand(op));
 	  ISA_REGISTER_CLASS cl = TN_register_class (src_tn);
           if (!TN_is_local_reg(src_tn)) {
-            LR_prefer_reg(clr) = LRA_TN_register(src_tn);
+	    Set_LR_prefer_reg(clr, LRA_TN_register(src_tn));
 	    if (Do_LRA_Trace(Trace_LRA_Detail)) {
 	      fprintf (TFile, "OP:%d>> preference %s to ", opnum,
 		       REGISTER_name (cl, LR_prefer_reg(clr)));
@@ -1520,7 +2113,7 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 		&& src_reg != REGISTER_UNDEFINED
 		&& src_reg >= (REGISTER_MIN + src_offs)
 		&& REGISTER_SET_MemberP (subclass_regs, src_reg - src_offs)) {
-	      LR_prefer_reg(clr) = src_reg - src_offs;
+	      Set_LR_prefer_reg(clr, (src_reg - src_offs));
 	      if (Do_LRA_Trace(Trace_LRA_Detail)) {
 		fprintf (TFile, "OP:%d>> preference %s to ", opnum,
 			 REGISTER_name (TN_register_class (src_tn),
@@ -1541,7 +2134,7 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 	  if (!TN_is_local_reg(src_tn)
 	      && src_reg != REGISTER_UNDEFINED
 	      && res_offs < TN_nhardregs(src_tn)) {
-	    LR_prefer_reg(clr) = src_reg + res_offs;
+	    Set_LR_prefer_reg(clr, (src_reg + res_offs));
 	    if (Do_LRA_Trace(Trace_LRA_Detail)) {
 	      fprintf (TFile, "OP:%d>> preference %s to ", opnum,
 		       REGISTER_name (TN_register_class (src_tn),
@@ -1564,7 +2157,7 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 #ifdef TARG_ST
           TN *src_tn = OP_opnd(op, OP_Copy_Operand(op));
           if (!TN_is_local_reg(src_tn)) {
-            LR_prefer_reg(clr) = LRA_TN_register(src_tn);
+            Set_LR_prefer_reg(clr, LRA_TN_register(src_tn));
 	    if (Do_LRA_Trace(Trace_LRA_Detail)) {
 	      fprintf (TFile, "OP:%d>> preference %s to ", opnum,
 		       REGISTER_name (TN_register_class(src_tn),
@@ -1580,7 +2173,11 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 #endif
           if (TN_is_local_reg(src_tn)) {
             LIVE_RANGE *src_lr = LR_For_TN (src_tn);
+#ifdef TARG_ST
+            Set_LR_prefer_reg(src_lr, LRA_TN_register(tn));
+#else
             LR_prefer_reg(src_lr) = LRA_TN_register(tn);
+#endif
           }
         }
 #ifdef TARG_ST
@@ -1598,7 +2195,7 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 		&& src_reg != REGISTER_UNDEFINED
 		&& src_reg >= (REGISTER_MIN + src_offs)
 		&& REGISTER_SET_MemberP (subclass_regs, src_reg - src_offs)) {
-	      LR_prefer_reg(clr) = src_reg - src_offs;
+	      Set_LR_prefer_reg(clr, (src_reg - src_offs));
 	      if (Do_LRA_Trace(Trace_LRA_Detail)) {
 		fprintf (TFile, "OP:%d>> preference %s to ", opnum,
 			 REGISTER_name (TN_register_class(src_tn),
@@ -1619,7 +2216,7 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 	  if (!TN_is_local_reg(src_tn)
 	      && src_reg != REGISTER_UNDEFINED
 	      && res_offs < TN_nhardregs(src_tn)) {
-	    LR_prefer_reg(clr) = src_reg + res_offs;
+	    Set_LR_prefer_reg(clr, (src_reg + res_offs));
 	    if (Do_LRA_Trace(Trace_LRA_Detail)) {
 	      fprintf (TFile, "OP:%d>> preference %s to ", opnum,
 		       REGISTER_name (TN_register_class (src_tn),
@@ -1668,6 +2265,63 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
       }
     }
   }  
+#endif
+
+#ifdef TARG_ST
+  // [TTh] Fill overlap coalescing info at end of BB
+  if (LRA_overlap_coalescing) {
+    // Define live out dedicated registers as alive
+    ISA_REGISTER_CLASS cl;
+    FOR_ALL_ISA_REGISTER_CLASS (cl) {
+      REGISTER r;
+      for (r = REGISTER_MIN; r <= REGISTER_MAX; r++) {
+	if (ded_reg_last_use(cl, r) >= BB_length(bb)) {
+	  Set_ded_reg_ovcoal_alive_count(cl, r, 1);
+	}
+      }
+    }
+
+    BOOL bb_call = BB_call(bb);
+    for (LIVE_RANGE *lr1 = Live_Range_List; lr1 != NULL; lr1 = LR_next(lr1)) {
+      TN *tn1 = LR_tn (lr1);
+      // Cleanup overlap coalescing tree
+      if ((!TN_is_local_reg(tn1)) &&
+	  (LR_ovcoal_parent(lr1) || LR_ovcoal_child(lr1))) {
+	if (LR_next_alias(lr1) != lr1 || LR_early_clobber(lr1)) {
+	  // Forbid overlap coalescing with aliased nodes
+	  if (Do_LRA_Trace(Trace_LRA_Detail)) {
+	    fprintf(TFile, OVCOAL_MSG" Detach GTN%d from its tree (aliased or early clobbered)\n", TN_number(tn1));
+	  }
+	  Detach_LR_ovcoal(lr1);
+	}
+	else if ((LR_last_use(lr1) > BB_length(bb)) ||
+		 (bb_call && ABI_PROPERTY_Is_caller(TN_register_class(tn1),
+						    LRA_TN_register(tn1)))) {
+	  // The GTN is either live out or potentially used by the call
+	  Update_Overlap_Coalescing_Info_For_Use(lr1);
+	}
+      }
+    }
+
+    // Propagate preference along the coalescing tree
+    for (LIVE_RANGE *lr1 = Live_Range_List; lr1 != NULL; lr1 = LR_next(lr1)) {
+      if (LRA_TN_register(LR_tn(lr1)) != REGISTER_UNDEFINED) {
+	Propagate_Overlap_Coalescing_Preference_Leaf_To_Root(lr1, LRA_TN_register(LR_tn(lr1)));
+      }
+    }
+
+    // Set overlap coalescing class for live out dedicated register
+    for (LIVE_RANGE *lr1 = Live_Range_List; lr1 != NULL; lr1 = LR_next(lr1)) {
+      TN *tn1 = LR_tn (lr1);
+      if ((!TN_is_local_reg(tn1)) && LR_last_use(lr1) > BB_length(bb)) {
+	// [TTh] Dealing with a Global TN, that is live out of the BB
+	Set_ded_reg_ovcoal_root(TN_register_class(tn1),
+				LRA_TN_register(tn1),
+				LR_ovcoal_root(lr1),
+				LR_ovcoal_rank(lr1));
+      }
+    }
+  }
 #endif
 }
 
@@ -1892,20 +2546,28 @@ Init_Avail_Regs (void)
  * Add_Avail_Reg
  *
  * Add the register (regclass,reg) back to the avail_regs list.
+ *
+#ifdef TARG_ST
+ * [TTh] When overlap coalescing is enabled, several TNs can be allocated
+ * at the same time to a given dedicated register (they belong to the same
+ * coalescing tree). A use count is then maintained and the dedicated
+ * register is effectively freed when there is no more user of it.
+#endif
  * ======================================================================*/
 #ifdef TARG_ST
   static void
-Add_Avail_Reg (ISA_REGISTER_CLASS regclass, REGISTER r, INT nregs, INT cur_op)
+Add_Avail_Reg (ISA_REGISTER_CLASS regclass, REGISTER reg, INT nregs, INT cur_op)
 {
-  REGISTER reg;
-  FOR_ALL_NREGS(r, nregs, reg) {
+  TN *tn = Build_Dedicated_TN (regclass, reg, 0);
+  REGISTER r;
+  FOR_ALL_NREGS(reg, nregs, r) {
     // are we establishing fat points?
     if (Calculating_Fat_Points()) {
       if (fat_points[cur_op] != FAT_POINTS_MIN) fat_points[cur_op]--;
       //
       // infinite register set used when establishing fat points.
       //
-      if (reg > REGISTER_MAX) continue;
+      if (r > REGISTER_MAX) continue;
     }
 
     /* don't put non-allocatable registers back on the free list. */
@@ -1913,16 +2575,29 @@ Add_Avail_Reg (ISA_REGISTER_CLASS regclass, REGISTER r, INT nregs, INT cur_op)
        all nregs are non-allocatable, and so return here.
        This helps with the use of register pair ( $0, $1 ) to represent
        zero, where $1 is not actually used. */
-    if (!REGISTER_allocatable(regclass, reg)) return;
+    if (!REGISTER_allocatable(regclass, r)) return;
 
     /* register excluded (by swp) */
-    if (REGISTER_SET_MemberP(exclude_set[regclass], reg)) continue;
+    if (REGISTER_SET_MemberP(exclude_set[regclass], r)) continue;
+
+    // For Zero TN, only first register is considered
+    if (r != reg && TN_is_zero_reg(tn)) continue;
 
     if (Do_LRA_Trace(Trace_LRA_Detail)) {
-      fprintf (TFile, "Deallocated register %s\n", REGISTER_name(regclass, reg));
+      fprintf (TFile, "Deallocated register %s\n", REGISTER_name(regclass, r));
     }
-    Is_True (!avail_regs[regclass].reg[reg], (" LRA: Error in Add_Avail_Reg"));
-    avail_regs[regclass].reg[reg] = TRUE;
+    Is_True (!avail_regs[regclass].reg[r], (" LRA: Error in Add_Avail_Reg"));
+    if (LRA_overlap_coalescing && !TN_is_zero_reg(tn)) {
+      // Update overlap coalescing info and effectively free the
+      // register if no more alive.
+      Decrement_ded_reg_ovcoal_alive_count(regclass, r);
+      if (ded_reg_ovcoal_alive_count(regclass, r) <= 0 ) {
+	avail_regs[regclass].reg[r] = TRUE;
+      }
+    }
+    else {
+      avail_regs[regclass].reg[r] = TRUE;
+    }
   }
 }
 #else
@@ -1957,12 +2632,19 @@ Add_Avail_Reg (ISA_REGISTER_CLASS regclass, REGISTER reg, INT cur_op)
  * Delete_Avail_Reg
  *
  * Delete the register <regclass, reg> from the avail_regs list. 
+ *
+#ifdef TARG_ST
+ * [TTh] When overlap coalescing is enabled, the same dedicated registers
+ * can be allocated several times as long as all allocated TNs belongs to
+ * the same overlap coalescing tree.
+#endif
  * ======================================================================*/
 #ifdef TARG_ST
 inline void
 Delete_Avail_Reg (ISA_REGISTER_CLASS regclass, REGISTER reg, INT nregs,
-		  INT cur_op)
+		  INT cur_op, LIVE_RANGE* lr)
 {
+  TN *tn = Build_Dedicated_TN (regclass, reg, 0);
   // are we establishing fat points?
   if (Calculating_Fat_Points()) {
     if (fat_points[cur_op] != FAT_POINTS_MAX) fat_points[cur_op]+=nregs;
@@ -1973,6 +2655,40 @@ Delete_Avail_Reg (ISA_REGISTER_CLASS regclass, REGISTER reg, INT nregs,
   }
   REGISTER r;
   FOR_ALL_NREGS(reg, nregs, r) {
+    if (TN_is_zero_reg(tn)) {
+      // Specific handling for Zero TN:
+      // - No overlap coalescing sanity check performed, as LR with different
+      //   overlap coalescing classes might be allocated to it, following
+      //   optimistic coalescing done in Is_Non_Allocatable_Reg_Available()
+      // - Only first register is considered
+      if (r != reg) continue;
+    }
+    else if (LRA_overlap_coalescing) {
+      if (ded_reg_ovcoal_alive_count(regclass, r)>0) {
+	// Current register not available: Check that it is allocated to the
+	// same overlap coalescing class.
+	FmtAssert((ded_reg_ovcoal_root(regclass, r)==LR_ovcoal_root(lr) &&
+		   ded_reg_ovcoal_rank(regclass, r)==LR_ovcoal_rank(lr)+(r-reg)),
+		  ("Delete_Avail_Reg(): Register '%s' already used by an incompatible overlap coalescing class!\n"
+		   "\tAllocated class: "OVCOAL_BASE_NAME"%d (rank:%d) use_count:%d\n"
+		   "\tNew       class: "OVCOAL_BASE_NAME"%d (rank:%d) used by TN%d\n",
+		   REGISTER_name(regclass, r),
+		   ded_reg_ovcoal_root(regclass, r)?TN_number(LR_tn(ded_reg_ovcoal_root(regclass, r))):0,
+		   ded_reg_ovcoal_rank(regclass, r),
+		   ded_reg_ovcoal_alive_count(regclass, r),
+		   LR_ovcoal_root(lr)?TN_number(LR_tn(LR_ovcoal_root(lr))):0,
+		   LR_ovcoal_rank(lr)+(r-reg),
+		   TN_number(LR_tn(lr))));
+	Increment_ded_reg_ovcoal_alive_count(regclass, r);
+      }
+      else {
+	// Current register available: Associate it to current LR
+	// overlap coalescing class.
+	Set_ded_reg_ovcoal_root(regclass, r, LR_ovcoal_root(lr),
+				LR_ovcoal_rank(lr)+(r-reg));
+	Set_ded_reg_ovcoal_alive_count(regclass, r, 1);
+      }
+    }
     if (Do_LRA_Trace(Trace_LRA_Detail)) {
       fprintf (TFile, "Allocated register %s\n", REGISTER_name(regclass, r));
     }
@@ -1996,13 +2712,21 @@ Delete_Avail_Reg (ISA_REGISTER_CLASS regclass, REGISTER reg, INT cur_op)
 #endif
 
 #ifdef TARG_ST
-static BOOL Regs_Available (ISA_REGISTER_CLASS rclass, REGISTER reg, INT nregs)
+// [TTh] When overlap coalescing is enabled, registers are seen as available if
+// they are already used by TN belonging to the same overlap coalescing tree and
+// with compatible rank.
+static BOOL Regs_Available (ISA_REGISTER_CLASS rclass, REGISTER reg, INT nregs, LIVE_RANGE *lr)
 {
+  INT rank = LR_ovcoal_rank(lr);
   REGISTER r;
   FOR_ALL_NREGS(reg, nregs, r) {
-    if (!avail_regs[rclass].reg[r]) {
+    if (!avail_regs[rclass].reg[r] &&
+	(ded_reg_ovcoal_root(rclass, r) == OVCOAL_ROOT_UNDEF ||
+	 ded_reg_ovcoal_root(rclass, r) != LR_ovcoal_root(lr) ||
+	 ded_reg_ovcoal_rank(rclass, r) != rank)) {
       return FALSE;
     }
+    rank++;
   }
   return TRUE;
 }
@@ -2047,7 +2771,7 @@ Is_Reg_Available (ISA_REGISTER_CLASS regclass,
   }
 
   if (reg != REGISTER_UNDEFINED && 
-      Regs_Available(regclass, reg, nregs) &&
+      Regs_Available(regclass, reg, nregs, lr) &&
       REGISTER_SET_MemberP(usable_regs, reg)) {
     OP *op;
     INT lr_def; 
@@ -2158,7 +2882,6 @@ Is_Non_Allocatable_Reg_Available (
       if (OP_Is_Preference_Copy(op) &&
 	  LRA_TN_register(OP_opnd(op, OP_Copy_Operand(op))) == reg)
         return TRUE;
-#ifdef TARG_ST
       else if (OP_compose(op)) {
 	// [SC] Allow compose ops where all the opnds are reg.
 	//  e.g.   tn :- compose $0, $0
@@ -2171,18 +2894,24 @@ Is_Non_Allocatable_Reg_Available (
 	}
 	return TRUE;
       }
-#endif
     }
     return FALSE;
   }
 
+  INT rank = LR_ovcoal_rank(lr);
   REGISTER r;
   FOR_ALL_NREGS (reg, nregs, r) {
     if (REGISTER_allocatable (regclass, r) ||
 	LR_effective_first_def(lr) < ded_reg_exposed_use(regclass, r) ||
-	LR_last_use(lr) > ded_reg_first_def(regclass, r)) {
+	LR_last_use(lr) > ded_reg_first_def(regclass, r)
+	// [TTh] Disable opportunistic coalescing if non-compatible
+	// overlap coalescing class
+	|| LR_ovcoal_root(lr) == NULL
+	|| LR_ovcoal_root(lr) != ded_reg_ovcoal_root(regclass, r)
+	|| rank != ded_reg_ovcoal_rank(regclass, r)) {
       return FALSE;
     }
+    rank++;
   }
   /* extend the exposed use of the non-allocatable TN */
   FOR_ALL_NREGS (reg, nregs, r) {
@@ -2271,6 +3000,16 @@ Get_Avail_Reg (ISA_REGISTER_CLASS regclass,
   // There is a possibility here to have next_reg > REGISTER_MAX
   // in this case set it to REGISTER_MIN
   if (next_reg > REGISTER_MAX) next_reg = REGISTER_MIN;
+
+  // [TTh] When overlap coalescing is enabled, try to find an optimal
+  // register that will allow current LR to be coalesced with its
+  // parents in the coalescing tree. 
+  INT ovcoal_optimal_rank=0, ovcoal_parent_size=0;
+  REGISTER suboptimal_reg = REGISTER_UNDEFINED;
+  if (LRA_overlap_coalescing) {
+    ovcoal_optimal_rank = LR_ovcoal_rank(lr);
+    ovcoal_parent_size  = TN_nhardregs(LR_tn(LR_ovcoal_root(lr)));
+  }
   
   // Get the best available register in the order given by gra_color.
   REGISTER_SET subclass_allowed = usable_regs;
@@ -2278,10 +3017,27 @@ Get_Avail_Reg (ISA_REGISTER_CLASS regclass,
 						 skip_regs);
   reg = CGCOLOR_Choose_Best_Register(regclass, nregs, subclass_allowed, allowed, next_reg);
   while (reg != REGISTER_UNDEFINED) {
-    if (Is_Reg_Available(regclass, usable_regs, reg, nregs, lr)) break;
+    if (Is_Reg_Available(regclass, usable_regs, reg, nregs, lr)) {
+      if (!LRA_overlap_coalescing ||
+	  REGISTER_Has_Expected_Rank(reg, ovcoal_parent_size, ovcoal_optimal_rank)) {
+	break;
+      }
+      else if (suboptimal_reg != REGISTER_UNDEFINED) {
+	// [TTh] Current register is available but not optimal for coalescing, 
+	// as it is not correctly aligned to be coalesced with the root of the
+	// coalescing tree.
+	// Keep track of the first one, and try to find a better one.
+	suboptimal_reg = reg;
+      }
+    }
     reg = CGCOLOR_Choose_Next_Best_Register();
   }
-  
+
+  if (reg == REGISTER_UNDEFINED) {
+    // [TTh] No optimal register found for coalescing, but maybe a suboptimal
+    // one is available.
+    reg = suboptimal_reg;
+  }
   // If we found it, allocate it
   if (reg != REGISTER_UNDEFINED) goto available;
 
@@ -2495,7 +3251,13 @@ Allocate_Register (
   if (!uniq_result &&
       regclass == result_regclass &&
 #ifdef TARG_ST
-      Is_Reg_Available (regclass, usable_regs, result_reg, nregs, clr))
+      Is_Reg_Available (regclass, usable_regs, result_reg, nregs, clr) &&
+      // [TTh] With overlap coalescing enabled, uses result_reg only if is correctly
+      // aligned to be coalesced with the root of its coalescing tree.
+      (!LRA_overlap_coalescing ||
+       REGISTER_Has_Expected_Rank(result_reg,
+				  TN_nhardregs(LR_tn(LR_ovcoal_root(clr))),
+				  LR_ovcoal_rank(clr))))
 #else
       Is_Reg_Available (regclass, usable_regs, result_reg, clr))
 #endif
@@ -2537,7 +3299,7 @@ Allocate_Register (
     if (reg == REGISTER_UNDEFINED) return REGISTER_UNDEFINED;
   }
 #ifdef TARG_ST
-  Delete_Avail_Reg (regclass, reg, nregs, opnum);
+  Delete_Avail_Reg (regclass, reg, nregs, opnum, clr);
 #else
   Delete_Avail_Reg (regclass, reg, opnum);
 #endif
@@ -3019,7 +3781,7 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
 #endif
 	  result_reg = prefer_reg;
 #ifdef TARG_ST
-	  Delete_Avail_Reg (result_cl, result_reg, result_nregs, opnum);
+	  Delete_Avail_Reg (result_cl, result_reg, result_nregs, opnum, clr);
 #else
 	  Delete_Avail_Reg (result_cl, result_reg, opnum);
 #endif
@@ -3077,6 +3839,11 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
 	  }
 	}
 	LRA_TN_Allocate_Register (result_tn, result_reg);
+#ifdef TARG_ST
+	if (LRA_overlap_coalescing) {
+	  Propagate_Overlap_Coalescing_Preference_Leaf_To_Root(clr, result_reg);
+	}
+#endif
       } else if (result_reg == REGISTER_sp && CG_localize_tns) {
 	Update_Callee_Availability(bb);
       } 
@@ -3225,7 +3992,10 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
     {
       LRA_TN_Allocate_Register (tn, prefer_reg);
 #ifdef TARG_ST
-      Delete_Avail_Reg (TN_register_class(tn), prefer_reg, nregs, opnum);
+      if (LRA_overlap_coalescing) {
+	Propagate_Overlap_Coalescing_Preference_Leaf_To_Root(clr, prefer_reg);
+      }
+      Delete_Avail_Reg (TN_register_class(tn), prefer_reg, nregs, opnum, clr);
 #else
       Delete_Avail_Reg (TN_register_class(tn), prefer_reg, opnum);
 #endif
@@ -3273,6 +4043,8 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
     // other extract rests.
     // [TTh] dest_nbregs is useful when extracted TNs are multiple-registers.
     // It is then required to allocate/free group of single register.
+    // [TTh] When overlap coalescing is enabled, LR_extract_op is defined only
+    // when the current liverange can be coalesced with the source of the extract
     OP *extract_op = LR_extract_op (clr);
     if (LRA_merge_extract
 	&& extract_op
@@ -3281,7 +4053,8 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
       TN *extract_source = OP_opnd(extract_op, 0);
       if (LRA_TN_register(extract_source) == REGISTER_UNDEFINED) {
 	 LIVE_RANGE *extract_source_lr = LR_For_TN (extract_source);
-	 if (LR_last_use (extract_source_lr) == LR_first_def (clr)) {
+	 if (LRA_overlap_coalescing ||
+	     LR_last_use (extract_source_lr) == LR_first_def (clr)) {
 	   ISA_REGISTER_CLASS extract_source_cl = TN_register_class (extract_source);
 	   Set_LR_last_use (extract_source_lr, LR_last_use (clr));
 	   reg = Allocate_Register (extract_source, uniq_result,
@@ -3297,10 +4070,15 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
 		 TN *extract_dest = OP_result(extract_op, d);
 		 if (extract_dest == tn) {
 		   LRA_TN_Allocate_Register (extract_dest, reg + (d * dest_nbregs));
+		   if (LRA_overlap_coalescing) {
+		     Propagate_Overlap_Coalescing_Preference_Leaf_To_Root(clr, reg + (d * dest_nbregs));
+		   }
 		 } else {
-		   LIVE_RANGE *d_lr = LR_For_TN (extract_dest);
-		   if (LR_prefer_reg (d_lr) == REGISTER_UNDEFINED) {
-		     LR_prefer_reg (d_lr) = reg + (d * dest_nbregs);
+		   if (!LRA_overlap_coalescing) {
+		     LIVE_RANGE *d_lr = LR_For_TN (extract_dest);
+		     if (LR_prefer_reg (d_lr) == REGISTER_UNDEFINED) {
+		       Set_LR_prefer_reg (d_lr, reg + (d * dest_nbregs));
+		     }
 		   }
 		   Add_Avail_Reg (regclass, reg + (d * dest_nbregs), dest_nbregs, opnum);
 		 }
@@ -3320,9 +4098,28 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
 	   }
 	 }
       }
+      else if (LRA_overlap_coalescing) {
+	// [TTh] With overlap coalescing enabled, we can try to use same register
+	// as the source, even if it is already allocated
+	INT dest_nbregs = TN_nhardregs(tn);
+	INT rr = LRA_TN_register(extract_source) + LR_ovcoal_local_rank(clr);
+	if (Regs_Available(regclass, rr, dest_nbregs, clr)) {
+	  Delete_Avail_Reg (TN_register_class(tn), rr, dest_nbregs, opnum, clr);
+	  LRA_TN_Allocate_Register (tn, rr);
+	  Propagate_Overlap_Coalescing_Preference_Leaf_To_Root(LR_For_TN(tn), rr);
+	  if (Do_LRA_Trace(Trace_LRA_Detail)) {
+	    fprintf (TFile, OVCOAL_MSG" Allocated TN%d to register %s!!\n",
+		     TN_number(tn), REGISTER_name(regclass, rr));
+	  }
+	  continue;
+	}
+      }
     }
     reg = Allocate_Register (tn, uniq_result, result_cl, must_use, result_reg,
 			     result_nregs, opnum);
+    if (LRA_overlap_coalescing) {
+      Propagate_Overlap_Coalescing_Preference_Leaf_To_Root(clr, reg);
+    }
 #else
     reg = Allocate_Register (tn, uniq_result, result_cl, must_use, result_reg, opnum);
 #endif
@@ -3515,6 +4312,12 @@ Assign_Registers (BB *bb, TN **spill_tn, BOOL *redundant_code)
       continue;
     }
 
+#ifdef TARG_ST
+    if (LRA_overlap_coalescing && !Calculating_Fat_Points() &&
+	Do_LRA_Trace(Trace_LRA_Detail)) {
+      Print_Overlap_Coalescing();
+    }
+#endif
     if (!Assign_Registers_For_OP (op, opnum, spill_tn, bb)) {
       return FALSE;
     }

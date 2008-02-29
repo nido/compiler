@@ -2885,7 +2885,7 @@ run_compiler (void)
            *       temp filename to back-end.
            */
           char* tmpfilename = NULL;
-          int cmdlineflag;
+          int cmdlineflag = 0;
          if (phase_order[i] == P_be)
             {
               boolean dump_cmdline(char* filename);

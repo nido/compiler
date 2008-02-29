@@ -824,6 +824,9 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE,"lra_resched_check", "",
     0, 0, 0, &LRA_resched_check, NULL,
     "check that the LRA rescheduling reduces register pressure" },
+  { OVK_BOOL,   OV_INTERNAL, TRUE,"lra_overlap_coalescing", "",
+    0, 0, 0, &LRA_overlap_coalescing, NULL,
+    "support coalescing of non-conflicting overlapping live ranges in local register allocation" },
 #endif /* TARG_ST (LRA) */
 
   // Global Code Motion (GCM) options.

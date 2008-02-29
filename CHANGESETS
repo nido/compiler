@@ -1,6 +1,34 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Feb 29 13:22:09 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-LRA-coalescing
+
+Description:
+------------
+	* [trunk] Deliver tt2/dev-LRA-coalescing rev #15857 with authorization branch #33593
+	          -> Overlap coalescing development: new approach to coalesce TNs in LRA,
+		     that support coalescing for overlapping live ranges.
+		     The new coalescing is activated by default, but it is possible to use 
+		     the former approach, by setting the command line option
+		     	-CG:lra_overlap_coalescing=false
+
+
+
+Modified Files:
+---------------
+	M      osprey/driver/phases.c
+	M      osprey/lai/lra.cxx
+	M      osprey/lai/cg_flags.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cg_flags.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Feb 29 12:43:37 CET 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
