@@ -134,7 +134,13 @@ static OP_MAP phi_op_map;
 // blocks now. (we don't know yet if the hammock will be reduced).
 // OPs will be updated in BB_Fix_Spec_Loads and BB_Fix_Spec_Stores.
 
+#ifdef TARG_ST
+//TDR - Add determinist selection mode to avoid diffs between -g / not -g mode
+typedef std::map<OP*, TN*, Op_Map_Cmp>    PredOp_Map;
+#else
 typedef std::map<OP*, TN*> PredOp_Map;
+#endif
+
 typedef PredOp_Map::iterator PredOp_Map_Iter;
 typedef PredOp_Map::const_iterator PredOp_Map_ConstIter;
 static PredOp_Map pred_i;

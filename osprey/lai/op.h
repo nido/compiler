@@ -354,6 +354,7 @@ typedef struct op {
   mUINT16	flags;		/* attributes associated with OP */
 #ifdef TARG_ST
   mUINT16	flags2;		/* [CL] attributes extension */
+  UINT64	g_map_idx;	/* Global unique id for OP */
 #endif
   mTOP		opr;		/* Opcode. topcode.h */
   mUINT8	unrolling;	/* which unrolled replication (if any) */

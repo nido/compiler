@@ -144,6 +144,9 @@ New_OP ( INT results, INT opnds )
   PU_OP_Cnt++;
   Set_OP_opnds(op, opnds);
   Set_OP_results(op, results);
+#ifdef TARG_ST
+  op->g_map_idx=PU_OP_Cnt;
+#endif
   return op;
 }
 
@@ -171,6 +174,7 @@ Dup_OP ( OP *op )
   Copy_OP_Annot ( new_op, op );
 #ifdef TARG_ST
   LABEL_IDX tag = Get_OP_Tag(op);
+  new_op->g_map_idx=PU_OP_Cnt;
   if (tag) {
 #else
   if (OP_has_tag(op)) {

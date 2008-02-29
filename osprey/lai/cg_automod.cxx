@@ -35,11 +35,14 @@ static BOOL BaseOffset_CheckCombine(OP *, OP *);
 static int baseOffset_Cost(DUD_REGION *, OP *, OP*);
 static BOOL check_OffsetIncrOffset(OP *, OP *);
 
-static std::map <OP *, OP * > M_Mem2Incr;
+//TDR - Add determinist selection mode to avoid diffs between -g / not -g mode
+typedef std::map <OP*, OP *, Op_Map_Cmp>    M_Mem_Map;
+typedef M_Mem_Map::const_iterator M_Mem_Map_Iter;
 
-static std::map <OP *, OP * > M_PostIncr2Mem;
-static std::map <OP *, OP * > M_PreIncr2Mem;
-static std::map <OP *, OP * > M_OffsetIncr2Mem;
+static M_Mem_Map M_Mem2Incr;
+static M_Mem_Map M_PostIncr2Mem;
+static M_Mem_Map M_PreIncr2Mem;
+static M_Mem_Map M_OffsetIncr2Mem;
 
 /*
  * Check that increment operation is a diadic add/sub
@@ -1291,8 +1294,8 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
 	  int cost = postincr_Cost(dud, op, useop);
 
 	  // Add to candidates
-	  std::map <OP *, OP *> :: const_iterator it_post = M_PostIncr2Mem.find(useop);
-	  std::map <OP *, OP *> :: const_iterator it_pre = M_PreIncr2Mem.find(useop);
+	  M_Mem_Map_Iter it_post = M_PostIncr2Mem.find(useop);
+	  M_Mem_Map_Iter it_pre = M_PreIncr2Mem.find(useop);
 
 	  if(cost < best_cost && it_post == M_PostIncr2Mem.end() && it_pre == M_PreIncr2Mem.end()){
 	    best_cost = cost;
@@ -1331,10 +1334,9 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
 	int cost = preincr_Cost(dud, op, defop);
 
 	//add to candidates
-	std::map <OP *, OP *> :: const_iterator it_post = M_PostIncr2Mem.find(defop);
-	std::map <OP *, OP *> :: const_iterator it_pre = M_PreIncr2Mem.find(defop);
-	std::map <OP *, OP *> :: const_iterator it_mem = M_Mem2Incr.find(op);
-
+	M_Mem_Map_Iter it_post = M_PostIncr2Mem.find(defop);
+	M_Mem_Map_Iter it_pre = M_PreIncr2Mem.find(defop);
+	M_Mem_Map_Iter it_mem = M_Mem2Incr.find(op);
 	if(cost < INT_MAX && it_post == M_PostIncr2Mem.end() && it_pre == M_PreIncr2Mem.end() && it_mem == M_Mem2Incr.end()){
 
 	  M_PreIncr2Mem[defop] = op;
@@ -1376,10 +1378,9 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
 	    //valid base + offset
 
 	    //add to candidates
-	    std::map <OP *, OP *> :: const_iterator it_post = M_PostIncr2Mem.find(defop);
-	    std::map <OP *, OP *> :: const_iterator it_pre = M_PreIncr2Mem.find(defop);
-	    std::map <OP *, OP *> :: const_iterator it_mem = M_Mem2Incr.find(op);
-
+		  M_Mem_Map_Iter it_post = M_PostIncr2Mem.find(defop);
+		  M_Mem_Map_Iter it_pre = M_PreIncr2Mem.find(defop);
+		  M_Mem_Map_Iter it_mem = M_Mem2Incr.find(op);
 	    if(it_post == M_PostIncr2Mem.end() && it_pre == M_PreIncr2Mem.end() && it_mem == M_Mem2Incr.end()){
 	      M_OffsetIncr2Mem[defop] = op;
 	      M_Mem2Incr[op] = defop;
@@ -1405,8 +1406,7 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
  */
 static void
 code_Repair(DUD_REGION *dud){
-
-  std::map <OP *, OP *> :: const_iterator it;
+	M_Mem_Map_Iter it;
 
   // Pre-increment
   for(it = M_PreIncr2Mem.begin(); it != M_PreIncr2Mem.end(); ++it){
