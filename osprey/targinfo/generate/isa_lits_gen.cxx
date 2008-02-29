@@ -287,14 +287,6 @@ void ISA_Create_Lit_Class(const char* name, LIT_CLASS_TYPE type, ...)
 //  See interface description.
 /////////////////////////////////////
 {
-  // We need special format in printf function
-  // when running Windows .NET compiler.
-#ifdef _MSC_VER
-#define LONGLONG_FORMAT "0x%016I64xLL"
-#else
-#define LONGLONG_FORMAT "0x%016llxLL"
-#endif
-
   va_list ap;
   LIT_RANGE range;
   bool is_signed = type == SIGNED;
@@ -339,17 +331,17 @@ void ISA_Create_Lit_Class(const char* name, LIT_CLASS_TYPE type, ...)
 
   // Initialize ISA_LIT_CLASS_info for this class. Note that .range[0]
   // holds the smallest min/largest max; .range[1] is the first sub-range.
-  fprintf(cfile, "  { { { " LONGLONG_FORMAT ", " LONGLONG_FORMAT " }", min, max);
+  fprintf(cfile, "  { { { " PRINTF_LONGLONG_HEXA ", " PRINTF_LONGLONG_HEXA " }", min, max);
   if(gen_static_code)
-    fprintf(cincfile, "  { { { " LONGLONG_FORMAT ", " LONGLONG_FORMAT " }", min, max);
+    fprintf(cincfile, "  { { { " PRINTF_LONGLONG_HEXA ", " PRINTF_LONGLONG_HEXA " }", min, max);
 
   va_start(ap,type);
   while ((range = va_arg(ap,LIT_RANGE)) != LIT_RANGE_END) {
-    fprintf(cfile, ",\n      { " LONGLONG_FORMAT ", " LONGLONG_FORMAT ", %ld, %#lx }", 
+    fprintf(cfile, ",\n      { " PRINTF_LONGLONG_HEXA ", " PRINTF_LONGLONG_HEXA ", %ld, %#lx }", 
 		   range->min, range->max, range->scaling_value, range->scaling_mask);
 
     if(gen_static_code)
-    { fprintf(cincfile, ",\n      { " LONGLONG_FORMAT ", " LONGLONG_FORMAT ", %ld, %#lx }", 
+    { fprintf(cincfile, ",\n      { " PRINTF_LONGLONG_HEXA ", " PRINTF_LONGLONG_HEXA ", %ld, %#lx }", 
 	      range->min, range->max, range->scaling_value, range->scaling_mask);
     }
   }

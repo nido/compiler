@@ -462,9 +462,10 @@ void ISA_Properties_End(void)
 
   const char* top_name_template = gen_static_code ? " /* TOP_%-25s */  " :  " /* TOP_dyn_%-25s */  " ;
   
+  unsigned long long * flag_value = (unsigned long long*)malloc(mask_word_count*sizeof(unsigned long long*)); // variable length flag, low indexes in low words.
   for (code = 0; code < TOP_count_limit; code++) {
     const char *sep;
-    unsigned long long flag_value[mask_word_count]; // variable length flag, low indexes in low words.
+    // Rejected by MS Visual 2003 // unsigned long long flag_value[mask_word_count]; // variable length flag, low indexes in low words.
     int i;
     
     memset(flag_value, 0, sizeof(unsigned long long)*mask_word_count);
@@ -483,7 +484,7 @@ void ISA_Properties_End(void)
     fprintf (cfile, "{ ");
     sep = "";
     for (i = 0; i < mask_word_count; i++) {
-      fprintf (cfile, "%s0x%0*llx%s", sep, mask_word_size / 4, flag_value[i], mask_int_suffix);
+      fprintf (cfile, "%s" PRINTF_LONGLONG_HEXA "%s", sep, flag_value[i], mask_int_suffix);
       sep = ", ";
     }
     fprintf (cfile, " }, ");
@@ -499,6 +500,7 @@ void ISA_Properties_End(void)
     }
     fprintf (cfile, " */\n");
   }        // End of for(code...) loop.
+  free(flag_value);
 
   if(gen_static_code) {
     // don't forget the one for TOP_UNDEFINED !
@@ -509,7 +511,7 @@ void ISA_Properties_End(void)
     fprintf (cfile, "{ ");
     sep = "";
     for (i = 0; i < mask_word_count; i++) {
-      fprintf (cfile, "%s0x%0*llx%s", sep, mask_word_size / 4, 0ULL, mask_int_suffix);
+      fprintf (cfile, "%s" PRINTF_LONGLONG_HEXA "%s", sep, 0ULL, mask_int_suffix);
       sep = ", ";
     }
     fprintf (cfile, " },\n");
@@ -547,7 +549,7 @@ void ISA_Properties_End(void)
       ISA_PROPERTY property = *isi;
       int word_idx = property->bit_position / mask_word_size;
       int bit_pos = property->bit_position % mask_word_size;
-      fprintf (hfile, "#define TOP_is_%s(t)\t (ISA_PROPERTIES_flags[(INT)t].mask[%d] & 0x%llx%s)\n",
+      fprintf (hfile, "#define TOP_is_%s(t)\t (ISA_PROPERTIES_flags[(INT)t].mask[%d] & " PRINTF_LONGLONG_HEXA "%s)\n",
 	       property->name, word_idx, (1ULL << bit_pos), mask_int_suffix);
     }
   } else {
@@ -568,7 +570,7 @@ void ISA_Properties_End(void)
       } else { 
 	int word_idx = property->bit_position / mask_word_size;
 	int bit_pos = property->bit_position % mask_word_size;
-	fprintf (hfile, "#define TOP_is_%s(t)\t (dyn_get_TOP_prop_tab()[(INT)t].flags[%d] & 0x%llx%s)\n",
+	fprintf (hfile, "#define TOP_is_%s(t)\t (dyn_get_TOP_prop_tab()[(INT)t].flags[%d] & " PRINTF_LONGLONG_HEXA "%s)\n",
 		 property->name, word_idx, (1ULL << bit_pos), mask_int_suffix);
       }
     }
@@ -833,7 +835,7 @@ void ISA_Properties_End(void)
   for ( isi = properties.begin(); isi != properties.end(); ++isi ) {
     ISA_PROPERTY property = *isi;
     if (property->bit_position != BIT_POS_NONE) {
-      unsigned long long identifier_value;
+      // no %0*llx with MS Visual // unsigned long long identifier_value;
       bool store_mask = false;
 
       /* For the static ISA, the actual identifier is always stored. 
@@ -846,7 +848,7 @@ void ISA_Properties_End(void)
 
       fprintf (cfile, "  { \"%s\", ", property->name);
       if (store_mask) {
-	fprintf (cfile, "0x%0*llx%s /* (1%s << %d) */ },\n", ident_int_size / 4, 
+	fprintf (cfile, "" PRINTF_LONGLONG_HEXA "%s /* (1%s << %d) */ },\n",
 		 (1ULL << property->bit_position), ident_int_suffix,
 		 ident_int_suffix, property->bit_position);
       } else {

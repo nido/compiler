@@ -104,6 +104,19 @@ extern "C" {
 #endif
 #endif
 
+// We need special format in printf function
+// when running Windows .NET compiler.
+#if defined(__MINGW32__) || defined(_MSC_VER)
+#define PRINTF_LONGLONG "I64"
+#else
+#define PRINTF_LONGLONG "ll"
+#endif
+#define PRINTF_LONGLONG_FORMAT(prefix,format,type) prefix "%" format PRINTF_LONGLONG type
+#define PRINTF_LONGLONG_HEXA                       PRINTF_LONGLONG_FORMAT("0x","016","x")
+#define PRINTF_LONGLONG_DECIMAL                    PRINTF_LONGLONG_FORMAT(""  ,""   ,"d")
+#define PRINTF_LONGLONG_SIGNED                     PRINTF_LONGLONG_FORMAT("+" ,""   ,"i")
+#define PRINTF_LONGLONG_UNSIGNED                   PRINTF_LONGLONG_FORMAT(""  ,""   ,"u")
+
 /* In order to keep code legacy, and in the same time */
 /* add a new parameter (extname), this last parameter */
 /* is optional and set to NULL if not specified.      */

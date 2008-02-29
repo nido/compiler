@@ -474,7 +474,7 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
     fprintf (hfile, "\n");
     for (iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei) {
       ISA_EXEC_UNIT_TYPE curr_exec_type = *iei;
-      fprintf (hfile, "#define ISA_EXEC_PROPERTY_%-15s (0x%llx%s)\n",
+      fprintf (hfile, "#define ISA_EXEC_PROPERTY_%-15s (" PRINTF_LONGLONG_HEXA "%s)\n",
                        curr_exec_type->name,
                        (1ULL << curr_exec_type->bit_position), int_suffix);
     }
@@ -591,13 +591,13 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
     fprintf(cfile, "\n    %2d,", curr_exec_type->pack_code);
     fprintf(cfile, " 0x%1x,", stop_mask);
 #ifdef TARG_ST
-    fprintf(cfile, "\n    { 0x%08llx", slot_mask.val[0]);
+    fprintf(cfile, "\n    { " PRINTF_LONGLONG_HEXA "", slot_mask.val[0]);
     for (i = 1; i < slot_mask_words; i++) {
-      fprintf(cfile, ", 0x%08llx", slot_mask.val[i]);
+      fprintf(cfile, ", " PRINTF_LONGLONG_HEXA "", slot_mask.val[i]);
     }
     fprintf(cfile, " }\n  },\n");
 #else
-    fprintf(cfile, " 0x%0*llx\n  },\n", slot_mask_digits, slot_mask);
+    fprintf(cfile, " " PRINTF_LONGLONG_HEXA "\n  },\n", slot_mask_digits, slot_mask);
 #endif
   }
 #ifdef TARG_ST
@@ -989,7 +989,7 @@ static void Emit_Pack_Component(
   if (first_comps[comp] < 0) first_comps[comp] = *pack_index;
 
   if (comp == END) {
-    fprintf (cfile, "  { %-30s, %2d, %2d, %2d,   %16lld },  /* %s */\n",
+    fprintf (cfile, "  { %-30s, %2d, %2d, %2d,   %16" PRINTF_LONGLONG "d },  /* %s */\n",
 		    pack_comp_name[comp],
 		    -1,
 		    -1,
@@ -1018,7 +1018,7 @@ static void Emit_Pack_Component(
       int b = bundle_pos % incr;
       int w = width;
       if (b + width > incr) w = incr - b;
-      fprintf (cfile, "  { %-30s, %2d, %2d, %2d, 0x%016llx },  /* %s */\n",
+      fprintf (cfile, "  { %-30s, %2d, %2d, %2d, " PRINTF_LONGLONG_HEXA " },  /* %s */\n",
 		      pack_comp_name[comp],
 		      index,
 		      comp_pos,
