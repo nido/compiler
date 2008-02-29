@@ -298,12 +298,15 @@ BOOL KnuthCompare(float af, float bf, float relError)
     return aafmbf <= relError * mxaafabf ;
 }
 
-#define KnuthCompareEQ(af, bf) (((af) == (bf)) ||  KnuthCompare(af, bf, FLT_EPSILON))
-#define KnuthCompareNE(af, bf) (((af) != (bf)) && !KnuthCompare(af, bf, FLT_EPSILON))
-#define KnuthCompareLE(af, bf) (((af) <= (bf)) ||  KnuthCompare(af, bf, FLT_EPSILON))
-#define KnuthCompareLT(af, bf) (((af) <  (bf)) && !KnuthCompare(af, bf, FLT_EPSILON))
-#define KnuthCompareGE(af, bf) (((af) >= (bf)) ||  KnuthCompare(af, bf, FLT_EPSILON))
-#define KnuthCompareGT(af, bf) (((af) >  (bf)) && !KnuthCompare(af, bf, FLT_EPSILON))
+/* [TTh] FLT_EPSILON is much too small (~1e-7) to be relevant.
+ *  KNUTH_FLT_EPSILON defines a more relevant value */
+#define KNUTH_FLT_EPSILON (1000.0F*FLT_EPSILON)
+#define KnuthCompareEQ(af, bf) (((af) == (bf)) ||  KnuthCompare(af, bf, KNUTH_FLT_EPSILON))
+#define KnuthCompareNE(af, bf) (((af) != (bf)) && !KnuthCompare(af, bf, KNUTH_FLT_EPSILON))
+#define KnuthCompareLE(af, bf) (((af) <= (bf)) ||  KnuthCompare(af, bf, KNUTH_FLT_EPSILON))
+#define KnuthCompareLT(af, bf) (((af) <  (bf)) && !KnuthCompare(af, bf, KNUTH_FLT_EPSILON))
+#define KnuthCompareGE(af, bf) (((af) >= (bf)) ||  KnuthCompare(af, bf, KNUTH_FLT_EPSILON))
+#define KnuthCompareGT(af, bf) (((af) >  (bf)) && !KnuthCompare(af, bf, KNUTH_FLT_EPSILON))
 #endif
 
 /* --------------------------------------------------------------------

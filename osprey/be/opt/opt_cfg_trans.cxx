@@ -93,6 +93,10 @@
 
 #include "opt_main.h"
 
+#ifdef TARG_ST
+#include "defs.h" // For KnuthCompare()
+#endif
+
 // for debugging
 #ifdef Is_True_On
 extern void show_graph(successor_graph& g);
@@ -580,12 +584,26 @@ struct comp_zones {
     double vx = (*zones)[x].priority();
     double vy = (*zones)[y].priority();
 
+#ifdef TARG_ST
+    // [TTh] Insure more determism to avoid difference between
+    // compiler build in debug and release mode:
+    // In case of (nearly) equal priorities, sort using zone ids
+    bool nearly_eq = KnuthCompareEQ((float)vx, (float)vy);
+    bool t = (!nearly_eq && (vx > vy)) || (nearly_eq && (x < y));
+
+    if (t) {
+      Is_True( nearly_eq || !(vy > vx),
+	       ("vx > vy && vy > vx."));
+    }
+#else
     bool t = vx > vy;
 
     if (t) {
       Is_True( !(vy > vx),
 	       ("vx > vy && vy > vx."));
     }
+#endif
+
 #endif
     return t;
   }

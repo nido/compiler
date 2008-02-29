@@ -4861,13 +4861,17 @@ Compare_Edges(const void *p1, const void *p2)
       if (BBINFO_nsuccs(e1->pred) != 1 && BBINFO_nsuccs(e2->pred) == 1) 
 	return sort_1_after_2;
   }
-#endif
-  if (weight1 > weight2) {
-    return sort_1_before_2;
-  } else if (weight1 < weight2) {
-    return sort_1_after_2;
-  } else {
-#ifdef TARG_ST
+  // [TTh] 20080220: Use weight comparison to sort edges only when the
+  // differences are meaningful. This is needed to avoid divergence between
+  // compilers build in debug and release mode.
+  if (!KnuthCompareEQ(weight1, weight2)) {
+    if (weight1 > weight2) {
+      return sort_1_before_2;
+    } else { // (weight1 < weight2)
+      return sort_1_after_2;
+    }
+  }
+  else {
     // [CG] Make it determinist to avoid 
     // host differences in the implementation of qsort.
     BB_NUM pred_id1 = BB_id(e1->pred);
@@ -4883,9 +4887,17 @@ Compare_Edges(const void *p1, const void *p2)
     else if (succ_id1 > succ_id2)
       return sort_1_after_2;
     else 
-#endif
+      return sort_1_same_2;
+  }
+#else
+  if (weight1 > weight2) {
+    return sort_1_before_2;
+  } else if (weight1 < weight2) {
+    return sort_1_after_2;
+  } else {
     return sort_1_same_2;
   }
+#endif
 }
 
 
@@ -6789,6 +6801,8 @@ Cloned_Gain(BB *pred, BB *suc)
  * We perform a two level sort. We first consider the metric_class. If
  * they are different, the metric_class defines the ordering. Otherwise,
  * the metric defines the ordering.
+ * [TTh] A third sorting level has been added, based on the id of the
+ *       predecessor BB.
  *
  * ====================================================================
  */
@@ -6818,6 +6832,29 @@ Compare_Clone_Cands(const void *p1, const void *p2)
 
   float metric1 = c1->metric;
   float metric2 = c2->metric;
+#ifdef TARG_ST
+  // [TTh] 20080220: Use KnuthCompare() for float comparison in order to
+  // avoid variation between same compiler build in debug or release mode.
+  // In case of near equality, use Id of predecessor BB to sort candidates.
+  if (!KnuthCompareEQ(metric1, metric2)) {
+    if (metric1 > metric2) {
+      return sort_1_before_2;
+    } else { // (metric1 < metric2)
+      return sort_1_after_2;
+    }
+  }
+  else {
+    INT pred1 = BB_id(c1->pred);
+    INT pred2 = BB_id(c2->pred);
+    if (pred1 > pred2) {
+      return sort_1_before_2;
+    } else if (pred1 < pred2) {
+      return sort_1_after_2;
+    } else {
+      return sort_1_same_2;
+    }
+  }
+#else
   if (metric1 > metric2) {
     return sort_1_before_2;
   } else if (metric1 < metric2) {
@@ -6825,6 +6862,7 @@ Compare_Clone_Cands(const void *p1, const void *p2)
   } else {
     return sort_1_same_2;
   }
+#endif
 }
 
 

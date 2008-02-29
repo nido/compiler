@@ -564,9 +564,11 @@ Update_Op_With_New_Base(OP *&op, TN *new_base_tn, INT64 base_offset, INT64 addr_
   // FdF 20061027: In case of operations in exception handlers,
   // there will be no common dominator. Some operations will not be
   // optimized in this case. (common_dom_new == NULL)
+  // [TTh] 20080220: Use KnuthCompare() function to improve
+  // determinism of float comparison.
   if(common_dom_new &&
      (!(CG_cbpo_block_method & CBPO_BLOCK_LOCAL) ||
-      ((sum / BB_freq(common_dom_new)) > min_frequency_ratio) ||
+      (KnuthCompareGT((sum / BB_freq(common_dom_new)), min_frequency_ratio)) ||
       (common_dom_new == common_dom && nbDone) || common_dom_new == bb)) {
     result = Update_Op_With_New_Base(op, new_base_tn, base_offset,
                                      addr_dist, nbDone);
@@ -612,7 +614,9 @@ Check_And_Update_Ops_With_New_Base(BB *&common_dom, TN* new_base_tn,
   INT CG_cbpo_block_method_save = CG_cbpo_block_method;
 
   if(CG_cbpo_block_method & CBPO_BLOCK_GLOBAL) {
-    if((sum / BB_freq(tmp_dom)) < min_frequency_ratio) {
+    // [TTh] 20080220: Use KnuthCompare() function to improve
+    // determinism of float comparison.
+    if(KnuthCompareLT((sum / BB_freq(tmp_dom)), min_frequency_ratio)) {
       if(Trace_SSA_CBPO) {
         fprintf(TFile, "Do not globaly optimize: Sum %f\tDominator "
                 "(BB%d) %f\n",

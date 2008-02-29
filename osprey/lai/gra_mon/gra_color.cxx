@@ -852,6 +852,18 @@ Compare_Priorities( LRANGE* lrange0, LRANGE* lrange1 )
 	&& lrange1->Type() != LRANGE_TYPE_LOCAL) {
       return TN_number(lrange0->Tn()) < TN_number(lrange1->Tn());
     }
+    else {
+      // [TTh] At least one if the LRANGE is local, but we still want to
+      // have a deterministic ordering.
+      // So (arbitrarily) prioritize:
+      // - a global or complement LR over a local one,
+      // - if both LR are locals, use container BB ids.
+      // (if both local LRs belong to same BB, the order should not impact
+      //  the allocation algorithm)
+      return (lrange1->Type() != LRANGE_TYPE_LOCAL ||
+	      (lrange0->Type() == LRANGE_TYPE_LOCAL &&
+	       (BB_id(lrange0->Gbb()->Bb()) < BB_id(lrange1->Gbb()->Bb()))));
+    }
   }
 #endif
   return lrange0->Priority() < lrange1->Priority();

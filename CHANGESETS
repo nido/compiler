@@ -1,6 +1,31 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Feb 29 17:13:00 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-39126
+
+Description:
+------------
+	* [trunk] Fix for bug #39126: Compiler generate different results in Debug and Release mode.
+	Deliver fixes/codex-39126 rev #15867 with authorization branch #39816
+
+
+Modified Files:
+---------------
+	M      osprey/Makefile.gsetup
+	M      osprey/be/opt/opt_cfg_trans.cxx
+	M      osprey/lai/gra_mon/gra_lrange.cxx
+	M      osprey/lai/gra_mon/gra_color.cxx
+	M      osprey/lai/cg_ssaopt.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/common/com/defs.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Feb 29 14:13:17 CET 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

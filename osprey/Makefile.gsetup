@@ -590,6 +590,9 @@ endif
 
 STD_COMPILE_OPTS += -DTARG_$(BUILD_TARGET)
 
+# [TTh] 20080220: Insure compiler optimisation determism when building either in debug or release mode
+STD_COMPILE_OPTS += -ffloat-store
+
 ifneq ($(BUILD_OS),$(HOST_OS))
 GCDEFS += -DCROSS_COMPILE
 GCXXDEFS += -DCROSS_COMPILE

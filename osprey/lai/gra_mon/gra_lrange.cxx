@@ -1477,7 +1477,7 @@ LRANGE::Format( char* buff )
   switch ( Type() ) {
   case LRANGE_TYPE_LOCAL:
 #ifdef TARG_ST
-    count = sprintf(buff,"[LRANGE %c%d rc %d", "LW"[Has_Wired_Register()],
+    count = sprintf(buff,"[LRANGE %c%d rc %d", Has_Wired_Register()?'W':'L',
 		    Id(), Rc());
     if (Sc() != ISA_REGISTER_SUBCLASS_UNDEFINED) {
       count += sprintf(buff+count, " sc %d", Sc());
