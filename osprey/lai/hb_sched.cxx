@@ -1466,7 +1466,7 @@ HB_Schedule::Put_Sched_Vector_Into_BB (BB *bb, BBSCH *bbsch, BOOL is_fwd)
       sched_is_better = TRUE;
     }
   } else {
-    sched_is_better = (cur_cycle < _max_sched);
+    sched_is_better = (cur_cycle <= _max_sched);
   }
   if (Trace_HB) {
     fprintf (TFile, "sched_is_better = %d\n", (int)sched_is_better);
@@ -1736,6 +1736,45 @@ List_Based_Fwd::Is_OP_Better (OP *cur_op, OP *best_op)
   // - Else the one with the biggest estart.
   // - Else the first one in the list.
     
+    
+    if(_hbs_type & HBS_HEURISTIC_CRITICAL_PATH) {
+      //[dt] try to improve even more :
+      // If one branch is not on the critical path but both have successors, we consider :
+      // - Being on critical path
+      // - The nuber of successors
+      // - The freedom in schedul time (i.e. slack)
+      // - The maximum latency between instruction and next one in worst case
+      if (((best_slack!=0) ||(cur_slack !=0)) 
+          &&  OPSCH_num_succs(cur_opsch) 
+          &&  OPSCH_num_succs(best_opsch)
+          &&  (OPSCH_lstart(best_opsch)==OPSCH_lstart(cur_opsch))) {
+  
+        INT cur_val = 0;
+        INT best_val = 0;
+  
+        if (cur_slack == 0) cur_val = 2;
+        else if (cur_slack <= 2) cur_val = 1;
+        if (best_slack == 0) best_val = 2;
+        else if (best_slack <= 2) best_val = 1;
+        
+        // Here we know that both operation have at least on successor
+        if (OPSCH_num_succs(cur_opsch) <=2 ) cur_val ++ ;
+        else cur_val += 2;
+        if (OPSCH_num_succs(best_opsch) <=2 ) best_val ++ ;
+        else best_val += 2;
+        
+        if (OPSCH_num_succs(cur_opsch) > OPSCH_num_succs(best_opsch)) cur_val ++ ;
+        if (OPSCH_num_succs(cur_opsch) < OPSCH_num_succs(best_opsch)) best_val ++ ;
+  
+  
+        if (CGTARG_Max_OP_Latency(cur_op) < CGTARG_Max_OP_Latency(best_op))  best_val ++;
+        if (CGTARG_Max_OP_Latency(cur_op) > CGTARG_Max_OP_Latency(best_op))  cur_val ++;
+       
+        if (cur_val > best_val)  return TRUE;
+        else if (cur_val < best_val)  return FALSE;
+      }
+    }
+
     if ((best_slack == 0) && (cur_slack !=0)) {
       if (OPSCH_num_succs(best_opsch) != 0) {
 	return FALSE;

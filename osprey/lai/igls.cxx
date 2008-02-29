@@ -754,6 +754,9 @@ IGLS_Schedule_Region (BOOL before_regalloc)
 				    GCM_POST_Enable_Scheduling)));
     hbs_type = HBS_CRITICAL_PATH;
     if (PROC_has_bundles()) hbs_type |= HBS_MINIMIZE_BUNDLES;
+#ifdef TARG_ST
+    hbs_type |= HBS_HEURISTIC_CRITICAL_PATH;
+#endif
 
     // allow data-speculation if (-O > O1) and -OPT:space is turned off.
 #ifndef TARG_ST
