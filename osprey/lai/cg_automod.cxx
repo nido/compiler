@@ -1497,6 +1497,7 @@ void Perform_AutoMod_Optimization() {
 
     if (dudRegion != NULL) {
 
+      M_Mem2Incr.clear();
       M_PostIncr2Mem.clear();
       M_PreIncr2Mem.clear();
       M_OffsetIncr2Mem.clear();
