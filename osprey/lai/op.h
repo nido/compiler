@@ -1711,6 +1711,28 @@ TN_Opernum_In_OP (OP* op, struct tn *tn)
  * =====================================================================
  */
 extern BOOL OPs_Are_Equivalent(OP *op1, OP *op2);
+
+/* ====================================================================
+ *
+ * OP_storeval_byte_offset
+ *
+ * OP is a memory store.
+ * Returns the byte offset at which operand opndno is stored, ofset from
+ * the start of the memory area written by op.
+ * ====================================================================
+ */
+extern INT OP_storeval_byte_offset (OP *op, INT opndno);
+
+/* ====================================================================
+ *
+ * OP_loadval_byte_offset
+ *
+ * OP is a memory load.
+ * Returns the byte offset from which result resno is loaded, ofset from
+ * the start of the memory area read by op.
+ * ====================================================================
+ */
+extern INT OP_loadval_byte_offset (OP *op, INT resno);
 #endif
 
 #endif /* op_INCLUDED */

@@ -78,7 +78,9 @@ main()
     load, 
     madd, 
     max, 
+    mem_endian_reg_reversed, 
     mem_fill_type, 
+    mem_highest_reg_first, 
     min, 
     move, 
     mul, 
@@ -992,8 +994,34 @@ main()
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 
+  mem_endian_reg_reversed = ISA_Property_Create ("mem_endian_reg_reversed"); 
+  Instruction_Group (mem_endian_reg_reversed, 
+		 TOP_ldlc_r_i_b_p, 
+		 TOP_ldlc_r_ii_b_p, 
+		 TOP_ldl_r_i_p, 
+		 TOP_ldl_r_ii_p, 
+		 TOP_multi_ldlc_r_i_b_r, 
+		 TOP_multi_ldlc_r_ii_b_r, 
+		 TOP_multi_ldl_r_i_r, 
+		 TOP_multi_ldl_r_ii_r, 
+		 TOP_multi_stlc_r_b_r_i, 
+		 TOP_multi_stlc_r_b_r_ii, 
+		 TOP_multi_stl_r_r_i, 
+		 TOP_multi_stl_r_r_ii, 
+		 TOP_stlc_p_b_r_i, 
+		 TOP_stlc_p_b_r_ii, 
+		 TOP_stl_p_r_i, 
+		 TOP_stl_p_r_ii, 
+		 TOP_UNDEFINED); 
+
+  /* ====================================== */ 
   mem_fill_type = ISA_Property_Create ("mem_fill_type"); 
   Instruction_Group (mem_fill_type, 
+		 TOP_UNDEFINED); 
+
+  /* ====================================== */ 
+  mem_highest_reg_first = ISA_Property_Create ("mem_highest_reg_first"); 
+  Instruction_Group (mem_highest_reg_first, 
 		 TOP_UNDEFINED); 
 
   /* ====================================== */ 

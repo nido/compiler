@@ -1568,4 +1568,64 @@ OP_plain_store(OP *op)
   if (OP_cond_def(op)) return FALSE;
   return TRUE;
 }
+
+/* ====================================================================
+ *
+ * OP_storeval_byte_offset
+ *
+ * See interface description
+ * ====================================================================
+ */
+INT
+OP_storeval_byte_offset (OP *op, INT opndno)
+{
+  TOP opcode = OP_code(op);
+  Is_True (TOP_is_store (opcode), ("OP_storeval_byte_offset (%s)",
+				   TOP_Name(opcode)));
+  INT byte_offset = 0;
+  INT storeval = OP_find_opnd_use (op, OU_storeval);
+  Is_True (opndno >= storeval && opndno < OP_opnds (op), ("OP_storeval_byte_offset invalid opndno (%d)", opndno));
+  for (INT i = storeval; i < opndno; i++) {
+    byte_offset += OP_opnd_size(op, i)/8;
+  }
+  BOOL reversed = ((TOP_is_mem_highest_reg_first(opcode) != 0)
+		   ^ (Target_Byte_Sex == BIG_ENDIAN
+		      && TOP_is_mem_endian_reg_reversed(opcode)));
+  if (reversed) {
+    unsigned short mem_bytes = TOP_Mem_Bytes (opcode);
+    byte_offset = mem_bytes - byte_offset - OP_opnd_size(op, opndno)/8;
+  }
+  return byte_offset;
+}
+
+/* ====================================================================
+ *
+ * OP_loadval_byte_offset
+ *
+ * See interface description
+ * ====================================================================
+ */
+INT
+OP_loadval_byte_offset (OP *op, INT resno)
+{
+  TOP opcode = OP_code(op);
+  Is_True (TOP_is_load (opcode), ("OP_loadval_byte_offset (%s)", TOP_Name(opcode)));
+  Is_True (resno < OP_results(op), ("OP_loadval_byte_offset invalid resno (%d)", resno));
+  INT byte_offset = 0;
+  INT postincr_result = TOP_Find_Result_With_Usage (opcode, OU_postincr);
+  INT preincr_result = TOP_Find_Result_With_Usage (opcode, OU_preincr);
+  for (INT i = 0; i < resno; i++) {
+    if (i != postincr_result && i != preincr_result) {
+      byte_offset += OP_result_size (op, i) / 8;
+    }
+  }
+  BOOL reversed = ((TOP_is_mem_highest_reg_first(opcode) != 0)
+		   ^ (Target_Byte_Sex == BIG_ENDIAN
+		      && TOP_is_mem_endian_reg_reversed(opcode)));
+  if (reversed) {
+    unsigned short mem_bytes = TOP_Mem_Bytes (opcode);
+    byte_offset = mem_bytes - byte_offset - OP_result_size (op, resno)/8;
+  }
+  return byte_offset;
+}
 #endif

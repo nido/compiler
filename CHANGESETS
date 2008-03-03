@@ -1,6 +1,31 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar  3 14:35:08 CET 2008
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/clarkes/dev-mem-endianness
+
+Description:
+------------
+	*  Development of targinfo properties to indicate endianness of loads
+        and stores.
+        Delivered clarkes/dev-mem-endianness rev #15888 with authorization
+        art #39476.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/op.h
+	M      osprey/lai/oputil.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/st200/isa/isa_properties.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Mar  3 13:20:02 CET 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
