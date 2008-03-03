@@ -151,6 +151,9 @@ BOOL Use_32_Bit_Pointers = FALSE;
 
 /* For various targets, what are the characteristics of pointers */
 INT		Pointer_Size; 
+#ifdef TARG_ST
+ISA_REGISTER_CLASS Pointer_Register_Class;
+#endif
 CLASS_INDEX	Pointer_Mtype;
 CLASS_INDEX	Pointer_Mtype2;
 

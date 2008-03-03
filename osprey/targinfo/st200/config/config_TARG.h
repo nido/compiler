@@ -184,4 +184,9 @@ BE_EXPORTED extern INT32 CG_LOOP_Packing_flags;
 }
 #endif /* __cplusplus */
     
+#ifdef TARG_ST
+#include "targ_isa_registers.h" // gets access to typedef ISA_REGISTER_CLASS
+BE_EXPORTED extern ISA_REGISTER_CLASS Pointer_Register_Class;
+#endif
+
 #endif /* config_TARG_INCLUDED */

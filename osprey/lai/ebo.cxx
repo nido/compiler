@@ -5350,7 +5350,12 @@ find_duplicate_op (BB *bb,
       for (resnum = 0; resnum < OP_results(op); resnum++) {
        /* All of the results need to be available at this point. */
         if (!TN_is_const_reg(OP_result(op,resnum)) &&
-            !EBO_tn_available(bb,opinfo->actual_rslt[resnum])) {
+            !EBO_tn_available(bb,opinfo->actual_rslt[resnum]) 
+#ifdef TARG_ST
+            || (!CGTARG_registerclass_may_be_copied
+                (TN_register_class(OP_result(op,resnum))))
+#endif
+            ) {
 
           if (EBO_Trace_Hash_Search) {
             #pragma mips_frequency_hint NEVER

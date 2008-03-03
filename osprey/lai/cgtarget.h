@@ -537,6 +537,8 @@
  *    Check whether given op is a simple jump, i.e. a jump with a known label
  *    (OU_target operand)
  *
+ *   BOOL CGTARG_op_may_alias_with_call(const OP* op)
+ *      Returns whether op may alias with a call. (used in loop_invar_hoist.cxx)
  * ====================================================================
  * ==================================================================== */
 
@@ -989,6 +991,9 @@ extern BOOL EETARG_Save_With_Regmask (ISA_REGISTER_CLASS cl, REGISTER reg);
 
 #ifdef TARG_ST 	 
 extern BOOL CGTARG_Is_Simple_Jump(const OP* op);
+extern BOOL CGTARG_op_may_alias_with_call(const OP* op);
+extern BOOL CGTARG_registerclass_may_be_copied(ISA_REGISTER_CLASS cl);
+extern BOOL CGTARG_Code_Motion_To_LoopHead_Is_Legal(const OP* op, BB* loophead);
 #endif
 
 #endif /* CGTARGET_INCLUDED */

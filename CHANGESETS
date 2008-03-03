@@ -1,6 +1,53 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar  3 13:20:02 CET 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-26480
+
+Description:
+------------
+	* [trunk] Fix for bug #26480: Hoisting of invariant HW loop setting instructions instructions not performed.
+	Deliver fixes/codex-26480 rev #15874 with authorization branch #33594
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_loop.cxx
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/loop_invar_hoist.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cgtarget.h
+	M      osprey/common/com/config.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_ext_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_si.cxx
+	M      osprey/targinfo/stxp70/config/gen_intrinsics.inc
+	M      osprey/targinfo/stxp70/config/config_TARG.h
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+	M      osprey/targinfo/stxp70/intrn/x3.h
+	M      osprey/targinfo/stxp70/intrn/builtins_x3.h
+	M      osprey/targinfo/stxp70/intrn/intrn_test.cxx
+	M      osprey/targinfo/stxp70/intrn/builtins_model_x3.c
+	M      osprey/targinfo/stxp70/intrn/builtins_model_x3.h
+	M      osprey/targinfo/stxp70/abi/abi_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_print.cxx
+	M      osprey/targinfo/stxp70/isa/isa_registers.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/st200/config/config_TARG.h
+	M      osprey/targinfo/st200/config/config_target.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Feb 29 17:13:00 CET 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

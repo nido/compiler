@@ -802,6 +802,15 @@ CG_Generate_Code(
       Stop_Timer ( T_EBO_CU );
       Check_for_Dump ( TP_EBO, NULL );
 
+#ifdef TARG_ST
+    // [vcdv] second call to PLICM after hwloop detection so that
+    // hwloop invariant instructions can  be factorized
+    if (IPFEC_Enable_LICM && CG_opt_level > 1 && !CG_localize_tns) {
+      Set_Error_Phase("Perform_Loop_Invariant_Code_Motion");
+      Perform_Loop_Invariant_Code_Motion ();
+    }
+#endif
+
       // FdF: Useful to run CFLOW_optimize again because EBO may have
       // propagated constants such that conditional branches become
       // inconditional.
@@ -812,6 +821,7 @@ CG_Generate_Code(
 	  FREQ_Verify("CFLOW (third pass)");
       }
     }
+
   } /* CG_opt_level > 1 */ 
 
   if (!Get_Trace (TP_CGEXP, 1024))

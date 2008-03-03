@@ -5300,7 +5300,7 @@ CG_LOOP_Gen_And_Prepend_To_Prolog(BB *loop_head, LOOP_DESCR* loop)
     // FdF 20070604: Try to avoid a branch at the end of the loop
     // prolog since this is not supported in loop invariant code
     // motion.
-    if (BB_branch_op(ftp) == NULL) {
+    if (BB_xfer_op(ftp) == NULL) {
       Insert_BB(new_prolog, ftp);
       Link_Pred_Succ_with_Prob(new_prolog, loop_head, 1.0);
       Unlink_Pred_Succ(ftp, loop_head);

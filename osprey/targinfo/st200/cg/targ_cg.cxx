@@ -3435,3 +3435,43 @@ CGTARG_Is_Simple_Jump(const OP* op)
     // not yet tested
     return top == TOP_br_i_b || top == TOP_brf_i_b ||top == TOP_goto_i;
 }
+
+/** 
+ * Returns whether op may alias with a call.
+ * 
+ * Note that this api is called from LICM on non register allocated
+ * code.
+ * To avoid a strong degradation of performance this api should only
+ * return false for instruction that do not have an impact on register
+ * pressure and thus do not result in spill !
+ *
+ *
+ * @param op 
+ * 
+ * @return 
+ */
+BOOL
+CGTARG_op_may_alias_with_call(const OP* op)
+{
+  return TRUE;
+}
+
+BOOL
+CGTARG_registerclass_may_be_copied(ISA_REGISTER_CLASS cl)
+{
+  return TRUE;
+}
+
+/** 
+ * check target specific rules on whether op may be moved
+ * into loophead
+ * 
+ * @param op 
+ * @param loophead 
+ * 
+ * @return 
+ */
+BOOL CGTARG_Code_Motion_To_LoopHead_Is_Legal(const OP* op, BB* loophead)
+{
+  return TRUE;
+}

@@ -584,12 +584,14 @@ Configure_Target ()
     Pointer_type   = Pointer_Mtype;
     Pointer_Mtype2 = MTYPE_U4;
     Pointer_type2  = MTYPE_U4;
+    Pointer_Register_Class = ISA_REGISTER_CLASS_integer;
   } else {
     Pointer_Size = 8;
     Pointer_Mtype  = MTYPE_U8;
     Pointer_type   = Pointer_Mtype;
     Pointer_Mtype2 = MTYPE_U8;
     Pointer_type2  = MTYPE_U8;
+    Pointer_Register_Class = ISA_REGISTER_CLASS_UNDEFINED;
   }
 
   if (Use_32_Bit_Pointers) {

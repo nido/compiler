@@ -986,8 +986,7 @@ LOOP_INVAR_CODE_MOTION :: TN_is_Loop_Constant (TN* t) {
 
     LI_TN_INFO* info;
     info = (LI_TN_INFO*)hTN_MAP_Get (_tn_info, t);
-
-    return info->Is_Loop_Invar(); 
+    return info->Is_Loop_Invar();
 }
 
 
@@ -1171,8 +1170,7 @@ LOOP_INVAR_CODE_MOTION :: Mark_Dep_OPs_As_Non_Loop_Invar (OP* op) {
      */
 void
 LOOP_INVAR_CODE_MOTION :: Identify_Loop_Invariants (void) {
-         
-    for (LOOP_TOPO_ITER iter(_loop, _mp); !iter.end (); ++iter) {
+  for (LOOP_TOPO_ITER iter(_loop, _mp); !iter.end (); ++iter) {
 
         BB* b = *iter;
         OP* op;
@@ -1249,6 +1247,20 @@ LOOP_INVAR_CODE_MOTION :: Identify_Loop_Invariants (void) {
 		tninfo->Reset_Loop_Invar ();
 	      }
 	    }
+
+            /* [vcdv] mark register operands which are defined outside
+               loop as being loop invariants */
+            for (INT i = OP_opnds (op) - 1; i >= 0; i--) {
+              TN* opnd = OP_opnd (op, i);
+              
+              LI_TN_INFO* tninfo = NULL;
+              if (TN_is_register(opnd))
+                tninfo = (LI_TN_INFO*) hTN_MAP_Get (_tn_info, opnd);
+              
+              if (tninfo && tninfo->Inloop_Def_Num ()==0) {
+                tninfo->Set_Loop_Invar ();
+              }
+            }
 	    
 #else /* !TARG_ST */
 	    /* [CG] : This loop is wrong, see the replacement code above. */
@@ -1311,7 +1323,12 @@ LOOP_INVAR_CODE_MOTION :: Alias_With_Call (OP* op, OP* call) {
          */
 
 #ifdef TARG_ST
-    return alias;
+    // [vcdv] check whether op may alias with a call.
+    // Note that here the register have not been allocated therefore
+    // this api has a strong impact on performances. We must only
+    // allow instructions that will not increment the register pressure.
+    if (CGTARG_op_may_alias_with_call(op))
+      return alias;
 #else
     if (OP_code(op) != TOP_addl) { return TRUE; }
 #endif
@@ -1321,25 +1338,41 @@ LOOP_INVAR_CODE_MOTION :: Alias_With_Call (OP* op, OP* call) {
          */
     for (INT i = 0; i < OP_opnds(op); i++) {
         TN* opnd = OP_opnd(op,i);
-        if (!It_Is_Constant_TN (opnd)) return TRUE;
+        //opnd should be a loop constant
+        if (!TN_is_Loop_Constant (opnd)) return TRUE;
     }
 
     for (INT i = 0; i < OP_results(op); i++) {
 
         TN* result = OP_result(op, i);
+#ifndef TARG_ST
+        // [vcdv] i don't see the point in discarding dedicated registers ?
         if (TN_is_dedicated(result)) { return TRUE; }
+#endif
 
         REGISTER reg = TN_register(result);
         if (reg == REGISTER_UNDEFINED) continue;
         ISA_REGISTER_CLASS rclass = TN_register_class (result);
 
+#ifdef TARG_ST
+        const ISA_REGISTER_CLASS_INFO *rcinfo = ISA_REGISTER_CLASS_Info(rclass);
+        INT first_isa_reg = ISA_REGISTER_CLASS_INFO_First_Reg(rcinfo);
+        INT isa_reg = reg+first_isa_reg-REGISTER_MIN;
+#endif
+
             /* prune out regs which have implicit meaning.
              */
         if(REGISTER_SET_MemberP(REGISTER_CLASS_function_value(rclass), reg) ||
            REGISTER_SET_MemberP(REGISTER_CLASS_function_argument(rclass), 
-                reg) ||
-           REGISTER_SET_MemberP(REGISTER_CLASS_caller_saves(rclass), reg)) {
-            return TRUE;
+                                reg) ||
+           REGISTER_SET_MemberP(REGISTER_CLASS_caller_saves(rclass), reg)
+#ifdef TARG_ST
+           // [vcdv] hw loop are non allocatable and thus do not
+           // appear in the REGISTER_SET REGISTER_CLASS_caller_saves
+           || ABI_PROPERTY_Is_caller(rclass, isa_reg)
+#endif
+           ) {
+          return TRUE;
         }
 
         #ifdef HAS_STACKED_REGISTERS
@@ -1734,6 +1767,12 @@ LOOP_INVAR_CODE_MOTION :: Illegal_Or_Nonprofitable (OP* loopinvar) {
     if (It_is_Fake_Loop_Invar (loopinvar)) {
         return TRUE;
     }
+
+#ifdef TARG_ST
+    if (! CGTARG_Code_Motion_To_LoopHead_Is_Legal( loopinvar,  LOOP_DESCR_loophead(_loop)) ) {
+      return TRUE;
+    }
+#endif
 
     return FALSE; 
 }
@@ -2355,15 +2394,12 @@ LOOP_INVAR_CODE_MOTION :: Perform_Scalarization (LI_MEMORY_INFO *memory) {
 		/* Generate a black-hole location and set
                    memory->Addr() to it in the prolog. */
 
-#ifdef TARG_ST200
-		TN *addrTN = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
-#else
-#ifdef TARG_STxP70
-		TN *addrTN = Gen_Register_TN (ISA_REGISTER_CLASS_gpr, Pointer_Size);
+#ifdef TARG_ST
+		TN *addrTN = Gen_Register_TN (Pointer_Register_Class,
+                                              Pointer_Size);
 #else
 		TN *addrTN = NULL;
 		FmtAssert(FALSE,("do not know how to generate address TN"));
-#endif
 #endif
 		memory->Set_Addr(addrTN);
 		Expand_BlackHole(mem_op, addrTN, &New_OPs);
@@ -2642,9 +2678,14 @@ Maintain_Dominator_Info (LOOP_DESCR* l, BB* prolog, MEM_POOL* mp) {
 	Set_BB_dom_set (epilog, dom_epi);
 
 	/* Post dominators are only partially updated. */
-	BS* pdom_epi = BS_Copy(BB_pdom_set(BB_Unique_Successor(epilog)), mp);
-	pdom_epi = BS_Union1D(pdom_epi, BB_id(epilog), mp);
-	Set_BB_pdom_set (epilog, pdom_epi);
+        BB* uniq = BB_Unique_Successor(epilog);
+        if (uniq == NULL) {
+          epilog = NULL; //cancel
+        } else {
+          BS* pdom_epi = BS_Copy(BB_pdom_set(uniq), mp);
+          pdom_epi = BS_Union1D(pdom_epi, BB_id(epilog), mp);
+          Set_BB_pdom_set (epilog, pdom_epi);
+        }
     }
 
         /* propagate the changes
@@ -2797,6 +2838,20 @@ Create_Loop_Epilogue (LOOP_DESCR* l) {
     BB *next = like_epilog;
     BB *ftp = BB_Fall_Thru_Predecessor(next);
     BBKIND ftp_kind = ftp ? BB_kind(ftp) : BBKIND_UNKNOWN;
+
+#ifdef TARG_ST
+    // filters out hwloops. the epilog is correct by construction
+    // therefore we must not create a new epilog BB which breaks the
+    // hwloop contraints.
+    if (ftp) {
+      OP* bop = BB_branch_op(ftp);
+      if (bop) {
+        if (bop && OP_Is_Counted_Loop(bop)) {
+          return like_epilog;
+        }
+      }
+    }
+#endif
 
     if (ftp && !BB_SET_MemberP(LOOP_DESCR_bbset(l), ftp)) {
 	/*
