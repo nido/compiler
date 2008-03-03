@@ -173,6 +173,9 @@ IPRA cg_ipra;
  *
  *   This function check that the alignment constraint related
  *   to local symbols is compatible with the stack alignment. 
+ *
+ *   FdF 20080212: Note that this function cannot get alignment
+ *   constraints from varargs parameters
  * ====================================================================
  */
 static void CGStack_Align_Check() {

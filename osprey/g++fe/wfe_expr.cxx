@@ -4886,6 +4886,14 @@ WFE_Expand_Expr (tree exp,
 	  }
 
 	  arg_mtype  = TY_mtype(arg_ty_idx);
+#ifdef TARG_ST
+	  // FdF 20080212: Consider also special alignment on
+	  // aggregates
+	  if (arg_mtype == MTYPE_M)
+	    if (Aggregate_Alignment > 0 &&
+		Aggregate_Alignment > TY_align (arg_ty_idx))
+	      Set_TY_align (arg_ty_idx, Aggregate_Alignment);
+#endif
 #if 0
 	  // gcc allows non-struct actual to correspond to a struct formal;
 	  // fix mtype of parm node so as not to confuse back-end
@@ -5128,6 +5136,14 @@ WFE_Expand_Expr (tree exp,
 	// All parameters are passd in a multiple of word-sized slots.
 	rounded_size = (((int_size_in_bytes (type) + (UNITS_PER_WORD - 1))
 			 / UNITS_PER_WORD) * UNITS_PER_WORD);
+	// FdF 20080212: Take into account special alignment on
+	// aggregates
+	if (TY_mtype(hi_ty_idx) == MTYPE_M) {
+	  if (align < Aggregate_Alignment)
+	    align = Aggregate_Alignment;
+#define ROUNDUP(val,align) 	( (-(INT64)align) & (INT64)(val+align-1) )
+	  rounded_size = ROUNDUP(type_size, align);
+	}
 
 	// Set wn = start address of arg.
 	if (align > 4) {

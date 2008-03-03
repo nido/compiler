@@ -4789,8 +4789,16 @@ WFE_Expand_Expr (tree exp,
           else {
 	    // gcc allows non-struct actual to correspond to a struct formal;
 	    // fix mtype of parm node so as not to confuse back-end
-	    if (arg_mtype == MTYPE_M)
+	    if (arg_mtype == MTYPE_M) {
 	      arg_mtype = WN_rtype(arg_wn);
+#ifdef TARG_ST
+	      // FdF 20080212: Consider also special alignment on
+	      // aggregates
+	      if (Aggregate_Alignment > 0 &&
+		  Aggregate_Alignment > TY_align (arg_ty_idx))
+		Set_TY_align (arg_ty_idx, Aggregate_Alignment);
+#endif
+	    }
             arg_wn = WN_CreateParm (Mtype_comparison (arg_mtype), arg_wn,
 				    arg_ty_idx, WN_PARM_BY_VALUE);
             WN_kid (call_wn, i++) = arg_wn;
@@ -5104,7 +5112,7 @@ WFE_Expand_Expr (tree exp,
 	  ap_load = WN_Iload (Pointer_Mtype, 0, va_list_ty_idx,
 			      ap_addr, va_list_field_id);
 	}
-	
+
 	// Any parameter larger than a word is double-word aligned.
 	align = ((type_size > UNITS_PER_WORD)
 		 ? (2 * UNITS_PER_WORD)
@@ -5112,6 +5120,14 @@ WFE_Expand_Expr (tree exp,
 	// All parameters are passd in a multiple of word-sized slots.
 	rounded_size = (((int_size_in_bytes (type) + (UNITS_PER_WORD - 1))
 			 / UNITS_PER_WORD) * UNITS_PER_WORD);
+	// FdF 20080212: Take into account special alignment on
+	// aggregates
+	if (TY_mtype(hi_ty_idx) == MTYPE_M) {
+	  if (align < Aggregate_Alignment)
+	    align = Aggregate_Alignment;
+#define ROUNDUP(val,align) 	( (-(INT64)align) & (INT64)(val+align-1) )
+	  rounded_size = ROUNDUP(type_size, align);
+	}
 
 	// Set wn = start address of arg.
 	if (align > 4) {
