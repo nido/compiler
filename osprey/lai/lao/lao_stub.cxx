@@ -113,7 +113,7 @@ lao_init(void)
     O64_getInstance_p = (O64_Interface (*)(void))dlsym(lao_handler, "O64_getInstance");
     O64_instance = (*O64_getInstance_p)();
     FmtAssert(O64_Interface_size(O64_instance) == sizeof(O64_Interface_),
-              ("O64_Interface mistmatch"));
+              ("Open64 and LAO interfaces are not compatible. The two components are not synchronized."));
     // Initialize LAI Interface
     O64_Interface_Initialize();
     interface = O64_Interface_getInstance();

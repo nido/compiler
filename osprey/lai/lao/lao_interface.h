@@ -18,7 +18,6 @@ typedef struct LoopScope_ *LoopScope;
 
 #define CGIR_h_INCLUDED 
 
-
 /*
  * !!!!	CGIR.xcc
  *
@@ -35,7 +34,6 @@ typedef struct LoopScope_ *LoopScope;
  * licences as published by the Free Software Foundation.
  */
 
-
 /*
  * Host compiler CGIR types.
  */
@@ -48,7 +46,6 @@ typedef struct bb *CGIR_BB;
 typedef struct LOOP_DESCR *CGIR_LD;
 typedef struct region_id *CGIR_RID;
 
-
 /*
  * Interface LAO enumerations.
  */
@@ -56,7 +53,6 @@ typedef int O64_OptimizeItem;
 typedef int O64_ConfigureItem;
 typedef void *O64_DependenceNode;
 typedef int O64_DependenceKind;
-
 
 /*
  * Interface LAO target enumerations.
@@ -68,7 +64,6 @@ typedef int O64_Convention;
 typedef int O64_Operator;
 typedef int O64_RegFile;
 typedef int O64_Register;
-
 
 //
 typedef enum {
@@ -83,7 +78,6 @@ typedef enum {
 const char *
 CGIR_Type_NAME_(CGIR_Type type);
 
-
 /*
  * O64_SymbolClass --	Used for symbol class definition.
  * Must match the LAO Sclass definition in LIR/Symbol.h.
@@ -97,7 +91,6 @@ typedef enum {
   O64_SymbolClass_BLOCK,
   O64_SymbolClass__
 } O64_SymbolClass;
-
 
 /*
  * O64_SymbolStore --	Used for symbol store definition.
@@ -119,7 +112,6 @@ typedef enum {
   O64_SymbolStore__
 } O64_SymbolStore;
 
-
 /*
  * O64_SymbolExport --	Used for symbol export definition.
  * Must match the LAO SymbolExport definition in LIR/Symbol.h.
@@ -135,7 +127,6 @@ typedef enum {
   O64_SymbolExport__
 } O64_SymbolExport;
 
-
 /*
  * O64_OperationCGIR --	Used to pass OperationFlag to CGIR_OP.
  */
@@ -150,7 +141,6 @@ typedef enum {
   O64_OperationCGIR_SafePerfs = 0x80,
 } O64_OperationCGIR;
 
-
 /*
  * O64_BasicBlockCGIR --	Used to pass BasicBlockFlag to CGIR_OP.
  */
@@ -159,12 +149,10 @@ typedef enum {
   O64_BasicBlockCGIR_Scheduled = 0x2,
 } O64_BasicBlockCGIR;
 
-
 /*
  * uint32_t CGIR_LAB_identity(CGIR_LAB cgir_lab); --	Identity of a CGIR_LAB.
  */
 #define CGIR_LAB_identity(cgir_lab) (uint32_t)(cgir_lab)
-
 
 
 /*
@@ -173,12 +161,10 @@ typedef enum {
 #define CGIR_SYM_identity(cgir_sym) (uint32_t)(cgir_sym)
 
 
-
 /*
  * uint32_t CGIR_TN_identity(CGIR_TN cgir_tn); --	Identity of a CGIR_TN.
  */
 #define CGIR_TN_identity(cgir_tn) (uint32_t)(cgir_tn)
-
 
 
 /*
@@ -187,12 +173,10 @@ typedef enum {
 #define CGIR_OP_identity(cgir_op) (uint32_t)(cgir_op)
 
 
-
 /*
  * uint32_t CGIR_BB_identity(CGIR_BB cgir_bb); --	Identity of a CGIR_BB.
  */
 #define CGIR_BB_identity(cgir_bb) (uint32_t)(cgir_bb)
-
 
 
 /*
@@ -201,13 +185,11 @@ typedef enum {
 #define CGIR_LD_identity(cgir_ld) (uint32_t)(cgir_ld)
 
 
-
 /*
  * CGIR_LAB_make --	Update a CGIR_LAB.
  */
 static CGIR_LAB
 CGIR_LAB_make(CGIR_LAB cgir_lab, const char *name);
-
 
 /*
  * CGIR_SYM_make --	Update a CGIR_SYM.
@@ -215,13 +197,11 @@ CGIR_LAB_make(CGIR_LAB cgir_lab, const char *name);
 static CGIR_SYM
 CGIR_SYM_make(CGIR_SYM cgir_sym, const char *name, bool isSpill, O64_NativeType lai_nativeType);
 
-
 /*
  * CGIR_TN_make --	Update a CGIR_TN.
  */
 static CGIR_TN
 CGIR_TN_make(CGIR_TN cgir_tn, CGIR_Type cgir_type, ...);
-
 
 /*
  * CGIR_OP_make --	Update a CGIR_OP from a LIR Operation.
@@ -229,11 +209,9 @@ CGIR_TN_make(CGIR_TN cgir_tn, CGIR_Type cgir_type, ...);
 static CGIR_OP
 CGIR_OP_make(CGIR_OP cgir_op, O64_Operator lai_operator, CGIR_TN arguments[], CGIR_TN results[], CGIR_OP orig_op);
 
-
 //
 static void
 CGIR_OP_more(CGIR_OP cgir_op, int iteration, int issueDate, unsigned flags);
-
 
 /*
  * void CGIR_BB_make --	Update a CGIR_BB.
@@ -241,11 +219,9 @@ CGIR_OP_more(CGIR_OP cgir_op, int iteration, int issueDate, unsigned flags);
 static CGIR_BB
 CGIR_BB_make(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_RID cgir_rid, float frequency);
 
-
 //
 static void
 CGIR_BB_more(CGIR_BB cgir_bb, CGIR_BB loop_bb, intptr_t traceId, int unrolled, unsigned flags);
-
 
 /*
  * CGIR_LD_make --	Update a CGIR_LD.
@@ -253,13 +229,11 @@ CGIR_BB_more(CGIR_BB cgir_bb, CGIR_BB loop_bb, intptr_t traceId, int unrolled, u
 static CGIR_LD
 CGIR_LD_make(CGIR_LD cgir_ld, CGIR_BB head_bb, CGIR_TN trip_count_tn, int unrolled);
 
-
 /*
  * CGIR_BB_chain --	Chain two CGIR_BBs in the CGIR.
  */
 static void
 CGIR_BB_chain(CGIR_BB cgir_bb, CGIR_BB succ_cgir_bb);
-
 
 /*
  * CGIR_BB_unchain --	Unchain a CGIR_BB in the CGIR.
@@ -267,13 +241,11 @@ CGIR_BB_chain(CGIR_BB cgir_bb, CGIR_BB succ_cgir_bb);
 static void
 CGIR_BB_unchain(CGIR_BB cgir_bb);
 
-
 /*
  * CGIR_BB_link --	Link two CGIR_BBs in the CGIR with the given branch probability.
  */
 static void
 CGIR_BB_link(CGIR_BB tail_cgir_bb, CGIR_BB head_cgir_bb, float probability);
-
 
 /*
  * void CGIR_BB_unlink(CGIR_BB cgir_bb, bool preds, bool succs);
@@ -282,14 +254,12 @@ CGIR_BB_link(CGIR_BB tail_cgir_bb, CGIR_BB head_cgir_bb, float probability);
 static void
 CGIR_BB_unlink(CGIR_BB cgir_bb, bool preds, bool succs);
 
-
 /*
  * void CGIR_BB_discard(CGIR_BB cgir_bb);
  * --	Discard a CGIR_BB in the CGIR.
  */
 static void
 CGIR_BB_discard(CGIR_BB cgir_bb);
-
 
 /*
  * CGIR_CallBack --	Call back functions.
@@ -354,21 +324,17 @@ typedef struct CGIR_CallBack_ * restrict_CGIR_CallBack;
 #define CGIR_CallBack__BB_discard(this) (&(this)->BB_discard)
 
 
-
 //
 int
 CGIR_Print_LAB_Vector(CGIR_LAB cgir_labels[], FILE *file);
-
 
 //
 int
 CGIR_Print_TN_Vector(CGIR_TN cgir_temporaries[], FILE *file);
 
-
 //
 int
 CGIR_Print_OP_Vector(CGIR_OP cgir_operations[], FILE *file);
-
 
 /*
  * O64_Interface --	O64 Interface object.
@@ -657,13 +623,11 @@ typedef struct O64_Interface_ * restrict_O64_Interface;
 #define O64_Interface__Interface_close(this) (&(this)->Interface_close)
 
 
-
 /*
  * O64_getInstance --	The singleton O64_Interface instance.
  */
 O64_Interface
 O64_getInstance(void);
-
 
 /*
  * Accessors to the O64_Interface functions.
@@ -754,7 +718,6 @@ O64_getInstance(void);
 
 #define Interface_h_INCLUDED 
 
-
 /*
  * !!!!	Interface.xcc
  *
@@ -772,11 +735,9 @@ O64_getInstance(void);
  * licences as published by the Free Software Foundation.
  */
 
-
 //
 typedef void *InterfaceCGIR;
 typedef void *LIR2CGIR;
-
 
 /*
   InterfaceType -- Enumerate the Interface types in reverse mapping.
@@ -794,7 +755,6 @@ typedef enum {
   InterfaceType__
 } InterfaceType;
 typedef uint8_t short_InterfaceType;
-
 
 /*
  * InterfaceMapped --	Mapped value in the LIR2CGIR HTables.
@@ -849,36 +809,29 @@ typedef struct Interface_ Interface_, *Interface;
 typedef const struct Interface_ *const_Interface;
 typedef struct Interface_ * restrict_Interface;
 
-
 /*
  * Interface_getInstance --	Returns the singleton Interface, for use by the LAO clients.
  */
 Interface
 Interface_getInstance(void);
 
-
 //
 int *Interface_Registers(int count, ...);
-
 
 //
 Label *
 Interface_Labels(int count, ...);
 
-
 //
 Temporary *
 Interface_Temporaries(int count, ...);
-
 
 //
 Operation *
 Interface_Operations(int count, ...);
 
-
 //
 /*--------------------- LAO Interface Input Functions ------------------------*/
-
 
 /*
  * Interface_setMaxIssue --	Set the processor max issue (override MDS information).
@@ -886,20 +839,17 @@ Interface_Operations(int count, ...);
 void
 Interface_setMaxIssue(Interface this, O64_Processor processor, int maxIssue);
 
-
 /*
  * Interface_setMinTaken --	Set the processor min taken (override MDS information).
  */
 void
 Interface_setMinTaken(Interface this, O64_Processor processor, int minTaken);
 
-
 /*
  * Interface_setReserved --	Set a register as reserved (override MDS information).
  */
 void
 Interface_setReserved(Interface this, O64_Convention convention, O64_Register reserved);
-
 
 /*
  * Interface_setArgStage --	Set the argument read stage (override MDS information).
@@ -908,7 +858,6 @@ bool
 Interface_setArgStage(Interface this, O64_Processor processor,
                       O64_Operator operator, int index, int stage);
 
-
 /*
  * Interface_setResStage --	Set the result write stage (override MDS information).
  */
@@ -916,13 +865,11 @@ bool
 Interface_setResStage(Interface this, O64_Processor processor,
                       O64_Operator operator, int index, int stage);
 
-
 /*
  * Interface_makeLabel --	Make a Label.
  */
 Label
 Interface_makeLabel(Interface this, CGIR_LAB cgir_lab, const char *name);
-
 
 /*
  * Interface_findLabel --	Find a Label.
@@ -930,13 +877,11 @@ Interface_makeLabel(Interface this, CGIR_LAB cgir_lab, const char *name);
 Label
 Interface_findLabel(Interface this, CGIR_LAB cgir_lab);
 
-
 /*
  * Interface_makeSymbol --	Make a Symbol.
  */
 Symbol
 Interface_makeSymbol(Interface this, CGIR_SYM cgir_sym, const char *name);
-
 
 /*
  * Interface_Symbol_setClasses --	Set the (class,store,export) for a Symbol.
@@ -944,13 +889,11 @@ Interface_makeSymbol(Interface this, CGIR_SYM cgir_sym, const char *name);
 void
 Interface_Symbol_setClasses(Interface this, Symbol symbol, O64_SymbolClass sclass, O64_SymbolStore sstore, O64_SymbolExport sexport);
 
-
 /*
  * Interface_findSymbol --	Find a Symbol.
  */
 Symbol
 Interface_findSymbol(Interface this, CGIR_SYM cgir_sym);
-
 
 /*
  * Interface_makeDedicatedTemporary --	Make a Dedicated Temporary.
@@ -958,13 +901,11 @@ Interface_findSymbol(Interface this, CGIR_SYM cgir_sym);
 Temporary
 Interface_makeDedicatedTemporary(Interface this, CGIR_TN cgir_tn, O64_Register cgir_register);
 
-
 /*
  * Interface_makeAssignedTemporary --	Make a Assigned Temporary.
  */
 Temporary
 Interface_makeAssignedTemporary(Interface this, CGIR_TN cgir_tn, O64_Register cgir_register);
-
 
 /*
  * Interface_makeVirtualTemporary --	Make a Virtual Temporary.
@@ -972,13 +913,11 @@ Interface_makeAssignedTemporary(Interface this, CGIR_TN cgir_tn, O64_Register cg
 Temporary
 Interface_makeVirtualTemporary(Interface this, CGIR_TN cgir_tn, O64_RegFile regFile);
 
-
 /*
  * Interface_makeAbsoluteTemporary --	Make an Absolute Temporary.
  */
 Temporary
 Interface_makeAbsoluteTemporary(Interface this, CGIR_TN cgir_tn, O64_Immediate immediate, int64_t value);
-
 
 /*
  * Interface_makeSymbolTemporary --	Make a Symbol Temporary.
@@ -986,13 +925,11 @@ Interface_makeAbsoluteTemporary(Interface this, CGIR_TN cgir_tn, O64_Immediate i
 Temporary
 Interface_makeSymbolTemporary(Interface this, CGIR_TN cgir_tn, O64_Immediate immediate, Symbol symbol, int64_t offset);
 
-
 /*
  * Interface_makeLabelTemporary --	Make a Label Temporary.
  */
 Temporary
 Interface_makeLabelTemporary(Interface this, CGIR_TN cgir_tn, O64_Immediate immediate, Label label);
-
 
 /*
  * Interface_Temporary_setWidth --	Set a Temporary bit-width.
@@ -1000,13 +937,11 @@ Interface_makeLabelTemporary(Interface this, CGIR_TN cgir_tn, O64_Immediate imme
 void
 Interface_Temporary_setWidth(Interface this, Temporary temporary, unsigned width);
 
-
 /*
  * Interface_Temporary_setRemater --	Set an Temporary as remat.
  */
 void
 Interface_Temporary_setRemater(Interface this, Temporary temporary, Temporary value);
-
 
 /*
  * Interface_Temporary_setHomeable --	Set an Temporary as homeable to location.
@@ -1014,13 +949,11 @@ Interface_Temporary_setRemater(Interface this, Temporary temporary, Temporary va
 void
 Interface_Temporary_setHomeable(Interface this, Temporary temporary, Temporary location);
 
-
 /*
  * Interface_Temporary_setDedicated --	Set an Temporary as dedicated.
  */
 void
 Interface_Temporary_setDedicated(Interface this, Temporary temporary);
-
 
 /*
  * Interface_findTemporary --	Find a Temporary.
@@ -1028,10 +961,8 @@ Interface_Temporary_setDedicated(Interface this, Temporary temporary);
 Temporary
 Interface_findTemporary(Interface this, CGIR_TN cgir_tn);
 
-
 //
 /*--------------------- LAO Interface Accessors Functions ------------------------*/
-
 
 /*
  * O64 Interface for queries on LAO Temporaries.
@@ -1061,7 +992,6 @@ Interface_Temporary_register(Temporary temporary);
 O64_RegFile
 Interface_Temporary_regFile(Temporary temporary);
 
-
 /*
  * O64Interface for queries on LAO Symbols.
  */
@@ -1073,7 +1003,6 @@ int
 Interface_Symbol_isSpill(Symbol symbol);
 O64_NativeType
 Interface_Symbol_nativeType(Symbol symbol);
-
 
 /*
  * O64 Interface for queries on LAO Operations.
@@ -1093,7 +1022,6 @@ Interface_Operation_isVolatile(Operation operation);
 int
 Interface_Operation_isHoisted(Operation operation);
 
-
 /*
  * O64 Interface for queries on LAO Labels.
  */
@@ -1101,7 +1029,6 @@ uint32_t
 Interface_Label_identity(Label label);
 const char *
 Interface_Label_name(Label label);
-
 
 /*
  * O64 Interface for queries on LAO BasicBlocks.
@@ -1113,7 +1040,6 @@ Interface_BasicBlock_unrolled(BasicBlock basicBlock);
 intptr_t
 Interface_BasicBlock_traceId(BasicBlock basicBlock);
 
-
 /*
  * O64 Interface for queries on LAO LoopScopes.
  */
@@ -1121,7 +1047,6 @@ uint32_t
 Interface_LoopScope_identity(LoopScope loopScope);
 int
 Interface_LoopScope_unrolled(LoopScope loopScope);
-
 
 /*
  * Interface_makeOperation --	Make an Operation.
@@ -1131,13 +1056,11 @@ Interface_makeOperation(Interface this, CGIR_OP cgir_op,
     O64_Operator operator, int iteration, int argCount, Temporary arguments[],
     int resCount, Temporary results[], int regCount, int registers[]);
 
-
 /*
  * Interface_findOperation --	Find a Operation.
  */
 Operation
 Interface_findOperation(Interface this, CGIR_OP cgir_op);
-
 
 /*
  * Interface_Operation_setSafeAccess --	Set an Operation as safe memory access.
@@ -1145,13 +1068,11 @@ Interface_findOperation(Interface this, CGIR_OP cgir_op);
 void
 Interface_Operation_setSafeAccess(Interface this, Operation operation);
 
-
 /*
  * Interface_Operation_setSafePerfs --	Set an Operation as safe performance effects.
  */
 void
 Interface_Operation_setSafePerfs(Interface this, Operation operation);
-
 
 /*
  * Interface_Operation_setHoisted --	Set an Operation as volatile.
@@ -1159,13 +1080,11 @@ Interface_Operation_setSafePerfs(Interface this, Operation operation);
 void
 Interface_Operation_setHoisted(Interface this, Operation operation);
 
-
 /*
  * Interface_Operation_setVolatile --	Set an Operation as volatile.
  */
 void
 Interface_Operation_setVolatile(Interface this, Operation operation);
-
 
 /*
  * Interface_Operation_setPrefetch --	Set an Operation as memory prefetch.
@@ -1173,13 +1092,11 @@ Interface_Operation_setVolatile(Interface this, Operation operation);
 void
 Interface_Operation_setPrefetch(Interface this, Operation operation);
 
-
 /*
  * Interface_Operation_setPreload --	Set an Operation as memory preload.
  */
 void
 Interface_Operation_setPreload(Interface this, Operation operation);
-
 
 /*
  * Interface_Operation_setBarrier --	Set an Operation as a memory barrier.
@@ -1187,13 +1104,11 @@ Interface_Operation_setPreload(Interface this, Operation operation);
 void
 Interface_Operation_setBarrier(Interface this, Operation operation);
 
-
 /*
  * Interface_Operation_setSpillCode --	Set an Operation as spill code.
  */
 void
 Interface_Operation_setSpillCode(Interface this, Operation operation, Symbol symbol);
-
 
 /*
  * Interface_makeBasicBlock --	Make a BasicBlock.
@@ -1203,13 +1118,11 @@ Interface_makeBasicBlock(Interface this, CGIR_BB cgir_bb, O64_Processor processo
                          int unrolled, int labelCount, Label labels[], int operationCount,
                          Operation operations[], intptr_t regionId, float frequency);
 
-
 /*
  * Interface_findBasicBlock --	Find a BasicBlock.
  */
 BasicBlock
 Interface_findBasicBlock(Interface this, CGIR_BB cgir_bb);
-
 
 /*
  * Interface_linkBasicBlocks --	Link two BasicBlocks.
@@ -1218,7 +1131,6 @@ void
 Interface_linkBasicBlocks(Interface this, BasicBlock tail_block,
                           BasicBlock head_block, float probability);
 
-
 /*
  * Interface_makeLoopScope --	Make a LoopScope.
  */
@@ -1226,20 +1138,17 @@ LoopScope
 Interface_makeLoopScope(Interface this, CGIR_LD cgir_ld, BasicBlock basicBlock,
                         Temporary temporary, O64_ConfigureItem item, ...);
 
-
 /*
  * Interface_findLoopScope --	Find a LoopScope.
  */
 LoopScope
 Interface_findLoopScope(Interface this, CGIR_LD cgir_ld);
 
-
 /*
  * Interface_LoopScope_setDependenceNode --	Set Operation with a memory dependence node.
  */
 void
 Interface_LoopScope_setDependenceNode(Interface this, LoopScope loopScope, Operation operation, O64_DependenceNode node);
-
 
 /*
  * Interface_LoopScope_setDependenceArc --	Set a memory dependence arc between two operations.
@@ -1248,14 +1157,12 @@ void
 Interface_LoopScope_setDependenceArc(Interface this, LoopScope loopScope,
     Operation tail_operation, Operation head_operation, int latency, int omega, O64_DependenceKind kind);
 
-
 //
 /*
  * Interface_setBody --	Set a BasicBlock as a body block.
  */
 void
 Interface_setBody(Interface this, BasicBlock basicBlock);
-
 
 //
 /*
@@ -1264,14 +1171,12 @@ Interface_setBody(Interface this, BasicBlock basicBlock);
 void
 Interface_setEntry(Interface this, BasicBlock basicBlock);
 
-
 //
 /*
  * Interface_setExit --	Set a BasicBlock as an exit block.
  */
 void
 Interface_setExit(Interface this, BasicBlock basicBlock);
-
 
 //
 /*
@@ -1280,10 +1185,8 @@ Interface_setExit(Interface this, BasicBlock basicBlock);
 void
 Interface_setStart(Interface this, BasicBlock basicBlock);
 
-
 //
 /*--------------------- LAO Interface Output Functions -----------------------*/
-
 
 /*
  * Interface_updateCGIR --	Update the CGIR from the LAO Interface.
@@ -1291,10 +1194,8 @@ Interface_setStart(Interface this, BasicBlock basicBlock);
 void
 Interface_updateCGIR(Interface this, CGIR_CallBack callback);
 
-
 //
 /*--------------------- LAO Interface Control Functions ----------------------*/
-
 
 /*
  * Interface_Initialize --	Initialize the interface, must be called once per process.
@@ -1302,13 +1203,11 @@ Interface_updateCGIR(Interface this, CGIR_CallBack callback);
 void
 Interface_Initialize(void);
 
-
 /*
  * Interface_open --	Open this Interface.
  */
 void
 Interface_open(Interface this, const char *name, O64_ConfigureItem item, ...);
-
 
 /*
  * Interface_optimize --	Apply the LAO optimizations through this Interface.
@@ -1316,13 +1215,11 @@ Interface_open(Interface this, const char *name, O64_ConfigureItem item, ...);
 unsigned
 Interface_optimize(Interface this, O64_OptimizeItem item, ...);
 
-
 /*
  * Interface_close --	Close this Interface.
  */
 void
 Interface_close(Interface this);
-
 
 /*
  * Interface_Finalize --	Finalize the interface, must be called once per process.

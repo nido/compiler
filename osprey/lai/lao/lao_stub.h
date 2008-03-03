@@ -6,7 +6,6 @@
 
 
 
-
 /*
  * OptimizeActivation --	Activation of LAO phases.
  */
@@ -16,43 +15,28 @@ typedef enum {
   OptimizeActivation_RegAlloc = 0x4, // Register allocation
   OptimizeActivation_PrePass = 0x8, // Pre-pass optimizations.
 } OptimizeActivation;
-
+typedef uint16_t short_OptimizeActivation;
 
 /*
  * OptimizeRegionType --	enumerates the OptimizeRegionType types.
  */
 typedef enum {
-  OptimizeRegionType_BasicBlock,
-  OptimizeRegionType_SuperBlock,
-  OptimizeRegionType_TraceBlock,
-  OptimizeRegionType_HyperBlock,
-  OptimizeRegionType_BasicInner,
-  OptimizeRegionType_SuperInner,
-  OptimizeRegionType_TraceInner,
-  OptimizeRegionType_HyperInner,
-  OptimizeRegionType__
+  OptimizeRegionType_SuperBlock = 0x1, // Superblock region.
+  OptimizeRegionType_TraceBlock = 0x2, // TraceBlock region.
+  OptimizeRegionType_HyperBlock = 0x4, // Hyperblock region.
+  OptimizeRegionType_InnerLoop = 0x8, // Inner loop region.
 } OptimizeRegionType;
 typedef uint8_t short_OptimizeRegionType;
-extern const char *
-OptimizeRegionType_NAME_[];
-#define OptimizeRegionType_NAME_(type) OptimizeRegionType_NAME_[type]
-
 
 /*
  * OptimizeProfiling --	Enumeration of the code profiling levels.
  */
 typedef enum {
-  OptimizeProfiling_, // No code profiling.
-  OptimizeProfiling_Static, // Static profiling
-  OptimizeProfiling_Edge, // Dynamic edge profiling.
-  OptimizeProfiling_Path, // Dynamic path profiling.
-  OptimizeProfiling__
+  OptimizeProfiling_Static = 0x1, // Static profiling
+  OptimizeProfiling_Edge = 0x2, // Dynamic edge profiling.
+  OptimizeProfiling_Path = 0x4, // Dynamic path profiling.
 } OptimizeProfiling;
 typedef uint8_t short_OptimizeProfiling;
-extern const char *
-OptimizeProfiling_NAME_[];
-#define OptimizeProfiling_NAME_(type) OptimizeProfiling_NAME_[type]
-
 
 /*
  * OptimizeScheduling --	Enumeration of the pre- and post-scheduler levels.
@@ -69,51 +53,25 @@ extern const char *
 OptimizeScheduling_NAME_[];
 #define OptimizeScheduling_NAME_(type) OptimizeScheduling_NAME_[type]
 
-
 /*
  * OptimizeAllocation --	Enumeration of the register allocation levels.
  */
 typedef enum {
-  OptimizeAllocation_, // No scheduling.
-  OptimizeAllocation_GraphColoring, // GraphColoring allocation
-  OptimizeAllocation__
+  OptimizeAllocation_ELinearScan = 0x1, // Extended Linear Scan of Sarkar et al.
+  OptimizeAllocation_SSILinearScan = 0x2, // SSI Linear Scan of Brisk et al.
+  OptimizeAllocation_SSATreeScan = 0x2, // SSI Tree Scan of Rastello et al.
+  OptimizeAllocation_GraphColoring = 0x4, // Some Graph Coloring implementation.
 } OptimizeAllocation;
-typedef uint8_t short_OptimizeAllocation;
-extern const char *
-OptimizeAllocation_NAME_[];
-#define OptimizeAllocation_NAME_(type) OptimizeAllocation_NAME_[type]
-
-
-/*
- * OptimizeScoreboarding --	Scoreboarder scheduling levels.
- */
-typedef enum {
-  OptimizeScoreboarding_, // No scoreboard schedule.
-  OptimizeScoreboarding_Fixup, // Fixup pass over the BasicBlock(s).
-  OptimizeScoreboarding_Iterate, // Iterate forward data-flow problem.
-  OptimizeScoreboarding_Priority, // Pre-order Operation(s) by priority.
-  OptimizeScoreboarding__
-} OptimizeScoreboarding;
-typedef uint8_t short_OptimizeScoreboarding;
-extern const char *
-OptimizeScoreboarding_NAME_[];
-#define OptimizeScoreboarding_NAME_(type) OptimizeScoreboarding_NAME_[type]
-
 
 /*
  * OptimizeLiveness --	Liveness analysis precision level.
  */
 typedef enum {
-  OptimizeLiveness_Upward, // Upward exposed uses approximation.
-  OptimizeLiveness_Linear, // Linear pass to improve upon Upward.
-  OptimizeLiveness_Iterate, // Iterate backward data-flow problem.
-  OptimizeLiveness__
+  OptimizeLiveness_Upward = 0x1, // Upward exposed uses approximation.
+  OptimizeLiveness_Linear = 0x2, // Linear pass to improve upon Upward.
+  OptimizeLiveness_Iterate = 0x4, // Iterate backward data-flow problem.
+  OptimizeLiveness_PhiCopy = 0x8, // Assume Phi are parallel copies
 } OptimizeLiveness;
-typedef uint8_t short_OptimizeLiveness;
-extern const char *
-OptimizeLiveness_NAME_[];
-#define OptimizeLiveness_NAME_(type) OptimizeLiveness_NAME_[type]
-
 
 /*
  * OptimizeConversion --	SSA form conversion flags.
@@ -131,6 +89,13 @@ typedef enum {
   OptimizeConversion_DForest = 0x400, // Use Dominance Forest to check interferences.
 } OptimizeConversion;
 
+/*
+ * OptimizeCoalescing --	SSA form coalescing flags.
+ */
+typedef enum {
+  OptimizeCoalescing_Sreedhar = 0x1, // Sreedhar coalesing based on conguence classes.
+  OptimizeCoalescing_Dominance = 0x2, // Use Dominance instead of Interference.
+} OptimizeCoalescing;
 
 /*
  * OptimizeNumbering --	Value Numbering flags.
@@ -141,14 +106,12 @@ typedef enum {
   OptimizeNumbering_Avail = 0x4, // AVAIL-based removal (else use Dominance).
 } OptimizeNumbering;
 
-
 /*
- * OptimizePropagation --	Fact Propagation flags.
+ * OptimizePropagation --	Data-flow facts Propagation flags.
  */
 typedef enum {
   OptimizePropagation_Constant = 0x1, // Sparse conditional constant propagation.
 } OptimizePropagation;
-
 
 /*
  * OptimizePredication --	Code Predication level.
@@ -163,7 +126,6 @@ extern const char *
 OptimizePredication_NAME_[];
 #define OptimizePredication_NAME_(type) OptimizePredication_NAME_[type]
 
-
 /*
  * OptimizeFormulation --	Enumerate the Formulation flags.
  */
@@ -177,8 +139,7 @@ typedef enum {
   OptimizeFormulation_PostPass = 0x80, // Apply to postpass problems.
   OptimizeFormulation_Acyclic = 0x100, // Apply to acyclic problems.
 } OptimizeFormulation;
-typedef unsigned OptimizeFormulations;
-typedef uint16_t short_OptimizeFormulations;
+typedef uint16_t short_OptimizeFormulation;
 #define OptimizeFormulations_isOptimize(flags) ( flags & ( OptimizeFormulation_Makespan | OptimizeFormulation_Lifetime ) )
 
 
@@ -186,6 +147,25 @@ typedef uint16_t short_OptimizeFormulations;
 
 
 
+/*
+ * OptimizeScoreboarding --	Scoreboarder scheduling levels.
+ */
+typedef enum {
+  OptimizeScoreboarding_Fixup = 0x1, // Fixup pass over the BasicBlock(s).
+  OptimizeScoreboarding_Iterate = 0x2, // Iterate forward data-flow problem.
+  OptimizeScoreboarding_Priority = 0x4, // Pre-order Operation(s) by priority.
+} OptimizeScoreboarding;
+
+/*
+ * OptimizeRCMSProblem --	RCMS problem description.
+ */
+typedef enum {
+  OptimizeRCMSProblem_Regular = 0x1, // Pass regular nodes and arcs.
+  OptimizeRCMSProblem_Overlap = 0x2, // Pass pipeline overlap-limiting arc.
+  OptimizeRCMSProblem_Lifetime = 0x4, // Pass lifetine nodes and arcs.
+  OptimizeRCMSProblem_Renaming = 0x8, // Pass modulo renaming-limiting arcs.
+  OptimizeRCMSProblem_Margins = 0x10, // Pass margin-enforcing arcs.
+} OptimizeRCMSProblem;
 
 /*
  * OptimizeItem --	Enumerate the Optimize items.
@@ -200,6 +180,7 @@ typedef enum {
   OptimizeItem_RegionType, // See OptimizeRegionType.
   OptimizeItem_Liveness, // See OptimizeLiveness.
   OptimizeItem_Conversion, // See OptimizeConversion.
+  OptimizeItem_Coalescing, // See OptimizeCoalescing.
   OptimizeItem_Numbering, // See OptimizeNumbering.
   OptimizeItem_Propagation, // See OptimizePropagation.
   OptimizeItem_Predication, // See OptimizePredication.
@@ -210,13 +191,13 @@ typedef enum {
   OptimizeItem_WindowSize, // Scoreboarder window size
   OptimizeItem_PrePadding, // See OptimizePrePadding.
   OptimizeItem_PostPadding, // See OptimizePostPadding.
+  OptimizeItem_RCMSProblem, // See OptimizeRCMSProblem.
   OptimizeItem__
 } OptimizeItem;
 typedef uint8_t short_OptimizeItem;
 extern const char *
 OptimizeItem_NAME_[];
 #define OptimizeItem_NAME_(type) OptimizeItem_NAME_[type]
-
 
 /*
  * ConfigureCompensation --	Enumeration of the code compensation levels.
@@ -233,7 +214,6 @@ typedef uint8_t short_ConfigureCompensation;
 extern const char *
 ConfigureCompensation_NAME_[];
 #define ConfigureCompensation_NAME_(type) ConfigureCompensation_NAME_[type]
-
 
 /*
  * ConfigureSpeculation --	Enumeration of the control speculation levels.
@@ -253,7 +233,6 @@ extern const char *
 ConfigureSpeculation_NAME_[];
 #define ConfigureSpeculation_NAME_(type) ConfigureSpeculation_NAME_[type]
 
-
 /*
  * ConfigureRelaxation --	Enumeration of the inductive relaxation levels.
  *
@@ -270,7 +249,6 @@ extern const char *
 ConfigureRelaxation_NAME_[];
 #define ConfigureRelaxation_NAME_(type) ConfigureRelaxation_NAME_[type]
 
-
 /*
  * ConfigureRenaming --	Enumeration of the register renaming levels.
  */
@@ -286,11 +264,10 @@ extern const char *
 ConfigureRenaming_NAME_[];
 #define ConfigureRenaming_NAME_(type) ConfigureRenaming_NAME_[type]
 
-
 /*
  * ConfigureBoosting --	Enumeration of the operation boosting levels.
  *
- * Boosting is the enabling of control speculation by code transformations.
+ * Boosting is the enabling of control speculation by code predication.
  */
 typedef enum {
   ConfigureBoosting_, // No operation boosting.
@@ -302,7 +279,6 @@ typedef uint8_t short_ConfigureBoosting;
 extern const char *
 ConfigureBoosting_NAME_[];
 #define ConfigureBoosting_NAME_(type) ConfigureBoosting_NAME_[type]
-
 
 /*
  * ConfigureAliasing --	Memory aliasing level.
@@ -322,7 +298,6 @@ extern const char *
 ConfigureAliasing_NAME_[];
 #define ConfigureAliasing_NAME_(type) ConfigureAliasing_NAME_[type]
 
-
 /*
  * ConfigurePreLoading --	Memory pre-loading level.
  */
@@ -338,7 +313,6 @@ typedef uint8_t short_ConfigurePreLoading;
 extern const char *
 ConfigurePreLoading_NAME_[];
 #define ConfigurePreLoading_NAME_(type) ConfigurePreLoading_NAME_[type]
-
 
 /*
  * ConfigureItem --	Enumerate the Configure items.
@@ -368,7 +342,6 @@ extern const char *
 ConfigureItem_NAME_[];
 #define ConfigureItem_NAME_(type) ConfigureItem_NAME_[type]
 
-
 /*
  * DependenceKind --	Enumerates the Dependence kinds.
  */
@@ -385,8 +358,9 @@ typedef enum {
   DependenceKind_WAW, // Register Write After Write dependence arc.
   DependenceKind_Life, // Register consumer node to its lifetime node.
   DependenceKind_Link, // Register producer node to its lifetime node.
-  DependenceKind_None, // Inserted by DepGraph_complete.
-  DependenceKind_Root, // Inserted by DepGraph_complete.
+  DependenceKind_Reuse, // Register reuse arc.
+  DependenceKind_Some, // Inserted by DepGraph_complete.
+  DependenceKind_Margin, // Inserted by DepGraph_complete.
   DependenceKind__,
   DependenceKind_Definite = 16,
 } DependenceKind;
