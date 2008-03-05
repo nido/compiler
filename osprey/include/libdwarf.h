@@ -244,6 +244,10 @@ typedef void  (*Dwarf_Handler)(Dwarf_Error /*error*/, Dwarf_Ptr /*errarg*/);
 #define DW_CIE_AUGMENTER_STRING_V0              "z"
 #endif // KEY
 
+#ifdef TARG_ST
+#define DW_CIE_AUGMENTER_HAS_AUGMENTATION_DATA  'z'
+#endif
+
 /* dwarf_init() access arguments
 */
 #define DW_DLC_READ        0        /* read only access */

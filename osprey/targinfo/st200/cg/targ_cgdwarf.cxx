@@ -1560,6 +1560,7 @@ static void Prepend_UE(UNWIND_ELEM* pue, UINT when, BB *bb)
   ue.is_copy = TRUE;
   ue.after_sp_adj = pue->after_sp_adj;
   ue.label_idx = LABEL_IDX_ZERO;
+  ue.frame_changed = pue->frame_changed;
 
   ue_list.insert(ue_iter, ue);
   if (Trace_Unwind) 
@@ -1653,6 +1654,8 @@ Add_UE (INT8 kind, PR_TYPE p, UINT when, BB *bb)
   ue.rc_reg = PR_To_CR(p);
   ue.when = when;
   ue.bb = bb;
+  ue.frame_changed = FALSE;
+
   ue_list.insert(ue_iter, ue);
   if (Trace_Unwind) 
 	fprintf(TFile, "state change for %s at entry to bb %d\n",
@@ -1676,6 +1679,8 @@ Add_UE (INT8 kind, UINT label, UINT when, BB *bb)
   ue.label = label;
   ue.when = when;
   ue.bb = bb;
+  ue.frame_changed = FALSE;
+
   ue_list.insert(ue_iter, ue);
   if (Trace_Unwind) 
 	fprintf(TFile, "add ue kind %d label %d at bb %d\n", kind, label, BB_id(bb));

@@ -1645,9 +1645,16 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 		DWARF_P_DBG_ERROR(dbg,DW_DLE_CIE_NULL,-1);
 	    }
 
+#ifndef TARG_ST
+	    // [CL] there is augmentation data as long as the
+	    // augmenter string begins with 'z'
 	    if (strcmp(cie_ptr->cie_aug, DW_CIE_AUGMENTER_STRING_V0) == 0
 		|| !strcmp(cie_ptr->cie_aug, PIC_DW_CIE_AUGMENTER_STRING_V0)
 	    ) {
+#else
+	      if (cie_ptr->cie_aug[0]
+		  == DW_CIE_AUGMENTER_HAS_AUGMENTATION_DATA) {
+#endif
 		v0_augmentation = 1;
 #ifdef TARG_ST
 		/* (cbr) don't use hardcoded length */
