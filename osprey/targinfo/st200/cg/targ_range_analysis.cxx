@@ -233,6 +233,15 @@ RangeAnalysis::TARG_Visit_Forward (OP *op, INT result_idx, LRange_pc &new_value,
     new_value = SignExtend (new_value, opnd1->getValue ());
     return TRUE;
   }
+  else if (opcode == TOP_perm_pb_i_r_r){
+    // perm.pb
+    TN *tn0 = OP_opnd(op, 0);
+    TN *tn1 = OP_opnd(op, 1);
+    LRange_pc opnd0 = ZeroExtend (Value (tn0), TN_bitwidth (tn0));
+    LRange_pc opnd1 = ZeroExtend (Value (tn1), TN_bitwidth (tn1));
+    new_value = BytePermute (opnd0, opnd1->getValue ());
+    return TRUE;
+  }    
   return FALSE;
 }
 

@@ -1,6 +1,33 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Mar  6 10:04:40 CET 2008
+	Author:    knochelh
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-35712
+
+Description:
+------------
+	* [trunk] Fix for bug #35712: Use perm.pb for quake idiom.
+	Deliver fixes/codex-35712 rev #15969 with authorization branch #38811
+
+
+Modified Files:
+---------------
+	M      osprey/common/util/paired_lattice.cxx
+	M      osprey/common/util/lbitvalue.h
+	M      osprey/common/util/lbvalrange.h
+	M      osprey/common/util/lbitvalue.cxx
+	M      osprey/common/util/lrange.h
+	M      osprey/common/util/lbvalrange.cxx
+	M      osprey/common/util/paired_lattice.h
+	M      osprey/targinfo/st200/cg/targ_range_prop.cxx
+	M      osprey/targinfo/st200/cg/targ_range_analysis.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Mar  5 11:02:22 CET 2008
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
