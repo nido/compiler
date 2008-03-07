@@ -1339,13 +1339,16 @@ static void
 Propagate_Overlap_Coalescing_Preference_Leaf_To_Root(LIVE_RANGE *lr, REGISTER alloc_reg) {
   LIVE_RANGE *cur_lr, *parent_lr;
 
-  if (alloc_reg > REGISTER_MAX) {
+  if (alloc_reg == REGISTER_UNDEFINED || alloc_reg > REGISTER_MAX) {
     return; // Might happens during fat point computation 
   }
 
   cur_lr = lr;
   while ((parent_lr = LR_ovcoal_parent(cur_lr)) != NULL) {
     alloc_reg -= LR_ovcoal_local_rank(cur_lr);
+    if (alloc_reg < REGISTER_MIN) {
+      break; // register chosen for 'lr' is not compatible with 'parent_lr'
+    }
 
     if (LR_extract_op(cur_lr)) {
       // Check if register is compatible with parent alignment
