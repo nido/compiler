@@ -1385,6 +1385,14 @@ inline void OPS_Remove_Ops(OPS *ops, OPS *remove_ops)
   FmtAssert(last != NULL,
 	    ("remove_ops is malformed (last is NULL but first isn't)"));
 
+#ifdef TARG_ST
+  extern void SSA_unset(OP *o);
+  OP *op;
+  for (op = OPS_first(remove_ops); op && op != OP_next(OPS_last(remove_ops)); op = OP_next(op)) {
+    SSA_unset(op);
+  }
+#endif
+
   prevp = OP_next(last) ? &OP_next(last)->prev : &ops->last;
   nextp = OP_prev(first) ? &OP_prev(first)->next : &ops->first;
   
@@ -1393,14 +1401,6 @@ inline void OPS_Remove_Ops(OPS *ops, OPS *remove_ops)
 
   first->prev = last->next = NULL;
   ops->length -= OPS_length(remove_ops);
-
-#ifdef TARG_ST
-extern void SSA_unset(OP *o);
- OP *op;
- for (op = OPS_first(remove_ops); op && op != OP_next(OPS_last(remove_ops)); op = OP_next(op)) {
-   SSA_unset(op);
- }
-#endif
 }
 
 void OPS_Insert_Op_Before(OPS *ops, OP *point, OP *op);
