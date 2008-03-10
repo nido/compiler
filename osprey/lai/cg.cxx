@@ -172,7 +172,13 @@ IPRA cg_ipra;
  *    CGStack_Align_Check()
  *
  *   This function check that the alignment constraint related
- *   to local symbols is compatible with the stack alignment. 
+ *   to local symbols is compatible with the stack alignment.
+ *
+ *   Basically there are two phases: 
+ *   1. determine the required alignment (accounts for function level
+ *	alignment attribute and alignment of automatics);
+ *   2. if CG_auto_align is true, set the required alignment, 
+ *	otherwise, emit a warning if it exceeds the natural stack alignment.
  *
  *   FdF 20080212: Note that this function cannot get alignment
  *   constraints from varargs parameters
@@ -196,9 +202,10 @@ static void CGStack_Align_Check() {
     }
   }
   
-  if (Update && !CG_auto_align_stack ) 
-    FmtAssert(FALSE, ("Stack Alignment of function %s is inconsistant (currentvalue is %d should be %d)",ST_name(Get_Current_PU_ST()),(int)PU_aligned_stack(Get_Current_PU()),Max_Stack_Align));
-
+  if (Update && !CG_auto_align_stack ) {
+    // Warn for undefined behavior
+    ErrMsg(EC_Warn_Stack_Exceeded,ST_name(Get_Current_PU_ST()),(int)PU_aligned_stack(Get_Current_PU()),Max_Stack_Align);
+  }
 
   if (Update && CG_auto_align_stack) {
     if (user_stack_align) {

@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar 10 15:51:40 CET 2008
+	Author:    guillon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/guillon/dev-stack-align
+
+Description:
+------------
+	* Deliver change to handling of aligned object in the stack. Now a warning is emitted if the alignment exceeds the natural stack alignment. Deliver after approval art #40375.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/ercg.desc
+	M      osprey/lai/ercg.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Mar 10 14:38:31 CET 2008
 	Author:    giraudoa
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
