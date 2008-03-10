@@ -462,7 +462,7 @@ void ISA_Properties_End(void)
 
   const char* top_name_template = gen_static_code ? " /* TOP_%-25s */  " :  " /* TOP_dyn_%-25s */  " ;
   
-  unsigned long long * flag_value = (unsigned long long*)malloc(mask_word_count*sizeof(unsigned long long*)); // variable length flag, low indexes in low words.
+  unsigned long long * flag_value = (unsigned long long*)malloc(mask_word_count*sizeof(unsigned long long)); // variable length flag, low indexes in low words.
   for (code = 0; code < TOP_count_limit; code++) {
     const char *sep;
     // Rejected by MS Visual 2003 // unsigned long long flag_value[mask_word_count]; // variable length flag, low indexes in low words.
