@@ -1,6 +1,23 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Mar 11 14:54:44 CET 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-33569
+
+Description:
+------------
+	* [trunk] Fix for bug #33569: Incorrect access to struct with -TENV:align_aggregates=8
+	Deliver fixes/codex-33569 rev #16090 with authorization branch #39557
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/config/targ_sim.cxx
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Mar 11 10:39:18 CET 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

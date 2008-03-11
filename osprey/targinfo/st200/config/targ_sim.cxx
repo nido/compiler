@@ -247,6 +247,7 @@ Init_Sim_Info( void ) {
   }
 }
 
+#define SLOT_BYTE_SIZE MTYPE_RegisterSize(SIM_INFO.int_type)
 
 void
 Set_struct_by_ref_for_parameter_location( BOOL _CG_struct_by_ref ) {
@@ -620,7 +621,11 @@ Pad_Formal_Offset(INT n)
  * ====================================================================
  */
 static void
-Update_Stack_Offsets(PLOC *ploc) {
+Update_Stack_Offsets(INT alignment, PLOC *ploc) {
+
+  if(ploc->by_reference)
+    // Passed by ref
+    alignment = MTYPE_alignment(MTYPE_A4);
 
   if(PLOC_on_stack(*ploc)) {
     if (ploc->lpad_overlap > 0) {
@@ -630,12 +635,12 @@ Update_Stack_Offsets(PLOC *ploc) {
       ploc->upformal_offset = 0;
     } else {
       ploc->formal_offset = Current_Formal_Offset;
-      ploc->upformal_offset = Current_UpFormal_Offset + PLOC_lpad(*ploc);
+      ploc->upformal_offset = ROUNDUP(Current_UpFormal_Offset + PLOC_lpad(*ploc), alignment);
     }
     Current_UpFormal_Offset = ploc->upformal_offset + PLOC_size(*ploc) + PLOC_rpad(*ploc);
   }
   else {
-    ploc->formal_offset = Current_Formal_Offset + PLOC_lpad(*ploc);
+    ploc->formal_offset = ROUNDUP(Current_Formal_Offset + PLOC_lpad(*ploc), alignment);
     Current_Formal_Offset = ploc->formal_offset + PLOC_size(*ploc) + PLOC_rpad(*ploc);
     /* If Current_Formal_Offset is greater than Max_Formal_Save_Area_size, we
        report the difference to the upformal offset. */
@@ -690,6 +695,7 @@ Get_Parameter_Location (
 
   /* check for array case where fe doesn't fill in right btype */
   TYPE_ID pmtype = Fix_TY_mtype (ty);	/* Target type */
+  INT align = MTYPE_alignment(pmtype);
 
   ploc.size = MTYPE_RegisterSize(pmtype);
 
@@ -802,36 +808,53 @@ Get_Parameter_Location (
 	  // on stack.
 	  //
 	  ploc.size = TY_size (ty);
+	  align = TY_align(ty);
+
+	  // FdF 20080304: size must be rounded to the object alignment
+	  ploc.size = ROUNDUP(ploc.size, align);
 
 	  // Calculate the number of parameter slots needed
 	  // A parameter slot is 4 bytes in size
 	  //
-	  INT psize = TY_size (ty) / 4;
+	  INT psize = ploc.size / SLOT_BYTE_SIZE;
 	  // round up
-	  if ((TY_size (ty) % MTYPE_RegisterSize(SIM_INFO.int_type)) != 0)
+	  if ((ploc.size % SLOT_BYTE_SIZE) != 0)
 	    psize++;
 
 	  ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
 
 	  // Structures are padded to a multiple of 32 bit.
-	  rpad = (psize * 4) - ploc.size;
+	  rpad = (psize * SLOT_BYTE_SIZE) - ploc.size;
 
 	  // Structures over 4 bytes are aligned on a 8-byte boundary
-	  //if (psize > 1 && Get_Preg_Alignment(ploc.reg) == 4) {
+	  if ((psize > 1) && (align < 8))
+	    align = 8;
 
-	  if (psize > 1 && ((!PLOC_on_stack(ploc) && (Get_Formal_Offset() % 8 == 4)) ||
-			    (PLOC_on_stack(ploc) && (Get_UpFormal_Offset() % 8 == 4)))) {
-	    //
-	    // skip one slot if the next still fits the register list
-	    //
+	  //if (psize > 1 && Get_Preg_Alignment(ploc.reg) == 4) {
+	  // FdF 20080212: Take into account also the TY_align value
+
+	  if (!PLOC_on_stack(ploc) && (Get_Formal_Offset() % align != 0))
+	    lpad = align - (Get_Formal_Offset() % align);
+	  else if (PLOC_on_stack(ploc) && (Get_UpFormal_Offset() % align != 0))
+	    lpad = align - (Get_UpFormal_Offset() % align);
+
+	  // FdF 20080212: Added support for align > 8
+	  if (lpad > 0) {
+	    // Skip several slots
+	    INT pad;
 	    PREG_NUM prev_preg = ploc.reg;
-	    lpad = 4;
-	    Current_Int_Param_Num++;
-	    ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
-	    if (IS_INT_PREG(prev_preg) && !IS_INT_PREG(ploc.reg)) {
-	      // For this target, the formal and upformal areas are continuous, hence
-	      // the padding must be allocated to the formal area when lpad is overlaping.
-	      ploc.lpad_overlap = lpad;
+
+	    FmtAssert(lpad % SLOT_BYTE_SIZE == 0, ("lpad is %d, should be multiple of %d for align %d\n", lpad, SLOT_BYTE_SIZE, align));
+
+	    for (pad = 0; pad < lpad; pad += SLOT_BYTE_SIZE) {
+	      Current_Int_Param_Num++;
+	      ploc.reg = Get_Current_Int_Preg_Num (SIM_INFO.int_args);
+	      if (IS_INT_PREG(prev_preg) && !IS_INT_PREG(ploc.reg)) {
+		// For this target, the formal and upformal areas are continuous, hence
+		// the padding must be allocated to the formal area when lpad is overlaping.
+		ploc.lpad_overlap = pad+SLOT_BYTE_SIZE;
+	      }
+	      prev_preg = ploc.reg;
 	    }
 	  }
 
@@ -853,7 +876,7 @@ Get_Parameter_Location (
 
   ploc.lpad = lpad;
   ploc.rpad = rpad;
-  Update_Stack_Offsets(&ploc);
+  Update_Stack_Offsets(align, &ploc);
 
   if(TRACE_ON) {
     fprintf(TFile,"Parameter %s: preg = %d, lpad = %d, rpad = %d,"
@@ -1032,7 +1055,7 @@ Get_Vararg_Parameter_Location (
   next.lpad = 0;
   next.rpad = 0;
   
-  Update_Stack_Offsets(&next);
+  Update_Stack_Offsets(MTYPE_alignment(MTYPE_I4), &next);
 
   if(TRACE_ON) {
     fprintf(TFile,"Vararg parameter: preg = %d, lpad = %d, rpad = %d, start_offset = %d, size = %d\n",
