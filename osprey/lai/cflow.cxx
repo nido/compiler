@@ -1764,6 +1764,8 @@ BB_HWLoop_head(BB *bb) {
 	return bb;
     }
   }
+  // TDR - Quick fix for bug codex-40739 we also check if the block is a HW loop initialization
+  if (CGTARG_bb_is_hwloop_init(bb)) return bb; 
   return NULL;
 }
 

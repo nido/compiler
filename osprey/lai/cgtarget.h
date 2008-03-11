@@ -991,6 +991,7 @@ extern BOOL EETARG_Save_With_Regmask (ISA_REGISTER_CLASS cl, REGISTER reg);
 
 #ifdef TARG_ST 	 
 extern BOOL CGTARG_Is_Simple_Jump(const OP* op);
+extern BOOL CGTARG_bb_is_hwloop_init(const BB* bb);
 extern BOOL CGTARG_op_may_alias_with_call(const OP* op);
 extern BOOL CGTARG_registerclass_may_be_copied(ISA_REGISTER_CLASS cl);
 extern BOOL CGTARG_Code_Motion_To_LoopHead_Is_Legal(const OP* op, BB* loophead);

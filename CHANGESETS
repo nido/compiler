@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Mar 11 10:39:18 CET 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-40739
+
+Description:
+------------
+	* [trunk] Fix for bug #40739: stxp70-trunk 05 march : HR4.2 fails.
+	Deliver fixes/codex-40739 rev #16076 with authorization branch #40809
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/cgtarget.h
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Mar 10 15:51:40 CET 2008
 	Author:    guillon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

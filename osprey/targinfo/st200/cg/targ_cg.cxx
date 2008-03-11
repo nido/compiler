@@ -3436,6 +3436,23 @@ CGTARG_Is_Simple_Jump(const OP* op)
     return top == TOP_br_i_b || top == TOP_brf_i_b ||top == TOP_goto_i;
 }
 
+
+/** 
+ * Returns whether basic bloc contain loop init.
+ * 
+ * Note that this api is called from CFLOW 
+ * @param bb 
+ * 
+ * @return Bool
+ */
+
+BOOL
+CGTARG_bb_is_hwloop_init(const BB* bb)
+{
+   return FALSE;
+}
+
+
 /** 
  * Returns whether op may alias with a call.
  * 
