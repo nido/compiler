@@ -213,6 +213,13 @@ IsSimpleBB<PU, BB>(const PU& a_cfg, BB& bb);
  */
 template<>
 static bool
+IsEntryBB<PU, BB>(const PU& a_cfg, BB& bb);
+
+/**
+ * @see tailmerge.h
+ */
+template<>
+static bool
 ReplaceSimpleJump<PU, BB>(PU& a_cfg, BB& src, BB& tgt, BB& origBb);
 } // End TAILMERGE_NAMESPACE
 
@@ -769,6 +776,14 @@ IsSimpleBB<PU, BB>(const PU& a_cfg, BB& bb)
                     curStmt = OP_next(curStmt);
                 }
         }
+    return result;
+}
+
+template<>
+static bool
+IsEntryBB<PU, BB>(const PU& a_cfg, BB& bb)
+{
+    bool result = BB_entry(&bb);
     return result;
 }
 

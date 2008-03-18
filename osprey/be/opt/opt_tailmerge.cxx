@@ -228,6 +228,13 @@ IsSimpleBB<CFG, BB_NODE>(const CFG& cfg, BB_NODE& bb);
  */
 template<>
 static bool
+IsEntryBB<CFG, BB_NODE>(const CFG& cfg, BB_NODE& bb);
+
+/**
+ * @see tailmerge.h
+ */
+template<>
+static bool
 ReplaceSimpleJump<CFG, BB_NODE>(CFG& cfg, BB_NODE& src, BB_NODE& tgt,
                                 BB_NODE& origBb);
 
@@ -1251,6 +1258,15 @@ IsSimpleBB<CFG, BB_NODE>(const CFG& cfg, BB_NODE& bb)
                     curStmt = WN_next(curStmt);
                 }
         }
+    return result;
+}
+
+template<>
+static bool
+IsEntryBB<CFG, BB_NODE>(const CFG& a_cfg, BB_NODE& bb)
+{
+    bool result = false;
+    if (bb.Kind() == BB_ENTRY) result=true;
     return result;
 }
 

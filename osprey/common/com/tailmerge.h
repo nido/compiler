@@ -467,6 +467,27 @@ extern bool
 IsSimpleBB(const Cfg& a_cfg, BasicBlock& bb);
 
 /**
+ * Check whether given basic block is PU entry block.
+ * Implementation can be based on specific BB kind or properties.
+ *
+ * @param  a_cfg Control flow graph
+ * @param  bb [in] Basic block to be checked
+ *
+ * @pre    true
+ * @post   result = bb is an entry block
+ *
+ * @return true if bb is entry, false otherwise
+ *
+ * @remarks Due to API problem in targeting, we cannot set bb as const
+ *
+ * @todo   Targetting to be done
+ */
+
+template<typename Cfg, typename BasicBlock>
+extern bool
+IsEntryBB(const Cfg& a_cfg, BasicBlock& bb);
+
+/**
  * Replace a simple jump (unconditionnal jump) from src to origBb by a jump
  * from src to tgt.
  * This function must correctly update predecessor/successor list of src, tgt
@@ -2623,6 +2644,17 @@ CExtendedTailmerge<Cfg, BasicBlock, Operation>::
     bool canBeRemoved = true;
     DbgPrintTailmerge((debugOutput, "*** Start %s for BB%d\n", __FUNCTION__,
                        BasicBlockId(CFG(), simpleBb)));
+
+    // VL: this is to fix bug #40577 where entry block is wrongly seen as
+    // removable due to 1/ the absence of predecessor and 2/ the absence
+    // of specific analyis and filtering for this kind of blocks!
+    // The underlying problem is that RemoveBBs() does not handle correc-
+    // cases where a block to be removed has implicit predecessor as it
+    // is the case for entry block (unlink/relink operations may be wrong
+    // in this case).
+
+    if( (IsEntryBB<Cfg, BasicBlock>(CFG(), simpleBb)) ) canBeRemoved=false;
+
     for(it = simplifyInfo.listOfPreds.begin();
         it != simplifyInfo.listOfPreds.end(); ++it)
         {

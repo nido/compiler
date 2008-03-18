@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Mar 18 12:26:25 CET 2008
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-40577
+
+Description:
+------------
+	* [trunk] Fix for bug #40577: Os results in wrong code on newlib 1.15 strcmp.
+	Deliver fixes/codex-40577 rev #16147 with authorization branch #40846
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_tailmerge.cxx
+	M      osprey/lai/cg_tailmerge.cxx
+	M      osprey/common/com/tailmerge.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Mar 11 14:54:44 CET 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
