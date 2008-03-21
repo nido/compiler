@@ -1341,7 +1341,12 @@ COPYPROP::Prop_var(CODEREP *x, BB_NODE *curbb, BOOL icopy_phase,
     STMTREP *eval_stmt = CXX_NEW(STMTREP(OPC_EVAL), Htable()->Mem_pool());
     expr->IncUsecnt();
     eval_stmt->Set_rhs(expr);
+#ifdef TARG_ST
+    // TDR Fix for issue #40057 related to do_while lowering
+    insertbb->Append_stmt_before_branch(eval_stmt);
+#else
     insertbb->Append_stmtrep(eval_stmt);
+#endif
   }
   return expr;
 }
@@ -1415,7 +1420,12 @@ COPYPROP::Prop_ivar(CODEREP *x, BB_NODE *curbb, BOOL icopy_phase,
     STMTREP *eval_stmt = CXX_NEW(STMTREP(OPC_EVAL), Htable()->Mem_pool());
     expr->IncUsecnt();
     eval_stmt->Set_rhs(expr);
+#ifdef TARG_ST
+    // TDR Fix for issue #40057 related to do_while lowering
+    insertbb->Append_stmt_before_branch(eval_stmt);
+#else
     insertbb->Append_stmtrep(eval_stmt);
+#endif
   }
   return expr;
 }
