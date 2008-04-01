@@ -746,6 +746,9 @@ add_special_options (void)
 	    /* [SC] Disable relaxation for all but the final linkphase. */
 	    remove_phase_for_option(O__relax, P_any_ld);
 	    add_phase_for_option(O__relax, P_ldsimple);
+	    /* [TB] Disable relocation emition for all but the final linkphase. */
+	    remove_phase_for_option(O__emit_relocs, P_any_ld);
+	    add_phase_for_option(O__emit_relocs, P_ldsimple);
 	    /* [TB] Disable --shared for all but the final linkphase. */
 	    if (shared == DSO_SHARED) {
 	      remove_phase_for_option(O_shared, P_any_ld);
