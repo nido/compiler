@@ -1429,8 +1429,17 @@ EBO_delete_subset_mem_op(
   if (OP_load(op) && OP_load(pred_op) &&
       (OP_results(op) == 1) && (OP_results(pred_op) == 2) &&
       (2*size_succ == size_pred)) {
-   /* Just use one of the 2 results for the predecessor. */
-    pred_result = (byte_offset >= size_succ) ? OP_result(pred_op,1) : OP_result(pred_op,0);
+    // Assign pred_result
+    
+    // fix for codex bug #38550
+    // Just use one of the 2 results for the predecessor. 
+    if (OP_loadval_byte_offset (pred_op, 0) == byte_offset) {
+      pred_result = OP_result (pred_op, 0);
+    } else if (OP_loadval_byte_offset (pred_op, 1) == byte_offset) {
+      pred_result = OP_result (pred_op, 1);
+    } else {
+      FmtAssert (FALSE, ("cannot match byte_offset"));
+    }
 
     if (EBO_Trace_Optimization) {
       #pragma mips_frequency_hint NEVER
