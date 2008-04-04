@@ -6658,8 +6658,11 @@ Whirl2ops_Finalize (void)
 #ifdef CGG_ENABLED
   if (CG_enable_cgg) CGG_Finalize();
 #endif
+
   return;
 }
+
+
 
 //CGG_DEV{
 #ifdef CGG_ENABLED

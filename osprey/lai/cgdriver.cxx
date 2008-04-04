@@ -183,6 +183,7 @@ static BOOL CG_select_cycles_overridden = FALSE;
 static BOOL CG_select_space_overridden = FALSE;
 static BOOL CG_select_spec_stores_overridden = FALSE;
 static BOOL CG_enable_thr_overridden = FALSE;
+static BOOL IPFEC_Enable_LICM_passes_overridden = FALSE;
 #endif
 
 static BOOL CG_enable_ssa_overridden = FALSE;
@@ -626,6 +627,10 @@ static OPTION_DESC Options_CG[] = {
     7, 0, 7,    &CG_LOOP_unroll_heuristics, NULL },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "licm", "", 
     1, 0, 2,	&IPFEC_Enable_LICM, &IPFEC_Enable_LICM_overridden },
+  /* [vcdv] this option controls which of the 3 passes of licm should
+     run. the parameter is a 3bit mask */
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "licm_passes", "", 
+    0x07, 0, 0x07,	&IPFEC_Enable_LICM_passes, &IPFEC_Enable_LICM_passes_overridden },
 #ifdef TARG_ST200
   { OVK_INT32,	OV_INTERNAL,	TRUE, "packing_load_store", "packing", 
     0x25B, 0, 0x3FF,	&CG_LOOP_Packing_flags, NULL },
@@ -1429,9 +1434,15 @@ Configure_CG_Options(void)
   }
 #endif
 
-  if ((Opt_Level >= 2) && !IPFEC_Enable_LICM_overridden) {
-    IPFEC_Enable_LICM = 2;
-  }
+  if (Opt_Level >= 2) {
+
+      if (!IPFEC_Enable_LICM_overridden) {
+        IPFEC_Enable_LICM = 2;
+      }
+      if (!IPFEC_Enable_LICM_passes_overridden) {
+        IPFEC_Enable_LICM_passes = 0x07;
+      }
+    }
 
   if ((Opt_Level >= 2) && !CG_AutoMod_overridden) {
     CG_AutoMod = TRUE;

@@ -645,7 +645,7 @@ CG_Generate_Code(
 
 #ifdef TARG_ST
   // FdF: Code imported from ORC2.1. Perform before SSA and if-conversion.
-    if (IPFEC_Enable_LICM && CG_opt_level > 1 && !CG_localize_tns) {
+  if (IPFEC_Enable_LICM && (IPFEC_Enable_LICM_passes & 0x01 ) && CG_opt_level > 1 && !CG_localize_tns) {
       Set_Error_Phase("Perform_Loop_Invariant_Code_Motion");
       Perform_Loop_Invariant_Code_Motion ();
       Check_for_Dump ( TP_LICM, NULL );
@@ -759,13 +759,13 @@ CG_Generate_Code(
 	Stop_Timer ( T_EBO_CU );
 	Check_for_Dump ( TP_EBO, NULL );
       }
-      if (IPFEC_Enable_LICM) {
+      if (IPFEC_Enable_LICM && (IPFEC_Enable_LICM_passes & 0x02) ) {
 	// Another pass of invariant code motion is useful after if-conversion
 	// as there are more speculated instructions in loop to hoist.
 	Set_Error_Phase("Perform_Loop_Invariant_Code_Motion after SSA");
 	Perform_Loop_Invariant_Code_Motion ();
 	Check_for_Dump ( TP_LICM, NULL );
-      }
+        }
     }
 #endif
 
@@ -815,7 +815,8 @@ CG_Generate_Code(
 #ifdef TARG_ST
     // [vcdv] second call to PLICM after hwloop detection so that
     // hwloop invariant instructions can  be factorized
-    if (IPFEC_Enable_LICM && CG_opt_level > 1 && !CG_localize_tns) {
+      if (IPFEC_Enable_LICM && (IPFEC_Enable_LICM_passes & 0x04) &&
+          CG_opt_level > 1 && !CG_localize_tns) {
       Set_Error_Phase("Perform_Loop_Invariant_Code_Motion");
       Perform_Loop_Invariant_Code_Motion ();
     }
@@ -832,7 +833,7 @@ CG_Generate_Code(
       }
     }
 
-  } /* CG_opt_level > 1 */ 
+  }  /* CG_opt_level > 1 */ 
 
   if (!Get_Trace (TP_CGEXP, 1024))
     Reuse_Temp_TNs = TRUE;	/* for spills */

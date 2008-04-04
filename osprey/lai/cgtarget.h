@@ -995,6 +995,7 @@ extern BOOL CGTARG_bb_is_hwloop_init(const BB* bb);
 extern BOOL CGTARG_op_may_alias_with_call(const OP* op);
 extern BOOL CGTARG_registerclass_may_be_copied(ISA_REGISTER_CLASS cl);
 extern BOOL CGTARG_Code_Motion_To_LoopHead_Is_Legal(const OP* op, BB* loophead);
+extern BOOL CGTARG_OP_Has_Loop_Sideeffects(BB* bb, OP* op);
 #endif
 
 #endif /* CGTARGET_INCLUDED */

@@ -520,6 +520,11 @@ enum OP_COND_DEF_KIND {
 
 // FdF 20071023
 #define OP_MASK_PACKED     0x0080 /* This is is a compiler generated packed operation. */
+
+// VCDV 20080401 codex #41195
+#define OP_MASK_MULTI_EXIT_LOOP   0x0100 /* this operation
+                                              correspond to a
+                                              multi-exit loop */
 #endif
 
 # define OP_glue(o)		(OP_flags(o) & OP_MASK_GLUE)
@@ -611,6 +616,11 @@ enum OP_COND_DEF_KIND {
 # define OP_packed(o)		(OP_flags2(o) & OP_MASK_PACKED)
 # define Set_OP_packed(o)	(OP_flags2(o) |= OP_MASK_PACKED)
 # define Reset_OP_packed(o)	(OP_flags2(o) &= ~OP_MASK_PACKED)
+
+# define OP_multi_exit_loop(o)		(OP_flags2(o) & OP_MASK_MULTI_EXIT_LOOP)
+# define Set_OP_multi_exit_loop(o)	(OP_flags2(o) |= OP_MASK_MULTI_EXIT_LOOP)
+# define Reset_OP_multi_exit_loop(o)	(OP_flags2(o) &= ~OP_MASK_MULTI_EXIT_LOOP)
+
 #endif
 
 extern BOOL OP_cond_def( const OP*);

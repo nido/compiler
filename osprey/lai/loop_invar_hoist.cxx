@@ -131,6 +131,7 @@
 #include "cg_select.h"
 
 INT32 IPFEC_Enable_LICM = 0;
+INT32 IPFEC_Enable_LICM_passes = 0;
 #endif
 
 /* Tracing flags. */
@@ -1036,7 +1037,7 @@ LOOP_INVAR_CODE_MOTION :: All_Reaching_Def_are_Outside_Of_Loop
 BOOL
 LOOP_INVAR_CODE_MOTION :: Unique_Reaching_Def_Inside_Loop 
     (OP* op, INT opnd_idx) {
-    
+
     BB* home = OP_bb (op);
 
     TN* opnd = OP_opnd (op, opnd_idx);
@@ -1189,6 +1190,13 @@ LOOP_INVAR_CODE_MOTION :: Identify_Loop_Invariants (void) {
                     Unique_Reaching_Def_Inside_Loop (op, i);
             }
 
+
+            if (it_is) {
+              if (CGTARG_OP_Has_Loop_Sideeffects(b, op)) {
+                  it_is = false;
+              }
+            }
+    
             if (OP_xfer (op) || OP_call (op)) {
                 /* branch, obviously, do not define any loop invar
                  */

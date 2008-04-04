@@ -3488,7 +3488,22 @@ CGTARG_registerclass_may_be_copied(ISA_REGISTER_CLASS cl)
  * 
  * @return 
  */
-BOOL CGTARG_Code_Motion_To_LoopHead_Is_Legal(const OP* op, BB* loophead)
+BOOL
+CGTARG_Code_Motion_To_LoopHead_Is_Legal(const OP* op, BB* loophead)
 {
   return TRUE;
+}
+/** 
+ * Verify that op has no loop sideeffects that avoids it to be moved
+ * upward.
+ * 
+ * @param _loop 
+ * @param bb
+ * @param op 
+ * 
+ * @return true/false
+ */
+BOOL
+CGTARG_OP_Has_Loop_Sideeffects(BB* bb, OP* op) {
+  return false;
 }
