@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Apr  7 10:57:55 CEST 2008
+	Author:    knochelh
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-41737
+
+Description:
+------------
+	* [trunk] Fix for bug #41737: Range analysis fails when compiling GhostScript 8 in EEMBC office.
+	Deliver fixes/codex-41737 rev #16328 with authorization branch #41824
+
+
+Modified Files:
+---------------
+	M      osprey/common/util/zint.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr  4 14:33:14 CEST 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
