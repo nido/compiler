@@ -5125,8 +5125,6 @@ WFE_Expand_Expr (tree exp,
 	if (TY_mtype(hi_ty_idx) == MTYPE_M) {
 	  if (align < Aggregate_Alignment)
 	    align = Aggregate_Alignment;
-#define ROUNDUP(val,align) 	( (-(INT64)align) & (INT64)(val+align-1) )
-	  rounded_size = ROUNDUP(type_size, align);
 	}
 
 	// Set wn = start address of arg.

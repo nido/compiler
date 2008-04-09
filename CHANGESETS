@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Apr  9 14:48:28 CEST 2008
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-42355
+
+Description:
+------------
+	*  Fix [ bug #42355 ] Incorrect handling of struct by va_arg()
+        Delivered fixes/codex-42355 rev #16350 with authorization art #42413.
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/g++fe/wfe_expr.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Apr  7 10:57:55 CEST 2008
 	Author:    knochelh
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
