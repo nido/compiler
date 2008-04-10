@@ -452,24 +452,28 @@ Update_Op_With_New_Base(OP *&op, TN *new_base_tn, INT64 base_offset, INT64 addr_
     FmtAssert(new_top != TOP_UNDEFINED,("Unable to get TOP immediate variant"));
     OP_Change_Opcode(op, new_top);
   }
-    
+
+#ifdef TARG_ST
+  if (offset_idx >= 0) {
+		//[dt] We should inform the user if the offset is not in the range or if it is a misaligned access 
+		if (!TOP_opnd_value_in_range (OP_code(op), offset_idx, offset_val)) {
+			const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
+			const ISA_OPERAND_VALTYP *vtype = ISA_OPERAND_INFO_Operand(oinfo,offset_idx);
+			const ISA_LIT_CLASS_INFO *plc = ISA_LIT_CLASS_info + ISA_OPERAND_VALTYP_Literal_Class(vtype);
+			INT i;
+			for (i = 1; i <= plc->num_ranges; ++i) {
+				if ( (offset_val & plc->range[i].scaling_mask) != 0) {
+					// Issue is on the scaling constraint 
+					ErrMsgSrcpos(EC_Bad_Align, OP_srcpos(op), (int)plc->range[i].scaling_mask+1);
+				}
+			}
+		}
+	}
+#endif
+
+  
 #ifdef Is_True_On
   if(offset_idx >= 0) {
-#ifdef TARG_ST
-    //[dt] We should inform the user if the offset is not in the range or if it is a misaligned access 
-    if (!TOP_opnd_value_in_range (OP_code(op), offset_idx, offset_val)) {
-      const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
-      const ISA_OPERAND_VALTYP *vtype = ISA_OPERAND_INFO_Operand(oinfo,offset_idx);
-      const ISA_LIT_CLASS_INFO *plc = ISA_LIT_CLASS_info + ISA_OPERAND_VALTYP_Literal_Class(vtype);
-      INT i;
-      for (i = 1; i <= plc->num_ranges; ++i) {
-	if ( (offset_val & plc->range[i].scaling_mask) != 0 ) { 
-	  // Issue is on the scaling constraint 
-	  ErrMsgSrcpos(EC_Bad_Align,OP_srcpos(op),(int)plc->range[i].scaling_mask+1);
-	}
-      }
-    }
-#endif
     FmtAssert(TOP_opnd_value_in_range (OP_code(op), offset_idx, offset_val),("new offset does not fit in immediate"));
   }
 #endif
