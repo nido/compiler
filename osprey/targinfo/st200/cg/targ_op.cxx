@@ -346,10 +346,18 @@ void
 CGTARG_Predicate_OP (
   BB* bb, 
   OP* op, 
-  TN* pred_tn
+  TN* pred_tn,
+  bool on_false
 )
 {
-  FmtAssert(FALSE,("CGTARG_Predicate_OP: target does not support predication"));
+  if (OP_has_predicate(op)) {
+    FmtAssert(!on_false ,("CGTARG_Predicate_OP: can't have a predicate valid if not"));
+    Set_OP_opnd(op, OP_find_opnd_use(op,OU_predicate), pred_tn);
+  }
+  else {
+    FmtAssert(FALSE,("CGTARG_Predicate_OP: target does not support predication"));
+  }
+
 }
 
 /* ====================================================================

@@ -1491,10 +1491,6 @@ CIO_RWTRAN::Predicate_Write( OPS *ops, OP *op, TN *tn_predicate )
 
   // Use predication, if available
   if ( OP_has_predicate( op ) ) {
-#ifdef TARG_ST200
-    // (cbr) not yet
-    abort();
-#endif
     TN *tn_pred = tn_predicate;
 #ifdef TARG_ST
   /* (cbr) predicate operand # is not necessary constant */
@@ -1506,9 +1502,9 @@ CIO_RWTRAN::Predicate_Write( OPS *ops, OP *op, TN *tn_predicate )
     }
 #ifdef TARG_ST
   /* (cbr) predicate operand # is not necessary constant */
-    Set_OP_opnd( op,  OP_find_opnd_use(op, OU_predicate), tn_pred );
+    CGTARG_Predicate_OP(NULL, op, tn_pred, false);
 #else
-    Set_OP_opnd( op, OP_PREDICATE_OPND, tn_pred );
+    Set_OP_opnd( op, OP_PREDICATE_OPND, tn_pred);
 #endif
     return;
   }
@@ -2962,7 +2958,7 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
   /* (cbr) predicate operand # is not necessary constant */
 	   && OP_opnd( change.source, OP_find_opnd_use(change.source, OU_predicate) ) != True_TN ) {
 	TN *tn_pred = OP_opnd( change.source, OP_find_opnd_use(change.source, OU_predicate) );
-	Set_OP_opnd( change.source, OP_find_opnd_use(change.source, OU_predicate), True_TN );
+        CGTARG_Predicate_OP(body, change.source, True_TN, false);
 #else
 	   && OP_opnd( change.source, OP_PREDICATE_OPND ) != True_TN ) {
 	TN *tn_pred = OP_opnd( change.source, OP_PREDICATE_OPND );
@@ -2978,7 +2974,8 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
 	  OP *op_copy = Append_TN_Copy( tn_old, tn_new, change.source, 0 );
 #ifdef TARG_ST
   /* (cbr) predicate operand # is not necessary constant */
-	  Set_OP_opnd( op_copy, OP_find_opnd_use(op_copy, OU_predicate), tn_pred );
+          CGTARG_Predicate_OP(body, op_copy, tn_pred,
+                              OP_Pred_False (change.source, OP_find_opnd_use(change.source, OU_predicate)));
 #else
 	  Set_OP_opnd( op_copy, OP_PREDICATE_OPND, tn_pred );
 #endif
@@ -3039,7 +3036,8 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
 				      change.op, change.omega );
 #ifdef TARG_ST
   /* (cbr) predicate operand # is not necessary constant */
-	Set_OP_opnd( op_copy, OP_find_opnd_use(op_copy, OU_predicate), tn_pred );
+        CGTARG_Predicate_OP(body ,op_copy, tn_pred,
+                            OP_Pred_False (change.op, OP_find_opnd_use(change.source, OU_predicate)));
 #else
 	Set_OP_opnd( op_copy, OP_PREDICATE_OPND, tn_pred );
 #endif

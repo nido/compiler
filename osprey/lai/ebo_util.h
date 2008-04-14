@@ -183,9 +183,17 @@ EBO_hash_op (OP *op,
                     (TN_register_class(OP_result(op,0)) == ISA_REGISTER_CLASS_predicate)))) ? 0 :
 #endif
                  (INT)OP_code(op);
+#ifdef TARG_ST
+    // (cbr) fix pred #
+    for (opndnum = 0; opndnum < opcount; opndnum++) {
+      if (opndnum != OP_find_opnd_use(op, OU_predicate))
+	hash_value+=(INT)(INTPS)based_on_tninfo[opndnum];
+    }
+#else
     for (opndnum = OP_has_predicate(op)?1:0; opndnum < opcount; opndnum++) {
       hash_value+=(INT)(INTPS)based_on_tninfo[opndnum];
     }
+#endif
     hash_value = EBO_RESERVED_OP_HASH + EBO_EXP_OP_HASH(hash_value);
   }
   return hash_value;
@@ -314,7 +322,12 @@ locate_opinfo_entry (EBO_TN_INFO *tninfo)
 
 inline
 void
+#ifdef TARG_ST
+// (cbr) handle inversed predicates
+EBO_OPS_predicate(TN *predicate_tn, bool on_false, OPS *ops)
+#else
 EBO_OPS_predicate(TN *predicate_tn, OPS *ops)
+#endif
 {
   OP *next_op = OPS_first(ops);
   while (next_op != NULL) {
@@ -322,6 +335,17 @@ EBO_OPS_predicate(TN *predicate_tn, OPS *ops)
       Set_OP_opnd(next_op, 
 		  TOP_Find_Operand_Use(OP_code(next_op), OU_predicate), 
 		  predicate_tn);
+
+#ifdef TARG_ST
+      // (cbr) Support for guards on false
+      if (on_false)
+	Set_OP_Pred_False(next_op, TOP_Find_Operand_Use(OP_code(next_op), OU_predicate));
+
+      if (!TN_is_true (predicate_tn))
+	Set_OP_cond_def_kind (next_op, OP_PREDICATED_DEF);
+
+#endif	
+
     }
     next_op = OP_next(next_op);
   }
@@ -332,7 +356,12 @@ EBO_OPS_predicate(TN *predicate_tn, OPS *ops)
 
 inline
 void
+#ifdef TARG_ST
+// (cbr) Support for guards on false
+EBO_Exp_COPY(TN *predicate_tn, bool on_false, TN *tgt_tn, TN *src_tn, OPS *ops)
+#else
 EBO_Exp_COPY(TN *predicate_tn, TN *tgt_tn, TN *src_tn, OPS *ops)
+#endif
 {
 #ifdef TARG_ST
   // If registers are identical we can generate a noop instead of a copy,
@@ -346,12 +375,19 @@ EBO_Exp_COPY(TN *predicate_tn, TN *tgt_tn, TN *src_tn, OPS *ops)
   }
   if (predicate_tn != NULL) {
     Expand_Copy(tgt_tn, predicate_tn, src_tn, ops);
+    if (on_false)
+      Set_OP_Pred_False(OPS_last(ops), OP_find_opnd_use(OPS_last(ops), OU_predicate)); 
     return;
   }
 #endif
   Exp_COPY(tgt_tn, src_tn, ops);
   if (predicate_tn != NULL) {
+#ifdef TARG_ST
+// (cbr) Support for guards on false
+    EBO_OPS_predicate (predicate_tn, on_false, ops);
+#else
     EBO_OPS_predicate (predicate_tn, ops);
+#endif
   }
 }
 

@@ -213,6 +213,8 @@ extern BOOL CG_enable_thr;
 extern BOOL CG_enable_peephole;
 extern BOOL CG_enable_ssa;	/* Enable SSA in cg */
 extern BOOL CG_enable_select;
+extern float CG_ifc_factor;
+
 #ifdef TARG_ST
 extern BOOL CG_enable_range_propagation;
 // In range analysis, ee will lower values at most this number of times.

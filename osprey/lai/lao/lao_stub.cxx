@@ -963,6 +963,10 @@ CGIR_OP_make(CGIR_OP cgir_op, O64_Operator o64operator, CGIR_TN arguments[],
   if (orig_op != NULL) {
     // Copy Annot, flags, srcpos, etc. See Dup_OP().
     OP_srcpos(cgir_op) = OP_srcpos(orig_op);
+#if defined (TARG_ST) && defined (SUPPORTS_OP_EFFECTS)
+    // (cbr) Support for guards on false
+    Copy_Pred (cgir_op, orig_op);
+#endif
     OP_variant(cgir_op) = OP_variant(orig_op);
     OP_scycle(cgir_op) = OP_scycle(orig_op);
     OP_flags(cgir_op) = OP_flags(orig_op);

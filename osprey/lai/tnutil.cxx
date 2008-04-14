@@ -1243,15 +1243,23 @@ TN_Reaching_Value_At_Op(
 	      if (OP_has_predicate(value_op) && OP_has_predicate(op)) {
 #ifdef TARG_ST
                 /* (cbr) predicate operand # is not necessary constant */
-		TN *p1 = OP_opnd((OP*) value_op,
-                                 OP_find_opnd_use(value_op, OU_predicate));
-		TN *p2 = OP_opnd((OP*) op,
-                                 OP_find_opnd_use(op, OU_predicate));
+                int idx1 = OP_find_opnd_use(value_op, OU_predicate);
+                int idx2 = OP_find_opnd_use(op, OU_predicate);
+
+		TN *p1 = OP_opnd((OP*) value_op, idx1);
+		TN *p2 = OP_opnd((OP*) op, idx2);
+
 #else
 		TN *p1 = OP_opnd((OP*) value_op, OP_PREDICATE_OPND);
 		TN *p2 = OP_opnd((OP*) op, OP_PREDICATE_OPND);
 #endif	
+#ifdef TARG_ST
+                // (cbr) Support for guards on false
+                if (TNs_Are_Equivalent (p1, p2) &&
+                    OP_Pred_False (value_op, idx1) == OP_Pred_False (op, idx2)) {
+#else
 		if (p1 == p2) {
+#endif
 		  *kind =  VAL_COND_DEF;
 		  return value_op;
 		}
@@ -1280,16 +1288,22 @@ TN_Reaching_Value_At_Op(
 	      if (OP_has_predicate(value_op) && OP_has_predicate(op)) {
 #ifdef TARG_ST
                 /* (cbr) predicate operand # is not necessary constant */
-		TN *p1 = OP_opnd((OP*) value_op,
-                                 OP_find_opnd_use(value_op, OU_predicate));
-		TN *p2 = OP_opnd((OP*) op,
-                                 OP_find_opnd_use(op, OU_predicate));
+                int idx1 = OP_find_opnd_use(value_op, OU_predicate);
+                int idx2 = OP_find_opnd_use(op, OU_predicate);
+
+		TN *p1 = OP_opnd((OP*) value_op, idx1);
+		TN *p2 = OP_opnd((OP*) op, idx2);
 #else
 		TN *p1 = OP_opnd((OP*) value_op, OP_PREDICATE_OPND);
 		TN *p2 = OP_opnd((OP*) op, OP_PREDICATE_OPND);
 #endif
-		
+#ifdef TARG_ST
+                // (cbr) Support for guards on false
+                if (TNs_Are_Equivalent (p1, p2) &&
+                    OP_Pred_False (value_op, idx1) == OP_Pred_False (op, idx2)) {
+#else		
 		if (p1 == p2) {
+#endif
 		  *kind =  VAL_COND_USE;
 		  return value_op;
 		}
@@ -1374,16 +1388,22 @@ TN_Reaching_Value_At_Op(
 	    if (OP_has_predicate(value_op) && OP_has_predicate(op)) {
 #ifdef TARG_ST
                 /* (cbr) predicate operand # is not necessary constant */
-		TN *p1 = OP_opnd((OP*) value_op,
-                                 OP_find_opnd_use(value_op, OU_predicate));
-		TN *p2 = OP_opnd((OP*) op,
-                                 OP_find_opnd_use(op, OU_predicate));
+                int idx1 = OP_find_opnd_use(value_op, OU_predicate);
+                int idx2 = OP_find_opnd_use(op, OU_predicate);
+
+		TN *p1 = OP_opnd((OP*) value_op, idx1);
+		TN *p2 = OP_opnd((OP*) op, idx2);
 #else
 	      TN *p1 = OP_opnd((OP*) value_op, OP_PREDICATE_OPND);
 	      TN *p2 = OP_opnd((OP*) op, OP_PREDICATE_OPND);
 #endif
-	      
+#ifdef TARG_ST
+                // (cbr) Support for guards on false
+                if (TNs_Are_Equivalent (p1, p2) &&
+                    OP_Pred_False (value_op, idx1) == OP_Pred_False (op, idx2)) {
+#else	      
 	      if (p1 == p2) {
+#endif
 		*kind =  VAL_COND_DEF;
 		return value_op;
 	      }
@@ -1402,17 +1422,22 @@ TN_Reaching_Value_At_Op(
 	    if (OP_has_predicate(value_op) && OP_has_predicate(op)) {
 #ifdef TARG_ST
                 /* (cbr) predicate operand # is not necessary constant */
-		TN *p1 = OP_opnd((OP*) value_op,
-                                 OP_find_opnd_use(value_op, OU_predicate));
-		TN *p2 = OP_opnd((OP*) op,
-                                 OP_find_opnd_use(op, OU_predicate));
+                int idx1 = OP_find_opnd_use(value_op, OU_predicate);
+                int idx2 = OP_find_opnd_use(op, OU_predicate);
+		TN *p1 = OP_opnd((OP*) value_op, idx1);
+		TN *p2 = OP_opnd((OP*) op, idx2);
 #else
-	      TN *p1 = OP_opnd((OP*) value_op, OP_PREDICATE_OPND);
-	      TN *p2 = OP_opnd((OP*) op, OP_PREDICATE_OPND);
+                TN *p1 = OP_opnd((OP*) value_op, OP_PREDICATE_OPND);
+                TN *p2 = OP_opnd((OP*) op, OP_PREDICATE_OPND);
 #endif
-	      
-	      if (p1 == p2) {
-		*kind =  VAL_COND_USE;
+#ifdef TARG_ST
+              // (cbr) Support for guards on false
+                if (TNs_Are_Equivalent (p1, p2) &&
+                    OP_Pred_False (value_op, idx1) == OP_Pred_False (op, idx2)) {
+#else	      
+                if (p1 == p2) {
+#endif
+                  *kind =  VAL_COND_USE;
 		return value_op;
 	      }
 	    }

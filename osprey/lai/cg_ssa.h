@@ -152,6 +152,7 @@ extern void SSA_Collect_Info (RID *rid, BOOL region, INT phase);
 // which BB corresponds to PHI-node operand 'opnd_idx' ?
 extern BB*  Get_PHI_Predecessor (const OP *phi, UINT8 opnd_idx);
 extern void Set_PHI_Predecessor (const OP *phi, UINT8 pos, BB *pred);
+extern void Change_PHI_Predecessor (const OP *phi, BB *pred, BB *new_pred);
 
 // which opnd_idx corresponds to PHI-node predecessor BB  ?
 extern UINT8 Get_PHI_Predecessor_Idx (const OP *phi, BB *);
@@ -162,6 +163,18 @@ extern UINT8 Get_PHI_Predecessor_Idx (const OP *phi, BB *);
 extern void Set_PSI_opnd(OP *, UINT8, TN *);
 extern TN *PSI_guard(const OP *, UINT8);
 extern void Set_PSI_guard(OP *, UINT8, TN *);
+
+#ifdef EFFECT_PRED_FALSE
+// (cbr) Support for guards on false
+extern void Set_PSI_Pred (OP *, UINT8, BOOL);
+#define PSI_Pred_False(psi, i) OP_Pred_False(psi, (i)<<1)
+#define Set_PSI_Pred_True(psi, i) Set_PSI_Pred(psi, i, FALSE)
+#define Set_PSI_Pred_False(psi, i) Set_PSI_Pred(psi, i, TRUE)
+#else
+#define PSI_Pred_False(psi, i) 0
+#define Set_PSI_Pred_True(psi, i) 
+#define Set_PSI_Pred_False(psi, i)
+#endif
 
 // Sort PHI operands according to the dominance relation of the
 // argument's definition

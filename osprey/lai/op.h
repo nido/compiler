@@ -376,8 +376,16 @@ typedef struct op {
  * in printing structs in the debugger (OP_sizeof's result is independent 
  * of the dimension).
  */
+#ifdef TARG_ST
+// (cbr) add effect supports to operands. Currently only used for false guards.
+//  no effects on results until necessary to save space.
+typedef int TN_effect;
+#define OP_sizeof(nresults, nopnds) \
+	((size_t)(offsetof(OP, res_opnd[0]) + ((nresults) + (nopnds)) * sizeof(TN *)) + ((nopnds) * sizeof(TN_effect)))
+#else
 #define OP_sizeof(nresults, nopnds) \
 	((size_t)(offsetof(OP, res_opnd[0]) + ((nresults) + (nopnds)) * sizeof(TN *)))
+#endif
 
 /* Both the operand and result TNs are stored in _res_opnds.
  * OP_opnd_offset and OP_result_offset give the offset into the
@@ -386,6 +394,10 @@ typedef struct op {
  */
 #define OP_opnd_offset(o)	(0)
 #define OP_result_offset(o)	OP_opnds(o)
+#ifdef TARG_ST
+// (cbr) add effect supports to operands. Currently used for false guards.
+#define OP_effects_offset(o)	(OP_opnds(o)+OP_results(o))
+#endif
 
 /* Define the access functions: */
 #define OP_srcpos(o)	((o)->srcpos)
@@ -414,6 +426,12 @@ typedef struct op {
 #define OP_opnd(o,n) \
   (Is_True((n)>=0,("invalid operand number (%d(%s),%d)", OP_code(o), TOP_Name (OP_code(o)),n)), \
    (struct tn *)(o)->res_opnd[(n)+OP_opnd_offset(o)])
+
+#ifdef TARG_ST
+// (cbr) add effect supports to operands. Currently used for false guards.
+#define OP_effects(o,n)	((TN_effect)(o)->res_opnd[(n)+OP_effects_offset(o)])
+#endif
+
 #else
 #define OP_result(o,n)	((struct tn *)(o)->res_opnd[(n)+OP_result_offset(o)])
 #define OP_opnd(o,n)	((struct tn *)(o)->res_opnd[(n)+OP_opnd_offset(o)])
@@ -430,6 +448,27 @@ typedef struct op {
 // [HK] added opr setting macro to avoid casts to non reference type on lvalue
 #define Set_OP_opr(op,c) ((op)->opr = (mTOP)(c))
 
+#ifdef TARG_ST
+// (cbr) add effect supports to operands. Currently used for false guards.
+#define Set_OP_effects(o,opnd,v) \
+	((o)->res_opnd[(opnd) + OP_effects_offset(o)] = \
+	 (TN*)((TN_effect)((o)->res_opnd[(opnd) + OP_effects_offset(o)]) | (v)))
+#define Reset_OP_effects(o,opnd,v) \
+	((o)->res_opnd[(opnd) + OP_effects_offset(o)] = (TN*)((TN_effect)((o)->res_opnd[(opnd) + OP_effects_offset(o)]) & ~(v)))
+
+#ifdef TARG_STxP70
+#define EFFECT_PRED_FALSE 0x1
+#define Set_OP_Pred_True(o, opnd) (Reset_OP_effects((o), (opnd), EFFECT_PRED_FALSE))
+#define Set_OP_Pred_False(o, opnd) (Set_OP_effects((o), (opnd) ,EFFECT_PRED_FALSE))
+#define OP_Pred_False(o, opnd) ((opnd) == -1 ? false \
+				: OP_effects((o), (opnd)) & EFFECT_PRED_FALSE)
+#else
+#define Set_OP_Pred_True(o, opnd) false
+#define Set_OP_Pred_False(o, opnd) false
+#define OP_Pred_False(o, opnd) false
+#endif /* TARG_STxP70 */
+
+#endif /* TARG_ST */
 
 /*
  * Define the OP cond def mask.
@@ -727,7 +766,8 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define TOP_is_predicated(t)    (TOP_is_guard_t(t) || TOP_is_guard_f(t))
 #define OP_is_predicated(o)     (TOP_is_predicated(OP_code(o)))
 #define OP_is_guard_t(o)        (TOP_is_guard_t(OP_code(o)))
-#define OP_is_guard_f(o)        (TOP_is_guard_f(OP_code(o)))
+#define OP_is_guard_f(o)         (OP_is_guard_t(o) && \
+                                 OP_Pred_False(o, OP_find_opnd_use(o, OU_predicate)))
 #define OP_has_predicate(o)	(TOP_is_predicated(OP_code(o)))
 #define OP_ijump(o)		(TOP_is_ijump(OP_code(o)))
 #define OP_jump(o)		(TOP_is_jump(OP_code(o)))
@@ -1098,6 +1138,11 @@ inline ISA_REGISTER_SUBCLASS OP_opnd_reg_subclass(OP *op, INT opnd)
   }
 #endif
   const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
+#ifdef EFFECT_PRED_FALSE
+// (cbr) add effect supports to operands. Currently used for false guards.
+  if (OP_Pred_False(op, opnd))
+    return ISA_REGISTER_SUBCLASS_gr_false;
+#endif
   return ISA_OPERAND_VALTYP_Register_Subclass(otype);
 }
 
@@ -1372,16 +1417,16 @@ inline void OPS_Remove_Op(OPS *ops, OP *op)
   OP **prevp = OP_next(op) ? &OP_next(op)->prev : &ops->last;
   OP **nextp = OP_prev(op) ? &OP_prev(op)->next : &ops->first;
   
+#ifdef TARG_ST
+extern void SSA_unset(OP *o);
+  SSA_unset(op);
+#endif
+
   *prevp = OP_prev(op);
   *nextp = OP_next(op);
 
   op->prev = op->next = NULL;
   ops->length--;
-
-#ifdef TARG_ST
-extern void SSA_unset(OP *o);
-  SSA_unset(op);
-#endif
 }
 
 inline void OPS_Remove_Ops(OPS *ops, OPS *remove_ops)
@@ -1517,7 +1562,12 @@ inline void Build_OP(TOP opc, struct tn *t1, struct tn *t2, struct tn *t3,
   OPS_Append_Op(ops, Mk_OP(opc, t1, t2, t3, t4, t5, t6, t7, t8, t9));
 }
 
+#ifdef TARG_ST
+// (cbr) Support for op effects
+extern void CGTARG_Predicate_OP(struct bb *bb, OP *op, struct tn *pred_tn, bool on_false);
+#else
 extern void CGTARG_Predicate_OP(struct bb *bb, OP *op, struct tn *pred_tn);
+#endif
 
 /* Determine if the op defines/references the given TN result/operand. */
 CG_EXPORTED extern BOOL OP_Defs_TN(const OP *op, const struct tn *res);
@@ -1721,6 +1771,19 @@ TN_Opernum_In_OP (OP* op, struct tn *tn)
  * =====================================================================
  */
 extern BOOL OPs_Are_Equivalent(OP *op1, OP *op2);
+
+/* =====================================================================
+   Opnds_Are_Equivalent
+   Returns TRUE if TNs have the same base TN number or that they are
+   assigned the same register.
+ ===================================================================== */
+extern BOOL Opnds_Are_Equivalent(OP *op1, OP *op2, int idx1, int idx2);
+
+/* =====================================================================
+   OPS_Copy_Predicate  
+   Copy predicate from src_op to ops.
+ ===================================================================== */
+extern void OPS_Copy_Predicate(OPS* ops, OP *src_op);
 
 /* ====================================================================
  *

@@ -737,6 +737,7 @@ Configure_Target ()
     }
   }
 
+  
   Init_Targ_Sim();	/* must be done before initialize_stack_frame */
 
 #define IS_POW2(n)              (((n) & ((n)-1))==0)

@@ -1286,9 +1286,11 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
 
 	BS *DOM = BB_dom_set(OP_bb(useop));
 	BS *PDOM = BB_pdom_set(OP_bb(op));
-
-	if((OP_bb(useop) != OP_bb(op) && BS_MemberP(DOM, BB_id(OP_bb(op))) && BS_MemberP(PDOM, BB_id(OP_bb(useop)))) 
-	   || (OP_bb(useop) == OP_bb(op) && OP_Precedes(op, useop))){
+        
+        // (cbr) conservatively check predicates.
+	if(Opnds_Are_Equivalent(useop, op, OP_find_opnd_use(useop, OU_predicate), OP_find_opnd_use(op, OU_predicate)) &&
+           ((OP_bb(useop) != OP_bb(op) && BS_MemberP(DOM, BB_id(OP_bb(op))) && BS_MemberP(PDOM, BB_id(OP_bb(useop)))) ||
+            (OP_bb(useop) == OP_bb(op) && OP_Precedes(op, useop)))) {
 
 	  // Compute cost
 	  int cost = postincr_Cost(dud, op, useop);
@@ -1504,7 +1506,7 @@ void Perform_AutoMod_Optimization() {
 
       // Automod
       for (OP *op = dudRegion->Begin_op(); op != dudRegion->End_op(); op = dudRegion->Next_op(op)) {
-	Memop_to_Incrop(&bbRegion, bbRegion_set, dudRegion, op);
+        Memop_to_Incrop(&bbRegion, bbRegion_set, dudRegion, op);
       }
 
       // Code repair and motion

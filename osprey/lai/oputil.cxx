@@ -145,11 +145,44 @@ New_OP ( INT results, INT opnds )
   Set_OP_opnds(op, opnds);
   Set_OP_results(op, results);
 #ifdef TARG_ST
+  // (cbr) make sure effects are reset
+  for (int i = 0; i < opnds; i++)
+    Reset_OP_effects(op, i, -1);
+#endif
+
+#ifdef TARG_ST
   op->g_map_idx=PU_OP_Cnt;
 #endif
+
   return op;
 }
 
+#ifdef TARG_ST
+/* ====================================================================
+ *
+ * OPS_Copy_Predicate()
+ *
+ * See interface description
+ * ====================================================================
+ */
+ void
+ OPS_Copy_Predicate (OPS *ops, OP *src_op) 
+ {
+   int pred_idx = OP_find_opnd_use(src_op, OU_predicate);
+
+   if (OP_has_predicate(src_op) && OP_opnd(src_op, pred_idx) != True_TN)  {
+     FmtAssert(pred_idx >= 0, ("invalide predicate operand"));
+     TN *pred = OP_opnd (src_op, pred_idx);
+     bool on_false = OP_Pred_False(src_op, pred_idx);
+     OP *op;
+     
+     FOR_ALL_OPS_OPs(ops, op) {
+       FmtAssert(OP_has_predicate(op), ("try to predicate a non predicated op."));
+       CGTARG_Predicate_OP (NULL, op, pred, on_false);
+     }
+   }
+ }
+#endif
 
 /* ====================================================================
  *
@@ -186,6 +219,7 @@ Dup_OP ( OP *op )
 }
 
 #ifdef TARG_ST
+
 /* ====================================================================
  *
  * OP_Copy_Properties()
@@ -219,6 +253,7 @@ OP_Copy_Properties(OP *op, OP *src_op)
   /* Copy annotations. */
   Copy_OP_Annot(op, src_op);
 }
+
 #endif
 
 
@@ -958,8 +993,12 @@ void Print_OP_No_SrcLine(const OP *op)
   if (OP_code(op) == TOP_psi) {
     for (i=0; i<PSI_opnds(op); i++) {
       TN *guard = PSI_guard(op, i);
-      if (guard)
+      if (guard) {
+        // (cbr) Support for guards on false
+        if (PSI_Pred_False(op, i))
+          fprintf(TFile, "!");
 	Print_TN(guard, FALSE);
+      }
       fprintf(TFile, "?");
       TN *tn = PSI_opnd(op,i);
       Print_TN(tn,FALSE);
@@ -977,6 +1016,9 @@ else
       if (pred_bb)
 	fprintf(TFile, "BB%d?", BB_id(pred_bb));
     }
+    // (cbr) Support for guards on false
+    if (OP_Pred_False(op, i))
+      fprintf(TFile, "!");
 #endif
     Print_TN(tn,FALSE);
     if (OP_Defs_TN(op, tn)) fprintf(TFile, "<defopnd>");
@@ -1501,6 +1543,21 @@ OP_same_res(OP *op, INT i) {
   return opnd_idx;
 } 
 
+#ifdef TARG_ST
+BOOL
+Opnds_Are_Equivalent(OP *op1, OP *op2, int idx1, int idx2)
+{
+  TN *tn1 = (idx1 == -1 ? True_TN : OP_opnd(op1, idx1));
+  TN *tn2 = (idx2 == -1 ? True_TN : OP_opnd(op2, idx2));
+
+  if (TNs_Are_Equivalent (tn1, tn2) &&
+      OP_Pred_False (op1, idx1) == OP_Pred_False (op2, idx2))
+    return TRUE;
+
+  return FALSE;
+}
+#endif
+
 /* ====================================================================
  *
  * OPs_Are_Equivalent()
@@ -1515,7 +1572,11 @@ OPs_Are_Equivalent(OP *op1, OP *op2)
   for (int i = 0; i < OP_opnds(op1); i++) {
     if (TN_is_register(OP_opnd(op1, i)) &&
 	TN_is_register(OP_opnd(op2, i)) &&
-	!TNs_Are_Equivalent(OP_opnd(op1, i), OP_opnd(op2, i)))
+#ifdef TARG_ST
+	!Opnds_Are_Equivalent(op1, op2, i, i))
+#else
+      !TNs_Are_Equivalent(OP_opnd(op1, i), OP_opnd(op2, i)))
+#endif
       return FALSE;
     else if (OP_opnd(op1, i) != OP_opnd(op2, i)) return FALSE;
   }
@@ -1629,3 +1690,4 @@ OP_loadval_byte_offset (OP *op, INT resno)
   return byte_offset;
 }
 #endif
+

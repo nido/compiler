@@ -83,6 +83,8 @@
 #include "config_TARG.h"
 #include "exp_private.h"
 
+#include "cg_ssa.h"
+
 /* Do we force inlining of extended immediates. */
 static BOOL Inline_Extended_Immediate = FALSE;
 
@@ -2834,6 +2836,9 @@ Expand_Select (
     return;
   }
 
+  if (SSA_Active() && TN_ssa_def (cond_tn) && OP_code(TN_ssa_def (cond_tn)) == TOP_convbi_b_r)
+    cond_tn = OP_opnd(TN_ssa_def (cond_tn), 0);
+
   if (cond_tn == True_TN) {
     DevWarn("Expand_Select with True_TN");
     Exp_COPY (dest_tn, true_tn, ops);
@@ -2841,15 +2846,29 @@ Expand_Select (
   }
 
   if (TN_is_register(true_tn) && TN_register_class(true_tn) == ISA_REGISTER_CLASS_branch) {
-    TN* tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-    Expand_Bool_To_Int (tmp, true_tn, mtype, ops);
-    true_tn = tmp;
+    // (cbr) if we have the value use it.
+    if (SSA_Active() && TN_ssa_def(true_tn) &&
+        OP_code (TN_ssa_def(true_tn)) == TOP_convbi_b_r) {
+      true_tn = OP_opnd(TN_ssa_def (true_tn), 0);
+    }
+    else {
+      TN* tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+      Expand_Bool_To_Int (tmp, true_tn, mtype, ops);
+      true_tn = tmp;
+    }
   }
 
   if (TN_is_register(false_tn) && TN_register_class(false_tn) == ISA_REGISTER_CLASS_branch) {
-    TN* tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-    Expand_Bool_To_Int (tmp, false_tn, mtype, ops);
-    false_tn = tmp;
+    // (cbr) if we have the value use it.
+    if (SSA_Active() && TN_ssa_def(false_tn) &&
+        OP_code (TN_ssa_def(false_tn)) == TOP_convbi_b_r) {
+      false_tn = OP_opnd(TN_ssa_def (false_tn), 0);
+    }
+    else {
+      TN* tmp = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+      Expand_Bool_To_Int (tmp, false_tn, mtype, ops);
+      false_tn = tmp;
+    }
   }
     
   if (TN_register_class(cond_tn) != ISA_REGISTER_CLASS_branch) {

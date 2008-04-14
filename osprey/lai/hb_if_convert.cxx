@@ -855,7 +855,7 @@ Predicate_Block(BB* bb, TN *pred_tn, BB_SET *hb_blocks)
       if ( ! OP_has_predicate(op)) continue;
 
       if (TN_is_true_pred(OP_opnd(op, OP_PREDICATE_OPND))) {
-	CGTARG_Predicate_OP(bb, op, pred_tn);
+	CGTARG_Predicate_OP(bb, op, pred_tn, false);
 #ifdef TARG_IA64
 	if (OP_icmp(op)) {
 		// if had a default, non-unconditional compare,

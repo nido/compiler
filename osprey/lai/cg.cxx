@@ -742,7 +742,7 @@ CG_Generate_Code(
 
 #ifdef TARG_ST
     // [CG] Run control flow opt after SSA.
-    // Currently enabled only if select_if_convert is true
+    // Currently enabled only if if_convert is true
     // Run also an EBO pre pass after if-conversion as
     // merge points may have been removed
     if (CG_enable_ssa && CG_enable_select && !CG_localize_tns) {

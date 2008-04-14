@@ -1418,12 +1418,6 @@ REGISTER_Get_Requested_Rotating_Registers (ISA_REGISTER_CLASS rclass)
 }
 
 BOOL
-Is_Predicate_REGISTER_CLASS(ISA_REGISTER_CLASS rclass)
-{
-  return FALSE;
-}
-
-BOOL
 REGISTER_Has_Stacked_Registers(ISA_REGISTER_CLASS rclass)
 {
   return FALSE;

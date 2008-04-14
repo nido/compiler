@@ -507,7 +507,12 @@ Spill_Homeable_TN(
 	  INT st_op_num = TOP_Find_Operand_Use(OP_code(op), OU_storeval);
 	  if ((OP_store(op) && !need_store &&
 	       orig_tn == OP_opnd(op, st_op_num)) ||
+#ifdef TARG_ST
+              // (cbr) don't remove partially defining loads.
+	      (OP_load(op) && !need_load && !aliased_store_seen &&
+#else
 	      (OP_load(op) && !aliased_store_seen &&
+#endif
 	       OP_result(op, 0) == orig_tn)) {
 	    GRA_Trace_Home_Removal(orig_tn, gbb, op);
 	    BB_Remove_Op(gbb->Bb(), op);
@@ -575,6 +580,14 @@ Spill_Homeable_TN(
 	//
 	if (!op_is_homing_load) {
 	  need_store = TRUE;
+#ifdef TARG_ST
+          // (cbr) predicated definitions not dominated by other
+	  // definitions in the same congruence class are not cond_defs
+          // (see cg_ssa.cxx:map_phi_resources_to_new_names())
+          if ((OP_has_predicate (op) && OP_Predicate(op) != True_TN) && !def_seen)
+            need_load = TRUE;
+          else
+#endif
 #ifdef KEY
           if (OP_cond_def(op) && !def_seen)
             need_load = TRUE;

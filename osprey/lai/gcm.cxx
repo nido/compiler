@@ -611,7 +611,12 @@ Can_Do_Safe_Predicate_Movement(OP        *cur_op,
     // TODO: Add support to allow speculation of predicated instructions
     // as well. 
     if (OP_has_predicate(cur_op) &&
+#ifdef TARG_ST
+        /* (cbr) predicate operand # is not necessary constant */
+	!TN_is_true_pred(OP_opnd(cur_op, OP_find_opnd_use(cur_op, OU_predicate))) &&
+#else
 	!TN_is_true_pred(OP_opnd(cur_op, OP_PREDICATE_OPND)) &&
+#endif
 #ifdef TARG_ST
 	!OP_Can_Be_Speculative(cur_op)) return FALSE;
 #else
@@ -624,7 +629,12 @@ Can_Do_Safe_Predicate_Movement(OP        *cur_op,
       // TODO: Check if <src_bb> has a unique predecessor <tgt_bb>. For,
       // more than one predecessor cases, need to compute new predicate
       // expression and allow movement.
+#ifdef TARG_ST
+        /* (cbr) predicate operand # is not necessary constant */
+      if (!TN_is_true_pred(OP_opnd(tgt_br_op, OP_find_opnd_use(tgt_br_op, OU_predicate))) &&
+#else
       if (!TN_is_true_pred(OP_opnd(tgt_br_op, OP_PREDICATE_OPND)) &&
+#endif
 	  (BB_Unique_Source(src_bb) ==  tgt_bb)) {
 	TN *tn1, *tn2;
 	OP *cmp_op;
@@ -642,7 +652,12 @@ Can_Do_Safe_Predicate_Movement(OP        *cur_op,
 	  // these expressions, be conservative at the moment.
 
 	  if (OP_has_predicate(cmp_op) &&
-	      !TN_is_true_pred(OP_opnd(cmp_op, OP_PREDICATE_OPND)))
+#ifdef TARG_ST
+        /* (cbr) predicate operand # is not necessary constant */
+              !TN_is_true_pred(OP_opnd(cmp_op, OP_find_opnd_use(cmp_op, OU_predicate))))
+#else
+              !TN_is_true_pred(OP_opnd(cmp_op, OP_PREDICATE_OPND)))
+#endif
 	    return FALSE;
 
 	  // For GCM phase (before register allocation), we need to guarantee
@@ -2212,7 +2227,12 @@ Perform_Post_GCM_Steps(BB *bb, BB *cand_bb, OP *cand_op, mINT32 motion_type,
 	OP *dup_op = Dup_OP(cand_op);
 	BB_Append_Op(GCM_Loop_Prolog, dup_op);
 	if (PSAFE_PTR_SPEC(spec_type)) 
+#ifdef TARG_ST
+        /* (cbr) predicate operand # is not necessary constant */
+	  Set_OP_opnd(dup_op, OP_find_opnd_use(dup_op, OU_predicate), True_TN);
+#else
 	  Set_OP_opnd(dup_op, OP_PREDICATE_OPND, True_TN);
+#endif
 	//copy the dom/pdom sets to the new_bb
 	Set_BB_dom_set(GCM_Loop_Prolog, BS_Create_Empty(2+PU_BB_Count+1, 
 							&gcm_loop_pool));
@@ -2537,8 +2557,14 @@ Adjust_Qualifying_Predicate(OP *cand_op, BB *src_bb, BB *tgt_bb,
 	// If <!fall_through> set the predicate of <cand_op> to the
 	// controlling predicate of <tgt_br_op>.
 	if (!fall_thru) {
+#ifdef TARG_ST
+        /* (cbr) predicate operand # is not necessary constant */
+	  Set_OP_opnd(cand_op, OP_find_opnd_use(cand_op, OU_predicate),
+		      OP_opnd(tgt_br_op, OP_find_opnd_use(tgt_br_op, OU_predicate)));
+#else
 	  Set_OP_opnd(cand_op, OP_PREDICATE_OPND, 
 		      OP_opnd(tgt_br_op, OP_PREDICATE_OPND));
+#endif
 	} else if (cmp && OP_results(cmp) == 2) {
 
 	  // If <fall_through>, then need to determine the exact condition,
@@ -2549,8 +2575,12 @@ Adjust_Qualifying_Predicate(OP *cand_op, BB *src_bb, BB *tgt_bb,
 	  TN *pred_tn;
 	  if (branch_on_true) {
 	    pred_tn = OP_result(cmp, 1);
+#ifdef TARG_ST
+        /* (cbr) predicate operand # is not necessary constant */
+	    Set_OP_opnd(cand_op, OP_find_opnd_use(cand_op, OU_predicate), pred_tn);
+#else
 	    Set_OP_opnd(cand_op, OP_PREDICATE_OPND, pred_tn);
-
+#endif
 	    // Set the global reg bit accordingly.
 	    if (OP_bb(cmp) != OP_bb(cand_op) && !TN_is_global_reg(pred_tn)) {
 	      GTN_UNIVERSE_Add_TN(pred_tn);
@@ -2558,8 +2588,12 @@ Adjust_Qualifying_Predicate(OP *cand_op, BB *src_bb, BB *tgt_bb,
 	    }
 	  } else {
 	    pred_tn = OP_result(cmp, 0);
+#ifdef TARG_ST
+        /* (cbr) predicate operand # is not necessary constant */
+	    Set_OP_opnd(cand_op, OP_find_opnd_use(cand_op, OU_predicate), pred_tn);
+#else
 	    Set_OP_opnd(cand_op, OP_PREDICATE_OPND, pred_tn);
-
+#endif
 	    // Set the global reg bit accordingly.
 	    if (OP_bb(cmp) != OP_bb(cand_op) && !TN_is_global_reg(pred_tn)) {
 	      GTN_UNIVERSE_Add_TN(pred_tn);
@@ -3062,7 +3096,12 @@ GCM_For_Loop (LOOP_DESCR *loop, BB_SET *processed_bbs, HBS_TYPE hb_type)
 	  // insert <cand_op> at the end. Also, check if the <cand_op>
 	  // itself needs to be adjusted.
 
+#ifdef TARG_ST
+        /* (cbr) predicate operand # is not necessary constant */
+	  TN *old_pred_tn = OP_opnd(cand_op, OP_find_opnd_use(cand_op, OU_predicate));
+#else
 	  TN *old_pred_tn = OP_opnd(cand_op, OP_PREDICATE_OPND);
+#endif
 	  Append_Op_To_BB(cand_op, cand_bb, bb, motion_type, spec_type);
 	  Set_BB_SCHEDULE(cand_bbsch);
 
@@ -3114,7 +3153,12 @@ GCM_For_Loop (LOOP_DESCR *loop, BB_SET *processed_bbs, HBS_TYPE hb_type)
 				   spec_type, &pred_bbs, loop, FALSE);
 	    BB_Remove_Op (cand_bb, cand_op);
 	    BB_Prepend_Op (bb, cand_op);
+#ifdef TARG_ST
+        /* (cbr) predicate operand # is not necessary constant */
+	    Set_OP_opnd(cand_op, OP_find_opnd_use(cand_op, OU_predicate), old_pred_tn);
+#else
 	    Set_OP_opnd(cand_op, OP_PREDICATE_OPND, old_pred_tn);
+#endif
 
 	    if (Trace_GCM && GCM_Internal_Flag) {
 	      #pragma mips_frequency_hint NEVER

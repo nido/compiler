@@ -2413,9 +2413,17 @@ Adjust_Alloca_Code (void)
 	Is_True(OP_has_predicate(new_op) || !OP_has_predicate(op),
 		                ("spadjust can't copy predicates"));
 	// copy predicate to new copy/sub ops
-	if (OP_has_predicate(op))
-	  Set_OP_opnd (new_op, OP_find_opnd_use(new_op,OU_predicate),
-		       OP_opnd(op, OP_find_opnd_use(op,OU_predicate) ));
+	if (OP_has_predicate(op)) {
+#ifdef TARG_ST
+          // (cbr) Support for guards on false
+          CGTARG_Predicate_OP(bb, new_op,
+                              OP_opnd(op, OP_find_opnd_use(op, OU_predicate)),
+                              OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)));
+#else
+          CGTARG_Predicate_OP(bb, new_op,
+                              OP_opnd(op, OP_find_opnd_use(op, OU_predicate)));
+#endif
+        }
       }
 
       BB_Insert_Ops_Before(bb, op, &ops);

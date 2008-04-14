@@ -319,5 +319,15 @@ CGTARG_Prefered_LRA_Registers(ISA_REGISTER_CLASS rclass)
   return CGTARG_Prefered_GRA_Registers (rclass);
 }
 
+
+/* ====================================================================
+ *   Is_Predicate_REGISTER_CLASS
+ *   Returns TRUE if the rclass is the predicate register class.
+ * ====================================================================
+ */
+BOOL Is_Predicate_REGISTER_CLASS(ISA_REGISTER_CLASS rclass) {
+  return rclass == ISA_REGISTER_CLASS_branch;
+}
+
 #endif                   // TARG_ST
 

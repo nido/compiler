@@ -92,7 +92,7 @@ Gen_Predicate_TN()
   // We will generate a integer TN always, so we can conduct boolean
   // arithmetic on it
   //
-  return Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
+  return Build_RCLASS_TN(ISA_REGISTER_CLASS_branch);
 }
 
 /* ====================================================================

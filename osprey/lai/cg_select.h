@@ -50,16 +50,22 @@
 extern INT32 CG_select_spec_loads;
 extern BOOL CG_select_spec_stores;
 extern BOOL CG_select_merge_stores;
-extern BOOL CG_select_allow_dup;
+extern BOOL CG_ifc_allow_dup;
 extern BOOL CG_select_promote_mem;
-extern const char* CG_select_factor;
+extern const char* CG_ifc_factor_string;
+extern BOOL CG_ifc_factor_overridden;
+extern float CG_ifc_factor;
 
-#ifdef TARG_ST
 //TB: Export variable
-extern BOOL CG_select_freq; 
-extern BOOL CG_select_cycles; 
-extern BOOL CG_select_space;
-#endif
+extern BOOL CG_ifc_freq; 
+extern BOOL CG_ifc_cycles; 
+extern BOOL CG_ifc_space;
+
+inline float CGTARG_Ifc_Factor(void)
+{
+  return CG_ifc_factor_overridden ?
+    atof(CG_ifc_factor_string) : CG_ifc_factor;
+}
 
 extern void Optimize_Conditional_Branches();
 extern void Convert_Select(RID *, const BB_REGION&);
@@ -100,10 +106,13 @@ typedef struct {
 //
 // targ_select.cxx
 //
-extern TN * Expand_CMP_Reg (TN*, OP *, OPS *);
+extern TN * Expand_CMP_Reg (TN*, OPS *);
 extern void Expand_Cond_Store (TN *, OP *, OP *, UINT8, OPS *ops);
 extern void Expand_BlackHole (OP *, TN *, OPS *);
 extern void Expand_CondStoreAddr (OP *, TN *, OPS *);
 extern void Expand_CondStoreOP (OP *, TN *, OPS *);
+
+/* TOP used to merge guards. used for heuristics. */
+extern TOP Get_TOP_Merge_Preds();
 
 #endif /* SELECT_H_INCLUDED */

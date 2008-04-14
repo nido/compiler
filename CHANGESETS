@@ -1,6 +1,92 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Apr 14 14:24:37 CEST 2008
+	Author:    bruel
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bruel/dev-merge-ifc
+
+Description:
+------------
+	*  deliver [ Branch #14800 ] dev-merge-ifc 
+
+https://codex.cro.st.com/tracker/?func=detail&aid=14800&atid=1036&group_id=440
+
+Modified Files:
+---------------
+	M      osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_properties.cxx
+	M      osprey/lai/cg_ssa.cxx
+	M      osprey/lai/cg_select.h
+	M      osprey/lai/ebo_util.h
+	M      osprey/lai/ebo_info.h
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/tn.h
+	M      osprey/lai/gcm.cxx
+	M      osprey/lai/cio_rwtran.cxx
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/calls.cxx
+	M      osprey/lai/cg_ivs.cxx
+	M      osprey/lai/loop_invar_hoist.cxx
+	M      osprey/lai/register.cxx
+	M      osprey/lai/cg_select.cxx
+	M      osprey/lai/tnutil.cxx
+	M      osprey/lai/gra_mon/gra_create.cxx
+	M      osprey/lai/gra_mon/gra_spill.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/cg_automod.cxx
+	M      osprey/lai/mexpand.cxx
+	M      osprey/lai/cg_swp_emit.cxx
+	M      osprey/lai/cg_dep_graph.cxx
+	M      osprey/lai/op.h
+	M      osprey/lai/cg_ssa.h
+	M      osprey/lai/cgtarget.h
+	M      osprey/lai/cg_flags.h
+	M      osprey/lai/Makefile.gbase
+	M      osprey/lai/range_prop.cxx
+	M      osprey/lai/hb_if_convert.cxx
+	M      osprey/lai/oputil.cxx
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/stxp70/expand/exp_pred.cxx
+	M      osprey/targinfo/stxp70/expand/exp_branch.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+	M      osprey/targinfo/stxp70/proc/proc_properties.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_ext_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_si.cxx
+	M      osprey/targinfo/stxp70/config/cg_flags_arch.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.h
+	M      osprey/targinfo/stxp70/cg/targ_select.cxx
+	M      osprey/targinfo/stxp70/cg/targ_tn.cxx
+	M      osprey/targinfo/stxp70/cg/targ_register.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/isa/isa_print.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M      osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/stxp70/isa/isa.cxx
+	M      osprey/targinfo/st200/expand/exp_pred.cxx
+	M      osprey/targinfo/st200/expand/exp_targ.cxx
+	M      osprey/targinfo/st200/proc/proc_properties.cxx
+	M      osprey/targinfo/st200/config/cg_flags_arch.cxx
+	M      osprey/targinfo/st200/config/config_target.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+	M      osprey/targinfo/st200/cg/targ_op.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.h
+	M      osprey/targinfo/st200/cg/targ_select.cxx
+	M      osprey/targinfo/st200/cg/targ_tn.cxx
+	M      osprey/targinfo/st200/cg/targ_register.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Apr 10 16:34:18 CEST 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

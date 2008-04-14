@@ -388,17 +388,40 @@ get_new_tninfo (BB *current_bb, OP *current_op, TN *local_tn)
  * that the second predicate is TRUE.
  *
  */
-inline BOOL
-EBO_predicate_dominates (TN *pred1, EBO_TN_INFO *info1,
-                         TN *pred2, EBO_TN_INFO *info2)
-{
 #ifdef TARG_ST
-  if (PQSCG_pqs_valid()) {
+// (cbr) Support for guards on false
+inline BOOL
+EBO_predicate_dominates (TN *pred1, bool false1, EBO_TN_INFO *info1,
+                         TN *pred2, bool false2, EBO_TN_INFO *info2)
+{
+  if (PQSCG_pqs_valid() && !false1 && !false2) {
     if (PQSCG_is_subset_of (pred2, pred1)) {
       return TRUE;
     }
   }
-#endif
+
+  if (pred1 == True_TN && !false1) {
+   /* A TRUE predicate dominates everything. */
+    return TRUE;
+  }
+
+  if (pred1 == Zero_TN && false1) {
+   /* A TRUE predicate dominates everything. */
+    return TRUE;
+  }
+
+  if (pred1 == pred2 && false1 == false2) {
+   /* Equal predicates are fine if the values are current. */
+    return (info1 == info2);
+  }
+ /* Until we can resolve subsets, assume a problem. */
+  return FALSE;
+}
+#else
+inline BOOL
+EBO_predicate_dominates (TN *pred1, EBO_TN_INFO *info1,
+                         TN *pred2, EBO_TN_INFO *info2)
+{
   if (pred1 == True_TN) {
    /* A TRUE predicate dominates everything. */
     return TRUE;
@@ -410,6 +433,7 @@ EBO_predicate_dominates (TN *pred1, EBO_TN_INFO *info1,
  /* Until we can resolve subsets, assume a problem. */
   return FALSE;
 }
+#endif
 
 #ifdef TARG_ST
 /*
@@ -420,11 +444,11 @@ EBO_predicate_dominates (TN *pred1, EBO_TN_INFO *info1,
  *
  */
 inline BOOL
-EBO_predicate_equivalent (TN *pred1, EBO_TN_INFO *info1,
-			  TN *pred2, EBO_TN_INFO *info2)
+EBO_predicate_equivalent (TN *pred1, bool false1, EBO_TN_INFO *info1,
+			  TN *pred2, bool false2, EBO_TN_INFO *info2)
 {
-  return EBO_predicate_dominates(pred1, info1, pred2, info2) &&
-    EBO_predicate_dominates(pred2, info2, pred1, info1);
+  return EBO_predicate_dominates(pred1, false1, info1, pred2, false2, info2) &&
+    EBO_predicate_dominates(pred2, false2, info2, pred1, false1, info1);
 }
 #endif
 
@@ -435,12 +459,13 @@ EBO_predicate_equivalent (TN *pred1, EBO_TN_INFO *info1,
  * that the second predicate is FALSE.
  *
  */
-inline BOOL
-EBO_predicate_complements (TN *pred1, EBO_TN_INFO *info1,
-                           TN *pred2, EBO_TN_INFO *info2)
-{
 #ifdef TARG_ST
-  if (PQSCG_pqs_valid ()) {
+// (cbr) Support for guards on false
+inline BOOL
+EBO_predicate_complements (TN *pred1, bool false1, EBO_TN_INFO *info1,
+                           TN *pred2, bool false2, EBO_TN_INFO *info2)
+{
+  if (PQSCG_pqs_valid () && !false1 && !false2) {
     PQS_TN_SET pred;
     pred.Insert (pred1); pred.Insert (pred2);
     if (PQSCG_is_disjoint (pred1, pred2)
@@ -448,7 +473,33 @@ EBO_predicate_complements (TN *pred1, EBO_TN_INFO *info1,
       return TRUE;
     }
   }
-#endif
+  if ((pred1 == True_TN && !false1) && (pred2 == Zero_TN && !false2)) {
+    return TRUE;
+  }
+  if ((pred1 == Zero_TN && !false1) && (pred2 == True_TN && !false2)) {
+    return TRUE;
+  }
+  if (pred1 == pred2 && false1 != false2) {
+    return TRUE;
+  }
+
+  if ((info1 == NULL) || (info2 == NULL) ||
+      (info1->in_op == NULL) || (info2->in_op == NULL)) {
+    return FALSE;
+  }
+  if ((pred1 != pred2) && (false1 == false2) && (info1->in_op == info2->in_op)
+      && info1->in_op && OP_results(info1->in_op) == 1) {
+   /* If defined by the same instruction but not equal, they must be complements. */
+    return TRUE;
+  }
+ /* Until we can resolve subsets, assume a problem. */
+  return FALSE;
+}
+#else
+inline BOOL
+EBO_predicate_complements (TN *pred1, EBO_TN_INFO *info1,
+                           TN *pred2, EBO_TN_INFO *info2)
+{
   if ((pred1 == True_TN) && (pred2 == Zero_TN)) {
     return TRUE;
   }
@@ -459,21 +510,16 @@ EBO_predicate_complements (TN *pred1, EBO_TN_INFO *info1,
       (info1->in_op == NULL) || (info2->in_op == NULL)) {
     return FALSE;
   }
-#ifdef TARG_ST
-  if ((pred1 != pred2) && (info1->in_op == info2->in_op)
-      && (OP_icmp (info1->in_op) || OP_fcmp (info1->in_op))) {
-   /* If defined by the same compare instruction but not equal, they must be
-      complements. (Care with extractp, which can define two predicates that
-      are not complements.) */
-#else
+
   if ((pred1 != pred2) && (info1->in_op == info2->in_op)) {
    /* If defined by the same instruction but not equal, they must be complements. */
-#endif
+
     return TRUE;
   }
  /* Until we can resolve subsets, assume a problem. */
   return FALSE;
 }
+#endif
 
 #ifdef TARG_ST
 /*
@@ -486,13 +532,13 @@ EBO_predicate_complements (TN *pred1, EBO_TN_INFO *info1,
  *
  */
 inline BOOL
-EBO_predicate_disjoint (TN *pred1, EBO_TN_INFO *info1,
-			TN *pred2, EBO_TN_INFO *info2)
+EBO_predicate_disjoint (TN *pred1, bool false1, EBO_TN_INFO *info1,
+			TN *pred2, bool false2, EBO_TN_INFO *info2)
 {
-  if (PQSCG_pqs_valid () && PQSCG_is_disjoint (pred1, pred2)) {
+  if (PQSCG_pqs_valid () && PQSCG_is_disjoint (pred1, pred2) && !false1 && !false2) {
       return TRUE;
   }
-  return EBO_predicate_complements (pred1, info1, pred2, info2);
+  return EBO_predicate_complements (pred1, false1, info1, pred2, false2, info2);
 }
 #endif
 
@@ -512,11 +558,25 @@ tn_info_def (BB *current_bb, OP *current_op, TN *local_tn,
   if ((tninfo_prev != NULL)  &&
       (tninfo_prev->in_bb == current_bb) &&
       ((predicate_tn == NULL) ||
+#ifdef TARG_ST
+       /* (cbr) there is a redefinition only if predicate have the same logical. */
+       (EBO_predicate_dominates(predicate_tn,
+				(predicate_tn != NULL)?
+				OP_Pred_False(current_op,  OP_find_opnd_use(current_op, OU_predicate)) : false,
+                                predicate_info,
+                                (tninfo_prev->predicate_tninfo != NULL)?
+				tninfo_prev->predicate_tninfo->local_tn:True_TN,
+                                (tninfo_prev->predicate_tninfo != NULL && tninfo_prev->in_op)?
+				OP_Pred_False(tninfo_prev->in_op,
+					      OP_find_opnd_use(tninfo_prev->in_op, OU_predicate)) : false,
+                                tninfo_prev->predicate_tninfo)))) {
+#else
        (EBO_predicate_dominates(predicate_tn,
                                 predicate_info,
                                 (tninfo_prev->predicate_tninfo != NULL)?
-                                        tninfo_prev->predicate_tninfo->local_tn:True_TN,
+				tninfo_prev->predicate_tninfo->local_tn:True_TN,
                                 tninfo_prev->predicate_tninfo)))) {
+#endif
    /* The new definition completely redefines the previous. */
     tninfo_prev->redefined_before_block_end = TRUE;
   }
@@ -589,20 +649,26 @@ tn_info_use (BB *current_bb, OP *current_op, TN *local_tn,
       TN *tninfo_predicate_tn = ((tninfo->predicate_tninfo != NULL)
 				 ? tninfo->predicate_tninfo->local_tn
 				 : True_TN);
-	
+
       if (EBO_predicate_complements(tninfo_predicate_tn,
+				    false,
 				    tninfo->predicate_tninfo,
 				    predicate_tn,
+				    false,
 				    predicate_info)) {
 	/* The predicates are completely independent. Keep looking for a definition. */
       } else {
 	BOOL tninfo_dom_current = EBO_predicate_dominates(tninfo_predicate_tn,
+							  false,
 							  tninfo->predicate_tninfo,
 							  predicate_tn,
+							  false,
 							  predicate_info);
 	BOOL current_dom_tninfo = EBO_predicate_dominates(predicate_tn,
+							  false,
 							  predicate_info,
 							  tninfo_predicate_tn,
+							  false,
 							  tninfo->predicate_tninfo);
 	if (tninfo_dom_current && current_dom_tninfo) {
 	  // Predicates are equivalent, so use this tninfo.

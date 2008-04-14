@@ -15,11 +15,7 @@
 #include "cxx_memory.h"
 #include "glob.h"
 #include "bitset.h"
-#ifndef TARG_ST 
-#include "config_targ.h"
-#else
 #include "config_target.h"
-#endif
 #include "config.h"
 
 #include "symtab.h"
@@ -645,6 +641,25 @@ void Set_PHI_Predecessor (
 }
 
 /* ================================================================
+ *   Change_PHI_Predecessor
+ * ================================================================
+ */
+void Change_PHI_Predecessor (
+ const OP *phi,
+ BB *pred,
+ BB *new_pred
+)
+{
+  UINT8 npreds = OP_opnds(phi);
+
+  for (UINT8 i = 0; i < npreds; i++) {
+    BB *ppred = Get_PHI_Predecessor (phi, i);
+    if (ppred == pred) 
+      Set_PHI_Predecessor (phi, i, new_pred);
+  }
+}
+
+/* ================================================================
  *   SSA_Prepend_Phi_To_BB
  * ================================================================
  */
@@ -699,8 +714,7 @@ OP_dominate(OP *op1, OP* op2) {
 
 // Look at if the two predicates are disjoints.static BOOL
 static BOOL
-Disjoint_Predicates(TN *guard1, TN *guard2) {
-
+Disjoint_Predicates(TN *guard1, bool on_false1, TN *guard2, bool on_false2) {
   // Get the definition of the two predicates, and see if one is the
   // opposite of the other.
   OP *def_guard1 = TN_ssa_def(guard1);
@@ -708,6 +722,10 @@ Disjoint_Predicates(TN *guard1, TN *guard2) {
 
   if (def_guard1 == NULL || def_guard2 == NULL)
     return FALSE;
+
+  // (cbr) if guarded on inverted guard, they are disjoint
+  if (guard1 == guard2 && on_false1 != on_false2)
+    return TRUE;
 
   // Currently we recognize only the two following patterns:
   // 				b1 = <exp>;
@@ -757,6 +775,25 @@ OP_guard(OP *op) {
   return OP_opnd(op, TOP_Find_Operand_Use(OP_code(op), OU_predicate));
 }
 
+/* ================================================================
+ *   Set_PSI_Pred
+ * ================================================================
+ */
+void Set_PSI_Pred (
+ OP *psi,
+ UINT8 pos,
+ BOOL pred_false
+)
+{
+  // We use (pos<<1), so that the trace function can correctly attach
+  // the Pred_False property to the guard of a PSI operand, without
+  // knowing this is a PSI operation.
+  if (pred_false)
+    Set_OP_Pred_False(psi, pos<<1);
+  else
+    Set_OP_Pred_True(psi, pos<<1);
+}
+
 /* Move opnd1 before opnd2 in op. */
 
 static void
@@ -765,20 +802,26 @@ PSI_move_opnd(
   int opnd1,
   int opnd2)
 {
+  Is_True(opnd2 <= opnd1, ("PSI_move_opnd moves an operand opnd1 at a place opnd2 on its left."));
+
   if (opnd1 == opnd2) return;
 
   TN *tn_guard1 = PSI_guard(psi_op, opnd1);
   TN *tn_opnd1 = PSI_opnd(psi_op, opnd1);
+  BOOL on_false1 = PSI_Pred_False(psi_op, opnd1);
 
   for (int opndi = opnd1-1; opndi >= opnd2; opndi--) {
     TN *tn_guardi = PSI_guard(psi_op, opndi);
     TN *tn_opndi = PSI_opnd(psi_op, opndi);
+    BOOL on_falsei = PSI_Pred_False(psi_op, opndi);
     Set_PSI_guard(psi_op, opndi+1, tn_guardi);
     Set_PSI_opnd(psi_op, opndi+1, tn_opndi);
+    Set_PSI_Pred(psi_op, opndi+1, on_falsei);
   }
 
   Set_PSI_guard(psi_op, opnd2, tn_guard1);
   Set_PSI_opnd(psi_op, opnd2, tn_opnd1);
+  Set_PSI_Pred(psi_op, opnd2, on_false1);
 }
 
 /* ================================================================
@@ -871,7 +914,8 @@ Sort_PHI_opnds (
  */
 OP *
 PSI_inline (
- OP *psi_op
+ OP *psi_op,
+ std::list<OP*> *inlined_psis
 )
 {
   int extra_opnds = 0;
@@ -909,6 +953,8 @@ PSI_inline (
 	  opnd[inlined_opndx*2] = PSI_guard(def_op, psi_opndx);
 	  inlined_opndx ++;
 	}
+	if (inlined_psis)
+	  inlined_psis->push_front(def_op);
       }
       else {
 	opnd[inlined_opndx*2+1] = opnd_tn;
@@ -950,7 +996,7 @@ PSI_reduce (
     // Discard all arguments on the left of an unconditional
     // definition
     OP *def_op = TN_ssa_def(opnd_tn);
-    if (!def_op || OP_guard(def_op) == True_TN) {
+    if (!def_op || PSI_guard(psi_op, opndx) == True_TN) {
       for (int i = 0; i < opndx; i++)
 	Set_PSI_opnd(psi_op, i, NULL);
       removed_opnds += opndx;
@@ -959,7 +1005,9 @@ PSI_reduce (
 
     // Otherwise, look for duplicate of an argument on the right
     for (int i = opndx+1; i < PSI_opnds(psi_op); i++)
-      if (PSI_opnd(psi_op, i) == opnd_tn) {
+      if ((PSI_opnd(psi_op, i) == opnd_tn) &&
+	  (PSI_guard(psi_op, i) == PSI_guard(psi_op, opndx)) &&
+	  (PSI_Pred_False(psi_op, i) == PSI_Pred_False(psi_op, opndx))) {
 	removed_opnds ++;
 	Set_PSI_opnd(psi_op, i, NULL);
 	break;
@@ -980,18 +1028,29 @@ PSI_reduce (
     for (opndx = 0, new_opndx = 0; opndx < PSI_opnds(psi_op); opndx++) {
       TN *opnd_tn = PSI_opnd(psi_op, opndx);
       if (opnd_tn == NULL) continue;
-      opnd[new_opndx*2] = PSI_guard(psi_op, opndx);
-      opnd[new_opndx*2+1] = opnd_tn;
-      new_opndx++;
+      opnd[new_opndx] = PSI_guard(psi_op, opndx);
+      opnd[new_opndx+1] = opnd_tn;
+      new_opndx+=2;
     }
 
-    Is_True(new_opndx == num_opnds, ("PSI_reduce: internal error"));
-    
-    psi_op = Mk_VarOP (TOP_psi,
-		       num_results,
-		       num_opnds*2,
-		       result,
-		       opnd);
+    Is_True(new_opndx == (num_opnds<<1), ("PSI_reduce: internal error"));
+
+    OP *new_psi_op;
+    new_psi_op = Mk_VarOP (TOP_psi,
+			   num_results,
+			   num_opnds*2,
+			   result,
+			   opnd);
+
+    // Also copy the Pred_False attribute
+    for (opndx = 0, new_opndx = 0; opndx < PSI_opnds(psi_op); opndx++) {
+      if (PSI_opnd(psi_op, opndx) != NULL) {
+	Set_PSI_Pred(new_psi_op, new_opndx, PSI_Pred_False(psi_op, opndx));
+	new_opndx ++;
+      }
+    }
+
+    return new_psi_op;
   }
 
   return psi_op;
@@ -1055,13 +1114,13 @@ Convert_PHI_to_PSI (
 // After the out of SSA all movc are replaced by select
 // operations or the corresponding target dependent conditional
 // move
-
 void
 OP_Make_movc (
   TN *guard,
   TN *dst,
   TN *src,
   OPS *cmov_ops
+  , bool on_false
 )
 {
 #ifdef TARG_ST200
@@ -1073,12 +1132,20 @@ OP_Make_movc (
     Is_True(OPS_length(&cmov_ops) == 1, ("Make_movc: Expand_Select produced more than a single operation"));
   return OPS_first(&cmov_ops);
 #endif
+
 #elif defined TARG_STxP70
   Expand_Copy(dst, guard, src, cmov_ops);
+
+  if (on_false) {
+    OP *mop = OPS_last(cmov_ops);
+    Set_OP_Pred_False(mop, OP_find_opnd_use(mop, OU_predicate));
+  }
+
 #else
-  Expand_Copy(dst, guard, src, cmov_ops);
+  FmtAssert(0,("Not implemented"));
 #endif
 }
+
 
 //
 // dominance frontier blocks for each BB in the region
@@ -1510,7 +1577,7 @@ SSA_Rename_BB (
       LOOPINFO *info = ANNOT_loopinfo(annot);
       TN *trip_count_tn = LOOPINFO_primary_trip_count_tn(info);
       if ((trip_count_tn != NULL) && TN_is_register(trip_count_tn)) {
-	LOOPINFO_primary_trip_count_tn(info) =  tn_stack_top(trip_count_tn);
+	LOOPINFO_primary_trip_count_tn(info) = tn_stack_top(trip_count_tn);
       }
     }
   }
@@ -1611,7 +1678,10 @@ SSA_Rename_BB (
   // order of pushing since it's here where I really rename all the
   // destination TNs.
   //
-  FOR_ALL_BB_OPs_REV(bb,op) {
+  OP *op_prev;
+  for (op = BB_last_op(bb); op; op = op_prev) {
+    op_prev = OP_prev(op);
+    //  FOR_ALL_BB_OPs_REV(bb,op) {
     //
     // rename result TNs
     //
@@ -1623,6 +1693,13 @@ SSA_Rename_BB (
       //
       if (TN_can_be_renamed(tn)) {
 	new_tn = tn_stack_pop(tn);
+	if (OP_Is_Copy(op) && Get_Trace(TP_TEMP, 0x4)) {
+	  TN *src_copy = OP_Copy_Operand_TN(op);
+	  if (new_tn == src_copy) { // Copy propagation was performed on this op
+	    BB_Remove_Op(bb, op);
+	    continue;
+	  }
+	}
 	Set_OP_result(op,i,new_tn);
 	Set_TN_ssa_def(tn, NULL);
 	Set_TN_ssa_def(new_tn, op);  // this should also include PHIs
@@ -1818,7 +1895,7 @@ SSA_Enter (
     }
   }
 #endif
-  //Trace_IR(TP_SSA, "After the SSA Conversion", NULL);
+  Trace_IR(TP_SSA, "After the SSA Conversion", NULL);
 
   MEM_POOL_Pop (&MEM_local_pool);
 
@@ -2752,6 +2829,7 @@ PSI_Live_Info_Init(OP *psi_op) {
     }
     Is_True(OP_dominate(TN_ssa_def(tn_left), def_right), ("Inconsistent PSI operation."));
     
+    // Then, the last argument is live on the PSI operation
     TN_LIST *op_psi_uses = (TN_LIST *)OP_MAP_Get(map_psi_use, def_right);
     OP_MAP_Set(map_psi_use, def_right, TN_LIST_Push(tn_left, op_psi_uses, &MEM_local_pool));
 
@@ -2776,36 +2854,80 @@ PSI_Live_Info_Init(OP *psi_op) {
  *   last point of use.
  *   ================================================================
  */
+static void insert_psi_operand_copy (OP *, INT8, OP *, BOOL);
+
 static void
 Normalize_Psi_Operations()
 {
   BB *bb;
   OP *op;
 
+  // TBD: Perform a top-down traversal of the dominator tree
+
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     FOR_ALL_BB_OPs(bb, op) {
       if (OP_code(op) != TOP_psi)
 	continue;
 
+      // Remove arguments that are later overriden by other arguments
+      OP *new_psi_op;
+      new_psi_op = PSI_reduce(op);
+      if (new_psi_op != op) {
+	// Must remove the current OP before inserting the new one.
+	OP *prev_op = OP_prev(op);
+	BB_Remove_Op(bb, op);
+	BB_Insert_Op(bb, prev_op, new_psi_op, (prev_op == NULL));
+	op = new_psi_op;
+      }
+
       /* Check interferences dues to code order. Fix it either by
 	 reordering the PSI opnds if guards are disjoints, or by
-	 introducing a repair variable otherwise. */
+	 introducing a repair variable otherwise. Also introduce a
+	 predicated mov operations when the guard used on the
+	 definition and in the guard are not equal. */
     
-      for (int opndi = 1; opndi < PSI_opnds(op); opndi++) {
+      for (int opndi = 0; opndi < PSI_opnds(op); opndi++) {
 	BOOL reorder_psi_args = TRUE;
 	TN *tn_opndi = PSI_opnd(op, opndi);
 	TN *tn_guardi = PSI_guard(op, opndi);
-	OP *op_defi = TN_ssa_def(tn_opndi);
-        Is_True(op_defi && OP_code(op_defi) != TOP_psi, ("Illegal PSI argument %d", opndi));
+        bool on_falsei = PSI_Pred_False(op, opndi);
+
+	OP *def_opndi = TN_ssa_def(tn_opndi);
+	FmtAssert(def_opndi, ("Illegal PSI argument %d", opndi));
+
+	// First, repair the guards.
+
+	TN *op_guardi = OP_guard(def_opndi);
+
+	/* The definition cannot be guarded or has been
+	   speculated. Introduce a predicated move instruction. */
+	if (Trace_SSA_Out) {
+	  fprintf(TFile, "PSI Normalize: Introduce predicated move to match predicate in PSI operation\n");
+	}
+
+	if (tn_guardi != op_guardi) {
+	  // Insert the operation at the lowest point between def_opndi, def(tn_guardi) and def(opndi-1)
+	  OP *def_guardi = TN_ssa_def(tn_guardi);
+	  FmtAssert(def_guardi, ("Illegal PSI guard %d", opndi));
+	  OP *point = !OP_dominate(def_opndi, def_guardi) ? def_opndi : def_guardi;
+	  if (opndi > 0) {
+	    OP *def_opndi_m1 = TN_ssa_def(PSI_opnd(op, opndi-1));
+	    if (OP_dominate(point, def_opndi_m1))
+	      point = def_opndi_m1;
+	  }
+	  insert_psi_operand_copy(op, opndi, point, false);
+
+	  tn_opndi = PSI_opnd(op, opndi);
+	  def_opndi = TN_ssa_def(tn_opndi);
+        }
 
 	int opndj;
 	for (opndj = opndi-1; opndj >= 0; opndj --) {
 	  TN *tn_opndj = PSI_opnd(op, opndj);
-	  OP *op_defj = TN_ssa_def(tn_opndj);
-	  Is_True(op_defj && (opndj == 0 || OP_code(op_defj) != TOP_psi), ("Illegal PSI argument %d", opndj));
-	  Is_True(OP_code(op_defj) != TOP_psi || PSI_guard(op, opndj) == True_TN, ("Illegal Guard on PSI argument"));
+	  OP *def_opndj = TN_ssa_def(tn_opndj);
+	  FmtAssert(def_opndj, ("Illegal PSI argument %d", opndj));
 	  
-	  if (OP_dominate(op_defj, op_defi)) {
+	  if (OP_dominate(def_opndj, def_opndi)) {
 	    // opndj is the last operand that is dominated by opndi
 	    opndj++;
 	    break;
@@ -2813,10 +2935,12 @@ Normalize_Psi_Operations()
 	  // FdF 20051010: On stxp70, guardi and guardj may be the
 	  // same, but defi and defj can be guarded one on true and
 	  // the other on false.
+          
 	  if (!((tn_guardi == PSI_guard(op, opndj)) &&
-		((OP_is_guard_t(op_defi) && OP_is_guard_f(op_defj)) ||
-		 (OP_is_guard_f(op_defi) && OP_is_guard_t(op_defj))))) {
-	    if (!Disjoint_Predicates(tn_guardi, PSI_guard(op, opndj))) {
+		((OP_is_guard_t(def_opndi) && OP_is_guard_f(def_opndj)) ||
+		 (OP_is_guard_f(def_opndi) && OP_is_guard_t(def_opndj))))) {
+	    if (!Disjoint_Predicates(tn_guardi, on_falsei, PSI_guard(op, opndj), PSI_Pred_False(op, opndj))) {
+
 	      // opndj is the first operand with non disjoint predicate
 	      // with opndi
 	      reorder_psi_args = FALSE;
@@ -2831,7 +2955,11 @@ Normalize_Psi_Operations()
 	    break;
 	}
 
-	if (opndj == opndi) {
+	if (opndi == 0)	{
+	  // Nothing to do on the operand order, just repair the gard
+	  // on the def if needed.
+	}
+	else if (opndj == opndi) {
 	  // Nothing to do. Arguments are in correct order compared to
 	  // the dominance order of their definitions.
 	}
@@ -2864,15 +2992,16 @@ Normalize_Psi_Operations()
 	// disable move of any memory operation
 	// FdF 20070528: Cannot duplicate an operation for repair if
 	// the op has multiple or implicit results.
-	else if (!OP_volatile(op_defi) /*[CG]*/&& !OP_memory(op_defi) &&
-		 (OP_results(op_defi) == 1) && !OP_has_implicit_interactions(op_defi)) {
+	else if (!OP_volatile(def_opndi) /*[CG]*/&& !OP_memory(def_opndi) &&
+		 /*FdF*/ (OP_code(def_opndi) != TOP_phi) &&
+		 (OP_results(def_opndi) == 1) && !OP_has_implicit_interactions(def_opndi)) {
 	  /* 1/ Move duplicate of defi below defi-1. */
 
 	  if (Trace_SSA_Out && opndi != opndj)
 	    fprintf(TFile, "PSI Normalize: 1/ Duplicate operation to match order in PSI operation\n");
 
 	  TN *tn_repair = Copy_TN(tn_opndi);
-	  OP *op_repair = Dup_OP(op_defi);
+	  OP *op_repair = Dup_OP(def_opndi);
 	  OP *op_prev = TN_ssa_def(PSI_opnd(op, opndi-1));
 
 	  Set_OP_result(op_repair, 0, tn_repair);
@@ -2881,22 +3010,25 @@ Normalize_Psi_Operations()
 	}
 
 	else {
-	  OP *op_defj = TN_ssa_def(PSI_opnd(op, opndj));
+	  OP *def_opndj = TN_ssa_def(PSI_opnd(op, opndj));
+          TN *copy_tn;
 	  if ((opndj == (opndi-1)) &&
-	      OP_move(op_defj) &&
-	      (TN_is_constant(OP_Copy_Operand_TN(op_defj)) ||
-	       TN_is_zero(OP_Copy_Operand_TN(op_defj)))) {
+	      OP_move(def_opndj) &&
+	      ((copy_tn = OP_Copy_Operand_TN(def_opndj)) != NULL &&
+               (TN_is_constant(copy_tn) ||
+                TN_is_zero(copy_tn))) &&
+	      (OP_guard(def_opndj) != True_TN)) {
 	    /* 2/ Create duplicate of defj before defi. */
 
 	    if (Trace_SSA_Out && opndi != opndj)
 	      fprintf(TFile, "PSI Normalize: 2/ Duplicate operation to match order in PSI operation\n");
 
 	    TN *tn_repair = Copy_TN(tn_opndi);
-	    OP *op_repair = Dup_OP(op_defj);
+	    OP *op_repair = Dup_OP(def_opndj);
 
 	    Set_OP_result(op_repair, 0, tn_repair);
 	    Set_PSI_opnd(op, opndj, tn_repair);
-	    BB_Insert_Op_Before(OP_bb(op_defi), op_defi, op_repair);
+	    BB_Insert_Op_Before(OP_bb(def_opndi), def_opndi, op_repair);
 	  }
 	  else {
 	    /* 3/ The original instruction cannot be duplicated.
@@ -2909,46 +3041,18 @@ Normalize_Psi_Operations()
 	    OP *op_prev = TN_ssa_def(PSI_opnd(op, opndi-1));
 	    OPS cmov_ops = OPS_EMPTY;
 
-	    OP_Make_movc(tn_guardi, tn_repair, tn_opndi, &cmov_ops);
+	    // FdF 20061110: Be careful that the guard tn_guardi may
+	    // not be computed at def(opndi-1)
+	    OP *op_defguardi = TN_ssa_def(tn_guardi);
+	    if (op_defguardi && (OP_dominate(op_prev, op_defguardi)))
+	      op_prev = op_defguardi;
+
+            // (cbr) Support for guards on false
+	    OP_Make_movc(tn_guardi, tn_repair, tn_opndi, &cmov_ops, on_falsei);
 	    Set_PSI_opnd(op, opndi, tn_repair);
 	    BB_Insert_Ops_After(OP_bb(op_prev), op_prev, &cmov_ops);
 	  }
 	}
-
-	tn_opndi = PSI_opnd(op, opndi);
-	tn_guardi = PSI_guard(op, opndi);
-	op_defi = TN_ssa_def(tn_opndi);
-        Is_True(op_defi && OP_code(op_defi) != TOP_psi, ("Illegal PSI argument %d", opndi));
-
-	if (OP_guard(op_defi) != True_TN) {
-	  /* Currently, we do not support "partial" speculation, which
-	     means speculation that do not break the semantics of the
-	     PSI operation. */
-	  TN *op_guardi = OP_guard(op_defi);
-	  Is_True(tn_guardi == op_guardi, ("Inconsistent predicate on psi argument and its definition."));
-	  continue;
-	}
-
-	/* The definition cannot be guarded or has been
-	   speculated. Introduce a predicated move instruction. */
-	if (Trace_SSA_Out && opndi != opndj) {
-	  fprintf(TFile, "PSI Normalize: Introduce predicated move to match predicate in PSI operation\n");
-	}
-
-	TN *tn_movi = Copy_TN(tn_opndi);
-
-        if (TN_is_true (tn_guardi)) {
-          OPS mov_ops = OPS_EMPTY;  
-          Exp_COPY (tn_movi, tn_opndi, &mov_ops);          
-          BB_Insert_Ops_Before(OP_bb(op), op, &mov_ops);
-        }
-        else {
-	  OPS cmov_ops = OPS_EMPTY;
-          OP_Make_movc(tn_guardi, tn_movi, tn_opndi, &cmov_ops);
-          BB_Insert_Ops_Before(OP_bb(op), op, &cmov_ops);
-        }
-
-	Set_PSI_opnd(op, opndi, tn_movi);
       }
       //      Set_OP_cond_def_kind(TN_ssa_def(PSI_opnd(op, 0)), OP_ALWAYS_UNC_DEF);
 
@@ -2969,25 +3073,31 @@ static void
 insert_psi_operand_copy (
   OP   *psi_op,
   INT8  opnd_idx,
-  OP *point
+  OP *point,
+  BOOL congruence
 )
 {
   TN *tn = PSI_opnd(psi_op, opnd_idx);
+  bool on_false =  PSI_Pred_False(psi_op, opnd_idx);
+
   TN *new_tn = Copy_TN(tn);
 
   // Make it an SSA TN
-  SSA_UNIVERSE_Add_TN(new_tn);
+  if (congruence)
+    SSA_UNIVERSE_Add_TN(new_tn);
 
   // replace old tn in the psi OP
   Set_PSI_opnd(psi_op, opnd_idx, new_tn);
 
   // Finally, append the copy op
   OPS cmov_ops = OPS_EMPTY;
-  OP_Make_movc(PSI_guard(psi_op, opnd_idx), new_tn, tn, &cmov_ops);
+  OP_Make_movc(PSI_guard(psi_op, opnd_idx), new_tn, tn, &cmov_ops, on_false);
   if (point) {
     // FdF 20050831: Be careful to insert after all PHI operations.
     while (OP_next(point) && (OP_code(OP_next(point)) == TOP_phi))
       point = OP_next(point);
+    // FdF 20061110: Be careful that the guard for opnd_idx may not be
+    // defined at the point of definition of opnd_idx.
     BB_Insert_Ops_After(OP_bb(point), point, &cmov_ops);
   }
   else
@@ -2995,10 +3105,12 @@ insert_psi_operand_copy (
   Set_OP_ssa_move(OPS_last(&cmov_ops));
 
   // Create a congruence class for new_tn
-  PHI_CONGRUENCE_CLASS *cc = 
-    PHI_CONGRUENCE_CLASS_make(TN_register_class(new_tn));
-  //Set_phiCongruenceClass(new_tn,cc);
-  PHI_CONGRUENCE_CLASS_Add_TN(cc,new_tn);
+  if (congruence) {
+    PHI_CONGRUENCE_CLASS *cc = 
+      PHI_CONGRUENCE_CLASS_make(TN_register_class(new_tn));
+    //Set_phiCongruenceClass(new_tn,cc);
+    PHI_CONGRUENCE_CLASS_Add_TN(cc,new_tn);
+  }
 
   // Update interference graph
   if (Igraph_Used) {
@@ -3058,7 +3170,7 @@ Eliminate_Psi_Resource_Interference ()
 	}
 #endif
 	if (phi_resources_interfere(ccPsi, ccOpnd)) {
-	  insert_psi_operand_copy(op, i, TN_ssa_def(PSI_opnd(op,i)));
+	  insert_psi_operand_copy(op, i, TN_ssa_def(PSI_opnd(op,i)), true);
 	  ccOpnd = phiCongruenceClass(PSI_opnd(op,i));
 
 	  if (Trace_SSA_Out) {
@@ -3711,7 +3823,7 @@ insert_copies_blindly ()
       else if (OP_code(op) == TOP_psi) {
 
 	for (i = 0; i < PSI_opnds(op); i++) {
-	  insert_psi_operand_copy(op, i, NULL);
+	  insert_psi_operand_copy(op, i, NULL, false);
 	}
 
 	// insert copies for result
@@ -3888,7 +4000,7 @@ Eliminate_Phi_Resource_Interference()
 
 /* ================================================================
  *   SSA_Make_Conventional
- * ================================================================
+ * ================================================================`
  */
 void
 SSA_Make_Conventional (
@@ -3981,7 +4093,7 @@ SSA_Make_Conventional (
   GRA_LIVE_Recalc_Liveness(rid);
 
   if (Trace_SSA_Out) {
-    Trace_IR(TP_SSA, "ELIMINATE PHI-RESOURCE INTRFERENCE", NULL);
+    Trace_IR(TP_SSA, "ELIMINATE PHI-RESOURCE INTERFERENCE", NULL);
   }
 
   Free_Dominators_Memory();

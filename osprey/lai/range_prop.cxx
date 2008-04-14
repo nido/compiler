@@ -157,9 +157,15 @@ validate_replacement (OP *op,
   // If we do this, we lose the opportunity to remove the
   // register copy.
 
+#ifdef TARG_ST
+  // (cbr) Support for guards on false
+  OPS_Copy_Predicate (ops, op);
+#endif
+
   Trace_OP_Replacement (op, ops);
 
   OP_srcpos (OPS_first (ops)) = OP_srcpos (op);
+
   BB *bb = OP_bb (op);
   OP *prev = OP_prev (op);
   BB_Remove_Op (bb, op);

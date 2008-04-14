@@ -577,7 +577,15 @@ OP_has_subset_predicate(const void *value1, const void *value2)
   if (v1P || v2P) {
     
     // First, check the trivial case
-    if (p1 == p2) return TRUE;
+#ifdef TARG_ST
+              // (cbr) Support for guards on false
+                if (TNs_Are_Equivalent (p1, p2) &&
+                    OP_Pred_False ((OP*) value1, OP_find_opnd_use((OP*)value1, OU_predicate)) ==
+                    OP_Pred_False ((OP*) value2, OP_find_opnd_use((OP*)value2, OU_predicate)))
+#else	      
+    if (p1 == p2)
+#endif
+      return TRUE;
 
     // Second, return conservative if no PQS information is available.
     if (!PQSCG_pqs_valid()) return FALSE;
@@ -585,6 +593,30 @@ OP_has_subset_predicate(const void *value1, const void *value2)
     // Third, invoke PQS interface to determine if p2 is not a subset of p1.
     return (PQSCG_is_subset_of(p2, p1));
   } 
+
+#else
+  /* (cbr) supports minimal cases. */
+
+  // Check if OPs have associated predicates and don't execute under same
+  // conditions.
+
+  TN *p1, *p2;
+  if (OP_has_predicate((OP *) value1) && OP_has_predicate((OP *) value2)) {
+    p1 = OP_opnd((OP*) value1, OP_find_opnd_use((OP*)value1, OU_predicate));
+    p2 = OP_opnd((OP*) value2, OP_find_opnd_use((OP*)value2, OU_predicate));
+
+
+    if (TNs_Are_Equivalent (p1, p2) &&
+        OP_Pred_False ((OP*) value1, OP_find_opnd_use((OP*)value1, OU_predicate)) ==
+        OP_Pred_False ((OP*) value2, OP_find_opnd_use((OP*)value2, OU_predicate)))
+      return TRUE;
+    else
+      return FALSE;      
+  }
+  else if (OP_has_predicate((OP *) value1) || OP_has_predicate((OP *) value2)) {
+    return FALSE; 
+  }
+
 #endif /* SUPPORTS_PREDICATION */
 
   return TRUE;
@@ -613,6 +645,26 @@ OP_has_disjoint_predicate(const OP *value1, const OP *value2)
     // Invoke PQS interface to determine if p1 and p2 are exclusive.
     if (PQSCG_is_disjoint(p1, p2)) return TRUE;
   }
+#else
+
+  /* (cbr) supports minimal cases. */
+
+  // Check if OPs have associated predicates and don't execute under same
+  // conditions.
+
+  TN *p1, *p2;
+  if (OP_has_predicate((OP *) value1) && OP_has_predicate((OP *) value2)) {
+    p1 = OP_opnd((OP*) value1, OP_find_opnd_use((OP*)value1, OU_predicate));
+    p2 = OP_opnd((OP*) value2, OP_find_opnd_use((OP*)value2, OU_predicate));
+
+    if (TNs_Are_Equivalent (p1, p2) &&
+        OP_Pred_False ((OP*) value1, OP_find_opnd_use((OP*)value1, OU_predicate)) !=
+        OP_Pred_False ((OP*) value2, OP_find_opnd_use((OP*)value2, OU_predicate)))
+      return TRUE;
+    else
+      return FALSE;      
+  }
+
 #endif
 
   return FALSE;
@@ -5533,6 +5585,7 @@ CG_DEP_Prune_Dependence_Arcs(std::list<BB*>    bblist,
 #ifdef TARG_ST
   /* (cbr) predicate operand # is not necessary constant */
 	    Set_OP_opnd(cur_op, OP_find_opnd_use(cur_op, OU_predicate), True_TN);
+            Set_OP_Pred_True(cur_op, OP_find_opnd_use(cur_op, OU_predicate));
 #else
 	    Set_OP_opnd(cur_op, OP_PREDICATE_OPND, True_TN);
 #endif

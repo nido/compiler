@@ -1064,7 +1064,13 @@ LOOP_INVAR_CODE_MOTION :: Unique_Reaching_Def_Inside_Loop
         if (OP_Precedes (op,def) || op == def) { return FALSE; }
     }
 
+#ifdef TARG_ST
+    // (cbr) Support for guards on false
+    int pred_index = OP_find_opnd_use(op, OU_predicate);
+    if (OP_has_predicate(op) && OP_opnd(op, pred_index) != True_TN) {
+#else
     if (OP_has_predicate(op) && OP_opnd(op, OP_PREDICATE_OPND) != True_TN) {
+#endif
         /* TODO: utilize PQS/PRDB to determine whether this statement 
          *   is true or not:
          *     <use>'s guarding predicate being 1 imply that <def>'s
@@ -2252,7 +2258,12 @@ Scalarize_OP(OP *memop, TN *scalar) {
 
     else Is_True(0, ("Only load and store can be scalarized"));
 
-    BB_Insert_Ops(OP_bb(memop), memop, &New_OPs, TRUE);	
+ #ifdef TARG_ST
+    // (cbr) Support for guards on false
+    OPS_Copy_Predicate (&New_OPs, memop);
+#endif
+
+   BB_Insert_Ops(OP_bb(memop), memop, &New_OPs, TRUE);	
 }
 
 /* Load and store operations in a same MEMORY group are in alias. To

@@ -1081,8 +1081,12 @@ Combine_Adjacent_Loads( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table)
 		ldp_offset_tn,
 		&ops_ldp);
 
-
     OP_srcpos(OPS_first(&ops_ldp)) = OP_srcpos(load1_op);
+
+#ifdef TARG_ST
+      // (cbr) Support for guards on false
+      OPS_Copy_Predicate (&ops_ldp, load1_op);
+#endif
 
     extern void Expand_Extract(TN *low_tn, TN *high_tn, TN *src_tn, OPS *ops);
 
@@ -1285,7 +1289,13 @@ Combine_Adjacent_Stores( LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table )
 		stp_addr_tn,
 		stp_offset_tn,
 		&ops_stp);
+
     OP_srcpos(OPS_last(&ops_stp)) = OP_srcpos(store2_op);
+
+#ifdef TARG_ST
+      // (cbr) Support for guards on false
+      OPS_Copy_Predicate (&ops_stp, store2_op);
+#endif
 
     /* Initialize the OP_omega for new operations. */
     CG_LOOP_Init_OPS(&ops_stp);

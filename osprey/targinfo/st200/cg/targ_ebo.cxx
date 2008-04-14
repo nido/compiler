@@ -833,7 +833,7 @@ EBO_copy_value (
   }
 
   /* Use full word copy. */
-  EBO_Exp_COPY(predicate_tn, OP_result(op, 0), pred_result, &ops);
+  EBO_Exp_COPY(predicate_tn, false, OP_result(op, 0), pred_result, &ops);
   if (!EBO_Verify_Ops(&ops)) return FALSE;
 
   OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
@@ -1454,7 +1454,7 @@ sxt_sequence (OP *op,
        /* The result of the OP is greater than or equal to the size of the input to the dep. */
 
         OPS ops = OPS_EMPTY;
-        EBO_Exp_COPY(OP_opnd(op,OP_PREDICATE_OPND),
+        EBO_Exp_COPY(OP_opnd(op,OP_PREDICATE_OPND), false,
                      OP_result(op,0), OP_opnd(op, op_idx), &ops);
 
         OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
@@ -1578,7 +1578,7 @@ sxt_sequence (OP *op,
 
     /* If there is no overlap between the two ANDs so the result is 0! */
       OPS ops = OPS_EMPTY;
-      EBO_Exp_COPY(OP_opnd(op,OP_PREDICATE_OPND),
+      EBO_Exp_COPY(OP_opnd(op,OP_PREDICATE_OPND), false
                    OP_result(op,0), Zero_TN, &ops);
 
       if (EBO_in_loop) EBO_Set_OP_omega (OPS_first(&ops),
@@ -1648,7 +1648,7 @@ sxt_sequence (OP *op,
     {
      /* The current instruction is not needed. */
       OPS ops = OPS_EMPTY;
-      EBO_Exp_COPY(OP_opnd(op,OP_PREDICATE_OPND),
+      EBO_Exp_COPY(OP_opnd(op,OP_PREDICATE_OPND), false,
                    OP_result(op,0), opnd_tn[op_idx], &ops);
 
       if (EBO_in_loop) EBO_Set_OP_omega (OPS_first(&ops),
@@ -2550,7 +2550,7 @@ if (EBO_Trace_Optimization) fprintf(TFile,"simplify fneg(fcmp()) operation.\n");
 if (EBO_Trace_Optimization) fprintf(TFile,"complementary moves of the same value\n");
         OPS ops = OPS_EMPTY;
         TN * predicate_tn = OP_opnd(predicate_opinfo->in_op,OP_PREDICATE_OPND);
-        EBO_Exp_COPY (predicate_tn,
+        EBO_Exp_COPY (predicate_tn, false,
                       OP_result(op, 0),
                       current_tn,
                       &ops);
@@ -3327,7 +3327,7 @@ addcg_sequence (
       !OP_copy(op) /* Avoid optimizing the special copy br<-br */) {
     OPS ops = OPS_EMPTY;
     if (OP_result(op, 0) != Zero_TN) {
-      EBO_Exp_COPY(NULL, OP_result(op, 0), OP_opnd(op, op_idx), &ops);
+      EBO_Exp_COPY(NULL, false, OP_result(op, 0), OP_opnd(op, op_idx), &ops);
       if (EBO_in_loop) 
 	EBO_OPS_omega (&ops, OP_opnd(op,op_idx), opnd_tninfo[op_idx]);
     }
@@ -3628,7 +3628,7 @@ iadd_special_case (
       val += base_ofst;
       if (val == 0) {
         OPS ops = OPS_EMPTY;
-        EBO_Exp_COPY(NULL, OP_result(op, 0), opnd_tn[1], &ops);
+        EBO_Exp_COPY(NULL, false, OP_result(op, 0), opnd_tn[1], &ops);
 
         OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
 	if (EBO_in_loop) 
@@ -5774,7 +5774,7 @@ cmp_subsat_to_zero (OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     return FALSE;
   }
   if (OP_has_predicate(op)) {
-    EBO_OPS_predicate (OP_opnd(op, OP_PREDICATE_OPND), &ops);
+    EBO_OPS_predicate (OP_opnd(op, OP_PREDICATE_OPND), false, &ops);
   }
 
   /* No need to replace if same op, avoids infinite loops. */
@@ -6488,14 +6488,14 @@ reduce_predicate_logical_sequence (OP *op, TN **opnd_tn,
   EBO_TN_INFO *tn1_info = opnd_tninfo[0];
   EBO_TN_INFO *tn2_info = opnd_tninfo[1];
   if (v == V_CMP_ANDL
-      && EBO_predicate_disjoint (tn1, tn1_info, tn2, tn2_info)) {
+      && EBO_predicate_disjoint (tn1, false, tn1_info, tn2, false, tn2_info)) {
     value = Gen_Literal_TN (0, 4);
   } else if (v == V_CMP_ORL
-	     && EBO_predicate_complements (tn1, tn1_info, tn2, tn2_info)) {
+	     && EBO_predicate_complements (tn1, false, tn1_info, tn2, false, tn2_info)) {
     value = Gen_Literal_TN (1, 4);
-  } else if (EBO_predicate_dominates (tn1, tn1_info, tn2, tn2_info)) {
+  } else if (EBO_predicate_dominates (tn1, false, tn1_info, tn2, false, tn2_info)) {
     value = (v == V_CMP_ANDL) ? tn2 : tn1;
-  } else if (EBO_predicate_dominates (tn2, tn2_info, tn1, tn1_info)) {
+  } else if (EBO_predicate_dominates (tn2, false, tn2_info, tn1, false, tn1_info)) {
     value = (v == V_CMP_ANDL) ? tn1 : tn2;
   }
   if (value) {

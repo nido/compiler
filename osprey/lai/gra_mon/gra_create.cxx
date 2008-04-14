@@ -197,8 +197,15 @@ Create_GRA_BB_Call_Spill_Block(BB *bb)
   } else if (OP_has_predicate(BB_last_op(bb)) &&
              OP_has_predicate(BB_last_op(succ)) &&
              !TN_is_const_reg(OP_opnd(BB_last_op(bb), OP_find_opnd_use(BB_last_op(bb),OU_predicate))) &&
+#ifdef TARG_ST
+             (!TNs_Are_Equivalent(OP_opnd(BB_last_op(bb), OP_find_opnd_use(BB_last_op(bb),OU_predicate)),
+                                 OP_opnd(BB_last_op(succ), OP_find_opnd_use(BB_last_op(succ),OU_predicate))) ||
+              OP_Pred_False (BB_last_op(bb), OP_find_opnd_use(BB_last_op(bb),OU_predicate)) !=
+              OP_Pred_False (BB_last_op(succ), OP_find_opnd_use(BB_last_op(succ),OU_predicate)))) {
+#else
              !TNs_Are_Equivalent(OP_opnd(BB_last_op(bb), OP_find_opnd_use(BB_last_op(bb),OU_predicate)),
-                                 OP_opnd(BB_last_op(succ), OP_find_opnd_use(BB_last_op(bb),OU_predicate)))) {
+                                 OP_opnd(BB_last_op(succ), OP_find_opnd_use(BB_last_op(bb),OU_predicate))) {
+#endif
    /* We really don't know what is going on here - so insert the block! */
     goto block_needed;
   } else {

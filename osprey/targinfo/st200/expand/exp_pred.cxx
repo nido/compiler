@@ -43,10 +43,9 @@
 #include "tn.h"
 #include "op.h"
 #include "cgexp.h"
-#ifdef TARG_ST
-/* (cbr) might need ssa_def if available */  
+
 #include "cg_ssa.h"
-#endif
+
 
 /* ====================================================================
  *   Alloc_Result_TNs

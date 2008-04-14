@@ -684,7 +684,11 @@ extern TOP CGTARG_Speculative_Load (OP *op);
 extern TOP CGTARG_Predicated_Store (OP *op);
 extern TOP CGTARG_Predicated_Load (OP *op);
 
+#ifdef TARG_ST
 extern OP *CGTARG_Dup_OP_Predicate (OP* op, TN *new_pred);
+#else
+extern OP *CGTARG_Dup_OP_Predicate (OP* op, TN *new_pred);
+#endif
 
 /* ====================================================================
  *    PROC:
@@ -788,7 +792,7 @@ inline BOOL CGTARG_Can_Predicate_Branches() {
   return PROC_has_predicate_branches(); 
 }
 inline BOOL CGTARG_Can_Predicate() { 
-  return PROC_is_ia64_predication(); 
+  return PROC_is_ia64_predication() || PROC_is_predicated(); 
 }
 inline BOOL CGTARG_Can_Select() { 
   return PROC_is_select(); 

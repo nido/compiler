@@ -497,11 +497,11 @@ CG_EXPORTED extern  TN *Build_Dedicated_TN ( ISA_REGISTER_CLASS rclass, REGISTER
 #define TN_is_fone_reg(r)  (TN_register_and_class(r) == CLASS_AND_REG_fone)
 
 
-#ifdef TARG_ST200
-// (cbr) if-conversion psi-ssa. need a True_TN
-#define TN_is_true(r) ((r) == True_TN || TN_is_true_pred(r))
+#ifdef TARG_ST
+// (cbr) if-conversion psi-ssa. True_TN used only while in psi-ssa.
+#define TN_is_true(r) ((r) == True_TN || !(r) || TN_is_true_pred(r))
 #else
-#define TN_is_true(r) (TN_is_true_pred(r))
+#define TN_is_true(r) (!(r) || TN_is_true_pred(r))
 #endif
 
 // Check if the TN is either a constant zero or the zero register TN.

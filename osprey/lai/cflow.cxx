@@ -933,6 +933,17 @@ Negate_Branch(OP *br)
     return TRUE;
   }
 
+#ifdef TARG_ST
+  if (PROC_has_predicate_false() && TOP_cond_variant(OP_code(br)) == V_COND_TRUE) {
+    int p_i = OP_find_opnd_use(br, OU_condition);
+    if (OP_Pred_False(br, p_i))
+      Set_OP_Pred_True(br, p_i);
+    else
+      Set_OP_Pred_False(br, p_i);
+    return TRUE;
+  }
+#endif
+
   if (OP_has_predicate(br)) {
     BB *br_bb = OP_bb(br);
     OP *cmp = BBINFO_compare_op(br_bb);
@@ -943,7 +954,9 @@ Negate_Branch(OP *br)
       BB *cmp_bb = OP_bb(cmp);
       TN *r0 = OP_result(cmp,0);
       TN *r1 = OP_result(cmp,1);
+      DevAssert(OP_find_opnd_use(cmp,OU_predicate) >= 0, ("shouldn't it be OU_condition?"));
       TN *pred = OP_opnd(br, OP_find_opnd_use(cmp,OU_predicate));
+
       TN *neg_tn = r0 == pred ? r1 : r0;
 
       if (TN_is_true_pred(neg_tn)) {
@@ -4360,7 +4373,13 @@ OP_equiv(OP *op1, OP *op2) {
     return FALSE;
 
   for (i = 0; i < OP_opnds(op1); i ++) {
+#ifdef TARG_ST
+    // (cbr) Support for guards on false
+    if (!TN_equiv(OP_opnd(op1, i), OP_opnd(op2, i)) || 
+        (OP_Pred_False(op1, i) != OP_Pred_False(op2, i)))
+#else
     if (!TN_equiv(OP_opnd(op1, i), OP_opnd(op2, i)))
+#endif
       return FALSE;
   }
   for (i = 0; i < OP_results(op1); i ++) {

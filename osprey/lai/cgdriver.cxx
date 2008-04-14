@@ -178,9 +178,10 @@ static BOOL CFLOW_Enable_Clone_overridden = FALSE;
 static BOOL CFLOW_Enable_Favor_Branches_Condition_overridden = FALSE;
 static BOOL CFLOW_Space_overridden = FALSE;
 static BOOL EMIT_space_overridden = FALSE;
-static BOOL CG_select_freq_overriden = FALSE;
-static BOOL CG_select_cycles_overridden = FALSE;
-static BOOL CG_select_space_overridden = FALSE;
+static BOOL CG_ifc_freq_overriden = FALSE;
+static BOOL CG_ifc_cycles_overridden = FALSE;
+static BOOL CG_ifc_allow_dup_overridden = FALSE;
+static BOOL CG_ifc_space_overridden = FALSE;
 static BOOL CG_select_spec_stores_overridden = FALSE;
 static BOOL CG_enable_thr_overridden = FALSE;
 static BOOL IPFEC_Enable_LICM_passes_overridden = FALSE;
@@ -1165,7 +1166,7 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0, &CG_ssa_rematerialization, NULL,
     "Enable rematerialization information computation in SSA form" },
 
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_if_convert", "",
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "if_convert", "",
     0, 0, 0,	&CG_enable_select, &CG_enable_select_overridden,
     "Enable if conversion using select op"},
 
@@ -1177,41 +1178,41 @@ static OPTION_DESC Options_CG[] = {
     2, 1, INT32_MAX, &CG_range_recompute_limit, &CG_range_recompute_limit_overridden,
     "Limit on the number of times a value range is recomputed" },
 
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_allow_dup", "",
-    0, 0, 0,	&CG_select_allow_dup, NULL,
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "ifc_allow_dup", "",
+    0, 0, 0,	&CG_ifc_allow_dup, &CG_ifc_allow_dup_overridden,
     "Allow basic blocks duplication for select if conversion"},
 
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_promote_mem", "",
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "ifc_promote_mem", "",
     0, 0, 0,	&CG_select_promote_mem, NULL,
     "Promotion of base/offset conditional memory loads"},
 
-  { OVK_INT32,	OV_INTERNAL, TRUE, "select_spec_loads", "",
+  { OVK_INT32,	OV_INTERNAL, TRUE, "ifc_spec_loads", "",
     0, 0, 2,	&CG_select_spec_loads, NULL,
     "Allow load speculation for select if conversion"},
 
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_spec_stores", "",
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "ifc_spec_stores", "",
     0, 0, 0,	&CG_select_spec_stores, &CG_select_spec_stores_overridden,
     "Allow store speculation using black holes stack slots"},
 
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_merge_stores", "",
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "ifc_merge_stores", "",
     0, 0, 0,	&CG_select_merge_stores, NULL,
     "Allow store merging using select instruction"},
 
-  { OVK_NAME,	OV_INTERNAL, TRUE, "select_factor", "",
-    0, 0, 0,	&CG_select_factor, NULL,
+  { OVK_NAME,	OV_INTERNAL, TRUE, "ifc_factor", "",
+    0, 0, 0,	&CG_ifc_factor_string, &CG_ifc_factor_overridden,
     "Extra gain in cycles for flattening a branch"},
 
   //TB: Export variable for cg_select.cxx
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_freq", "",
-    0, 0, 0,	&CG_select_freq, &CG_select_freq_overriden,
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "ifc_freq", "",
+    0, 0, 0,	&CG_ifc_freq, &CG_ifc_freq_overriden,
     "Use frequecies and probabilities to determine if if conversion is profitable"},
 
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_cycles", "",
-    0, 0, 0,	&CG_select_cycles, &CG_select_cycles_overridden,
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "ifc_cycles", "",
+    0, 0, 0,	&CG_ifc_cycles, &CG_ifc_cycles_overridden,
     "Use performance heuristic to determine if if conversion is profitable"},
   
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "select_space", "",
-    0, 0, 0,	&CG_select_space, &CG_select_space_overridden,
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "ifc_space", "",
+    0, 0, 0,	&CG_ifc_space, &CG_ifc_space_overridden,
     "Take into account code size for if convertion"},
 #endif /* TARG_ST (SSA) */
 
@@ -1569,10 +1570,13 @@ Configure_CG_Options(void)
     CG_enable_ssa = FALSE;
   }
 
+  // still off by default
+#ifndef NO_IFC_DEFAULT
   // [CG] turned on select
   if (!CG_enable_select_overridden) {
-    CG_enable_select =  (CG_opt_level > 1) ? CGTARG_Can_Select() : FALSE;
+    CG_enable_select =  (CG_opt_level > 1) ? CGTARG_Can_Predicate() || CGTARG_Can_Select() : FALSE;
   }
+#endif
 
   if (CG_enable_select && !CG_enable_ssa) {
     DevWarn("CG: Ignoring select=ON, need ssa");
@@ -2054,14 +2058,16 @@ CG_Apply_Opt_Size(UINT32 level)
     EMIT_space = TRUE;
 
   //cg_select
-  if (!CG_select_freq_overriden)
-    CG_select_freq = FALSE;
-  if (!CG_select_cycles_overridden)
-    CG_select_cycles = FALSE;
+  if (!CG_ifc_freq_overriden)
+    CG_ifc_freq = FALSE;
+  if (!CG_ifc_cycles_overridden)
+    CG_ifc_cycles = FALSE;
+  if (!CG_ifc_allow_dup_overridden)
+    CG_ifc_allow_dup = FALSE;
   if (!CG_select_spec_stores_overridden)
     CG_select_spec_stores = PROC_has_predicate_stores() && Enable_Conditional_Store;
-  if (!CG_select_space_overridden)
-    CG_select_space = TRUE;
+  if (!CG_ifc_space_overridden)
+    CG_ifc_space = TRUE;
   //Integrated Global and Local Scheduling Framework
   if (!CG_enable_thr_overridden)
     CG_enable_thr = FALSE;

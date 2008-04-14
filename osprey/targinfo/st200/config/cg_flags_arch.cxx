@@ -113,5 +113,8 @@ void Configure_CG_Target() {
   //  CIO_enable_read_removal = TRUE;
   //  CIO_enable_write_removal = TRUE;
 
+  /* when optimising for cycles */
+  CG_ifc_factor = 1.05F;
+
   return;
 }

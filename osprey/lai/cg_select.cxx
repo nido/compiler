@@ -33,25 +33,26 @@
  * This optimisation works and maintains the SSA representation.
  *
  * General Flags are:
- * -CG:select_if_convert=TRUE    enable if conversion
- * -CG:select_spec_stores=TRUE   enable conditional or blackhole stores
- * -CG:select_merge_stores=TRUE  enable store merging optimisation
+ * -CG:if_convert=TRUE    enable if conversion
+ * -CG:ifc_spec_stores=TRUE   enable conditional or blackhole stores
+ * -CG:ifc_merge_stores=TRUE  enable store merging optimisation
  *
  * The following flags to drive the algorithm and heuristics.
- * -CG:select_allow_dup=TRUE     remove side entries. duplicate blocks
+ * -CG:ifc_allow_dup=TRUE     remove side entries. duplicate blocks
  *                               might increase code size in some cases.
  *
- * -CG:select_spec_loads=[0,1,2]  speculate loads 
+ * -CG:ifc_spec_loads=[0,1,2]  speculate loads 
  *                              0 = no load speculation
  *                              1 = speculate safe loads (default)
  *                              2 = speculate all loads 
  *
- * -CG:select_factor="1.05"      factor to reduce the cost of the 
+ * -CG:ifc_factor="1.05"      factor to reduce the cost of the 
  *                              ifconverted region
  *
- * -CG:select_promote_mem=false  base or offset memory load promotion
+ * -CG:ifc_promote_mem=true  base or offset memory load promotion
  *
- * -CG:select_freq=TRUE         heuristic based on execution frequency (optimize  *                              speed) or size of block (optimize space).
+ * -CG:ifc_freq=TRUE         heuristic based on execution frequency (optimize
+ *                              speed) or size of block (optimize space).
  *
  * -TARG:conditional_load=TRUE    enable predicated loads
  * -TARG:conditional_store=TRUE   enable predicated stores
@@ -66,9 +67,9 @@
 #if __GNUC__ >=3
 #include <list>
 #include <map>
+#include <set>
 #else
 #include <list.h>
-#include <map.h>
 #endif // __GNUC__ >=3
 #include "namespace_trans.h"
 
@@ -102,6 +103,7 @@
 #include "cg_select.h"
 #include "DaVinci.h"
 
+extern char *Cur_PU_Name;
 
 static BB_MAP postord_map;      // Postorder ordering
 static BB     **cand_vec;       // Vector of potential hammocks BBs.
@@ -130,20 +132,44 @@ static OP_MAP phi_op_map;
 // Stores are mapped with their equivalent.
 // Loads are just recorded. They will be replaced with their dismissible form
 // in BB_Fix_Spec_Loads.
-// I record these operation in a map because we don't want to touch the basic
+// I keep these operation in a list because we don't want to touch the basic
 // blocks now. (we don't know yet if the hammock will be reduced).
 // OPs will be updated in BB_Fix_Spec_Loads and BB_Fix_Spec_Stores.
 
-#ifdef TARG_ST
-//TDR - Add determinist selection mode to avoid diffs between -g / not -g mode
-typedef std::map<OP*, TN*, Op_Map_Cmp>    PredOp_Map;
-#else
-typedef std::map<OP*, TN*> PredOp_Map;
-#endif
+// we don't want to modify ops until the final commit is done,
+// so we can lazilly assign predicates during the process.
 
+#ifdef EFFECT_PRED_FALSE
+typedef struct {
+  TN *tn;
+  bool on_false;
+} guard_t;
+
+#define Set_PredOp(op, pred, invert) do { \
+pred_i[op].tn = pred; \
+pred_i[op].on_false = invert; \
+} while (0)
+#define PredOp_Invert(op) (pred_i[op].on_false)
+#else 
+typedef struct {
+  TN *tn;
+} guard_t;
+
+#define Set_PredOp(op, pred, invert) (pred_i[op].tn = pred)
+#define PredOp_Invert(op) false
+#endif 
+
+#define PredOp_TN(op) (pred_i[op].tn)
+#define Need_Predicate_Op(op) (pred_i.find(op) != pred_i.end())
+
+typedef std::map<OP*, guard_t, Op_Map_Cmp>    PredOp_Map;
 typedef PredOp_Map::iterator PredOp_Map_Iter;
 typedef PredOp_Map::const_iterator PredOp_Map_ConstIter;
-static PredOp_Map pred_i;
+
+static PredOp_Map         pred_i;
+
+#define PredOp_Map_Op(iter) ((*iter).first)
+#define PredOp_Map_Pred(iter) ((*iter).second)
 
 // Mapping of register class equivalent tns
 static TN_MAP btn_map = NULL;
@@ -161,19 +187,20 @@ static PredOp_Map_Iter pred_erase(PredOp_Map_Iter i_iter)
  */
 BOOL CG_select_spec_stores = TRUE;
 BOOL CG_select_merge_stores = TRUE;
-BOOL CG_select_allow_dup = TRUE;
-BOOL CG_select_promote_mem = FALSE;
+BOOL CG_ifc_allow_dup = TRUE;
+BOOL CG_select_promote_mem = TRUE;
 INT32 CG_select_spec_loads = 1;
-BOOL CG_select_freq = TRUE;
-BOOL CG_select_cycles = TRUE;
-const char* CG_select_factor = "1.05";
+BOOL CG_ifc_freq = TRUE;
+BOOL CG_ifc_cycles = TRUE;
+const char* CG_ifc_factor_string = "1.05";
+BOOL CG_ifc_factor_overridden = FALSE;
+float CG_ifc_factor; /* in Configure_CG_Target */
 static float select_factor;
 static int branch_penalty;
 
-#ifdef TARG_ST
 //TB:
-BOOL CG_select_space = FALSE;
-#endif
+BOOL CG_ifc_space = FALSE;
+
 /* ================================================================
  *
  *   Traces
@@ -426,17 +453,27 @@ Can_Predicate_Op (OP *op)
   return FALSE;
 }
 
-static bool
-Need_Predicate_Op (OP *op)
+static TN*
+Generate_Merged_Predicates(TN *pred_tn, TN *tn, VARIANT variant, OPS *ops)
 {
-  if (Can_Predicate_Op (op)) {
-    if (pred_i.find(op) != pred_i.end()) {
-      // check that we don't want the dismissible load.
-      return !OP_load (op) || !PROC_has_dismissible_load();
-    }
+  TN *new_tn = Dup_TN(pred_tn);
+  TN *tn2 = tn;
+
+  if (!(tn = (TN *)TN_MAP_Get(btn_map, tn2))) {
+    tn = Expand_CMP_Reg (tn2, ops);
+    TN_MAP_Set(btn_map, tn, tn2);
   }
 
-  return FALSE;
+  tn2 = pred_tn;
+  if (!(pred_tn = (TN *)TN_MAP_Get(btn_map, tn2))) {
+    pred_tn = Expand_CMP_Reg (tn2, ops);
+    TN_MAP_Set(btn_map, pred_tn, tn2);
+  }
+
+  Expand_Logical_And (new_tn, pred_tn, tn, variant, ops);
+
+  //  Print_OPS (ops);
+  return new_tn;
 }
 
 // Check than the tn doesn't depend on an instruction that is beeing predicated.
@@ -447,25 +484,55 @@ Always_Locally_Defined (TN *tn, BB *bb)
     return TRUE;
 
   OP *op_def = TN_ssa_def(tn);
-  if (!op_def || OP_phi (op_def) || OP_bb (op_def) != bb)
+  if (!op_def || OP_phi (op_def))
     return TRUE;
 
-  if (Need_Predicate_Op(op_def))
+  if (Need_Predicate_Op (op_def))
     return FALSE;
 
-  for (INT i = 0; i < OP_opnds(op_def); i++) {  
+  // Almost can't say anything about this op_def. 
+  // be very conservative here... but good enough. too much
+  // aggressiveness would harm.
+  if (OP_bb (op_def) != bb) {
+    for (INT i = 0; i < OP_opnds(op_def); i++) {  
+      TN *tn2 = OP_opnd (op_def, i);
+      if (TN_is_register (tn2) && TN_ssa_def (tn2))
+        return FALSE;
+    }
+    return TRUE;
+  }
+
+  for (INT i = 0; i < OP_opnds(op_def); i++)
     if (! Always_Locally_Defined (OP_opnd (op_def, i), bb))
       return FALSE;
-  }
 
   return TRUE;
 }
 
-static void
-Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS *cmov_ops)
+static bool
+Can_Be_Dismissible(OP *op)
 {
-  TN* cond_tn=True_TN;
-  TN* fcond_tn=True_TN;
+  return (OP_load (op) && Enable_Dismissible_Load && PROC_has_dismissible_load() && !OP_volatile(op));
+}
+
+static void
+Create_PSI_or_Select (TN *target_tn, TN* test_tn, BB *head, BB* true_bb, BB* false_bb,
+                      OP *phi, OPS *cmov_ops)
+{
+  TN *true_tn   = OP_opnd(phi, Get_TN_Pos_in_PHI (phi, true_bb));
+  TN *false_tn  = OP_opnd(phi, Get_TN_Pos_in_PHI (phi, false_bb));
+
+#ifdef TARG_ST200
+    // cond_tn1 need to be a pred register
+    // must improve interface.
+    if (TN_ssa_def (test_tn) && OP_code(TN_ssa_def (test_tn)) == TOP_convbi_b_r)
+      test_tn = OP_opnd(TN_ssa_def (test_tn), 0);
+#else
+    FmtAssert(Is_Predicate_REGISTER_CLASS( TN_register_class(test_tn)),
+	      ("cond_tn1 is not a predicate"));
+#endif
+
+  DevAssert(true_tn && false_tn, ("Select: undef TN"));
 
   INT num_results = 1;
   INT num_opnds = 4;
@@ -482,9 +549,12 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
   OP *opt = TN_ssa_def(true_tn);
   OP *opf = TN_ssa_def(false_tn);
 
-  if (!opt || !opf ||
-      (OP_Can_Be_Speculative (opt) || !Need_Predicate_Op (opt)) &&
-      (OP_Can_Be_Speculative (opf) || !Need_Predicate_Op (opf))) {
+  if (PROC_is_select() &&
+      (!opt || !opf ||
+       (GTN_SET_MemberP(BB_live_out(head), true_tn) ||
+        OP_Can_Be_Speculative (opt) || Can_Be_Dismissible (opt)) &&
+       (GTN_SET_MemberP(BB_live_out(head), false_tn) ||
+        OP_Can_Be_Speculative (opf) || Can_Be_Dismissible (opf)))) {
 #if 1
     /* transform region guarded by p
        (p)  ? tn1 = psi(T:x, p0:b) 
@@ -562,24 +632,116 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
     if (opf) Print_OP (opf);
   }
 
-  if (pred_i.find(opt) != pred_i.end())
-    cond_tn = pred_i[opt];
-  if (pred_i.find(opf) != pred_i.end())
-    fcond_tn = pred_i[opf];
+  TN* cond_tn=(TN*)-1;
+  TN* fcond_tn=(TN*)-1;
+
+  bool invert_cond=false;
+  bool invert_fcond=false;
+
+  if (Need_Predicate_Op (opt)) {
+    cond_tn = PredOp_TN(opt);
+    invert_cond = PredOp_Invert(opt);
+  }
+  if (Need_Predicate_Op (opf)) {
+    fcond_tn = PredOp_TN(opf);
+    invert_fcond = PredOp_Invert(opf);
+  }
 
   result[0] = target_tn;
+  // index for false predicate register
+  int inv = -1;
 
-  if (TN_is_true (fcond_tn) &&
-      (TN_is_true (cond_tn) &&
-       (TN_is_global_reg (false_tn) &&
-        (!TN_ssa_def(true_tn) || GTN_SET_MemberP(BB_live_in(OP_bb(TN_ssa_def(true_tn))), false_tn)))) ||
-      !TN_is_true (cond_tn)) {
+  if (fcond_tn == (TN*)-1) {
+    if (OP_has_predicate (opf)) {
+      int p_i = OP_find_opnd_use(opf, OU_predicate);
+      TN *pred_tn = OP_opnd(opf, p_i);
+
+      if (pred_tn == True_TN) {
+#ifdef EFFECT_PRED_FALSE
+        invert_fcond = true;
+        fcond_tn = test_tn;
+#else
+        fcond_tn = Dup_TN (test_tn);
+        Exp_Pred_Complement(fcond_tn, NULL, test_tn, cmov_ops);
+#endif
+      }
+      else {
+        fcond_tn = Generate_Merged_Predicates (pred_tn, test_tn, 
+                                               V_BR_NONE,
+                                               cmov_ops);
+        OP *mop = OPS_last(cmov_ops);
+        Set_OP_Pred_False(mop, 2);
+
+        if (OP_Pred_False (opf, p_i))
+          Set_OP_Pred_False(mop, 1);          
+
+      }
+    }
+    else if (OP_phi (opf)) {
+      fcond_tn = True_TN;
+    }
+    else {
+#ifdef EFFECT_PRED_FALSE
+      invert_fcond = true;
+      fcond_tn = test_tn;
+#else
+      fcond_tn = Dup_TN (test_tn);
+      Exp_Pred_Complement(fcond_tn, NULL, test_tn, cmov_ops);
+#endif
+    }
+  }
+
+  if (cond_tn == (TN*)-1) {
+    if (OP_has_predicate (opt)) {
+      int p_i = OP_find_opnd_use(opt, OU_predicate);
+      TN *pred_tn = OP_opnd(opt, p_i);
+
+      if (pred_tn == True_TN) {
+        cond_tn = test_tn;
+      }
+      else {
+        cond_tn = Generate_Merged_Predicates (pred_tn, test_tn, 
+                                               V_BR_NONE,
+                                               cmov_ops);
+        OP *mop = OPS_last(cmov_ops);
+
+        if (OP_Pred_False (opt, p_i))
+          Set_OP_Pred_False(mop, 1);
+        }
+    }
+    else if (OP_phi (opt)) {
+      cond_tn = True_TN;
+    }
+    else {
+      cond_tn = test_tn;
+    }
+  }  
+
+  // if each psi operand is true make sure the first one is defined before
+  //  the second one
+  if (TN_is_true (fcond_tn) && !TN_is_true (cond_tn)) {
+#ifdef EFFECT_PRED_FALSE
+    if (invert_fcond) {
+      inv = 0;
+    }
+    else if(invert_cond) {
+      inv = 1;
+    }
+#endif
     opnd[0] = fcond_tn;
     opnd[1] = false_tn;
     opnd[2] = cond_tn;
-    opnd[3] = true_tn;    
+    opnd[3] = true_tn;
   }
   else {
+#ifdef EFFECT_PRED_FALSE
+    if (invert_fcond) {
+      inv = 1;
+    }
+    else if(invert_cond) {
+      inv = 0;
+    }
+#endif
     opnd[0] = cond_tn;
     opnd[1] = true_tn;
     opnd[2] = fcond_tn;
@@ -592,7 +754,10 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, TN* true_tn, TN* false_tn, OPS
 			 result,
 			 opnd);
 
-
+  if (inv >= 0) {
+    Set_PSI_Pred_False(psi_op, inv);
+  }
+    
   if (Trace_Select_Gen) {
     fprintf (Select_TFile, "Create_PSI_or_Select\n");
     Print_OP (psi_op);
@@ -664,8 +829,7 @@ BB_Update_Phis(BB *bb)
 }
 
 static void
-BB_Recomp_Phis (BB *bb, BB *bb1, TN *cond_tn1, BB *bb2, TN *cond_tn2,
-                BOOL true_br)
+BB_Recomp_Phis (BB *bb, BB *bb1, TN *cond_tn1, BB *bb2, TN *cond_tn2, BOOL true_br)
 {
   OP *phi;
   OPS cmov_ops = OPS_EMPTY;
@@ -677,33 +841,10 @@ BB_Recomp_Phis (BB *bb, BB *bb1, TN *cond_tn1, BB *bb2, TN *cond_tn2,
     UINT8 npreds = OP_opnds(phi);
     TN *select_tn = npreds > 2 ? Dup_TN(OP_result(phi, 0)) : OP_result(phi, 0);
 
-    UINT8 tpos;
-    UINT8 fpos;
-
-    // value defined in bb1 was if true.
-    if (true_br) {
-      tpos = Get_TN_Pos_in_PHI (phi, bb1);
-      fpos = Get_TN_Pos_in_PHI (phi, bb2);
-    }
-    else {
-      tpos = Get_TN_Pos_in_PHI (phi, bb2);
-      fpos = Get_TN_Pos_in_PHI (phi, bb1);
-    }
-
-    TN *true_tn = OP_opnd(phi, tpos);
-    TN *false_tn = OP_opnd(phi, fpos);
-
-    // cond_tn1 need to be a pred register
-#ifdef TARG_ST200
-    // must improve interface.
-    if (TN_ssa_def (cond_tn1) && OP_code(TN_ssa_def (cond_tn1)) == TOP_convbi_b_r)
-      cond_tn1 = OP_opnd(TN_ssa_def (cond_tn1), 0);
-#else
-    FmtAssert(Is_Predicate_REGISTER_CLASS( TN_register_class(cond_tn1)),
-	      ("cond_tn1 is not a predicate"));
-#endif
-
-    Create_PSI_or_Select (select_tn, cond_tn1, true_tn, false_tn, &cmov_ops);
+    if (true_br) 
+      Create_PSI_or_Select (select_tn, cond_tn1, bb1, bb1, bb2, phi, &cmov_ops);
+    else
+      Create_PSI_or_Select (select_tn, cond_tn1, bb1, bb2, bb1, phi, &cmov_ops);
 
     if (npreds > 2) {
       BBLIST* edge;
@@ -802,8 +943,10 @@ Can_Speculate_BB(BB *bb)
 
     /* check if we are trying to speculate predicated ops */
     if (OP_has_predicate (op)) {
-      TN *cond_tn = OP_opnd(op, OP_find_opnd_use(op, OU_predicate));
-      pred_i[op] = cond_tn;
+      int p_i = OP_find_opnd_use(op, OU_predicate);
+      DevAssert(p_i >= 0, ("Invalid predicate"));
+      TN *cond_tn = OP_opnd(op, p_i);
+      Set_PredOp (op, cond_tn, OP_Pred_False (op, p_i));
       Set_TN_is_if_conv_cond(cond_tn);
     }
 
@@ -825,15 +968,13 @@ Can_Speculate_BB(BB *bb)
       }
 
       // loads will be optimized only if hardware support
-      if ((Enable_Dismissible_Load && PROC_has_dismissible_load() && 
-	   !OP_volatile(op)) ||
+      if (Can_Be_Dismissible (op) ||
           (Enable_Conditional_Load && PROC_has_predicate_loads())) {
-        if (!OP_has_predicate (op) && !OP_Is_Speculative(op)) {
-          pred_i[op] = 0;
-          pred_av = true;
-        }
+        if (!OP_has_predicate (op) && !OP_Is_Speculative(op)) 
+          Set_PredOp (op, 0, false);
       }
       else if (!OP_Can_Be_Speculative(op)) {
+        pred_av = true;
         return FALSE;
       }
     }
@@ -845,10 +986,8 @@ Can_Speculate_BB(BB *bb)
 	    OP_volatile(op))
 	  return FALSE;	  
 
-        if (!OP_has_predicate (op)) {
-          pred_i[op] = 0;
-          pred_av = true;
-        }
+        if (!OP_has_predicate (op)) 
+          Set_PredOp (op, 0, false);
       }
 
       else if (!OP_Can_Be_Speculative(op))
@@ -862,7 +1001,7 @@ Can_Speculate_BB(BB *bb)
       if (wn && Alias_Manager && Safe_to_speculate (Alias_Manager, wn))
 	continue;
 
-      pred_i[op] = 0;
+      Set_PredOp (op, 0, false);
       pred_av = true;
     }
     
@@ -926,7 +1065,6 @@ Are_Same_Location(OP* op1, OP* op2)
     WN *wn2 = Get_WN_From_Memory_OP(op2);
     if (wn1 != NULL && wn2 != NULL) {
       ALIAS_RESULT alias = Aliased(Alias_Manager, wn1, wn2);
-      // [CG] Check that ops are not black_hole
       if (!OP_black_hole(op1) && !OP_black_hole(op2))
         if (alias == SAME_LOCATION)
           return TRUE;
@@ -1003,11 +1141,18 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
   }
 #endif
 
-  if (!CG_select_cycles) {
+  if (!CG_ifc_cycles) {
     return TRUE;
   }
 
-  if (CG_select_freq) {
+  OP *op;
+  TN *cond_tn;
+  TN *dummy;
+  OP *br_op = BB_branch_op(bb2);
+  (void) CGTARG_Analyze_Branch(br_op, &cond_tn, &dummy);
+  OP *cond_op = TN_ssa_def (cond_tn);
+
+  if (CG_ifc_freq) {
     BBLIST *bblist;
     FOR_ALL_BB_SUCCS(bb1, bblist) {
       BB *succ = BBLIST_item(bblist);
@@ -1045,18 +1190,16 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
     fprintf (Select_TFile, "\n");
   }
 
-  float bp = (bb2 == BB_Fall_Thru_Successor(bb1)) ? 0 : branch_penalty;
-
   // ponderate cost of each region taken separatly.
-  float est_cost_before = cycles1 + ((bp + cycles2) * prob);
+  float est_cost_before = cycles1 + (cycles2 * prob);
 
   CG_SCHED_EST_Append_Scheds(se1, se2);
 
-#ifdef TARG_ST200
-  CG_SCHED_EST_Add_Op_Resources(se1, TOP_and_r_r_r);
-#else
-  CG_SCHED_EST_Add_Op_Resources(se1, TOP_and_r);
-#endif
+  if (BB_Fall_Thru_Successor (bb1) != bb2)
+    CG_SCHED_EST_Subtract_Op_Resources(se1, OP_code(BB_branch_op(bb1)));
+
+  // a new instruction to merge predicate will be added.
+  CG_SCHED_EST_Add_Op_Resources(se1, Get_TOP_Merge_Preds());
 
   cycles1 = CG_SCHED_EST_Cycles(se1);
 
@@ -1067,30 +1210,31 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
     fprintf (Select_TFile, "\n");
   }
 
-  // if the condition depends of a load that is beeing conditionalized 
-  // in the same basic block there is a dependency difficult to estimate
-  // the real job should be to construct the if converted block with output
-  // the predicate, then take the estimated schedule (eembc/bmark_lite).
-  // artificially raise cost of memory loads to account for increased
-  // dependence height.
-  OP *op;
-  FOR_ALL_BB_OPs(bb2, op) {
-    for (INT i = 0; i < OP_opnds(op); i++) {
-      if (TN_is_register(OP_opnd(op, i))) {
-        OP *opb = TN_ssa_def (OP_opnd(op, i));
-        if (opb && OP_bb(opb) == bb2 && !OP_Can_Be_Speculative(opb)) {
-            cycles1 += 4;
-        }
+  // if the output of the logical condition depends on the current basic block
+  // we will increase the dependence height.
+  if (cond_op && OP_bb (cond_op) == bb2) {
+      for (INT opndnum = 0; opndnum < OP_opnds(cond_op); opndnum++) {
+        TN *cond = OP_opnd(cond_op, opndnum);
+        if (TN_is_register (cond)) {
+        OP *resop = TN_ssa_def (OP_opnd(cond_op, opndnum));
+        if (resop && OP_bb (resop) == bb2
+#ifdef TARG_STxP70
+	    // we don't really speculate on the stxp70
+	    )
+#else
+	    && !OP_Can_Be_Speculative(resop))
+#endif
+          cycles1 += 4;
       }
     }
   }
 
-  float est_cost_after = cycles1 / select_factor;
-
   CG_SCHED_EST_Delete(se1);
   CG_SCHED_EST_Delete(se2);
 
-  return est_cost_after <= est_cost_before;
+  float est_cost_after = cycles1 / select_factor;
+
+  return KnuthCompareLE(est_cost_after, est_cost_before);
 }
 
 static BOOL
@@ -1099,6 +1243,8 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
 {
   BBLIST *bb1, *bb2;
   BB *bb;
+  bool will_need_predicate_merge = false;
+
   // Find block probs
   bb2 = BBlist_Fall_Thru_Succ(head);
   FOR_ALL_BB_SUCCS(head, bb1) {
@@ -1107,7 +1253,7 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   }
 
   float taken_prob, fallthr_prob;
-  if (CG_select_freq) {
+  if (CG_ifc_freq) {
     taken_prob = BBLIST_prob(bb1);
     fallthr_prob = BBLIST_prob(bb2);
   }
@@ -1144,6 +1290,14 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
                                                 SCHED_EST_FOR_IF_CONV);
       CG_SCHED_EST_Append_Scheds(se1, tmp_est);
       CG_SCHED_EST_Delete(tmp_est);
+
+      OP *op;
+      FOR_ALL_BB_OPs(bb, op) {
+        if (OP_has_predicate (op) && OP_opnd(op, OP_find_opnd_use(op,OU_predicate)) != True_TN) {
+          will_need_predicate_merge = true;
+          break;
+        }
+      }
     }
 
     cycles1 = CG_SCHED_EST_Cycles(se1);
@@ -1160,6 +1314,14 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
                                                   SCHED_EST_FOR_IF_CONV);
       CG_SCHED_EST_Append_Scheds(se2, tmp_est);
       CG_SCHED_EST_Delete(tmp_est);
+
+      OP *op;
+      FOR_ALL_BB_OPs(bb, op) {
+        if (OP_has_predicate (op) && OP_opnd(op, OP_find_opnd_use(op,OU_predicate)) != True_TN) {
+          will_need_predicate_merge = true;
+          break;
+        }
+      }
     }
 
     cycles2 = CG_SCHED_EST_Cycles(se2);
@@ -1187,26 +1349,29 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   }
 #endif
 
-  if (!CG_select_cycles)
-    return TRUE;
-
-  float bp = (BBLIST_item(bb1) == tail) ? 0 : branch_penalty;
+  if (!CG_ifc_cycles)
+    return !will_need_predicate_merge;
 
   // ponderate cost of each region taken separatly.
-  float est_cost_before = ((cycles1 + branch_penalty) * taken_prob) + (cycles2 * fallthr_prob) + cyclesh + bp;
+  float est_cost_before = ((cycles1 + branch_penalty) * taken_prob) + (cycles2 * fallthr_prob) + cyclesh;
 
   if (Trace_Select_Candidates) {
     fprintf (Select_TFile, "noifc region: head %f, bb1 %f, bb2 %f\n",
              cyclesh, cycles1, cycles2);
   }
 
-  if (se1)
+  if (se1) {
     CG_SCHED_EST_Append_Scheds(sehead, se1);
+    CG_SCHED_EST_Subtract_Op_Resources(sehead, OP_code(BB_branch_op(head)));
+  }
 
   if (se2) 
     CG_SCHED_EST_Append_Scheds(sehead, se2);
 
-  CG_SCHED_EST_Subtract_Op_Resources(sehead, OP_code(BB_branch_op(head)));
+  // a new instruction to merge predicate will be added.
+if (will_need_predicate_merge)
+  CG_SCHED_EST_Add_Op_Resources(sehead, Get_TOP_Merge_Preds());
+
   cyclesh = CG_SCHED_EST_Cycles(sehead);
 
   if (Trace_Select_Candidates) {
@@ -1232,29 +1397,17 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   }
 
   // If estimated cost of if convertion is a win, do it.
-  return est_cost_after <= est_cost_before;
+  return KnuthCompareLE(est_cost_after, est_cost_before);
 }
 
 static BOOL
-Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
-                        BB_SET* t_path, BB_SET* ft_path, bool allow_dup)
+Check_Suitable_Chain (BB* ipdom, BB* bb, BB_SET* path, bool allow_dup)
 {
-  if (Trace_Select_Candidates) {
-    fprintf(Select_TFile, "<select> Found Hammock : ");
-    fprintf(Select_TFile, " target BB%d, fall_thru BB%d, tail BB%d\n",
-            BB_id(target), BB_id(fall_thru), BB_id(ipdom));
-  }
-    
-  BB *bb = target;
-
   while (bb != ipdom) {
     DevAssert(bb, ("Invalid BB chain in hammock"));
 
     // allow removing of side entries only on one of targets.
-    if (BB_preds_len (bb) > 1 &&
-        (!allow_dup || BB_loophead(bb) || (CG_select_space && BB_length(bb) > 1))) {
-      if (Trace_Select_Candidates) 
-        fprintf(Select_TFile, "<select> Would duplicate more than 1 side block. reject.\n");
+    if (BB_preds_len (bb) > 1 && (!allow_dup || BB_loophead(bb))) {
       return FALSE; 
     }
 
@@ -1264,29 +1417,7 @@ Check_Suitable_Hammock (BB* ipdom, BB* target, BB* fall_thru,
       return FALSE;
     }
 
-    t_path  = BB_SET_Union1D(t_path, bb, &MEM_Select_pool);
-    bb = BB_Unique_Successor (bb);
-  }
-  
-  bb = fall_thru;
-
-  while (bb != ipdom) {
-    DevAssert(bb, ("Invalid BB chain in hammock"));
-
-    if (BB_preds_len (bb) > 1 &&
-        (!allow_dup || BB_loophead(bb) || (CG_select_space && BB_length(bb) > 1))) {
-      if (Trace_Select_Candidates) 
-        fprintf(Select_TFile, "<select> Would duplicate more than 1 side block. reject.\n");
-      return FALSE; 
-    }
-
-    if (! Can_Speculate_BB(bb)) {
-      if (Trace_Select_Candidates) 
-        fprintf(Select_TFile, "<select> Can't speculate BB%d\n", BB_id(bb));
-      return FALSE;
-    }
-
-    ft_path  = BB_SET_Union1D(ft_path, bb, &MEM_Select_pool);
+    path  = BB_SET_Union1D(path, bb, &MEM_Select_pool);
     bb = BB_Unique_Successor (bb);
   }
 
@@ -1324,12 +1455,9 @@ Is_Hammock (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail, bool allow_dup)
     return FALSE;
   }
 
-  if (Check_Suitable_Hammock (*tail, target, fall_thru, t_set, ft_set, allow_dup)) {
-    if (Trace_Select_Candidates) {
-      fprintf (Select_TFile, "<select> hammock BB%d is suitable \n",  BB_id(head));
-    }
+  if ((target == *tail || Check_Suitable_Chain (*tail, target, t_set, allow_dup)) &&
+      (fall_thru == *tail || Check_Suitable_Chain (*tail, fall_thru, ft_set, allow_dup)))
     return Check_Profitable_Select(head, t_set, ft_set, *tail);
-  }
   else
     return FALSE;
 }
@@ -1400,11 +1528,10 @@ Rename_TNs(BB* bp, hTN_MAP dup_tn_map)
       }
 
       if (OP_has_predicate (op) || TOP_is_select (OP_code (op))) {
-        if (pred_i.find(op) != pred_i.end()) {
-          new_tn = (TN*) hTN_MAP_Get(dup_tn_map, pred_i[op]);
-	  // [SC] Care: the TN may not be mapped.
+        if (Need_Predicate_Op(op)) {
+          new_tn = (TN*) hTN_MAP_Get(dup_tn_map, pred_i[op].tn);
 	  if (new_tn != NULL) {
-	    pred_i[op] = new_tn;
+	    pred_i[op].tn = new_tn;
 	    Set_TN_is_if_conv_cond(new_tn);
 	  }
         }
@@ -1416,7 +1543,7 @@ Rename_TNs(BB* bp, hTN_MAP dup_tn_map)
 static void 
 Update_Predicates (OP *op, OP *new_op)
 {
-  if (pred_i.find(op) != pred_i.end()) {
+  if (Need_Predicate_Op(op)) {
     pred_i[new_op] = pred_i[op];
     pred_i.erase(op);
   }
@@ -1576,6 +1703,11 @@ static bool Interferes_Ops(OP *op1, OP *op2)
     OP *op = OP_next(op1);
 
     while (op && op != op2) {
+      if (OP_store (op) && Are_Same_Location(op1, op2))
+        return false;
+      if (OP_volatile (op))
+        return false;
+
       for (int i = 0; i < OP_opnds(op); i++) {
         if (OP_opnd(op, i) == result_tn)
           return true;
@@ -1602,8 +1734,38 @@ BB_Replace_Op (OP *op, OPS *ops)
 
 static void BB_Sort_Psi_Ops(BB *head)
 {
-  OP *psi;
+  OP *psi = BB_first_op(head);
   
+#if 0
+  std::list<OP*> old_psis;
+
+  while (psi != NULL) {
+    OP *next = OP_next(psi);
+
+    if (OP_psi (psi)) {
+      OP *npsi = PSI_inline(psi, &old_psis);
+      npsi = PSI_reduce(npsi);
+      if (npsi != psi) {
+        OPS mops = OPS_EMPTY;  
+        OPS_Append_Op (&mops, npsi);
+        BB_Replace_Op (psi, &mops);
+      }
+    }
+    psi = next;
+  }
+
+  op_list::iterator op_iter = old_psis.begin();
+  op_list::iterator op_end  = old_psis.end();
+  for (; op_iter != op_end; ++op_iter) {
+    if (!TN_is_global_reg (OP_result (*op_iter, 0))) {
+      DevAssert(head == OP_bb(*op_iter), ("psi_inline"));
+      BB_Remove_Op(head, *op_iter);
+    }
+  }
+  old_psis.clear();
+  
+#endif
+
   BB_Update_OP_Order(head);
 
   FOR_ALL_BB_OPs_FWD(head, psi) {
@@ -1672,11 +1834,20 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
           if (ppred == pred) {
             OPS new_ops = OPS_EMPTY;  
             TN *res = OP_result (op, 0);
+            DevAssert((OP_results(op) == 1), ("wrong res count in dup bb"));
             TN *new_tn = Dup_TN(res);
             if (TN_is_global_reg(res)) Set_TN_is_global_reg (new_tn);
             hTN_MAP_Set(dup_tn_map, res, new_tn);
 
             Exp_COPY (new_tn, OP_opnd (op, i), &new_ops);
+
+            OP *op_def = TN_ssa_def(OP_opnd (op, i));
+            if (op_def && Need_Predicate_Op(op_def)) {
+              TN *cond_tn = PredOp_TN(op_def);
+              bool on_false = PredOp_Invert(op_def);
+              Set_PredOp (OPS_last(&new_ops), cond_tn, on_false);
+            }
+
             BB_Append_Ops (to_bb, &new_ops);
           }
           else {
@@ -1703,17 +1874,12 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
       else if (!OP_br (op)) {
         OP* new_op = Dup_OP (op);
 
-        if (OP_memory(op)) {
-          if (Trace_Select_Dup) {
-            fprintf (Select_TFile, "Duplicating Memory OP \n");
-            Print_OP (op);
-            fprintf (Select_TFile, "\n");
-          }
-          Copy_WN_For_Memory_OP(new_op, op);
+        if (TOP_is_select (OP_code (op)) || OP_has_predicate(op)) {
           Update_Predicates (op, new_op);
         }
-        else if (TOP_is_select (OP_code (op))) {
+        else if (OP_memory(op)) {
           Update_Predicates (op, new_op);
+          Copy_WN_For_Memory_OP(new_op, op);
         }
 
         // Must rename new results before BB_Append_Op because
@@ -1799,6 +1965,21 @@ Promote_BB(BB *bp, BB *to_bb)
     BBlist_Delete_BB(&BB_succs(pred), bp);
   }
   BBlist_Free(&BB_preds(bp));
+
+  if (BB_call(bp)) {
+    BB_Copy_Annotations(to_bb, bp, ANNOT_CALLINFO);
+  }
+
+  if (BB_has_note(bp)) {
+    BB_Copy_Annotations(to_bb, bp, ANNOT_NOTE);
+  }
+
+  if (BB_asm(bp)) {
+    BB_Copy_Annotations(to_bb, bp, ANNOT_ASMINFO);
+  }
+
+  BB_Copy_Annotations(to_bb, bp, ANNOT_LOOPINFO);
+
 }
 
 static void
@@ -1832,67 +2013,42 @@ Check_Psi_Uses (OP *op, BB *bb, TN *new_tn)
   }
 }
 
+// update predicates with merged predicate in psis. 
 static void
-Rename_Cond_Tns (TN *tn, TN *new_tn, OP*op)
+Rename_Cond_Tns (TN *tn, TN *new_tn, OP *op, bool on_false)
 {
-  while (op = OP_next(op)) {
+  BB *bb = OP_bb(op);
+
+  FOR_ALL_BB_OPs_FWD(bb, op) {
     if (OP_psi (op))
-      for (int i = 0; i < OP_opnds(op); i++) {
-        if (OP_opnd(op, i) == tn) {
-          Set_OP_opnd (op, i, new_tn);
+      {
+        int n = PSI_opnds(op)-1;
+
+        for (int i = 0; i < PSI_opnds(op); i++) {
+          if (PSI_guard(op, i) == tn && PSI_Pred_False(op, i) == on_false)
+            if (i != n) {
+              TN *tmp_guard = PSI_guard(op, n);
+              TN *tmp_op = PSI_opnd(op, n);
+              bool tmp_false = PSI_Pred_False(op, n);
+              
+              Set_PSI_guard (op, n, new_tn);
+              Set_PSI_opnd (op, n, PSI_opnd(op, i));
+              Set_PSI_Pred_True(op, n);
+              
+              Set_PSI_guard (op, i, tmp_guard);
+              Set_PSI_opnd (op, i, tmp_op);
+              if (tmp_false)
+                Set_PSI_Pred_False(op, i);
+              else
+                Set_PSI_Pred_True(op, i);
+            }
+            else {
+              Set_PSI_guard (op, i, new_tn);
+              Set_PSI_Pred_True(op, i);
+            }
         }
       }
-    else if (OP_has_predicate(op)) {
-      int i = OP_find_opnd_use(op, OU_predicate);
-      if (OP_opnd(op, i) == tn)
-        Set_OP_opnd (op, i, new_tn);
-    }
-  } 
-}
-
-static TN*
-Generate_Merged_Predicates(TN *pred_tn, TN *tn, VARIANT variant, OPS *ops)
-{
-  TN *new_tn = Dup_TN(pred_tn);
-          
-#ifdef TARG_ST200
-  // must improve interface
-  OP *opb = TN_ssa_def (tn);
-  if (opb && OP_code(opb) == TOP_convib_r_b) {
-    tn = OP_opnd(opb, 0);
   }
-  else
-#endif
-    {
-      TN *tn2 = tn;
-      if (!(tn = (TN *)TN_MAP_Get(btn_map, tn2))) {
-        tn = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-        Expand_Bool_To_Int (tn, tn2, MTYPE_I4, ops);
-        TN_MAP_Set(btn_map, tn, tn2);
-      }
-    }
-
-#ifdef TARG_ST200
-  // must improve interface
-  opb = TN_ssa_def (pred_tn);
-  if (opb && OP_code(opb) == TOP_convib_r_b) {
-    pred_tn = OP_opnd(opb, 0);
-  }
-  else
-#endif
-    {
-      TN *tn2 = pred_tn;
-      if (!(pred_tn = (TN *)TN_MAP_Get(btn_map, tn2))) {
-        pred_tn = Build_RCLASS_TN(ISA_REGISTER_CLASS_integer);
-        Expand_Bool_To_Int (pred_tn, tn2, MTYPE_I4, ops);
-        TN_MAP_Set(btn_map, pred_tn, tn2);
-      }
-    }
-
-  Expand_Logical_And (new_tn, pred_tn, tn, variant, ops);
-
-  //  Print_OPS (ops);
-  return new_tn;
 }
 
 static void 
@@ -1903,9 +2059,13 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
     return;
 
   TN *tn2=Dup_TN(cond_tn);
-  Exp_Pred_Complement(tn2, NULL, cond_tn, ops);
+  bool comp_needed = false;
 
-  hTN_MAP dup_tn_map = hTN_MAP_Create(&MEM_local_pool);
+  // we need to maintain a second map for inverted pred'tns.
+  hTN_MAP and_tn_ft_map = hTN_MAP_Create(&MEM_local_pool);
+  hTN_MAP and_tn_ff_map = hTN_MAP_Create(&MEM_local_pool);
+  hTN_MAP and_tn_tt_map = hTN_MAP_Create(&MEM_local_pool);
+  hTN_MAP and_tn_tf_map = hTN_MAP_Create(&MEM_local_pool);
 
   PredOp_Map_Iter i_iter;
   PredOp_Map_Iter i_end;
@@ -1915,19 +2075,54 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
 
   while(i_iter != i_end) {
 
-    OP* op = (*i_iter).first;
+    OP* op = PredOp_Map_Op(i_iter);
 
     if (BB_SET_MemberP(t_set, OP_bb (op))) {
-      TN *pred_tn = (*i_iter).second;
 
-      if (!pred_tn) {
-        (*i_iter).second = false_br ? tn2 : cond_tn;
+      TN *pred_tn = PredOp_Map_Pred(i_iter).tn;
+
+      if (!pred_tn || TN_is_true(pred_tn)) {
+        if (false_br) {
+#ifndef EFFECT_PRED_FALSE
+          TOP ftop = CGTARG_Invert(OP_code(op));
+          if (ftop == TOP_UNDEFINED) {
+            PredOp_Map_Pred(i_iter).tn = tn2;
+            comp_needed |= true;
+          }
+          else {
+            OP_Change_Opcode(op, ftop);
+            PredOp_Map_Pred(i_iter).tn = cond_tn;
+          }
+#else
+          PredOp_Map_Pred(i_iter).tn = cond_tn;
+          PredOp_Map_Pred(i_iter).on_false = true;
+#endif
+
+        }
+        else {
+          PredOp_Map_Pred(i_iter).tn = cond_tn;
+        }
       }
       else {
+#ifdef EFFECT_PRED_FALSE
+        TN *tn = cond_tn;
+#else
         TN *tn = false_br ? tn2 : cond_tn;
-          
+        comp_needed |= false_br;
+#endif
+
         if (pred_tn != tn) {
-          TN *new_tn = (TN*) hTN_MAP_Get(dup_tn_map, pred_tn);
+          int pred_i = OP_find_opnd_use(op,OU_predicate);
+          int on_false = OP_Pred_False(op, pred_i);
+
+          hTN_MAP *map;
+          // t_set
+          if (false_br)
+            map = on_false ? &and_tn_ff_map : &and_tn_ft_map;
+          else
+            map = on_false ? &and_tn_tf_map : &and_tn_tt_map;
+            
+          TN *new_tn = (TN*) hTN_MAP_Get(*map, pred_tn);
 
           if (!new_tn) {
             OPS mops = OPS_EMPTY;  
@@ -1936,28 +2131,81 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
                                                  false_br ? V_BR_FALSE : V_BR_NONE,
                                                  &mops);
 
-            hTN_MAP_Set(dup_tn_map, pred_tn, new_tn);
+            hTN_MAP_Set(*map, pred_tn, new_tn);
               
+            OP *mop = OPS_last(&mops);
+            if (OP_Pred_False(op, pred_i)) { 
+              if (OP_Pred_False(mop, 1))
+                abort();
+              Set_OP_Pred_False(mop, 1);
+            }
+            // we are in t_set
+            if (false_br) {
+              if (OP_Pred_False(mop, 2))
+                abort();
+              Set_OP_Pred_False(mop, 2);
+            }
+
+            // find first use of cond_tn or pred_tn
             OP* opb = TN_ssa_def (pred_tn);
-            BB_Insert_Ops_After(OP_bb(opb), opb, &mops);
-            Rename_Cond_Tns((*i_iter).second, new_tn, OPS_last(&mops));
+            BB *bb = OP_bb (opb);
+            OP *last_seen_op=NULL;
+            FOR_ALL_BB_OPs_FWD(bb,opb) {
+              for (int i = 0; i < OP_results(opb); i++) {
+                if (TNs_Are_Equivalent (OP_result(opb, i), cond_tn))
+                  last_seen_op = opb;
+                else if (TNs_Are_Equivalent (OP_result(opb, i), pred_tn))
+                  last_seen_op = opb;
+              }
+            }
+            BB_Insert_Ops_After(bb, last_seen_op, &mops);
           }
-            
-          (*i_iter).second = new_tn;
         }
       }
     }
     else if (BB_SET_MemberP(ft_set, OP_bb (op))) {
-      TN *pred_tn = (*i_iter).second;
+      TN *pred_tn = PredOp_Map_Pred(i_iter).tn;
 
-      if (!pred_tn) {
-        (*i_iter).second = false_br ? cond_tn : tn2;
+      if (!pred_tn || TN_is_true(pred_tn)) {
+        if (false_br) {
+          PredOp_Map_Pred(i_iter).tn = cond_tn;
+        }
+        else {
+#ifndef EFFECT_PRED_FALSE
+          TOP ftop = CGTARG_Invert(OP_code(op));
+          if (ftop == TOP_UNDEFINED) {
+            Set_PredOp(PredOp_Map_Op(i_iter), tn2, false);
+            comp_needed |= true;
+          }
+          else {
+            OP_Change_Opcode(op, ftop);      
+            Set_PredOp(PredOp_Map_Op(i_iter), cond_tn, false);
+          }
+#else
+          Set_PredOp(PredOp_Map_Op(i_iter), cond_tn, true);
+#endif
+        }
       }
       else  {
+#ifdef EFFECT_PRED_FALSE
+        TN *tn = cond_tn;
+#else
         TN *tn = false_br ? cond_tn : tn2;
+        comp_needed |= !false_br;
+#endif
 
         if (pred_tn != tn) {
-          TN *new_tn = (TN*) hTN_MAP_Get(dup_tn_map, pred_tn);
+          int pred_i = OP_find_opnd_use(op,OU_predicate);
+          int on_false = OP_Pred_False(op, pred_i);
+
+          hTN_MAP *map;
+          // ft_set
+          if (false_br)
+            map = on_false ? &and_tn_tf_map : &and_tn_tt_map;
+          else
+            map = on_false ? &and_tn_ff_map : &and_tn_ft_map;
+
+          TN *new_tn = (TN*) hTN_MAP_Get(*map, pred_tn);
 
           if (!new_tn) {
             OPS mops = OPS_EMPTY;  
@@ -1966,14 +2214,35 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
                                                  false_br ? V_BR_FALSE : V_BR_NONE,
                                                  &mops);
 
-            hTN_MAP_Set(dup_tn_map, pred_tn, new_tn);
-              
+            hTN_MAP_Set(*map, pred_tn, new_tn);
+
+            OP *mop = OPS_last(&mops);
+            if (OP_Pred_False(op, pred_i)) { 
+              if (OP_Pred_False(mop, 1))
+                abort();
+              Set_OP_Pred_False(mop, 1);
+            }
+            // we are in ft_set
+            if (!false_br) {
+              if (OP_Pred_False(mop, 2))
+                abort();
+              Set_OP_Pred_False(mop, 2);
+            }
+
+            // find first use of cond_tn or pred_tn
             OP* opb = TN_ssa_def (pred_tn);
-            BB_Insert_Ops_After(OP_bb(opb), opb, &mops);
-            Rename_Cond_Tns((*i_iter).second, new_tn, OPS_last(&mops));
+            BB *bb = OP_bb (opb);
+            OP *last_seen_op=NULL;
+            FOR_ALL_BB_OPs_FWD(bb,opb) {
+              for (int i = 0; i < OP_results(opb); i++) {
+                if (TNs_Are_Equivalent (OP_result(opb, i), cond_tn))
+                  last_seen_op = opb;
+                else if (TNs_Are_Equivalent (OP_result(opb, i), pred_tn))
+                  last_seen_op = opb;
+              }
+            }
+            BB_Insert_Ops_After(bb, last_seen_op, &mops);
           }
-            
-          (*i_iter).second = new_tn;
         }
       }
     }
@@ -1981,6 +2250,64 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
       DevAssert(FALSE, ("couldnt map memory op to bb"));
     
     i_iter++;
+  }
+
+  // need to reiterate thru psis to update predicates with merged ones
+  i_iter = pred_i.begin();
+  i_end = pred_i.end();
+
+  while(i_iter != i_end) {
+    OP *op = PredOp_Map_Op(i_iter);
+    int pred_i = OP_find_opnd_use(op,OU_predicate);
+    int on_false = OP_Pred_False(op, pred_i);
+
+    hTN_MAP *map;
+    if (PredOp_Map_Pred(i_iter).tn) {
+      if (BB_SET_MemberP(t_set, OP_bb (op))) {
+        if (false_br)
+          map = on_false ? &and_tn_ff_map : &and_tn_ft_map;
+        else
+          map = on_false ? &and_tn_tf_map : &and_tn_tt_map;
+      }
+      else if (BB_SET_MemberP(ft_set, OP_bb (op))) {
+        if (false_br)
+          map = on_false ? &and_tn_tf_map : &and_tn_tt_map;
+        else
+          map = on_false ? &and_tn_ff_map : &and_tn_ft_map;
+      }
+
+      TN *new_tn = (TN*) hTN_MAP_Get(*map, PredOp_Map_Pred(i_iter).tn);
+
+      // instruction will be updated in BB_Fix_Spec_Loads 
+      if (new_tn) {
+        Rename_Cond_Tns(PredOp_Map_Pred(i_iter).tn, new_tn, op, on_false);
+        PredOp_Map_Pred(i_iter).tn = new_tn;
+#ifdef EFFECT_PRED_FALSE
+        PredOp_Map_Pred(i_iter).on_false = false;
+#endif
+        Set_OP_Pred_True(op, OP_find_opnd_use(op, OU_predicate));
+      }
+    }
+
+    i_iter++;
+  }
+
+  if (comp_needed) {
+#ifdef TARG_STxP70
+    /* if cannot invert into one op, build a new cmp.
+       move into Exp_Pred_Complement */
+    OP* cond_op = TN_ssa_def (cond_tn);
+    TOP new_cmp = TOP_UNDEFINED;
+
+    if (cond_op && (new_cmp = CGTARG_Invert(OP_code(cond_op))) != TOP_UNDEFINED) {
+      OP* new_op = Dup_OP (cond_op);
+      OP_Change_Opcode(new_op, new_cmp);
+      Set_OP_result(new_op, 0, tn2);
+      OPS_Append_Op(ops, new_op);
+    }
+    else
+#endif
+      Exp_Pred_Complement(tn2, NULL, cond_tn, ops);
   }
 }
 
@@ -2022,8 +2349,7 @@ Promote_Mem_Based_On (int index, OP *psi_op)
   if (TN_is_register(cond_TN0))
     sel_tn = Dup_TN (cond_TN0);
   else
-    sel_tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, 
-                              TN_size(cond_TN0) == 8 ? MTYPE_I8: MTYPE_I4); 
+    sel_tn = CGTARG_select_TN (TN_size(cond_TN0));
 
   BB *bb = OP_bb(psi_op);
   OPS ops = OPS_EMPTY;  
@@ -2082,8 +2408,8 @@ Optimize_Spec_Loads(BB *bb)
     PredOp_Map_Iter i_iter2=i_iter;
     i_iter2++;
 
-    OP *op1 = (*i_iter).first;
-    TN *tn1 = (*i_iter).second;
+    OP *op1 = PredOp_Map_Op(i_iter);
+    TN *tn1 = PredOp_Map_Pred(i_iter).tn;
 
     if (OP_store (op1)) {
       i_iter++;
@@ -2091,12 +2417,12 @@ Optimize_Spec_Loads(BB *bb)
     }
 
     while (i_iter2 != i_end) {
-      OP *op2 = (*i_iter2).first;
-      TN *tn2 = (*i_iter2).second;
+      OP *op2 = PredOp_Map_Op(i_iter2);
+      TN *tn2 = PredOp_Map_Pred(i_iter2).tn;
 
       if (OP_load (op2) && 
           Are_Same_Location (op1, op2) && tn1 != tn2 &&
-          !OP_has_predicate(op1) && !OP_has_predicate(op2)) {
+          !Need_Predicate_Op(op1) && !Need_Predicate_Op(op2)) {
 
         // check that we don't cross an aliasing memory operation
         if (Can_Mem_Conflicts(op1, op2)) {
@@ -2124,6 +2450,7 @@ Optimize_Spec_Loads(BB *bb)
           goto next_load;
         }
       }
+
       else if (OP_load (op2) && 
                Have_Same_Offset_Or_Base (op1, op2) && tn1 != tn2 &&
                !OP_has_predicate(op1) && !OP_has_predicate(op2)) {
@@ -2196,7 +2523,8 @@ Optimize_Spec_Loads(BB *bb)
 static void
 BB_Fix_Spec_Loads (BB *bb)
 {
-  Optimize_Spec_Loads (bb);
+  if (CGTARG_Can_Select ())
+    Optimize_Spec_Loads (bb);
 
   PredOp_Map_ConstIter i_iter;
   PredOp_Map_ConstIter i_end;
@@ -2205,15 +2533,13 @@ BB_Fix_Spec_Loads (BB *bb)
   i_end = pred_i.end();
   while(i_iter != i_end) {
 
-    OPS ops = OPS_EMPTY;  
-    OP* op = (*i_iter).first;
+    OP* op = PredOp_Map_Op(i_iter);
 
-    TOP ld_top = TOP_UNDEFINED;
-
+#ifdef TARG_ST200
     if (OP_load (op)) {
 
-      if (PROC_has_dismissible_load()) { 
-        ld_top = CGTARG_Speculative_Load (op);
+      if (Can_Be_Dismissible (op)) { 
+        TOP ld_top = CGTARG_Speculative_Load (op);
         DevAssert(ld_top != TOP_UNDEFINED, ("couldnt find a speculative load"));
         DevAssert(!OP_volatile (op), ("cannot speculate a load"));
 
@@ -2222,44 +2548,71 @@ BB_Fix_Spec_Loads (BB *bb)
       }
 
       else if (PROC_has_predicate_loads()) {
-        TN *btn = (*i_iter).second;
+        TN *btn = PredOp_Map_Pred(i_iter).tn;
 
         if (!TN_is_true(btn)) {
-          ld_top = OP_has_predicate(op) ? OP_code(op) :
-            CGTARG_Predicated_Load (op);
+          if (OP_has_predicate (op))
+            CGTARG_Predicate_OP (NULL, op, btn, false);
+          else {
+            TOP ld_top = CGTARG_Predicated_Load (op);
+            OPS ops = OPS_EMPTY;  
+        
+            Build_OP (ld_top, OP_result(op,0),
+                      btn,
+                      OP_opnd(op, OP_find_opnd_use(op, OU_offset)),
+                      OP_opnd(op, OP_find_opnd_use(op, OU_base)),
+                      &ops);
 
-          Build_OP (ld_top, OP_result(op,0),
-                    btn,
-                    OP_opnd(op, OP_find_opnd_use(op, OU_offset)),
-                    OP_opnd(op, OP_find_opnd_use(op, OU_base)),
-                    &ops);
+            Copy_WN_For_Memory_OP(OPS_last(&ops), op);
 
-          Copy_WN_For_Memory_OP(OPS_last(&ops), op);
+            if (OP_volatile (op))
+              Set_OP_volatile(OPS_last(&ops));
 
-	  if (OP_volatile (op))
-	    Set_OP_volatile(OPS_last(&ops));
+            BB_Replace_Op (op, &ops);
 
-          BB_Replace_Op (op, &ops);
-
-          Check_Psi_Uses(op, bb, btn);
+            Check_Psi_Uses(op, bb, btn);
+          }
         }
       }
-
-      disloads_count++;
     }
     else if (OP_prefetch (op)) {
-      TN *btn = (*i_iter).second;
+      TN *btn = PredOp_Map_Pred(i_iter).tn;
 
-      ld_top = OP_has_predicate(op) ? OP_code(op) : CGTARG_Predicated_Load (op);
+      if (OP_has_predicate (op))
+        CGTARG_Predicate_OP (NULL, op, btn, false);
+      else {
+        OPS ops = OPS_EMPTY;  
+        TOP ld_top = CGTARG_Predicated_Load (op);
 
-      Build_OP (ld_top, btn, 
+        Build_OP (ld_top, btn, 
                   OP_opnd(op, OP_find_opnd_use(op, OU_offset)),
                   OP_opnd(op, OP_find_opnd_use(op, OU_base)),
                   &ops);
 
         Copy_WN_For_Memory_OP(OPS_last(&ops), op);
         BB_Replace_Op (op, &ops);
+      }
     }
+#elif TARG_STxP70
+    {
+      TN *btn = PredOp_Map_Pred(i_iter).tn;
+
+      CGTARG_Predicate_OP(bb, op, btn, PredOp_Map_Pred(i_iter).on_false);
+
+      OP *psi;
+      FOR_ALL_BB_OPs_FWD(bb, psi) {
+        if (OP_psi (psi)) {
+          for (int i = 0; i < OP_opnds(psi); i++) {
+            if (OP_opnd(psi, i) == OP_result(op, 0)) {
+              Set_OP_opnd (psi, i-1, btn);
+              if (PredOp_Map_Pred(i_iter).on_false)
+                Set_OP_Pred_False(psi,i-1);
+            }
+          }
+        }
+      }
+    }
+#endif
 
     i_iter++;
   }
@@ -2286,8 +2639,8 @@ Optimize_Spec_Stores(BB *bb)
     PredOp_Map_Iter i_iter2=i_iter;
     i_iter2++;
 
-    OP *op1 = (*i_iter).first;
-    TN *tn1 = (*i_iter).second;
+    OP *op1 = PredOp_Map_Op(i_iter);
+    TN *tn1 = PredOp_Map_Pred(i_iter).tn;
 
     if (OP_load (op1)) {
       i_iter++;
@@ -2296,13 +2649,13 @@ Optimize_Spec_Stores(BB *bb)
 
     while (i_iter2 != i_end) {
 
-        OP *op2 = (*i_iter2).first;
-        TN *tn2 = (*i_iter2).second;
-
-        if (OP_store (op2) && 
-            Are_Same_Location (op1, op2) && tn1 != tn2 &&
-            !OP_has_predicate(op1) && !OP_has_predicate(op2)) {
-          OPS ops = OPS_EMPTY;  
+      OP *op2 = PredOp_Map_Op(i_iter2);
+      TN *tn2 = PredOp_Map_Pred(i_iter2).tn;
+      
+      if (OP_store (op2) && 
+          Are_Same_Location (op1, op2) && tn1 != tn2 &&
+          !OP_has_predicate(op1) && !OP_has_predicate(op2)) {
+        OPS ops = OPS_EMPTY;  
           
         // check that we don't cross an aliasing memory operation
 	  OP *first;
@@ -2376,7 +2729,6 @@ Optimize_Spec_Stores(BB *bb)
     }
 }
 
-
 static void
 BB_Fix_Spec_Stores (BB *bb)
 {
@@ -2391,42 +2743,43 @@ BB_Fix_Spec_Stores (BB *bb)
 
   while(i_iter != i_end) {
 
-    OPS ops = OPS_EMPTY;  
-    OP* op = (*i_iter).first;
-    TN *btn = (*i_iter).second;
+    OP* op = PredOp_Map_Op(i_iter);
+    TN *btn = PredOp_Map_Pred(i_iter).tn;
 
     if (OP_store (op)) {
       if (PROC_has_predicate_stores() && Enable_Conditional_Store) {
-        TOP st_top = OP_has_predicate(op) ?
-          OP_code(op) : CGTARG_Predicated_Store (op);
+        if (OP_has_predicate (op))
+          CGTARG_Predicate_OP (NULL, op, btn, false);
+        else {
+          OPS ops = OPS_EMPTY;  
+          TOP st_top = CGTARG_Predicated_Store (op);
 
-        Build_OP (st_top,
-                  OP_opnd(op, OP_find_opnd_use(op, OU_offset)),
-                  OP_opnd(op, OP_find_opnd_use(op, OU_base)),
-                  btn,
-                  OP_opnd(op, OP_find_opnd_use(op, OU_storeval)),
-                  &ops);
+          Build_OP (st_top,
+                    OP_opnd(op, OP_find_opnd_use(op, OU_offset)),
+                    OP_opnd(op, OP_find_opnd_use(op, OU_base)),
+                    btn,
+                    OP_opnd(op, OP_find_opnd_use(op, OU_storeval)),
+                    &ops);
+
+          Copy_WN_For_Memory_OP(OPS_last(&ops), op);
+
+          if (OP_volatile (op))
+            Set_OP_volatile(OPS_last(&ops));
+
+          BB_Replace_Op (op, &ops);
+        }
       }
       else {
+        OPS ops = OPS_EMPTY;  
         UINT8 opnd_idx = OP_find_opnd_use(op, OU_base);
         DevAssert(!OP_volatile (op), ("cannot speculate a store"));
         Expand_Cond_Store (btn, op, NULL, opnd_idx, &ops);
+
+        Copy_WN_For_Memory_OP(OPS_last(&ops), op);
+
+        BB_Replace_Op (op, &ops);
       }
 
-      DevAssert(OPS_length(&ops), ("cannot expand a conditional store"));
-
-      Copy_WN_For_Memory_OP(OPS_last(&ops), op);
-
-      if (OP_volatile (op))
-	Set_OP_volatile(OPS_last(&ops));
-
-      BB_Replace_Op (op, &ops);
-
-      if (Trace_Select_Gen) {
-	fprintf(Select_TFile, "<select> Insert conditional store in BB%d", BB_id(bb));
-	Print_OPS (&ops); 
-	fprintf (Select_TFile, "\n");
-      }
     }
     i_iter++;
   }
@@ -2436,33 +2789,26 @@ static BOOL
 Negate_Cmp_BB (OP *br)
 {
   TN *btn = OP_opnd(br, 0);
+  int idx = OP_find_opnd_use(br, OU_condition);
+  OPS new_ops = OPS_EMPTY;
 
   OP *cmp_op = TN_ssa_def(btn);
-  TOP new_cmp;
+  OP *new_op;
 
-  if (TN_is_global_reg(btn) 
-      || (new_cmp = CGTARG_Invert(OP_code(cmp_op))) == TOP_UNDEFINED) {
-    OPS ops = OPS_EMPTY;
-
+  if (cmp_op && (BB_id (OP_bb(br)) == BB_id (OP_bb (cmp_op))) &&
+      (!GTN_SET_MemberP(BB_live_out(OP_bb (br)), btn)) && 
+      (new_op = CGTARG_Invert_OP(cmp_op)) != NULL) {
+    Set_OP_result(new_op, 0, btn);
+    OPS_Prepend_Op(&new_ops, new_op);
+    BB_Replace_Op (cmp_op, &new_ops);
+  }
+  else {
     TN *tn2=Dup_TN(btn);
-    Exp_Pred_Complement(tn2, NULL, btn, &ops);
-    BB_Insert_Ops_Before(OP_bb(br), br, &ops);
+    Exp_Pred_Complement(tn2, NULL, btn, &new_ops);
+    BB_Insert_Ops_Before(OP_bb(br), br, &new_ops);
     Set_OP_opnd(br, 0, tn2);
-    return TRUE;
   }
 
-  OP_Change_Opcode(cmp_op, new_cmp);
-  return TRUE;
-}
-
-static BOOL
-Negate_Branch_BB (OP *br)
-{
-  TOP new_br = CGTARG_Invert(OP_code(br));
-  if (new_br == TOP_UNDEFINED)
-    return FALSE;
-
-  OP_Change_Opcode(br, new_br);
   return TRUE;
 }
 
@@ -2478,7 +2824,11 @@ Prep_And_Normalize_Jumps(BB *bb1, BB *bb2, BB *fall_thru1, BB *target1,
   FmtAssert(br2 && OP_cond(br2),
             ("BB%d doesn't end in a conditional branch.", BB_id(bb2)));
 
-  BOOL needInvert = OP_code (br1) != OP_code (br2);
+  TN *dummy;
+  VARIANT variant1 = CGTARG_Analyze_Branch(br1, &dummy, &dummy);
+  VARIANT variant2 = CGTARG_Analyze_Branch(br2, &dummy, &dummy);
+
+  BOOL needInvert = V_false_br (variant1) != V_false_br (variant2);
 
   BB_Fall_Thru_and_Target_Succs(bb2, fall_thru2, target2);
 
@@ -2533,10 +2883,6 @@ Is_Double_Logif(BB* bb)
 {
   BB *fall_thru, *target, *sec_fall_thru, *sec_target;
   BOOL cmp_invert;
-
-  if (Trace_Select_Gen) {
-    fprintf (Select_TFile, "\nIs_Double_Logif %d \n", BB_id(bb));
-  }
 
   // Find fall_thru and taken BBs.
   BB_Fall_Thru_and_Target_Succs(bb, &fall_thru, &target);
@@ -2596,14 +2942,34 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   BB_Fall_Thru_and_Target_Succs(bb1, &bb1_fall_thru, &bb1_target);
   BB_Fall_Thru_and_Target_Succs(bb2, &bb2_fall_thru, &bb2_target);
 
+  /*  [VCdV]
+     We need to invalidate trip_count_tn info if bb2 is the last BB of
+     a loop. In fact, in this case, the condition for the loop and the
+     condition for an early exit are merged and as a consequence the
+     trip_count_tn is no longer valid. The loop is no longer countable !
+  */
+  BB* loop_head = BB_loop_head_bb(bb2);
+  if (loop_head!=NULL &&
+      ((loop_head==bb2_fall_thru) || (loop_head==bb2_target)))  {
+    ANNOTATION *annot = ANNOT_Get(BB_annotations(loop_head), ANNOT_LOOPINFO);
+    if (annot!=NULL) {
+      LOOPINFO_primary_trip_count_tn(ANNOT_loopinfo(annot)) = NULL;
+    }
+  }
+
   if (Trace_Select_Gen) {
+    fprintf (Select_TFile, "in function %s\n", Cur_PU_Name);
     fprintf (Select_TFile, "\nStart gen logical from BB%d \n", BB_id(bb1));
   }
 
+  // final test variant
+  VARIANT variant = V_BR_P_TRUE;
+
   // Check optimisation type.
   if (bb1_fall_thru == bb2_fall_thru) {
-    // if (a && b)
+    // if (!a || !b)
     AndNeeded = TRUE;
+    Set_V_false_br (variant);
     else_block = bb2_target;
     joint_block = bb2_fall_thru;
   }
@@ -2613,6 +2979,8 @@ Simplify_Logifs(BB *bb1, BB *bb2)
     else_block = bb2_fall_thru;
     joint_block = bb2_target;
   }
+  else
+    DevAssert(FALSE, ("Simplify_Logifs unknown operation"));
 
   // Compute probability for the new bb1->else edge
   // prob(bb1->else) = prob(bb1->bb2) * prob(bb2->else)
@@ -2650,16 +3018,17 @@ Simplify_Logifs(BB *bb1, BB *bb2)
 
   // get compares return values.
   TN *branch_tn1, *branch_tn2;
+  TN *reg_tn1, *reg_tn2;
   TN *dummy;
-  VARIANT variant = CGTARG_Analyze_Branch(br1_op, &branch_tn1, &dummy);
+  VARIANT variant1 = CGTARG_Analyze_Branch(br1_op, &branch_tn1, &dummy);
   CGTARG_Analyze_Branch(br2_op, &branch_tn2, &dummy);
 
   // Find the defining OPs for the tested values.
   OP *cmp_op1 = TN_ssa_def(branch_tn1);
   OP *cmp_op2 = TN_ssa_def(branch_tn2);
 
-  BOOL false_br = V_false_br(variant)?TRUE:FALSE;
-  TN *label_tn = OP_opnd(br1_op, OP_find_opnd_use(br1_op, OU_target));
+  LABEL_IDX targ_label = Gen_Label_For_BB(joint_block);
+  TN *label_tn = Gen_Label_TN(targ_label, 0);
 
   // instructions from bb2 will be promoted. check mem predicates are set.
   BB_SET *t_set = BB_SET_Create_Empty(2, &MEM_Select_pool);
@@ -2667,12 +3036,22 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   t_set = BB_SET_Union1D(t_set, bb2, &MEM_Select_pool);
   ft_set = BB_SET_Union1D(ft_set, else_block, &MEM_Select_pool);
 
+  // !a or !b -> !(a and b)
+  if (V_false_br (variant1)) {
+    if (V_false_br (variant))
+      Set_V_true_br (variant);
+    else
+      Set_V_false_br (variant);
+    AndNeeded = !AndNeeded;
+  }
+
   OPS ops = OPS_EMPTY;
 
   // now associate with each BB the predicate tn
+  // BB2 is dependent from condition computed in BB1 if computing an 'and'
   Associate_Mem_Predicates(branch_tn1,
-                           (!false_br && bb2 == bb1_fall_thru) ||
-                           (false_br && bb2 == bb1_target),
+                           (bb1_target==bb2 && V_false_br (variant1)) ||
+                           (bb1_target!=bb2 && !V_false_br (variant1)),
                            t_set, ft_set, &ops);
 
   // add computation of !test
@@ -2680,81 +3059,65 @@ Simplify_Logifs(BB *bb1, BB *bb2)
 
   OPS_Init(&ops);
 
-  // make joint_block a fall_thru of bb1.
-  BOOL invert_branch = FALSE;
-  if (BB_Fall_Thru_Successor (bb1) == bb2 &&
-      BB_Fall_Thru_Successor (bb2) == joint_block)
-    invert_branch = TRUE;
-
   BB_Remove_Branch(bb1);
   BB_Remove_Branch(bb2);
   Promote_BB(bb2, bb1);
 
-  // Get the result of the comparaison for the logical operation.
-  branch_tn1 = Expand_CMP_Reg (branch_tn1, cmp_op1, &ops);
-  branch_tn2 = Expand_CMP_Reg (branch_tn2, cmp_op2, &ops);
+  reg_tn1 = Expand_CMP_Reg (branch_tn1, &ops);
+  reg_tn2 = Expand_CMP_Reg (branch_tn2, &ops);
 
   // we need a branch_tn that will be the result of the logical op
   TN *new_branch_tn = Build_TN_Like (OP_opnd(br1_op, 0));
 
-  // !a op !a -> !(a !op b)
-  AndNeeded = AndNeeded ^ false_br;
+  // joint_block will be the branch target.
+  BOOL invert_branch = FALSE;
+
+  if (BB_next (bb1) == joint_block) {
+    if (V_false_br (variant))
+      Set_V_true_br (variant);
+    else
+      Set_V_false_br (variant);
+    invert_branch = TRUE;
+  }
+
+  // Update control flow 
+  Unlink_Pred_Succ (bb1, bb2);
+  Unlink_Pred_Succ (bb1, joint_block);
+  Unlink_Pred_Succ (bb2, joint_block);
+  Unlink_Pred_Succ (bb2, else_block);
 
   // insert new logical op.
   if (AndNeeded)
-    Expand_Logical_And (new_branch_tn, branch_tn1, branch_tn2, variant, &ops);
+    Expand_Logical_And (new_branch_tn, reg_tn1, reg_tn2, V_BR_P_TRUE, &ops);
   else
-    Expand_Logical_Or (new_branch_tn, branch_tn1, branch_tn2, variant, &ops);
+    Expand_Logical_Or (new_branch_tn, reg_tn1, reg_tn2, V_BR_P_TRUE, &ops);
 
+  OP *mop = OPS_last(&ops);
+    
   // Stats
   logif_count++;
 
-  // Create the branch.
-  variant = V_BR_P_TRUE;
-  if (false_br) {
-    Set_V_false_br(variant);
-  } else {
-    Set_V_true_br(variant);
-  }
   Expand_Branch (label_tn, new_branch_tn, NULL, variant, &ops);
 
   BB_Append_Ops (bb1, &ops);
 
-  // Commit dismissible loads and stores
-  BB_Fix_Spec_Loads (bb1);
-  BB_Fix_Spec_Stores (bb1);
 
-  // Update control flow 
-  Unlink_Pred_Succ (bb1, joint_block);
-  Unlink_Pred_Succ (bb1, else_block);
-
-  BB *taken_bb;
-  BB *not_taken_bb;
-
-  if (joint_block == bb1_fall_thru) {
-    taken_bb = else_block;
-    not_taken_bb = joint_block;
-  }
-  else {
-    taken_bb = joint_block;
-    not_taken_bb = else_block;
-  }
-
-  if (invert_branch) {
-    br1_op = BB_branch_op(bb1);
-    Negate_Branch_BB (br1_op);
-    Target_Logif_BB(bb1, not_taken_bb, 1.0F - prob, taken_bb);
-  }
+  if (invert_branch)
+    Target_Logif_BB(bb1, else_block, 1.0F - prob, joint_block);
   else
-    Target_Logif_BB(bb1, taken_bb, prob, not_taken_bb);
+    Target_Logif_BB(bb1, joint_block, prob, else_block);
 
   BB_MAP_Set(if_bb_map, bb1, NULL);
   BB_MAP_Set(if_bb_map, bb2, NULL);
     
   // replace phis in joint_block with a new reduced one.
-  BB_Recomp_Phis(joint_block, bb1, branch_tn1, bb2, branch_tn2, 
-                 (!false_br && bb2 == bb1_fall_thru) ||
-                 (false_br && bb2 == bb1_target));
+  BB_Recomp_Phis(joint_block, bb1, branch_tn1, bb2, branch_tn2, !V_false_br(variant1) && !AndNeeded);
+
+  // Commit dismissible loads and stores
+  BB_Fix_Spec_Loads (bb1);
+
+  if (PROC_is_select())
+    BB_Fix_Spec_Stores (bb1);
 
   OP *phi;
   FOR_ALL_BB_PHI_OPs(else_block, phi) {
@@ -2801,6 +3164,7 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
   BB_Fall_Thru_and_Target_Succs(head, &fall_thru_bb, &target_bb);
 
   if (Trace_Select_Gen) {
+    fprintf (TFile, "in function %s\n", Cur_PU_Name);
     fprintf (TFile, "\nStart Select_Fold from BB%d\n", BB_id(head));
 
     fprintf (TFile, "\n fall_thrus are\n");
@@ -2892,9 +3256,26 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
       Force_End_Tns (pred, tail);
 
       if (BB_preds_len (pred) > 1) {
+        BB *succ = BB_Fall_Thru_Successor(head);
         other_pred = Gen_And_Insert_BB_After (phi_pred);
+
         if (!BB_Retarget_Branch(phi_pred, pred, other_pred))
           Change_Succ(phi_pred, pred, other_pred);
+
+        if (phi_pred == head) {
+          // don't change the fallthru
+          BB *new_succ = Gen_And_Insert_BB_After (head); 
+          fall_thru_bb = new_succ;
+          Add_Goto (new_succ, succ);
+          Change_Succ(phi_pred, succ, new_succ);
+          if (succ == tail) {
+            OP *phi;
+            FOR_ALL_BB_PHI_OPs(tail, phi) {
+              Change_PHI_Predecessor (phi, phi_pred, new_succ);
+            }
+          }
+        }
+
         Add_Goto (other_pred, tail);
         if (pred == target_bb) {
           target_bb = other_pred;
@@ -2983,11 +3364,7 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
       old_phis.push_front(phi);
     }
 
-    TN *true_tn   = OP_opnd(phi, Get_TN_Pos_in_PHI (phi, true_bb));
-    TN *false_tn  = OP_opnd(phi, Get_TN_Pos_in_PHI (phi, false_bb));
-    DevAssert(true_tn && false_tn, ("Select: undef TN"));
-
-    Create_PSI_or_Select (select_tn, cond_tn, true_tn, false_tn, &cmov_ops);
+    Create_PSI_or_Select (select_tn, cond_tn, head, true_bb, false_bb, phi, &cmov_ops);
   
     select_count++;
   }
@@ -3012,7 +3389,9 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
 
   // Commit dismissible loads and stores
    BB_Fix_Spec_Loads (head);
-   BB_Fix_Spec_Stores (head);
+
+  if (PROC_is_select())
+    BB_Fix_Spec_Stores (head);
 
    // create or update the new head->tail edge.
    if (edge_needed) {
@@ -3059,14 +3438,14 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 #ifndef TARG_ST
   //TB: no more OPT_SPACE. This is done in a centralized function
   if (OPT_Space) {
-    CG_select_freq = FALSE;
-    CG_select_cycles = FALSE;
+    CG_ifc_freq = FALSE;
+    CG_ifc_cycles = FALSE;
     CG_select_spec_stores = PROC_has_predicate_stores() && Enable_Conditional_Store;
   }
 #endif
 
   // higher select_factor means ifc more aggressive.
-  select_factor = atof(CG_select_factor);
+  select_factor = CGTARG_Ifc_Factor();
   branch_penalty = CGTARG_Branch_Taken_Penalty();
 
   if (select_factor == 0.0) return;
@@ -3117,6 +3496,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
       Simplify_Logifs(bb, bbb);
 
+      GRA_LIVE_Recalc_Liveness(rid);
+
 #ifdef Is_True_On
       //      Sanity_Check();
 #endif
@@ -3151,6 +3532,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
 
       Select_Fold (bb, t_set, ft_set, bbb);
 
+      GRA_LIVE_Recalc_Liveness(rid);
+
 #ifdef Is_True_On
       //      Sanity_Check();
 #endif
@@ -3177,7 +3560,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     goto restart;
   }
   else {
-    if (!allow_dup && CG_select_allow_dup) {
+    if (!allow_dup && CG_ifc_allow_dup) {
       allow_dup = true;
       goto restart;
     }
@@ -3326,6 +3709,8 @@ Node(BB* bb)
     for (i = 0; i < OP_opnds(op); i++) {
      p = sPrint_TN (OP_opnd(op, i), p);
      p += strlen (p);
+     if (OP_Pred_False(op, i))
+       p += sprintf(p, "!");
      p += sprintf(p, " ");
     }
 
@@ -3336,8 +3721,6 @@ Node(BB* bb)
 
   return buffer;
 }
-
-extern char *Cur_PU_Name;
 
 void
 draw_CFG(void)
@@ -3400,8 +3783,8 @@ static void dump_pred_cands()
   i_end = pred_i.end();
 
   while(i_iter != i_end) {
-    OP* op = (*i_iter).first;
-    TN *pred = (*i_iter).second;
+    OP* op = PredOp_Map_Op(i_iter);
+    TN *pred = PredOp_Map_Pred(i_iter).tn;
     Print_OP (op);
     Print_TN (pred, FALSE);    
     fprintf (Select_TFile, "\n");    

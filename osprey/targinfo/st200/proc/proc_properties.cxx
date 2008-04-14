@@ -48,8 +48,12 @@
 //     supports IA64 predication model
 //   is_not_interlocked
 //     Instructions are not fully interlocked
+//   is_predicated
+//     supports full predication model
 //   is_select
-//     supports partial predication model
+//     supports partial predication model based on 'select' instruction and speculation.
+//   has_predicate_false
+//     supports predicated execution on false value of predicate
 //   has_predicate_branches
 //     can predicate branches
 //   has_predicate_calls
@@ -96,6 +100,7 @@ main()
    has_fast_recip,
    has_predicate_branches,
    has_predicate_calls,
+   has_predicate_false,
    has_predicate_loads,
    has_predicate_returns,
    has_predicate_stores,
@@ -105,6 +110,7 @@ main()
    is_ia64_predication,
    is_not_interlocked,
    is_out_of_order,
+   is_predicated,
    is_select,
    is_superscalar;
 
@@ -161,6 +167,10 @@ main()
   Processor_Group (has_predicate_calls,
 			PROCESSOR_UNDEFINED);
 
+  has_predicate_false = PROC_Property_Create ("has_predicate_false");
+  Processor_Group (has_predicate_false,
+			PROCESSOR_UNDEFINED);
+
   has_predicate_loads = PROC_Property_Create ("has_predicate_loads");
   Processor_Group (has_predicate_loads,
 			PROCESSOR_st240,
@@ -201,6 +211,10 @@ main()
 
   is_out_of_order = PROC_Property_Create ("is_out_of_order");
   Processor_Group (is_out_of_order,
+			PROCESSOR_UNDEFINED);
+
+  is_predicated = PROC_Property_Create ("is_predicated");
+  Processor_Group (is_predicated,
 			PROCESSOR_UNDEFINED);
 
   is_select = PROC_Property_Create ("is_select");

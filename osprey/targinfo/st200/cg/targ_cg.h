@@ -139,10 +139,16 @@ extern void CGTARG_Postprocess_Asm_String (char*);
  * ====================================================================
  */
 
+inline TN *CGTARG_select_TN (INT32 size) 
+{ 
+  return Gen_Register_TN (ISA_REGISTER_CLASS_integer, size); 
+}
+
 inline TN *CGTARG_gen_trip_count_TN (INT32 trip_size) 
 { 
   return Gen_Register_TN(ISA_REGISTER_CLASS_integer, trip_size);
 }
+
 
 inline BOOL
 CGTARG_Has_Branch_Predict(void)

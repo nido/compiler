@@ -41,13 +41,19 @@
 #include "whirl2ops.h"
 #include "tn.h"
 #include "targ_cg_private.h"
+#include "cg_ssa.h"
+
+TOP Get_TOP_Merge_Preds()
+{
+  return TOP_and_r_r_r;
+}
 
 /* --------------------------------------------------------------------
  *    Make sure the compare instruction returns in a general register.
  * --------------------------------------------------------------------
  */
 TN *
-Expand_CMP_Reg (TN *btn, OP *cmp, OPS *ops)
+Expand_CMP_Reg (TN *btn, OPS *ops)
 {
   TN *tn = btn;
 
@@ -60,54 +66,13 @@ Expand_CMP_Reg (TN *btn, OP *cmp, OPS *ops)
   }
 #else
   if (TN_register_class(btn) == ISA_REGISTER_CLASS_branch) {
+    OP *cmp = TN_ssa_def(btn);
     // (cbr) if we have the value take it.
-    if (OP_code (cmp) == TOP_convib_r_b) {
+    if (cmp && OP_code (cmp) == TOP_convib_r_b) {
       return OP_opnd(cmp, 0);
     }
     tn = Gen_Register_TN (ISA_REGISTER_CLASS_integer, Pointer_Size);
-    if(TN_is_global_reg(btn) || TN_is_if_conv_cond(btn)) {
-      Build_OP(TOP_convbi_b_r, tn, btn, ops);
-    }
-    else {
-      OP *op = cmp;
-
-      while (op = OP_next (op)) {
-        // if the btn is only used in the conditional branch, can change
-        // cmp return value type without the need of a convbi.
-        if (OP_cond (op))
-          break;
-
-        if (OP_code (op) == TOP_convbi_b_r) {
-          for (INT opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
-            TN *res = OP_opnd(op, opndnum);
-            if (res == btn) {
-              return OP_result(op, 0);
-            }
-          }
-        }
-
-        for (INT opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
-          TN *res = OP_opnd(op, opndnum);
-          if (res == btn) {
-            Build_OP(TOP_convbi_b_r, tn, btn, ops);
-            return tn;
-          }
-        }
-      }
-
-      // the tn is not in use in the block. Can just replace the
-      // compare instruction
-      // This duplicates with some of the EBO work. keep it for now.
-      // could do the "convbi" above everytime and let EBO clean it up.
-      DevAssert(cmp, ("TOP_Branch_To_Reg\n"));
-      TOP cmp_top = TOP_result_register_variant(OP_code(cmp), 0, TN_register_class(tn));
-      if (cmp_top == TOP_UNDEFINED) {
-	Build_OP(TOP_convbi_b_r, tn, btn, ops);
-	return tn;
-      }
-      Build_OP (cmp_top, tn, OP_opnd(cmp, 0), OP_opnd(cmp, 1), ops);
-      BB_Remove_Op(OP_bb(cmp), cmp);
-    }
+    Build_OP(TOP_convbi_b_r, tn, btn, ops);
   }
 #endif
 
