@@ -578,7 +578,10 @@ EBO_combine_adjacent_loads(
     }
   }
 
-  if (OP_cond_def(op) || OP_cond_def(pred_op)) {
+  // FdF 20080327: Some predicated OPs have OP_cond_def
+  // reseted.
+  //  if (OP_cond_def(op) || OP_cond_def(pred_op)) {
+  if (OP_has_predicate(op) || OP_has_predicate(pred_op)) {
     if (EBO_Trace_Data_Flow) {
       fprintf(TFile,"%sCannot packed predicated loads.\n", EBO_trace_pfx);
     }
