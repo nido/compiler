@@ -71,6 +71,7 @@ using std::list;
 #include "dwarf_DST_mem.h"         /* for DST_IDX */
 #include "em_dwarf.h"
 
+#include "cg.h"
 #include "cgtarget.h"
 #include "calls.h"
 #include "cgemit.h"
@@ -289,6 +290,12 @@ TN_Is_Unwind_Reg (TN *tn)
 	   TN_register(tn))) {
     return TRUE;
   }
+  // [SC] In an eh_return PU, we want unwind information for eh_return registers.
+  if (PU_Has_EH_Return
+      && REGISTER_SET_MemberP(REGISTER_CLASS_eh_return(TN_register_class(tn)),
+			      TN_register(tn))) {
+    return TRUE;
+  }      
   else if (CLASS_REG_PAIR_EqualP(TN_class_reg(tn), CLASS_REG_PAIR_ra)) {
     return TRUE;
   }
@@ -744,6 +751,31 @@ Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	      goto case1_OK;
 	    }
 	  }
+	  // [SC] Allow a special case:
+	  // the post-adjustment of SP in an EH_return exit.
+	  // This happens only in an EH_return exit, and it
+	  // happens after the real exit stack adjust.
+	  // Note: there must be a real exit stack adjust, since an
+	  // EH_return requires registers to be saved in the stack frame.
+	  EXITINFO *exit_info;
+	  OP *sp_adj;
+	  OP *p;
+	  if (OP_iadd (op)
+	      && OP_result (op, 0) == SP_TN
+	      && OP_opnd(op, 0) == SP_TN
+	      && (exit_info = ANNOT_exitinfo(ANNOT_Get (BB_annotations(bb),
+							ANNOT_EXITINFO)))
+	      && EXITINFO_is_eh_return (exit_info)
+	      && (sp_adj = EXITINFO_sp_adj (exit_info))) {
+	    for (p = OP_next(sp_adj); p != NULL; p = OP_next (p)) {
+	      if (p == op) {
+		// Satisfied all the conditions for an EH_return
+		// post-adjustment of SP.  We generate no unwind info
+		// for this op.
+		return;
+	      }
+	    }
+	  }	      
 	}
       } else {
 	// FP/SP is defined as a move from another reg
@@ -968,6 +1000,8 @@ typedef enum {
 	PR_R5,
 	PR_R6,
 	PR_R7,
+        PR_R8,
+        PR_R9,
 	PR_R13,
 	PR_R14,
 	PR_RA,
@@ -994,6 +1028,8 @@ CR_To_PR (CLASS_REG_PAIR crp)
     case ISA_REGISTER_CLASS_integer:
 	if (reg == 12) return PR_SP;
 	if (reg >= 1 && reg <= 7) return (PR_TYPE) (PR_R1 + (reg-1));
+	if (reg == 8) return PR_R8;
+	if (reg == 9) return PR_R9;
 	if (reg == 13) return PR_R13;
 	if (reg == 14) return PR_R14;
 	break;
@@ -1017,6 +1053,8 @@ PR_To_CR (PR_TYPE p)
   case PR_R5:
   case PR_R6:
   case PR_R7:
+  case PR_R8:
+  case PR_R9:
 	Set_CLASS_REG_PAIR_rclass(crp, ISA_REGISTER_CLASS_integer);
 	Set_CLASS_REG_PAIR_reg(crp, REGISTER_MIN+1 + p-PR_R1);
 	break;

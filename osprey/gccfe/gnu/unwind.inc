@@ -29,12 +29,6 @@
    the first such frame here.  Cleanup code will call back into
    _Unwind_Resume and we'll continue Phase 2 there.  */
 
-#ifdef TARG_ST200
-/* (cbr) */
-static int dummy0;
-static int dummy1;
-#endif
-
 static _Unwind_Reason_Code
 _Unwind_RaiseException_Phase2(struct _Unwind_Exception *exc,
 			      struct _Unwind_Context *context)
@@ -60,13 +54,6 @@ _Unwind_RaiseException_Phase2(struct _Unwind_Exception *exc,
       /* Unwind successful.  Run the personality routine, if any.  */
       if (fs.personality)
 	{
-#ifdef TARG_ST200
-	  /* (cbr) */
-	  if (! context->reg[__builtin_eh_return_data_regno (0)])
-	    context->reg[__builtin_eh_return_data_regno (0)] = &dummy0;
-	  if (! context->reg[__builtin_eh_return_data_regno (1)])
-	    context->reg[__builtin_eh_return_data_regno (1)] = &dummy1;
-#endif	  
 	  code = (*fs.personality) (1, _UA_CLEANUP_PHASE | match_handler,
 				    exc->exception_class, exc, context);
 	  if (code == _URC_INSTALL_CONTEXT)

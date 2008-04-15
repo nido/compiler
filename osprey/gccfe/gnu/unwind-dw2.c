@@ -61,36 +61,6 @@ struct _Unwind_Context
   _Unwind_Word args_size;
 };
 
-#ifdef TARG_ST200
-/* (cbr) */
-void __int_builtin_eh_return () __attribute__ ((noreturn));
-void __int_builtin_eh_return (void* handler, void* sp, void* r8, void* r9,
-			     void *r1, void *r2, void *r3, void *r4, void *r5, 
-			     void *r6, void *r7, void *r13, void *r14)
-{
-   __asm__("mov $r63 = %0\n\t"
-	   "mov $r1 = %1\n\t"
-	   "mov $r2 = %2\n\t"
-	   "mov $r3 = %3\n\t"
-	   : : "r"(handler), "r"(r1), "r"(r2), "r"(r3));
-
-   __asm__("mov $r4 = %0\n\t"
-	   "mov $r5 = %1\n\t"
-	   "mov $r6 = %2\n\t"
-	   "mov $r7 = %3\n\t"
-	   : : "r"(r4), "r"(r5), "r"(r6), "r"(r7));
-
-   __asm__("mov $r13 = %0\n\t"
-	   "mov $r14 = %1\n\t"
-           : : "r"(r13), "r"(r14));
-
-   __asm__("goto $r63\n\t"
-           "mov $r8 = %0\n\t"
-           "mov $r9 = %1\n\t"
-	   "mov $r12 = %2\n\t": : "r"(r8), "r"(r9), "r"(sp));
-}
-#endif
-
 /* Byte size of every register managed by these routines.  */
 static unsigned char dwarf_reg_size_table[DWARF_FRAME_REGISTERS+1];
 
@@ -1194,16 +1164,6 @@ uw_update_context (struct _Unwind_Context *context, _Unwind_FrameState *fs)
 /* Fill in CONTEXT for top-of-stack.  The only valid registers at this
    level will be the return address and the CFA.  */
 
-#ifdef TARG_ST200
-/* (cbr) */
-#define uw_init_context(CONTEXT)					   \
-  do									   \
-    {									   \
-  register void *sp __asm__("r12"); \
-  uw_init_context_1 (CONTEXT, (void*)sp+16, __builtin_return_address (0)); \
-    }									   \
-  while (0)
-#else
 #define uw_init_context(CONTEXT)					   \
   do									   \
     {									   \
@@ -1214,7 +1174,6 @@ uw_update_context (struct _Unwind_Context *context, _Unwind_FrameState *fs)
 			 __builtin_return_address (0));			   \
     }									   \
   while (0)
-#endif
 
 static void
 uw_init_context_1 (struct _Unwind_Context *context,
@@ -1231,20 +1190,12 @@ uw_init_context_1 (struct _Unwind_Context *context,
     abort ();
 
   /* Force the frame state to use the known cfa value.  */
-#ifdef TARG_ST200
-  /* (cbr) */
-  sp_slot = (_Unwind_Ptr) outer_cfa-STACK_POINTER_OFFSET;
-#else
   sp_slot = (_Unwind_Ptr) outer_cfa;
-#endif
   context->reg[__builtin_dwarf_sp_column ()] = &sp_slot;
 
-#ifndef TARG_ST200
-  /* (cbr) */
   fs.cfa_how = CFA_REG_OFFSET;
   fs.cfa_reg = __builtin_dwarf_sp_column ();
   fs.cfa_offset = 0;
-#endif
 
   uw_update_context_1 (context, &fs);
 
@@ -1268,28 +1219,6 @@ void dump_context(struct _Unwind_Context *pt)
 }
 #endif
 
-#ifdef TARG_ST200
-/* (cbr) */
-#define uw_install_context(CURRENT, TARGET)				 \
-  do									 \
-    {									 \
-      void *handler = (TARGET)->ra;                                      \
-      __int_builtin_eh_return (handler,                                   \
-                 (TARGET)->cfa-16,                                       \
-                 _Unwind_GetGR((TARGET), __builtin_eh_return_data_regno (0)),  \
-                 _Unwind_GetGR((TARGET), __builtin_eh_return_data_regno (1)),  \
-                 (TARGET)->reg[1] ? _Unwind_GetGR((TARGET), 1) : 0xdead,     \
-                 (TARGET)->reg[2] ? _Unwind_GetGR((TARGET), 2) : 0xdead,     \
-                 (TARGET)->reg[3] ? _Unwind_GetGR((TARGET), 3) : 0xdead,     \
-                 (TARGET)->reg[4] ? _Unwind_GetGR((TARGET), 4) : 0xdead,     \
-                 (TARGET)->reg[5] ? _Unwind_GetGR((TARGET), 5) : 0xdead,     \
-                 (TARGET)->reg[6] ? _Unwind_GetGR((TARGET), 6) : 0xdead,     \
-                 (TARGET)->reg[7] ? _Unwind_GetGR((TARGET), 7) : 0xdead,     \
-                 (TARGET)->reg[13] ? _Unwind_GetGR((TARGET), 13) : 0xdead,   \
-                 (TARGET)->reg[14] ? _Unwind_GetGR((TARGET), 14) : 0xdead);  \
-    } \
-  while (0)
-#else
 #define uw_install_context(CURRENT, TARGET)				 \
   do									 \
     {									 \
@@ -1298,19 +1227,11 @@ void dump_context(struct _Unwind_Context *pt)
       __builtin_eh_return (offset, handler);				 \
     }									 \
   while (0)
-#endif
 
 static inline void
 init_dwarf_reg_size_table (void)
 {
-#ifdef TARG_ST
-  /* (cbr) */
-  int i;
-  for (i = 0; i < DWARF_FRAME_REGISTERS+1; i++)
-    dwarf_reg_size_table[i] = 4;
-#else
   __builtin_init_dwarf_reg_size_table (dwarf_reg_size_table);
-#endif
 }
 
 static long

@@ -394,6 +394,9 @@ Initialize_Register_Class(
   REGISTER_SET       shrink_wrap    = REGISTER_SET_EMPTY_SET;
   REGISTER_SET	     stacked        = REGISTER_SET_EMPTY_SET;
   REGISTER_SET	     rotating       = REGISTER_SET_EMPTY_SET;
+#ifdef TARG_ST
+  REGISTER_SET       eh_return      = REGISTER_SET_EMPTY_SET;
+#endif
 
 #ifdef TARG_ST
   // Call first target dependent initialization for the register class
@@ -491,6 +494,10 @@ Initialize_Register_Class(
           shrink_wrap = REGISTER_SET_Union1(shrink_wrap, reg);
         if ( ABI_PROPERTY_Is_stacked(rclass, isa_reg) )
           stacked = REGISTER_SET_Union1(stacked, reg);
+#ifdef TARG_ST
+        if ( ABI_PROPERTY_Is_eh_return(rclass, isa_reg) )
+          eh_return = REGISTER_SET_Union1(eh_return, reg);
+#endif
       }
     }
 
@@ -590,6 +597,7 @@ Initialize_Register_Class(
   REGISTER_CLASS_stacked(rclass)           = stacked;
   REGISTER_CLASS_rotating(rclass)          = rotating;
 #ifdef TARG_ST
+  REGISTER_CLASS_eh_return(rclass)         = eh_return;
     REGISTER_CLASS_is_ptr(rclass)
 	= ISA_REGISTER_CLASS_INFO_Is_Ptr(icinfo);
 #endif

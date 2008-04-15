@@ -421,7 +421,11 @@ expand_builtin_init_dwarf_reg_sizes (address)
   rtx addr = expand_expr (address, NULL_RTX, VOIDmode, 0);
   rtx mem = gen_rtx_MEM (BLKmode, addr);
 
+#ifdef TARG_ST
+  for (i = 0; i < FIRST_PSEUDO_REGISTER_USED; i++)
+#else
   for (i = 0; i < FIRST_PSEUDO_REGISTER; i++)
+#endif
     if (DWARF_FRAME_REGNUM (i) < DWARF_FRAME_REGISTERS)
       {
 	HOST_WIDE_INT offset = DWARF_FRAME_REGNUM (i) * GET_MODE_SIZE (mode);

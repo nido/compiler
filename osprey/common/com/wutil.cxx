@@ -740,6 +740,10 @@ static const struct {
 #ifdef TARG_ST
   INTRN_KILL,                   "KILL",
 
+  INTRN_BUILTIN_EH_RETURN,      "EH_RETURN",
+  INTRN_BUILTIN_UNWIND_INIT,    "UNWIND_INIT",
+  INTRN_BUILTIN_DWARF_CFA,      "DWARF_CFA",
+
 #include "targ_wutil.def"
 #endif
 

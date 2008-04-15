@@ -2354,6 +2354,15 @@ const intrn_info_t intrn_info[INTRINSIC_LAST+1] = {
   { /* [TTh] KILL */
 	BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
 	IRETURN_DYNAMIC, "__builtin__KILL", NULL, "__builtin__KILL"},
+  { /* BUILTIN_EH_RETURN */
+	BYVAL, NOT_PURE, SIDEEFFECTS, NEVER_RETURN, NOT_ACTUAL, CGINTRINSIC,
+	IRETURN_V, "__builtin_eh_return", NULL, "__builtin_eh_return"},
+  { /* BUILTIN_UNWIND_INIT */
+	BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+	IRETURN_V, "__builtin_unwind_init", NULL, "__builtin_unwind_init"},
+  { /* BUILTIN_DWARF_CFA */
+	BYVAL, PURE,  NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+	IRETURN_U4, "__builtin_dwarf_cfa", NULL, "__builtin_dwarf_cfa"},
 
 #include "targ_intrn_info.def"
 #endif

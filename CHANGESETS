@@ -1,6 +1,62 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Apr 15 14:44:42 CEST 2008
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-40985
+
+Description:
+------------
+	*  Fix [ bug #40985 ] C++ exceptions are not thread-safe	(st200)
+        Delivered fixes/codex-40985 rev #1107 with authorization art #42097.
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/data_layout.cxx
+	M      osprey/be/com/data_layout.h
+	M      osprey/lai/cg.h
+	M      osprey/lai/register.h
+	M      osprey/lai/annotations.h
+	M      osprey/lai/reg_live.cxx
+	M      osprey/lai/tn.h
+	M      osprey/lai/calls.cxx
+	M      osprey/lai/lra.cxx
+	M      osprey/lai/register.cxx
+	M      osprey/lai/tnutil.cxx
+	M      osprey/lai/gra_mon/gra_split.cxx
+	M      osprey/lai/gra_mon/gra_lrange.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/gccfe/wfe_expr.cxx
+	A  +   osprey/gccfe/gnu/gthr-default.h
+	M      osprey/gccfe/gnu/unwind.inc
+	M      osprey/gccfe/gnu/Makefile.gbase
+	M      osprey/gccfe/gnu/dwarf2out.c
+	M      osprey/gccfe/gnu/unwind-dw2.c
+	M      osprey/g++fe/wfe_expr.cxx
+	M      osprey/g++fe/wfe_decl.cxx
+	M      osprey/common/com/wintrinsic.h
+	M      osprey/common/com/gccfe_targinfo_interface.h
+	M      osprey/common/com/wutil.cxx
+	M      osprey/common/com/intrn_info.cxx
+	M      osprey/common/com/gccfe_targinfo_interface.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.h
+	M      osprey/targinfo/stxp70/abi/abi_properties.cxx
+	M      osprey/targinfo/st200/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/st200/config/targ_sim.h
+	M      osprey/targinfo/st200/config/targ_sim.cxx
+	M      osprey/targinfo/st200/cg/targ_cgdwarf.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.h
+	M      osprey/targinfo/st200/cg/targ_entry_exit.cxx
+	M      osprey/targinfo/st200/abi/abi_properties.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Apr 14 14:24:37 CEST 2008
 	Author:    bruel
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

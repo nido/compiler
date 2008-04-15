@@ -544,6 +544,15 @@ ifeq ($(BUILD_MOD), libunwind)
 # (cbr) libunwind support 
 CFLAGS+=-DIN_GCC -DIN_LIBGCC2 -D__GCC_FLOAT_NOT_NEEDED -DEH_RETURN_STACKADJ_RTX -funwind-tables
 
+# (cm) make exceptions thread safe by defining a default threading model
+# In vanillia gcc build, this definition and header gthr-xxx.h header really come from gcc configure
+# And query on the threading model.
+ifeq ($(BUILD_TARGET), ST200)
+  ifeq ($(BUILD_TARGET_OS), BARE_OS21)
+    CFLAGS+= -DHAVE_GTHR_DEFAULT
+  endif
+endif
+
 $(LIBUNWIND): $(UNWIND_OBJS)
 	$(AR) rv $(LIBUNWIND) $(UNWIND_OBJS)
 

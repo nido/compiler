@@ -267,10 +267,16 @@ typedef	struct entryinfo {
 typedef struct exitinfo {
   struct op *sp_adj;	/* Exit SP adjustment operation */
   SRCPOS    srcpos;	/* source position of function exit */
+#ifdef TARG_ST
+  mBOOL     is_eh_return; /* TRUE for an EH_return exit */
+#endif
 } EXITINFO;
 
 #define EXITINFO_sp_adj(x)    ((x)->sp_adj)
 #define EXITINFO_srcpos(x)    ((x)->srcpos)
+#ifdef TARG_ST
+#define EXITINFO_is_eh_return(x) ((x)->is_eh_return)
+#endif
 
 typedef struct callinfo {
   ST *call_st;

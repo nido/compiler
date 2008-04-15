@@ -1983,7 +1983,11 @@ LRANGE_Do_Split( LRANGE* lrange, LRANGE_CLIST_ITER* iter,
   DevAssert (! (lrange->Has_Wired_Register() && lrange->Reg() == TN_register(RA_TN)), ("split_lrange for wired ra_tn"));
 
   REGISTER_SET forbidden = CGTARG_Forbidden_GRA_Registers(lrange->Rc());
-  if (lrange->Tn_Is_Save_Reg() && REGISTER_SET_MemberP(forbidden,TN_save_reg(lrange->Tn())))
+  // [SC] Special treatment for all save-regs and callee-save registers in a function that
+  // has an eh_return: they should always be spilled.
+  if (lrange->Tn_Is_Save_Reg()
+      && (REGISTER_SET_MemberP(forbidden,TN_save_reg(lrange->Tn()))
+	  || PU_Has_EH_Return))
     return FALSE;
 #endif
 

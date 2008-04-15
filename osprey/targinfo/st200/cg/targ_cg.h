@@ -196,5 +196,9 @@ CGTARG_enable_pf_L2_st (BOOL current_value)
   return FALSE;
 }
 
-
+inline TN *
+CGTARG_EH_Gen_Return_Stackadj_TN ()
+{
+  return Build_TN_Of_Mtype (Pointer_Mtype);
+}
 #endif /* targ_cg_INCLUDED */

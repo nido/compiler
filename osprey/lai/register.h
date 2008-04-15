@@ -598,6 +598,11 @@
  *      REGISTER_SET REGISTER_CLASS_rotating(
  *          ISA_REGISTER_CLASS rclass
  *      )
+#ifdef TARG_ST
+ *      REGISTER_SET REGISTER_CLASS_eh_return(
+ *          ISA_REGISTER_CLASS rclass
+ *      )
+#endif
  *
  *          Returns the REGISTER_SET within the given 'rclass' of a
  *          particular type.
@@ -805,6 +810,9 @@ typedef struct {
   REGISTER_SET      shrink_wrap;
   REGISTER_SET	    stacked;
   REGISTER_SET      rotating;
+#ifdef TARG_ST
+  REGISTER_SET      eh_return;
+#endif
 } REGISTER_CLASS_INFO;
 
 
@@ -856,6 +864,8 @@ CG_EXPORTED REGISTER_CLASS_info[ISA_REGISTER_CLASS_MAX + 1];
 #define REGISTER_CLASS_shrink_wrap(x)				\
                                 (REGISTER_CLASS_info[x].shrink_wrap)
 #ifdef TARG_ST
+#define REGISTER_CLASS_eh_return(x)				\
+                                (REGISTER_CLASS_info[x].eh_return)
 #define REGISTER_CLASS_is_ptr(x)				\
                                 (REGISTER_CLASS_info[x].is_ptr)
 #endif

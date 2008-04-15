@@ -116,7 +116,8 @@ TN *LC_TN;
 #ifdef TARG_ST
 TN *Link_TN;
 TN *RS_TN;
-TN *TP_TN; // [SC] TLS support
+TN *TP_TN;
+TN *EH_Return_Stackadj_TN;
 #endif
 
 /* We currently always use the same dedicated TN for each
@@ -781,6 +782,7 @@ Init_Dedicated_TNs (void)
   }
   else
     GP_TN = NULL;
+    EH_Return_Stackadj_TN = NULL;
 
 #ifdef TARG_ST200
   if (!True_TN) {

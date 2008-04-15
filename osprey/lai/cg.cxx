@@ -146,6 +146,7 @@ BOOL PU_References_GP;
 #ifdef TARG_ST
 BOOL PU_Has_Asm;
 BOOL PU_Has_Hwloops;
+BOOL PU_Has_EH_Return;
 #endif
 #ifdef KEY
 BOOL PU_Has_Exc_Handler;
@@ -245,6 +246,7 @@ CG_PU_Initialize (
 #ifdef TARG_ST
   PU_Has_Asm = FALSE;
   PU_Has_Hwloops = FALSE;
+  PU_Has_EH_Return = FALSE;
 #endif
 #ifdef KEY
   PU_Has_Exc_Handler = FALSE;

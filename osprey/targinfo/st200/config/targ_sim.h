@@ -39,51 +39,6 @@
 extern "C" {
 #endif
 
-#if 0
-  /* [JV] These defines must become variables as the parameter
-     passing ABI can change by options.
-     Initialization moved to Init_Targ_Sim
-  */
-/* some definitions for the dedicated hardware pregs: */
-
-#define Int_Preg_Min_Offset             1
-#define Int_Preg_Max_Offset             64
-#define Ptr_Preg_Min_Offset             1
-#define Ptr_Preg_Max_Offset             0
-#define Float_Preg_Min_Offset           1
-#define Float_Preg_Max_Offset           0  
-#define Branch_Preg_Min_Offset          65
-#define Branch_Preg_Max_Offset          72
-#define Fcc_Preg_Min_Offset             1
-#define Fcc_Preg_Max_Offset             0
-#define Last_Dedicated_Preg_Offset      Branch_Preg_Max_Offset
-
-/* The offsets for return registers are fixed: */
-#define First_Int_Preg_Return_Offset	17	/* register r0 */
-#define Last_Int_Preg_Return_Offset	24	/* register r1 */
-#define First_Ptr_Preg_Return_Offset    0	/* undef */
-#define Last_Ptr_Preg_Return_Offset     0	/* undef */
-#define First_Float_Preg_Return_Offset	0	/* undef */
-#define Last_Float_Preg_Return_Offset	0	/* undef */
-
-/* Parameter placement */
-#define First_Int_Preg_Param_Offset	17	/* register r0 */
-#define First_Ptr_Preg_Param_Offset     0	/* undef */
-#define First_Float_Preg_Param_Offset	0	/* undef */
-
-#define Stack_Pointer_Preg_Offset	13	/* register sp (r12) */
-/* [SC] match fp setting in targinfo/st200/abi/abi_properties.cxx */
-#define Frame_Pointer_Preg_Offset	8	/* register fp (r7) */
-#define Static_Link_Preg_Offset	        9	/* resgister r8 */
-#define Struct_Return_Preg_Offset       16   	/* returning structs (r15) */
-#ifdef TARG_ST //[TB]
-#define Function_Link_Preg_Offset       64   /* function link register (for mcount call) (r63) */
-  /* (cbr) define exceptions handler parameters. see EH_RETURN_DATA_REGNO(N) */
-#define Exc_Ptr_Param_Offset            9    /* exception struct ptr (r8) */
-#define Exc_Filter_Param_Offset         10   /* exception filter value (r9) */
-#endif
-
-#else /* if !0 */
 
 /* some definitions for the dedicated hardware pregs: */
 
@@ -115,11 +70,10 @@ BE_EXPORTED extern INT Stack_Pointer_Preg_Offset;
 BE_EXPORTED extern INT Frame_Pointer_Preg_Offset;
 BE_EXPORTED extern INT Static_Link_Preg_Offset;
 BE_EXPORTED extern INT Struct_Return_Preg_Offset;
-#ifdef TARG_ST //[TB]
 BE_EXPORTED extern INT Function_Link_Preg_Offset;
 BE_EXPORTED extern INT Exc_Ptr_Param_Offset;           /* exception struct ptr */
 BE_EXPORTED extern INT Exc_Filter_Param_Offset;   /* exception filter value */
-#endif
+
   /* [JV] This is the maximum formal save area size: thous in case of multiple register
    * files with different alignment constraints, this is not always equal to the total
    * size of possible register parameters but can contains some padding. So to set this
@@ -138,7 +92,6 @@ BE_EXPORTED extern INT Default_Max_Formal_Save_Area_Size;
   /* [JV] This is the total size of varargs functions formal area size. */
 BE_EXPORTED extern INT Default_Vararg_Formal_Save_Area_Size;
 
-#endif
 
   /* [JV] These defines are used to set array size (targ_sim_core.h).
      Cannot for now change them by variables (is it necessary?).

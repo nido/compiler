@@ -13,12 +13,13 @@
 #include "const.h" /* needed to manipulate target/host consts */
 #include "targ_const.h" /* needed to manipulate target/host consts */
 #include "cgir.h"
+#include "cgexp.h"
 
 #include "topcode.h"
 #include "targ_isa_lits.h"
 #include "targ_isa_properties.h"
-#include "exp_targ.h"
 #include "config_TARG.h"
+#include "data_layout.h"
 
 static void
 Expand_Unimplemented_Intrinsic (TOP opcode,
@@ -7037,6 +7038,16 @@ Expand__trap(
 @@@  break ;
 */
 
+static void
+Expand__builtin_dwarf_cfa(
+ TN* result,
+ OPS* ops
+)
+{
+  Exp_Lda (Pointer_Mtype, result, Get_UpFormal_Base_Symbol (), 0,
+	   OPERATOR_UNKNOWN, ops);
+} /* Expand__builtin_dwarf_cfa */
+
 #define INTRN_EXPAND
 #include "gen_intrinsics.inc"
 #undef INTRN_EXPAND
@@ -7602,7 +7613,10 @@ Exp_Intrinsic_Op (
     break ;
     case INTRN_TRAP:	
       Expand__trap(ops) ;
-    break ;   
+    break ;
+  case INTRN_BUILTIN_DWARF_CFA:
+    Expand__builtin_dwarf_cfa (result[0], ops) ;
+    break;
 #define INTRN_SWITCH
 #include "gen_intrinsics.inc"
 #undef INTRN_SWITCH

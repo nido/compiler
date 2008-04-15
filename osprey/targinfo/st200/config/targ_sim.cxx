@@ -55,9 +55,7 @@
 #include "config_target.h"
 #include "targ_sim.h"
 #include "tracing.h"
-#ifdef TARG_ST
 #include "register_preg.h" // TB: For CGTARG_Regclass_Preg_Min
-#endif
 
 #ifdef Is_True_On
 /* Use a macro here such that each use effectively calls the Get_Trace() function. 
@@ -115,11 +113,9 @@ INT Stack_Pointer_Preg_Offset;
 INT Frame_Pointer_Preg_Offset;
 INT Static_Link_Preg_Offset;
 INT Struct_Return_Preg_Offset;
-#ifdef TARG_ST //[TB]
 INT Function_Link_Preg_Offset;
 INT Exc_Ptr_Param_Offset;           /* exception struct ptr */
 INT Exc_Filter_Param_Offset;   /* exception filter value */
-#endif
 
 static void
 Init_Pregs( void ) {
@@ -160,9 +156,7 @@ Init_Pregs( void ) {
   Frame_Pointer_Preg_Offset =	    CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 7;	/* register fp (r7) */
   Static_Link_Preg_Offset =	    CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 8;	/* register r8 */
   Struct_Return_Preg_Offset =       CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 15;   	/* register r15 */
-#ifdef TARG_ST //[TB]
   Function_Link_Preg_Offset =       CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 63;   	/* r63 function link register (for mcount call) */
-#endif
 
   Exc_Ptr_Param_Offset = CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 8;    /* exception struct ptr: r8 */
   Exc_Filter_Param_Offset = CGTARG_Regclass_Preg_Min(ISA_REGISTER_CLASS_integer) + 9;   /* exception filter value: r9 */
@@ -434,12 +428,8 @@ Get_Return_Info (
       {
 	UINT64 size = TY_size(Ty_Table[rtype]);
 
-#ifdef TARG_ST
         /* (cbr) (C++ only) allocate non pod objects in caller */
 	if (!TY_is_non_pod (rtype) && SIM_INFO.max_struct_size >= size) {
-#else
-	if (SIM_INFO.max_struct_size >= size) {
-#endif
 	  INT n = (size + MTYPE_RegisterSize(SIM_INFO.int_type) - 1)
                     / MTYPE_RegisterSize(SIM_INFO.int_type);
 	  reg = PR_first_reg(SIM_INFO.int_results);
@@ -504,12 +494,8 @@ Init_Stack_Offsets(void)
  */
 static PLOC
 Setup_Parameter_Locations (
-#ifdef TARG_ST
 			   TY_IDX pu_type,
 			   BOOL   first_hidden_param_is_lowered
-#else
-  TY_IDX pu_type
-#endif
 )
 {
   static PLOC plocNULL;
@@ -521,13 +507,8 @@ Setup_Parameter_Locations (
   TY_IDX ret_type = (TY_kind(pu_type) == KIND_FUNCTION ? TY_ret_type(pu_type)
 			: pu_type);
   RETURN_INFO info = Get_Return_Info (ret_type, No_Simulated);
-#ifdef TARG_ST
   First_Param_In_Return_Reg = (RETURN_INFO_return_via_first_arg(info) & SIM_return_addr_via_int_return_reg)
     && first_hidden_param_is_lowered;
-#else
-  First_Param_In_Return_Reg = (RETURN_INFO_return_via_first_arg(info) 
-			       & SIM_return_addr_via_int_return_reg);
-#endif
 
   if (TY_is_varargs (pu_type)) {
     // find last fixed parameter
@@ -1065,13 +1046,11 @@ Get_Vararg_Parameter_Location (
   return next;
 }
 
-#ifdef TARG_ST
 // [SC] Return the type of a nested function trampoline.
 TYPE_ID Get_Nested_Fn_Trampoline_Type ()
 {
   return Make_Array_Type (MTYPE_U8, 1, 5);
 }
-#endif
 
 /* ====================================================================
  *   Init_Targ_Sim

@@ -6736,8 +6736,13 @@ Prolog_save_code(BB *entrybb)
     ISA_REGISTER_CLASS cl = TN_save_rclass(tn);
     REGISTER reg = TN_save_reg(tn);
 #ifdef TARG_ST
+    REGISTER_SET used = Callee_Saved_Regs_Used[cl];
+    if (PU_Has_EH_Return) {
+      used = REGISTER_SET_Union (used, REGISTER_CLASS_callee_saves(cl));
+      used = REGISTER_SET_Union (used, REGISTER_CLASS_eh_return(cl));
+    }
     if (! EETARG_Save_With_Regmask (cl, reg) &&
-	REGISTER_SET_IntersectsP(Callee_Saved_Regs_Used[cl],
+	REGISTER_SET_IntersectsP(used,
 				 REGISTER_SET_Range (reg, reg + TN_nhardregs(tn) - 1))) {
 #else
     if (REGISTER_SET_MemberP(Callee_Saved_Regs_Used[cl], reg)) {
@@ -6776,8 +6781,13 @@ Epilog_restore_code(BB *exitbb)
     ISA_REGISTER_CLASS cl = TN_save_rclass(tn);
     REGISTER reg = TN_save_reg(tn);
 #ifdef TARG_ST
+    REGISTER_SET used = Callee_Saved_Regs_Used[cl];
+    if (PU_Has_EH_Return) {
+      used = REGISTER_SET_Union (used, REGISTER_CLASS_callee_saves(cl));
+      used = REGISTER_SET_Union (used, REGISTER_CLASS_eh_return(cl));
+    }
     if (! EETARG_Save_With_Regmask (cl, reg)
-	&& REGISTER_SET_IntersectsP(Callee_Saved_Regs_Used[cl],
+	&& REGISTER_SET_IntersectsP(used,
 				 REGISTER_SET_Range (reg, 
 						     reg + TN_nhardregs(tn) - 1))) {
 #else

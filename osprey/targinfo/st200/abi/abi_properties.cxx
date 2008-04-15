@@ -56,6 +56,7 @@
  *      static_link    -- for the nested procedures
  *      true_predicate -- true predicate register
  *      zero           -- register hard-wired to zero
+ *      eh_return      -- exception handler return register
  *
  *      xxx_names[128] -- assembler names for xxx registers.
  *
@@ -75,6 +76,7 @@ main()
   ABI_PROPERTY allocatable = Create_Reg_Property("allocatable");
   ABI_PROPERTY callee = Create_Reg_Property("callee");
   ABI_PROPERTY caller = Create_Reg_Property("caller");
+  ABI_PROPERTY eh_return = Create_Reg_Property("eh_return");
   ABI_PROPERTY entry_ptr = Create_Reg_Property("entry_ptr");
   ABI_PROPERTY epilog_count = Create_Reg_Property("epilog_count");
   ABI_PROPERTY fone = Create_Reg_Property("fone");
@@ -106,6 +108,8 @@ main()
 
   Reg_Property(caller, ISA_REGISTER_CLASS_branch, 0, 1, 2, 3, 4, 5, 6, 7, -1);
   Reg_Property(caller, ISA_REGISTER_CLASS_integer, 8, 9, 10, 11, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, -1);
+
+  Reg_Property(eh_return, ISA_REGISTER_CLASS_integer, 8, 9, -1);
 
   Reg_Property(frame_ptr, ISA_REGISTER_CLASS_integer, 7, -1);
 
@@ -140,6 +144,8 @@ main()
 
   Reg_Property(caller, ISA_REGISTER_CLASS_branch, 0, 1, 2, 3, 4, 5, 6, 7, -1);
   Reg_Property(caller, ISA_REGISTER_CLASS_integer, 8, 9, 10, 11, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, -1);
+
+  Reg_Property(eh_return, ISA_REGISTER_CLASS_integer, 8, 9, -1);
 
   Reg_Property(frame_ptr, ISA_REGISTER_CLASS_integer, 7, -1);
 

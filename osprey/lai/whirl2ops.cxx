@@ -5356,6 +5356,23 @@ static void Handle_Return (void)
   Start_New_Basic_Block ();
 }
 
+#ifdef TARG_ST
+static void Handle_EH_Return (TN *stackadj, TN *handler)
+{
+  if (! PU_Has_EH_Return) {
+    PU_Has_EH_Return = TRUE;
+  }
+  EH_Return_Stackadj_TN = CGTARG_EH_Gen_Return_Stackadj_TN ();
+  if (EH_Return_Stackadj_TN) {
+    Exp_COPY (EH_Return_Stackadj_TN, stackadj, &New_OPs);
+  }
+  Exp_COPY (RA_TN, handler, &New_OPs);
+  BB *exit_bb = Cur_BB;
+  Handle_Return ();
+  EXITINFO *exit_info = ANNOT_exitinfo(ANNOT_Get(BB_annotations(exit_bb), ANNOT_EXITINFO));
+  EXITINFO_is_eh_return(exit_info) = TRUE;
+}
+#endif
 
 /* Handle traps (from OP_ASSERT or OP_TRAP) */
 static void Handle_Trap(WN *trap) 
@@ -6067,18 +6084,25 @@ Handle_INTRINSIC_CALL (
     fprintf(TFile, "\n");
   }
 
-
   // if straight-line code, then label and loop_ops are unused,
   // but might create a loop in which case we need to create bb for it.
   // (other possible ways of doing this would have been to use split_bb
   // or multiple exp_ calls for the different parts).
 
   OPS_Init(&loop_ops);
-  Exp_Intrinsic_Call (id, numrests, numopnds, res, opnd_tn, &New_OPs, &label, &loop_ops, current_srcpos);
-
 #ifdef TARG_ST
+  if (id == INTRN_BUILTIN_EH_RETURN) {
+    Handle_EH_Return (opnd_tn[0], opnd_tn[1]);
+  } else if (id == INTRN_BUILTIN_UNWIND_INIT) {
+    PU_Has_EH_Return = TRUE;
+  } else {
+    Exp_Intrinsic_Call (id, numrests, numopnds, res, opnd_tn, &New_OPs, &label, &loop_ops, current_srcpos);
+  }
+
   // [CG]:We keep the last generated op
   OP *last_intr_op =  OPS_last(&New_OPs);
+#else
+  Exp_Intrinsic_Call (id, numrests, numopnds, res, opnd_tn, &New_OPs, &label, &loop_ops, current_srcpos);
 #endif
 
   if (OPS_first(&loop_ops) != NULL && label != LABEL_IDX_ZERO) {

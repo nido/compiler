@@ -665,6 +665,11 @@ LRANGE::Allowed_Registers( GRA_REGION* region )
       sv_set = REGISTER_SET_Union (sv_set, REGISTER_CLASS_caller_saves (rc));
     }
     allowed = REGISTER_SET_Intersection(allowed, sv_set);
+    // [SC] Special treatment for all save-regs in a function that has an
+    // eh_return: they should always be spilled.
+    if (PU_Has_EH_Return) {
+      allowed = REGISTER_SET_EMPTY_SET;
+    }
 #else
     REGISTER_SET singleton = REGISTER_SET_Union1(REGISTER_SET_EMPTY_SET,sv_reg);
     allowed = REGISTER_SET_Intersection(allowed,singleton);

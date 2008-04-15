@@ -447,8 +447,9 @@ extern  TN *FZero_TN;		// Floating zero (0.0) register TN
 extern  TN *FOne_TN;		// Floating one (1.0) register TN
 extern  TN *Link_TN;            // Link TN for indirect branching
 extern  TN *RS_TN;              // TN for returning structs by value
-#ifdef TARG_ST                  // [SC] TLS supprt 
+#ifdef TARG_ST
 extern TN *TP_TN;               // Thread Pointer
+extern  TN *EH_Return_Stackadj_TN; // Stack adjustment for EH_return.
 #endif
 
 #ifdef TARG_ST

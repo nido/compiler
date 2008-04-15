@@ -2097,6 +2097,16 @@ Get_Altentry_UpFormal_Symbol (ST *formal, PLOC ploc)
   return upformal;
 }
 
+#ifdef TARG_ST
+extern ST*
+Get_UpFormal_Base_Symbol ()
+{
+  ST *sym = Gen_Temp_Symbol(MTYPE_To_TY (MTYPE_V), ".upformal.base");
+  Set_ST_sclass (sym, SCLASS_FORMAL);
+  Assign_Object_To_Frame_Segment (sym, SFSEG_UPFORMAL, 0);
+  return sym;
+}
+#endif
 
 /* ====================================================================
  * Calc_Formal_Size

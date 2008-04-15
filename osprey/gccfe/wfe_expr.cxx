@@ -2182,6 +2182,40 @@ emit_builtin_trap ()
   WFE_Stmt_Append (wn, Get_Srcpos()); 
   return wn;
 } /* emit_builtin_trap */
+
+static void
+emit_builtin_init_dwarf_reg_sizes (WN *address)
+{
+  TYPE_ID desc = MTYPE_U1;
+  INT64 desc_sz = MTYPE_byte_size (desc);
+  TY_IDX ty_idx = Make_Pointer_Type (MTYPE_To_TY (desc));
+  SRCPOS srcpos = Get_Srcpos ();
+  for (INT i = 0; i < FIRST_PSEUDO_REGISTER_USED; i++) {
+    int dwarf_id = GCCTARG_Dwarf_Get_Reg_Id_From_Gcc_Reg (i);
+    if (dwarf_id < DWARF_FRAME_REGISTERS) {
+      INT64 offset = dwarf_id * desc_sz;
+      INT64 sz = GCCTARG_Gcc_Reg_Bit_Size (i) / BITS_PER_UNIT;
+
+      if (offset < 0)
+	continue;
+      WFE_Stmt_Append (WN_Istore (desc, offset, ty_idx,
+				  WN_COPY_Tree (address),
+				  WN_Intconst (MTYPE_U4, sz), 0),
+		       srcpos);
+    }
+  }
+      
+#ifdef DWARF_ALT_FRAME_RETURN_COLUMN
+  {
+    INT64 offset = DWARF_ALT_FRAME_RETURN_COLUMN * desc_sz;
+    INT64 sz = GET_MODE_SIZE (Pmode);
+    WFE_Stmt_Append (WN_Istore (desc, offset, ty_idx,
+				WN_COPY_Tree (address),
+				WN_IntConst (MTYPE_U4, sz), 0),
+		     srcpos);
+  }
+#endif
+}
 #endif
 
 static char *
@@ -4282,6 +4316,9 @@ WFE_Expand_Expr (tree exp,
                 // I think that the libc should be fixed or the builtin
                 // deprecated but. keep the compatibility here 
             case BUILT_IN_EXTRACT_RETURN_ADDR:
+	      // [SC] Add builtin_frob_return_address, it is also an identity op
+	      // on our supported targets.
+	    case BUILT_IN_FROB_RETURN_ADDR:
               wn = WFE_Expand_Expr (TREE_VALUE (TREE_OPERAND (exp, 1)));
               whirl_generated = TRUE;
               break;
@@ -4301,6 +4338,20 @@ WFE_Expand_Expr (tree exp,
               whirl_generated = TRUE;
               break;
             }
+	    case BUILT_IN_EH_RETURN:
+              iopc = INTRN_BUILTIN_EH_RETURN;
+	      break;
+	    case BUILT_IN_UNWIND_INIT:
+              iopc = INTRN_BUILTIN_UNWIND_INIT;
+	      break;
+	    case BUILT_IN_DWARF_CFA:
+              iopc = INTRN_BUILTIN_DWARF_CFA;
+	      break;
+	    case BUILT_IN_INIT_DWARF_REG_SIZES:
+	      emit_builtin_init_dwarf_reg_sizes
+		(WFE_Expand_Expr (TREE_VALUE (TREE_OPERAND (exp, 1))));
+	      whirl_generated = TRUE;
+	      break;
 #endif
 
 #ifdef TARG_ST

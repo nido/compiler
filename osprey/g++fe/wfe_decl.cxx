@@ -629,7 +629,6 @@ void WFE_Expand_Decl(tree decl)
       /* (cbr) handle using_decl */
   case USING_DECL: {
     tree init = DECL_INITIAL(decl);
-    (void) Get_TY(init);
     break;
   }
 #endif

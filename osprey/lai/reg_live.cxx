@@ -330,6 +330,12 @@ Compute_PU_Regs (
     FOR_ALL_ISA_REGISTER_CLASS(rc) {
       liveout[rc] = REGISTER_SET_Union (liveout[rc], 
 				     REGISTER_CLASS_callee_saves(rc));
+#ifdef TARG_ST
+      if (PU_Has_EH_Return) {
+	liveout[rc] = REGISTER_SET_Union (liveout[rc],
+					  REGISTER_CLASS_eh_return(rc));
+      }
+#endif      
     }
 
     // add sp to list of liveout registers.
@@ -912,6 +918,12 @@ REG_LIVE_Epilog_Temps(
    * the caller saved regs with the return regs removed.
    */
   FOR_ALL_ISA_REGISTER_CLASS(cl) {
+#ifdef TARG_ST
+    // [SC] Avoid EH return registers if there is an EH_return in this function.
+    if (PU_Has_EH_Return) {
+      temps[cl] = REGISTER_SET_Union (temps[cl], REGISTER_CLASS_eh_return(cl));
+    }
+#endif
     temps[cl] = REGISTER_SET_Difference(REGISTER_CLASS_caller_saves(cl),
 					temps[cl]);
 #ifdef TARG_ST

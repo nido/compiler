@@ -133,6 +133,10 @@ BE_EXPORTED extern void Allocate_Temp_To_Memory ( ST *st );
 /* Get upformal symbol for altentries that will be copied to temp space */
 BE_EXPORTED extern ST* Get_Altentry_UpFormal_Symbol (ST *formal, PLOC ploc);
 
+#ifdef TARG_ST
+BE_EXPORTED extern ST*Get_UpFormal_Base_Symbol ();
+#endif
+
 /* reset the upformal segment when start an alternate entry */
 BE_EXPORTED extern void Reset_UPFORMAL_Segment(void );
 

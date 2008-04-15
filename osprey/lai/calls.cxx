@@ -372,6 +372,12 @@ Init_Callee_Saved_Regs_for_REGION (
 
     if (EETARG_Do_Not_Save_Callee_Reg_Class(cl)) continue;
 
+#ifdef TARG_ST
+    if (PU_Has_EH_Return) {
+      regset = REGISTER_SET_Union (regset,
+				   REGISTER_CLASS_eh_return(cl));
+    }
+#endif
     for ( reg = REGISTER_SET_Choose(regset);
 	  reg != REGISTER_UNDEFINED;
 	  reg = REGISTER_SET_Choose_Next(regset, reg), ++i
@@ -916,6 +922,8 @@ Can_Do_Tail_Calls_For_PU ()
   // If PU is an interrupt handler, cannot do tail-call opt
   if (PU_is_interrupt(Get_Current_PU())
       || PU_is_interrupt_nostkaln(Get_Current_PU())) return FALSE;
+  // If PU is an exception handler, avoid tail-call opt
+  if (PU_Has_EH_Return) return FALSE;
 #endif
 
 #ifdef TARG_STxP70
@@ -1206,6 +1214,11 @@ Generate_Unique_Exit (void)
      */
     if (BB_call(bb)) continue;
 
+#ifdef TARG_ST
+    // [SC] Exclude EH_return exits.
+    if (EXITINFO_is_eh_return(ANNOT_exitinfo(ANNOT_Get(BB_annotations(bb), ANNOT_EXITINFO))))
+      continue;
+#endif
     /* This block will no longer be a exit block. So for the first
      * block, transfer the exitinfo to the unique exit block. For
      * the others, just remove the exitinfo.
@@ -1328,7 +1341,13 @@ Generate_Exit (
   if ( gra_run )
     EETARG_Restore_Extra_Callee_Tns (&ops);
 
+#ifdef TARG_ST
+  // [SC]: EH return exits have the RA set up already.
+  if (RA_TN != NULL
+      && ! EXITINFO_is_eh_return(exit_info)) {
+#else
   if (RA_TN != NULL) {
+#endif
     if (PU_has_return_address(Get_Current_PU())) {
       /* If the return address builtin is required, restore RA_TN from the 
        * memory location for __return_address. 
@@ -1348,7 +1367,6 @@ Generate_Exit (
     }
     else {
 #ifdef TARG_ST
-      //
       /*
        * RA_TN must be saved as a callee saved TN whatever is actual classification.
        */
@@ -1413,6 +1431,12 @@ Generate_Exit (
     Exp_Spadjust (SP_TN, Frame_Len_TN, V_NONE, &ops);
   }
   EXITINFO_sp_adj(exit_info) = OPS_last(&ops);
+#ifdef TARG_ST
+  if (EXITINFO_is_eh_return(exit_info)
+      && EH_Return_Stackadj_TN) {
+    Exp_ADD (Pointer_Mtype, SP_TN, SP_TN, EH_Return_Stackadj_TN, &ops);
+  }
+#endif
 
   /* Restore the caller's frame pointer register if we used FP: */
   if ( Gen_Frame_Pointer 
