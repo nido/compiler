@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Apr 16 11:35:12 CEST 2008
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-27983
+
+Description:
+------------
+	*  Fix [ bug #27983 ] Exception problems when destructing a global
+        static object redefining the terminate function.
+        Delivered fixes/codex-27983 rev #16480 with authorization art #42347.
+
+
+Modified Files:
+---------------
+	M      osprey/ipa/common/ip_graph.cxx
+	M      osprey/ipa/common/ip_graph.h
+	M      osprey/ipa/inline/inline.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Apr 15 14:59:05 CEST 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -56,9 +56,15 @@
  * ====================================================================
  */
 
+#ifdef TARG_ST
+#include <list>
+#endif
 #include "defs.h"
 #include "erglob.h"
 #include "cxx_memory.h"
+#ifdef TARG_ST
+#include "mempool_allocator.h"
+#endif
 #include "tracing.h"
 #include "ip_graph.h"
 #include "W_bstring.h"			// for bzero
@@ -462,6 +468,11 @@ NODE_ITER::Next_Succ()
  * always follow all of its predecessors (ignoring back-edges in the
  * graph).  Therefore, both the resulting node order and its reversal
  * are topological sorts.
+#ifdef TARG_ST
+ * If node_order is TRUE, then the successors of a node are visited in
+ * the order of their NODE_IDX (the order in which they were added to
+ * the graph.)  This helps the caller to preserve the original ordering.
+#endif
  *
  * When called, the DFN struct contains the vertexes already added
  * to the order, with DFN_first being the smallest index where a
@@ -474,20 +485,49 @@ NODE_ITER::Next_Succ()
 #define VISITED TRUE
 
 static void
+#ifdef TARG_ST
+Search ( GRAPH *g, NODE_INDEX v, DFN *d, mBOOL *visit, BOOL node_order )
+#else
 Search ( GRAPH *g, NODE_INDEX v, DFN *d, mBOOL *visit )
+#endif
 {
   visit[v] = VISITED;	/* Mark the vertex as visited */
 
   /* Create a vertex iterator: */
   NODE_ITER v_iter(g, v);
 
+#ifdef TARG_ST
+  if (node_order) {
+    std::list<NODE_INDEX,mempool_allocator<NODE_INDEX> > successor;
+    for ( NODE_INDEX vtx = v_iter.First_Succ();
+	  vtx != INVALID_NODE_INDEX ;
+	  vtx = v_iter.Next_Succ() ) {
+      successor.push_back (vtx);
+    }
+    // Ensure that we visit successors in order of their index.
+    successor.sort();
+    
+    std::list<NODE_INDEX,mempool_allocator<NODE_INDEX> >::iterator succ_it;
+    for (succ_it = successor.begin (); succ_it != successor.end (); ++succ_it) {
+      NODE_INDEX vtx = *succ_it;
+      /* Recursively search from vtx if it has not been visited: */
+      if ( !visit[vtx] ) {
+	Search ( g, vtx, d, visit, node_order ); 
+      }
+    }
+  } else
+#endif
   for ( NODE_INDEX vtx = v_iter.First_Succ();
 	vtx != INVALID_NODE_INDEX ;
 	vtx = v_iter.Next_Succ() )
   {
      /* Recursively search from vtx if it has not been visited: */
     if ( !visit[vtx] ) {
+#ifdef TARG_ST
+      Search ( g, vtx, d, visit, FALSE ); 
+#else
       Search ( g, vtx, d, visit ); 
+#endif
     }
   }
 
@@ -508,7 +548,11 @@ Search ( GRAPH *g, NODE_INDEX v, DFN *d, mBOOL *visit )
  */
 
 DFN *
+#ifdef TARG_ST
+Depth_First_Ordering ( GRAPH *g, MEM_POOL* m, BOOL node_order )
+#else
 Depth_First_Ordering ( GRAPH *g, MEM_POOL* m )
+#endif
 {
   NODE_INDEX vertex_count = GRAPH_vcnt(g);
   EDGE_INDEX edge_count = GRAPH_ecnt(g);
@@ -548,7 +592,11 @@ Depth_First_Ordering ( GRAPH *g, MEM_POOL* m )
   DFN_first(d) = DFN_end(d) = vertex_count;
 
   /* Go do the depth-first walk from the root: */
+#ifdef TARG_ST
+  Search ( g, GRAPH_root(g), d, visit, node_order );
+#else
   Search ( g, GRAPH_root(g), d, visit );
+#endif
 
   /* Free work array: */
   MEM_POOL_FREE(m, visit);

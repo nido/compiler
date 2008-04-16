@@ -373,7 +373,14 @@ struct DFN {
 extern void Print_DFN ( const FILE *, DFN * );
 
 /* Construct a depth-first numbering of the given graph: */
+#ifdef TARG_ST
+// [SC] Note that this creates a reverse-depth-first ordering.
+// If node_order is true then we visit successors in the order they were
+// added to the graph.
+extern DFN* Depth_First_Ordering ( GRAPH*, MEM_POOL *, BOOL node_order = FALSE );
+#else
 extern DFN* Depth_First_Ordering ( GRAPH*, MEM_POOL * );
+#endif
 
 /* De-allocate a DFN ordering: */
 extern void Free_DFN ( DFN *, MEM_POOL * );

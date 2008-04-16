@@ -821,21 +821,28 @@ Inliner_Read_PUs (IP_FILE_HDR& file_header, PU_Info *pu_tree, INT num_PU)
 //----------------------------------------------------------------
 
 typedef std::pair<INT32, PU_Info *> PU_SORT_INFO;
-typedef std::multimap<INT32, PU_Info *> PU_SORT_MAP;
+typedef std::map<INT32, PU_Info *> PU_SORT_MAP;
 
 static PU_Info *
 Inliner_Sort_PUs (PU_Info *pu_tree)
 {
   PU_Info *current_pu;
-  INT pu_count = 0;
   INT i;
   INT32 *pu_map;
 
+  // [SC] Note that there are unreachable PUs on the pu_tree list, and these
+  // will not appear in the depth-first numbering, so take care to
+  // initialize all entries of pu_map.
+  INT unknown_dfnum = -1;
   pu_map = CXX_NEW_ARRAY (INT32, IPA_Call_Graph->Node_Size() + 1, Malloc_Mem_Pool);
+  for (i = IPA_Call_Graph->Node_Size () - 1; i >=0; i--) {
+    pu_map[i] = unknown_dfnum--;
+  }
   // Make a depth-first numbering of the call graph.
   {
-    DFN *dfn = Depth_First_Ordering (IPA_Call_Graph->Graph(), Malloc_Mem_Pool);
-
+    // Create a reverse-depth-first numbering of the call-graph.
+    DFN *dfn = Depth_First_Ordering (IPA_Call_Graph->Graph(), Malloc_Mem_Pool, TRUE);
+    
     // Create a map from call graph node number to depth-first number.
     for (i = DFN_first(dfn); i < DFN_end(dfn); i++) {
       NODE_INDEX ni = DFN_v_list_i(dfn, i);
@@ -844,18 +851,20 @@ Inliner_Sort_PUs (PU_Info *pu_tree)
     Free_DFN (dfn, Malloc_Mem_Pool);
   }
 
-  // Create a sorted multimap, from depth-first number to PU, for the PUs we
-  // are interested in.  (We need a multimap, not a map, because we may have multiple
-  // keys with value -1.)
+  // Create a map, from depth-first number to PU, for the PUs we are interested in.
   PU_SORT_MAP pu_sort_map;
   pu_sort_map.clear();
   for (current_pu = pu_tree; current_pu != NULL; current_pu = PU_Info_next (current_pu)) {
     NODE_INDEX ni = AUX_PU_node (Aux_Pu_Table[ST_pu (St_Table[PU_Info_proc_sym(current_pu)])]);
-    INT32 dfnum = (ni != INVALID_NODE_INDEX) ? pu_map[ni] : -1;
+    INT32 dfnum = (ni != INVALID_NODE_INDEX) ? pu_map[ni] : unknown_dfnum--;
+    FmtAssert (pu_sort_map.find (dfnum) == pu_sort_map.end (),
+	       ("Key %d (ni %d) already present in map", dfnum, ni));
     pu_sort_map.insert (PU_SORT_INFO(dfnum, current_pu));
   }
   CXX_DELETE_ARRAY (pu_map, Malloc_Mem_Pool);
   // Now iterate over the map, in sorted order reconstructing the PU list.
+  // Note here we are creating the reverse order of the sorted map, because the
+  // dfn was actually reverse-depth-first numbering.
   PU_SORT_MAP::iterator iter;
   current_pu = NULL;
   for (iter = pu_sort_map.begin(); iter != pu_sort_map.end(); iter++) {
