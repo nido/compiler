@@ -70,7 +70,7 @@ typedef enum {
   OptimizeLiveness_Upward = 0x1, // Upward exposed uses approximation.
   OptimizeLiveness_Linear = 0x2, // Linear pass to improve upon Upward.
   OptimizeLiveness_Iterate = 0x4, // Iterate backward data-flow problem.
-  OptimizeLiveness_PhiCopy = 0x8, // Assume Phi are parallel copies
+  OptimizeLiveness_PhiFixes = 0x8, // Include PHI Liveness fixes.
 } OptimizeLiveness;
 
 /*
@@ -82,11 +82,14 @@ typedef enum {
   OptimizeConversion_SemiPruned = 0x4, // Semi-pruned improved SSA construction.
   OptimizeConversion_SigmaGoTo = 0x8, // Sigma operations for the GoTo conditions.
   OptimizeConversion_Coalescing = 0x10, // Sreedhar coalescing before SSA destruction.
-  OptimizeConversion_Dominance = 0x20, // Use dominance to prune interference tests.
+  OptimizeConversion_PCopies = 0x20, // Use parallel copies when destructing SSA.
   OptimizeConversion_Sreedhar = 0x40, // Sreedhar method III for congruence classes.
+  OptimizeConversion_Exact = 0x80, // Exact method for congruence classes.
   OptimizeConversion_Budimlic = 0x100, // Use Budimlic to build congruence classes.
   OptimizeConversion_SSAWebs = 0x200, // Use SSAWebs to build congruence classes.
   OptimizeConversion_DForest = 0x400, // Use Dominance Forest to check interferences.
+  OptimizeConversion_Traces = 0x800, // Print extra traces.
+  OptimizeConversion_TrackValues = 0x1000, // Track variables with equivalent values.
 } OptimizeConversion;
 
 /*

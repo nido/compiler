@@ -1,6 +1,31 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 17 17:40:04 CEST 2008
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-40772
+
+Description:
+------------
+	*  Fix [ bug #40772 ] st200 bundling information incorrect in MDS
+        Delivered fixes/codex-40772 rev #16524 with authorization art #42407.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/lao/st200/lao_target.h
+	M      osprey/lai/lao/lao_stub.h
+	M      osprey/targinfo/st200/proc/st220_si.cxx
+	M      osprey/targinfo/st200/proc/st231_si.cxx
+	M      osprey/targinfo/st200/proc/st240_si.cxx
+	M      osprey/targinfo/st200/isa/isa_bundle.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Apr 17 16:37:11 CEST 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
