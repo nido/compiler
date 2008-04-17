@@ -555,7 +555,7 @@ static hTN_MAP tn_to_new_name_map = NULL;
 // TN_home. A same TN_home must be used for only one TN. So, associate
 // on the first TN, the Home with the TN, and on further references,
 // if Home is used with another TN, reset the gra_homeable property.
-static WN_MAP tn_home_map = NULL;
+static WN_MAP tn_home_map = WN_MAP_UNDEFINED;
 static BOOL TN_home_Used(TN *tn) {
   TN *tn_use = (TN *)WN_MAP_Get(tn_home_map, TN_home(tn));
   return (tn_use != NULL) && (tn_use != tn);
@@ -2122,7 +2122,7 @@ static hTN_MAP32 tn_idx_map;    // TN -> idx in SSA universe
 
 #define TN_is_ssa_reg(t)        (TN_is_register(t) && SSA_UNIVERSE_tn_idx(t) != 0)
 
-static void SSA_UNIVERSE_Initialize ();
+static BOOL SSA_UNIVERSE_Initialize ();
 static void SSA_UNIVERSE_Finalize ();
 
 // For all variables occuring as an argument of PSI operations,
@@ -2679,6 +2679,25 @@ PHI_CONGRUENCE_CLASS_Add_TN (
 }
 
 /* ================================================================
+ *   PHI_CONGRUENCE_CLASS_Init_TN
+ * ================================================================
+ */
+static void
+PHI_CONGRUENCE_CLASS_Init_TN (
+  TN *tn
+)
+{
+  // Make it an SSA TN
+  SSA_UNIVERSE_Add_TN(tn);
+
+  if (phiCongruenceClass(tn) == NULL) {
+    PHI_CONGRUENCE_CLASS *cc = 
+      PHI_CONGRUENCE_CLASS_make(TN_register_class(tn));
+    PHI_CONGRUENCE_CLASS_Add_TN(cc, tn);
+  }
+}
+
+/* ================================================================
  *   PHI_CONGRUENCE_CLASS_Member
  * ================================================================
  */
@@ -3082,10 +3101,6 @@ insert_psi_operand_copy (
 
   TN *new_tn = Copy_TN(tn);
 
-  // Make it an SSA TN
-  if (congruence)
-    SSA_UNIVERSE_Add_TN(new_tn);
-
   // replace old tn in the psi OP
   Set_PSI_opnd(psi_op, opnd_idx, new_tn);
 
@@ -3106,16 +3121,47 @@ insert_psi_operand_copy (
 
   // Create a congruence class for new_tn
   if (congruence) {
-    PHI_CONGRUENCE_CLASS *cc = 
-      PHI_CONGRUENCE_CLASS_make(TN_register_class(new_tn));
-    //Set_phiCongruenceClass(new_tn,cc);
-    PHI_CONGRUENCE_CLASS_Add_TN(cc,new_tn);
+    PHI_CONGRUENCE_CLASS_Init_TN(new_tn);
   }
 
   // Update interference graph
   if (Igraph_Used) {
     // Add an interference between tn and new_tn
     IGRAPH_Add_Interference(tn, new_tn);
+  }
+
+  return;
+}
+
+/* ================================================================
+ *   insert_SameRes_operand_copy
+ * ================================================================
+ */
+static void
+insert_SameRes_operand_copy (
+  OP   *op,
+  INT8  opnd_idx
+)
+{
+  TN *opnd_tn = OP_opnd(op, opnd_idx);
+  TN *new_tn = Copy_TN(opnd_tn);
+
+  // replace old tn in op
+  Set_OP_opnd(op, opnd_idx, new_tn);
+
+  // Finally, append the copy op
+  OPS copy_ops = OPS_EMPTY;
+  Exp_COPY(new_tn, opnd_tn, &copy_ops);
+  BB_Insert_Ops_Before(OP_bb(op), op, &copy_ops);
+  Set_OP_ssa_move(OPS_last(&copy_ops));
+
+  // Create a congruence class for new_tn
+  PHI_CONGRUENCE_CLASS_Init_TN(new_tn);
+
+  // Update interference graph
+  if (Igraph_Used) {
+    // Add an interference between tn and new_tn
+    IGRAPH_Add_Interference(opnd_tn, new_tn);
   }
 
   return;
@@ -3178,6 +3224,78 @@ Eliminate_Psi_Resource_Interference ()
 	  }
 	}
 	ccPsi = PHI_CONGRUENCE_CLASS_Merge(ccPsi, ccOpnd);
+      }
+
+    } // for all BB PHI OPs
+  } // for all BBs
+
+  return;
+}
+
+/* ================================================================
+ *   Eliminate_SameRes_Resource_Interference
+ *
+ *   This function look for interferences between variables connected
+ *   through operations with the SameRes constraint and repair them.
+ *   ================================================================
+ */
+static void
+Eliminate_SameRes_Resource_Interference ()
+{
+  INT i,j;
+  BB *bb;
+  OP *op;
+
+  if (Trace_SSA_Out) {
+    fprintf(TFile, "-----------------------------------------------\n");
+    fprintf(TFile, "    Eliminate_SameRes_Resource_Interference    \n");
+    fprintf(TFile, "-----------------------------------------------\n");
+  }
+
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+    FOR_ALL_BB_OPs_FWD(bb, op) {
+      if (!OP_sameres(op)) continue;
+
+      INT res_idx, opnd_idx;
+      for (res_idx = 0; res_idx < OP_results(op); res_idx++) {
+
+	if ((opnd_idx = OP_same_res(op, res_idx)) == -1)
+	  continue;
+
+	TN *tn_res = OP_result(op, res_idx);
+	TN *tn_opnd =  OP_opnd(op, opnd_idx);
+
+	if (!TN_is_ssa_var(tn_res))
+	  continue;
+
+	PHI_CONGRUENCE_CLASS *ccRes, *ccOpnd;
+
+	ccRes = phiCongruenceClass(tn_res);
+	Is_True(ccRes != NULL, ("empty congruence class for TN%d", TN_number(tn_res)));
+
+	ccOpnd = phiCongruenceClass(tn_opnd);
+	Is_True(ccOpnd != NULL, ("empty congruence class for TN%d", TN_number(tn_opnd)));
+
+	// FdF 20080402: Check if coalescing RES and OPND will remove
+	// a split-point accross different loops. Copies are ignored
+	// since they will be coalesced sooner or later. There are
+	// examples where this coalescing contraints too much the
+	// register allocator (STxP70 QMX mixer)
+	OP *defop;
+	for (defop = TN_ssa_def(tn_opnd); (defop != NULL) && OP_Is_Copy(defop); defop = TN_ssa_def(tn_opnd))
+	  tn_opnd = OP_Copy_Operand_TN(defop);
+
+	BOOL need_copy = (defop && (BB_loop_head_bb(OP_bb(defop)) != BB_loop_head_bb(bb)));
+	  
+	if (need_copy || phi_resources_interfere(ccRes, ccOpnd)) {
+	  insert_SameRes_operand_copy(op, opnd_idx);
+	  ccOpnd = phiCongruenceClass(OP_opnd(op, opnd_idx));
+
+	  if (Trace_SSA_Out) {
+	    fprintf(TFile, "Eliminate_SameRes_Resource_Interference: found interference\n");
+	  }
+	}
+	PHI_CONGRUENCE_CLASS_Merge(ccRes, ccOpnd);
       }
 
     } // for all BB PHI OPs
@@ -3264,7 +3382,12 @@ merge_phiCongruenceClasses (
  *   Initialize PhiCongruenceClasses, IGRAPH, if necessary, etc.
  * ================================================================
  */
-static void
+
+static BOOL has_phi;
+static BOOL has_psi;
+static BOOL has_sameres;
+
+static BOOL
 SSA_UNIVERSE_Initialize () 
 {
   INT i;
@@ -3287,15 +3410,37 @@ SSA_UNIVERSE_Initialize ()
   //   4. Add appropriate TNs to the SSA_UNIVERSE.
   //
 
+  has_phi = has_psi = has_sameres = FALSE;
+
   // Calculate the SSA_UNIVERSE_size
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     FOR_ALL_BB_OPs(bb, op) {
-      if (OP_code(op) == TOP_phi)
+      if (OP_code(op) == TOP_phi) {
 	SSA_UNIVERSE_size += OP_opnds(op) + OP_results(op);
-      else if (OP_code(op) == TOP_psi)
+	has_phi = TRUE;
+      }
+      else if (OP_code(op) == TOP_psi) {
 	SSA_UNIVERSE_size += PSI_opnds(op) + OP_results(op);
+	has_psi = TRUE;
+      }
+      else {
+	INT res_idx;
+	Reset_OP_sameres(op);
+	for (res_idx = 0; res_idx < OP_results(op); res_idx++) {
+	  if (OP_same_res(op, res_idx) != -1 &&
+	      TN_is_ssa_var(OP_result(op, res_idx))) {
+	    Set_OP_sameres(op);
+	    SSA_UNIVERSE_size ++;
+	    has_sameres = TRUE;
+	  }
+	}
+      }
     }
   }
+
+  if (SSA_UNIVERSE_size == 0)
+    return FALSE;
+
   SSA_UNIVERSE_size *= 2;
 
   // Initialize the SSA_UNIVERSE stuff
@@ -3319,51 +3464,47 @@ SSA_UNIVERSE_Initialize ()
   // Do the second traversal:
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     FOR_ALL_BB_OPs(bb, op) {
-      if (OP_code(op) != TOP_phi && OP_code(op) != TOP_psi)
+      if (OP_code(op) != TOP_phi && OP_code(op) != TOP_psi && !OP_sameres(op))
 	continue;
       //
       // Initialize PhiCongruenceClasses for PHI resources;
       // Add PHI resources to the SSA_UNIVERSE
       //
-      if (phiCongruenceClass(OP_result(op,0)) == NULL) {
-	// first, add this TN to the SSA universe
-	SSA_UNIVERSE_Add_TN(OP_result(op,0));
-	// create a congruence class
-	PHI_CONGRUENCE_CLASS *cc = 
-	  PHI_CONGRUENCE_CLASS_make(TN_register_class(OP_result(op,0)));
-	PHI_CONGRUENCE_CLASS_Add_TN(cc, OP_result(op,0));
-      }
 
-      if (OP_code(op) == TOP_psi) {
-	for (i = 0; i < PSI_opnds(op); i++) {
-	  TN *tn = PSI_opnd(op,i);
-	  // first, add this TN to the SSA universe
-	  SSA_UNIVERSE_Add_TN(tn);
-	  if (phiCongruenceClass(tn) == NULL) {
-	    PHI_CONGRUENCE_CLASS *cc = 
-	      PHI_CONGRUENCE_CLASS_make(TN_register_class(tn));
-	    PHI_CONGRUENCE_CLASS_Add_TN(cc, tn);
+      if (OP_sameres(op)) {
+	INT res_idx, opnd_idx;
+	for (res_idx = 0; res_idx < OP_results(op); res_idx++) {
+	  if ((opnd_idx = OP_same_res(op, res_idx)) != -1 && 
+	      TN_can_be_renamed(OP_result(op, res_idx))) {
+	    TN *res_tn = OP_result(op, res_idx);
+	    TN *opnd_tn = OP_opnd(op, opnd_idx);
+	    PHI_CONGRUENCE_CLASS_Init_TN(res_tn);
+	    PHI_CONGRUENCE_CLASS_Init_TN(opnd_tn);
 	  }
 	}
       }
-
       else {
+	PHI_CONGRUENCE_CLASS_Init_TN(OP_result(op,0));
 
-	for (i = 0; i < OP_opnds(op); i++) {
-	  TN *tn = OP_opnd(op,i);
-	  // first, add this TN to the SSA universe
-	  SSA_UNIVERSE_Add_TN(tn);
-	  if (phiCongruenceClass(tn) == NULL) {
-	    PHI_CONGRUENCE_CLASS *cc = 
-	      PHI_CONGRUENCE_CLASS_make(TN_register_class(tn));
-	    PHI_CONGRUENCE_CLASS_Add_TN(cc, tn);
+	if (OP_code(op) == TOP_psi) {
+	  for (i = 0; i < PSI_opnds(op); i++) {
+	    TN *tn = PSI_opnd(op,i);
+	    PHI_CONGRUENCE_CLASS_Init_TN(tn);
+	  }
+	}
+
+	else {
+
+	  for (i = 0; i < OP_opnds(op); i++) {
+	    TN *tn = OP_opnd(op,i);
+	    PHI_CONGRUENCE_CLASS_Init_TN(tn);
 	  }
 	}
       }
     }
   }
 
-  return;
+  return TRUE;
 }
 
 /* ================================================================
@@ -3531,6 +3672,8 @@ map_phi_resources_to_new_names()
     } /* FOR_ALL_BB_OPs_FWD */
   } /* for (bb = REGION_First_BB ... */
 
+  WN_MAP_Delete(tn_home_map);
+
   return;
 }
 
@@ -3545,7 +3688,8 @@ SSA_UNIVERSE_Finalize ()
   // Before the CongruenceClasses are destroyed, we need to map
   // all involved TNs onto CongruenceClass representative names.
   //
-  map_phi_resources_to_new_names();
+  if (SSA_UNIVERSE_size > 0)
+    map_phi_resources_to_new_names();
 
   // reset the SSA_UNIVERSE_size.
   // The SSA data structures will go away with MEM_local_pool Pop.
@@ -3610,9 +3754,6 @@ insert_operand_copy (
   //gra_homeable value.
   TN *new_tn = Copy_TN(tn);
   Set_TN_is_global_reg(new_tn);
-
-  // Make it an SSA TN
-  SSA_UNIVERSE_Add_TN(new_tn);
 
   // replace old tn in the phi OP
   Set_OP_opnd(phi_op, opnd_idx, new_tn);
@@ -3688,10 +3829,7 @@ liveout:
   }
 
   // Create a congruence class for new_tn
-  PHI_CONGRUENCE_CLASS *cc = 
-    PHI_CONGRUENCE_CLASS_make(TN_register_class(new_tn));
-  //Set_phiCongruenceClass(new_tn,cc);
-  PHI_CONGRUENCE_CLASS_Add_TN(cc,new_tn);
+  PHI_CONGRUENCE_CLASS_Init_TN(new_tn);
 
   // Update interference graph
   if (Igraph_Used) {
@@ -3731,9 +3869,6 @@ insert_result_copy (
   //gra_homeable value.
   TN *new_tn = Copy_TN(tn);
   Set_TN_is_global_reg(new_tn);
-
-  // Make it an SSA TN
-  SSA_UNIVERSE_Add_TN(new_tn);
 
   // replace old tn in the phi OP
   Set_OP_result(phi_op, 0, new_tn);
@@ -3777,10 +3912,7 @@ insert_result_copy (
     BB_Append_Ops(in_bb, &ops);
 
   // Create a congruence class for new_tn
-  PHI_CONGRUENCE_CLASS *cc = 
-    PHI_CONGRUENCE_CLASS_make(TN_register_class(new_tn));
-  //Set_phiCongruenceClass(new_tn,cc);
-  PHI_CONGRUENCE_CLASS_Add_TN(cc,new_tn);
+  PHI_CONGRUENCE_CLASS_Init_TN(new_tn);
 
   // Update interference graph
   if (Igraph_Used) {
@@ -4062,15 +4194,16 @@ SSA_Make_Conventional (
 
     GRA_LIVE_Recalc_Liveness(rid);
 
-    SSA_UNIVERSE_Initialize ();
-
-    //
-    // Build the interference graph
-    //
-    IGRAPH_Build();
-    Eliminate_Psi_Resource_Interference ();
-    Eliminate_Phi_Resource_Interference();
-    IGRAPH_Clean(); // do I need to clean anything ??
+    if (SSA_UNIVERSE_Initialize ()) {
+      //
+      // Build the interference graph
+      //
+      IGRAPH_Build();
+      if (has_psi) Eliminate_Psi_Resource_Interference ();
+      if (has_sameres) Eliminate_SameRes_Resource_Interference ();
+      if (has_phi) Eliminate_Phi_Resource_Interference();
+      IGRAPH_Clean(); // do I need to clean anything ??
+    }
 
     OP_MAP_Delete(map_psi_use);
     map_psi_use = NULL;
@@ -4278,7 +4411,9 @@ SSA_Remove_Pseudo_OPs (
   //
   // Last, fix machine constraints due to ISA/ABI constraints
   //
-  repair_machine_constraints();
+  // FdF 20080321: OP_same_res is now handled during PHI CONGRUENCE
+  // classes coalescing.
+  // repair_machine_constraints();
 
 
 

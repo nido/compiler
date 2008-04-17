@@ -564,6 +564,9 @@ enum OP_COND_DEF_KIND {
 #define OP_MASK_MULTI_EXIT_LOOP   0x0100 /* this operation
                                               correspond to a
                                               multi-exit loop */
+// FdF 20080320
+#define OP_MASK_SAMERES	   0x0200 /* This op has one or more SameRes constraint. */
+
 #endif
 
 # define OP_glue(o)		(OP_flags(o) & OP_MASK_GLUE)
@@ -655,11 +658,12 @@ enum OP_COND_DEF_KIND {
 # define OP_packed(o)		(OP_flags2(o) & OP_MASK_PACKED)
 # define Set_OP_packed(o)	(OP_flags2(o) |= OP_MASK_PACKED)
 # define Reset_OP_packed(o)	(OP_flags2(o) &= ~OP_MASK_PACKED)
-
 # define OP_multi_exit_loop(o)		(OP_flags2(o) & OP_MASK_MULTI_EXIT_LOOP)
 # define Set_OP_multi_exit_loop(o)	(OP_flags2(o) |= OP_MASK_MULTI_EXIT_LOOP)
 # define Reset_OP_multi_exit_loop(o)	(OP_flags2(o) &= ~OP_MASK_MULTI_EXIT_LOOP)
-
+# define OP_sameres(o)		(OP_flags2(o) & OP_MASK_SAMERES)
+# define Set_OP_sameres(o)	(OP_flags2(o) |= OP_MASK_SAMERES)
+# define Reset_OP_sameres(o)	(OP_flags2(o) &= ~OP_MASK_SAMERES)
 #endif
 
 extern BOOL OP_cond_def( const OP*);
