@@ -1128,6 +1128,9 @@ CGIR_LD_make(CGIR_LD cgir_ld, CGIR_BB head_bb, CGIR_TN trip_count_tn, int unroll
     if (cgir_li != NULL) {
       LOOPINFO *new_li = TYPE_P_ALLOC(LOOPINFO);
       *new_li = *cgir_li;
+      TN *trip_count_tn = LOOPINFO_primary_trip_count_tn(new_li);
+      if (trip_count_tn != NULL && TN_is_register(trip_count_tn))
+	LOOPINFO_primary_trip_count_tn(new_li) = NULL;
       if (LOOPINFO_wn(cgir_li) != NULL && unrolled > 1) {
 	// Code adapted from Unroll_Dowhile_Loop.
 	WN *wn = WN_COPY_Tree(LOOPINFO_wn(cgir_li));

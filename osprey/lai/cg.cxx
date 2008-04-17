@@ -885,8 +885,29 @@ CG_Generate_Code(
     for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
       LRA_Compute_Register_Request (bb, &MEM_local_region_pool);
     }
-  } else
+  } else {
     IGLS_Schedule_Region (TRUE /* before register allocation */);
+#ifdef TARG_ST
+    // FdF 20080328: Reset loop trip count to remove an artificial use
+    // for register allocation.
+    BOOL need_live = FALSE;
+    for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+      if (BB_loophead(bb)) {
+	ANNOTATION *info_ant = ANNOT_Get(BB_annotations(bb), ANNOT_LOOPINFO);
+	LOOPINFO *info = info_ant ? ANNOT_loopinfo(info_ant) : NULL;
+	TN *trip_count_tn = info ? LOOPINFO_primary_trip_count_tn(info) : NULL;
+	if (trip_count_tn != NULL && TN_is_register(trip_count_tn)) {
+	  LOOPINFO_primary_trip_count_tn(info) = NULL;
+	  need_live = TRUE;
+	}
+      }
+    }
+    if (need_live) {
+      GRA_LIVE_Recalc_Liveness(NULL);
+      GRA_LIVE_Rename_TNs();
+    }
+#endif
+  }
 #else
   IGLS_Schedule_Region (TRUE /* before register allocation */);
 #endif

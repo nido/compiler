@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 17 16:37:11 CEST 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-40561
+
+Description:
+------------
+	* [trunk] Fix for bug #40561: Increased register pressure because of trip_count tn in loopinfo
+	Deliver fixes/codex-40561 rev #16517 with authorization branch #41684
+
+
+Modified Files:
+---------------
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Apr 17 11:30:50 CEST 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
