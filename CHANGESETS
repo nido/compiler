@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 17 10:42:17 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-42022
+
+Description:
+------------
+	* [trunk] Fix for bug #42022: ICE in local register allocator overlap coalescing.
+	          -> Fix in LRA: Insure that overlap coalescing info
+		     for dedicated registers is consistent with
+		     avail_reg info
+	Deliver fixes/codex-42022 rev #16493 with authorization branch #42033
+
+
+Modified Files:
+---------------
+	M      osprey/lai/lra.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Apr 16 11:35:12 CEST 2008
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

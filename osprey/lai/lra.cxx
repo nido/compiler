@@ -2272,13 +2272,14 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 
 #ifdef TARG_ST
   // [TTh] Fill overlap coalescing info at end of BB
-  if (LRA_overlap_coalescing) {
+  if (LRA_overlap_coalescing && (BB_length(bb) > 0)) {
     // Define live out dedicated registers as alive
     ISA_REGISTER_CLASS cl;
     FOR_ALL_ISA_REGISTER_CLASS (cl) {
       REGISTER r;
       for (r = REGISTER_MIN; r <= REGISTER_MAX; r++) {
-	if (ded_reg_last_use(cl, r) >= BB_length(bb)) {
+	if (avail_regs[cl].reg[r] == FALSE &&
+	    ded_reg_last_use(cl, r) > BB_length(bb)) {
 	  Set_ded_reg_ovcoal_alive_count(cl, r, 1);
 	}
       }
