@@ -1307,6 +1307,11 @@ Create_ST_For_Tree (tree decl_node)
           Set_TY_size (ty_idx, TY_size (Get_TY (TREE_TYPE (TREE_TYPE (decl_node)))));
         }
 	if (TY_mtype (ty_idx) == MTYPE_M &&
+#ifdef TARG_ST
+            // [SC] Alignment of parameters is fixed by the ABI, and cannot
+            // be changed by Aggregate_Alignment.
+            TREE_CODE(decl_node) != PARM_DECL &&
+#endif
 	    Aggregate_Alignment > 0 &&
 	    Aggregate_Alignment > TY_align (ty_idx))
 	  Set_TY_align (ty_idx, Aggregate_Alignment);

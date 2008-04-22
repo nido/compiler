@@ -1,6 +1,42 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Apr 22 13:05:29 CEST 2008
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/clarkes/dev-align-aggregates
+
+Description:
+------------
+	*  Do not allow -TENV:align_aggregates to change alignment of aggregate
+        parameters passed by value.
+        Delivered clarkes/dev-align-aggregates rev #16564 with authorization
+        art #42698.
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/tree_symtab.cxx
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/g++fe/tree_symtab.cxx
+	M      osprey/g++fe/wfe_expr.cxx
+
+
+Patch generation command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@16526 --new=https://codex.cro.st.com/svnroot/open64/branches/clarkes/dev-align-aggregates@16564" 
+
+Diff links to modified files:
+-----------------------------
+osprey/gccfe/tree_symtab.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/tree_symtab.cxx?p2=branches/clarkes/dev-align-aggregates/osprey/gccfe/tree_symtab.cxx&r1=16526&r2=16564&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_expr.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_expr.cxx?p2=branches/clarkes/dev-align-aggregates/osprey/gccfe/wfe_expr.cxx&r1=16526&r2=16564&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/tree_symtab.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/tree_symtab.cxx?p2=branches/clarkes/dev-align-aggregates/osprey/g++fe/tree_symtab.cxx&r1=16526&r2=16564&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_expr.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_expr.cxx?p2=branches/clarkes/dev-align-aggregates/osprey/g++fe/wfe_expr.cxx&r1=16526&r2=16564&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Apr 17 17:40:04 CEST 2008
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

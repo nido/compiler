@@ -4936,14 +4936,6 @@ WFE_Expand_Expr (tree exp,
 	  }
 
 	  arg_mtype  = TY_mtype(arg_ty_idx);
-#ifdef TARG_ST
-	  // FdF 20080212: Consider also special alignment on
-	  // aggregates
-	  if (arg_mtype == MTYPE_M)
-	    if (Aggregate_Alignment > 0 &&
-		Aggregate_Alignment > TY_align (arg_ty_idx))
-	      Set_TY_align (arg_ty_idx, Aggregate_Alignment);
-#endif
 #if 0
 	  // gcc allows non-struct actual to correspond to a struct formal;
 	  // fix mtype of parm node so as not to confuse back-end
@@ -5152,7 +5144,7 @@ WFE_Expand_Expr (tree exp,
 	TY_IDX hi_ty_idx = Get_TY (type);
 	TY_IDX ty_idx = component_ty_idx ? component_ty_idx : hi_ty_idx;
 	TYPE_ID mtype = TY_mtype (ty_idx);
-	INT64 type_size = int_size_in_bytes (type);
+	INT64 type_size = TY_size (hi_ty_idx);
 	TY_IDX va_list_ty_idx = Get_TY (va_list_type_node);
 	TYPE_ID va_list_mtype = TY_mtype (va_list_ty_idx);
 	WN *ap_addr, *ap_load, *ap_store;
@@ -5186,12 +5178,6 @@ WFE_Expand_Expr (tree exp,
 	// All parameters are passd in a multiple of word-sized slots.
 	rounded_size = (((int_size_in_bytes (type) + (UNITS_PER_WORD - 1))
 			 / UNITS_PER_WORD) * UNITS_PER_WORD);
-	// FdF 20080212: Take into account special alignment on
-	// aggregates
-	if (TY_mtype(hi_ty_idx) == MTYPE_M) {
-	  if (align < Aggregate_Alignment)
-	    align = Aggregate_Alignment;
-	}
 
 	// Set wn = start address of arg.
 	if (align > 4) {
