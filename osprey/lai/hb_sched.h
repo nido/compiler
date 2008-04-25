@@ -73,6 +73,7 @@
 #define HBS_FROM_GCM_TO_BB		0x1000
 #define HBS_MINIMIZE_BUNDLES		0x2000
 #define HBS_HEURISTIC_CRITICAL_PATH     0x4000
+#define HBS_CRITICAL_PATH_PREF_LOAD     0x8000
 
 
 typedef UINT16 HBS_TYPE;
@@ -495,6 +496,8 @@ public:
   // [SC] Variant that accepts a threshold for reg usage minimization.
   void Init (BB*, HBS_TYPE, INT32, BBSCH*, mINT8*,
 	     ISA_REGISTER_CLASS, INT32);
+  //TDR Variant for schedule in sequence
+  void Init (BB*, HBS_TYPE);
 #endif
   INT Find_Schedule_Cycle(OP*, BOOL);
   void Estimate_Reg_Cost_For_OP (OP*);

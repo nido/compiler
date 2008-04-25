@@ -99,6 +99,7 @@ static INT BBs_Processed = 0;
 static INT Clock;
 static INT MAX_Clock;
 #ifdef TARG_ST
+static INT32 computed_max_sched = INT32_MAX;
 // FdF 15/12/2003: We need to know if we are in pre-pass or post-pass
 // scheduling, because optimizations with SP_Sym in Ldst_Addiu_Pair
 // are only valid in post-pass.
@@ -1503,6 +1504,7 @@ HB_Schedule::Put_Sched_Vector_Into_BB (BB *bb, BBSCH *bbsch, BOOL is_fwd)
 #endif
   {
 #ifdef TARG_ST
+	computed_max_sched=cur_cycle;
     Adjust_Ldst_Offsets (is_fwd);
 #else
     Adjust_Ldst_Offsets ();
@@ -1747,9 +1749,9 @@ List_Based_Fwd::Is_OP_Better (OP *cur_op, OP *best_op)
       if (((best_slack!=0) ||(cur_slack !=0)) 
           &&  OPSCH_num_succs(cur_opsch) 
           &&  OPSCH_num_succs(best_opsch)
-          &&  (OPSCH_lstart(best_opsch)==OPSCH_lstart(cur_opsch))) {
-  
-        INT cur_val = 0;
+          &&  ((OPSCH_lstart(best_opsch)==OPSCH_lstart(cur_opsch)) || (_hbs_type & HBS_CRITICAL_PATH_PREF_LOAD))) {   	  
+
+    	INT cur_val = 0;
         INT best_val = 0;
   
         if (cur_slack == 0) cur_val = 2;
@@ -1763,6 +1765,21 @@ List_Based_Fwd::Is_OP_Better (OP *cur_op, OP *best_op)
         if (OPSCH_num_succs(best_opsch) <=2 ) best_val ++ ;
         else best_val += 2;
         
+        if (_hbs_type & HBS_CRITICAL_PATH_PREF_LOAD) {
+			/*[dt] Address more specific cases: If we are already after a latest start date, 
+			 * increase choose coef and increase the one that have the sooner last start date
+			 * Also we add a extra value if the operand is a load*/
+	        
+	        if (OPSCH_lstart(best_opsch) < OPSCH_lstart(cur_opsch)) best_val ++;
+	        if (OPSCH_lstart(cur_opsch) < OPSCH_lstart(best_opsch)) cur_val ++;
+
+	        if (OPSCH_lstart(best_opsch) < cur_scycle) best_val += 2;
+	        if (OPSCH_lstart(cur_opsch) < cur_scycle) cur_val += 2;
+
+	        if(OP_load(cur_op)) cur_val += 3;
+	        if(OP_load(best_op)) best_val += 3;
+        }
+        
         if (OPSCH_num_succs(cur_opsch) > OPSCH_num_succs(best_opsch)) cur_val ++ ;
         if (OPSCH_num_succs(cur_opsch) < OPSCH_num_succs(best_opsch)) best_val ++ ;
   
@@ -1770,7 +1787,7 @@ List_Based_Fwd::Is_OP_Better (OP *cur_op, OP *best_op)
         if (CGTARG_Max_OP_Latency(cur_op) < CGTARG_Max_OP_Latency(best_op))  best_val ++;
         if (CGTARG_Max_OP_Latency(cur_op) > CGTARG_Max_OP_Latency(best_op))  cur_val ++;
        
-        if (cur_val > best_val)  return TRUE;
+  	  	if (cur_val > best_val)  return TRUE;
         else if (cur_val < best_val)  return FALSE;
       }
     }
@@ -2352,6 +2369,15 @@ HB_Schedule::Init(BB *bb, HBS_TYPE hbs_type, INT32 max_sched,
     minimize_regs_threshold = regs_avail[cl] - cl_limit;
 }
 #endif
+
+#ifdef TARG_ST
+void
+HB_Schedule::Init(BB *bb, HBS_TYPE hbs_type)
+{
+	Init(bb, hbs_type, computed_max_sched, NULL,NULL);
+}
+#endif
+
 
 void
 HB_Schedule::Init(BB *bb, HBS_TYPE hbs_type, INT32 max_sched,

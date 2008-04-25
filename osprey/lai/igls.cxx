@@ -757,7 +757,6 @@ IGLS_Schedule_Region (BOOL before_regalloc)
 #ifdef TARG_ST
     hbs_type |= HBS_HEURISTIC_CRITICAL_PATH;
 #endif
-
     // allow data-speculation if (-O > O1) and -OPT:space is turned off.
 #ifndef TARG_ST
     should_we_do_thr = should_we_do_thr && (CG_opt_level > 1) && !OPT_Space;
@@ -956,7 +955,7 @@ IGLS_Schedule_Region (BOOL before_regalloc)
             case Forward_Post_Sched:
               Sched->Init(bb, hbs_type, max_sched, NULL, NULL);
               Sched->Schedule_BB(bb, NULL, TRUE);
-              break;
+             break;
             case Backward_Post_Sched:
               Sched->Init(bb, hbs_type, max_sched, NULL, NULL);
               Sched->Schedule_BB(bb, NULL, FALSE);
@@ -966,6 +965,21 @@ IGLS_Schedule_Region (BOOL before_regalloc)
               Sched->Schedule_BB(bb, NULL, TRUE);
               Sched->Init(bb, hbs_type, max_sched, NULL, NULL);
               Sched->Schedule_BB(bb, NULL, FALSE);
+              break;
+            // TDR: New optimization to improve on xp70
+            case Optimized_Post_Sched:
+              Sched->Init(bb, hbs_type, max_sched, NULL, NULL);
+              Sched->Schedule_BB(bb, NULL, TRUE);
+              Sched->Init(bb, (hbs_type | HBS_CRITICAL_PATH_PREF_LOAD));
+              Sched->Schedule_BB(bb, NULL, TRUE);
+              break;
+            case Optimized_Double_Post_Sched:
+              Sched->Init(bb, hbs_type, max_sched, NULL, NULL);
+              Sched->Schedule_BB(bb, NULL, TRUE);
+              Sched->Init(bb, hbs_type);
+              Sched->Schedule_BB(bb, NULL, FALSE);
+              Sched->Init(bb, (hbs_type | HBS_CRITICAL_PATH_PREF_LOAD));
+              Sched->Schedule_BB(bb, NULL, TRUE);
               break;
             }
 #else
