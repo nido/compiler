@@ -41,21 +41,18 @@
  * ====================================================================
  */
 
+#ifndef __CGDWARF_DEBUG_FRAME_H__
+#define __CGDWARF_DEBUG_FRAME_H__
+
 //#define DEBUG_UNWIND
 #define PROPAGATE_DEBUG
 //#define USE_UNREACHABLE
 
 #include "cgdwarf_targ.h"
-
-// [HK]
-#if __GNUC__ >= 3
-#include <list>
-using std::list;
-#else
-#include <list.h>
-#endif // __GNUC__ >= 3
-
-extern INT Data_Alignment_Factor;
+#include "cgir.h"
+#include "tn_map.h"
+#include "em_elf.h"
+#include "em_dwarf.h" // Needed for DebugRegId defintion
 
 extern BOOL Trace_Unwind;
 
@@ -89,8 +86,8 @@ typedef struct unwind_elem {
   mUINT8 kind;
   mUINT8 qp;			// reg number of qualifying predicate
   mUINT16 label;		// body label id
-  CLASS_REG_PAIR rc_reg;	// reg whose state is changing
-  CLASS_REG_PAIR save_rc_reg;	// reg being saved into
+  DebugRegId rc_reg;	// reg whose state is changing
+  DebugRegId save_rc_reg;	// reg being saved into
   LABEL_IDX label_idx;          // idx of label generated in asm file
   mINT64 offset;		// stack offset or frame size
   BOOL frame_changed;           // frame size changes in the same bundle
@@ -104,6 +101,7 @@ typedef struct unwind_elem {
   mUINT8 propagated;            // used internally when propagating
 				// infos along the CFG
   BOOL is_copy;                 // is this ue a copy_state?
+  BOOL after_sp_adj;            // is this ue after SP adjust?
   mINT64 frame_size;            // frame size at this point in PU
   BOOL handler;                 // belongs to an exception handler
 #endif
@@ -135,8 +133,6 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb);
 
 void Record_UE(OP* op, UNWIND_ELEM* ue, BB* bb, UINT when);
 
-typedef UINT64 PR_BITSET;	// bit mask for PR enumeration
-
 // call per-PU
 void Init_Unwind_Info (BOOL trace);
 
@@ -144,3 +140,4 @@ void Finalize_Unwind_Info(void);
 
 void Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process,
 				   BOOL inserted_late);
+#endif

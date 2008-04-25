@@ -2251,7 +2251,7 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
     dwarf_add_expr_gen (expr, DW_OP_bregx,
 #ifdef TARG_ST
 			//TB: better DWARF register support
-			TN_Get_Debug_Reg_Id(FP_TN),
+			Get_Debug_Reg_Id(FP_TN),
 #else
 			REGISTER_machine_id (TN_register_class(FP_TN), TN_register(FP_TN)),
 #endif
@@ -2260,7 +2260,7 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
     dwarf_add_expr_gen (expr, DW_OP_bregx,
 #ifdef TARG_ST
 			//TB: better DWARF register support
-			TN_Get_Debug_Reg_Id (SP_TN),
+			Get_Debug_Reg_Id (SP_TN),
 #else
 			REGISTER_machine_id (TN_register_class(SP_TN), TN_register(SP_TN)),
 #endif

@@ -31,7 +31,9 @@
   http://oss.sgi.com/projects/GenInfo/NoticeExplan
 
 */
-#include "targ_isa_registers.h" // For ISA_REGISTER_CLASS definition
+#ifndef __TARG_EM_DWARF_H__
+#   define __TARG_EM_DWARF_H__
+
 #define DWARF_TARGET_FLAG	DW_DLC_ISA_IA64
 
 #define STACK_SCRATCH_AREA_SIZE 16 /* [CL] size in bytes */
@@ -69,22 +71,4 @@ Dwarf_Ptr Em_Dwarf_Symbolic_Relocs_To_Elf(next_buffer_retriever,
 					  Cg_Dwarf_Sym_To_Elfsym_Ofst,
 					  Dwarf_Unsigned *);
 
-/**
- * Get debug identifier for given register.
- * The debug identifier is a virtual representation of the hardware register.
- * This representation is understood by the debugger whereas hardware
- * identifier are not.
- *
- * @param  reg_class Register class of given reg
- * @param  reg Register to be translated
- * @param  bitSize Size in bit of the register
- *
- * @pre    true
- * @post   true
- *
- * @return Related debug identifier
- */
-typedef Dwarf_Unsigned DebugRegId;
-extern DebugRegId
-Get_Debug_Reg_Id(ISA_REGISTER_CLASS reg_class, INT reg, INT bitSize);
-
+#endif  /* __TARG_EM_DWARF_H__ */

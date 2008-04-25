@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Apr 25 10:23:36 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cq1/dev-migration-debug-fw
+
+Description:
+------------
+	* [trunk] Deliver cq1/dev-migration-debug-fw rev #16618 with authorization branch #32573
+	          -> Migration of STxP70 and ST200 debug framework to generic one.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgdwarf.cxx
+	M      osprey/lai/cgdwarf_debug_frame.h
+	M      osprey/lai/tn.h
+	M      osprey/lai/cgdwarf_debug_frame.cxx
+	M      osprey/lai/Makefile.gbase
+	M      osprey/common/com/em_dwarf.h
+	M      osprey/common/com/em_dwarf.cxx
+	M      osprey/targinfo/stxp70/cg/cgdwarf_targ.h
+	M      osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+	D      osprey/targinfo/stxp70/cg/targ_cgdwarf_utils.h
+	D      osprey/targinfo/stxp70/cg/targ_cgdwarf_utils.cxx
+	M      osprey/targinfo/stxp70/abi/abi_properties.cxx
+	M      osprey/targinfo/stxp70/emit/targ_em_dwarf.cxx
+	M      osprey/targinfo/stxp70/emit/targ_em_dwarf.h
+	M      osprey/targinfo/st200/cg/cgdwarf_targ.h
+	M      osprey/targinfo/st200/cg/targ_cgdwarf.cxx
+	M      osprey/targinfo/st200/emit/targ_em_dwarf.cxx
+	M      osprey/targinfo/st200/emit/targ_em_dwarf.h
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr 25 10:08:50 CEST 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

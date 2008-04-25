@@ -512,7 +512,6 @@ ifeq ($(BUILD_TARGET),STxP70)
  CG_CXX_SRCS +=  pqs.cxx
  CG_CXX_SRCS +=  pqs_cg.cxx
  CG_CXX_SRCS +=  targ_pqs.cxx
- CG_CXX_SRCS +=  targ_cgdwarf_utils.cxx
 
 #CGG_DEV{
   ifeq ($(BUILD_VARIANT), CGG_BUILD)

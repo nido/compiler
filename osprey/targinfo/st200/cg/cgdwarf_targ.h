@@ -50,6 +50,8 @@ typedef enum {
 	PR_R5,
 	PR_R6,
 	PR_R7,
+        PR_R8,
+        PR_R9,
 	PR_R13,
 	PR_R14,
 	PR_RA,
@@ -106,22 +108,7 @@ extern void Finalize_Unwind_Info(void);
 #ifdef TARG_ST
 // [CL] need to emit labels after bundles too
 extern void Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL after_op,
-
 					  BOOL inserted_late);
-/*[TB]
- * Give the debug register identifier of given tn. This translation is needed
- * because we have to be backward compatible with debugger developed for CoSy
- * framework
- *
- * @param  tn [in] Machine register
- *
- * @pre    TN_is_register(tn)
- * @post   true
- *
- * @return The debug identifier that represents tn in dwarf information
- */
-typedef Dwarf_Unsigned DebugRegId;
-extern DebugRegId Get_Debug_Reg_Id_From_TN(TN* tn);
 #else
 extern void Emit_Unwind_Directives_For_OP(OP *op, FILE *f);
 #endif

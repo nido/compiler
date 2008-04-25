@@ -41,11 +41,22 @@
  * ====================================================================
  */
 
-#if !defined(TARG_ST) // TODO POST MERGE: sync with targinfo/stxp70/cg/targ_cgdwarf.cxx
+// [HK]
+#if __GNUC__ >= 3
+#include <list>
+using std::list;
+#else
+#include <list.h>
+#endif // __GNUC__ >= 3
+
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <libelf.h>
+#include <map>
+#include <vector>
+#include <set>
+#include <algorithm>
 
 #include "W_alloca.h"
 #include "tracing.h"
@@ -62,29 +73,54 @@
 #include "cgemit.h"
 #include "cgdwarf.h"               /* [CL] for CGD_LABIDX */
 #include "cgdwarf_debug_frame.h"
+#include "cg.h"                    /* for PU_Has_EH_Return */
+#include "mempool.h" // For MEM_POOL definition
 
 BOOL Trace_Unwind = FALSE;
 
 BOOL has_asm;
+/**
+ * Represent a boolean that must be true to allow unwind information analysis
+ */
+#define OPTIONS_CHECK ((CG_emit_unwind_info && CG_emit_asm_dwarf) || \
+                       CXX_Exceptions_On)
+
+/**
+ * Memory pool used for the whole debug frame generation
+ */
+static MEM_POOL dw_Mem_Pool;
+
+typedef list < UNWIND_ELEM > UEs; 
+typedef UEs::iterator UEsIt;
 
 // use list not slist cause append to end
-static list < UNWIND_ELEM > ue_list;
-static list < UNWIND_ELEM >::iterator ue_iter;
+static UEs ue_list;
+static UEsIt ue_iter;
 static UINT last_when;
 static UINT last_label = 0;
 static TN_MAP tn_def_op;
+
+typedef std::map<DebugRegId, UEs> DbgIdToUEs;
+typedef DbgIdToUEs::iterator DbgIdToUEsIt;
+
+typedef std::map<DebugRegId, UNWIND_ELEM*> DbgIdToPUE;
+typedef std::vector<DbgIdToPUE> VectorOfDbgIdToPUE;
+typedef DbgIdToPUE::iterator DbgIdToPUEIt;
+typedef DbgIdToPUE::const_iterator DbgIdToPUECIt;
+
 
 BOOL PU_has_FP = FALSE;  // does the current PU use a frame pointer?
 BOOL PU_has_restored_FP = FALSE; // has the current PU already restored FP?
 
 static BOOL UE_validated; // was the Tag_Irrelevant_Saves_And_Restores
 			  // pass alreadly run?
+typedef CCIEInfo::SavedList SetOfDbgId;
+typedef CCIEInfo::CItSavedList SetOfDbgIdCIt;
+typedef std::vector<SetOfDbgId> VectorOfSetOfDbgId;
+typedef CCIEInfo::LessThanDebugRegId CmpDbgId;
+typedef CCIEInfo::DebugRegIdAllocator DbgIdAllocator;
 
-static const char *
-UE_Register_Name (ISA_REGISTER_CLASS rc, REGISTER r)
-{
-  return REGISTER_name(rc,r);
-}
+static SetOfDbgId PU_saved_dbgid; // Set of DebugId to be tracked for debug_frame
 
 void
 Print_Unwind_Elem (UNWIND_ELEM ue, char *msg)
@@ -118,19 +154,12 @@ Print_Unwind_Elem (UNWIND_ELEM ue, char *msg)
 			ue.label);
 		break;
 	case UE_SAVE_GR:  
-		fprintf(TFile, " save %s in gr %s",
-		    UE_Register_Name(
-			CLASS_REG_PAIR_rclass(ue.rc_reg),
-        		CLASS_REG_PAIR_reg(ue.rc_reg) ),
-		    UE_Register_Name(
-			CLASS_REG_PAIR_rclass(ue.save_rc_reg),
-        		CLASS_REG_PAIR_reg(ue.save_rc_reg) ));
+		fprintf(TFile, " save %lld in gr %lld",
+			(long long)ue.rc_reg, (long long)ue.save_rc_reg);
 		break;
 	case UE_SAVE_SP:
 	case UE_SAVE_FP:
-		fprintf(TFile, " save %s", UE_Register_Name(
-				CLASS_REG_PAIR_rclass(ue.rc_reg),
-        			CLASS_REG_PAIR_reg(ue.rc_reg) ));
+		fprintf(TFile, " save %lld", (long long)ue.rc_reg);
 #ifdef PROPAGATE_DEBUG
 		fprintf(TFile, " to mem %lld(%s) %lld(entry-%s)", ue.offset,
 			(ue.kind == UE_SAVE_SP ? "sp" : "fp"), ue.top_offset,
@@ -140,29 +169,22 @@ Print_Unwind_Elem (UNWIND_ELEM ue, char *msg)
 			(ue.kind == UE_SAVE_SP ? "sp" : "fp") );
 		break;
 	case UE_RESTORE_GR:  
-		fprintf(TFile, " restore %s", UE_Register_Name(
-			CLASS_REG_PAIR_rclass(ue.rc_reg),
-        		CLASS_REG_PAIR_reg(ue.rc_reg) ));
-			if (!CLASS_REG_PAIR_EqualP(ue.save_rc_reg,
-						   CLASS_REG_PAIR_undef)) {
-			  fprintf(TFile, " from %s",
-				  UE_Register_Name(CLASS_REG_PAIR_rclass(ue.save_rc_reg),
-						   CLASS_REG_PAIR_reg(ue.save_rc_reg) ));
-			}
+		fprintf(TFile, " restore %lld", (long long)ue.rc_reg);
+		if (ue.save_rc_reg != DebugRegId_undef) {
+		  fprintf(TFile, " from %lld", (long long)ue.save_rc_reg);
+		}
 		break;
 	case UE_RESTORE_SP:
 	case UE_RESTORE_FP:
 #ifdef PROPAGATE_DEBUG
-		fprintf(TFile, " restore %s from mem %lld(%s) %lld(entry-%s)",
-			UE_Register_Name(CLASS_REG_PAIR_rclass(ue.rc_reg),
-					 CLASS_REG_PAIR_reg(ue.rc_reg) ),
+		fprintf(TFile, " restore %lld from mem %lld(%s) %lld(entry-%s)",
+			(long long)ue.rc_reg,
 			ue.offset, (ue.kind == UE_RESTORE_SP ? "sp" : "fp"),
 			ue.top_offset,
 			(ue.kind == UE_RESTORE_SP ? "sp" : "fp"));
 #else
-		fprintf(TFile, " restore %s from mem %s", UE_Register_Name(
-			CLASS_REG_PAIR_rclass(ue.rc_reg),
-			CLASS_REG_PAIR_reg(ue.rc_reg) ),
+		fprintf(TFile, " restore %lld from mem %s",
+			(long long)ue.rc_reg,
 			(ue.kind == UE_RESTORE_SP ? "sp" : "fp"));
 #endif
 		break;
@@ -197,23 +219,54 @@ Print_All_Unwind_Elem (char *msg)
   }
 }
 
+static void
+Print_Set(FILE* file, const SetOfDbgId& set)
+{
+    SetOfDbgIdCIt it;
+    for(it = set.begin(); it != set.end(); ++it) {
+        if(it == set.begin()) {
+            fprintf(file, "%lld", (long long)*it);
+        } else {
+            fprintf(file, " %lld", (long long)*it);
+        }
+    }
+}
+
+/* Computes the set of DebugId that should bes acked in debug frame.
+ * Usually correspond to the list associated to the CIE, but some
+ * exception might exist (currently it is the case for procedure
+ * with eh_return()).
+ */
+static void
+Compute_Saved_DbgId() {
+  PU_saved_dbgid = CIEs[CIE_index(Get_Current_PU())].Saved();
+
+  // [SC] In an eh_return PU, we want unwind information for eh_return registers.
+  if (PU_Has_EH_Return) {
+    ISA_REGISTER_CLASS rc;
+    FOR_ALL_ISA_REGISTER_CLASS(rc) {
+      REGISTER_SET eh_return_set;
+      eh_return_set = REGISTER_CLASS_eh_return(rc);
+      if (!REGISTER_SET_EmptyP(eh_return_set)) {
+	int bitSize = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(rc));
+	REGISTER r;
+	r = REGISTER_SET_Choose(eh_return_set);
+	do {
+	  PU_saved_dbgid.insert(Get_Debug_Reg_Id(rc, r, bitSize));
+	  r = REGISTER_SET_Choose_Next(eh_return_set, r);
+	} while (r != REGISTER_UNDEFINED);
+      }
+    }
+  }
+}
+
 BOOL TN_Is_Unwind_Reg (TN *tn)
 {
-  if (!TN_is_register(tn))
+  if (!TN_is_register(tn)) {
     return FALSE;
+  }
 
-  if (REGISTER_SET_MemberP(
-	   REGISTER_CLASS_callee_saves(TN_register_class(tn)),
-	   TN_register(tn))) {
-    return TRUE;
-  }
-  else if (CLASS_REG_PAIR_EqualP(TN_class_reg(tn), CLASS_REG_PAIR_ra)) {
-    return TRUE;
-  }
-  else if (CLASS_REG_PAIR_EqualP(TN_class_reg(tn), CLASS_REG_PAIR_fp)) {
-    return TRUE;
-  }
-  return FALSE;
+  return (PU_saved_dbgid.find(Get_Debug_Reg_Id(tn)) != PU_saved_dbgid.end());
 }
 
 OP* Find_Def_Of_TN (TN *tn, OP *cur_op, BB *bb)
@@ -274,8 +327,8 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
 #ifdef PROPAGATE_DEBUG
     if (TN_Is_Unwind_Reg(tn)) {
 #ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s is an unwind reg %d\n", __FUNCTION__,
-	      TN_Get_Debug_Reg_Id(tn));
+      fprintf(TFile, "** %s is an unwind reg %lld\n", __FUNCTION__,
+              (long long)Get_Debug_Reg_Id(tn));
 #endif
 	return tn;
     }
@@ -284,8 +337,8 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     if (TN_is_dedicated(tn)) 
     {
 #ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s is dedicated reg %d\n", __FUNCTION__,
-	      TN_Get_Debug_Reg_Id(tn));
+      fprintf(TFile, "** %s is dedicated reg %lld\n", __FUNCTION__,
+              (long long)Get_Debug_Reg_Id(tn));
 #endif
 	return NULL;
     }
@@ -322,8 +375,8 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     if (otn && TN_Is_Unwind_Reg(otn)) 
     {
 #ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s TN is save reg %d\n", __FUNCTION__,
-	      TN_Get_Debug_Reg_Id(otn));
+      fprintf(TFile, "** %s TN is save reg %lld\n", __FUNCTION__,
+              (long long)Get_Debug_Reg_Id(otn));
 #endif
 	return otn;
     }
@@ -336,8 +389,8 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     if (TN_is_save_reg(tn)) 
     {
 #ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s is a save reg %d\n", __FUNCTION__,
-	      TN_Get_Debug_Reg_Id(tn));
+      fprintf(TFile, "** %s is a save reg %lld\n", __FUNCTION__,
+              (long long)Get_Debug_Reg_Id(tn));
 #endif
 	return tn;
     }
@@ -349,8 +402,8 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     // thing in the exit block, but as this is a temporary fix...
     if (BB_entry(bb) && TN_Is_Unwind_Reg(tn)) {
 #ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s is an unwind reg %d\n", __FUNCTION__,
-	      TN_Get_Debug_Reg_Id(tn));
+      fprintf(TFile, "** %s is an unwind reg %lld\n", __FUNCTION__,
+              (long long)Get_Debug_Reg_Id(tn));
 #endif
 	return tn;
     }
@@ -358,8 +411,8 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     if (TN_is_dedicated(tn)) 
     {
 #ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s is dedicated reg %d\n", __FUNCTION__,
-	      TN_Get_Debug_Reg_Id(tn));
+      fprintf(TFile, "** %s is dedicated reg %lld\n", __FUNCTION__,
+              (long long)Get_Debug_Reg_Id(tn));
 #endif
 	return NULL;
     }
@@ -390,8 +443,8 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     if (otn && TN_is_register(otn) && TN_is_save_reg(otn)) 
     {
 #ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s TN is save reg %d\n", __FUNCTION__,
-	      TN_Get_Debug_Reg_Id(otn));
+      fprintf(TFile, "** %s TN is save reg %lld\n", __FUNCTION__,
+              (long long)Get_Debug_Reg_Id(otn));
 #endif
 	return otn;
     }
@@ -404,25 +457,6 @@ void Record_UE(OP* op, UNWIND_ELEM* ue, BB* bb, UINT when)
 {
   if (ue->kind != UE_UNDEFINED) {
     ue->qp = 0;
-#if 0
-    if (OP_has_predicate(op)) {
-      ue.qp = REGISTER_Get_Debug_Reg_Id (ISA_REGISTER_CLASS_predicate,
-			TN_register(OP_opnd(op, OP_PREDICATE_OPND)) );
-    }
-#endif
-#if 0
-    if (ue.kind == UE_SAVE_GR) {
-      ISA_REGISTER_CLASS rc = CLASS_REG_PAIR_rclass(ue.save_rc_reg);
-      REGISTER reg = CLASS_REG_PAIR_reg(ue.save_rc_reg);
-      if (ABI_PROPERTY_Is_stacked(rc, REGISTER_machine_id(rc, reg))
-	  && ! BB_rotating_kernel(bb)
-	  && REGISTER_Is_Stacked_Output(rc, reg) )
-	{
-	  reg = REGISTER_Translate_Stacked_Output(reg);
-	  Set_CLASS_REG_PAIR_reg(ue.save_rc_reg, reg);
-	}
-    }
-#endif
     ue->when = when;
     ue->bb = bb;
     ue_list.push_back (*ue);
@@ -490,30 +524,60 @@ Find_Unwind_Info (void)
   TN_MAP_Delete (tn_def_op);
 }
 
-
 
-#define INCR(p)	(p = static_cast<PR_TYPE>(static_cast<INT>(p) +1))
 
-typedef UINT64 PR_BITSET;	// bit mask for PR enumeration
-static inline BOOL Get_PR (PR_BITSET state, PR_TYPE p)
+static inline BOOL Get_PR (const SetOfDbgId& state, DebugRegId p)
 {
-	return (BOOL) ((state >> p) & 1);
+	return (BOOL) (state.find(p) != state.end());
 }
-static inline BOOL Get_PR (PR_BITSET *state, BB *bb, PR_TYPE p)
+static inline BOOL Get_PR (const VectorOfSetOfDbgId& state, BB *bb, DebugRegId p)
 {
-	return (BOOL) ((state[bb->id] >> p) & 1);
+	return (BOOL) (state[bb->id].find(p) != state[bb->id].end());
 }
-static inline PR_BITSET Set_PR (PR_BITSET state, PR_TYPE p)
+static inline void Set_PR (SetOfDbgId& state, DebugRegId p)
 {
-	return (state | (1LL << p));
+	state.insert(p);
 }
-static inline void Set_PR (PR_BITSET *state, BB *bb, PR_TYPE p)
+static inline void Set_PR (VectorOfSetOfDbgId& state, BB *bb, DebugRegId p)
 {
-	state[bb->id] |= (1LL << p);
+	state[bb->id].insert(p);
 }
-static inline PR_BITSET Clear_PR (PR_BITSET state, PR_TYPE p)
+static inline void Clear_PR (SetOfDbgId& state, DebugRegId p)
 {
-	return (state & (~(1LL << p)));
+	state.erase(p);
+}
+
+static SetOfDbgId
+SetOfDbgId_Difference(const SetOfDbgId& setA, const SetOfDbgId& setB)
+{
+    // gcc is misled with the following syntax:
+    // SetOfDbgId res(CmpDbgId(), DbgIdAllocator(&dw_Mem_Pool));
+    // So use this one
+    SetOfDbgId res = SetOfDbgId(CmpDbgId(), DbgIdAllocator(&dw_Mem_Pool));
+    std::insert_iterator<SetOfDbgId> out(res, res.begin());
+    std::set_difference(setA.begin(), setA.end(), setB.begin(), setB.end(),
+                        out);
+    return res;
+}
+
+static SetOfDbgId
+SetOfDbgId_Union(const SetOfDbgId& setA, const SetOfDbgId& setB)
+{
+    SetOfDbgId res = SetOfDbgId(CmpDbgId(), DbgIdAllocator(&dw_Mem_Pool));
+    std::insert_iterator<SetOfDbgId> out(res, res.begin());
+    std::set_union(setA.begin(), setA.end(), setB.begin(), setB.end(),
+                   out);
+    return res;
+}
+
+static SetOfDbgId
+SetOfDbgId_Intersection(const SetOfDbgId& setA, const SetOfDbgId& setB)
+{
+    SetOfDbgId res = SetOfDbgId(CmpDbgId(), DbgIdAllocator(&dw_Mem_Pool));
+    std::insert_iterator<SetOfDbgId> out(res, res.begin());
+    std::set_intersection(setA.begin(), setA.end(), setB.begin(), setB.end(),
+                          out);
+    return res;
 }
 
 #ifdef PROPAGATE_DEBUG
@@ -522,18 +586,18 @@ static INT64 current_frame_size = 0;
 static BOOL is_handler = FALSE;
 
 static void Tag_Irrelevant_Saves_And_Restores_For_BB(BB* bb,
-				     list < UNWIND_ELEM > pr_stack[PR_LAST],
+				     DbgIdToUEs& pr_stack,
 						     BOOL* visited,
 						     INT64* frame_size_bb)
 {
   // Record the UEs pushed/popped here (in this bb), in order to
   // restore pr_stack for recursion
-  list < UNWIND_ELEM > pushed_popped_here;
-  PR_TYPE p;
+  UEs pushed_popped_here;
+  DebugRegId p;
 
   if (Trace_Unwind) {
-    fprintf(TFile, "Recursing to BB %d current frame size %d\n", BB_id(bb),
-current_frame_size);
+    fprintf(TFile, "Recursing to BB %d current frame size %lld\n", BB_id(bb),
+	    current_frame_size);
   }
 
   pushed_popped_here.clear();
@@ -575,9 +639,10 @@ current_frame_size);
     case UE_SAVE_GR:
     case UE_SAVE_SP:
     case UE_SAVE_FP:
-      p = CR_To_PR (ue_iter->rc_reg);
+      p = ue_iter->rc_reg;
       if (current_frame_size && ue_iter->kind == UE_SAVE_SP) {
 	ue_iter->top_offset = ue_iter->offset - current_frame_size;
+	ue_iter->after_sp_adj = TRUE;
       } else {
 	ue_iter->top_offset = ue_iter->offset;
       }
@@ -589,6 +654,7 @@ current_frame_size);
 	if (Trace_Unwind) {
 	  Print_Unwind_Elem (*ue_iter, "invalid");
 	}
+    break;
       } else {
 	if (Trace_Unwind) {
 	  Print_Unwind_Elem (*ue_iter, "valid");
@@ -603,7 +669,7 @@ current_frame_size);
     case UE_RESTORE_GR:
     case UE_RESTORE_SP:
     case UE_RESTORE_FP:
-      p = CR_To_PR (ue_iter->rc_reg);
+      p = ue_iter->rc_reg;
       // FIXME if p was saved with SAVE_FP, maybe we should not use
       // current_frame_size. But so far there is no distinction
       // between a restore from SP and from FP
@@ -614,7 +680,7 @@ current_frame_size);
       }
 
       if (!is_handler || !pr_stack[p].empty()) {
-          list<UNWIND_ELEM>::iterator it = pr_stack[p].begin(), itPair;
+          UEsIt it = pr_stack[p].begin(), itPair;
           ue_iter->valid = FALSE;
           
           for(; !ue_iter->valid && it != pr_stack[p].end(); ++it) {
@@ -643,8 +709,7 @@ current_frame_size);
                   // Check that restore from a register corresponds to a save
                   // to the same register
                   if (it->kind == UE_SAVE_GR
-                      && CLASS_REG_PAIR_EqualP(ue_iter->save_rc_reg,
-                                               it->save_rc_reg)) {
+                      && ue_iter->save_rc_reg == it->save_rc_reg) {
                       ue_iter->valid = TRUE;
                       itPair = it;
                   }
@@ -720,7 +785,7 @@ current_frame_size);
     UNWIND_ELEM ue;
     ue = pushed_popped_here.front();
 
-    p = CR_To_PR (ue.rc_reg);
+    p = ue.rc_reg;
     if (ue.propagated == UE_PROP_PUSHED) {
       pr_stack[p].pop_front();
       if (Trace_Unwind) {
@@ -763,10 +828,7 @@ static void Tag_Irrelevant_Saves_And_Restores_BB_List(BB_LIST *elist,
   }
 
   // Use a stack to record the state of each PR along the CFG
-  list < UNWIND_ELEM > pr_stack[PR_LAST];
-  for (PR_TYPE p = PR_FIRST; p < PR_LAST; INCR(p)) {
-    pr_stack[p].clear();
-  }
+  DbgIdToUEs pr_stack;
 
   BB* bb = BB_LIST_first(elist);
 
@@ -795,12 +857,15 @@ static void Tag_Irrelevant_Saves_And_Restores_TOP(INT64* frame_size_bb)
 
 // iterate thru list and mark all saves/restores in local state
 static void
-Mark_Local_Saves_Restores (PR_BITSET *local_save_state, 
-	PR_BITSET *local_restore_state)
+Mark_Local_Saves_Restores (VectorOfSetOfDbgId& local_save_state, 
+                           VectorOfSetOfDbgId& local_restore_state)
 {
-  PR_TYPE p;
-  memset (local_save_state, 0, ((PU_BB_Count+1) * sizeof(PR_BITSET)));
-  memset (local_restore_state, 0, ((PU_BB_Count+1) * sizeof(PR_BITSET)));
+  DebugRegId p;
+  int i;
+  for(i = 0; i <local_save_state.size(); ++i) {
+      local_save_state[i].clear();
+      local_restore_state[i].clear();
+  }
 
 #ifdef PROPAGATE_DEBUG
   // remove the invalid UEs from the list
@@ -826,7 +891,7 @@ Mark_Local_Saves_Restores (PR_BITSET *local_save_state,
 	case UE_SAVE_GR:
 	case UE_SAVE_SP:
 	case UE_SAVE_FP:
-  		p = CR_To_PR (ue_iter->rc_reg);
+  		p = ue_iter->rc_reg;
   		Set_PR(local_save_state, ue_iter->bb, p);
 		break;
 	case UE_DESTROY_FRAME:
@@ -834,7 +899,7 @@ Mark_Local_Saves_Restores (PR_BITSET *local_save_state,
 	case UE_RESTORE_GR:
 	case UE_RESTORE_SP:
 	case UE_RESTORE_FP:
-  		p = CR_To_PR (ue_iter->rc_reg);
+  		p = ue_iter->rc_reg;
   		Set_PR(local_restore_state, ue_iter->bb, p);
 		break;
 	}
@@ -842,14 +907,14 @@ Mark_Local_Saves_Restores (PR_BITSET *local_save_state,
 }
 
 static void
-Propagate_Save_Restore_State (PR_BITSET *entry_state,
-	PR_BITSET *local_save_state,
-	PR_BITSET *local_restore_state,
-	PR_BITSET *exit_state
+Propagate_Save_Restore_State (VectorOfSetOfDbgId& entry_state,
+                              VectorOfSetOfDbgId& local_save_state,
+                              VectorOfSetOfDbgId& local_restore_state,
+                              VectorOfSetOfDbgId& exit_state
 #ifdef PROPAGATE_DEBUG
-       ,UNWIND_ELEM* bb_entry_ue[][PR_LAST],
-	UNWIND_ELEM* bb_exit_ue[][PR_LAST],
-	list < UNWIND_ELEM > pr_last_info[PR_LAST]
+	,VectorOfDbgIdToPUE& bb_entry_ue,
+	VectorOfDbgIdToPUE& bb_exit_ue,
+	DbgIdToUEs& pr_last_info
 #endif
 )
 {
@@ -858,13 +923,17 @@ Propagate_Save_Restore_State (PR_BITSET *entry_state,
   INT bbid;
   BOOL changed = TRUE;
   INT count = 0;
-
+  
 #ifdef PROPAGATE_DEBUG
-  PR_TYPE p;
+  DebugRegId p;
 #endif
-
-  memset (entry_state, 0, ((PU_BB_Count+1) * sizeof(PR_BITSET)));
-  memset (exit_state, -1, ((PU_BB_Count+1) * sizeof(PR_BITSET)));
+  SetOfDbgId savedList = PU_saved_dbgid;
+  savedList.insert(Get_Debug_Reg_Id(SP_TN)); // SP must also be handled
+  int i;
+  for(i = 0; i < entry_state.size(); ++i) {
+      entry_state[i].clear();
+      exit_state[i] = savedList;
+  }
 
   while (changed) {
 	++count;
@@ -880,40 +949,46 @@ Propagate_Save_Restore_State (PR_BITSET *entry_state,
 		if (Trace_Unwind) 
 			fprintf (TFile, "curbb: %d, preds: ", BB_id(bb));
 		if (BB_preds(bb) != NULL) {
-			PR_BITSET new_entry_state = (PR_BITSET) -1; // all 1's
+			SetOfDbgId new_entry_state = savedList;
 #ifdef PROPAGATE_DEBUG
 			UNWIND_ELEM* new_entry_ue[PR_LAST];
 			memset(new_entry_ue, 0, PR_LAST * sizeof(UNWIND_ELEM*));
 #endif
 			FOR_ALL_BB_PREDS (bb, blst) {
 				bbid = BB_id(BBLIST_item(blst));
-				new_entry_state &= exit_state[bbid];
-				if (Trace_Unwind) fprintf (TFile, "[%d %llx], ",
-					bbid, exit_state[bbid]);
+				new_entry_state = SetOfDbgId_Intersection(new_entry_state,
+                                                          exit_state[bbid]);
+				if (Trace_Unwind) {
+				  fprintf (TFile, "[BB%d ",
+					   bbid);
+				  Print_Set(TFile, exit_state[bbid]);
+				  fprintf (TFile, "], ");
+				}
 #ifdef PROPAGATE_DEBUG
 				// Do the equivalent of the &= line
 				// above, for UEs
-				for (p = PR_FIRST; p < PR_LAST; INCR(p)) {
+				DbgIdToPUECIt it;
+				for (it = bb_exit_ue[bbid].begin();
+				     it != bb_exit_ue[bbid].end(); ++it) {
+				  DbgIdToPUECIt entryIt =
+				    bb_entry_ue[BB_id(bb)].find(it->first);
 				  // if 'p' has an exit state in bbid
 				  // and no entry state in bb, then
 				  // the entry state in bb is the exit
 				  // state of bbid
-				  if (bb_exit_ue[bbid][p]) {
-				    if (bb_entry_ue[BB_id(bb)][p] == NULL) {
-				      bb_entry_ue[BB_id(bb)][p] =
-					bb_exit_ue[bbid][p];
-				      if (Trace_Unwind) 
-					Print_Unwind_Elem(*bb_exit_ue[bbid][p], "entry_state");
-				      // if there is already an entry
-				      // state in bb, it should match
-				      // the exit state of bbid
-				    } else if (bb_entry_ue[BB_id(bb)][p]
-					       != bb_exit_ue[bbid][p]) {
-				      if (Trace_Unwind) {
-					fprintf(TFile, "**UE do not match:\n");
-					Print_Unwind_Elem(*bb_entry_ue[BB_id(bb)][p], "");
-					Print_Unwind_Elem(*bb_exit_ue[bbid][p], "");
-				      }
+				  if (entryIt ==  bb_entry_ue[BB_id(bb)].end()) {
+				    bb_entry_ue[BB_id(bb)][it->first] = it->second;
+				    if (Trace_Unwind) 
+				      Print_Unwind_Elem(*(it->second),
+							"entry_state");
+				    // if there is already an entry
+				    // state in bb, it should match
+				    // the exit state of bbid
+				  } else if (entryIt->second != it->second) {
+				    if (Trace_Unwind) {
+				      fprintf(TFile, "**UE do not match:\n");
+				      Print_Unwind_Elem(*(entryIt->second), "");
+				      Print_Unwind_Elem(*(it->second), "");
 				    }
 				  }
 				}
@@ -922,25 +997,41 @@ Propagate_Save_Restore_State (PR_BITSET *entry_state,
         		entry_state[BB_id(bb)] = new_entry_state;
 		}
 		bbid = BB_id(bb);
-		if (Trace_Unwind) 
-			fprintf (TFile, "\n entry_state: %llx\n", entry_state[bbid]);
+		if (Trace_Unwind) {
+			fprintf (TFile, "\n entry_state: ");
+			Print_Set(TFile, entry_state[bbid]);
+			fprintf(TFile, "\n");
+		}
 
-		// exit state bit is 1 if entry or local_save is 1
-		// and local restore is 0.
-		PR_BITSET new_exit_state = 
-			entry_state[bbid] | local_save_state[bbid];
-		new_exit_state &= ~local_restore_state[bbid];
-		if (new_exit_state != exit_state[bbid]) {
+		// A debug id is inserted in exit state if it belongs
+		// to entry or local_save state and if it is not
+		// locally restored.
+		SetOfDbgId new_exit_state = SetOfDbgId_Union(entry_state[bbid],
+                                                     local_save_state[bbid]);
+		new_exit_state =
+		  SetOfDbgId_Intersection(new_exit_state,
+					  SetOfDbgId_Difference(savedList,
+								local_restore_state[bbid]));
+		if ((count == 1) || (new_exit_state != exit_state[bbid])) {
+			// This code must be reached at least once (first iteration) to
+			// correctly propagate bb_entry_ue to bb_exit_ue
 			changed = TRUE;
-			if (Trace_Unwind) 
-			  fprintf(TFile, "changed from %llx to %llx\n", exit_state[bbid], new_exit_state);
+			if (Trace_Unwind) {
+			  fprintf(TFile, "changed from: ");
+			  Print_Set(TFile, exit_state[bbid]);
+			  fprintf(TFile, "\nto          : ");
+			  Print_Set(TFile, new_exit_state);
+			  fprintf(TFile, "'\n");
+			}
 			exit_state[bbid] = new_exit_state;
 #ifdef PROPAGATE_DEBUG
 			// do the equivalent of the above, for UEs
-			for (p = PR_FIRST; p < PR_LAST; INCR(p)) {
-
+			CCIEInfo::CItSavedList itSaved;
+			for (itSaved = savedList.begin(); itSaved != savedList.end();
+			     ++itSaved) {
+			  p = *itSaved;
 			  // look for the UE that corresponds to bb
-			  list < UNWIND_ELEM >::iterator ue_for_p_iter;
+			  UEsIt ue_for_p_iter;
 			  for(ue_for_p_iter = pr_last_info[p].begin();
 			      ue_for_p_iter != pr_last_info[p].end();
 			      ue_for_p_iter++) {
@@ -952,36 +1043,46 @@ Propagate_Save_Restore_State (PR_BITSET *entry_state,
 			      FmtAssert(FALSE, ("no UE found -- inconsistent!\n"));
 			    }
 			    bb_exit_ue[bbid][p] = &(*ue_for_p_iter);
-			  } else {
+			  } else if(bb_entry_ue[bbid].find(p) != bb_entry_ue[bbid].end()) {
 			    bb_exit_ue[bbid][p] = bb_entry_ue[bbid][p];
 			  }
-			  if (bb_exit_ue[bbid][p]) {
+			  DbgIdToPUECIt it = bb_exit_ue[bbid].find(p);
+			  if (it != bb_exit_ue[bbid].end()) {
 			    if (Trace_Unwind) {
-			      Print_Unwind_Elem(*bb_exit_ue[bbid][p], "exit_state");
+			      Print_Unwind_Elem(*(it->second), "exit_state");
 			    }
 			  }
 			}
 #endif
 		}
-		if (Trace_Unwind) 
-		  fprintf (TFile, " exit_state: %llx\n", exit_state[bbid]);
+		if (Trace_Unwind) {
+		  fprintf (TFile, " exit_state: ");
+		  Print_Set(TFile, exit_state[bbid]);
+		  fprintf(TFile, "\n");
+		}
 
 	}
   }
   if (Trace_Unwind) {
-	fprintf(TFile, "bb\tentry\t\tlocal_save\tlocal_restore\texit:\n");
 	for (INT i = 1; i <= PU_BB_Count; ++i) {
-		fprintf(TFile, "%4d:\t%12llx\t%12llx\t%12llx\t%12llx\n", 
-			i, entry_state[i], local_save_state[i], local_restore_state[i], exit_state[i]);
+		fprintf(TFile, "BB%4d:\nentry: ", i);
+		Print_Set(TFile, entry_state[i]);
+		fprintf(TFile, "\nlocal_save: ");
+		Print_Set(TFile, local_save_state[i]);
+		fprintf(TFile, "\nlocal_restore: ");
+		Print_Set(TFile, local_restore_state[i]);
+		fprintf(TFile, "\nexit: ");
+		Print_Set(TFile, exit_state[i]);
+		fprintf(TFile, "\n");
 	}
   }
 }
 
 static UNWIND_ELEM
-Find_Prev_Save_UE_For_BB (list < UNWIND_ELEM > prev_ue, BB *bb, UINT level)
+Find_Prev_Save_UE_For_BB (UEs prev_ue, BB *bb, UINT level)
 {
   BBLIST *blst;
-  list < UNWIND_ELEM >::iterator prev_iter;
+  UEsIt prev_iter;
   FOR_ALL_BB_PREDS (bb, blst) {
 	// find ue in nbb that does a save
   	for (prev_iter = prev_ue.begin(); prev_iter != prev_ue.end(); ++prev_iter) {
@@ -1022,7 +1123,9 @@ static void Prepend_UE(UNWIND_ELEM* pue, UINT when, BB *bb)
   ue.valid = TRUE;
   ue.top_offset = pue->top_offset;
   ue.is_copy = TRUE;
+  ue.after_sp_adj = pue->after_sp_adj;
   ue.label_idx = LABEL_IDX_ZERO;
+  ue.frame_changed = pue->frame_changed;
   ue.frame_size = pue->frame_size;
   ue.handler = ue_iter->handler;
 
@@ -1037,23 +1140,24 @@ static void Prepend_UE(UNWIND_ELEM* pue, UINT when, BB *bb)
 // overload some routines to add unwind elements
 static void
 #ifdef PROPAGATE_DEBUG
-Add_UE (list < UNWIND_ELEM > prev_ue, PR_TYPE p, UINT when, BB *bb, INT64 frame_size, BOOL is_handler)
+Add_UE (UEs prev_ue, DebugRegId p, UINT when, BB *bb, INT64 frame_size, BOOL is_handler)
 #else
-Add_UE (list < UNWIND_ELEM > prev_ue, PR_TYPE p, UINT when, BB *bb)
+Add_UE (UEs prev_ue, DebugRegId p, UINT when, BB *bb)
 #endif
 {
-  list < UNWIND_ELEM >::iterator prev_iter;
+  UEsIt prev_iter;
   UNWIND_ELEM ue;
   ue.kind = UE_UNDEFINED;
 #ifdef PROPAGATE_DEBUG
   ue.valid = TRUE;
   ue.top_offset = 0;
   ue.is_copy = FALSE;
+  ue.after_sp_adj = FALSE;
   ue.frame_size = frame_size;
   ue.handler = is_handler;
 #endif
   ue.label_idx = LABEL_IDX_ZERO;
-  ue.save_rc_reg =  CLASS_REG_PAIR_undef;
+  ue.save_rc_reg =  DebugRegId_undef;
   UINT num_found = 0;
   for (prev_iter = prev_ue.begin(); prev_iter != prev_ue.end(); ++prev_iter) {
 	// look for save
@@ -1065,14 +1169,14 @@ Add_UE (list < UNWIND_ELEM > prev_ue, PR_TYPE p, UINT when, BB *bb)
 	}
   }
   if (num_found == 0) {
-	DevWarn("unwind: no pr_info found for %d", p);
+	DevWarn("unwind: no pr_info found for %lld", p);
 	return;
   }
   if (num_found > 1) {
 	// check if all are same
   	for (prev_iter = prev_ue.begin(); prev_iter != prev_ue.end(); ++prev_iter) {
 		if (prev_iter->kind == ue.kind 
-		  && CLASS_REG_PAIR_EqualP(prev_iter->rc_reg, ue.rc_reg))
+		  && prev_iter->rc_reg == ue.rc_reg)
 			--num_found;
 	}
 	++num_found;	// original still counts
@@ -1090,7 +1194,7 @@ Add_UE (list < UNWIND_ELEM > prev_ue, PR_TYPE p, UINT when, BB *bb)
 			}
 		}
 		if (nue.kind == UE_UNDEFINED) {
-			DevWarn("couldn't find unwind save for %d", p);
+			DevWarn("couldn't find unwind save for %lld", p);
 		}
 		else
 			ue = nue;
@@ -1102,19 +1206,16 @@ Add_UE (list < UNWIND_ELEM > prev_ue, PR_TYPE p, UINT when, BB *bb)
   ue.bb = bb;
   ue_list.insert(ue_iter, ue);
   if (Trace_Unwind) {
-    CLASS_REG_PAIR rc_reg = PR_To_CR(p);
-	fprintf(TFile, "state change for %s at entry to bb %d when %d\n",
-		UE_Register_Name(CLASS_REG_PAIR_rclass(rc_reg),
-				 CLASS_REG_PAIR_reg(rc_reg) ),
-		 BB_id(bb), when);
+	fprintf(TFile, "state change for %lld at entry to bb %d when %d\n",
+            (long long)p, BB_id(bb), when);
   }
 }
 
 static void
 #ifdef PROPAGATE_DEBUG
-Add_UE (INT8 kind, PR_TYPE p, UINT when, BB *bb, INT64 frame_size, BOOL is_handler)
+Add_UE (INT8 kind, DebugRegId p, UINT when, BB *bb, INT64 frame_size, BOOL is_handler)
 #else
-Add_UE (INT8 kind, PR_TYPE p, UINT when, BB *bb)
+Add_UE (INT8 kind, DebugRegId p, UINT when, BB *bb)
 #endif
 {
   UNWIND_ELEM ue;
@@ -1122,22 +1223,23 @@ Add_UE (INT8 kind, PR_TYPE p, UINT when, BB *bb)
   ue.valid = TRUE;
   ue.top_offset = 0;
   ue.is_copy = FALSE;
+  ue.after_sp_adj = FALSE;
   ue.frame_size = frame_size;
   ue.handler = is_handler;
 #endif
   ue.label_idx = LABEL_IDX_ZERO;
-  ue.save_rc_reg =  CLASS_REG_PAIR_undef;
+  ue.save_rc_reg =  DebugRegId_undef;
   ue.kind = kind;
   ue.qp = 0;
-  ue.rc_reg = PR_To_CR(p);
+  ue.rc_reg = p;
   ue.when = when;
   ue.bb = bb;
+  ue.frame_changed = FALSE;
+
   ue_list.insert(ue_iter, ue);
   if (Trace_Unwind) 
-	fprintf(TFile, "state change for %s at entry to bb %d when %d\n",
-		UE_Register_Name(CLASS_REG_PAIR_rclass(ue.rc_reg),
-				 CLASS_REG_PAIR_reg(ue.rc_reg) ),
-		BB_id(bb), when);
+	fprintf(TFile, "state change for %lld at entry to bb %d when %d\n",
+            (long long)ue.rc_reg, BB_id(bb), when);
 }
 
 static void
@@ -1152,15 +1254,18 @@ Add_UE (INT8 kind, UINT label, UINT when, BB *bb)
   ue.valid = TRUE;
   ue.top_offset = 0;
   ue.is_copy = FALSE;
+  ue.after_sp_adj = FALSE;
   ue.frame_size = frame_size;
   ue.handler = is_handler;
 #endif
   ue.label_idx = LABEL_IDX_ZERO;
-  ue.save_rc_reg =  CLASS_REG_PAIR_undef;
+  ue.save_rc_reg =  DebugRegId_undef;
   ue.kind = kind;
   ue.label = label;
   ue.when = when;
   ue.bb = bb;
+  ue.frame_changed = FALSE;
+
   ue_list.insert(ue_iter, ue);
   if (Trace_Unwind) 
 	fprintf(TFile, "add ue kind %d label %d at bb %d when %d\n",
@@ -1177,10 +1282,21 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
   // entry, local-save, local-restore, and exit state.
   // first fill in the local state info with changes that happen in that bb.
 
-  PR_BITSET entry_state[PU_BB_Count+1];
-  PR_BITSET local_save_state[PU_BB_Count+1];
-  PR_BITSET local_restore_state[PU_BB_Count+1];
-  PR_BITSET exit_state[PU_BB_Count+1];
+  VectorOfSetOfDbgId entry_state;
+  VectorOfSetOfDbgId local_save_state;
+  VectorOfSetOfDbgId local_restore_state;
+  VectorOfSetOfDbgId exit_state;
+  int i;
+  for(i = 0; i < PU_BB_Count+1; ++i) {
+      entry_state.push_back(SetOfDbgId(CmpDbgId(),
+                                       DbgIdAllocator(&dw_Mem_Pool)));
+      local_save_state.push_back(SetOfDbgId(CmpDbgId(),
+                                            DbgIdAllocator(&dw_Mem_Pool)));
+      local_restore_state.push_back(SetOfDbgId(CmpDbgId(),
+                                               DbgIdAllocator(&dw_Mem_Pool)));
+      exit_state.push_back(SetOfDbgId(CmpDbgId(),
+                                      DbgIdAllocator(&dw_Mem_Pool)));
+  }
 
 #ifdef PROPAGATE_DEBUG
   INT64 frame_size_bb[PU_BB_Count+1];
@@ -1197,11 +1313,11 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
   Mark_Local_Saves_Restores (local_save_state, local_restore_state);
 
 #ifdef PROPAGATE_DEBUG
-  PR_TYPE p;
+  DebugRegId p;
   // keep list of ue's for each pr.
-  list < UNWIND_ELEM > pr_last_info[PR_LAST];
+  DbgIdToUEs pr_last_info;
   for (ue_iter = ue_list.begin(); ue_iter != ue_list.end(); ++ue_iter) {
-		p = CR_To_PR (ue_iter->rc_reg);
+		p = ue_iter->rc_reg;
 		// put last ue for bb on list
 		if ( ! pr_last_info[p].empty()
 		    && pr_last_info[p].front().bb == ue_iter->bb)
@@ -1212,11 +1328,8 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
   }
 
   // for each BB, keep ue for each pr on BB's exit
-  UNWIND_ELEM* bb_exit_ue[PU_BB_Count+1][PR_LAST];
-  UNWIND_ELEM* bb_entry_ue[PU_BB_Count+1][PR_LAST];
-
-  memset(bb_exit_ue,  0, ((PU_BB_Count+1) * PR_LAST * sizeof(UNWIND_ELEM*)));
-  memset(bb_entry_ue, 0, ((PU_BB_Count+1) * PR_LAST * sizeof(UNWIND_ELEM*)));
+  VectorOfDbgIdToPUE bb_exit_ue(PU_BB_Count + 1);
+  VectorOfDbgIdToPUE bb_entry_ue(PU_BB_Count + 1);
 #endif
 
   // now propagate the save/restore state thru the control flow.
@@ -1231,11 +1344,11 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 #endif
 
 #ifndef PROPAGATE_DEBUG // moved above
-  PR_TYPE p;
+  DebugRegId p;
   // keep list of ue's for each pr.
-  list < UNWIND_ELEM > pr_last_info[PR_LAST];
+  DbgIdToUEs pr_last_info;
   for (ue_iter = ue_list.begin(); ue_iter != ue_list.end(); ++ue_iter) {
-		p = CR_To_PR (ue_iter->rc_reg);
+		p = ue_iter->rc_reg;
 		// put last ue for bb on list
 		if ( ! pr_last_info[p].empty()
 		    && pr_last_info[p].front().bb == ue_iter->bb)
@@ -1248,7 +1361,8 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 
   // now determine save/restore changes at each when point
   // and update ue_list with changes
-  PR_BITSET current_state = 0;
+  SetOfDbgId current_state =
+      SetOfDbgId(CmpDbgId(), DbgIdAllocator(&dw_Mem_Pool));
   INT bbid;
   UINT lwhen = 0;
   ue_iter = ue_list.begin();
@@ -1278,16 +1392,11 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 	// first copy previous label then do new label.
 	if (BB_prev(bb) != NULL && BB_exit(BB_prev(bb))) {
 		// in bb that follows exit, so copy above label
+		// Add_UE (UE_COPY, last_label, lwhen, bb);
+		// current_state = entry_state[BB_id(BB_prev(bb))];
 #ifdef PROPAGATE_DEBUG
-		Add_UE (UE_COPY, last_label, lwhen, bb, last_frame_size, is_handler);
-#else
-		Add_UE (UE_COPY, last_label, lwhen, bb);
-#endif
-		current_state = entry_state[BB_id(BB_prev(bb))];
-#ifdef PROPAGATE_DEBUG
-		// in addition to the (fake for us) COPY, explicitly
-		// add all the UEs required to restore the desired
-		// state
+		// explicitly add all the UEs required to restore the
+		// desired state
 
 		// FIXME: for an EH BB, the state of the pred is 0.
 		// TODO: propagate bottom-up the entry states
@@ -1299,15 +1408,17 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 		  pred_id = BB_id(BB_prev(bb));
 		}
 		if (Trace_Unwind) 
-		  fprintf(TFile, "copying entry state from bb %d\n", pred_id);
+		  fprintf(TFile, "copying exit state from bb %d\n", pred_id);
 
-  		for (p = PR_FIRST; p < PR_LAST; INCR(p)) {
-		  if (bb_entry_ue[pred_id][p]) {
-		    Prepend_UE(bb_entry_ue[pred_id][p], lwhen, bb);
-		  }
+		DbgIdToPUECIt it;
+		for(it = bb_exit_ue[pred_id].begin();
+		    it != bb_exit_ue[pred_id].end(); ++it) {
+		  Prepend_UE(it->second, lwhen, bb);
 		}
+		current_state = exit_state[pred_id];
 #endif
 	}
+
 	if (BB_exit(bb) && BB_next(bb) != NULL) {
 		// if have an exit that is followed by another bb
 		// then want to create body label before exit and
@@ -1342,9 +1453,11 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 		}
 	}
 
-	if (Trace_Unwind) 
-	  fprintf (TFile, "current_state for bb %d: %llx\n", bbid,
-		   current_state);
+  if (Trace_Unwind) {
+	fprintf (TFile, "current_state for bb %d: ", bbid);
+	Print_Set(TFile, current_state);
+	fprintf(TFile, "\n");
+  }
 
 	// add implicit changes upon entry
 #ifdef PROPAGATE_DEBUG
@@ -1369,10 +1482,13 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 #endif
 #endif
 	if (current_state != entry_state[bbid]) {
-  		for (p = PR_FIRST; p < PR_LAST; INCR(p)) {
+	    CCIEInfo::CItSavedList itSaved;
+	    for (itSaved = PU_saved_dbgid.begin(); itSaved != PU_saved_dbgid.end();
+		 ++itSaved) {
+			p = *itSaved;
 			// ignore implicit sp changes,
 			// as label/copy should handle those.
-			if (p == PR_SP) continue;
+			if (p == Get_Debug_Reg_Id(SP_TN)) continue;
 			if (Get_PR(current_state,p) != Get_PR(entry_state[bbid],p)) 
 			{
 				// add into ue_list
@@ -1397,34 +1513,36 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 #endif
 				}
 			}
-  		}
-		current_state = entry_state[bbid];
+	    }
+	    current_state = entry_state[bbid];
 	}
 
 	// look for changes in bb
 	while (ue_iter != ue_list.end() && ue_iter->bb == bb) {
-		p = CR_To_PR (ue_iter->rc_reg);
-		if (Trace_Unwind) fprintf(TFile, 
-			"state change for %s in bb %d\n",
-					  UE_Register_Name(CLASS_REG_PAIR_rclass(ue_iter->rc_reg),
-							   CLASS_REG_PAIR_reg(ue_iter->rc_reg) ),
-					  bbid);
+		p = ue_iter->rc_reg;
+		if (Trace_Unwind) {
+		  fprintf(TFile, 
+			  "state change for %lld in bb %d\n",
+			  (long long)ue_iter->rc_reg, bbid);
+		}
 		if (ue_iter->kind == UE_RESTORE_GR
-		 || ue_iter->kind == UE_RESTORE_SP
-		 || ue_iter->kind == UE_RESTORE_FP)
+		    || ue_iter->kind == UE_RESTORE_SP
+		    || ue_iter->kind == UE_RESTORE_FP)
 		{
-			current_state = Clear_PR(current_state, p);
+			Clear_PR(current_state, p);
 		}
 		else {
-			current_state = Set_PR(current_state, p);
+			Set_PR(current_state, p);
 		}
 		++ue_iter;
 	}
 	lwhen += Get_BB_When_Length(bb);
 
-	if (Trace_Unwind) 
-	  fprintf (TFile, "final current_state for bb %d: %llx\n", bbid,
-		   current_state);
+	if (Trace_Unwind) {
+	  fprintf (TFile, "final current_state for bb %d: ", bbid);
+	  Print_Set(TFile, current_state);
+	  fprintf (TFile, "\n");
+	}
 
   }
 }
@@ -1432,7 +1550,8 @@ Do_Control_Flow_Analysis_Of_Unwind_Info (void)
 static void
 Insert_Epilogs (void)
 {
-  list < UNWIND_ELEM >::iterator prev_ue;
+#if 0
+  UEsIt prev_ue;
   UNWIND_ELEM ue;
   for (ue_iter = ue_list.begin(); ue_iter != ue_list.end(); ++ue_iter) {
     switch (ue_iter->kind) {
@@ -1459,6 +1578,7 @@ Insert_Epilogs (void)
 		fprintf(TFile, "add epilog at bb %d, when %d\n", BB_id(ue.bb), ue.when);
     }
   }
+#endif
 }
 
 static UINT next_when;
@@ -1476,7 +1596,9 @@ static INT Idx_restore_csr = 0;
 void 
 Init_Unwind_Info (BOOL trace)
 {
-  if (!CG_emit_unwind_info) return;
+  if (!OPTIONS_CHECK) return;
+  MEM_POOL_Initialize(&dw_Mem_Pool, "Unwind generation", TRUE);
+  MEM_POOL_Push (&dw_Mem_Pool);
 
   Trace_Unwind = trace;
   has_asm = FALSE;
@@ -1485,6 +1607,8 @@ Init_Unwind_Info (BOOL trace)
   UE_validated = FALSE;
 
   if (Get_Trace (TP_EMIT, 128)) draw_flow_graph();
+
+  Compute_Saved_DbgId();
 
   Find_Unwind_Info ();
 
@@ -1526,11 +1650,14 @@ Init_Unwind_Info (BOOL trace)
 void 
 Finalize_Unwind_Info(void)
 {
-  if (!CG_emit_unwind_info) return;
+  if (!OPTIONS_CHECK) return;
 
   ue_list.clear();
+  MEM_POOL_Pop(&dw_Mem_Pool);
+  MEM_POOL_Delete(&dw_Mem_Pool);
+
 }
-
+
 
 static void Generate_Label_For_Unwinding2(LABEL_IDX* label, INT* idx, char* txt,
 				      UNWIND_ELEM& ue_iter, BOOL post_process)
@@ -1566,7 +1693,7 @@ static void Generate_Label_For_Unwinding(LABEL_IDX* label, INT* idx, char* txt,
 #ifdef PROPAGATE_DEBUG
   if (!ue_iter.is_copy) {
 #endif
-  Generate_Label_For_Unwinding2(label, idx, txt, ue_iter, post_process);
+    Generate_Label_For_Unwinding2(label, idx, txt, ue_iter, post_process);
 #ifdef PROPAGATE_DEBUG
   } else {
     if (!post_process) {
@@ -1594,7 +1721,7 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process,
 				     // order to generate
 				     // DW_CFA_advance_loc insn only
 				     // when necessary
-  static list < UNWIND_ELEM >::iterator saved_ue_iter;
+  static UEsIt saved_ue_iter;
 
   // Remember if we create/destroy the frame inside this bundle. This
   // is necessary to handle the case where the frame is created and
@@ -1625,7 +1752,7 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process,
   Label_save_csr    = LABEL_IDX_ZERO;
   Label_restore_csr = LABEL_IDX_ZERO;
 
-  if (!CG_emit_unwind_info) return;
+  if (!OPTIONS_CHECK) return;
 
   // If this OP was inserted after unwind elements computation (eg
   // simulated_op), don't take it into account
@@ -1660,14 +1787,14 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process,
   if (OP_dummy(op)) return;
 
   while (ue_iter != ue_list.end() && ue_iter->when == next_when) {
-    ISA_REGISTER_CLASS rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
-    REGISTER reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
 
     ue_iter->when_bundle_start = when_bundle_start;
 
     switch (ue_iter->kind) {
     case UE_CREATE_FRAME:
-      bundle_has_frame_change = TRUE;
+      if (!ue_iter->is_copy) {
+        bundle_has_frame_change = TRUE;
+      }
       frame_size += ue_iter->offset;
 
       Generate_Label_For_Unwinding(&Label_adjust_sp, &Idx_adjust_sp,
@@ -1675,7 +1802,9 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process,
       break;
 
     case UE_DESTROY_FRAME:
-      bundle_has_frame_change = TRUE;
+      if (!ue_iter->is_copy) {
+        bundle_has_frame_change = TRUE;
+      }
       frame_size -= ue_iter->offset;
 
       Generate_Label_For_Unwinding(&Label_restore_sp, &Idx_restore_sp,
@@ -1694,28 +1823,31 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process,
 
     case UE_SAVE_SP:
     case UE_SAVE_FP:
-      if (CLASS_REG_PAIR_EqualP(ue_iter->rc_reg, CLASS_REG_PAIR_ra)) {
+        if (ue_iter->rc_reg ==
+            Get_Debug_Reg_Id(CLASS_REG_PAIR_ra)) {
 	Generate_Label_For_Unwinding(&Label_save_ra, &Idx_save_ra,
 				   "save_ra", *ue_iter, post_process);
       } else {
 	Generate_Label_For_Unwinding(&Label_save_csr, &Idx_save_csr,
 				   "save_csr", *ue_iter, post_process);
       }
+        if (!ue_iter->is_copy) {
+          // adjust offset if SP is adjusted in the same bundle
+          if (post_process && bundle_has_frame_change) {
+            ue_iter->offset += frame_size;
+          }
 
-      // adjust offset if SP is adjusted in the same bundle
-      if (post_process && bundle_has_frame_change) {
-	ue_iter->offset += frame_size;
-      }
-
-      /* flag this ue in order to adjust the offset later */
-      if (bundle_has_frame_change) {
-	ue_iter->frame_changed = TRUE;
-      }
+          /* flag this ue in order to adjust the offset later */
+          if (bundle_has_frame_change) {
+            ue_iter->frame_changed = TRUE;
+          }
+        }
       break;
 
     case UE_RESTORE_SP:
     case UE_RESTORE_FP:
-      if (CLASS_REG_PAIR_EqualP(ue_iter->rc_reg, CLASS_REG_PAIR_ra)) {
+      if (ue_iter->rc_reg ==
+          Get_Debug_Reg_Id(CLASS_REG_PAIR_ra)) {
 	Generate_Label_For_Unwinding(&Label_restore_ra, &Idx_restore_ra,
 				   "restore_ra", *ue_iter, post_process);
       } else {
@@ -1723,14 +1855,16 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process,
 				   "restore_csr", *ue_iter, post_process);
       }
 
-      // adjust offset if SP is adjusted in the same bundle
-      if (post_process && bundle_has_frame_change) {
-	ue_iter->offset -= frame_size;
-      }
+      if (!ue_iter->is_copy) {
+        // adjust offset if SP is adjusted in the same bundle
+        if (post_process && bundle_has_frame_change) {
+          ue_iter->offset -= frame_size;
+        }
 
-      /* flag this ue in order to adjust the offset later */
-      if (bundle_has_frame_change) {
-	ue_iter->frame_changed = TRUE;
+        /* flag this ue in order to adjust the offset later */
+        if (bundle_has_frame_change) {
+          ue_iter->frame_changed = TRUE;
+        }
       }
       break;
 
@@ -1755,13 +1889,13 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process,
     case UE_RESTORE_GR:
       if (ue_iter->qp != 0) {
 	if (emit_directives) {
-	  fprintf(f, "%s\t.restorereg.p p%d, %s\n", prefix, 
-		  ue_iter->qp,
-		  UE_Register_Name(rc, reg) );
+	  fprintf(f, "%s\t.restorereg.p p%d, %lld\n", prefix, 
+		  ue_iter->qp, ue_iter->rc_reg);
 	}
       }
       else {
-	if (CLASS_REG_PAIR_EqualP(ue_iter->rc_reg, CLASS_REG_PAIR_ra)) {
+          if (ue_iter->rc_reg ==
+              Get_Debug_Reg_Id(CLASS_REG_PAIR_ra)) {
 	  Generate_Label_For_Unwinding(&Label_restore_ra, &Idx_restore_ra,
 				       "restore_ra", *ue_iter, post_process);
 	} else {
@@ -1773,16 +1907,15 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process,
     case UE_SAVE_GR:
       if (ue_iter->qp != 0) {
 	if (emit_directives) {
-	  fprintf(f, "%s\t%s p%d, %s, %s\n", prefix, ".spillreg.p",
-		  ue_iter->qp,
-		  UE_Register_Name(rc, reg),
-		  UE_Register_Name( CLASS_REG_PAIR_rclass(ue_iter->save_rc_reg),
-				    CLASS_REG_PAIR_reg(ue_iter->save_rc_reg) ) );
+	  fprintf(f, "%s\t%s p%d, %lld, %lld\n", prefix, ".spillreg.p",
+              ue_iter->qp, (long long)ue_iter->rc_reg,
+              (long long)ue_iter->save_rc_reg);
 	}
       }
       else {
 
-	if (CLASS_REG_PAIR_EqualP(ue_iter->rc_reg, CLASS_REG_PAIR_ra)) {
+          if (ue_iter->rc_reg ==
+              Get_Debug_Reg_Id(CLASS_REG_PAIR_ra)) {
 	  Generate_Label_For_Unwinding(&Label_save_ra, &Idx_save_ra,
 				       "save_ra", *ue_iter, post_process);
 	} else {
@@ -1802,7 +1935,7 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process,
 
   next_when += OP_Real_Inst_Words(op);
 }
-
+
 
 extern char *Cg_Dwarf_Name_From_Handle(Dwarf_Unsigned idx);
 
@@ -1811,9 +1944,6 @@ static void
 Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			   Dwarf_Unsigned begin_label, bool emit_restores)
 {
-  ISA_REGISTER_CLASS rc, save_rc;
-  REGISTER reg, save_reg;
-
   Dwarf_Error dw_error;
   INT64 frame_size = 0;
   INT64 frame_offset = 0;
@@ -1911,8 +2041,6 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       break;
 
     case UE_CREATE_FP:
-      rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
-      reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
       Is_True(frame_size == ue_iter->offset,
 	      ("unwind: dynamic frame size invalid at creation point (%lld vs %lld)",
 	       ue_iter->offset, frame_size));
@@ -1924,7 +2052,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 						 scn_index),
 			   &dw_error);
       }
-      dwarf_add_fde_inst(fde, DW_CFA_def_cfa, REGISTER_Get_Debug_Reg_Id(rc,reg),
+      dwarf_add_fde_inst(fde, DW_CFA_def_cfa, (Dwarf_Unsigned)ue_iter->rc_reg,
 			 STACK_OFFSET_ADJUSTMENT,
 			 &dw_error);
       if (Trace_Unwind) {
@@ -1949,14 +2077,14 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 						 scn_index),
 			   &dw_error);
       }
-
-      dwarf_add_fde_inst(fde, DW_CFA_def_cfa,
-			 REGISTER_Get_Debug_Reg_Id(
-					     CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_sp),
-					     CLASS_REG_PAIR_reg(CLASS_REG_PAIR_sp)),
-			 STACK_OFFSET_ADJUSTMENT,
-			 &dw_error);
-
+      {
+          DebugRegId baseId;
+          UINT ofst;
+          CfaDef(baseId, ofst, Get_Current_PU());
+          dwarf_add_fde_inst(fde, DW_CFA_def_cfa, (Dwarf_Unsigned)baseId,
+                             ofst,
+			     &dw_error);
+      }
       if (Trace_Unwind) {
 	fprintf(TFile, "destroy dynamic frame of size %lld at when %d\n",
 		frame_size, ue_iter->when);
@@ -1971,16 +2099,16 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 
     case UE_SAVE_SP:
     case UE_SAVE_FP:
-      rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
-      reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
       frame_offset = - ue_iter->offset + STACK_OFFSET_ADJUSTMENT;
       if (ue_iter->kind == UE_SAVE_SP) {
 #ifdef PROPAGATE_DEBUG
 	if (ue_iter->is_copy == FALSE) {
 	  frame_offset += frame_size;
 	} else {
-	  // if is_copy is TRUE, we are sure that top_offset is valid
-	  frame_offset = -ue_iter->top_offset + STACK_OFFSET_ADJUSTMENT;
+	  // if is_copy is TRUE, check if top_offset is valid
+	  if (ue_iter->after_sp_adj) {
+        frame_offset = -ue_iter->top_offset + STACK_OFFSET_ADJUSTMENT;
+      }
 	}
 #else
 	frame_offset += frame_size;
@@ -1995,8 +2123,8 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			   &dw_error);
       }
 
-      dwarf_add_fde_inst(fde, DW_CFA_offset, REGISTER_Get_Debug_Reg_Id(rc,reg),
-		 frame_offset / Data_Alignment_Factor,
+      dwarf_add_fde_inst(fde, DW_CFA_offset, (Dwarf_Unsigned)ue_iter->rc_reg,
+                         frame_offset / abs(DataAlignmentFactor(Get_Current_PU())),
 			 &dw_error);
 
       if (Trace_Unwind) {
@@ -2008,10 +2136,10 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 
 #ifdef DEBUG_UNWIND
       fprintf(TFile,
-	      "** %s label %s to %s adv loc + save reg %d at offset %llu\n",
+	      "** %s label %s to %s adv loc + save reg %lld at offset %lld\n",
 	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
 	      Cg_Dwarf_Name_From_Handle(last_label_idx),
-	      REGISTER_Get_Debug_Reg_Id(rc,reg),
+              (long long)ue_iter->rc_reg,
 	      frame_offset);
 #endif
 
@@ -2021,9 +2149,6 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
     case UE_RESTORE_FP:
       if (!emit_restores) continue;
 
-      rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
-      reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
-
       if (ue_iter->when_bundle_start > current_loc) {
 	dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
 			   Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
@@ -2032,7 +2157,7 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			   &dw_error);
       }
 
-      dwarf_add_fde_inst(fde, DW_CFA_restore, REGISTER_Get_Debug_Reg_Id(rc,reg),
+      dwarf_add_fde_inst(fde, DW_CFA_restore, (Dwarf_Unsigned)ue_iter->rc_reg,
 			 0, &dw_error);
 
       if (Trace_Unwind) {
@@ -2043,20 +2168,15 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
       }
 
 #ifdef DEBUG_UNWIND
-      fprintf(TFile, "** %s label %s to %s adv loc + restore reg %llu\n",
+      fprintf(TFile, "** %s label %s to %s adv loc + restore reg %lld\n",
 	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
 	      Cg_Dwarf_Name_From_Handle(last_label_idx),
-	      REGISTER_Get_Debug_Reg_Id(rc,reg));
+           (long long)ue_iter->rc_reg);
 #endif
 
       break;
 
     case UE_SAVE_GR:
-      rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
-      reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
-      save_rc = CLASS_REG_PAIR_rclass(ue_iter->save_rc_reg);
-      save_reg = CLASS_REG_PAIR_reg(ue_iter->save_rc_reg);
-
       if (ue_iter->when_bundle_start > current_loc) {
 	dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
 			   Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
@@ -2065,24 +2185,22 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			   &dw_error);
       }
 
-      dwarf_add_fde_inst(fde, DW_CFA_register, REGISTER_Get_Debug_Reg_Id(rc,reg),
-			 REGISTER_Get_Debug_Reg_Id(save_rc,save_reg),
+      dwarf_add_fde_inst(fde, DW_CFA_register, (Dwarf_Unsigned)ue_iter->rc_reg,
+                         (Dwarf_Unsigned)ue_iter->save_rc_reg,
 			 &dw_error);
 
       if (Trace_Unwind) {
-	fprintf(TFile, "save reg %s to reg %s at when %d\n",
-		UE_Register_Name(rc, reg),
-		UE_Register_Name(save_rc, save_reg),
+	fprintf(TFile, "save reg %lld to reg %lld at when %d\n",
+		ue_iter->rc_reg, ue_iter->save_rc_reg,
 		ue_iter->when);
       }
 
 #ifdef DEBUG_UNWIND
       fprintf(TFile,
-	      "** %s label %s to %s adv loc + save reg %s to reg %s\n",
+	      "** %s label %s to %s adv loc + save reg %lld to reg %lld\n",
 	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
 	      Cg_Dwarf_Name_From_Handle(last_label_idx),
-	      UE_Register_Name(rc,reg),
-	      UE_Register_Name(save_rc,save_reg));
+	      ue_iter->rc_reg, ue_iter->save_rc_reg);
 #endif
 
       break;
@@ -2090,11 +2208,6 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
     case UE_RESTORE_GR:
       if (!emit_restores) continue;
 
-      rc = CLASS_REG_PAIR_rclass(ue_iter->rc_reg);
-      reg = CLASS_REG_PAIR_reg(ue_iter->rc_reg);
-      save_rc = CLASS_REG_PAIR_rclass(ue_iter->save_rc_reg);
-      save_reg = CLASS_REG_PAIR_reg(ue_iter->save_rc_reg);
-
       if (ue_iter->when_bundle_start > current_loc) {
 	dwarf_add_fde_inst(fde, DW_CFA_advance_loc4, last_label_idx,
 			   Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
@@ -2103,23 +2216,21 @@ Create_Unwind_Descriptors (Dwarf_P_Fde fde, Elf64_Word	scn_index,
 			   &dw_error);
       }
 
-      dwarf_add_fde_inst(fde, DW_CFA_restore, REGISTER_Get_Debug_Reg_Id(rc,reg),
+      dwarf_add_fde_inst(fde, DW_CFA_restore, (Dwarf_Unsigned)ue_iter->rc_reg,
 			 0, &dw_error);
 
       if (Trace_Unwind) {
-	fprintf(TFile, "restore reg %s from reg %s when %d\n",
- 		UE_Register_Name(rc, reg),
-		UE_Register_Name(save_rc, save_reg),
+	fprintf(TFile, "restore reg %lld from reg %lld when %d\n",
+            (long long)ue_iter->rc_reg, (long long)ue_iter->save_rc_reg,
 		ue_iter->when);
       }
 
 #ifdef DEBUG_UNWIND
       fprintf(TFile,
-	      "** %s label %s to %s adv loc + restore reg %s from reg %s\n",
+	      "** %s label %s to %s adv loc + restore reg %lld from reg %lld\n",
 	      __FUNCTION__, LABEL_name(ue_iter->label_idx),
 	      Cg_Dwarf_Name_From_Handle(last_label_idx),
-	      UE_Register_Name(rc,reg),
-	      UE_Register_Name(save_rc,save_reg));
+              (long long)ue_iter->rc_reg, (long long)ue_iter->save_rc_reg);
 #endif
 
       break;
@@ -2156,7 +2267,7 @@ Build_Fde_For_Proc (Dwarf_P_Debug dw_dbg, BB *firstbb,
   Dwarf_P_Fde fde;
   Dwarf_Error dw_error;
 
-  if ( ! CG_emit_unwind_info) return NULL;
+  if ( ! OPTIONS_CHECK) return NULL;
   if ( CG_emit_unwind_directives) return NULL;
 
   fde = dwarf_new_fde(dw_dbg, &dw_error);
@@ -2169,5 +2280,3 @@ Build_Fde_For_Proc (Dwarf_P_Debug dw_dbg, BB *firstbb,
 
   return fde;
 }
-
-#endif // !defined(TARG_ST)

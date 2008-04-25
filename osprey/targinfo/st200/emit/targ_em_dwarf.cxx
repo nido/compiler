@@ -42,9 +42,14 @@
 #include <assert.h>	// temporary
 #define USE_STANDARD_TYPES 1
 #include "defs.h"
-#include "errors.h"
-#include "register.h" // For REGISTER_MIN and CGTARG_DW_DEBUG_Get_Extension_Id
+#include "cgir.h"
+#include "tn_map.h"
+#include "em_elf.h"
+#include "dwarf_DST_mem.h"         /* for DST_IDX */
+#include "em_dwarf.h"
 #include "targ_em_dwarf.h"
+#include "cg.h"
+
 
 #pragma pack(1)
 struct UINT32_unaligned {
@@ -104,14 +109,64 @@ Em_Dwarf_Symbolic_Relocs_To_Elf(next_buffer_retriever     get_buffer,
   return (Dwarf_Ptr) result_buf;
 }
 
-//TB: Add Get_Debug_Reg_Id from stxp70
-DebugRegId
-Get_Debug_Reg_Id(ISA_REGISTER_CLASS reg_class, INT reg, INT bitSize)
+INT
+CodeAlignmentFactor(PU& pu)
 {
-    // Input register identifier are given for REGISTER API. To use it with
-    // ISA_REGISTER API and so have a machine representation, we have to applied
-    // the offset used between the two APIs.
-    reg -= REGISTER_MIN;
-    mINT32 regId = CGTARG_DW_DEBUG_Get_Reg_Id(reg_class, reg, bitSize);
-    return DebugRegId(regId);
+    return 1;
+}
+
+INT
+DataAlignmentFactor(PU& pu)
+{
+    return Use_32_Bit_Pointers? -4: -8;
+}
+
+INT
+HashValue(PU& pu)
+{
+    return 0;
+}
+
+BOOL
+IsSaved(const DebugRegId& a_id, ISA_REGISTER_CLASS regClass, REGISTER reg,
+        PU& a_pu)
+{
+    return REGISTER_SET_MemberP(REGISTER_CLASS_callee_saves(regClass), reg) ||
+        a_id == Get_Debug_Reg_Id(CLASS_REG_PAIR_fp) ||
+        a_id == Get_Debug_Reg_Id(CLASS_REG_PAIR_ra);
+}
+
+BOOL
+ShouldGenerateInformation(ISA_REGISTER_CLASS register_class, PU& pu)
+{
+    return TRUE;
+}
+
+void
+CfaDef(DebugRegId& a_base, UINT& a_offset, PU& a_pu)
+{
+    a_base = 12;
+    a_offset = STACK_SCRATCH_AREA_SIZE;
+}
+
+BOOL
+HasSpecialDef(const DebugRegId& a_id, UINT& offset,
+              ISA_REGISTER_CLASS regClass, REGISTER reg, PU& a_pu)
+{
+    return FALSE;
+}
+
+extern BOOL
+ReturnAddressDef(DebugRegId& a_id, UINT& offset, PU& a_pu)
+{
+    a_id = DW_FRAME_RA_COL;
+    offset = 0;
+    return FALSE;
+}
+
+
+DebugRegId
+Get_Debug_Reg_Id(ISA_REGISTER_CLASS reg_class, REGISTER reg, INT bitSize)
+{
+    return DebugRegId(REGISTER_machine_id(reg_class, reg));
 }
