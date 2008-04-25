@@ -286,6 +286,7 @@ BE_EXPORTED extern BOOL	INLINE_Exceptions;	/* Inline exception code? */
 BE_EXPORTED extern BOOL	INLINE_Keep_PU_Order;	/* Retain input PU order? */
 #ifdef TARG_ST
 BE_EXPORTED extern BOOL	INLINE_Sort_PU_Order;	/* Sort input PU order? */
+BE_EXPORTED extern BOOL INLINE_Old_PU_Order;   /* Old input PU order? */
 #endif
 BE_EXPORTED extern BOOL	INLINE_List_Actions;	/* List inline actions? */
 BE_EXPORTED extern UINT32   INLINE_Max_Pu_Size;      /* Max size of pu : default 5000 */

@@ -841,7 +841,9 @@ Inliner_Sort_PUs (PU_Info *pu_tree)
   // Make a depth-first numbering of the call graph.
   {
     // Create a reverse-depth-first numbering of the call-graph.
-    DFN *dfn = Depth_First_Ordering (IPA_Call_Graph->Graph(), Malloc_Mem_Pool, TRUE);
+    // By default, TRUE as last parameter for DFO
+    // If INLINE_Old_PU_Order has been set, used former order instead
+    DFN *dfn = Depth_First_Ordering (IPA_Call_Graph->Graph(), Malloc_Mem_Pool, !INLINE_Old_PU_Order);
     
     // Create a map from call graph node number to depth-first number.
     for (i = DFN_first(dfn); i < DFN_end(dfn); i++) {

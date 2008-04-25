@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Apr 25 13:02:10 CEST 2008
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lv21/dev-option-old-pu-order
+
+Description:
+------------
+	* [trunk] Deliver lv21/dev-option-old-pu-order rev #16627 with authorization branch #43301
+
+
+Modified Files:
+---------------
+	M      osprey/common/com/config_ipa.cxx
+	M      osprey/common/com/config_ipa.h
+	M      osprey/ipa/inline/inline.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr 25 10:23:36 CEST 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

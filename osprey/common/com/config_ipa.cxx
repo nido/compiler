@@ -579,6 +579,7 @@ BOOL	INLINE_Exceptions = TRUE;	/* Inline exception code? */
 BOOL	INLINE_Keep_PU_Order = FALSE;	/* Retain input PU order? */
 #ifdef TARG_ST
 BOOL    INLINE_Sort_PU_Order = TRUE; /* Sort input PUs to aid code generation. */
+BOOL    INLINE_Old_PU_Order = FALSE; /* Use old PUs order befor rev 16483) to ease code comparison. */
 #endif
 BOOL	INLINE_List_Actions = FALSE;	/* List inline actions? */
 UINT32	INLINE_Max_Pu_Size = DEFAULT_INLINE_Max_Pu_Size;
@@ -656,6 +657,9 @@ static OPTION_DESC Options_INLINE[] = {
     { OVK_BOOL,	OV_VISIBLE,	FALSE, "sort_pu_order",	"sort_pu",
 	  0, 0, 0,	&INLINE_Sort_PU_Order,	NULL,
 	  "Sort source subprograms to improve code generation" },
+    { OVK_BOOL, OV_INTERNAL,    FALSE, "old_pu_order", "old_pu_order",
+          0, 0, 0,      &INLINE_Old_PU_Order,  NULL,
+          "Back to old PU order (before rev 16483) to ease code comparison" },
 #endif
 #if defined(TARG_ST) && defined(_STANDALONE_INLINER)
     { OVK_LIST, OV_VISIBLE,     FALSE, "library", "lib",
