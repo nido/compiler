@@ -162,6 +162,10 @@ extern void treat_one_arg ( int * argc, char *argv[] ) {
 
 }
 
+static char relocatable_str1[1024];
+static char relocatable_str2[1024];
+static char *script_argv[] = { relocatable_str1, relocatable_str2 };
+
 extern int 
 main (int argc, char *argv[])
 {
@@ -220,22 +224,22 @@ main (int argc, char *argv[])
 		option_name = argv[i];
 		set_current_arg_pos(i);
 		if (argv[i][0] == '-' && !dashdash_flag) {
-         treat_one_arg(&i,argv);
+			treat_one_arg(&i,argv);
          
 		} else if (argv[i][0] == '+') {
 			check_old_CC_options(argv[i]);
 			i++;
 		} else {
 #ifdef TARG_STxP70
-         // [HC]: Trial to take .ld files as link script files and automatically
-         //       inserting -T ahead.
-         char * suffix_ptr;
+			// [HC]: Trial to take .ld files as link script files and automatically
+			//       inserting -T ahead.
+			char * suffix_ptr;
          
-         if ((NULL!=(suffix_ptr=get_suffix(argv[i]))) && 
-             !strcmp(suffix_ptr,"ld")) {
-            add_script_file(argv[i]);
+			if ((NULL!=(suffix_ptr=get_suffix(argv[i]))) && 
+			    !strcmp(suffix_ptr,"ld")) {
+				add_script_file(argv[i]);
 				add_option_seen (O_T);
-         } else {
+			} else {
 #endif
 			source_kind = get_source_kind(argv[i]);
 			/* if -E used, then preprocess anything, even .o's */
@@ -283,8 +287,8 @@ main (int argc, char *argv[])
 				num_files++;
 			}
 #ifdef TARG_STxP70
-         } // Associated to trial to take .ld files as link script ones 
-           // and automatically inserting -T ahead.
+		} // Associated to trial to take .ld files as link script ones 
+		  // and automatically inserting -T ahead.
 #endif
 			cancel_saved_arg(1);
 			i++;
@@ -303,6 +307,47 @@ main (int argc, char *argv[])
          int  i = 0;
          
    		treat_one_arg(&i,newargv);
+      }
+   }
+   /* At this point, add -Wy,-T,<link_scripts>.reloc in case of
+    * binopt activation
+    */
+   if (!option_was_seen(O_S) && !option_was_seen(O_c)) {
+      extern string_list_t *script_files;
+      string_item_t *p;
+      int i;
+      
+      p = script_files->head;
+      if (NULL == p) {
+         string spath;
+         string ofile;
+	 
+         spath = get_phase_dir(P_library);
+         spath = concat_path (spath, "ldscript");
+	 if (shared == RELOCATABLE) {
+            ofile = concat_path (spath, "sx_valid.ld.reloc");
+	 } else {
+            ofile = concat_path (spath, "sx_valid.ld");
+	 }
+	 strcpy(relocatable_str1,"-T");
+	 snprintf(relocatable_str2,1024,"%s",ofile);
+	 i = 0;
+	 treat_one_arg(&i,script_argv);
+      }
+      p = script_files->head;
+      if ((NULL != p ) && ((deadcode==TRUE) || ((olevel>=2) && (deadcode==UNDEFINED)))) {
+         snprintf(relocatable_str1,1024,"%s.reloc",p->name);
+	 if (!file_exists(p->name)) {
+	    error("Link script file required: %s",p->name);
+	 }
+         if (!file_exists(relocatable_str1)) {
+            warning("Relocatable link script file required: %s\nPlease read \"HowTo write associated relocatable link script for BinOpt\"",relocatable_str1);
+	 } else {
+            snprintf(relocatable_str1,1024,"-Wy,-T,%s.reloc",p->name);
+            i = 0;
+            treat_one_arg(&i,script_argv);
+            treat_one_arg(&i,script_argv); // Required two times!
+	 }
       }
    }
 #endif

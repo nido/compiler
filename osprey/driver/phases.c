@@ -530,6 +530,9 @@ add_file_args (string_list_t *args, phases_t index)
 	string temp;
 	string_item_t *p;
 	string count_file_name;
+#ifdef TARG_STxP70
+	extern char Mextension_str[256];
+#endif
 	/* boolean dsm_crt_init_needed = FALSE; */
 
 	/* current_phase is used to say which file might be the last output 
@@ -1313,13 +1316,11 @@ add_file_args (string_list_t *args, phases_t index)
 			add_string(args,str);
 		}
 		if (option_was_seen(O_fshort_double)) {
-         add_string(args,"-double=32");
-      } else {
-         add_string(args,"-double=64");
-      }
-		if (option_was_seen(O_Mextension__)) {
-			extern char Mextension_str[256];
-
+			add_string(args,"-double=32");
+		} else {
+			add_string(args,"-double=64");
+		}
+		if (option_was_seen(O_Mextension__) && strcmp(Mextension_str,"")) {
 			add_string(args,Mextension_str);
 		} else {
 			add_string(args,"-Mextension=x3");
@@ -2611,6 +2612,9 @@ run_ld (void)
 	phases_t ldphase;
 	string ldpath;
 	string_list_t *args = init_string_list();
+#ifdef TARG_STxP70
+	extern char Mextension_str[256];
+#endif
 
 #ifdef BCO_ENABLED
 	  /* TB: initialization of next_ld_for_icache_is_simple */
@@ -2734,8 +2738,7 @@ run_ld (void)
       sprintf(str,"-corecfg=%#x",corecfg);
       add_string(args,str);
    }
-   if (option_was_seen(O_Mextension__)) {
-      extern char Mextension_str[256];
+   if (option_was_seen(O_Mextension__) && strcmp(Mextension_str,"")) {
       
       add_string(args,Mextension_str);
    } else {

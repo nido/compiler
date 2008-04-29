@@ -69,7 +69,7 @@ static string_list_t *ar_objects;
 static string_list_t *library_dirs;
 #ifdef TARG_ST
 /* [CG]: See comment above. */
-static string_list_t *script_files;
+string_list_t *script_files;
 /* [TB]: Add objects list for ld -r and final ld phase for -Wy,XXX and
    -Wz,XXX options */
 string_list_t *objects_ld_r;
