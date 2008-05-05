@@ -763,6 +763,9 @@ static ISA_REGISTER_CLASS trace_cl = (ISA_REGISTER_CLASS)2;
 
 #ifdef TARG_ST
 
+// The widest local TN (specified as number fo registers) in each register class.
+static INT regclass_widest_local_TN[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+
 // The number of members in each subclass.
 static INT subclass_size[ISA_REGISTER_SUBCLASS_MAX_LIMIT+1];
 // We have a preferred subclass ordering: a subclass with a lower
@@ -2236,6 +2239,14 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
   }
 
 #ifdef TARG_ST
+  if (LRA_overlap_coalescing) {
+    // Initialize array of widest local TN found in current BB
+    ISA_REGISTER_CLASS rc;
+    FOR_ALL_ISA_REGISTER_CLASS(rc) {
+      regclass_widest_local_TN[rc] = 0;
+    }
+  }
+
   // [SC] Now that all the live ranges are created, form their
   // alias lists.
   for (LIVE_RANGE *lr1 = Live_Range_List; lr1 != NULL; lr1 = LR_next(lr1)) {
@@ -2267,7 +2278,16 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 	}	  
       }
     }
-  }  
+    else if (LRA_overlap_coalescing) {
+      // [TTh] Benefit of the current loop to find the widest local TN
+      // for each register class.
+      INT nregs = TN_nhardregs(tn1);
+      ISA_REGISTER_CLASS rc = TN_register_class(tn1);
+      if (nregs > regclass_widest_local_TN[rc]) {
+	regclass_widest_local_TN[rc] = nregs;
+      }
+    }
+  }
 #endif
 
 #ifdef TARG_ST
@@ -2972,6 +2992,80 @@ Is_Non_Allocatable_Reg_Available (
 }
 #endif
 
+#ifdef TARG_ST
+/*
+ * Return TRUE if assigning <reg> to <tn> is optimal, return FALSE otherwise.
+ * If the returned value is FALSE, <suboptimal_coalescing> parameter is set
+ * depending on wether or not this allocation can impact coalescing.
+ *
+ * Details:
+ * Considering that current register class is divided in N multi registers
+ * of size S, and considering only the multi-register MR containing <reg>,
+ * return TRUE if <tn> either fully occupy MR register or if at least one part
+ * of MR that will not be used by <tn> is already allocated to another TN,
+ * that will never need to be coalesced with <reg>.
+ * Return FALSE otherwise.
+ * The size S of multi-registers corresponds to the widest local TN of this
+ * register class in current BB.
+ * <suboptimal_coalescing> flag is set to TRUE if choosing this register
+ * might lead to suboptimal coalescing for some other TNs.
+ *
+ * Notes: - This function is context sensitive and must therefore only be
+ *          called during the allocation walk (dependency on avail_regs array).
+ *        - Rely on the fact that registers are grouped uniformly for
+ *          all registers of the register class.
+ */
+static BOOL
+Is_Optimal_Fill_Register_For_TN(TN *tn, REGISTER reg, BOOL *suboptimal_coalescing) {
+  INT i;
+  INT widest_tn_nregs;
+  INT current_tn_nregs;
+
+  *suboptimal_coalescing = FALSE;
+
+  ISA_REGISTER_CLASS rc = TN_register_class(tn);
+
+  if (TN_nhardregs(tn) >= regclass_widest_local_TN[rc]) {
+    return TRUE;
+  }
+
+  widest_tn_nregs  = regclass_widest_local_TN[rc];
+  current_tn_nregs = TN_nhardregs(tn);
+
+  // Register range of current tn if allocated to reg
+  INT first_reg_to_alloc = reg;
+  INT last_reg_to_alloc  = reg + current_tn_nregs - 1;
+
+  // Register range of the widest multi-register
+  INT rank_mask = widest_tn_nregs - 1;
+  INT first_reg_to_check = (((INT)reg-1) & ~rank_mask) + 1;
+  INT last_reg_to_check  = first_reg_to_check + widest_tn_nregs - 1;
+
+  BOOL fully_avail = TRUE;
+  for (i=first_reg_to_check; i<=last_reg_to_check; i++) {
+    if ((i < first_reg_to_alloc || i > last_reg_to_alloc) &&
+	(avail_regs[rc].reg[i] == FALSE)) {
+      fully_avail = FALSE;
+      // Register <i> is already allocated to a TN: check if current
+      // allocation will block coalescing for this specific TN with
+      // its parent in the overlap coalescing tree.
+      LIVE_RANGE *lr = ded_reg_ovcoal_root(rc, i);
+      if (lr &&
+	  ((i < first_reg_to_alloc &&
+	    ((i + TN_nhardregs(LR_tn(lr)) - ded_reg_ovcoal_rank(rc, i) - 1) >= first_reg_to_alloc)) ||
+	   (i > last_reg_to_alloc &&
+	    ((i - ded_reg_ovcoal_rank(rc, i)) <= last_reg_to_alloc)))) {
+	*suboptimal_coalescing = TRUE;
+	return FALSE;
+      }
+    }
+  }
+  
+  // Return TRUE if part of the widest register is already allocated, 
+  // because choosing <reg> will contribute to fill the widest one.
+  return (!fully_avail);
+}
+#endif
 
 /* ======================================================================
  * Get_Avail_Reg
@@ -3010,11 +3104,20 @@ Get_Avail_Reg (ISA_REGISTER_CLASS regclass,
   // in this case set it to REGISTER_MIN
   if (next_reg > REGISTER_MAX) next_reg = REGISTER_MIN;
 
-  // [TTh] When overlap coalescing is enabled, try to find an optimal
-  // register that will allow current LR to be coalesced with its
-  // parents in the coalescing tree. 
+  // [TTh] When overlap coalescing is enabled, try to find a register which meet
+  // the following properties:
+  // - OPTIMAL RANK: the register chosen should allow to coalesce current LR
+  //   with its parents in the coalescing tree, by checking that its rank is
+  //   correct when seeing the register class as group of multi-registers of
+  //   size S, S depending on the size of parent LR in coalescing tree.
+  // - OPTIMAL FILL: considering that current register class is divided in N
+  //   multi registers of size S, prefer a register that will be contiguous
+  //   to an already allocated register within its multi-register.
+  //   This property will help to keep full multi-registers available.
   INT ovcoal_optimal_rank=0, ovcoal_parent_size=0;
-  REGISTER suboptimal_reg = REGISTER_UNDEFINED;
+  REGISTER suboptimal_reg   = REGISTER_UNDEFINED;
+  INT suboptimal_reg_status = -1;
+
   if (LRA_overlap_coalescing) {
     ovcoal_optimal_rank = LR_ovcoal_rank(lr);
     ovcoal_parent_size  = TN_nhardregs(LR_tn(LR_ovcoal_root(lr)));
@@ -3027,23 +3130,35 @@ Get_Avail_Reg (ISA_REGISTER_CLASS regclass,
   reg = CGCOLOR_Choose_Best_Register(regclass, nregs, subclass_allowed, allowed, next_reg);
   while (reg != REGISTER_UNDEFINED) {
     if (Is_Reg_Available(regclass, usable_regs, reg, nregs, lr)) {
-      if (!LRA_overlap_coalescing ||
-	  REGISTER_Has_Expected_Rank(reg, ovcoal_parent_size, ovcoal_optimal_rank)) {
+      if (!LRA_overlap_coalescing) {
 	break;
       }
-      else if (suboptimal_reg != REGISTER_UNDEFINED) {
-	// [TTh] Current register is available but not optimal for coalescing, 
-	// as it is not correctly aligned to be coalesced with the root of the
-	// coalescing tree.
-	// Keep track of the first one, and try to find a better one.
-	suboptimal_reg = reg;
+      else {
+	BOOL subopt_coal = FALSE;
+	BOOL is_opt_rank = REGISTER_Has_Expected_Rank(reg, ovcoal_parent_size, ovcoal_optimal_rank);
+	BOOL is_opt_fill = Is_Optimal_Fill_Register_For_TN(LR_tn(lr), reg, &subopt_coal);
+
+	if (is_opt_rank && is_opt_fill) {
+	  break; // Optimal reg found
+	}
+	else {
+	  // Compute score for current register and keep the best one
+	  INT new_status;
+	  new_status  = is_opt_rank ? 4 : 0;
+	  new_status |= is_opt_fill ? 2 : 0;
+	  new_status |= subopt_coal ? 0 : 1;
+	  if (new_status > suboptimal_reg_status) {
+	    suboptimal_reg = reg;
+	    suboptimal_reg_status = new_status;
+	  }
+	}
       }
     }
     reg = CGCOLOR_Choose_Next_Best_Register();
   }
 
   if (reg == REGISTER_UNDEFINED) {
-    // [TTh] No optimal register found for coalescing, but maybe a suboptimal
+    // No optimal register found for coalescing, but maybe a suboptimal
     // one is available.
     reg = suboptimal_reg;
   }
@@ -4038,89 +4153,119 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
     if (OP_extract(op) || OP_compose(op) || OP_widemove(op)) {
       uniq_result = TRUE;
     }
-    // [SC] For a register initially defined by an extract op,
-    // we would like to ensure that it gets allocated to a suitable register
-    // for the _source_ of the extract op, so that we do not need to expand
-    // the extract into move operations.
-    // To get this, we here allocate the source of the extract op,
-    // then assign the appropriate allocated register to this operand.
-    // Immediately deallocate all the other registers, but
-    // set preferred register of all the other extract dests to be these
-    // deallocated registers.  We rely on the round-robin nature
+    // [SC/TTh] For a TN initially defined by an extract op (or, when overlap
+    // coalescing is enabled, a TN that contains at least an ancestor in
+    // its coalescing tree), we would like to ensure that it gets allocated
+    // to a suitable register for the _source_ of the extract op (or the
+    // root of the coalescing tree), so that we do not need to expand the
+    // extract(s) into move operations.
+    // To get this, we here allocate the source of the extract op (or the
+    // root of the coalescing tree), then assign the appropriate allocated
+    // register to this operand.
+    // Immediately deallocate all the other registers, but set preferred
+    // register of all the other extract dests to be these deallocated
+    // registers (or propagate preferencing through overlap coalescing tree).
+    // We rely on the round-robin nature
     // of Get_Avail_Reg and last_assigned_reg to ensure that these registers
     // are not allocated to anything else before we need them for the
-    // other extract rests.
+    // other extract rests. When overlap coalescing is used, Get_Avail_Reg()
+    // is also able to smartly avoid those suboptimal allocations.
     // [TTh] dest_nbregs is useful when extracted TNs are multiple-registers.
     // It is then required to allocate/free group of single register.
     // [TTh] When overlap coalescing is enabled, LR_extract_op is defined only
     // when the current liverange can be coalesced with the source of the extract
-    OP *extract_op = LR_extract_op (clr);
-    if (LRA_merge_extract
-	&& extract_op
-	&& OP_extract (extract_op)
-	&& LR_def_cnt (clr) == 1) {
-      TN *extract_source = OP_opnd(extract_op, 0);
-      if (LRA_TN_register(extract_source) == REGISTER_UNDEFINED) {
-	 LIVE_RANGE *extract_source_lr = LR_For_TN (extract_source);
-	 if (LRA_overlap_coalescing ||
-	     LR_last_use (extract_source_lr) == LR_first_def (clr)) {
-	   ISA_REGISTER_CLASS extract_source_cl = TN_register_class (extract_source);
-	   Set_LR_last_use (extract_source_lr, LR_last_use (clr));
-	   reg = Allocate_Register (extract_source, uniq_result,
-				    extract_source_cl,
-				    Usable_Registers(extract_source, extract_source_lr),
-				    result_reg,
-				    result_nregs, opnum);
-	   Set_LR_last_use (extract_source_lr, LR_first_def (clr));
-	   if (reg != REGISTER_UNDEFINED) {
-	     if (reg <= REGISTER_MAX) {
-	       INT dest_nbregs = TN_nhardregs(OP_result(extract_op, 0));
-	       for (INT d = 0; d < OP_results(extract_op); d++) {
-		 TN *extract_dest = OP_result(extract_op, d);
-		 if (extract_dest == tn) {
-		   LRA_TN_Allocate_Register (extract_dest, reg + (d * dest_nbregs));
-		   if (LRA_overlap_coalescing) {
-		     Propagate_Overlap_Coalescing_Preference_Leaf_To_Root(clr, reg + (d * dest_nbregs));
-		   }
-		 } else {
-		   if (!LRA_overlap_coalescing) {
-		     LIVE_RANGE *d_lr = LR_For_TN (extract_dest);
-		     if (LR_prefer_reg (d_lr) == REGISTER_UNDEFINED) {
-		       Set_LR_prefer_reg (d_lr, reg + (d * dest_nbregs));
-		     }
-		   }
-		   Add_Avail_Reg (regclass, reg + (d * dest_nbregs), dest_nbregs, opnum);
-		 }
-	       }
-	       continue;
-	     }
-	     else {
-	       FmtAssert(Calculating_Fat_Points(),
-			 ("LRA: Invalid register returned by Allocate_Register()"));
-	       // [TTh] When computing fat points, Allocate_Register()  might
-	       // "allocate" a virtual register (reg > REGISTER_MAX) if there
-	       // is no real register available.
-	       // As we don't care about such registers here, we need to free
-	       // them (mainly to decrement the fat point).
-	       Add_Avail_Reg (regclass, reg, TN_nhardregs(extract_source), opnum);
-	     }
-	   }
-	 }
-      }
-      else if (LRA_overlap_coalescing) {
-	// [TTh] With overlap coalescing enabled, we can try to use same register
-	// as the source, even if it is already allocated
-	INT dest_nbregs = TN_nhardregs(tn);
-	INT rr = LRA_TN_register(extract_source) + LR_ovcoal_local_rank(clr);
-	if (Regs_Available(regclass, rr, dest_nbregs, clr)) {
-	  Delete_Avail_Reg (TN_register_class(tn), rr, dest_nbregs, opnum, clr);
-	  LRA_TN_Allocate_Register (tn, rr);
-	  Propagate_Overlap_Coalescing_Preference_Leaf_To_Root(LR_For_TN(tn), rr);
-	  if (Do_LRA_Trace(Trace_LRA_Detail)) {
-	    fprintf (TFile, OVCOAL_MSG" Allocated TN%d to register %s!!\n",
-		     TN_number(tn), REGISTER_name(regclass, rr));
+    if (LRA_overlap_coalescing) {
+      // At this point, we already know that either current LR has no preference
+      // or that the preference did not work.
+      if (LR_ovcoal_parent(clr)) {
+	LIVE_RANGE *root_lr = LR_ovcoal_root(clr);
+	TN *root_tn = LR_tn(root_lr);
+	if (LRA_TN_register(root_tn) == REGISTER_UNDEFINED) {
+	  INT root_LR_last_use = LR_last_use(root_lr);
+	  Set_LR_last_use (root_lr, LR_last_use (clr));
+	  reg = Allocate_Register (root_tn, uniq_result,
+				   regclass,
+				   Usable_Registers(root_tn, root_lr),
+				   result_reg,
+				   result_nregs, opnum);
+	  Set_LR_last_use (root_lr, root_LR_last_use);
+	  if (reg != REGISTER_UNDEFINED) {
+	    if (reg <= REGISTER_MAX) {
+	      INT dest_nbregs = TN_nhardregs(LR_tn(clr));
+	      INT root_nbregs = TN_nhardregs(root_tn);
+	      INT dest_rank   = LR_ovcoal_rank(clr);
+	      for (INT d = 0; d < root_nbregs; d++) {
+		if (d == dest_rank) {
+		  LRA_TN_Allocate_Register (LR_tn(clr), reg + d);
+		  Propagate_Overlap_Coalescing_Preference_Leaf_To_Root(clr, reg + d);
+		}
+		else if (d < dest_rank || d >= dest_rank + dest_nbregs) {
+		  Add_Avail_Reg (regclass, reg + d, 1, opnum);
+		}
+	      }
+	      continue;
+	    }
+	    else {
+	      FmtAssert(Calculating_Fat_Points(),
+			("LRA: Invalid register returned by Allocate_Register()"));
+	      // [TTh] When computing fat points, Allocate_Register()  might
+	      // "allocate" a virtual register (reg > REGISTER_MAX) if there
+	      // is no real register available.
+	      // As we don't care about such registers here, we need to free
+	      // them (mainly to decrement the fat point).
+	      Add_Avail_Reg (regclass, reg, TN_nhardregs(root_tn), opnum);
+	    }
 	  }
-	  continue;
+	}
+      }
+    }
+    else {
+      OP *extract_op = LR_extract_op (clr);
+      if (LRA_merge_extract
+	  && extract_op
+	  && OP_extract (extract_op)
+	  && LR_def_cnt (clr) == 1) {
+	TN *extract_source = OP_opnd(extract_op, 0);
+	if (LRA_TN_register(extract_source) == REGISTER_UNDEFINED) {
+	  LIVE_RANGE *extract_source_lr = LR_For_TN (extract_source);
+	  if (LR_last_use (extract_source_lr) == LR_first_def (clr)) {
+	    ISA_REGISTER_CLASS extract_source_cl = TN_register_class (extract_source);
+	    Set_LR_last_use (extract_source_lr, LR_last_use (clr));
+	    reg = Allocate_Register (extract_source, uniq_result,
+				     extract_source_cl,
+				     Usable_Registers(extract_source, extract_source_lr),
+				     result_reg,
+				     result_nregs, opnum);
+	    Set_LR_last_use (extract_source_lr, LR_first_def (clr));
+	    if (reg != REGISTER_UNDEFINED) {
+	      if (reg <= REGISTER_MAX) {
+		INT dest_nbregs = TN_nhardregs(OP_result(extract_op, 0));
+		for (INT d = 0; d < OP_results(extract_op); d++) {
+		  TN *extract_dest = OP_result(extract_op, d);
+		  if (extract_dest == tn) {
+		    LRA_TN_Allocate_Register (extract_dest, reg + (d * dest_nbregs));
+		  } else {
+		    LIVE_RANGE *d_lr = LR_For_TN (extract_dest);
+		    if (LR_prefer_reg (d_lr) == REGISTER_UNDEFINED) {
+		      Set_LR_prefer_reg (d_lr, reg + (d * dest_nbregs));
+		    }
+		    Add_Avail_Reg (regclass, reg + (d * dest_nbregs), dest_nbregs, opnum);
+		  }
+		}
+		continue;
+	      }
+	      else {
+		FmtAssert(Calculating_Fat_Points(),
+			  ("LRA: Invalid register returned by Allocate_Register()"));
+		// [TTh] When computing fat points, Allocate_Register()  might
+		// "allocate" a virtual register (reg > REGISTER_MAX) if there
+		// is no real register available.
+		// As we don't care about such registers here, we need to free
+		// them (mainly to decrement the fat point).
+		Add_Avail_Reg (regclass, reg, TN_nhardregs(extract_source), opnum);
+	      }
+	    }
+	  }
 	}
       }
     }

@@ -1,6 +1,35 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon May  5 16:39:32 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-41857
+
+Description:
+------------
+	* [trunk] Fix for bug #41857: [ISPx] Potentially uneeded spills generated in LRA.
+	Deliver fixes/codex-41857 rev #16749 with authorization branch #42534
+
+	Changes in LRA:
+	-> Refined color choose heuristic when dealing with register classes
+	   containing composite registers: avoid allocating small TNs within
+	   fully available composite registers, so that full composite
+	   registers remain available as long as possible. Also try to avoid
+	   registers that could be needed by some other TNs, based on
+	   overlap coalescing information.
+	-> Reworked allocation of extract operands to exploit information
+	   provided by overlap coalescing
+
+
+Modified Files:
+---------------
+	M      osprey/lai/lra.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon May  5 14:37:02 CEST 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
