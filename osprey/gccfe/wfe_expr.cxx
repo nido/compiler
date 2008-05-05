@@ -4580,10 +4580,18 @@ WFE_Expand_Expr (tree exp,
           }
 
 	  if (intrinsic_op) {
+#ifdef TARG_ST
+	    WN *ikids [INTRN_MAX_ARG];
+#else
 	    WN *ikids [5];
+#endif
 	    for (i = 0, list = TREE_OPERAND (exp, 1);
 		 list;
 		 i++, list = TREE_CHAIN (list)) {
+#ifdef TARG_ST
+	      FmtAssert(i < INTRN_MAX_ARG,
+			("Intrinsic exceeds the limit of support number of parameters (%d)", INTRN_MAX_ARG));
+#endif
               arg_wn     = WFE_Expand_Expr (TREE_VALUE (list));
 	      arg_ty_idx = Get_TY(TREE_TYPE(TREE_VALUE(list)));
 	      arg_mtype  = TY_mtype(arg_ty_idx);

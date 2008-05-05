@@ -360,6 +360,10 @@ BE_EXPORTED extern BOOL FP_packed_arithmetic;
  */
 BE_EXPORTED extern BOOL Check_Asm_Constraints(char* constraint_string, UINT8 mtype);
 
+// [TTh] Maximum number of arguments for intrinsic ops
+// (Added to fix codex bug #43451)
+#define INTRN_MAX_ARG 10
+
 #endif //TARG_ST
 
 #ifdef __cplusplus

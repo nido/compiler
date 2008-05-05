@@ -2713,7 +2713,7 @@ lower_hilo_expr (
       INT nkids = 0;
       PREG_NUM pregNo;
       TYPE_ID rtype = WN_rtype(tree);
-      WN *kids[10];
+      WN *kids[INTRN_MAX_ARG];
       WN *intrn_op;
 
       //

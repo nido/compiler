@@ -264,15 +264,18 @@ void Add_Intrinsics(const Extension_dll_t *dll_instance, BOOL verbose)
     //dll into MTYPE. We need this info only for out and inout
     //parameters.
     //Out parameters
-    TYPE_ID outmtype[10];
+    TYPE_ID outmtype[INTRN_MAX_ARG];
     for (int arg = 0; arg < btypes[i].arg_count; arg++) {
       TYPE_ID  mtype = MachineMode_To_Mtype(btypes[i].arg_type[arg]);
       outmtype[arg] = mtype;
     }
 
-    INTRN_INOUT_TYPE inouttype[10];
+    INTRN_INOUT_TYPE inouttype[INTRN_MAX_ARG];
     int nb_out = 0;
     int nb_in = 0;
+    FmtAssert(btypes[i].arg_count <= INTRN_MAX_ARG,
+	      ("Intrinsic %s exceed the limit of supported number of parameters (%d)\n.",
+	       btypes[i].c_name, INTRN_MAX_ARG));
     for (int arg = 0; arg < btypes[i].arg_count; arg++) {
       FmtAssert(btypes[i].arg_inout[arg] != BUILTARG_UNDEF,
 		("Undef parameter type for intrinsic %s\n.", btypes[i].c_name));
