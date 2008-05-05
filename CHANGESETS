@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon May  5 13:39:39 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-ifc-tuning
+
+Description:
+------------
+	* [trunk] Deliver dt25/dev-ifc-tuning rev #16736 with authorization branch #43019
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_ssa.cxx
+	M      osprey/lai/cg_select.cxx
+	M      osprey/lai/cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon May  5 13:27:54 CEST 2008
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

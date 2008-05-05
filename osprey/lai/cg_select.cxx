@@ -1141,8 +1141,9 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
   }
 #endif
 
+  //TDR In size, a logif transfomration is not profitable without bundles.
   if (!CG_ifc_cycles) {
-    return TRUE;
+    return PROC_has_bundles();
   }
 
   OP *op;
@@ -3484,7 +3485,8 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     
     if (bb == NULL) continue;
       
-    // tests for logical expression 
+    // tests for logical expression
+    //TDR: Be aware that Is_Double_Logif will modify the code => normalize the branch
     if (bbb = Is_Double_Logif(bb)) {
       Initialize_Hammock_Memory();
 

@@ -4256,7 +4256,6 @@ SSA_Remove_Pseudo_OPs (
   TN *tn, *new_tn;
   OP *op;
   BB *bb;
-
   Trace_phi_removal = Get_Trace(TP_SSA, SSA_REMOVE_PHI);
 
   // FdF 20070322: Discard these maps first, to avoid looking for or
@@ -4385,6 +4384,7 @@ SSA_Remove_Pseudo_OPs (
 	    // Add new_tn to live_out of this BB
 	    GRA_LIVE_Add_Live_Out_GTN(bb, new_tn);
 #endif
+
 	  }
 	  else if (OP_cond_def(op) && (OP_results(op) == 1)) {
 	    // FdF 20070514: This TN is not involved in any PSI or PHI

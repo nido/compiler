@@ -136,6 +136,17 @@
 #include "gcov_profile.h"
 #endif
 
+void Print_BB_id ( int id ) 
+{
+  BB *bp;
+  for (bp = REGION_First_BB; bp; bp = BB_next(bp)) {
+	  if (BB_id(bp)==id) {
+		  Print_BB ( bp );
+		  fprintf ( TFile,"\n" );
+	  }
+  }
+}
+
 MEM_POOL MEM_local_region_pool;	/* allocations local to processing a region */
 MEM_POOL MEM_local_region_nz_pool;
 
