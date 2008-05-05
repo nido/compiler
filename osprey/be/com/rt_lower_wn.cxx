@@ -1055,6 +1055,9 @@ RT_LOWER_stmt_wn(WN *tree)
   case OPR_PREFETCH:
   case OPR_EVAL: 
   case OPR_AGOTO:
+#ifdef TARG_ST
+  case OPR_AFFIRM:
+#endif
     // don't need to do anything
     WN_kid0(tree) = RT_LOWER_expr(WN_kid0(tree));
     return;

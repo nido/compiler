@@ -927,6 +927,9 @@ FB_CFG::Walk_WN_statement( WN *wn )
 
   case OPR_EVAL:
   case OPR_STID:
+#ifdef TARG_ST
+  case OPR_AFFIRM:
+#endif
     Walk_WN_expression( WN_kid0(wn) );
     break;
 

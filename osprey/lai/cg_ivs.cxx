@@ -74,6 +74,7 @@ static const char rcs_id[] = "";
 #include "cxx_memory.h"
 #include "cg_sched_est.h"
 #include "cg_ivs.h"
+#include "cg_affirm.h"
 
 #include "stblock.h" // for ST_alignment
 
@@ -690,7 +691,10 @@ Pack32_Get_Alignment(OP *memop, INT64 offset) {
       }
     }
 
-    if (OP_Is_Copy(def_base)) {
+    if (OP_Is_Affirm(def_base)) {
+      break;
+    }
+    else if (OP_Is_Copy(def_base)) {
       base_tn = OP_opnd(def_base, OP_Copy_Operand(def_base));
       opnd_tn = Zero_TN;
     }
@@ -752,7 +756,14 @@ Pack32_Get_Alignment(OP *memop, INT64 offset) {
   INT base_alignment = -1;
   if (def_base != NULL) {
     Is_True(BB_loop_head_bb(OP_bb(def_base)) != loophead, ("Pack32_Get_Alignment: Incorrect base for stream"));
-    if (base_sym == NULL) {
+    if (OP_Is_Affirm(def_base)) {
+      base_alignment = Get_Affirm_modulo(OP_Get_Affirm(def_base));
+      if (Get_Trace(TP_AFFIRM, 0x1)) {
+	fPrint_TN(TFile, "Used AFFIRM property (", OP_result(def_base, 0));
+	fprintf(TFile, "%%%d==0) for packing.\n", base_alignment);
+      }
+    }
+    else if (base_sym == NULL) {
       Is_True(base_tn == SP_TN, ("Pack32_Get_Alignment: only SP_TN+Symbol is recognized"));
       base_alignment = Stack_Alignment();
     }

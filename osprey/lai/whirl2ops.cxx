@@ -102,6 +102,8 @@
 #include "betarget.h"    /* for Target_Has_Immediate_Operand */
 #include "bb_map.h"
 #include "register_preg.h" /* For CGTARG_Regclass_Preg_Min() */
+#include "config_opt.h" /* For OPT_Enable_Warn_Assume */
+#include "cg_affirm.h"
 #endif
 
 #if   defined ( TARG_ST200  )
@@ -5706,6 +5708,71 @@ Handle_ASM (const WN* asm_wn)
 #endif
 }
 
+#ifdef TARG_ST
+static BOOL
+WN_Find_Unique_LDID(WN *expr, WN **ldid) {
+
+  if (WN_operator(expr) == OPR_LDID) {
+    if (*ldid == NULL) {
+      // The first time a variable is seen
+      *ldid = expr;
+      return TRUE;
+    }
+    else if (WN_Equiv(*ldid, expr)) {
+      // The same variable is used several times
+      return TRUE;
+    }
+    else {
+      return FALSE;
+    }
+  }
+  else {
+    int i;
+    for (i = 0; i < WN_kid_count(expr); i++) {
+      if (!WN_Find_Unique_LDID(WN_kid(expr,i), ldid))
+	return FALSE;
+    }
+    return TRUE;
+  }
+}
+
+// First, check that wn_affirm node references one and only one LDID
+// variable. Then, look for the TN associated to this LDID variable
+// and generate a copy tn = tn, on which the property 'affirm' is set.
+static void
+Handle_AFFIRM(WN *wn_affirm) {
+  // First, look for the single PREG that should be used in the
+  // expression.
+  WN *ldid = NULL;
+  OP *op_assume = NULL;
+
+  if (Get_Trace(TP_CGEXP, 8)) {
+    fprintf(TFile, "<%d> [ASSUME] WN_AFFIRM attached to CGIR OP:\n", Current_PU_Count());
+    fdump_tree(TFile, wn_affirm);
+  }
+
+  if (!WN_Find_Unique_LDID(wn_affirm, &ldid)) {
+    if (OPT_Enable_Warn_Assume)
+      DevWarn("__builtin_assume uses more than one variable (line %d). Ignored.",
+	      Srcpos_To_Line(WN_Get_Linenum(wn_affirm)));
+  }
+  else if (ldid == NULL) {
+    if (OPT_Enable_Warn_Assume) {
+      DevWarn("No variable found in __builtin_assume (line %d). Ignored.", Srcpos_To_Line(WN_Get_Linenum(wn_affirm)));
+    }
+    if (Get_Trace(TP_CGEXP, 8))
+      fprintf(TFile, "*** Cannot analyze WHIRL node WN_AFFIRM ***\n", Current_PU_Count());
+  }
+  else {
+    TN *result = Handle_LDID(ldid, NULL, WN_opcode (ldid));
+    Exp_COPY(result, result, &New_OPs);
+    op_assume = OPS_last(&New_OPs);
+    OP_Set_Affirm(op_assume, wn_affirm);
+    if (Get_Trace(TP_CGEXP, 8))
+      Print_OP_No_SrcLine(op_assume);
+  }
+}
+#endif
 
 // replace all occurrences of match string with new string in s string.
 static void
@@ -5976,6 +6043,11 @@ Expand_Statement (
   case OPC_ASM_STMT:
     Handle_ASM (stmt);
     break;
+#ifdef TARG_ST
+  case OPC_AFFIRM:
+    Handle_AFFIRM (stmt);
+    break;
+#endif
   default:
     PU_WN_Cnt--;	/* don't want to count node twice */
     Expand_Expr (stmt, NULL, NULL);
@@ -6667,6 +6739,7 @@ Whirl2ops_Finalize (void)
     OP_MAP_Delete(OP_packed_to_ops_map);
     OP_packed_to_ops_map = NULL;
   }
+  OP_Affirm_delete_map();
 #endif
 
   OP_MAP_Delete(OP_Asm_Map);

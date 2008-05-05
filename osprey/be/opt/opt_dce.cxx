@@ -2118,6 +2118,9 @@ DCE::Required_stmt( const STMTREP *stmt ) const
   case OPR_RETURN_VAL:
   case OPR_REGION_EXIT:
   case OPR_OPT_CHI: // entry chi is required, pv 454154
+#ifdef TARG_ST
+  case OPR_AFFIRM:
+#endif
     return TRUE;
 
   case OPR_CALL:

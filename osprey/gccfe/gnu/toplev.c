@@ -1509,6 +1509,13 @@ int warn_packed;
 
 int warn_padded;
 
+#ifdef TARG_ST
+
+/* Warn when assume expressions could not be analyzed by the compiler.  */
+int warn_assume;
+
+#endif
+
 /* Warn when an optimization pass is disabled.  */
 
 int warn_disabled_optimization;
@@ -1567,6 +1574,10 @@ static const lang_independent_options W_options[] =
    N_("Warn when the packed attribute has no effect on struct layout") },
   {"padded", &warn_padded, 1,
    N_("Warn when padding is required to align struct members") },
+#ifdef TARG_ST
+  {"assume", &warn_assume, 1,
+   N_("Warn when assume expression cannot be analyzed by the compiler") },
+#endif
   {"disabled-optimization", &warn_disabled_optimization, 1,
    N_("Warn when an optimization pass is disabled") },
   {"deprecated-declarations", &warn_deprecated_decl, 1,

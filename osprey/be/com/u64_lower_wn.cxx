@@ -220,6 +220,9 @@ U64_LOWER_stmt_wn(WN *tree, BOOL leave_CVTL_at_leaf)
   case OPR_PREFETCH:
   case OPR_EVAL: 
   case OPR_AGOTO:
+#ifdef TARG_ST
+  case OPR_AFFIRM:
+#endif
     // don't need to do anything
     WN_kid0(tree) = U64_LOWER_expr(WN_kid0(tree), maxsize, hob_state, hob_to_do,
 				   leave_CVTL_at_leaf);

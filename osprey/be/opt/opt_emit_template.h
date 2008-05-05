@@ -1056,6 +1056,13 @@ Gen_stmt_wn(STMTREP *srep, STMT_CONTAINER *stmt_container, EMITTER *emitter)
       rwn = WN_CreateEval(rhs_wn);
     break;
 
+#ifdef TARG_ST
+  case OPR_AFFIRM:
+    rhs_wn = Gen_exp_wn( srep->Rhs(), emitter );
+    rwn = WN_CreateAffirm(rhs_wn);
+    break;    
+#endif
+
   case OPR_REGION: // black box region, previously processed
     rwn = srep->Black_box_wn(); 
     break;

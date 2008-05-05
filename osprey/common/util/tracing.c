@@ -210,6 +210,7 @@ static PDESC Phases[] = {
   { TP_LICM,            "LIM",  "Loop Invariant Code Motion" },
   { TP_EXTLOAD,		"EXT",	"Extension loader" },
   { TP_TAIL,		"TAL",	"Tailmerge" },
+  { TP_AFFIRM,		"AFF",  "Affirm" },
 #endif
 
 #ifdef TARG_ST

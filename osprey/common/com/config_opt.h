@@ -163,6 +163,10 @@ BE_EXPORTED extern BOOL Fused_Madd;  /* Fused madd allowed ? */
 BE_EXPORTED extern BOOL Fused_Madd_Set;  /* ... option seen? */
 BE_EXPORTED extern BOOL No_Denormals;  /* No denormals support  ? */
 BE_EXPORTED extern BOOL No_Denormals_Set;  /* ... option seen? */
+BE_EXPORTED extern BOOL OPT_Expand_Assume; /* Expand __builtin_assume ? */
+BE_EXPORTED extern BOOL OPT_Expand_Assume_Set; /* ... option seen? */
+// FdF 20080305: Emit warning on unsupported expressions in __builtin_assume
+BE_EXPORTED extern BOOL OPT_Enable_Warn_Assume;
 typedef enum {
   REASSOC_NONE,	/* No roundoff-inducing transformations */
   REASSOC_SIMPLE,	/* Simple roundoff transformations */

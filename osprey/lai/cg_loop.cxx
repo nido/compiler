@@ -179,6 +179,7 @@
 #include "config_TARG.h"
 #include "cg_dud.h"
 #include "config_cache.h"
+#include "cg_affirm.h"
 #endif
 
 /* Error tolerance for feedback-based frequency info */
@@ -5133,6 +5134,21 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
   int modulus, residue;
 
   Get_pragma_LoopMod(loop, &modulus, &residue);
+  int affirm_modulus = Get_Affirm_modulo(trip_count_tn, CG_LOOP_prolog);
+  if (affirm_modulus > 1) {
+    if ((modulus > 1) && (residue != 0)) {
+      DevWarn("#pragma loopmod values does match computed values. Ignored.");
+      modulus = 1;
+    }
+    if (affirm_modulus > modulus) {
+      modulus = affirm_modulus;
+      residue = 0;
+      if (Get_Trace(TP_AFFIRM, 0x1) && (modulus >= ntimes)) {
+	fPrint_TN(TFile, "Used AFFIRM property (%s", trip_count_tn);
+	fprintf(TFile, "%%%d==0) for loop unrolling with factor %d\n", modulus, ntimes);
+      }
+    }
+  }
 
   if (trip_count_tn && TN_is_constant(trip_count_tn))
     remainder_trip_count_val = TN_value(trip_count_tn) % ntimes;
@@ -5607,6 +5623,22 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
        trip_min >= ntimes. */
     if ((LOOPINFO_trip_min(info) != -1) && (LOOPINFO_trip_min(info) >= ntimes))
       gen_unrolled_loop_guard = FALSE;
+
+    int affirm_modulus = Get_Affirm_modulo(trip_count_tn, CG_LOOP_prolog);
+    if (affirm_modulus > 1) {
+      if ((modulus > 1) && (residue != 0)) {
+	DevWarn("#pragma loopmod values does match computed values. Ignored.");
+	modulus = 1;
+      }
+      if (affirm_modulus > modulus) {
+	modulus = affirm_modulus;
+	residue = 0;
+	if (Get_Trace(TP_AFFIRM, 0x1) && (modulus >= ntimes)) {
+	  fPrint_TN(TFile, "Used AFFIRM property (%s", trip_count_tn);
+	  fprintf(TFile, "%%%d==0) for loop unrolling with factor %d\n", modulus, ntimes);
+	}
+      }
+    }
 
     if (modulus > 1) {
 

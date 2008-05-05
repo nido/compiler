@@ -1,6 +1,56 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon May  5 16:58:39 CEST 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/ferriere/dev-assume
+
+Description:
+------------
+	* [trunk] Development for __builtin_assume annotation and affirm property
+	Deliver ferriere/dev-assume rev #16754 with authorization branch #42656
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_bdce.cxx
+	M      osprey/be/opt/opt_etable.cxx
+	M      osprey/be/opt/opt_emit_template.h
+	M      osprey/be/opt/opt_dce.cxx
+	M      osprey/be/opt/opt_htable.cxx
+	M      osprey/be/vho/vho_lower.cxx
+	M      osprey/be/com/rt_lower_wn.cxx
+	M      osprey/be/com/fb_cfg.cxx
+	M      osprey/be/com/wn_lower.cxx
+	M      osprey/be/com/u64_lower_wn.cxx
+	M      osprey/driver/OPTIONS
+	M      osprey/lai/cg_ssa.cxx
+	M      osprey/lai/cg_loop.cxx
+	A  +   osprey/lai/cg_affirm.h
+	M      osprey/lai/cg_ivs.cxx
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/lai/cgdriver.cxx
+	A  +   osprey/lai/cg_affirm.cxx
+	M      osprey/lai/cg_ssa.h
+	M      osprey/lai/Makefile.gbase
+	M      osprey/lai/range_prop.cxx
+	M      osprey/lai/oputil.cxx
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/gccfe/gnu/flags.h
+	M      osprey/gccfe/gnu/toplev.c
+	M      osprey/gccfe/gnu/builtins.def
+	M      osprey/g++fe/wfe_expr.cxx
+	M      osprey/common/util/tracing.c
+	M      osprey/common/util/tracing.h
+	M      osprey/common/com/config_opt.h
+	M      osprey/common/com/config_opt.cxx
+	M      osprey/common/com/wn.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon May  5 16:39:32 CEST 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

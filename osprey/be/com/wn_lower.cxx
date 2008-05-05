@@ -13608,6 +13608,27 @@ static WN *lower_return_val(WN *block, WN *tree, LOWER_ACTIONS actions)
   return tree;
 }
 
+#ifdef TARG_ST
+// Inside an AFFIRM node, use non control-flow versions of conditional
+// AND and OR operator.
+static WN *
+lower_affirm_expr (WN * wn)
+{
+  int i;
+  for ( i = 0; i < WN_kid_count(wn); i++ )
+    WN_kid(wn, i) = lower_affirm_expr ( WN_kid(wn, i) );
+  
+  if (WN_operator(wn) == OPR_CAND) {
+    wn = WN_LAND( WN_kid0(wn), WN_kid1(wn) );
+  }
+  else if (WN_operator(wn) == OPR_CIOR) {
+    wn = WN_LIOR( WN_kid0(wn), WN_kid1(wn) );
+  }
+
+  return wn;
+}
+#endif
+
 
 /* ====================================================================
  *
@@ -13754,6 +13775,13 @@ static WN *lower_stmt(WN *block, WN *tree, LOWER_ACTIONS actions)
     if (WN_pragma(tree) == WN_PRAGMA_PREAMBLE_END) {
       tree = lower_preamble_end(block, tree, actions);
     }
+    break;
+
+  case OPR_AFFIRM:
+    // FdF 20080306: Do not generate control flow for AFFIRM expressions
+    if (Action(LOWER_SHORTCIRCUIT))
+      WN_kid0(tree) = lower_affirm_expr(WN_kid0(tree));
+    WN_kid0(tree) = lower_expr(block, WN_kid0(tree), actions);
     break;
 #endif
 

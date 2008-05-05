@@ -99,6 +99,7 @@
 #include "cg_ssa.h"                 /* for SSA flags */
 #include "cg_select.h"              /* for SELECT flags */
 #include "cg_ivs.h"		    /* for packing flags */
+#include "cg_affirm.h"		    /* for Affirm flags */
 #endif
 
 #ifdef LAO_ENABLED
@@ -195,6 +196,7 @@ static BOOL CG_enable_loop_optimizations_overridden = FALSE;
 static BOOL CG_LOOP_unroll_multi_bb_overridden = FALSE;
 static BOOL IPFEC_Enable_LICM_overridden = FALSE;
 static BOOL CG_enable_cbpo_overriden = FALSE;
+static BOOL CG_affirm_opt_overridden = FALSE;
 
 static BOOL CG_LAO_optimizations_overridden = FALSE;
 static BOOL CG_LAO_regiontype_overridden = FALSE;
@@ -1184,6 +1186,10 @@ static OPTION_DESC Options_CG[] = {
     2, 1, INT32_MAX, &CG_range_recompute_limit, &CG_range_recompute_limit_overridden,
     "Limit on the number of times a value range is recomputed" },
 
+  { OVK_INT32,  OV_INTERNAL, TRUE, "affirm_opt", "",
+    1, 0, 3, &CG_affirm_opt, &CG_affirm_opt_overridden,
+    "Generation and optimization of AFFIRM property" },
+
   { OVK_BOOL,	OV_INTERNAL, TRUE, "ifc_allow_dup", "",
     0, 0, 0,	&CG_ifc_allow_dup, &CG_ifc_allow_dup_overridden,
     "Allow basic blocks duplication for select if conversion"},
@@ -1603,6 +1609,11 @@ Configure_CG_Options(void)
   if (CG_enable_range_propagation && !CG_enable_ssa) {
     DevWarn("CG: Ignoring range_propagation=ON, need ssa");
     CG_enable_range_propagation = FALSE;
+  }
+
+  // [FdF] AFFIRM property generation and optimization
+  if (!CG_affirm_opt_overridden) {
+    CG_affirm_opt = (CG_opt_level > 1) ? 1 : 0;
   }
 
   // Enable CBPO at > -O1

@@ -65,6 +65,8 @@
 #ifndef cg_ssa_INCLUDED
 #define cg_ssa_INCLUDED
 
+#include "tn_map.h"
+
 /* ========================================================================
  *   SSA flags:
  * ========================================================================
@@ -128,6 +130,8 @@ inline void Set_TN_ssa_def(TN *t, OP *o) {
 /* The two following functions update the SSA use-def link when an
    operation is inserted into or removed from a basicblock. 
 */
+extern void SSA_Disable();
+extern void SSA_Enable();
 extern void SSA_setup(OP *o);
 extern void SSA_unset(OP *o);
 
@@ -144,6 +148,7 @@ inline BOOL SSA_Active (void) {
 extern BOOL SSA_Check (RID *rid, BOOL region);
 extern BOOL SSA_Verify (RID *rid, BOOL region);
 extern void SSA_Enter (RID *rid, BOOL region);
+extern void SSA_Update ();
 extern void SSA_Make_Conventional (RID *rid, BOOL region);
 extern void SSA_Remove_Pseudo_OPs (RID *rid, BOOL region);
 

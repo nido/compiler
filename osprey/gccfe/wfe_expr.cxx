@@ -497,7 +497,7 @@ extern tree c_strlen (tree);
 // Return the node effectively generated
 static WN *WFE_Append_Expr_Stmt(WN *wn)
 {
-  if (WN_operator (wn) != OPR_PREFETCH)
+  if ((WN_operator (wn) != OPR_PREFETCH) && (WN_operator (wn) != OPR_AFFIRM))
     wn = WN_CreateEval (wn);
   WFE_Stmt_Append (wn, Get_Srcpos ());
   return wn;
@@ -4517,6 +4517,19 @@ WFE_Expand_Expr (tree exp,
 	      whirl_generated = TRUE;
 	      break;
 
+#endif
+
+#ifdef TARG_ST
+	    case BUILT_IN_ASSUME:
+	      if (arglist == 0)
+		break;
+	      if (OPT_Expand_Assume)
+	      {
+		arg_wn = WFE_Expand_Expr (TREE_VALUE (arglist));
+		wn = WN_CreateAffirm(arg_wn);
+		whirl_generated = TRUE;
+	      }
+	      break;
 #endif
 
 #ifdef TARG_ST

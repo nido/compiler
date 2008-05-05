@@ -89,10 +89,8 @@
 
 #ifdef TARG_ST
 #include "cg_ssa.h"
-#endif
-
-#ifdef TARG_ST
 #include "op_map.h"			/* For using OP_Asm_Map */
+#include "cg_affirm.h"
 #endif
 
 /* #include "targ_isa_hazards.h" */ /* Should be included through op.h */
@@ -1053,6 +1051,11 @@ else
     if (Alias_Manager) Print_alias_info (buf, Alias_Manager, wn);
     fprintf(TFile, " WN=0x%p %s", wn, buf);
   }
+#ifdef TARG_ST
+  if (OP_Get_Affirm(op)) {
+    fprintf(TFile, " affirm");
+  }
+#endif
   if (OP_unrolling(op)) {
     UINT16 unr = OP_unrolling(op);
     fprintf(TFile, " %d%s unrolling", unr,

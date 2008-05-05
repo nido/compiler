@@ -141,6 +141,10 @@ BOOL No_Denormals = TRUE;  /* No denormals support  ? */
 BOOL No_Denormals_Set = FALSE;  /* ... option seen? */
 REASSOC Reassoc_Level = REASSOC_NONE; /* reassociations level */
 BOOL Reassoc_Set = FALSE;  /* ... option seen? */
+BOOL OPT_Expand_Assume = TRUE; /* Expand __builtin_assume ? */
+BOOL OPT_Expand_Assume_Set = FALSE; /* ... option seen? */
+// FdF 20080305: Emit warning on unsupported expressions in __builtin_assume
+BOOL OPT_Enable_Warn_Assume = FALSE;
 #endif
 
 
@@ -539,6 +543,13 @@ static OPTION_DESC Options_OPT[] = {
   { OVK_INT32,  OV_VISIBLE,	TRUE, "Reassoc_level",		"Reassoc",
     0, 0, 3,	&Reassoc_Level, &Reassoc_Set,
     "Level of FP reassociations optimizations" },
+
+  { OVK_BOOL,	OV_VISIBLE,	TRUE, "Assume",		"Assume",
+    1, 0, 0,	&OPT_Expand_Assume, &OPT_Expand_Assume_Set,
+    "Enable the expansion of __builtin_assume into an AFFIRM whirl node" },
+
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "warn_assume",		"",
+    1, 0, 0,	&OPT_Enable_Warn_Assume, NULL },
 #endif
 
   { OVK_BOOL,	OV_SHY,		TRUE, "implied_do_io_opt",	NULL,

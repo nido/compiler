@@ -2062,6 +2062,12 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"warn about returning structures, unions or arrays"
 -Wno-aggregate-return	;		Cc	f,cpp	self
 	""
+#ifdef TARG_ST
+-Wassume	;		Cc	f,cpp	-OPT:warn_assume=on
+	"warn about unsupported expression in __builtin_assume"
+-Wno-assume	;		Cc	f,cpp	-OPT:warn_assume=off
+	""
+#endif
 -Wbad-function-cast	;		Cc	f,cpp	self
 	"attempt to support writable-strings K&R style C"
 -Wno-bad-function-cast	;		Cc	f,cpp	self
@@ -2965,6 +2971,8 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 --write-user-dependencies	;	ALL	NONE	"-MMD"
 	""
 #if defined(TARG_ST)
+-mno-assume 	;		Cc	cpp,f	"-OPT:Assume=0"
+	"Do not process __builtin_assume directives"
 -mbuiltin-prefetch	;	Cc	cpp,cfe	"-TENV:no_builtin_prefetch=off"
 	NA__STxP70__"Activate built in prefetch functions"
 -mno-builtin-prefetch	;	Cc	cpp,cfe	"-TENV:no_builtin_prefetch=on"

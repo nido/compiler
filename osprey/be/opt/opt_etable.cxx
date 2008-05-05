@@ -2630,6 +2630,13 @@ ETABLE::Bottom_up_stmt(STMTREP *stmt)
   stmt->Set_stmt_id(Cfg()->Get_stmt_id());
 #endif
 
+#ifdef TARG_ST
+  // FdF 20080307: Do not perform PRE on AFFIRM node, otherwise the
+  // original expression is no longer within this single node.
+  if (stmt_opr == OPR_AFFIRM)
+    return;
+#endif
+
   // for each statement see if they have a rhs and lhs and traverse
   // any expressions there
   CODEREP *rhs = stmt->Rhs();

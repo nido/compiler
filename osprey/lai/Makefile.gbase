@@ -403,6 +403,7 @@ CG_CXX_SRCS = 		\
   cgemit.cxx		\
   cgexp.cxx		\
   cgprep.cxx		\
+  cg_affirm.cxx		\
   cg_db_op.cxx		\
   cg_dud.cxx		\
   cg_automod.cxx	\

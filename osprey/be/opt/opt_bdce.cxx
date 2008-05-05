@@ -162,6 +162,9 @@ BITWISE_DCE::Operators_without_dependency(OPERATOR opr)
   case OPR_BACKWARD_BARRIER:
   case OPR_DEALLOCA:
   case OPR_EVAL:	// for EVAL, can alternatively use strategy in DCE
+#ifdef TARG_ST
+  case OPR_AFFIRM:
+#endif
     return TRUE;
   default:
     return FALSE;

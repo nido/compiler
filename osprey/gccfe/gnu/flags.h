@@ -177,6 +177,13 @@ extern int warn_padded;
 
 /* Warn when an optimization pass is disabled.  */
 
+#ifdef TARG_ST
+
+/* Warn when assume expressions could not be analyzed by the compiler.  */
+extern int warn_assume;
+
+#endif
+
 extern int warn_disabled_optimization;
 
 /* Nonzero means warn about uses of __attribute__((deprecated)) 

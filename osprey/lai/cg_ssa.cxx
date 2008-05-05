@@ -99,6 +99,23 @@ OP_Attach_Rematerialization(OP *op)
   }
 }
 
+static TN_MAP save_ssamap = NULL;
+void
+SSA_Disable() {
+  if (tn_ssa_map != NULL) {
+    save_ssamap = tn_ssa_map;
+    tn_ssa_map = NULL;
+  }
+}
+
+void
+SSA_Enable() {
+  if (save_ssamap != NULL) {
+    tn_ssa_map = save_ssamap;
+    save_ssamap = NULL;
+  }
+}
+
 void 
 SSA_setup(OP *o) 
 {
@@ -1337,13 +1354,17 @@ SSA_Place_Phi_In_BB (
  *  initialize_tn_def_map
  * ================================================================
  */
-static void
-initialize_tn_def_map ()
+static TN_LIST *
+initialize_tn_def_map (BOOL incremental)
 {
   INT i;
   BB *bb;
   OP *op;
 
+  TN_LIST *global_tns = NULL;
+  TN_LIST *cur_list = NULL;
+
+  GTN_SET *gtn_set = GTN_SET_Create_Empty (Last_TN + 1,&MEM_local_pool);
   tn_def_map = TN_MAP_Create();
 
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
@@ -1354,13 +1375,36 @@ initialize_tn_def_map ()
 
       for (i = 0; i < OP_results(op); i++) {
 	TN *tn = OP_result(op,i);
+	// Already an SSA variable (for incremental renaming), or
+	// cannot be an SSA variable
+	if (!(TN_is_global_reg(tn) && TN_can_be_renamed(tn)))
+	  continue;
+	if (incremental && TN_is_ssa_var(tn))
+	  continue;
+	if (!GTN_SET_MemberP(gtn_set, tn)) {
+	  gtn_set = GTN_SET_Union1D(gtn_set, tn, &MEM_local_pool);
+	  // FdF 20080502: Use a list and insert at the end of the
+	  // list, so as to link the TNs in the order of the occurence
+	  // of their first definition in the sequential order of the
+	  // function. This keeps the order of the insertion of the
+	  // PHIs instructions unchanged from previous versions, and
+	  // avoids some performance/size regressions observed when
+	  // this order is changed.
+	  TN_LIST *new_list = TN_LIST_Push(tn, NULL, &MEM_local_pool);
+	  if (global_tns == NULL)
+	    cur_list = global_tns = new_list;
+	  else {
+	    TN_LIST_rest(cur_list) = new_list;
+	    cur_list = new_list;
+	  }
+	}
 	BB_LIST *p = TN_is_def_in(tn);
 	TN_MAP_Set(tn_def_map, tn, BB_LIST_Push(bb, p, &MEM_local_pool));
       }
     }
   }
 
-  return;
+  return global_tns;
 }
 
 /* ================================================================
@@ -1387,9 +1431,29 @@ finalize_tn_def_map ()
  */
 static BB_SET *Phi_Functions_work;
 static BB_SET *Phi_Functions_has_already;
+
+static BOOL
+Lookup_Phi_Function_For_TN(BB *bb, TN *tn) {
+  OP *op;
+  TN *opnd;
+
+  FOR_ALL_BB_OPs_FWD(bb, op) {
+    if (OP_code(op) != TOP_phi)
+      break;
+    for (INT i = 0; i < OP_opnds(op); i++) {
+      opnd = OP_opnd(op,i);
+      if (opnd == tn)
+	return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
 static void
 SSA_Place_Phi_Functions (
-  TN *tn
+  TN *tn,
+  BOOL incremental
 )
 {
   BB *bb;
@@ -1405,6 +1469,10 @@ SSA_Place_Phi_Functions (
   for (p = TN_is_def_in(tn); p != NULL; p = BB_LIST_rest(p)) {
     Phi_Functions_work = BB_SET_Union1D(Phi_Functions_work, BB_LIST_first(p), &MEM_local_pool);
   }
+
+  // FdF 20080331: Even with BB_SET_Size(Phi_Functions_work) == 1,
+  // there waybe a PHI instruction, with an uninitialized operand.
+
   //BB_SET *work = BB_SET_Copy(TN_is_def_in(tn), &MEM_local_pool);
   FOR_ALL_BB_SET_members(Phi_Functions_work, bb) {
     work_lst.push_back(bb);
@@ -1442,8 +1510,12 @@ SSA_Place_Phi_Functions (
 	fprintf(TFile, " %s, %s\n", BB_SET_MemberP(Phi_Functions_has_already, sc) ? "has already" : "no phi yet", GTN_SET_MemberP(BB_live_in(sc), tn) ? "live in" : "not live in");
       }
 
-      if (!BB_SET_MemberP(Phi_Functions_has_already, sc) &&
-	                     GTN_SET_MemberP(BB_live_in(sc), tn)) {
+      if (incremental && !BB_SET_MemberP(Phi_Functions_has_already, sc) &&
+	  Lookup_Phi_Function_For_TN(sc, tn))
+        Phi_Functions_has_already = BB_SET_Union1D(Phi_Functions_has_already, sc, &MEM_local_pool);
+
+      else if (!BB_SET_MemberP(Phi_Functions_has_already, sc) &&
+	       (incremental || GTN_SET_MemberP(BB_live_in(sc), tn))) {
 
 	//fprintf(TFile, "    placing a PHI in BB%d\n", BB_id(sc));
 
@@ -1553,9 +1625,10 @@ Rename_Phi_Operands (
 static void
 SSA_Rename_BB (
   BB   *bb,
-  BOOL *visited    // has been remaned processing another entry BB
-                   // in this case only need to renema ephi-operands
-                   // of its CFG successors
+  BOOL *visited,   // has been renamed processing another entry BB in
+                   // this case only need to rename phi-operands of
+                   // its CFG successors
+  BOOL incremental
 )
 {
   INT  i;
@@ -1615,8 +1688,11 @@ SSA_Rename_BB (
       // result TN must be a register ??
       // but do not touch dedicated TNs
       if (TN_can_be_renamed(tn)) {
+	if (incremental && TN_is_ssa_var(tn)) {
+	  tn_stack_push(tn, tn);
+	}
 	//
-	if (OP_cond_def(op)) {
+	else if (OP_cond_def(op)) {
 	  /* Create a PSI to merge the previous value with the new
 	     one. */
 	  if (TN_STACK_empty(tn))
@@ -1669,7 +1745,7 @@ SSA_Rename_BB (
   //
   for (BB_LIST *elist = BB_children(bb); elist; elist = BB_LIST_rest(elist)) {
     BB *kid = BB_LIST_first(elist);
-    SSA_Rename_BB (kid, visited);
+    SSA_Rename_BB (kid, visited, incremental);
   }
 
   //
@@ -1724,22 +1800,20 @@ SSA_Rename_BB (
  * ================================================================
  */
 static void
-SSA_Rename ()
+SSA_Rename (BOOL incremental)
 {
   INT  i;
   BB  *bb;
+  TN  *tn;
 
   //
   // First, calculate the dominance frontiers
   //
   SSA_Compute_Dominance_Frontier ();
 
-  initialize_tn_def_map();
+  TN_LIST *global_tns;
 
-  //
-  // has given TN been processed by the renaming algorithm ?
-  //
-  TN_SET  *tn_seen = TN_SET_Create_Empty (Last_TN + 1,&MEM_local_pool);
+  global_tns = initialize_tn_def_map(incremental);
 
   if (Trace_SSA_Build) {
     fprintf(TFile, "<ssa> Placing the PHI-nodes: \n");
@@ -1748,20 +1822,17 @@ SSA_Rename ()
   Phi_Functions_work = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_local_pool);
   Phi_Functions_has_already = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_local_pool);
 
-  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-    OP *op;
-    FOR_ALL_BB_OPs_FWD (bb, op) {
-      for (i = 0; i < OP_results(op); i++) {
-	TN *tn = OP_result(op, i);
-	// if the TN is not renamable or has been processed, move on
-	if (!(TN_is_global_reg(tn) && TN_can_be_renamed(tn)) || 
-	                         TN_SET_MemberP(tn_seen, tn)) continue;
+  if (incremental)
+    SSA_Disable();
 
-	SSA_Place_Phi_Functions (tn);
-	tn_seen = TN_SET_Union1D(tn_seen, tn, &MEM_local_pool);
-      }
-    }
+  TN_LIST *p;
+  for (p = global_tns; p != NULL; p = TN_LIST_rest(p)) {
+    TN *tn = TN_LIST_first(p);
+    SSA_Place_Phi_Functions (tn, incremental);
   }
+
+  if (incremental)
+    SSA_Enable();
 
   if (Trace_SSA_Build) {
     Trace_IR(TP_SSA, "AFTER PHI_NODES INSERTION", NULL);
@@ -1776,13 +1847,14 @@ SSA_Rename ()
   //
   // initialize tn_ssa_map, deleted by the SSA_Remove_Pseudo_OPs()
   //
-  tn_ssa_map = TN_MAP_Create();
+  if (!incremental)
+    tn_ssa_map = TN_MAP_Create();
 
   //
   // visit nodes in the dominator tree order renaming TNs
   //
   FOR_ALL_BB_SET_members(region_entry_set,bb) {
-    SSA_Rename_BB (bb, visited);
+    SSA_Rename_BB (bb, visited, incremental);
   }
 
 #if 0
@@ -1876,7 +1948,7 @@ SSA_Enter (
   //initialize_tn_stack();
   DOM_TREE_Initialize();
 
-  SSA_Rename();
+  SSA_Rename(FALSE);
 
   // Finalize dominator tree for SSA construction.
   // Note that this does not destroy Dominator information itself.
@@ -1905,6 +1977,32 @@ SSA_Enter (
   return;
 }
 
+
+/* ================================================================
+ *   SSA_Update
+ *
+ *   SSA_Update can be called at any point during SSA
+ *   transformations/optimizations. It will introduce single
+ *   defintions and PHI operations for any variable in the procedure
+ *   that is candidate for SSA renaming and do not have an SSA def.
+ *
+ * ================================================================
+ */
+void
+SSA_Update ()
+{
+
+  MEM_POOL_Push (&MEM_local_pool);
+
+  //initialize_tn_stack();
+  DOM_TREE_Initialize();
+
+  SSA_Rename(TRUE);
+
+  MEM_POOL_Pop (&MEM_local_pool);
+
+  return;
+}
 
 /* ================================================================
  *   SSA_Check

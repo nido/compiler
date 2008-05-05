@@ -3385,6 +3385,8 @@ WN_has_side_effects (const WN* wn)
 #ifdef TARG_ST
       /* (cbr) recognize. compiler can't optimize out those */
   case OPR_PREFETCH:
+    /* FdF 20080310: Do not optimize this out. */
+  case OPR_AFFIRM:
     return TRUE;
 #endif
 

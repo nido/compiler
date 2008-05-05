@@ -3668,6 +3668,9 @@ STMTREP::Enter_rhs(CODEMAP *htable, OPT_STAB *opt_stab, COPYPROP *copyprop, EXC 
   case OPR_EVAL:
   case OPR_COMPGOTO:
   case OPR_RETURN_VAL:
+#ifdef TARG_ST
+  case OPR_AFFIRM:
+#endif
     Set_rhs(htable->Add_expr(WN_kid0(Wn()),
                              opt_stab, this, &proped, copyprop));
     break;

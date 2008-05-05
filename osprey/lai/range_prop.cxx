@@ -49,6 +49,7 @@
 #include "range.h"
 #include "lbrange.h"
 #include "paired_lattice.h"
+#include "cg_affirm.h"
 
 #define SWAP_TN(tn1, tn2) do { TN *tmp = tn1; tn1 = tn2; tn2 = tmp; } while (0)
 #define SWAP_RANGE(r1, r2) do { LRange_p tmp = r1; r1 = r2; r2 = tmp; } while (0)
@@ -636,6 +637,7 @@ RangePropagatePass (RangeAnalysis &range_analysis, INT pass)
   if (! range_analysis.Can_Analyze ()) {
     Trace_RangePropagate_Aborted ();
     range_analysis.Finalize ();
+    MEM_POOL_Delete (&mempool);
     return FALSE;
   }
 
@@ -643,6 +645,31 @@ RangePropagatePass (RangeAnalysis &range_analysis, INT pass)
   
   range_analysis.Analyze_Forward ();
 
+  // FdF 20080314: (pass == -1) is used to perform a forward analysis
+  // pass to collect range facts, and apply these facts to attach
+  // AFFIRM property in the code.
+  if (pass == -1) {
+    BOOL SSA_update = FALSE;
+
+    BB *bb;
+    for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+      OP *op;
+      OP *next = NULL;
+
+      if (Generate_Affirm(&range_analysis, bb))
+	SSA_update = TRUE;
+    }
+
+    if (SSA_update)
+      SSA_Update ();
+    
+    range_analysis.Finalize ();
+    MEM_POOL_Delete (&mempool);
+
+    return FALSE;
+  }
+
+  
   BB *bb;
   for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
     OP *op;
@@ -703,6 +730,9 @@ RangePropagate ()
       changed = RangePropagatePass (range_analysis, passes);
       if (changed) SSA_DeadCode ();
     } while (changed && passes < Max_Passes);
+
+    if (CG_affirm_opt != 0)
+      RangePropagatePass (range_analysis, -1);
 
     Trace_RangePropagate_End ();
   }

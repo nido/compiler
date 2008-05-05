@@ -1888,6 +1888,7 @@ vho_lower_set_st_addr_info ( WN * wn, ADDRESS_INFO_TYPE code )
     case OPR_PARM:
 #ifdef TARG_ST
   case OPR_SUBPART:
+  case OPR_AFFIRM:
 #endif
 
       vho_lower_set_st_addr_info ( WN_kid0(wn), code );
@@ -4728,6 +4729,10 @@ vho_lower_stmt ( WN * wn, WN * block )
 
       break;
 
+#ifdef TARG_ST
+    case OPR_AFFIRM:
+      // fall through
+#endif
     case OPR_EVAL:
 
       wn = vho_lower_eval ( wn, block );
