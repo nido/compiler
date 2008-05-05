@@ -262,6 +262,12 @@ static BOOL CG_simp_flow_in_tailmerge_overridden = FALSE;
 
 #ifdef TARG_ST
 static BOOL LOCS_POST_Scheduling_overriden;
+/* 
+ * TDR options controlled by mask, previously mixed with option -Wb,-tt...
+ * See art #41947 
+ */
+INT32 CG_sched_mask = 0;
+INT32 CG_LRA_mask = 0;
 #endif
 
 /* Keep	a copy of the command line options for assembly	output:	*/
@@ -1222,6 +1228,12 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE, "save_return_address", "",
     0, 0, 0,	&CG_save_return_address, NULL },
 
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "SCH_mask", "", 
+    0, 0, 0xffffffff,	&CG_sched_mask, NULL,
+    "Control Scheduler optimization (mask)" },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LRA_mask", "", 
+    0, 0, 0xffffffff,	&CG_LRA_mask, NULL,
+    "Control LRA optimization (mask)" },
 #endif
 
   { OVK_COUNT }

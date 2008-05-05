@@ -1040,7 +1040,7 @@ Check_Allow_Reorder() {
   if ((CG_opt_level > 1) &&
       IGLS_Enable_All_Scheduling && LOCS_Enable_Scheduling &&
       (Trip_Count <= CG_opt_level) &&
-      !Get_Trace (TP_ALLOC, 0x2000)) {
+      !(CG_LRA_mask & 0x2000)) {
 #else
   if ((CG_opt_level > 1) &&
       (Trip_Count <= CG_opt_level) &&
@@ -1068,16 +1068,16 @@ Check_Allow_Reschedule()
 #ifdef TARG_ST
   // [CG]: When LAO is enabled, rescheduling takes place only 
   // if register_requirement > 1.5*(register avail)
-  // Rescheduling can be disabled by -Wb,-tt54:0x200
-  // Rescheduling can be forced under -Wb,-tt54:0x2000
+  // Rescheduling can be disabled by -GC:LRA_mask=0x200
+  // Rescheduling can be forced under -GC:LRA_mask=0x20000
 #ifdef LAO_ENABLED
   if (!Check_Allow_Reorder()) return FALSE;
   if (Trip_Count != 1) return FALSE;
-  if (Get_Trace (TP_ALLOC, 0x0200)) return FALSE;
+  if (CG_LRA_mask & 0x0200) return FALSE;
 
   if (!CG_LAO_optimizations) return TRUE;
   
-  if (Get_Trace (TP_ALLOC, 0x20000)) return TRUE; /* Force even if LAO */
+  if (CG_LRA_mask & 0x20000) return TRUE; /* Force even if LAO */
 
   /* We estimate the registers request compared to the 
      registers availability. If it is above a fixed threshold (1.5)
@@ -2368,9 +2368,14 @@ Is_OP_Spill_Store (OP *op, ST *spill_loc)
 static void
 Mark_Reloadable_Live_Ranges (ISA_REGISTER_CLASS cl)
 {
+
+#ifdef TARG_ST
+  // Disable Reloading for spilling with -CG:LRA_mask=0x1000.
+  if (CG_LRA_mask & 0x1000) return;
+#else
   // Disable Reloading for spilling with -Wb,-ttlra:0x1000.
   if (Get_Trace (TP_ALLOC, 0x1000)) return;
-
+#endif
   for (LIVE_RANGE *lr = Live_Range_List; lr != NULL; lr = LR_next(lr)) 
   {
     // Look for live ranges with a single definition and no exposed uses.
@@ -4266,7 +4271,11 @@ Assign_Registers (BB *bb, TN **spill_tn, BOOL *redundant_code)
 	!OP_xfer(op) &&
 #endif
         !OP_Is_Intrinsic(op) &&
+#ifdef TARG_ST
+        !(CG_LRA_mask & 0x400))
+#else
         !Get_Trace (TP_ALLOC, 0x400))
+#endif
     {
       // Go through all the operands of this <op> and update the 
       // LR_use_cnt and LR_last_use fields for their live ranges.
@@ -6187,8 +6196,12 @@ Init_Live_LRs_Vector (
   Live_LRs_Vector = VECTOR_Init (BB_length(bb)+REGISTER_MAX, pool);
 
   // find candidate global live ranges to spill.
+#ifdef TARG_ST
+  if (!(CG_LRA_mask & 0x0100)) {
+#else
   // don't consider global live ranges with the option -Wb,-ttlra:0x100.
   if (!Get_Trace (TP_ALLOC, 0x0100)) {
+#endif 
     // Look for live ranges of all allocatable registers in this class.
     REGISTER_SET rs = REGISTER_CLASS_allocatable(cl);
 #ifdef TARG_ST

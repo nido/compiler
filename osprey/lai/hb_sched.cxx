@@ -2494,8 +2494,11 @@ HB_Schedule::Schedule_BB (BB *bb, BBSCH *bbsch, bool is_fwd)
 
   if (HBS_Before_GRA() && !HBS_From_CGPREP()) {
 
-    if (!Get_Trace (TP_SCHED, 0x2000)) {
-
+#ifdef TARG_ST
+	  if(!(CG_sched_mask & 0x2000)) {
+#else
+	  if (!Get_Trace (TP_SCHED, 0x2000)) {
+#endif
       // Assumes that <bbsch> is computed fopass      
       mINT8 *fatpoint = (_hbs_type & HBS_FROM_PRE_GCM_SCHED_AGAIN) ?
 #ifdef TARG_ST

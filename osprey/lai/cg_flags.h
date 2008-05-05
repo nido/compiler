@@ -530,6 +530,13 @@ extern INT CG_tailmerge;
 extern INT CG_simp_flow_in_tailmerge;
 #endif
 
+
+/*Other options controled by mask value*/
+#ifdef TARG_ST
+extern INT32 CG_sched_mask;
+extern INT32 CG_LRA_mask;
+#endif
+
 #endif /* cg_flags_INCLUDED */
 
 
