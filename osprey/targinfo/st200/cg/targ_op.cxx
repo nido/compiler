@@ -225,6 +225,8 @@ BOOL OP_Can_Be_Speculative (
 
   if (OP_Is_Barrier(op)) return FALSE;
 
+  if (OP_side_effects (op)) return FALSE;
+
   if (OP_Performance_Effects(op)) return OP_Safe_Effects (op);
 
   switch (Eager_Level) {

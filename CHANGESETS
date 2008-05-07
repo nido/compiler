@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed May  7 10:50:40 CEST 2008
+	Author:    bruel
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bruel/dev-stxpe
+
+Description:
+------------
+	*  preventive fix with speculation of side effect instructions.
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/st200/cg/targ_op.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon May  5 16:58:39 CEST 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
