@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu May 15 09:31:38 CEST 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-43657
+
+Description:
+------------
+	* [trunk] Fix for bug #43657: is_shl property is missing on SHLU instruction
+	Deliver fixes/codex-43657 rev #16832 with authorization branch #43710
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed May  7 10:50:40 CEST 2008
 	Author:    bruel
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
