@@ -1022,9 +1022,16 @@ Same_Reg_Or_Value (TN* tn1, TN *tn2)
       return (TN_value (tn1) == TN_value(tn2));
   }
 
-  if (TN_is_register (tn1) && TN_is_register (tn2)
-      && TNs_Are_Equivalent (tn1, tn2))
-    return true;
+  if (TN_is_register (tn1) && TN_is_register (tn2)) {
+    if (TNs_Are_Equivalent (tn1, tn2))
+      return true;
+
+    OP *op1 = TN_ssa_def(tn1);
+    OP *op2 = TN_ssa_def(tn2);
+
+    if (op1 && op2 && OPs_Are_Equivalent (op1, op2))
+      return true;
+  }
 
   return false;
 }
@@ -1843,7 +1850,8 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
             Exp_COPY (new_tn, OP_opnd (op, i), &new_ops);
 
             OP *op_def = TN_ssa_def(OP_opnd (op, i));
-            if (op_def && Need_Predicate_Op(op_def)) {
+            if (op_def && Need_Predicate_Op(op_def) &&
+                OP_has_predicate(OPS_last(&new_ops))) {
               TN *cond_tn = PredOp_TN(op_def);
               bool on_false = PredOp_Invert(op_def);
               Set_PredOp (OPS_last(&new_ops), cond_tn, on_false);
@@ -2379,13 +2387,17 @@ Promote_Mem_Based_On (int index, OP *psi_op)
     Reset_OP_no_alias(op1);
 
   OP_MAP_Set(OP_to_WN_map, op1, NULL);
+  TN *psi_res = OP_result(psi_op, 0);
 
-  Set_OP_result(op1, 0, OP_result(psi_op, 0));
-  Set_OP_opnd(op1, OP_find_opnd_use(op1, index), sel_tn);
-
-  BB_Insert_Ops_Before(bb, op1, &ops);
+  // First remove psi_op, it also unsets the SSA link
   BB_Remove_Op (bb, op2);
   BB_Remove_Op (bb, psi_op);
+
+  Set_OP_result(op1, 0, psi_res);
+  Set_OP_opnd(op1, OP_find_opnd_use(op1, index), sel_tn);
+  SSA_setup(op1);
+
+  BB_Insert_Ops_Before(bb, op1, &ops);
 }
 
 static void
@@ -2468,6 +2480,7 @@ Optimize_Spec_Loads(BB *bb)
         bool found2 = false;
 
         // Does those loads merge ?
+        // (we could look at tn1 compl tn2 instead)
         OP *psi;
         FOR_ALL_BB_OPs_FWD(bb, psi) {
           if (OP_psi (psi)) {
@@ -2482,6 +2495,8 @@ Optimize_Spec_Loads(BB *bb)
                   if (found1) goto found;
                 }
               }
+
+              found1 = found2 = false;
             }
             else {
               // todo: reduce phi if nops > 2

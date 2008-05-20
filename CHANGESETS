@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue May 20 08:54:49 CEST 2008
+	Author:    bruel
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-44050
+
+Description:
+------------
+	*  deliver fix for codex-44050
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_select.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu May 15 09:31:38 CEST 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
