@@ -2363,6 +2363,9 @@ const intrn_info_t intrn_info[INTRINSIC_LAST+1] = {
   { /* BUILTIN_DWARF_CFA */
 	BYVAL, PURE,  NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
 	IRETURN_U4, "__builtin_dwarf_cfa", NULL, "__builtin_dwarf_cfa"},
+  { /* BUILTIN_FRAME_ADDRESS */
+	BYVAL, PURE,  NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+	IRETURN_U4, "__builtin_frame_address", NULL, "__builtin_frame_address"},
 
 #include "targ_intrn_info.def"
 #endif

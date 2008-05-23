@@ -1,6 +1,46 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri May 23 13:05:04 CEST 2008
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-18130
+
+Description:
+------------
+	*  Fix for bug #18130 Gcc __builtin_frame_address (0) required	for
+	Linux.
+	Delivered fixes/codex-18130 rev #16921 with authorization art #44348.
+
+
+
+Modified Files:
+---------------
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/g++fe/wfe_expr.cxx
+	M      osprey/common/com/wintrinsic.h
+	M      osprey/common/com/wutil.cxx
+	M      osprey/common/com/intrn_info.cxx
+
+
+Patch generation command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@16918 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-18130@16921" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/whirl2ops.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/whirl2ops.cxx?p2=branches/fixes/codex-18130/osprey/lai/whirl2ops.cxx&r1=16918&r2=16921&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_expr.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_expr.cxx?p2=branches/fixes/codex-18130/osprey/gccfe/wfe_expr.cxx&r1=16918&r2=16921&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_expr.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_expr.cxx?p2=branches/fixes/codex-18130/osprey/g++fe/wfe_expr.cxx&r1=16918&r2=16921&roottype=svn&root=open64&diff_format=h
+osprey/common/com/wintrinsic.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/wintrinsic.h?p2=branches/fixes/codex-18130/osprey/common/com/wintrinsic.h&r1=16918&r2=16921&roottype=svn&root=open64&diff_format=h
+osprey/common/com/wutil.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/wutil.cxx?p2=branches/fixes/codex-18130/osprey/common/com/wutil.cxx&r1=16918&r2=16921&roottype=svn&root=open64&diff_format=h
+osprey/common/com/intrn_info.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/intrn_info.cxx?p2=branches/fixes/codex-18130/osprey/common/com/intrn_info.cxx&r1=16918&r2=16921&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri May 23 12:26:45 CEST 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

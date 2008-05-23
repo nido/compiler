@@ -743,6 +743,7 @@ static const struct {
   INTRN_BUILTIN_EH_RETURN,      "EH_RETURN",
   INTRN_BUILTIN_UNWIND_INIT,    "UNWIND_INIT",
   INTRN_BUILTIN_DWARF_CFA,      "DWARF_CFA",
+  INTRN_BUILTIN_FRAME_ADDRESS,  "FRAME_ADDRESS",
 
 #include "targ_wutil.def"
 #endif

@@ -4322,6 +4322,9 @@ WFE_Expand_Expr (tree exp,
               wn = WFE_Expand_Expr (TREE_VALUE (TREE_OPERAND (exp, 1)));
               whirl_generated = TRUE;
               break;
+	    case BUILT_IN_FRAME_ADDRESS:
+              iopc = INTRN_BUILTIN_FRAME_ADDRESS;
+              break;
 #endif
 
 #if defined (TARG_ST) && (GNU_FRONT_END==33)

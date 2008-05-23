@@ -4578,6 +4578,7 @@ WFE_Expand_Expr (tree exp,
                 emit_builtin_synchronize (exp, num_args);
                 whirl_generated = TRUE;
                 break;
+#endif
 
               case BUILT_IN_RETURN_ADDRESS:
                 i = Get_Integer_Value (TREE_VALUE (TREE_OPERAND (exp, 1)));
@@ -4594,7 +4595,6 @@ WFE_Expand_Expr (tree exp,
 		}
                 whirl_generated = TRUE;
 		break;
-#endif
 
 #ifdef TARG_ST
                 // (cbr) Builtin for glibc compatibility, Returning the
@@ -4607,6 +4607,9 @@ WFE_Expand_Expr (tree exp,
 	    case BUILT_IN_FROB_RETURN_ADDR:
               wn = WFE_Expand_Expr (TREE_VALUE (TREE_OPERAND (exp, 1)));
               whirl_generated = TRUE;
+              break;
+	    case BUILT_IN_FRAME_ADDRESS:
+              iopc = INTRN_BUILTIN_FRAME_ADDRESS;
               break;
 #endif
 

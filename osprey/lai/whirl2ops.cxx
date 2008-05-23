@@ -5374,6 +5374,15 @@ static void Handle_EH_Return (TN *stackadj, TN *handler)
   EXITINFO *exit_info = ANNOT_exitinfo(ANNOT_Get(BB_annotations(exit_bb), ANNOT_EXITINFO));
   EXITINFO_is_eh_return(exit_info) = TRUE;
 }
+
+static void Handle_Frame_Address (TN *result, TN *frame_number)
+{
+  if (TN_is_zero(frame_number)) {
+    Exp_Lda (Pointer_type, result, Get_UpFormal_Base_Symbol (), -STACK_OFFSET_ADJUSTMENT, OPERATOR_UNKNOWN, &New_OPs);
+  } else {
+    Exp_Immediate (result, Gen_Literal_TN(0, Pointer_Size), FALSE, &New_OPs);
+  }
+}
 #endif
 
 /* Handle traps (from OP_ASSERT or OP_TRAP) */
@@ -6167,6 +6176,8 @@ Handle_INTRINSIC_CALL (
     Handle_EH_Return (opnd_tn[0], opnd_tn[1]);
   } else if (id == INTRN_BUILTIN_UNWIND_INIT) {
     PU_Has_EH_Return = TRUE;
+  } else if (id == INTRN_BUILTIN_FRAME_ADDRESS) {
+    Handle_Frame_Address (res[0], opnd_tn[0]);
   } else {
     Exp_Intrinsic_Call (id, numrests, numopnds, res, opnd_tn, &New_OPs, &label, &loop_ops, current_srcpos);
   }
