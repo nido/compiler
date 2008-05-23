@@ -231,6 +231,8 @@ BOOL CG_nop_insertion_directives = TRUE;
 #ifdef TARG_ST
 BOOL CG_AutoMod = FALSE;
 static BOOL CG_AutoMod_overridden = FALSE;
+BOOL CG_AutoMod_RelaxPdom = FALSE;
+static BOOL CG_AutoMod_RelaxPdom_overridden = FALSE;
 BOOL CG_cbpo_optimize_load_imm = FALSE;
 static BOOL CG_cbpo_optimize_load_imm_overridden = FALSE;
 INT32 CG_cbpo_ratio = 50;
@@ -679,11 +681,13 @@ static OPTION_DESC Options_CG[] = {
     "activate commonalization of load immediate constant (vs symbol) in common"
     " base pointer optimization. Unless cbpo_optimize_load_imm cbpo_facto_cst "
     " are set, it has no effect" },
-  { OVK_BOOL, OV_INTERNAL,	FALSE, "cbpo_facto_cst", "", 
+  { OVK_BOOL, OV_INTERNAL,     FALSE, "cbpo_facto_cst", "", 
     0, 0, 0,	&CG_cbpo_facto_cst, &CG_cbpo_facto_cst_overridden,
     "activate special phase of load immediat commonalization" },
   { OVK_BOOL, 	OV_INTERNAL, TRUE, "automod", "",
     TRUE, 0, 0, &CG_AutoMod, &CG_AutoMod_overridden },
+  { OVK_BOOL,   OV_INTERNAL, TRUE, "automod_relax_pdom", "",
+    TRUE, 0, 0, &CG_AutoMod_RelaxPdom, &CG_AutoMod_RelaxPdom_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "tailmerge", "", 
     0, 0, 255,	&CG_tailmerge, &CG_tailmerge_overridden,
     "Activate tailmerge optimization for phases (mask)" },
@@ -1465,6 +1469,10 @@ Configure_CG_Options(void)
 
   if ((Opt_Level >= 2) && !CG_AutoMod_overridden) {
     CG_AutoMod = TRUE;
+  }
+
+  if (!CG_AutoMod_RelaxPdom_overridden) {
+    CG_AutoMod_RelaxPdom = FALSE;
   }
 
 #else

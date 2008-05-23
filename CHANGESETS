@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri May 23 12:26:45 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-43867
+
+Description:
+------------
+	* [trunk] Fix for bug #43867: Wrong automod transformation in AATV code.
+	Deliver fixes/codex-43867 rev #16916 with authorization branch #43879
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_automod.h
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cg_automod.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri May 23 09:41:53 CEST 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

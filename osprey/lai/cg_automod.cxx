@@ -29,6 +29,7 @@ static const char rcs_id[] = "";
 
 extern void Print_BB_Dominators(BB* bb);
 extern void Print_Dominators(void);
+extern BOOL CG_AutoMod_RelaxPdom;
 
 static BOOL BaseOffset_Combine(OP *, OP *, OPS *);
 static BOOL BaseOffset_CheckCombine(OP *, OP *);
@@ -43,6 +44,54 @@ static M_Mem_Map M_Mem2Incr;
 static M_Mem_Map M_PostIncr2Mem;
 static M_Mem_Map M_PreIncr2Mem;
 static M_Mem_Map M_OffsetIncr2Mem;
+
+// *****************************************************************************
+// Hot fix for bug #43867, TTh and VL, 2008/05/13
+
+// This function will return FALSE if post domination is not relevant for
+// any of the exit blocks. This is the desired behavior.
+// Warning: it also return FALSE if several exit blocks can be reached from 
+// the block, which is not really expected!! To be reworked.
+
+static BOOL
+Is_Pdom_valid(BB *bb) {
+  BS *PDOM_bb = BB_pdom_set(bb);
+                                                                                                           
+  BB_LIST* bbList;
+  // fprintf(stderr, "Is_Pdom_valid block %d\n", BB_id(bb));
+                                                                                                           
+  for(bbList = Exit_BB_Head; bbList; bbList = BB_LIST_rest(bbList)) {
+    BB *bb_exit = BB_LIST_first(bbList);
+    // fprintf(stderr, "Checks exit %d\n", BB_id(bb_exit));
+    if (BS_MemberP(PDOM_bb, BB_id(bb_exit))) {
+      // fprintf(stderr, "Block %d post dom OK for exit %d\n", BB_id(bb), BB_id(bb_exit));
+      return TRUE;
+    }
+  }
+  // fprintf(TFile, "Block %d not member of valid ones\n", BB_id(bb));
+  return FALSE;
+}
+
+static BS*
+Get_Pdom(BB* check_bb, BB* incr_bb, BB* memacc_bb)
+{
+      BS* pdom = NULL;
+
+      // fprintf(TFile, "Get_Pdom for block %d\n", BB_id(check_bb));
+
+      if (!CG_AutoMod_RelaxPdom) {
+        if(incr_bb!=memacc_bb) pdom = Is_Pdom_valid(check_bb)?BB_pdom_set(check_bb):NULL;
+        else pdom = BB_pdom_set(check_bb);
+      } else {
+        // former behavior accessible for support purpose, and because new one may
+	// be too conservative if several exit blocks can be reached
+        pdom = BB_pdom_set(check_bb);
+      }
+
+      return pdom;
+}
+
+// *****************************************************************************
 
 /*
  * Check that increment operation is a diadic add/sub
@@ -352,14 +401,19 @@ is_NotUsed_PostIncr(DUD_REGION *dud, OP *memop, OP *incrop){
       BB *usebb = OP_bb(useop);
 
       BS *DOM = BB_dom_set(usebb);
-      BS *PDOM = BB_pdom_set(usebb);
+      BS *PDOM;
+                                                                                                           
+      //if(OP_bb(incrop)!=OP_bb(memop)) PDOM = Is_Pdom_valid(usebb)?BB_pdom_set(usebb):NULL;
+      //else PDOM=BB_pdom_set(usebb);
+
+      PDOM = Get_Pdom(usebb, OP_bb(incrop), OP_bb(memop));
 
       // Operation must be on a path from BB(memory operation) to BB(increment operation)
       if( ((OP_bb(incrop) == OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(memop, useop) && OP_Precedes(useop, incrop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(useop, incrop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) == usebb && OP_Precedes(memop, useop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) != usebb && OP_bb(incrop) != usebb))
-	  && BS_MemberP(DOM, BB_id(OP_bb(memop))) && BS_MemberP(PDOM, BB_id(OP_bb(incrop)))){
+	  && BS_MemberP(DOM, BB_id(OP_bb(memop))) && PDOM && BS_MemberP(PDOM, BB_id(OP_bb(incrop)))){
 
 
 	// offset if operation is a load/store
@@ -491,13 +545,18 @@ is_NotDefined_PostIncr(DUD_REGION *dud, OP *memop, OP *incrop){
       BB *bb = OP_bb(op);
 
       BS *DOM = BB_dom_set(bb);
-      BS *PDOM = BB_pdom_set(bb);
+      BS *PDOM;
+                                                                                                           
+      //if(OP_bb(incrop)!=OP_bb(memop)) PDOM = )Is_Pdom_valid(bb)?BB_pdom_set(bb):NULL;
+      //else PDOM=BB_pdom_set(bb);
+
+      PDOM = Get_Pdom(bb, OP_bb(incrop), OP_bb(memop));
 
       if( ((OP_bb(incrop) == OP_bb(memop) && OP_bb(incrop) == bb && OP_Precedes(memop, op) && OP_Precedes(op, incrop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(incrop) == bb && OP_Precedes(op, incrop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) == bb && OP_Precedes(memop, op))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) != bb && OP_bb(incrop) != bb))
-	  && BS_MemberP(DOM, BB_id(OP_bb(memop))) && BS_MemberP(PDOM, BB_id(OP_bb(incrop)))){
+	  && BS_MemberP(DOM, BB_id(OP_bb(memop))) && PDOM && BS_MemberP(PDOM, BB_id(OP_bb(incrop)))){
 	return FALSE;
       }
     }
@@ -545,14 +604,19 @@ is_NotUsed_PreIncr(DUD_REGION *dud, OP *memop, OP *incrop){
       // Do not count instructions before the memory operation in the basicblock
 
       BS *DOM = BB_dom_set(usebb);
-      BS *PDOM = BB_pdom_set(usebb);
+      BS *PDOM;
+                                                                                                           
+      //if(OP_bb(incrop)!=OP_bb(memop)) PDOM = Is_Pdom_valid(usebb)?BB_pdom_set(usebb):NULL;
+      //else PDOM=BB_pdom_set(usebb);
+
+      PDOM = Get_Pdom(usebb, OP_bb(incrop), OP_bb(memop));
 
       // Operation must be on a path from BB(increment operation) to BB(memory operation)
       if( ((OP_bb(incrop) == OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(useop, memop) && OP_Precedes(incrop, useop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(incrop, useop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) == usebb && OP_Precedes(useop, memop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) != usebb && OP_bb(incrop) != usebb))
-	  && BS_MemberP(DOM, BB_id(OP_bb(incrop))) && BS_MemberP(PDOM, BB_id(OP_bb(memop)))
+	  && BS_MemberP(DOM, BB_id(OP_bb(incrop))) && PDOM && BS_MemberP(PDOM, BB_id(OP_bb(memop)))
 	  ){
 
 	// offset if operation is a load/store
@@ -668,14 +732,19 @@ is_NotDefined_PreIncr(DUD_REGION *dud, OP *memop, OP *incrop, INT opnd){
 	// Do not count instructions before the memory operation in the basicblock
 
 	BS *DOM = BB_dom_set(usebb);
-	BS *PDOM = BB_pdom_set(usebb);
+        BS *PDOM;
+                                                                                                           
+        //if(OP_bb(incrop)!=OP_bb(memop)) PDOM = Is_Pdom_valid(usebb)?BB_pdom_set(usebb):NULL;
+        //else PDOM=BB_pdom_set(usebb);
+
+        PDOM = Get_Pdom(usebb, OP_bb(incrop), OP_bb(memop));
 
 	// Operation must be on a path from BB(increment operation) to BB(memory operation)
 	if( ((OP_bb(incrop) == OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(op, memop) && OP_Precedes(incrop, op))
 	     || (OP_bb(incrop) != OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(incrop, op))
 	     || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) == usebb && OP_Precedes(op, memop))
 	     || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) != usebb && OP_bb(incrop) != usebb))
-	    && BS_MemberP(DOM, BB_id(OP_bb(incrop))) && BS_MemberP(PDOM, BB_id(OP_bb(memop)))
+	    && BS_MemberP(DOM, BB_id(OP_bb(incrop))) && PDOM && BS_MemberP(PDOM, BB_id(OP_bb(memop)))
 	    ){
 
 	  for (INT idx = 0; idx < OP_results(op); idx++) {
@@ -730,8 +799,16 @@ check_LiveOut(BB_SET *bbRegion_set, OP *memop, OP* incrop, TN *tn){
   FOR_ALL_BB_SET_members(bbRegion_set, dom) { //forall dominated
 
     BS *DOM = BB_dom_set(dom);
-    BS *PDOM = BB_pdom_set(dom);
+    BS *PDOM;
+                                                                                                           
+    //if(OP_bb(incrop)!=OP_bb(memop)) PDOM = Is_Pdom_valid(dom)?BB_pdom_set(dom):NULL;
+    //else PDOM=BB_pdom_set(dom);
 
+    PDOM = Get_Pdom(dom, OP_bb(incrop), OP_bb(memop));
+
+    if (!PDOM) {
+      return FALSE;
+    }
     if(    BS_MemberP(DOM,  BB_id(OP_bb(memop)))
        && !BS_MemberP(PDOM, BB_id(OP_bb(incrop)))
        && !BS_MemberP(DOM,  BB_id(OP_bb(incrop)))){
@@ -853,14 +930,19 @@ postincr_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
        */
 
       BS *DOM = BB_dom_set(usebb);
-      BS *PDOM = BB_pdom_set(usebb);
+      BS *PDOM;
+                                                                                                           
+      //if(OP_bb(incrop)!=OP_bb(memop)) PDOM = Is_Pdom_valid(usebb)?BB_pdom_set(usebb):NULL;
+      //else PDOM=BB_pdom_set(usebb);
+
+      PDOM = Get_Pdom(usebb, OP_bb(incrop), OP_bb(memop));
 
       // Operation must be on a path from BBB(memory operation) to BB(increment operation)
       if( ((OP_bb(incrop) == OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(memop, useop) && OP_Precedes(useop, incrop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(useop, incrop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) == usebb && OP_Precedes(memop, useop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) != usebb && OP_bb(incrop) != usebb))
-	  && BS_MemberP(DOM, BB_id(OP_bb(memop))) && BS_MemberP(PDOM, BB_id(OP_bb(incrop)))){
+	  && BS_MemberP(DOM, BB_id(OP_bb(memop))) && PDOM && BS_MemberP(PDOM, BB_id(OP_bb(incrop)))){
 
 	// offset if operation is a load/store
 	INT offset_idx = OP_find_opnd_use(useop, OU_offset);
@@ -912,9 +994,10 @@ postincr_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
 
       }
       else if(OP_bb(defop) != OP_bb(memop)
-	      &&  BS_MemberP(DOM,  BB_id(OP_bb(memop)))
-	      && !BS_MemberP(PDOM, BB_id(OP_bb(incrop)))
-	      && !BS_MemberP(DOM,  BB_id(OP_bb(incrop)))){
+	      && (!PDOM
+		  || ( BS_MemberP(DOM,  BB_id(OP_bb(memop)))
+		       && !BS_MemberP(PDOM, BB_id(OP_bb(incrop)))
+		       && !BS_MemberP(DOM,  BB_id(OP_bb(incrop)))))){
 	// Repair code insertion needed in a basicblock or on an out edge of the region
 
 	// Currently not supported
@@ -965,14 +1048,19 @@ preincr_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
       // Do not count instructions before the memory operation in the basicblock
 
       BS *DOM = BB_dom_set(usebb);
-      BS *PDOM = BB_pdom_set(usebb);
+      BS *PDOM;
+                                                                                                           
+      //if(OP_bb(incrop)!=OP_bb(memop)) PDOM = Is_Pdom_valid(usebb)?BB_pdom_set(usebb):NULL;
+      //else PDOM=BB_pdom_set(usebb);
+
+      PDOM = Get_Pdom(usebb, OP_bb(incrop), OP_bb(memop));
 
       // Operation must be on a path from BB(increment operation) to BB(memory operation)
       if( ((OP_bb(incrop) == OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(useop, memop) && OP_Precedes(incrop, useop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(incrop, useop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) == usebb && OP_Precedes(useop, memop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) != usebb && OP_bb(incrop) != usebb))
-	  && BS_MemberP(DOM, BB_id(OP_bb(incrop))) && BS_MemberP(PDOM, BB_id(OP_bb(memop)))
+	  && BS_MemberP(DOM, BB_id(OP_bb(incrop))) && PDOM && BS_MemberP(PDOM, BB_id(OP_bb(memop)))
 	  ){
 
 	// offset if operation is a load/store
@@ -1024,9 +1112,10 @@ preincr_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
 
       }
       else if(OP_bb(incrop) != OP_bb(memop)
-	      &&  BS_MemberP(DOM,  BB_id(OP_bb(incrop)))
-	      && !BS_MemberP(PDOM, BB_id(OP_bb(memop)))
-	      && !BS_MemberP(DOM,  BB_id(OP_bb(memop)))){
+	      && (!PDOM ||
+		  ( BS_MemberP(DOM,  BB_id(OP_bb(incrop)))
+		    && !BS_MemberP(PDOM, BB_id(OP_bb(memop)))
+		    && !BS_MemberP(DOM,  BB_id(OP_bb(memop)))))){
 
 	// Repair code insertion needed in a basicblock or on an out edge of the region
 
@@ -1089,14 +1178,19 @@ postincr_RepairOffset(DUD_REGION *dud, OP *memop, OP* incrop){
       BB *usebb = OP_bb(useop);
 
       BS *DOM = BB_dom_set(usebb);
-      BS *PDOM = BB_pdom_set(usebb);
+      BS *PDOM;
+                                                                                                           
+      //if(OP_bb(incrop)!=OP_bb(memop)) PDOM = Is_Pdom_valid(usebb)?BB_pdom_set(usebb):NULL;
+      //else PDOM=BB_pdom_set(usebb);
+
+      PDOM = Get_Pdom(usebb, OP_bb(incrop), OP_bb(memop));
 
       //do not repair operations which are not on a path from BB(memory operation) to BB(increment operation)
       if(((OP_bb(incrop) == OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(memop, useop) && OP_Precedes(useop, incrop))
 	  || (OP_bb(incrop) != OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(useop, incrop))
 	  || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) == usebb && OP_Precedes(memop, useop))
 	  || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) != usebb && OP_bb(incrop) != usebb))
-	 && BS_MemberP(DOM, BB_id(OP_bb(memop))) && BS_MemberP(PDOM, BB_id(OP_bb(incrop)))){
+	 && BS_MemberP(DOM, BB_id(OP_bb(memop))) && PDOM && BS_MemberP(PDOM, BB_id(OP_bb(incrop)))){
 
 	// Offset TN
 	INT useopnd = OP_find_opnd_use(useop, OU_offset);
@@ -1131,9 +1225,10 @@ postincr_RepairOffset(DUD_REGION *dud, OP *memop, OP* incrop){
 	}
       }
       else if(OP_bb(defop) != OP_bb(memop)
-	      &&  BS_MemberP(DOM,  BB_id(OP_bb(memop)))
-	      && !BS_MemberP(PDOM, BB_id(OP_bb(incrop)))
-	      && !BS_MemberP(DOM,  BB_id(OP_bb(incrop)))){
+	      && (!PDOM ||
+		  ( BS_MemberP(DOM,  BB_id(OP_bb(memop)))
+		    && !BS_MemberP(PDOM, BB_id(OP_bb(incrop)))
+		    && !BS_MemberP(DOM,  BB_id(OP_bb(incrop)))))){
 	// Repair code insertion needed in a basicblock or on an out edge of the region
 
 	// Curently not supported
@@ -1176,14 +1271,19 @@ preincr_RepairOffset(DUD_REGION *dud, OP *memop, OP* incrop){
       BB *usebb = OP_bb(useop);
 
       BS *DOM = BB_dom_set(usebb);
-      BS *PDOM = BB_pdom_set(usebb);
+      BS *PDOM;
+                                                                                                           
+      //if(OP_bb(incrop)!=OP_bb(memop)) PDOM = Is_Pdom_valid(usebb)?BB_pdom_set(usebb):NULL;
+      //else PDOM=BB_pdom_set(usebb);
+
+      PDOM = Get_Pdom(usebb, OP_bb(incrop), OP_bb(memop));
   
       // Operation must be on a path from BB(increment operation) to BB(memory operation)
       if( ((OP_bb(incrop) == OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(useop, memop) && OP_Precedes(incrop, useop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(incrop, useop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) == usebb && OP_Precedes(useop, memop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) != usebb && OP_bb(incrop) != usebb))
-	  && BS_MemberP(DOM, BB_id(OP_bb(incrop))) && BS_MemberP(PDOM, BB_id(OP_bb(memop)))
+	  && BS_MemberP(DOM, BB_id(OP_bb(incrop))) && PDOM && BS_MemberP(PDOM, BB_id(OP_bb(memop)))
 	  ){
 
 	// Offset TN
@@ -1221,9 +1321,10 @@ preincr_RepairOffset(DUD_REGION *dud, OP *memop, OP* incrop){
 	}
       }
       else if(OP_bb(incrop) != OP_bb(memop)
-	      &&  BS_MemberP(DOM,  BB_id(OP_bb(incrop)))
-	      && !BS_MemberP(PDOM, BB_id(OP_bb(memop)))
-	      && !BS_MemberP(DOM,  BB_id(OP_bb(memop)))){
+	      && (!PDOM ||
+		  ( BS_MemberP(DOM,  BB_id(OP_bb(incrop)))
+		    && !BS_MemberP(PDOM, BB_id(OP_bb(memop)))
+		    && !BS_MemberP(DOM,  BB_id(OP_bb(memop)))))){
 	// Repair code insertion needed in a basicblock or on an out edge of the region
 
 	// Currently not supported
@@ -1285,11 +1386,16 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
 	 ) {
 
 	BS *DOM = BB_dom_set(OP_bb(useop));
-	BS *PDOM = BB_pdom_set(OP_bb(op));
+	BS *PDOM;
+                                                                                                           
+        //if(OP_bb(useop)!=OP_bb(op)) PDOM = Is_Pdom_valid(OP_bb(op))?BB_pdom_set(OP_bb(op)):NULL;
+        //else PDOM=BB_pdom_set(OP_bb(op));
+
+        PDOM = Get_Pdom(OP_bb(op), OP_bb(useop), OP_bb(op));
         
         // (cbr) conservatively check predicates.
 	if(Opnds_Are_Equivalent(useop, op, OP_find_opnd_use(useop, OU_predicate), OP_find_opnd_use(op, OU_predicate)) &&
-           ((OP_bb(useop) != OP_bb(op) && BS_MemberP(DOM, BB_id(OP_bb(op))) && BS_MemberP(PDOM, BB_id(OP_bb(useop)))) ||
+           ((OP_bb(useop) != OP_bb(op) && BS_MemberP(DOM, BB_id(OP_bb(op))) && PDOM && BS_MemberP(PDOM, BB_id(OP_bb(useop)))) ||
             (OP_bb(useop) == OP_bb(op) && OP_Precedes(op, useop)))) {
 
 	  // Compute cost
@@ -1327,9 +1433,14 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
 	&& LOOP_DESCR_Find_Loop(OP_bb(defop)) == LOOP_DESCR_Find_Loop(OP_bb(op))){
 
       BS *DOM = BB_dom_set(OP_bb(op));
-      BS *PDOM = BB_pdom_set(OP_bb(defop));
+      BS *PDOM; 
 
-      if( (OP_bb(defop) != OP_bb(op) && BS_MemberP(DOM, BB_id(OP_bb(defop))) && BS_MemberP(PDOM, BB_id(OP_bb(op))))
+      //if(OP_bb(defop)!=OP_bb(op)) PDOM = Is_Pdom_valid(OP_bb(defop))?BB_pdom_set(OP_bb(defop)):NULL;
+      //else PDOM=BB_pdom_set(OP_bb(defop));
+
+      PDOM = Get_Pdom(OP_bb(defop), OP_bb(defop), OP_bb(op));
+
+      if( (OP_bb(defop) != OP_bb(op) && BS_MemberP(DOM, BB_id(OP_bb(defop))) && PDOM && BS_MemberP(PDOM, BB_id(OP_bb(op))))
 	  || (OP_bb(defop) == OP_bb(op) && OP_Precedes(defop, op)) ){
 
 	// compute cost
@@ -1367,9 +1478,14 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
 	  && LOOP_DESCR_Find_Loop(OP_bb(defop)) == LOOP_DESCR_Find_Loop(OP_bb(op))){
 
 	BS *DOM = BB_dom_set(OP_bb(op));
-	BS *PDOM = BB_pdom_set(OP_bb(defop));
+        BS *PDOM;
+                                                                                                                                              
+        //if(OP_bb(defop)!=OP_bb(op)) PDOM = Is_Pdom_valid(OP_bb(defop))?BB_pdom_set(OP_bb(defop)):NULL;
+        //else PDOM=BB_pdom_set(OP_bb(defop));
 
-	if( (OP_bb(defop) != OP_bb(op) && BS_MemberP(DOM, BB_id(OP_bb(defop))) && BS_MemberP(PDOM, BB_id(OP_bb(op))))
+        PDOM = Get_Pdom(OP_bb(defop), OP_bb(defop), OP_bb(op));
+
+	if( (OP_bb(defop) != OP_bb(op) && BS_MemberP(DOM, BB_id(OP_bb(defop))) && PDOM && BS_MemberP(PDOM, BB_id(OP_bb(op))))
 	    || (OP_bb(defop) == OP_bb(op) && OP_Precedes(defop, op)) ){
 
 	  // compute cost
@@ -1779,14 +1895,19 @@ baseOffset_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
 	// Do not count instructions before the memory operation in the basicblock
 
 	BS *DOM = BB_dom_set(usebb);
-	BS *PDOM = BB_pdom_set(usebb);
+        BS *PDOM;
+                                                                                                           
+        //if(OP_bb(incrop)!=OP_bb(memop)) PDOM = Is_Pdom_valid(usebb)?BB_pdom_set(usebb):NULL;
+        //else PDOM=BB_pdom_set(usebb);
+
+        PDOM = Get_Pdom(usebb, OP_bb(incrop), OP_bb(memop));
 
 	// Operation must be on a path from BB(increment operation) to BB(memory operation)
 	if( ((OP_bb(incrop) == OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(useop, memop) && OP_Precedes(incrop, useop))
 	     || (OP_bb(incrop) != OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(incrop, useop))
 	     || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) == usebb && OP_Precedes(useop, memop))
 	     || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) != usebb && OP_bb(incrop) != usebb))
-	    && BS_MemberP(DOM, BB_id(OP_bb(incrop))) && BS_MemberP(PDOM, BB_id(OP_bb(memop)))
+	    && BS_MemberP(DOM, BB_id(OP_bb(incrop))) && PDOM && BS_MemberP(PDOM, BB_id(OP_bb(memop)))
 	    ){
 
 	  for (INT idx = 0; idx < OP_results(useop); idx++) {
@@ -1811,14 +1932,19 @@ baseOffset_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
 	// Do not count instructions before the memory operation in the basicblock
 
 	BS *DOM = BB_dom_set(usebb);
-	BS *PDOM = BB_pdom_set(usebb);
+        BS *PDOM;
+                                                                                                           
+        //if(OP_bb(incrop)!=OP_bb(memop)) PDOM = Is_Pdom_valid(usebb)?BB_pdom_set(usebb):NULL;
+        //else PDOM=BB_pdom_set(usebb);
+
+        PDOM = Get_Pdom(usebb, OP_bb(incrop), OP_bb(memop));
 
 	// Operation must be on a path from BB(increment operation) to BB(memory operation)
 	if( ((OP_bb(incrop) == OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(useop, memop) && OP_Precedes(incrop, useop))
 	     || (OP_bb(incrop) != OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(incrop, useop))
 	     || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) == usebb && OP_Precedes(useop, memop))
 	     || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) != usebb && OP_bb(incrop) != usebb))
-	    && BS_MemberP(DOM, BB_id(OP_bb(incrop))) && BS_MemberP(PDOM, BB_id(OP_bb(memop)))
+	    && BS_MemberP(DOM, BB_id(OP_bb(incrop))) && PDOM && BS_MemberP(PDOM, BB_id(OP_bb(memop)))
 	    ){
 
 	  for (INT idx = 0; idx < OP_results(useop); idx++) {
@@ -1846,14 +1972,19 @@ baseOffset_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
       // Do not count instructions before the memory operation in the basicblock
 
       BS *DOM = BB_dom_set(usebb);
-      BS *PDOM = BB_pdom_set(usebb);
+      BS *PDOM;
+                                                                                                           
+      //if(OP_bb(incrop)!=OP_bb(memop)) PDOM = Is_Pdom_valid(usebb)?BB_pdom_set(usebb):NULL;
+      //else PDOM=BB_pdom_set(usebb);
+
+      PDOM = Get_Pdom(usebb, OP_bb(incrop), OP_bb(memop));
 
       // Operation must be on a path from BB(increment operation) to BB(memory operation)
       if( ((OP_bb(incrop) == OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(useop, memop) && OP_Precedes(incrop, useop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(incrop) == usebb && OP_Precedes(incrop, useop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) == usebb && OP_Precedes(useop, memop))
 	   || (OP_bb(incrop) != OP_bb(memop) && OP_bb(memop) != usebb && OP_bb(incrop) != usebb))
-	  && BS_MemberP(DOM, BB_id(OP_bb(incrop))) && BS_MemberP(PDOM, BB_id(OP_bb(memop)))
+	  && BS_MemberP(DOM, BB_id(OP_bb(incrop))) && PDOM && BS_MemberP(PDOM, BB_id(OP_bb(memop)))
 	  ){
 
 	// offset if operation is a load/store
@@ -1906,9 +2037,10 @@ baseOffset_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
 
       }
       else if(OP_bb(incrop) != OP_bb(memop)
-	      &&  BS_MemberP(DOM,  BB_id(OP_bb(incrop)))
-	      && !BS_MemberP(PDOM, BB_id(OP_bb(memop)))
-	      && !BS_MemberP(DOM,  BB_id(OP_bb(memop)))){
+	      && (!PDOM ||
+		  ( BS_MemberP(DOM,  BB_id(OP_bb(incrop)))
+		    && !BS_MemberP(PDOM, BB_id(OP_bb(memop)))
+		    && !BS_MemberP(DOM,  BB_id(OP_bb(memop)))))){
 
 	// Repair code insertion needed in a basicblock or on an out edge of the region
 
