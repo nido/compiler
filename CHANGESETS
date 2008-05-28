@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed May 28 14:47:39 CEST 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/ferriere/dev-assume
+
+Description:
+------------
+	* [trunk] Development for __builtin_assume annotation and affirm property
+	re-opened at rev #16930 for fixes.
+        Deliver ferriere/dev-assume rev #16993 with authorization branch #42656
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_affirm.cxx
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/g++fe/wfe_expr.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue May 27 09:56:09 CEST 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

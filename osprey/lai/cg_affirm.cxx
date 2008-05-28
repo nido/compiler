@@ -309,10 +309,10 @@ Get_Affirm_modulo(TN *tn, BB *bb) {
       }
     }
 
-    // Go up one bb while bb has one single predecessor with one
-    // single successor.
+    // FdF 20080528: Go up one bb while there is only one predecessor.
+    // Edges leaving the region do not invalidate an AFFIRM property.
     bb = BB_Unique_Predecessor(bb);
-  } while ((bb != NULL) && (BB_succs_len(bb) == 1));
+  } while (bb != NULL);
 
   return -1;
 }

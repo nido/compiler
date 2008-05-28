@@ -4530,8 +4530,8 @@ WFE_Expand_Expr (tree exp,
 	      {
 		arg_wn = WFE_Expand_Expr (TREE_VALUE (arglist));
 		wn = WN_CreateAffirm(arg_wn);
-		whirl_generated = TRUE;
 	      }
+	      whirl_generated = TRUE;
 	      break;
 #endif
 
