@@ -2486,7 +2486,7 @@ WN *WN_UVConst( TYPE_ID type)
       } cvt;
       cvt.i2[0] = DEBUG_Trapuv_Int_Value;
       cvt.i2[1] = DEBUG_Trapuv_Int_Value;
-      return WN_Intconst( Mtype_TransferSign(type, MTYPE_I4), cvt.ll);
+      return WN_Intconst( Mtype_TransferSign(type, MTYPE_I8), cvt.ll);
     }
 #else
     return WN_Intconst(type, 0xfffa5a5afffa5a5all);
