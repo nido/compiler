@@ -1060,7 +1060,8 @@ CG_Generate_Code(
 #endif
 
 #ifdef LAO_ENABLED
-  if (CG_LAO_optimizations & OptimizeActivation_PostPass) {
+  if (CG_LAO_optimizations & (OptimizeActivation_PostPass|
+                              OptimizeActivation_Encode)) {
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
     LAO_Schedule_Region(FALSE /* after register allocation */, frequency_verify);
   } else {

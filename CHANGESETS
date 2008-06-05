@@ -1,6 +1,45 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jun  5 13:57:39 CEST 2008
+	Author:    bd3
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bd3/dev-lao
+
+Description:
+------------
+	Synchronize with trunk/LAO. Enable activation of LAO binary encoder.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/igls.cxx
+	M      osprey/lai/lao/lao_interface.h
+	M      osprey/lai/lao/st200/lao_target.h
+	M      osprey/lai/lao/lao_stub.h
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      DEPENDENCIES
+
+
+Patch generation command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@17092 --new=https://codex.cro.st.com/svnroot/open64/branches/bd3/dev-lao@17095" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/igls.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/igls.cxx?p2=branches/bd3/dev-lao/osprey/lai/igls.cxx&r1=17092&r2=17095&roottype=svn&root=open64&diff_format=h
+osprey/lai/lao/lao_interface.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lao/lao_interface.h?p2=branches/bd3/dev-lao/osprey/lai/lao/lao_interface.h&r1=17092&r2=17095&roottype=svn&root=open64&diff_format=h
+osprey/lai/lao/st200/lao_target.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lao/st200/lao_target.h?p2=branches/bd3/dev-lao/osprey/lai/lao/st200/lao_target.h&r1=17092&r2=17095&roottype=svn&root=open64&diff_format=h
+osprey/lai/lao/lao_stub.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lao/lao_stub.h?p2=branches/bd3/dev-lao/osprey/lai/lao/lao_stub.h&r1=17092&r2=17095&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg.cxx?p2=branches/bd3/dev-lao/osprey/lai/cg.cxx&r1=17092&r2=17095&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgdriver.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgdriver.cxx?p2=branches/bd3/dev-lao/osprey/lai/cgdriver.cxx&r1=17092&r2=17095&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/bd3/dev-lao/DEPENDENCIES&r1=17092&r2=17095&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jun  3 12:49:40 CEST 2008
 	Author:    bidaultt
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

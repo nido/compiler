@@ -1031,8 +1031,10 @@ LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
   else {
     // Call the LAO for postpass scheduling.
     Set_Error_Phase( "LAO Postpass Optimizations" );
-    if (CG_LAO_optimizations & OptimizeActivation_PostPass) {
-      lao_optimize_pu(CG_LAO_optimizations & OptimizeActivation_PostPass);
+    if (CG_LAO_optimizations & (OptimizeActivation_PostPass|
+                                OptimizeActivation_Encode)) {
+      lao_optimize_pu(CG_LAO_optimizations & (OptimizeActivation_PostPass|
+                                              OptimizeActivation_Encode));
       if (frequency_verify)
 	FREQ_Verify("LAO Postpass Optimizations");
     }

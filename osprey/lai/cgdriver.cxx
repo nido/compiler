@@ -1111,7 +1111,7 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_regiontype", "",
     1, 0, 2,	&CG_LAO_regiontype, &CG_LAO_regiontype_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_conversion", "",
-    0, 0, 127,	&CG_LAO_conversion, &CG_LAO_conversion_overridden },
+    0, 0, 65536,	&CG_LAO_conversion, &CG_LAO_conversion_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_predication", "",
     0, 0, 127,	&CG_LAO_predication, &CG_LAO_predication_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_scheduling", "",
