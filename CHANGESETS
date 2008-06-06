@@ -1,6 +1,33 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jun  6 10:00:38 CEST 2008
+	Author:    bd3
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bd3/dev-lao
+
+Description:
+------------
+	* Sync with fixes for Win32 LAO build.
+
+
+Modified Files:
+---------------
+	M      DEPENDENCIES
+
+
+Patch generation command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@17105 --new=https://codex.cro.st.com/svnroot/open64/branches/bd3/dev-lao@17109" 
+
+Diff links to modified files:
+-----------------------------
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/bd3/dev-lao/DEPENDENCIES&r1=17105&r2=17109&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jun  5 13:57:39 CEST 2008
 	Author:    bd3
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
