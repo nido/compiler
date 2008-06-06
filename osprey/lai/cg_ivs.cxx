@@ -1542,17 +1542,20 @@ Find_Consecutive_Memops(LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table) {
     // Find memop_count operations that are all contiguous, set again OP_flag1 for the remaining operations
     int incr = step > 0 ? 4 : -4;
     int i, memop_ofst;
+    bool contiguous = FALSE;
     for (memop_ofst = 0; memop_ofst <= (memop_idx - memop_count); memop_ofst++) {
-      for (i = 1+memop_ofst; i < (memop_count+memop_ofst); i++) {
-	if (memop_table[i].offset != (memop_table[i-1].offset+incr))
+      for (i = 1; i < memop_count; i++) {
+	if (memop_table[memop_ofst+i].offset != (memop_table[memop_ofst+i-1].offset+incr))
 	  break;
       }
-      if (i == memop_count)
+      if (i == memop_count) {
+	contiguous = TRUE;
 	break;
+      }
     }
 
     // No sequence of contiguous memop_count operations
-    if (memop_ofst > (memop_idx - memop_count))
+    if (!contiguous)
       continue;
 
     // Otherwise, move the memop_count contiguous operations at the
@@ -1563,9 +1566,9 @@ Find_Consecutive_Memops(LOOP_IVS *loop_ivs, Candidate_Memory_t *memop_table) {
       for (i = 0; i < memop_ofst; i++)
 	Set_OP_flag1(loop_ivs->Op(memop_table[i].index));
       for (i = 0; i < memop_count; i++)
-	memop_table[i] = memop_table[i+memop_ofst];
+	memop_table[i] = memop_table[memop_ofst+i];
     }
-    for (i = memop_count + memop_ofst; i < memop_idx; i++)
+    for (i = memop_ofst + memop_count; i < memop_idx; i++)
       Set_OP_flag1(loop_ivs->Op(memop_table[i].index));
     
     int alignment;

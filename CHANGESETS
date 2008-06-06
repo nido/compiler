@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jun  6 10:47:18 CEST 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-44560
+
+Description:
+------------
+	* [trunk] Fix for bug #44560: Compiler generates misaligned code when packing (versabench, st240, packing)
+	Deliver fixes/codex-44560 rev #17116 with authorization branch #44775
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_ivs.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jun  6 10:00:38 CEST 2008
 	Author:    bd3
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
