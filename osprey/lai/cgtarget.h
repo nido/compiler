@@ -539,6 +539,16 @@
  *
  *   BOOL CGTARG_op_may_alias_with_call(const OP* op)
  *      Returns whether op may alias with a call. (used in loop_invar_hoist.cxx)
+#ifdef TARG_ST
+ *   BOOL CGTARG_Is_OP_Inter_RegClass_Bool_Copy(OP *op)
+ *      Returns TRUE if op is a copy between register classes that preserves
+ *      the booleanness of the copied value, i.e. if the source and dest
+ *      are both subsequently converted to bool, they must yield the same
+ *      value.  Take care in particular with a copy that ignores some bits
+ *      of the source, where the source is converted to
+ *      boolean by executing source != 0.  This function should return
+ *      false for such a copy.
+#endif
  * ====================================================================
  * ==================================================================== */
 
@@ -721,7 +731,7 @@ extern BOOL CGTARG_Is_OP_Speculative(OP *op);
 extern BOOL CGTARG_Can_Be_Speculative(OP* op);
 #endif
 
-extern BOOL CGTARG_Is_OP_Inter_RegClass_Copy(OP *op);
+extern BOOL CGTARG_Is_OP_Inter_RegClass_Bool_Copy(OP *op);
 
 extern BOOL CGTARG_OP_is_counted_loop(OP *op);
 extern BOOL CGTARG_Can_Change_To_Brlikely(OP *xfer_op, TOP *new_opcode);

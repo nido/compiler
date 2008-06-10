@@ -702,10 +702,9 @@ CGTARG_Invert(TOP opr)
 }
 
 BOOL
-CGTARG_Is_OP_Inter_RegClass_Copy(OP *op) {
-
-  return OP_code(op) == TOP_targ_mov_r_b || OP_code(op) == TOP_targ_mov_b_r || 
-    OP_code (op) == TOP_convib_r_b;
+CGTARG_Is_OP_Inter_RegClass_Bool_Copy(OP *op)
+{
+  return OP_code(op) == TOP_convbi_b_r || OP_code (op) == TOP_convib_r_b;
 }
 
 // [CL] try to invert an operation, able to deal with cases where it

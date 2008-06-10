@@ -770,12 +770,12 @@ Disjoint_Predicates(TN *guard1, bool on_false1, TN *guard2, bool on_false2) {
 
     if (cmp_opnd != NULL) {
       // Look for b1 = cmp_opnd;
-      if (CGTARG_Is_OP_Inter_RegClass_Copy(def_guard1) && OP_opnd(def_guard1, 0) == cmp_opnd)
+      if (CGTARG_Is_OP_Inter_RegClass_Bool_Copy(def_guard1) && OP_opnd(def_guard1, 0) == cmp_opnd)
 	return TRUE;
 
       // Look for cmp_opnd = b1;
       OP *def_cmp = TN_ssa_def(cmp_opnd);
-      if (def_cmp && CGTARG_Is_OP_Inter_RegClass_Copy(def_cmp) && OP_opnd(def_cmp, 0) == guard1)
+      if (def_cmp && CGTARG_Is_OP_Inter_RegClass_Bool_Copy(def_cmp) && OP_opnd(def_cmp, 0) == guard1)
 	return TRUE;
     }
   }
