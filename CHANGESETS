@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jun 10 10:46:42 CEST 2008
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-44857
+
+Description:
+------------
+	*  [trunk] fix for bug #44857: Internal assertion failure in
+	cgdwarf_debug_frame on st200.
+	Deliver fixes/codex-44857 rev #17156 with authorization branch #44905
+
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgdwarf_debug_frame.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jun  6 10:47:18 CEST 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

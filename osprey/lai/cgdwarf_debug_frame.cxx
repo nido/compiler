@@ -1127,7 +1127,7 @@ static void Prepend_UE(UNWIND_ELEM* pue, UINT when, BB *bb)
   ue.label_idx = LABEL_IDX_ZERO;
   ue.frame_changed = pue->frame_changed;
   ue.frame_size = pue->frame_size;
-  ue.handler = ue_iter->handler;
+  ue.handler = BB_handler(bb);
 
   ue_list.insert(ue_iter, ue);
   if (Trace_Unwind) {
