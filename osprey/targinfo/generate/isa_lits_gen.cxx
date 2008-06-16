@@ -209,8 +209,8 @@ void ISA_Lits_Begin (void)
 
   // UNDEFINED entry is reserved to static table
   if(gen_static_code)
-    { fprintf(cfile, "  { { { 0x0000000000000000LL, 0x0000000000000000LL, 0, 0 } }, 0, 0, \"ISA_LC_UNDEFINED\" },\n");
-      fprintf(cincfile,"  { { { 0x0000000000000000LL, 0x0000000000000000LL, 0, 0 } }, 0, 0, \"ISA_LC_UNDEFINED\" },\n");
+    { fprintf(cfile, "  { { { 0x0000000000000000ULL, 0x0000000000000000ULL, 0, 0 } }, 0, 0, \"ISA_LC_UNDEFINED\" },\n");
+      fprintf(cincfile,"  { { { 0x0000000000000000ULL, 0x0000000000000000ULL, 0, 0 } }, 0, 0, \"ISA_LC_UNDEFINED\" },\n");
     }
 
   // For dynamic code generation, we include in the

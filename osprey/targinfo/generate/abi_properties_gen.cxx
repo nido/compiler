@@ -642,7 +642,7 @@ void ABI_Properties_End(void)
       ABI_PROPERTY prop = *prop_iter;
       assert(prop->is_flag);
       if (prop->v != 0) {
-	fprintf(hfile, "#define ABI_PROPERTY_%-20s " PRINTF_LONGLONG_HEXA "%s\n",
+	fprintf(hfile, "#define ABI_PROPERTY_%-20s " PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s\n",
 		prop->name,
 		// no "%0*llx" with MSVisual... // Type_Size(prop_count[true][prop->is_reg]) / 4,
 		prop->v,
@@ -675,7 +675,7 @@ void ABI_Properties_End(void)
 	ABI_PROPERTY prop = *prop_iter;
 	mask |= prop->v;
       }
-      fprintf(cfile, "    " PRINTF_LONGLONG_HEXA "%s,\n",
+      fprintf(cfile, "    " PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s,\n",
 		     // no "%0*llx" with MSVisual... // Type_Size(count) / 4,
 		     mask,
 		     Type_Suffix(count));

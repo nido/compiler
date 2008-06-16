@@ -1545,8 +1545,8 @@ void ISA_Operands_End(void)
 
   fprintf(hfile, "\ninline BOOL ISA_OPERAND_Any_Use(ISA_OPERAND_USE ouse)\n"
 		 "{\n"
-	  //		 "  return (" PRINTF_LONGLONG_HEXA "ULL & (1ULL << ouse)) != 0;\n"
-		 "  return (" PRINTF_LONGLONG_HEXA "ULL & ouse) != 0;\n"
+	  //	 "  return (" PRINTF_LONGLONG_HEXA "ULL & (1ULL << ouse)) != 0;\n"
+		 "  return (" PRINTF_LONGLONG_HEXA " & ouse) != 0;\n"
 		 "}\n",
 		 use_mask);
 

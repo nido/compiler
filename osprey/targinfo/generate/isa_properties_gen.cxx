@@ -484,7 +484,7 @@ void ISA_Properties_End(void)
     fprintf (cfile, "{ ");
     sep = "";
     for (i = 0; i < mask_word_count; i++) {
-      fprintf (cfile, "%s" PRINTF_LONGLONG_HEXA "%s", sep, flag_value[i], mask_int_suffix);
+      fprintf (cfile, "%s" PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s", sep, flag_value[i], mask_int_suffix);
       sep = ", ";
     }
     fprintf (cfile, " }, ");
@@ -511,7 +511,7 @@ void ISA_Properties_End(void)
     fprintf (cfile, "{ ");
     sep = "";
     for (i = 0; i < mask_word_count; i++) {
-      fprintf (cfile, "%s" PRINTF_LONGLONG_HEXA "%s", sep, 0ULL, mask_int_suffix);
+      fprintf (cfile, "%s" PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s", sep, 0ULL, mask_int_suffix);
       sep = ", ";
     }
     fprintf (cfile, " },\n");
@@ -549,7 +549,7 @@ void ISA_Properties_End(void)
       ISA_PROPERTY property = *isi;
       int word_idx = property->bit_position / mask_word_size;
       int bit_pos = property->bit_position % mask_word_size;
-      fprintf (hfile, "#define TOP_is_%s(t)\t (ISA_PROPERTIES_flags[(INT)t].mask[%d] & " PRINTF_LONGLONG_HEXA "%s)\n",
+      fprintf (hfile, "#define TOP_is_%s(t)\t (ISA_PROPERTIES_flags[(INT)t].mask[%d] & " PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s)\n",
 	       property->name, word_idx, (1ULL << bit_pos), mask_int_suffix);
     }
   } else {
@@ -570,7 +570,7 @@ void ISA_Properties_End(void)
       } else { 
 	int word_idx = property->bit_position / mask_word_size;
 	int bit_pos = property->bit_position % mask_word_size;
-	fprintf (hfile, "#define TOP_is_%s(t)\t (dyn_get_TOP_prop_tab()[(INT)t].flags[%d] & " PRINTF_LONGLONG_HEXA "%s)\n",
+	fprintf (hfile, "#define TOP_is_%s(t)\t (dyn_get_TOP_prop_tab()[(INT)t].flags[%d] & " PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s)\n",
 		 property->name, word_idx, (1ULL << bit_pos), mask_int_suffix);
       }
     }
@@ -848,7 +848,7 @@ void ISA_Properties_End(void)
 
       fprintf (cfile, "  { \"%s\", ", property->name);
       if (store_mask) {
-	fprintf (cfile, "" PRINTF_LONGLONG_HEXA "%s /* (1%s << %d) */ },\n",
+	fprintf (cfile, PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s /* (1%s << %d) */ },\n",
 		 (1ULL << property->bit_position), ident_int_suffix,
 		 ident_int_suffix, property->bit_position);
       } else {

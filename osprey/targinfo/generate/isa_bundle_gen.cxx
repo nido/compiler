@@ -474,7 +474,7 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
     fprintf (hfile, "\n");
     for (iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei) {
       ISA_EXEC_UNIT_TYPE curr_exec_type = *iei;
-      fprintf (hfile, "#define ISA_EXEC_PROPERTY_%-15s (" PRINTF_LONGLONG_HEXA "%s)\n",
+      fprintf (hfile, "#define ISA_EXEC_PROPERTY_%-15s (" PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s)\n",
                        curr_exec_type->name,
                        (1ULL << curr_exec_type->bit_position), int_suffix);
     }
@@ -989,7 +989,7 @@ static void Emit_Pack_Component(
   if (first_comps[comp] < 0) first_comps[comp] = *pack_index;
 
   if (comp == END) {
-    fprintf (cfile, "  { %-30s, %2d, %2d, %2d,   %16" PRINTF_LONGLONG "d },  /* %s */\n",
+    fprintf (cfile, "  { %-30s, %2d, %2d, %2d, " PRINTF_LONGLONG_DECIMAL " },  /* %s */\n",
 		    pack_comp_name[comp],
 		    -1,
 		    -1,

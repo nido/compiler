@@ -112,10 +112,10 @@ extern "C" {
 #define PRINTF_LONGLONG "ll"
 #endif
 #define PRINTF_LONGLONG_FORMAT(prefix,format,type) prefix "%" format PRINTF_LONGLONG type
-#define PRINTF_LONGLONG_HEXA                       PRINTF_LONGLONG_FORMAT("0x","016","x")
-#define PRINTF_LONGLONG_DECIMAL                    PRINTF_LONGLONG_FORMAT(""  ,""   ,"d")
-#define PRINTF_LONGLONG_SIGNED                     PRINTF_LONGLONG_FORMAT("+" ,""   ,"i")
-#define PRINTF_LONGLONG_UNSIGNED                   PRINTF_LONGLONG_FORMAT(""  ,""   ,"u")
+#define PRINTF_LONGLONG_HEXA                       PRINTF_LONGLONG_FORMAT("0x","016","xULL")
+#define PRINTF_LONGLONG_DECIMAL                    PRINTF_LONGLONG_FORMAT(""  ,""   ,"dLL")
+#define PRINTF_LONGLONG_SIGNED                     PRINTF_LONGLONG_FORMAT("+" ,""   ,"iLL")
+#define PRINTF_LONGLONG_UNSIGNED                   PRINTF_LONGLONG_FORMAT(""  ,""   ,"uULL")
 
 /* In order to keep code legacy, and in the same time */
 /* add a new parameter (extname), this last parameter */
