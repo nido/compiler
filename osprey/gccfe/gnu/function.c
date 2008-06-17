@@ -5978,6 +5978,13 @@ reorder_blocks ()
   if (block == NULL_TREE)
     return;
 
+#ifdef TARG_ST
+  /* (cbr) inlined functions are lazilly emitted (see cp/semantics.c)
+     note that while emitting whirl. we could always skip this step. */
+  if (block == error_mark_node)
+    return;  
+#endif
+
   VARRAY_TREE_INIT (block_stack, 10, "block_stack");
 
   /* Reset the TREE_ASM_WRITTEN bit for all blocks.  */

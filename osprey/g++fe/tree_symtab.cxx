@@ -1582,6 +1582,7 @@ Create_ST_For_Tree (tree decl_node)
                 /* (cbr) static data member or static data in function member 
                    has external linkage */
             if (DECL_CONTEXT (decl_node) && TREE_STATIC (decl_node) &&
+                TYPE_NEEDS_CONSTRUCTING (TREE_TYPE (decl_node)) &&
                 DECL_COMDAT (DECL_CONTEXT (decl_node))) {
               tree init = DECL_INITIAL (decl_node);
               // (cbr) will be constructed at runtime. reserve space only
