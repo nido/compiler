@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jun 18 13:50:20 CEST 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-31926
+
+Description:
+------------
+	* [trunk] Fix for bug #31926: Assertion during Code_Expansion : XGOTO block doesn't have goto's?
+	Deliver fixes/codex-31926 rev #17268 with authorization branch #44834
+
+
+Modified Files:
+---------------
+	M      osprey/g++fe/wfe_stmt.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jun 17 13:07:36 CEST 2008
 	Author:    bruel
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

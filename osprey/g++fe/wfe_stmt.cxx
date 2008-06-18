@@ -2794,6 +2794,15 @@ WFE_Expand_Start_Case (tree selector)
   WN *switch_block = WN_CreateBlock ();
   WN *index;
   index = WFE_Expand_Expr_With_Sequence_Point (selector, index_mtype);
+
+#ifdef TARG_ST
+  // FdF 20080605: Another block is created around the switch, so that
+  // COMPGOTO edges do not cross a REGION. A REGION may be created if
+  // the switch value is computed by a call. Fix for codex #31926.
+  WN *scope_block = WN_CreateBlock();
+  WFE_Stmt_Push (scope_block, wfe_stmk_scope, Get_Srcpos());
+#endif
+
   WFE_Stmt_Push (switch_block, wfe_stmk_switch, Get_Srcpos());
   if (++switch_info_i == switch_info_max) {
     switch_info_max   = ENLARGE(switch_info_max);
@@ -2980,6 +2989,13 @@ WFE_Expand_End_Case (void)
 #ifdef TARG_ST
   // [CL] use line number of switch() statement in user's source code
   WFE_Stmt_Append (wn, WN_linenum(switch_block));
+  // FdF 20080605: Pop the block that was created around the
+  // switch. If a REGION is needed, it will enclose this block,
+  // instead of enclosing only switch_wn. This avoids COMPGOTO edges
+  // from switch_wn to switch block to cross a REGION. Fix for codex
+  // #31926.
+  WN *scope_block = WFE_Stmt_Pop (wfe_stmk_scope);
+  WFE_Stmt_Append (scope_block, 0);
 #else
   WFE_Stmt_Append (wn, Get_Srcpos ());
 #endif
