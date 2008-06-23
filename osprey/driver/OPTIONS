@@ -2661,7 +2661,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 #ifdef TARG_ST
 %%% Relocatable library / main program macro options
 %%% These options are shortcuts for a combinaison of options
---rlib			;			LINK	ld	"-shared -Bsymbolic --allow-shlib-undefined  -nodefaultlibs"
+--rlib		;			LINK	ld	"-shared -Bsymbolic --allow-shlib-undefined  -nodefaultlibs"
 	NA__STxP70__"Build a relocatable library loadable by the rl_lib loader"
 %%% The --rmain option also triggers in phases.c the link flags "-lrl -lrl_s"
 --rmain			;			LINK	ld	"--export-dynamic --dynamic-linker=RL_LIB"

@@ -1645,19 +1645,23 @@ add_file_args (string_list_t *args, phases_t index)
 	  }
 	  if (deadcode == TRUE) {
 	    add_string(args, "--deadcode");
+#ifdef TARG_ST
+	    /*TB: fix [bug #45189]: In dynamic mode no need to tell
+	      binopt that __start/_start is preserved in dynamic mode */
+	    if (shared != RELOCATABLE && shared != DSO_SHARED) {
+	      add_string(args, "--preserved");
 #ifdef TARG_STxP70
-	    add_string(args, "--preserved");
-	    add_string(args, "_start");
-	    add_string(args, "--ignore-start");
+	      add_string(args, "_start");
 #else
 #ifdef TARG_ST200
-	    add_string(args, "--preserved");
-	    add_string(args, "__start");
-	    add_string(args, "--ignore-start");
+	      add_string(args, "__start");
 #else
 #error "Unknowm start point for binopt/deadcode"
 #endif
 #endif
+	    }
+	    add_string(args, "--ignore-start");
+#endif //TARG_ST
 	    if (dynamic == TRUE) {
 	      add_string(args, "--dynamic");
 	    }
