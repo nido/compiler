@@ -486,10 +486,13 @@ RangeAnalysis::Create_Topological_Ordering ()
   for (bb = REGION_First_BB; bb != NULL; bb = BB_next (bb)) {
     INT32 bb_topo_id = BB_MAP32_Get (dfo_map, bb) - 1;
     if (bb_topo_id >= 0) {
+      Reset_BB_unreachable(bb);
       topological_order[bb_topo_id] = bb;
       if (n_topological_order < bb_topo_id) {
 	n_topological_order = bb_topo_id;
       }
+    } else {
+      Set_BB_unreachable(bb);
     }
     if (BB_handler (bb)) {
       handler_seen = TRUE;
@@ -586,8 +589,8 @@ RangeAnalysis::Initialize (LRange_p instance, MEM_POOL mempool)
   tn_value_backward = NULL;
   ordered_succs = NULL;
   Create_Topological_Ordering ();
-  executed = BB_SET_Create (PU_BB_Count, &pool);
-  visited_backward = BB_SET_Create (PU_BB_Count, &pool);
+  executed = BB_SET_Create_Empty (PU_BB_Count, &pool);
+  visited_backward = BB_SET_Create_Empty (PU_BB_Count, &pool);
   Initialize_TN_Uses ();
   tn_equivalence.Build_Equivalence_Classes ();
   analysis = None;
@@ -1017,9 +1020,16 @@ RangeAnalysis::Analyze_Forward ()
   FmtAssert (bb_work.empty (), ("Analyze_Forward: bb worklist not empty"));
 
   FOR_ALL_BB_SET_members (SSA_region_entries (), bb) {
-    Recompute_Forward (bb);
+    // Care: when we have unreachable code, SSA_region_entries() can classify
+    // unreachable BBs as region entries.  This causes problems here because when
+    // we set up BB_ordered_succ we set null for successors of unreachable BBs.
+    // So here, call Recompute_Forward only if the bb is reachable from a real
+    // entrypoint.
+    if (BB_entry (bb) || BB_handler (bb)) {
+      Recompute_Forward (bb);
+    }
   }
-
+  
   while (! bb_work.empty () || ! tn_work.empty ()) {
     // Patterson 95: "experience has shown that preferring
     // to select from the Flow worklist tends to ... reduce
