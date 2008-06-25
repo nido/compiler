@@ -3809,6 +3809,32 @@ Set_pragma_LoopMod(LOOP_DESCR *loop, int modulus, int residue)
   }
 }
 
+// Check if affirm(base, bias) and loopmod(base, bias) are
+// compatible. If not, return FALSE, otherwise return TRUE and set
+// affirm(base,bias) to be the most precise information.
+
+static BOOL
+Check_Affirm_Loopmod(int *affirm_base, int *affirm_bias, int loopmod_base, int loopmod_bias) {
+
+  if (*affirm_base < loopmod_base) {
+    if (((loopmod_base % *affirm_base) == 0) &&
+	((loopmod_bias % *affirm_base) == *affirm_bias)) {
+      *affirm_base = loopmod_base;
+      *affirm_bias = loopmod_bias;
+      return TRUE;
+    }
+  }
+
+  else if (*affirm_base >= loopmod_base) {
+    if (((*affirm_base % loopmod_base) == 0) &&
+	((*affirm_bias % loopmod_base) == loopmod_bias)) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
 /* Create a primary induction variable and use it on the loop exit
    test. */
 static void
@@ -5132,23 +5158,25 @@ static BOOL unroll_multi_bb(LOOP_DESCR *loop, UINT8 ntimes)
    */
 #ifdef TARG_ST
   int modulus, residue;
+  int affirm_modulus = 1;
+  int affirm_bias = 0;
 
   Get_pragma_LoopMod(loop, &modulus, &residue);
-  int affirm_modulus = Get_Affirm_modulo(trip_count_tn, CG_LOOP_prolog);
-  if (affirm_modulus > 1) {
-    if ((modulus > 1) && (residue != 0)) {
-      DevWarn("#pragma loopmod values does match computed values. Ignored.");
-      modulus = 1;
-    }
-    if (affirm_modulus > modulus) {
-      modulus = affirm_modulus;
-      residue = 0;
-      if (Get_Trace(TP_AFFIRM, 0x1) && (modulus >= ntimes)) {
-	fPrint_TN(TFile, "Used AFFIRM property (%s", trip_count_tn);
-	fprintf(TFile, "%%%d==0) for loop unrolling with factor %d\n", modulus, ntimes);
-      }
+  if ( trip_count_tn != NULL && TN_is_register(trip_count_tn)){
+    Get_Affirm_modulo(trip_count_tn, CG_LOOP_prolog, &affirm_modulus, &affirm_bias);
+  }
+
+  if (!Check_Affirm_Loopmod(&affirm_modulus, &affirm_bias, modulus, residue)) {
+    DevWarn("#pragma loopmod values does match computed values. Ignored.");
+  }
+  else if (affirm_modulus > modulus) {
+    if (Get_Trace(TP_AFFIRM, 0x1) && (affirm_modulus >= ntimes)) {
+      fPrint_TN(TFile, "Used AFFIRM property (%s", trip_count_tn);
+      fprintf(TFile, "%%%d==%d) for loop unrolling with factor %d\n", affirm_modulus, affirm_bias, ntimes);
     }
   }
+  modulus = affirm_modulus;
+  residue = affirm_bias;
 
   if (trip_count_tn && TN_is_constant(trip_count_tn))
     remainder_trip_count_val = TN_value(trip_count_tn) % ntimes;
@@ -5624,21 +5652,23 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
     if ((LOOPINFO_trip_min(info) != -1) && (LOOPINFO_trip_min(info) >= ntimes))
       gen_unrolled_loop_guard = FALSE;
 
-    int affirm_modulus = Get_Affirm_modulo(trip_count_tn, CG_LOOP_prolog);
-    if (affirm_modulus > 1) {
-      if ((modulus > 1) && (residue != 0)) {
-	DevWarn("#pragma loopmod values does match computed values. Ignored.");
-	modulus = 1;
-      }
-      if (affirm_modulus > modulus) {
-	modulus = affirm_modulus;
-	residue = 0;
-	if (Get_Trace(TP_AFFIRM, 0x1) && (modulus >= ntimes)) {
-	  fPrint_TN(TFile, "Used AFFIRM property (%s", trip_count_tn);
-	  fprintf(TFile, "%%%d==0) for loop unrolling with factor %d\n", modulus, ntimes);
-	}
+    int affirm_modulus = 1;
+    int affirm_bias = 0;
+
+    if ( trip_count_tn != NULL && TN_is_register(trip_count_tn)){
+      Get_Affirm_modulo(trip_count_tn, CG_LOOP_prolog, &affirm_modulus, &affirm_bias);
+    }
+    if (!Check_Affirm_Loopmod(&affirm_modulus, &affirm_bias, modulus, residue)) {
+      DevWarn("#pragma loopmod values does match computed values. Ignored.");
+    }
+    else if (affirm_modulus > modulus) {
+      if (Get_Trace(TP_AFFIRM, 0x1) && (affirm_modulus >= ntimes)) {
+	fPrint_TN(TFile, "Used AFFIRM property (%s", trip_count_tn);
+	fprintf(TFile, "%%%d==%d) for loop unrolling with factor %d\n", affirm_modulus, affirm_bias, ntimes);
       }
     }
+    modulus = affirm_modulus;
+    residue = affirm_bias;
 
     if (modulus > 1) {
 

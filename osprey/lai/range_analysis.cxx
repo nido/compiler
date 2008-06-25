@@ -43,6 +43,9 @@
 #include "lrange.h"
 #include "range.h"
 #include "cg_ssa.h"
+#include "cg_affirm.h"
+#include "stblock.h" // for ST_alignment
+#include "data_layout.h" // for Stack_Alignment
 
 
 MEM_POOL TN_Equivalence::pool;
@@ -684,6 +687,10 @@ RangeAnalysis::Value (const TN *tn)
     }
   } else if (TN_has_value (tn)) {
     result = lattice->makeRangeValue (TN_value(tn));
+  } else if (TN_is_symbol (tn)) {
+      result = lattice->makeAlign (ST_alignment(TN_var(tn)), TN_offset(tn));
+  } else if (tn == SP_TN || tn == FP_TN) {
+      result = lattice->makeAlign (Stack_Alignment(), 0);
   } else {
     result = lattice->makeBottom ();
   }
@@ -962,6 +969,13 @@ RangeAnalysis::Visit_Forward (OP *op, BOOL *succs_done)
       // Select result has meet of the operands.
       new_value = lattice->makeMeet (Value (OP_Opnd1(op)),
 				 Value (OP_Opnd2(op)));
+    }
+
+    // Get affirm information, if available
+    INT base, bias;
+    if (Get_Affirm_modulo(result, OP_bb(op), &base, &bias)){
+      LRange_p aff_value = lattice->makeAlign(base, bias);
+      new_value = lattice->makeJoin(new_value, aff_value);
     }
     // Value is limited to the range of the tn that holds it.
     new_value =  Fit_To_TN (new_value, result, 0);

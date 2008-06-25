@@ -62,9 +62,9 @@ inline BOOL OP_Is_Affirm(const OP *op) { return OP_Get_Affirm(op) != NULL; }
 extern void OP_Affirm_delete_map();
 
 
-extern BOOL Insert_Affirm_for_modulo(TN *tn, INT align, BB *bb);
-extern INT  Get_Affirm_modulo(TN *tn, BB *bb);
-extern INT Get_Affirm_modulo(WN *wn_affirm, WN** wn_modulo = NULL);
+extern BOOL Insert_Affirm_for_modulo(TN *tn, INT base, INT bias, BB *bb);
+extern BOOL Get_Affirm_modulo(TN *tn, BB *bb, INT* base, INT* bias);
+extern BOOL Get_Affirm_modulo(WN *wn_affirm, WN** wn_modulo, INT* base, INT* bias);
 
 extern BOOL Generate_Affirm(RangeAnalysis *range_analysis, BB *bb);
 #endif /* CG_AFFIRM_INCLUDED */

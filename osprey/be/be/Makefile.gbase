@@ -436,10 +436,12 @@ COMMON_UTIL_CXX_SRCS =  \
   options_stack.cxx     \
   lbrange.cxx             \
   lvrange.cxx             \
+  larange.cxx             \
   lbvalrange.cxx             \
   range.cxx             \
   lbitmask.cxx          \
   lbitvalue.cxx          \
+  lalign.cxx          \
   paired_lattice.cxx          \
   zint.cxx              \
 

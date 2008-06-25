@@ -754,13 +754,14 @@ Pack32_Get_Alignment(OP *memop, INT64 offset) {
   // Get exact alignment
 
   INT base_alignment = -1;
+  INT bias_alignment = -1;
   if (def_base != NULL) {
     Is_True(BB_loop_head_bb(OP_bb(def_base)) != loophead, ("Pack32_Get_Alignment: Incorrect base for stream"));
     if (OP_Is_Affirm(def_base)) {
-      base_alignment = Get_Affirm_modulo(OP_Get_Affirm(def_base));
+      Get_Affirm_modulo(OP_Get_Affirm(def_base), NULL, &base_alignment, &bias_alignment);
       if (Get_Trace(TP_AFFIRM, 0x1)) {
 	fPrint_TN(TFile, "Used AFFIRM property (", OP_result(def_base, 0));
-	fprintf(TFile, "%%%d==0) for packing.\n", base_alignment);
+	fprintf(TFile, "%%%d==%d) for packing.\n", base_alignment, bias_alignment);
       }
     }
     else if (base_sym == NULL) {

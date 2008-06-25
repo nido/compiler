@@ -54,6 +54,8 @@
 #define SWAP_TN(tn1, tn2) do { TN *tmp = tn1; tn1 = tn2; tn2 = tmp; } while (0)
 #define SWAP_RANGE(r1, r2) do { LRange_p tmp = r1; r1 = r2; r2 = tmp; } while (0)
 
+typedef PairedLattice <LVRange, LBValRange> VBLattice; 
+typedef PairedLattice <VBLattice, LARange> VBALattice; 
 
 /* ====================================================================
  *
@@ -631,8 +633,8 @@ RangePropagatePass (RangeAnalysis &range_analysis, INT pass)
 
 // paired-lattice (value plus bit-value ranges) initialization 
 // for forward RA pass
-  VBLattice::MEMPOOL_Initialize(mempool);
-  range_analysis.Initialize (VBLattice::getInstance (), mempool);
+  VBALattice::MEMPOOL_Initialize(mempool);
+  range_analysis.Initialize (VBALattice::getInstance (), mempool);
 
   if (! range_analysis.Can_Analyze ()) {
     Trace_RangePropagate_Aborted ();

@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jun 25 11:07:58 CEST 2008
+	Author:    knochelh
+	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
+	Branch:    http://svn.open64.codex.cro.st.com/svnroot/open64/branches/knochelh/dev-range-analysis-align
+
+Description:
+------------
+	* [trunk] Deliver knochelh/dev-range-analysis-align rev #17355 with authorization branch #45191
+
+
+Modified Files:
+---------------
+	M      osprey/be/be/Makefile.gbase
+	M      osprey/lai/cg_loop.cxx
+	M      osprey/lai/cg_affirm.h
+	M      osprey/lai/cg_ivs.cxx
+	M      osprey/lai/cg_affirm.cxx
+	M      osprey/lai/range_prop.cxx
+	M      osprey/lai/range_analysis.cxx
+	M      osprey/common/util/zint.cxx
+	A  +   osprey/common/util/larange.h
+	A  +   osprey/common/util/lalign.cxx
+	M      osprey/common/util/paired_lattice.cxx
+	M      osprey/common/util/zint.h
+	A  +   osprey/common/util/lalign.h
+	A  +   osprey/common/util/larange.cxx
+	M      osprey/common/util/lbitvalue.cxx
+	M      osprey/common/util/lrange.h
+	M      osprey/common/util/Makefile.gbase
+	M      osprey/common/util/paired_lattice.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jun 25 10:08:55 CEST 2008
 	Author:    knochelh
 	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk

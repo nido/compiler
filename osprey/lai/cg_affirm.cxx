@@ -118,12 +118,14 @@ Affirm_Combine_And_Expressions(wn_and_exprs_t *wn_list, int idx) {
     return WN_LAND((*wn_list)[idx], Affirm_Combine_And_Expressions(wn_list, idx+1));
 }
 
-INT
-Get_Affirm_modulo(WN *wn_affirm, WN**wn_modulo) {
+BOOL
+Get_Affirm_modulo(WN *wn_affirm, WN**wn_modulo, INT* affirm_base, INT* affirm_bias) {
 
   Is_True(WN_operator_is(wn_affirm, OPR_AFFIRM), ("AFFIRM property is not an AFFIRM whirl node"));
 
   wn_and_exprs_t wn_and_list;
+  *affirm_base = 1;
+  *affirm_bias = 0;
 
   Affirm_Extract_And_Expressions(WN_kid0(wn_affirm), &wn_and_list);
 
@@ -138,7 +140,7 @@ Get_Affirm_modulo(WN *wn_affirm, WN**wn_modulo) {
       Normalized_Binary_WN(exp_affirm, &wn_eq1, &wn_eq2);
 
       if (WN_operator_is(wn_eq2, OPR_INTCONST) &&
-	  WN_operator_is(wn_eq1, OPR_BAND)) {
+	  (WN_operator_is(wn_eq1, OPR_BAND) || WN_operator_is(wn_eq1, OPR_MOD))) {
 
 	int eq_val = WN_const_val(wn_eq2);
 	WN *wn_band1, *wn_band2;
@@ -146,20 +148,26 @@ Get_Affirm_modulo(WN *wn_affirm, WN**wn_modulo) {
 
 	if (WN_operator_is(wn_band2, OPR_INTCONST) &&
 	    WN_operator_is(wn_band1, OPR_LDID)) {
-
 	  int band_val = WN_const_val(wn_band2);
-	  if ((eq_val == 0) && (band_val > 0) &&
-	      ((band_val & (band_val+1)) == 0)) {
+	  if (band_val > 0 && eq_val >= 0) {
 	    if (wn_modulo != NULL)
 	      *wn_modulo = exp_affirm;
-	    return band_val+1;
+	    if (WN_operator_is(wn_eq1, OPR_BAND) && 
+		((band_val & (band_val + 1))==0))
+	      *affirm_base = band_val+1;
+	    else if (WN_operator_is(wn_eq1, OPR_MOD))
+	      *affirm_base = band_val;
+	    else {
+	      return FALSE;
+	    }
 	  }
+	    *affirm_bias = eq_val;
+	    return TRUE;
 	}
       }
     }
   }
-
-  return -1;
+  return FALSE;
 }
 
 static WN *
@@ -187,18 +195,19 @@ Affirm_Insert_wn(WN *wn_affirm, WN *wn_new) {
 }
 
 BOOL
-Insert_Affirm_for_modulo(TN *tn, INT modulo, BB *bb) {
+Insert_Affirm_for_modulo(TN *tn, INT base, INT bias, BB *bb) {
 
   WN *wn_affirm = NULL;
   WN *wn_modulo = NULL;
   OP *op_affirm = NULL;
-  INT affirm_modulo = -1;
+  INT affirm_base = -1;
+  INT affirm_bias = -1;
 
-  Is_True((modulo > 0) && ((modulo&(modulo-1)) == 0), ("Unsupported value for modulo (%d) in Insert_Affirm_for_modulo", modulo));
+//   Is_True((base > 0) && ((base&(base-1)) == 0), ("Unsupported value for base (%d) in Insert_Affirm_for_modulo", base));
 
   if (Get_Trace(TP_AFFIRM, 0x1)) {
     fPrint_TN(TFile, "TN has modularity %s%%", tn);
-    fprintf(TFile, "%d==0, will set AFFIRM property.\n", modulo);
+    fprintf(TFile, "%d==%d, will set AFFIRM property.\n", base, bias);
   }
 
   // First, look if the definition for tn is not already in bb, or in
@@ -219,6 +228,7 @@ Insert_Affirm_for_modulo(TN *tn, INT modulo, BB *bb) {
       tn_def = NULL;
   }
 
+
   // Then, check that tn_def is defined in the current basic block or
   // in predecessors bb while there is no incomming or outgoing edges.
   if (tn_def != NULL) {
@@ -238,15 +248,14 @@ Insert_Affirm_for_modulo(TN *tn, INT modulo, BB *bb) {
 
   // Check if wn_affirm is a superset of the modulo property we get
   if (wn_affirm != NULL) {
-    affirm_modulo = Get_Affirm_modulo(wn_affirm, &wn_modulo);
+    if (!Get_Affirm_modulo(wn_affirm, &wn_modulo, &affirm_base, &affirm_bias))
+      return FALSE;
 
-    FmtAssert((affirm_modulo == -1) ||
-	      ((affirm_modulo > 0) &&
-	       ((affirm_modulo&(affirm_modulo-1)) == 0)),
-	      ("Unsupported modulo information on affirm: %d", affirm_modulo));
+    FmtAssert((affirm_bias < 0) || (affirm_base < affirm_bias),
+	      ("Unsupported base/bias information on affirm: %d %d", affirm_base, affirm_bias));
 
     // Affirm node already includes this modulo information
-    if (affirm_modulo >= modulo)
+    if (affirm_base >= base)
       return FALSE;
   }
 
@@ -254,10 +263,10 @@ Insert_Affirm_for_modulo(TN *tn, INT modulo, BB *bb) {
   WN *wn_new_modulo;
   ST *st = Gen_Temp_Symbol(MTYPE_To_TY(MTYPE_I4), ".affirm");
   wn_new_modulo = WN_EQ(MTYPE_I4,
-		    WN_Band(MTYPE_I4,
+			WN_Binary(OPR_MOD, MTYPE_I4,
 			    WN_Ldid(MTYPE_I4, 0, st, 4),
-			    WN_Intconst(MTYPE_I4, (modulo-1))),
-		    WN_Intconst(MTYPE_I4, 0));
+			    WN_Intconst(MTYPE_I4, base)),
+		    WN_Intconst(MTYPE_I4, bias));
 
   if (op_affirm == NULL) {
     OPS New_OPs = OPS_EMPTY;
@@ -280,7 +289,7 @@ Insert_Affirm_for_modulo(TN *tn, INT modulo, BB *bb) {
 
   // If there was already a modulo information, replace it with this
   // new, more precise, one
-  if (affirm_modulo != -1)
+  if (affirm_base != -1)
     wn_affirm = Affirm_Replace_wn(wn_affirm, wn_modulo, wn_new_modulo);
   else if (wn_affirm != NULL)
     wn_affirm = Affirm_Insert_wn(wn_affirm, wn_new_modulo);
@@ -291,20 +300,28 @@ Insert_Affirm_for_modulo(TN *tn, INT modulo, BB *bb) {
   OP_Set_Affirm(op_affirm, wn_affirm);
 }
 
-INT
-Get_Affirm_modulo(TN *tn, BB *bb) {
+// =======================================================================
+// Get_Affirm_modulo
+// Returns TRUE if a non-trivial alignment information has been infered
+// by an affirm property on tn at exit of bb
+// =======================================================================
+BOOL
+Get_Affirm_modulo(TN *tn, BB *bb, INT* base, INT* bias) {
   // Look backward for a definition of tn in bb;
+  *base = 1;
+  *bias = 0;
   do {
     OP *op;
     FOR_ALL_BB_OPs_REV(bb, op) {
-      if (OP_Is_Affirm(op) && (OP_results(op) == 1) && (tn == OP_result(op, 0)))
-	return Get_Affirm_modulo(OP_Get_Affirm(op));
+      if (OP_Is_Affirm(op) && (OP_results(op) == 1) && (tn == OP_result(op, 0))){
+	return Get_Affirm_modulo(OP_Get_Affirm(op), NULL, base, bias);
+      }
       for (INT i = 0; i < OP_results(op); i++) {
 	if (OP_result(op,i) == tn) {
 	  if ((OP_results(op) == 1) && (OP_Copy_Operand_TN(op) != NULL))
 	    tn = OP_Copy_Operand_TN(op);
 	  else
-	    return -1;
+	    return FALSE;
 	}
       }
     }
@@ -314,7 +331,7 @@ Get_Affirm_modulo(TN *tn, BB *bb) {
     bb = BB_Unique_Predecessor(bb);
   } while (bb != NULL);
 
-  return -1;
+  return FALSE;
 }
 
 BOOL 
@@ -347,11 +364,12 @@ Generate_Affirm(RangeAnalysis *range_analysis, BB *bb)
       if (trip_count_tn && TN_is_ssa_var(trip_count_tn)) {
 	// Insert a copy with an assume property before the loop head.
 	const LRange_p r = range_analysis->Get_Value(trip_count_tn);
-	UINT64 zmask = r->getZeroMask();
-	if ((zmask != 0) && ((zmask & (zmask+1)) == 0)) {
+       UINT64 base = r->getBase();
+       UINT64 bias = r->getBias();
+      if ((base != 0) && (base != 1)) {
 	  if (Get_Trace(TP_AFFIRM, 0x1))
 	      fprintf(TFile, "Trip count: ");
-	  if (Insert_Affirm_for_modulo(trip_count_tn, zmask+1, prolog))
+	  if (Insert_Affirm_for_modulo(trip_count_tn, base, bias, prolog))
 	    Update_SSA = TRUE;
 	}
       }
@@ -370,11 +388,12 @@ Generate_Affirm(RangeAnalysis *range_analysis, BB *bb)
 	INT idx = Get_PHI_Predecessor_Idx(op, prolog);
 	TN *tn = OP_opnd(op, idx);
 	const LRange_p r = range_analysis->Get_Value(tn);
-	UINT64 zmask = r->getZeroMask();
-	if ((zmask > 0) && (zmask <= 0xffff) && ((zmask & (zmask+1)) == 0)) {
+	UINT64 base = r->getBase();
+	UINT64 bias = r->getBias();
+	if ((base != 0) && (base != 1) && (base <= 0x10000)) {
 	  if (Get_Trace(TP_AFFIRM, 0x1))
 	      fprintf(TFile, "PHI Operand: ");
-	  if (Insert_Affirm_for_modulo(tn, zmask+1, prolog))
+	  if (Insert_Affirm_for_modulo(tn, base, bias, prolog))
 	    Update_SSA = TRUE;
 	}
       }
