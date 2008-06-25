@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jun 25 10:08:55 CEST 2008
+	Author:    knochelh
+	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
+	Branch:    http://svn.open64.codex.cro.st.com/svnroot/open64/branches/fixes/codex-46611
+
+Description:
+------------
+	* [trunk] Fix for bug #46611: astpdx ff00.c fails (st240, be, -O2).
+	Deliver fixes/codex-46611 rev #17350 with authorization branch #46618
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/cg/targ_range_analysis.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jun 24 19:12:10 CEST 2008
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

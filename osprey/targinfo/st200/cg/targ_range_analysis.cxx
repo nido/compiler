@@ -184,14 +184,14 @@ RangeAnalysis::TARG_Visit_Forward (OP *op, INT result_idx, LRange_pc &new_value,
     INT extractcount = TN_Value(extractcount_tn);
     UINT bit_offset, bit_size;
     st200_decode_extract_mask (opcode, extractcount, &bit_size, &bit_offset);
-    INT lshiftcount = 32 - bit_offset - bit_size;
-    INT rshiftcount = 32 - bit_size;
     LRange_p extracted = Value (extracted_tn);
-    extracted = LeftShift (extracted, lshiftcount);
+    extracted = SignedRightShift(extracted, bit_offset);
     if (TOP_is_unsign (opcode)) {
-	extracted = MakeUnsigned (extracted, TN_bitwidth (extracted_tn));
+	new_value = ZeroExtend (extracted, bit_size);
     }
-    new_value = SignedRightShift (extracted, rshiftcount);
+    else {
+	new_value = SignExtend (extracted, bit_size);
+    }
     return TRUE;
   }
   else if (opcode == TOP_addcg_b_r_r_b_r){
@@ -215,22 +215,26 @@ RangeAnalysis::TARG_Visit_Forward (OP *op, INT result_idx, LRange_pc &new_value,
 	    ("Bad result index for TOP_addcg_b_r_r_b_r"));  
     return TRUE;
   }
-  else if (opcode == TOP_zxt_i_r_r){
+  else if (opcode == TOP_zxt_i_r_r || opcode == TOP_zxt_r_r_r){
     // zxt
     TN *tn0 = OP_opnd(op, 0);
     TN *tn1 = OP_opnd(op, 1);
     LRange_pc opnd0 = ZeroExtend (Value (tn0), TN_bitwidth (tn0));
     LRange_pc opnd1 = ZeroExtend (Value (tn1), 8);
-    new_value = ZeroExtend (new_value, opnd1->getValue ());
+    new_value = opnd0;
+    if (opnd1->hasValue ())
+      new_value = ZeroExtend (new_value, opnd1->getValue ());
     return TRUE;
   }
-  else if (opcode == TOP_sxt_i_r_r){
+  else if (opcode == TOP_sxt_i_r_r || opcode == TOP_sxt_r_r_r){
     // sxt
     TN *tn0 = OP_opnd(op, 0);
     TN *tn1 = OP_opnd(op, 1);
     LRange_pc opnd0 = ZeroExtend (Value (tn0), TN_bitwidth (tn0));
     LRange_pc opnd1 = ZeroExtend (Value (tn1), 8);
-    new_value = SignExtend (new_value, opnd1->getValue ());
+    new_value = opnd0;
+    if (opnd1->hasValue ())
+      new_value = SignExtend (new_value, opnd1->getValue ());
     return TRUE;
   }
   else if (opcode == TOP_perm_pb_i_r_r){
