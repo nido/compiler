@@ -2337,12 +2337,10 @@ Can_Mem_Conflicts(OP *op1, OP *op2)
 
   for (OP *iop = OP_next(first);
        iop!= NULL && iop != last;
-       iop = OP_next(iop)) {
-    if (OP_store (iop) && !Are_Not_Aliased (first, iop)) {
+       iop = OP_next(iop)) 
+    if (OP_store (iop) && !Are_Not_Aliased (first, iop))
       return true;
-    }
-  }
-
+    
   return false;
 }
 
@@ -2503,8 +2501,21 @@ Optimize_Spec_Loads(BB *bb)
               DevWarn("promote_memory with phis. not yet");
             }
           }
+          else {
+            // cannot remove op1 or op2 if they are alive inside the bb,
+            // beside the psi,
+              for (INT i = 0; i < OP_opnds(psi); i++) {
+                TN *use = OP_opnd (psi, i);
+                if (TN_is_register (use)) {
+                  if (TNs_Are_Equivalent (res1, use) || TNs_Are_Equivalent (res2, use)) {
+                    i_iter++;
+                    goto next_load;
+                  }
+                }
+              }
+          }
         }
-
+        
       found:
         if (found1 && found2) {
           TN *offsetTN1 = OP_opnd(op1, OP_find_opnd_use(op1, OU_offset));
