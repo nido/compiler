@@ -1540,7 +1540,37 @@ put_enumerator(DST_flag flag, DST_ENUMERATOR *attr, Dwarf_P_Die die)
 {
   put_decl(DST_ENUMERATOR_decl(attr), die);
   put_name (DST_ENUMERATOR_name(attr), die, pb_typename);
+#ifndef TARG_ST
   put_const_attribute (DST_ENUMERATOR_cval(attr), DW_AT_const_value, die);
+#else
+  // [CL] encode enumerator values in LEB128 because GDB assumes
+  // values are signed (encoding with DATA1, DATA2, DATA4 or DATA8
+  // means that large unsigned values would appear to have negative
+  // values in the debugger)
+  DST_CONST_VALUE cval = DST_ENUMERATOR_cval(attr);
+  switch (DST_CONST_VALUE_form(cval)) {
+    case DST_FORM_DATA1:
+      dwarf_add_AT_const_value_signedint (die,
+					  DST_CONST_VALUE_form_data1(cval),
+					  &dw_error);
+      break;
+    case DST_FORM_DATA2:
+      dwarf_add_AT_const_value_signedint (die,
+					  DST_CONST_VALUE_form_data2(cval),
+					  &dw_error);
+      break;
+    case DST_FORM_DATA4:
+      dwarf_add_AT_const_value_signedint (die,
+					  DST_CONST_VALUE_form_data4(cval),
+					  &dw_error);
+      break;
+    case DST_FORM_DATA8:
+      dwarf_add_AT_const_value_signedint (die,
+					  DST_CONST_VALUE_form_data8(cval),
+					  &dw_error);
+      break;
+  }
+#endif
 }
 
 

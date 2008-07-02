@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jul  2 10:13:35 CEST 2008
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/ddts-29419
+
+Description:
+------------
+	*  [trunk] Deliver fix for DDTS #29419 (DWARF information for
+	emumerated types incorrect) at rev #17411, with authorization #46222.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgdwarf.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jun 25 11:07:58 CEST 2008
 	Author:    knochelh
 	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
