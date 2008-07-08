@@ -1,7 +1,6 @@
-
 /* 
 
-  Copyright (C) 2006 ST Microelectronics, Inc.  All Rights Reserved. 
+  Copyright (C) 2007 ST Microelectronics, Inc.  All Rights Reserved. 
 
   This program is free software; you can redistribute it and/or modify it 
   under the terms of version 2 of the GNU General Public License as 
@@ -28,29 +27,32 @@
   For further information regarding this notice, see: 
 
   http: 
-*/ 
+*/
 
-/**
- *
- * This file is only useful for dynamic code extension.
- *
- * More precisely, when building the shared object (dll)
- * the Open64 code generator needs some functions that have
- * been processed in earlier step of its own process.
- *
- * The role devoted to files dyn_stubxxx.c is to emulate these
- * functions when dynamic code generation is activated.
- * 
+/* Assembly Intermediate Representation
+ * STxP70 target specific header file
  */
-#ifndef DYNAMIC_CODE_GEN
-#error "File " __FILE__ " can only be used for dynamic code generation\n"
+#ifndef __TARG_AIR_H__
+#define __TARG_AIR_H__
+
+#include "topcode.h"
+
+#include "air.h"
+#include "air_services.h"
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#include "dyn_isa_topcode.h"
+extern INT AIR_target_init(void);
+extern INT AIR_target_end(void);
 
-TOP TOP_UNDEFINED = TOP_static_count;
+#ifdef TARG_STxP70
+extern int stxp70_pre_print_fct ( AIR_Print * );
+#define DISASM_DECODE_pre_print_fct stxp70_pre_print_fct
+#endif
 
-const char* TOP_Name( TOP topcode )
-{
-   return (dyn_get_TOP_name_tab())[(int)topcode];
+#ifdef __cplusplus
 }
+#endif
+#endif /* __TARG_AIR_H__*/

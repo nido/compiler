@@ -45,9 +45,9 @@
  *   Branch handling:
  * ====================================================================
  */
-#define MIN_BRANCH_DISP             (2097151 * ISA_INST_BYTES)
-#define DEFAULT_BRP_BRANCH_LIMIT    (256 * ISA_INST_BYTES)
-#define DEFAULT_LONG_BRANCH_LIMIT   (2000000 * ISA_INST_BYTES)
+#define MIN_BRANCH_DISP             (2097151 * ISA_MAX_INST_BYTES)
+#define DEFAULT_BRP_BRANCH_LIMIT    (256 * ISA_MAX_INST_BYTES)
+#define DEFAULT_LONG_BRANCH_LIMIT   (2000000 * ISA_MAX_INST_BYTES)
 
 // Given a conditional branch with a <branch_taken_probability>
 // return TRUE if it would be beneficial to convert it to a brlikely.

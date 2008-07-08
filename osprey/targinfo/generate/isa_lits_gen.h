@@ -51,9 +51,10 @@
 //	list of LIT_RANGE parameters.
 //
 //  LIT_RANGE ISA_Create_Lit_Range(const char *name, 
-//				   long long min, long long max)
+//				   long long min, long long max, long scaling=0)
 //	Create a literal range named <name> (used for debugging/informational
 //	purposes only) with minimum value <min> and maximum value <max>.
+//      Last optional parameter is the scaling factor (0 is the default value).
 //
 //  LIT_RANGE SignedBitRange(unsigned int bit_size)
 //  LIT_RANGE UnsignedBitRange(unsigned int bit_size)
@@ -85,9 +86,20 @@
 extern "C" {
 #endif
 
+
+  /* 3 kinds of literal classes are available:
+     + UNSIGNED with max range from 0 to ULONGLONG_MAX
+     + SIGNED with max range from LONGLONG_MIN to LONGLONG_MAX
+     + NEGATIVE with max range from LONGLONG_MIN to 0
+
+     Note here that the choice for the NEGATIVE max range is based on
+     implementation simplification issue. We need to represent
+     NEGATIVE values by a C type (longlong).
+   */
 typedef enum {
   UNSIGNED,
-  SIGNED
+  SIGNED,
+  NEGATIVE
 } LIT_CLASS_TYPE;
 
 typedef struct lit_range *LIT_RANGE;

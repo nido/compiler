@@ -39,7 +39,7 @@
 #include "data_layout.h"
 #include "sections.h"
 #include "targ_sections.h"
-#include "targ_isa_bundle.h" // for ISA_INST_BYTES
+#include "targ_isa_bundle.h" // for ISA_MAX_INST_BYTES
 
 /* ====================================================================
  *    Corresponding_Short_Section

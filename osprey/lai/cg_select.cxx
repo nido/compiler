@@ -2308,9 +2308,8 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
     OP* cond_op = TN_ssa_def (cond_tn);
     TOP new_cmp = TOP_UNDEFINED;
 
-    if (cond_op && (new_cmp = CGTARG_Invert(OP_code(cond_op))) != TOP_UNDEFINED) {
-      OP* new_op = Dup_OP (cond_op);
-      OP_Change_Opcode(new_op, new_cmp);
+    if (cond_op ) {
+      OP* new_op = CGTARG_Negate_OP(cond_op);
       Set_OP_result(new_op, 0, tn2);
       OPS_Append_Op(ops, new_op);
     }
@@ -2824,7 +2823,7 @@ Negate_Cmp_BB (OP *br)
 
   if (cmp_op && (BB_id (OP_bb(br)) == BB_id (OP_bb (cmp_op))) &&
       (!GTN_SET_MemberP(BB_live_out(OP_bb (br)), btn)) && 
-      (new_op = CGTARG_Invert_OP(cmp_op)) != NULL) {
+      (new_op = CGTARG_Negate_OP(cmp_op)) != NULL) {
     Set_OP_result(new_op, 0, btn);
     OPS_Prepend_Op(&new_ops, new_op);
     BB_Replace_Op (cmp_op, &new_ops);
@@ -3665,7 +3664,7 @@ sPrint_TN (
       ST *var = TN_var(tn);
 
       buf += sprintf ( buf, "(sym" );
-      buf += sprintf ( buf, TN_RELOCS_Name(TN_relocs(tn)) );
+      buf += sprintf ( buf, "%s",TN_RELOCS_Name(TN_relocs(tn)) );
 
       if (ST_class(var) == CLASS_CONST)
       	buf += sprintf ( buf, ":%s)", Targ_Print(NULL, ST_tcon_val(var)));

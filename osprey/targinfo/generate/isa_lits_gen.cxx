@@ -97,25 +97,60 @@ static const char * const interface[] = {
   " *       that have multiple sub-ranges, ISA_LC_Max returns the largest",
   " *       maximum of all the sub-ranges.",
   " *",
+  " *   INT64 ISA_LC_Scaling_Value (ISA_LIT_CLASS lc, mUINT8 range )",
+  " *       Returns the scaling value for given range.",
+  " *",
+  " *   INT64 ISA_LC_Scaling_Mask (ISA_LIT_CLASS lc, mUINT8 range )",
+  " *       Returns the scaling mask for given range.",
+  " *",
   " *   BOOL ISA_LC_Is_Signed (ISA_LIT_CLASS lc)",
   " *       Returns whether the lit-class <lc> is signed.",
+  " *",
+  " *   BOOL ISA_LC_Is_Negative (ISA_LIT_CLASS lc)",
+  " *       Returns whether the lit-class <lc> is negative.",
   " *",
   " *   BOOL ISA_LC_Value_In_Class (INT64 val, ISA_LIT_CLASS lc)",
   " *       Returns whether <val> is a value that belongs to <lc>.",
   " *",
   " * ====================================================================",
+  " *",
+  " *   INT32 ISA_LC_Abstract_Value (INT64 val, ISA_LIT_CLASS lc)",
+  " *        Returns the so-called *abstract value* for the given",
+  " *        *concrete value* <val> and literal class <lc>.",
+  " *        The *abstract value* is the value used internally in the",
+  " *        compiler, the *concrete value* is the value used outside",
+  " *",
+  " *        The following example is limited to the case where",
+  " *        a scaling factor mechanism is available. In such a",
+  " *        case, the relation holds:",
+  " *              lc_abst = lc_concrete << scf",
+  " *              (lc_abst & mask) == 0",
+  " *        where <lc_abst> is the abstract value, <mask>",
+  " *        is the scaling mask and <&> is the conventional bitwise ",
+  " *        operator. ",
+  " *        For instance, we can assume that <lc_abst> is 0x8 , and",
+  " *        that the scaling factor is 0x3. The scaling <mask> is therefore",
+  " *        (0x1<<0x3)-1 = 0x7 and the relation (0x8 & 0x7)==0 is true. The",
+  " *        concrete value is 0x8>>3 or 0x1.",
+  " *",
+  " *",
   " * ====================================================================",
   " */",
   NULL
 };
 
-static FILE *hfile = NULL, *cfile = NULL, *efile = NULL;
+static FILE *hfile = NULL;
+static FILE *cfile = NULL;
+static FILE *sfile = NULL;
+static FILE *efile = NULL;
+
 static struct lit_range signed_range[65];
 static struct lit_range unsigned_range[65];
 static int max_ranges = 0;
 
 static char *hfilename     = NULL;
 static char *cfilename     = NULL;
+static char *sfilename     = NULL;
 static char *efilename     = NULL;
 
 // Whether we generate code for the core or for
@@ -160,12 +195,25 @@ void ISA_Lits_Begin (void)
   cfile     = Gen_Open_File_Handle(cfilename,"w");
 
   // Export file
-  if(gen_static_code) 
-   { efilename = Gen_Build_Filename(FNAME_TARG_ISA_LITS,
-                                    extname,
-                                    gen_util_file_type_efile);
-     efile     = Gen_Open_File_Handle(efilename,"w");
-   }
+  if(gen_static_code) {
+    efilename = Gen_Build_Filename(FNAME_TARG_ISA_LITS,
+				   extname,
+				   gen_util_file_type_efile);
+    efile     = Gen_Open_File_Handle(efilename,"w");
+  }
+  else {
+    const char *headers[] = {
+      "<stddef.h>",
+      "\"dyn_" FNAME_ISA_LITS ".h\"",
+      "",
+    };
+
+    sfilename = Gen_Build_Filename(FNAME_STUB_ISA_LITS,
+				   extname,
+				   gen_util_file_type_cfile);
+    sfile     = Gen_Open_File_Handle(sfilename,"w");
+    Emit_Stub_Header(sfile,headers);
+  }
 
   // C file generated when static code generation is done,
   // included in C ISA_LIT_info table when dynamic code
@@ -173,17 +221,17 @@ void ISA_Lits_Begin (void)
   cincfilename = Gen_Build_Filename(FNAME_TARG_ISA_LITS,
                                     NULL, /* Build at static code gen. time*/
                                     gen_util_file_type_c_i_file);
-  if(gen_static_code)
-   { cincfile  = Gen_Open_File_Handle(cincfilename,"w");
-
-     fprintf(cincfile,
-             "\n\n"
-             "/* This file has been create automatically\n"
-             " *  Do not modifiy it.\n"
-             " */\n\n"
-             "/* Including the static part of literal table.\n"
-             " */\n\n");
-   }
+  if(gen_static_code) {
+    cincfile  = Gen_Open_File_Handle(cincfilename,"w");
+    
+    fprintf(cincfile,
+	    "\n\n"
+	    "/* This file has been create automatically\n"
+	    " *  Do not modifiy it.\n"
+	    " */\n\n"
+	    "/* Including the static part of literal table.\n"
+	    " */\n\n");
+  }
 
   /* For dynamic extensions, we want to emit C and not C++     */
   if(!gen_static_code)      /* For a pure interface, start     */
@@ -209,8 +257,8 @@ void ISA_Lits_Begin (void)
 
   // UNDEFINED entry is reserved to static table
   if(gen_static_code)
-    { fprintf(cfile, "  { { { 0x0000000000000000ULL, 0x0000000000000000ULL, 0, 0 } }, 0, 0, \"ISA_LC_UNDEFINED\" },\n");
-      fprintf(cincfile,"  { { { 0x0000000000000000ULL, 0x0000000000000000ULL, 0, 0 } }, 0, 0, \"ISA_LC_UNDEFINED\" },\n");
+    { fprintf(cfile, "  { { { 0x0000000000000000ULL, 0x0000000000000000ULL, 0, 0 } }, 0, 0, 0, \"ISA_LC_UNDEFINED\" },\n");
+      fprintf(cincfile,"  { { { 0x0000000000000000ULL, 0x0000000000000000ULL, 0, 0 } }, 0, 0, 0, \"ISA_LC_UNDEFINED\" },\n");
     }
 
   // For dynamic code generation, we include in the
@@ -289,9 +337,26 @@ void ISA_Create_Lit_Class(const char* name, LIT_CLASS_TYPE type, ...)
 {
   va_list ap;
   LIT_RANGE range;
-  bool is_signed = type == SIGNED;
-  long long min = is_signed ? LONGLONG_MAX : ULONGLONG_MAX;
-  long long max = is_signed ? LONGLONG_MIN : 0;
+  bool is_signed = (type != UNSIGNED);
+  bool is_negative = (type == NEGATIVE);
+  long long min;
+  long long max;
+
+  switch(type) {
+  case SIGNED:
+    min = LONGLONG_MAX;
+    max = LONGLONG_MIN;
+    break;
+  case UNSIGNED:
+    min = ULONGLONG_MAX;
+    max = 0;
+    break;
+  case NEGATIVE:
+    min = 0;
+    max = LONGLONG_MIN;
+    break;
+  }
+    
   int num_ranges = 0;
   const char *string_template;
 
@@ -300,20 +365,38 @@ void ISA_Create_Lit_Class(const char* name, LIT_CLASS_TYPE type, ...)
   va_start(ap,type);
   while ((range = va_arg(ap,LIT_RANGE)) != LIT_RANGE_END) {
     ++num_ranges;
-    if (is_signed) {
+    switch(type) {
+    case SIGNED:
       if (range->min < min) min = range->min;
       if (range->max > max) max = range->max;
-    } else {
+      break;
+    case UNSIGNED:
       if ((unsigned long long)range->min < (unsigned long long)min) {
 	min = range->min;
       }
       if ((unsigned long long)range->max > (unsigned long long)max) {
 	max = range->max;
       }
+      break;
+    case NEGATIVE:
+      long long sw = range->min;
+      range->min = - range->max;
+      range->max = - sw;
+
+      if (range->min < max) {
+	min = range->min;
+      }
+      if (range->max > max) {
+	max = range->max;
+      }
+      break;
     }
   }
   va_end(ap);
   if (num_ranges > max_ranges) max_ranges = num_ranges;
+  assert (num_ranges <= 1 && 
+	  "LIT_CLASS with multiple ranges not yet supported"
+	  "(this will break extension compatibility).");
 
   if(gen_static_code)
    fprintf(hfile,"#define LC_%-17s %d\n",name,lc_count);
@@ -348,12 +431,12 @@ void ISA_Create_Lit_Class(const char* name, LIT_CLASS_TYPE type, ...)
   va_end(ap);
 
   string_template = gen_static_code ?
-                    " }, %d, %d, \"LC_%s\" },\n":
-                    " }, %d, %d, \"LC_dyn_%s\" },\n";
+                    " }, %d, %d, %d, \"LC_%s\" },\n":
+                    " }, %d, %d, %d, \"LC_dyn_%s\" },\n";
 
-  fprintf(cfile,string_template,num_ranges,is_signed,name);
+  fprintf(cfile,string_template,num_ranges,is_signed,is_negative,name);
   if(gen_static_code)
-    fprintf(cincfile,string_template,num_ranges,is_signed,name);
+    fprintf(cincfile,string_template,num_ranges,is_signed,is_negative,name);
 
   return;
 }
@@ -365,30 +448,33 @@ void ISA_Lits_End(void)
 //  See interface description.
 /////////////////////////////////////
 {
-  if(gen_static_code)
-   { fprintf(hfile,
-               "\n"
-               "BE_EXPORTED extern mUINT32 ISA_LC_MAX;\n\n"
-               "#define %-20s %d\n" 
-               "#define %-20s %d\n\n"
-               "typedef mUINT32 ISA_LIT_CLASS; /* used to be an enum */\n\n",
-               "ISA_LC_STATIC_MAX",lc_count-1,"ISA_LC_MAX_LIMIT",lc_max_limit);
-   }
+  if(gen_static_code) {
+    fprintf(hfile,
+	    "\n"
+	    "BE_EXPORTED extern mUINT32 ISA_LC_MAX;\n\n"
+	    "#define %-20s %d\n" 
+	    "#define %-20s %d\n\n"
+	    "typedef mUINT32 ISA_LIT_CLASS; /* used to be an enum */\n\n",
+	    "ISA_LC_STATIC_MAX",lc_count-1,"ISA_LC_MAX_LIMIT",lc_max_limit);
+  }
 
 
   fprintf(cfile, "};\n\n");
   if(gen_static_code)
     fprintf(cincfile,"\n\n");
 
-  if(gen_static_code)
-   { fprintf(cfile,
-      "BE_EXPORTED const ISA_LIT_CLASS_INFO * ISA_LIT_CLASS_info = ISA_LIT_CLASS_static_info;\n");
-   }
-  else
-   { const char *fct_name1= "dyn_get_ISA_LIT_CLASS_info_tab";
-     const char *fct_name2= "dyn_get_ISA_LIT_CLASS_info_tab_sz";
-     const char *fct_name3= "dyn_get_ISA_LIT_CLASS_static_max";
+  if(gen_static_code) {
+    fprintf(cfile,
+	    "BE_EXPORTED const ISA_LIT_CLASS_INFO * ISA_LIT_CLASS_info = ISA_LIT_CLASS_static_info;\n");
+  }
+  else {
+    const char *fct_name1= "dyn_get_ISA_LIT_CLASS_info_tab";
+    const char *fct_name2= "dyn_get_ISA_LIT_CLASS_info_tab_sz";
+    const char *fct_name3= "dyn_get_ISA_LIT_CLASS_static_max";
 
+    fprintf(sfile,
+	    "BE_EXPORTED const ISA_LIT_CLASS_INFO * ISA_LIT_CLASS_info = NULL;\n");
+    
      fprintf(cfile,
              "\n\n"
              "const ISA_LIT_CLASS_INFO* %s ( void )\n"
@@ -416,10 +502,14 @@ void ISA_Lits_End(void)
              fct_name1,fct_name2,fct_name3);
    }
 
-  if(gen_static_code)
-   { fprintf(cfile,"\n"
-             "BE_EXPORTED mUINT32 ISA_LC_MAX = ISA_LC_STATIC_MAX;\n");
-   }
+  if(gen_static_code) {
+    fprintf(cfile,"\n"
+	    "BE_EXPORTED mUINT32 ISA_LC_MAX = ISA_LC_STATIC_MAX;\n");
+  }
+  else {
+    fprintf(sfile,"\n"
+	    "BE_EXPORTED mUINT32 ISA_LC_MAX = 0;\n");
+  }
 
   if(gen_static_code) 
    { fprintf(hfile,"#define MAX_RANGE_STATIC %d\n",
@@ -429,6 +519,7 @@ void ISA_Lits_End(void)
              "struct { INT64 min; INT64 max; INT32 scaling_value; INT32 scaling_mask; } range[MAX_RANGE_STATIC];\n"
              "  mUINT8 num_ranges;\n"
              "  mBOOL is_signed;\n"
+             "  mBOOL is_negative;\n"
              "  const char *name;\n"
              "} ISA_LIT_CLASS_INFO;\n");
 
@@ -454,9 +545,29 @@ void ISA_Lits_End(void)
 		 "  return ISA_LIT_CLASS_info[lc].range[0].max;\n"
 		 "}\n");
 
+  fprintf(hfile, "\ninline INT64 ISA_LC_Scaling_Value (ISA_LIT_CLASS lc, mUINT8 range)\n"
+		 "{\n"
+		 "  return ISA_LIT_CLASS_info[lc].range[range].scaling_value;\n"
+		 "}\n");
+
+  fprintf(hfile, "\ninline INT64 ISA_LC_Scaling_Mask (ISA_LIT_CLASS lc, mUINT8 range)\n"
+		 "{\n"
+		 "  return ISA_LIT_CLASS_info[lc].range[range].scaling_mask;\n"
+		 "}\n");
+
+  fprintf(hfile, "\ninline mUINT8 ISA_LC_Ranges (ISA_LIT_CLASS lc)\n"
+		 "{\n"
+		 "  return ISA_LIT_CLASS_info[lc].num_ranges;\n"
+		 "}\n");
+
   fprintf(hfile, "\ninline BOOL ISA_LC_Is_Signed (ISA_LIT_CLASS lc)\n"
 		 "{\n"
 		 "  return ISA_LIT_CLASS_info[lc].is_signed;\n"
+		 "}\n");
+
+  fprintf(hfile, "\ninline BOOL ISA_LC_Is_Negative (ISA_LIT_CLASS lc)\n"
+		 "{\n"
+		 "  return ISA_LIT_CLASS_info[lc].is_negative;\n"
 		 "}\n");
 
   fprintf(hfile, "\ninline BOOL ISA_LC_Value_In_Class (INT64 val, ISA_LIT_CLASS lc)\n"
@@ -467,16 +578,64 @@ void ISA_Lits_End(void)
 		 "    INT64 min = plc->range[i].min;\n"
 		 "    INT64 max = plc->range[i].max;\n"
 	         "    if ( (val & plc->range[i].scaling_mask) != 0 ) { return FALSE; }\n"
-	         "    val = val >> plc->range[i].scaling_value;\n"
 		 "    if ( plc->is_signed ) {\n"
+	         "      val = val >> plc->range[i].scaling_value;\n"
 		 "      if (val >= min && val <= max) return TRUE;\n"
 		 "    } else {\n"
-		 "      if ((UINT64)val >= (UINT64)min && (UINT64)val <= (UINT64)max) return TRUE;\n"
+                 "      UINT64 valu = (UINT64)val;\n"
+                 "      valu >>= ((UINT64)(plc->range[i].scaling_value));\n"
+		 "      if (valu >= (UINT64)min && valu <= (UINT64)max) return TRUE;\n"
 		 "    }\n"
 		 "  }\n"
 		 "  return FALSE;\n"
 		 "}\n");
+
+  fprintf(hfile, "inline INT64 ISA_LC_Abstract_Value (INT64 val, ISA_LIT_CLASS lc)\n"
+                 "{\n"
+                 "  const ISA_LIT_CLASS_INFO *plc = ISA_LIT_CLASS_info + lc;\n"
+		 "  INT i;\n"
+                 "\n"
+		 "  for (i = 1; i <= plc->num_ranges; ++i) {\n"
+		 "    INT64 min = plc->range[i].min;\n"
+		 "    INT64 max = plc->range[i].max;\n"
+                 "\n"
+                 "    /* Managing scaling factor */\n"
+	         "    if(plc->range[i].scaling_value == 0)\n"
+                 "        continue;\n"
+                 "\n"
+                 "    /* Left shift is not sensitive to sign extension\n"
+                 "     * Thus, we can factorize both the signed and the unsigned cases.\n"
+                 "     */\n"
+                 "    if( (plc->is_signed && val>=min && val<= max) ||\n"
+                 "       ((UINT64)val>=(UINT64)min && (UINT64)val<=(UINT64)max)) {\n"
+                 "            return val <<=plc->range[i].scaling_value;\n"
+                 "        }\n"
+                 "\n"
+                 "  }    /* End for */\n"
+                 "\n"
+                 "    return val;            /* Default value */\n"
+                 "}\n\n");
+
   }                            // if (gen_static_code)
+
+
+  fprintf(hfile, "#ifdef DYNAMIC_CODE_GEN\n");
+  fprintf(hfile, "extern void ISA_LITS_Initialize_Stub(void);\n");
+  fprintf(hfile, "#endif\n");
+
+  if(!gen_static_code) {
+    fprintf(sfile,
+	    "/*\n"
+	    " * Exported routine.\n"
+	    " */\n"
+	    "void \n"
+	    "ISA_LITS_Initialize_Stub( void )\n"
+	    "{\n"
+	    "  ISA_LIT_CLASS_info = (ISA_LIT_CLASS_INFO*)dyn_get_ISA_LIT_CLASS_info_tab();\n"
+	    "  ISA_LC_MAX = dyn_get_ISA_LIT_CLASS_info_tab_sz();\n"
+	    "  return;\n"
+	    "}\n");
+  }
 
   Emit_Footer (hfile);
   if(!gen_static_code)
@@ -486,12 +645,14 @@ void ISA_Lits_End(void)
   Gen_Close_File_Handle(cfile,cfilename);
   Gen_Close_File_Handle(hfile,hfilename);
   if(efile)    Gen_Close_File_Handle(efile,efilename);
+  if(sfile)    Gen_Close_File_Handle(sfile,sfilename);
   if(cincfile) Gen_Close_File_Handle(cincfile,cincfilename);
 
   // Memory deallocation
   if(cfilename)    Gen_Free_Filename(cfilename);
   if(hfilename)    Gen_Free_Filename(hfilename);
   if(efilename)    Gen_Free_Filename(efilename);
+  if(sfilename)    Gen_Free_Filename(sfilename);
   if(cincfilename) Gen_Free_Filename(cincfilename);
 
   return;

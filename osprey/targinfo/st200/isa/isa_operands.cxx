@@ -55,17 +55,24 @@ main()
       ISA_Lit_Opnd_Type_Create("Opd_brknum", 
                                12, 
                                UNSIGNED, 
-                               LC_brknum); 
+                               LC_brknum,
+                               ISA_RELOC_UNDEFINED,
+                               ISA_RELOC_UNDEFINED);
   OPERAND_VALUE_TYPE Opd_btarg = 
       ISA_Lit_Opnd_Type_Create("Opd_btarg", 
                                23, 
                                PCREL, 
-                               LC_btarg); 
+                               LC_btarg,
+                               ISA_RELOC_R_ST200_23_PCREL,
+                               ISA_RELOC_R_ST200_23_PCREL,
+                               ISA_RELOC_UNDEFINED);
   OPERAND_VALUE_TYPE Opd_imm = 
       ISA_Lit_Opnd_Type_Create("Opd_imm", 
                                23, 
                                SIGNED, 
-                               LC_imm); 
+                               LC_imm,
+                               ISA_RELOC_UNDEFINED,
+                               ISA_RELOC_UNDEFINED);
   OPERAND_VALUE_TYPE Opd_integer = 
       ISA_Reg_Opnd_Type_Create("Opd_integer", 
                                ISA_REGISTER_CLASS_integer, 
@@ -75,7 +82,10 @@ main()
       ISA_Lit_Opnd_Type_Create("Opd_isrc2", 
                                9, 
                                SIGNED, 
-                               LC_isrc2); 
+                               LC_isrc2,
+                               ISA_RELOC_R_ST200_LO9,
+                               ISA_RELOC_R_ST200_LO9,
+                               ISA_RELOC_UNDEFINED);
   OPERAND_VALUE_TYPE Opd_link = 
       ISA_Reg_Opnd_Type_Create("Opd_link", 
                                ISA_REGISTER_CLASS_integer, 
@@ -125,12 +135,24 @@ main()
       ISA_Lit_Opnd_Type_Create("Opd_sbrknum", 
                                21, 
                                UNSIGNED, 
-                               LC_sbrknum); 
+                               LC_sbrknum,
+                               ISA_RELOC_UNDEFINED,
+                               ISA_RELOC_UNDEFINED);
   OPERAND_VALUE_TYPE Opd_xsrc2 = 
       ISA_Lit_Opnd_Type_Create("Opd_xsrc2", 
                                32, 
                                PCREL, 
-                               LC_xsrc2); 
+                               LC_xsrc2,
+                               ISA_RELOC_R_ST200_HI23,
+                               ISA_RELOC_R_ST200_LO9,
+                               ISA_RELOC_R_ST200_HI23,
+                               ISA_RELOC_R_ST200_GPREL_LO9,
+                               ISA_RELOC_R_ST200_GPREL_HI23,
+                               ISA_RELOC_R_ST200_GOTOFF_LO9,
+                               ISA_RELOC_R_ST200_GOTOFF_HI23,
+                               ISA_RELOC_R_ST200_NEGGPREL_LO9,
+                               ISA_RELOC_R_ST200_NEGGPREL_HI23,
+                               ISA_RELOC_UNDEFINED);
   /* Create the operand uses: */ 
 
   /* ------------------------------------------------------

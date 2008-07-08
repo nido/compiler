@@ -1,6 +1,1989 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jul  8 17:32:44 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+
+Description:
+------------
+	* [trunk] Deliver janiny/dev-air2 rev #17462 with authorization branch #
+
+
+Modified Files:
+---------------
+	M      osprey/configure
+	M      osprey/Makefile.gsetup
+	M      osprey/be/cg/cgemit.cxx
+	M      osprey/be/com/data_layout.cxx
+	M      osprey/targinfo_ext/stxp70_ext/vx/proc/vx_si.cxx
+	M      osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_registers.cxx
+	M      osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_operands.cxx
+	A  +   osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_pack.cxx
+	A  +   osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_syntax.cxx
+	A  +   osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_relocs.cxx
+	D      osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_print.cxx
+	M      osprey/targinfo_ext/template/Makefile.gbase.ext
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/phases.c
+	M      osprey/driver/objects.c
+	M      osprey/driver/special_options.c
+	M      osprey/driver/Makefile.gbase
+	M      osprey/driver/config_platform.h
+	M      osprey/driver/lang_defs.c
+	M      osprey/driver/main.c
+	M      osprey/driver/stxp70_options.i
+	M      osprey/driver/lang_defs.h
+	A  +   osprey/libair
+	A  +   osprey/libair/air
+	A  +   osprey/libair/air/air_hash.c
+	A  +   osprey/libair/air/air_services.c
+	A  +   osprey/libair/air/air.h
+	A  +   osprey/libair/air/air_disasm.h
+	A  +   osprey/libair/air/air_stxp70.c
+	A  +   osprey/libair/air/air_utils.h
+	A  +   osprey/libair/air/air_hash.h
+	A  +   osprey/libair/air/air_services.h
+	A  +   osprey/libair/air/air.c
+	A  +   osprey/libair/air/air_disasm.c
+	A  +   osprey/libair/air/air_utils.c
+	A  +   osprey/libair/air/Makefile.gbase
+	A  +   osprey/libair/air/targ_air.h
+	A  +   osprey/libair/README
+	M      osprey/lai/cg_ssa.cxx
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/cgdwarf.cxx
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/tn.h
+	M      osprey/lai/bbutil.cxx
+	M      osprey/lai/igls.cxx
+	M      osprey/lai/gcm.cxx
+	M      osprey/lai/bb.h
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/top_properties.cxx
+	M      osprey/lai/calls.cxx
+	M      osprey/lai/top_properties.h
+	M      osprey/lai/cg_loop_recur.cxx
+	M      osprey/lai/calls.h
+	M      osprey/lai/cg_select.cxx
+	M      osprey/lai/freq.cxx
+	M      osprey/lai/tnutil.cxx
+	M      osprey/lai/cg_ssaopt.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cgemit.h
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/hb_hazards.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/cg_automod.cxx
+	M      osprey/lai/cgdwarf_debug_frame.cxx
+	M      osprey/lai/hb_sched.cxx
+	M      osprey/lai/op.h
+	M      osprey/lai/variants.h
+	M      osprey/lai/cgtarget.h
+	M      osprey/lai/range_prop.cxx
+	M      osprey/lai/range_analysis.cxx
+	M      osprey/lai/oputil.cxx
+	M      osprey/INSTALL
+	A  +   osprey/make/sitedefs/crolles
+	A  +   osprey/make/sitedefs/crolles/Makefile.sitedefs
+	M      osprey/make/template/Makefile.in
+	M      osprey/include/libdwarf.h
+	D      osprey/common/rcparser/utils_dll.h
+	D      osprey/common/rcparser/utils_hostdefs.h
+	D      osprey/common/rcparser/utils_debug.c
+	D      osprey/common/rcparser/utils_debug.h
+	D      osprey/common/rcparser/utils_string_buffer.h
+	D      osprey/common/rcparser/libUtils.c
+	D      osprey/common/rcparser/utils_option.c
+	D      osprey/common/rcparser/utils_memory.c
+	D      osprey/common/rcparser/utils_messages.h
+	D      osprey/common/rcparser/libUtils.h
+	D      osprey/common/rcparser/utils_memory.h
+	D      osprey/common/rcparser/libUtilsVersion.c
+	D      osprey/common/rcparser/utils_option.h
+	D      osprey/common/rcparser/libUtilsVersion.h
+	D      osprey/common/rcparser/libUtilsOptions.c
+	D      osprey/common/rcparser/libUtilsOptions.h
+	D      osprey/common/rcparser/utils_filesystem.h
+	M      osprey/common/rcparser/Makefile.gbase
+	D      osprey/common/rcparser/utils_print.c
+	D      osprey/common/rcparser/utils_path.h
+	D      osprey/common/rcparser/utils_print.h
+	D      osprey/common/rcparser/utils_version_id.c
+	D      osprey/common/rcparser/utils_version_id.h
+	D      osprey/common/rcparser/utils_string.c
+	D      osprey/common/rcparser/utils_types.h
+	D      osprey/common/rcparser/utils_string.h
+	D      osprey/common/rcparser/utils_copyright.h
+	A  +   osprey/common/rtkutils
+	A  +   osprey/common/rtkutils/utils_dll.h
+	A  +   osprey/common/rtkutils/libUtilsVersion.h
+	A  +   osprey/common/rtkutils/libUtilsOptions.c
+	A  +   osprey/common/rtkutils/utils_hostdefs.h
+	A  +   osprey/common/rtkutils/utils_debug.c
+	A  +   osprey/common/rtkutils/libUtilsOptions.h
+	A  +   osprey/common/rtkutils/utils_filesystem.h
+	A  +   osprey/common/rtkutils/utils_debug.h
+	A  +   osprey/common/rtkutils/Makefile.gbase
+	A  +   osprey/common/rtkutils/utils_print.c
+	A  +   osprey/common/rtkutils/utils_path.h
+	A  +   osprey/common/rtkutils/utils_print.h
+	A  +   osprey/common/rtkutils/utils_version_id.c
+	A  +   osprey/common/rtkutils/utils_string_buffer.h
+	A  +   osprey/common/rtkutils/utils_string.c
+	A  +   osprey/common/rtkutils/utils_version_id.h
+	A  +   osprey/common/rtkutils/libUtils.c
+	A  +   osprey/common/rtkutils/utils_memory.c
+	A  +   osprey/common/rtkutils/utils_option.c
+	A  +   osprey/common/rtkutils/utils_types.h
+	A  +   osprey/common/rtkutils/utils_string.h
+	A  +   osprey/common/rtkutils/utils_messages.h
+	A  +   osprey/common/rtkutils/libUtils.h
+	A  +   osprey/common/rtkutils/utils_memory.h
+	A  +   osprey/common/rtkutils/utils_copyright.h
+	A  +   osprey/common/rtkutils/libUtilsVersion.c
+	A  +   osprey/common/rtkutils/utils_option.h
+	M      osprey/common/com/dyn_isa_api.h
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/dyn_isa_api_access.h
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/em_dwarf.h
+	M      osprey/common/com/dyn_isa_api_access.cxx
+	M      osprey/common/com/lai_loader_api.h
+	M      osprey/common/com/em_dwarf.cxx
+	M      osprey/libdwarf/pro_line.c
+	M      osprey/libdwarf/pro_line.h
+	M      osprey/libdwarf/pro_init.c
+	M      osprey/libdwarf/pro_section.c
+	M      osprey/libdwarf/pro_opaque.h
+	M      osprey/libdwarf/pro_reloc_symbolic.c
+	A  +   osprey/parser
+	A  +   osprey/parser/parser_main.c
+	A  +   osprey/parser/Makefile.gbase
+	M      osprey/targinfo/access/ti_bundle.c
+	M      osprey/targinfo/access/ti_bundle.h
+	M      osprey/targinfo/access/ti_asm.c
+	A  +   osprey/targinfo/access/ti_hash.c
+	M      osprey/targinfo/access/ti_asm.h
+	A  +   osprey/targinfo/access/ti_hash.h
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.h
+	M      osprey/targinfo/stxp70/expand/exp_divrem.cxx
+	M      osprey/targinfo/stxp70/expand/exp_memrf.cxx
+	M      osprey/targinfo/stxp70/expand/exp_pred.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.cxx
+	M      osprey/targinfo/stxp70/expand/exp_branch.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+	A  +   osprey/targinfo/stxp70/test
+	A  +   osprey/targinfo/stxp70/test/patterns.txt
+	M      osprey/targinfo/stxp70/proc/proc_properties.cxx
+	D      osprey/targinfo/stxp70/proc/stxp70_ext_si.cxx
+	D      osprey/targinfo/stxp70/proc/stxp70_si.cxx
+	M      osprey/targinfo/stxp70/proc/proc.cxx
+	A  +   osprey/targinfo/stxp70/proc/stxp70_v3_ext_si.cxx
+	A  +   osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx
+	A  +   osprey/targinfo/stxp70/proc/stxp70_v4_si.cxx
+	M      osprey/targinfo/stxp70/config/gen_intrinsics.inc
+	M      osprey/targinfo/stxp70/config/config_asm.h
+	M      osprey/targinfo/stxp70/config/config_target.h
+	M      osprey/targinfo/stxp70/config/config_cache_targ.cxx
+	M      osprey/targinfo/stxp70/config/targ_sim.cxx
+	M      osprey/targinfo/stxp70/config/config_elf_targ.cxx
+	M      osprey/targinfo/stxp70/config/targ_elf.h
+	M      osprey/targinfo/stxp70/config/targ_register_common.cxx
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+	M      osprey/targinfo/stxp70/be/targ_sections.cxx
+	M      osprey/targinfo/stxp70/be/driver_targ.cxx
+	M      osprey/targinfo/stxp70/be/betarget.cxx
+	M      osprey/targinfo/stxp70/cg/cgdwarf_targ.h
+	M      osprey/targinfo/stxp70/cg/targ_pqs.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_tn.h
+	M      osprey/targinfo/stxp70/cg/targ_cgemit.cxx
+	M      osprey/targinfo/stxp70/cg/targ_loop_recur.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.h
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/stxp70/cg/targ_select.cxx
+	M      osprey/targinfo/stxp70/cg/targ_grouping.h
+	M      osprey/targinfo/stxp70/cg/targ_tn.cxx
+	A  +   osprey/targinfo/stxp70/cg/targ_pqs.h
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+	M      osprey/targinfo/stxp70/cg/targ_calls.cxx
+	M      osprey/targinfo/stxp70/intrn/x3.h
+	M      osprey/targinfo/stxp70/intrn/builtins_x3.h
+	M      osprey/targinfo/stxp70/intrn/intrn_test.cxx
+	M      osprey/targinfo/stxp70/intrn/builtins_model_x3.c
+	M      osprey/targinfo/stxp70/intrn/builtins_model_x3.h
+	M      osprey/targinfo/stxp70/abi/abi_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_decode.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_relocs.cxx
+	M      osprey/targinfo/stxp70/isa/isa_variants.cxx
+	M      osprey/targinfo/stxp70/isa/isa_enums.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	D      osprey/targinfo/stxp70/isa/isa_print.cxx
+	M      osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M      osprey/targinfo/stxp70/isa/isa_registers.cxx
+	M      osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_lits.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/stxp70/isa/isa.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      osprey/targinfo/stxp70/emit/targ_em_dwarf.cxx
+	M      osprey/targinfo/st100/be/targ_sections.cxx
+	M      osprey/targinfo/st100/cg/targ_cg.h
+	M      osprey/targinfo/st200/expand/exp_divrem.cxx
+	M      osprey/targinfo/st200/expand/exp_targ.cxx
+	A  +   osprey/targinfo/st200/test
+	A  +   osprey/targinfo/st200/test/patterns.txt
+	M      osprey/targinfo/st200/proc/st220_si.cxx
+	M      osprey/targinfo/st200/proc/st231_si.cxx
+	M      osprey/targinfo/st200/proc/st240_si.cxx
+	M      osprey/targinfo/st200/config/config_asm.h
+	M      osprey/targinfo/st200/be/targ_sections.cxx
+	M      osprey/targinfo/st200/cg/cgdwarf_targ.h
+	M      osprey/targinfo/st200/cg/targ_pqs.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+	M      osprey/targinfo/st200/cg/targ_tn.h
+	M      osprey/targinfo/st200/cg/targ_cgdwarf.cxx
+	M      osprey/targinfo/st200/cg/targ_op.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.h
+	M      osprey/targinfo/st200/cg/targ_grouping.h
+	M      osprey/targinfo/st200/cg/targ_tn.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_range_prop.cxx
+	M      osprey/targinfo/st200/cg/targ_calls.cxx
+	M      osprey/targinfo/st200/isa/isa_decode.cxx
+	A  +   osprey/targinfo/st200/isa/isa_syntax.cxx
+	A  +   osprey/targinfo/st200/isa/isa_relocs.cxx
+	M      osprey/targinfo/st200/isa/isa_properties.cxx
+	D      osprey/targinfo/st200/isa/isa_print.cxx
+	M      osprey/targinfo/st200/isa/isa_bundle.cxx
+	M      osprey/targinfo/st200/isa/isa_operands.cxx
+	M      osprey/targinfo/st200/isa/isa_lits.cxx
+	M      osprey/targinfo/st200/isa/isa_pack.cxx
+	A  +   osprey/targinfo/st200/isa/isa_selector.cxx
+	M      osprey/targinfo/generate/isa_bundle_gen.h
+	M      osprey/targinfo/generate/isa_operands_gen.h
+	M      osprey/targinfo/generate/isa_lits_gen.h
+	M      osprey/targinfo/generate/isa_pack_gen.h
+	M      osprey/targinfo/generate/isa_subset_gen.cxx
+	A  +   osprey/targinfo/generate/isa_selector_gen.h
+	M      osprey/targinfo/generate/gen_util.h
+	M      osprey/targinfo/generate/isa_registers_gen.cxx
+	M      osprey/targinfo/generate/abi_properties_gen.cxx
+	M      osprey/targinfo/generate/isa_enums_gen.h
+	M      osprey/targinfo/generate/si_gen.cxx
+	A  +   osprey/targinfo/generate/isa_syntax_gen.cxx
+	A  +   osprey/targinfo/generate/isa_relocs_gen.cxx
+	M      osprey/targinfo/generate/isa_print_gen.cxx
+	M      osprey/targinfo/generate/isa_properties_gen.cxx
+	A  +   osprey/targinfo/generate/dyn/dyn_isa_relocs.h
+	D      osprey/targinfo/generate/dyn/dyn_stub3.h
+	M      osprey/targinfo/generate/dyn/dyn_isa_api.c
+	D      osprey/targinfo/generate/dyn/dyn_stub1.cxx
+	D      osprey/targinfo/generate/dyn/dyn_stub2.cxx
+	A  +   osprey/targinfo/generate/dyn/dyn_isa_pack.h
+	D      osprey/targinfo/generate/dyn/dyn_stub3.cxx
+	M      osprey/targinfo/generate/isa_bundle_gen.cxx
+	M      osprey/targinfo/generate/isa_operands_gen.cxx
+	M      osprey/targinfo/generate/isa_lits_gen.cxx
+	A  +   osprey/targinfo/generate/isa_syntax_gen.h
+	A  +   osprey/targinfo/generate/isa_relocs_gen.h
+	M      osprey/targinfo/generate/isa_pack_gen.cxx
+	M      osprey/targinfo/generate/isa_gen.cxx
+	A  +   osprey/targinfo/generate/isa_selector_gen.cxx
+	M      osprey/targinfo/generate/gen_util.cxx
+	M      osprey/targinfo/generate/isa_decode_gen.cxx
+	M      osprey/targinfo/generate/proc_properties_gen.cxx
+	M      osprey/targinfo/generate/isa_enums_gen.cxx
+	A  +   osprey/targinfo/parser
+	A  +   osprey/targinfo/parser/gensyn
+	A  +   osprey/targinfo/parser/gensyn/build
+	A  +   osprey/targinfo/parser/gensyn/build/LINUX
+	A  +   osprey/targinfo/parser/gensyn/build/Makefile
+	A  +   osprey/targinfo/parser/gensyn/include
+	A  +   osprey/targinfo/parser/gensyn/include/gensyn_option.h
+	A  +   osprey/targinfo/parser/gensyn/include/lname.h
+	A  +   osprey/targinfo/parser/gensyn/include/action0.h
+	A  +   osprey/targinfo/parser/gensyn/include/strind.h
+	A  +   osprey/targinfo/parser/gensyn/include/gensyn_defs.h
+	A  +   osprey/targinfo/parser/gensyn/include/gencode.h
+	A  +   osprey/targinfo/parser/gensyn/include/unilex.h
+	A  +   osprey/targinfo/parser/gensyn/include/astype.h
+	A  +   osprey/targinfo/parser/gensyn/include/cstexp.h
+	A  +   osprey/targinfo/parser/gensyn/include/gensyn_version.h
+	A  +   osprey/targinfo/parser/gensyn/include/arbsem.h
+	A  +   osprey/targinfo/parser/gensyn/include/elf-x.h
+	A  +   osprey/targinfo/parser/gensyn/include/gensyn_error.h
+	A  +   osprey/targinfo/parser/gensyn/include/groups.h
+	A  +   osprey/targinfo/parser/gensyn/include/encinfo.h
+	A  +   osprey/targinfo/parser/gensyn/include/avl.h
+	A  +   osprey/targinfo/parser/gensyn/include/table.h
+	A  +   osprey/targinfo/parser/gensyn/include/format.h
+	A  +   osprey/targinfo/parser/gensyn/doc
+	A  +   osprey/targinfo/parser/gensyn/doc/GenSyn.cfg
+	A  +   osprey/targinfo/parser/gensyn/doc/Makefile
+	A  +   osprey/targinfo/parser/gensyn/doc/GenSynErrors.txt
+	A  +   osprey/targinfo/parser/gensyn/src
+	A  +   osprey/targinfo/parser/gensyn/src/groups.c
+	A  +   osprey/targinfo/parser/gensyn/src/encinfo.c
+	A  +   osprey/targinfo/parser/gensyn/src/avl.c
+	A  +   osprey/targinfo/parser/gensyn/src/table.c
+	A  +   osprey/targinfo/parser/gensyn/src/analex0.c
+	A  +   osprey/targinfo/parser/gensyn/src/format.c
+	A  +   osprey/targinfo/parser/gensyn/src/gensyn_version.c
+	A  +   osprey/targinfo/parser/gensyn/src/arbsem.c
+	A  +   osprey/targinfo/parser/gensyn/src/gensyn_option.c
+	A  +   osprey/targinfo/parser/gensyn/src/gensyn_error.c
+	A  +   osprey/targinfo/parser/gensyn/src/lname.c
+	A  +   osprey/targinfo/parser/gensyn/src/action0.c
+	A  +   osprey/targinfo/parser/gensyn/src/anasynt0.c
+	A  +   osprey/targinfo/parser/gensyn/bin
+	A  +   osprey/targinfo/parser/gensyn/Makefile.gbase
+	A  +   osprey/targinfo/parser/src
+	A  +   osprey/targinfo/parser/src/ctxstck.c
+	A  +   osprey/targinfo/parser/src/globals.c
+	A  +   osprey/targinfo/parser/src/analyzer.c
+	A  +   osprey/targinfo/parser/src/astype.c
+	A  +   osprey/targinfo/parser/src/ext_engine.c
+	A  +   osprey/targinfo/parser/src/opndstck.c
+	A  +   osprey/targinfo/parser/src/alloc.c
+	A  +   osprey/targinfo/parser/src/ext_dll.c
+	A  +   osprey/targinfo/parser/src/parser.c
+	A  +   osprey/targinfo/parser/inc
+	A  +   osprey/targinfo/parser/inc/alloc.h
+	A  +   osprey/targinfo/parser/inc/Dll.h
+	A  +   osprey/targinfo/parser/inc/parser.h
+	A  +   osprey/targinfo/parser/inc/type_defs.h
+	A  +   osprey/targinfo/parser/inc/ctxstck.h
+	A  +   osprey/targinfo/parser/inc/globals.h
+	A  +   osprey/targinfo/parser/inc/analyzer.h
+	A  +   osprey/targinfo/parser/inc/astype.h
+	A  +   osprey/targinfo/parser/inc/ext_engine.h
+	A  +   osprey/targinfo/parser/inc/opndstck.h
+	A  +   osprey/targinfo/parser/Makefile.gbase
+	M      osprey/targinfo/Makefile.gbase
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu Jul  3 12:53:40 CEST 2008
+	Author:    giraudoa
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/stxp70/main
+
+Description:
+------------
+	* hot fix: incorrect argument given to fprintf: bitfields (pointer) VS nb_bitfields (int)
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/generate/isa_relocs_gen.cxx
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu Jun 19 14:48:20 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-air2-debuginfo
+
+Description:
+------------
+	* [janiny/dev-air2] Deliver tt2/dev-air2-debuginfo rev #17287 with authorization branch #44375
+	  --> Updated generation of debug information to be compatible with xp70 v4 architecture.
+	      The main changes is the support of symbolic offsets in .debug_line and .debug_arange sections.
+
+Modified Files:
+---------------
+	M      osprey/driver/opt_actions.c
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/cgdwarf.cxx
+	M      osprey/lai/cgemit.h
+	M      osprey/include/libdwarf.h
+	M      osprey/common/com/em_dwarf.h
+	M      osprey/common/com/em_dwarf.cxx
+	M      osprey/libdwarf/pro_line.c
+	M      osprey/libdwarf/pro_line.h
+	M      osprey/libdwarf/pro_init.c
+	M      osprey/libdwarf/pro_section.c
+	M      osprey/libdwarf/pro_opaque.h
+	M      osprey/libdwarf/pro_reloc_symbolic.c
+	M      osprey/targinfo/stxp70/config/config_asm.h
+	M      osprey/targinfo/stxp70/config/targ_register_common.cxx
+	M      osprey/targinfo/stxp70/cg/cgdwarf_targ.h
+	M      osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+	M      osprey/targinfo/st200/config/config_asm.h
+	M      osprey/targinfo/st200/cg/cgdwarf_targ.h
+	M      osprey/targinfo/st200/cg/targ_cgdwarf.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu Jun 19 14:12:33 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/chauveth/dev-mcore
+
+Description:
+------------
+	* [janiny/dev-air2] Deliver chauveth/dev-mcore rev #17280 with authorization branch #
+
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/phases.c
+	M      osprey/driver/objects.c
+	M      osprey/driver/special_options.c
+	M      osprey/driver/lang_defs.c
+	M      osprey/driver/stxp70_options.i
+	M      osprey/libair/air/air_services.c
+	M      osprey/libair/air/air_disasm.h
+	M      osprey/libair/air/air_services.h
+	M      osprey/libair/air/air_disasm.c
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed Jun 18 13:28:01 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-air2-madmds-updates
+
+Description:
+------------
+	*  deliver under authorisation #41766
+ 3 dev in this branch:
+  + mad update for XjSFR2R instruction (encoding fix).
+  + mad update: complete the programming rule that forces single GMI per bundle (added missing instruction lgs, moveg2r, jrgtudec, jagtudec as GMI instructions).
+  + mds update: update isa_reloc for gp48_make32.
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_si.cxx
+	M      osprey/targinfo/stxp70/isa/isa_relocs.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon Jun 16 15:21:13 CEST 2008
+	Author:    villette
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/villette/dev-subsets
+
+Description:
+------------
+	*  [janiny/dev-air2] Deliver of villette/dev-subsets rev #17226 with authorization branch #44517, to split stxp70 v4 core and X3 extensions.
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/test/patterns.txt
+	M      osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_si.cxx
+	M      osprey/targinfo/stxp70/be/driver_targ.cxx
+	M      osprey/targinfo/stxp70/isa/isa_decode.cxx
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M      osprey/targinfo/stxp70/isa/isa_registers.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      osprey/targinfo/Makefile.gbase
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon Jun  9 12:34:19 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-45211
+
+Description:
+------------
+	* [janiny/dev-air2] Fix for bug #45211: [v4] Illegal instruction order in bundles.
+	Deliver fixes/codex-45211 rev #17133 with authorization branch #45228
+
+       also fixes bug #45206
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/cgtarget.h
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Tue Jun  3 16:09:05 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mds-update
+
+Description:
+------------
+	* [janiny/dev-air2] Deliver cv17/dev-mds-update rev #17079 with authorization branch #44204
+	  + single GMI instruction per bundle on v4
+	  + ugraded hwloop rules for bundling
+	  + v3/v4 merge issues (ITCR, ..)
+	  + Update Bundle Template naming to match mad naming.
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_si.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+	M      osprey/targinfo/stxp70/abi/abi_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_registers.cxx
+	M      osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/emit/targ_em_dwarf.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Tue Jun  3 09:29:12 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-air2-x3-v3
+
+Description:
+------------
+	* [janiny/dev-air2] Deliver dt25/dev-air2-x3-v3 rev #17033 with authorization branch #44622
+
+
+Modified Files:
+---------------
+	M      osprey/driver/opt_actions.c
+	M      osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx
+	M      osprey/targinfo/stxp70/isa/isa_decode.cxx
+	M      osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Fri May 30 10:27:14 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-air2-debuginfo
+
+Description:
+------------
+	* [janiny/dev-air2] Deliver tt2/dev-air2-debuginfo rev #17018 with authorization branch #44375
+	  -> Several fixes to restore debug info generation on stxp70 v3 (v4 support to be done later).
+	     Main changes are:
+	     - Driver: enable back generation of debug info [OPTIONS], and add a temporary hack to disable it for v4[opt_actions.c]
+	     - Use Unit_Slot information instead of Inst_Words to compute PC advance [cgemit.cxx, cgdwarf_debug_frame.cxx]
+	     - Fix incorrect frame offset computation when automod instructions are used [targ_cgdwarf.cxx]
+	     - Insure stxp70_v4_itcr register class is ignored for debug information [targ_entry_exit.cxx, targ_em_dwarf.cxx] (Note: tempo patch that will potentially disappeared if itcr and stxp70_v4_itcr are merged)
+	     - Insure base debug id offset is generated for lc register class [abi_properties.cxx]
+	     - Tempo fix to insure that ISA_MAX_INST_BYTES is equal to 4 on v3 architecture [isa_bundle_gen.cxx] (Note: this fix will be reworked later on when implementing debug info support for v4)
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/opt_actions.c
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/cgdwarf_debug_frame.cxx
+	M      osprey/lai/op.h
+	M      osprey/lai/oputil.cxx
+	M      osprey/common/com/dyn_isa_api_access.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+	M      osprey/targinfo/stxp70/abi/abi_properties.cxx
+	M      osprey/targinfo/stxp70/emit/targ_em_dwarf.cxx
+	M      osprey/targinfo/generate/isa_bundle_gen.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon May 26 10:35:16 CEST 2008
+	Author:    villette
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/villette/dev-coding
+
+Description:
+------------
+	* [janiny/dev-air2] Deliver of villette/dev-coding rev #16902 with authorization branch #40497, to support variable instruction and bundle coding on xp70 V4.
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/data_layout.cxx
+	A  +   osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_pack.cxx
+	M      osprey/targinfo_ext/template/Makefile.gbase.ext
+	M      osprey/libair/air/air_services.c
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/cgdwarf.cxx
+	M      osprey/lai/gcm.cxx
+	M      osprey/lai/hb_hazards.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/hb_sched.cxx
+	M      osprey/common/com/dyn_isa_api.h
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/dyn_isa_api_access.h
+	M      osprey/common/com/dyn_isa_api_access.cxx
+	M      osprey/targinfo/access/ti_bundle.c
+	M      osprey/targinfo/access/ti_bundle.h
+	M      osprey/targinfo/access/ti_asm.c
+	M      osprey/targinfo/access/ti_asm.h
+	M      osprey/targinfo/stxp70/be/targ_sections.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.h
+	M      osprey/targinfo/stxp70/cg/targ_grouping.h
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/st100/be/targ_sections.cxx
+	M      osprey/targinfo/st100/cg/targ_cg.h
+	M      osprey/targinfo/st200/be/targ_sections.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.h
+	M      osprey/targinfo/st200/cg/targ_grouping.h
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/isa/isa_bundle.cxx
+	M      osprey/targinfo/st200/isa/isa_pack.cxx
+	M      osprey/targinfo/generate/isa_bundle_gen.h
+	M      osprey/targinfo/generate/isa_pack_gen.h
+	M      osprey/targinfo/generate/isa_syntax_gen.cxx
+	M      osprey/targinfo/generate/isa_properties_gen.cxx
+	M      osprey/targinfo/generate/dyn/dyn_isa_api.c
+	A  +   osprey/targinfo/generate/dyn/dyn_isa_pack.h
+	M      osprey/targinfo/generate/isa_bundle_gen.cxx
+	M      osprey/targinfo/generate/isa_pack_gen.cxx
+	M      osprey/targinfo/Makefile.gbase
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed May 21 08:12:13 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mds-update
+
+Description:
+------------
+	*  mad synchronisation
+	*  mds minor fixes (switch upcase to lowcase in assembly emission)
+	*  fix for bug #44349 (guard spill on v4)
+ 	*  fix for action #44301 (some bundles are lost by the
+	   mds->targinfo bridge)
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/test/patterns.txt
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_variants.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M      osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      osprey/targinfo/stxp70/isa/isa.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed May  7 14:18:07 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-air2-debuginfo
+
+Description:
+------------
+	* [janiny/dev-air2] Deliver dt25/dev-air2-debuginfo rev #16779 with authorization branch #43655
+
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+	M      osprey/lai/cgemit.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed May  7 13:00:37 CEST 2008
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/chauveth/dev-driver-air2
+
+Description:
+------------
+	* [janiny/dev-air2] driver updates for v3/v4 compiler and tools. Authorized by artifact #43117
+
+
+Modified Files:
+---------------
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/phases.c
+	M      osprey/driver/lang_defs.c
+	M      osprey/libair/air/air_stxp70.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Tue Apr 29 16:53:51 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-air2-tuning
+
+Description:
+------------
+ misc code cleaning and minor updates:
+  + suppress some targ-sp70 ifdefs
+  + add a a switch of @(Rn-0) to @(Rn+0) in a late pass (just before asm emission).
+  + rewrote expand_load/store to use the new top_opnd_immediate_variant() api.
+  + add use of mover2g and moreg2r on v4 for guard spill.
+  + synchronize with new mad (shlnu fix, ...).
+  + re-introduce function CheckSingleInstructionHwloop() which was lost in trunk rebase.
+
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/cgtarget.h
+	M      osprey/targinfo/stxp70/expand/exp_memrf.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+	M      osprey/targinfo/stxp70/test/patterns.txt
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_si.cxx
+	M      osprey/targinfo/stxp70/config/gen_intrinsics.inc
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/isa/isa_decode.cxx
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Fri Apr 25 14:01:35 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-air2-mds-updates
+
+Description:
+------------
+	*  mad synchro plus add unsign property to unsigned comparisons
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/test/patterns.txt
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Fri Apr 25 09:23:32 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-air2-perf-improve
+
+Description:
+------------
+	* [janiny/dev-air2] Deliver dt25/dev-air2-perf-improve rev #16606 with authorization branch #42875
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/bbutil.cxx
+	M      osprey/lai/bb.h
+	M      osprey/lai/cg_automod.cxx
+	M      osprey/lai/op.h
+	M      osprey/lai/oputil.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu Apr 10 08:50:32 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-air2-remove-extra-store-tops
+
+Description:
+------------
+	*   remove unavailable store Rn+Rp
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/expand/exp_memrf.cxx
+	M      osprey/targinfo/stxp70/test/patterns.txt
+	M      osprey/targinfo/stxp70/proc/stxp70_v3_ext_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_si.cxx
+	M      osprey/targinfo/stxp70/config/gen_intrinsics.inc
+	M      osprey/targinfo/stxp70/cg/targ_cgemit.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+	M      osprey/targinfo/stxp70/cg/targ_select.cxx
+	M      osprey/targinfo/stxp70/isa/isa_decode.cxx
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_variants.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M      osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      osprey/targinfo/stxp70/isa/isa.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed Apr  9 11:26:16 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-41280
+
+Description:
+------------
+	* [janiny/dev-air2] Fix for bug #41280: [DEVAIR2] - Top Immediate variant missusage.
+	Deliver fixes/codex-41280 rev #16356 with authorization branch #41281
+
+
+Modified Files:
+---------------
+	M      osprey/lai/op.h
+	M      osprey/targinfo/stxp70/expand/exp_memrf.cxx
+	M      osprey/targinfo/stxp70/expand/exp_branch.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Fri Apr  4 15:45:38 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-air2-madmds-updates
+
+Description:
+------------
+	*  
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/access/ti_asm.c
+	M      osprey/targinfo/stxp70/test/patterns.txt
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_lits.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      osprey/targinfo/generate/isa_selector_gen.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Fri Apr  4 12:56:21 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-air2-extensions
+
+Description:
+------------
+	* [janiny/dev-air2] Deliver tt2/dev-air2-extensions rev #16251 with authorization branch #40786
+		-> Added support of v3 extensions built with a air2 version of the RTK
+		   (RTK based on targinfo description found in dev-air2 branch). The corresponding
+		   RTK branch is int-air2.
+		   Main modifications in compiler are:
+		   - Added extra 'asmname' parameter to generated functions ISA_PRINT_Inst(),
+		     in order to remove dependency between extension library and core concerningi
+		     ISA_PRINT_asmname array (we should try to keep extension as much stand-alonei
+		     as possible).
+		   - Updated extension API to use recently defined types: EXTENSION_ISA_PROPERTY_FLAGS
+		     (used to be mUINT64) and EXTENSION_ISA_PROPERTIES_ATTRIBUTE (used to be
+		     ISA_PROPERTIES_ATTRIBUTE).
+		   - Handle additional field 'is_negative' of ISA_LIT_CLASS_INFO datastructure.
+
+Modified Files:
+---------------
+	M      osprey/targinfo_ext/template/Makefile.gbase.ext
+	M      osprey/libair/air/air_services.c
+	M      osprey/common/com/dyn_isa_api.h
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/dyn_isa_api_access.h
+	M      osprey/common/com/dyn_isa_api_access.cxx
+	M      osprey/targinfo/access/ti_asm.c
+	M      osprey/targinfo/generate/isa_syntax_gen.cxx
+	M      osprey/targinfo/generate/isa_relocs_gen.cxx
+	M      osprey/targinfo/generate/isa_properties_gen.cxx
+	M      osprey/targinfo/generate/dyn/dyn_isa_api.c
+	M      osprey/targinfo/generate/isa_lits_gen.cxx
+	M      osprey/targinfo/parser/gensyn/Makefile.gbase
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu Mar 27 12:37:18 CET 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-imm_variant
+
+Description:
+------------
+	*  
+
+
+Modified Files:
+---------------
+	M      osprey/driver/special_options.c
+	M      osprey/libair/air/air_services.c
+	M      osprey/libair/air/air_stxp70.c
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/cg_ssaopt.cxx
+	M      osprey/lai/cg_automod.cxx
+	M      osprey/targinfo/access/ti_asm.c
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/stxp70/expand/exp_memrf.cxx
+	M      osprey/targinfo/stxp70/test/patterns.txt
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_si.cxx
+	M      osprey/targinfo/stxp70/config/gen_intrinsics.inc
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_variants.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_registers.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_lits.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      osprey/targinfo/generate/isa_operands_gen.h
+	M      osprey/targinfo/generate/isa_lits_gen.h
+	M      osprey/targinfo/generate/isa_syntax_gen.cxx
+	M      osprey/targinfo/generate/isa_operands_gen.cxx
+	M      osprey/targinfo/generate/isa_lits_gen.cxx
+	M      osprey/targinfo/generate/isa_pack_gen.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Fri Mar 14 10:05:41 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-air2-extensions
+
+Description:
+------------
+	* [janiny/dev-air2] Deliver tt2/dev-air2-extensions rev #16114 with authorization branch #40786
+	  -> Added backward compatibility support of v3 extensions built
+	     with a non-air version of the RTK (RTK generating targinfo
+	     description compatible with open64 trunk branch).
+
+Modified Files:
+---------------
+	M      osprey/common/com/dyn_isa_api.h
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/dyn_isa_api_access.h
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/dyn_isa_api_access.cxx
+	M      osprey/common/com/lai_loader_api.h
+	M      osprey/targinfo/stxp70/expand/exp_branch.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed Mar 12 10:02:36 CET 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/chauveth/dev-air2-libutils
+
+Description:
+------------
+	*  
+
+
+Modified Files:
+---------------
+	M      osprey/configure
+	M      osprey/Makefile.gsetup
+	M      osprey/targinfo_ext/template/Makefile.gbase.ext
+	M      osprey/driver/Makefile.gbase
+	M      osprey/libair/air/air_services.c
+	M      osprey/make/template/Makefile.in
+	D      osprey/common/rcparser/utils_dll.h
+	D      osprey/common/rcparser/utils_hostdefs.h
+	D      osprey/common/rcparser/utils_debug.c
+	D      osprey/common/rcparser/utils_debug.h
+	D      osprey/common/rcparser/utils_string_buffer.h
+	D      osprey/common/rcparser/libUtils.c
+	D      osprey/common/rcparser/utils_option.c
+	D      osprey/common/rcparser/utils_memory.c
+	D      osprey/common/rcparser/utils_messages.h
+	D      osprey/common/rcparser/libUtils.h
+	D      osprey/common/rcparser/utils_memory.h
+	D      osprey/common/rcparser/libUtilsVersion.c
+	D      osprey/common/rcparser/utils_option.h
+	D      osprey/common/rcparser/libUtilsVersion.h
+	D      osprey/common/rcparser/libUtilsOptions.c
+	D      osprey/common/rcparser/libUtilsOptions.h
+	D      osprey/common/rcparser/utils_filesystem.h
+	M      osprey/common/rcparser/Makefile.gbase
+	D      osprey/common/rcparser/utils_print.c
+	D      osprey/common/rcparser/utils_path.h
+	D      osprey/common/rcparser/utils_print.h
+	D      osprey/common/rcparser/utils_version_id.c
+	D      osprey/common/rcparser/utils_version_id.h
+	D      osprey/common/rcparser/utils_string.c
+	D      osprey/common/rcparser/utils_types.h
+	D      osprey/common/rcparser/utils_string.h
+	D      osprey/common/rcparser/utils_copyright.h
+	A  +   osprey/common/rtkutils
+	A  +   osprey/common/rtkutils/utils_dll.h
+	A  +   osprey/common/rtkutils/libUtilsVersion.h
+	A  +   osprey/common/rtkutils/libUtilsOptions.c
+	A  +   osprey/common/rtkutils/utils_hostdefs.h
+	A  +   osprey/common/rtkutils/utils_debug.c
+	A  +   osprey/common/rtkutils/libUtilsOptions.h
+	A  +   osprey/common/rtkutils/utils_filesystem.h
+	A  +   osprey/common/rtkutils/utils_debug.h
+	A  +   osprey/common/rtkutils/Makefile.gbase
+	A  +   osprey/common/rtkutils/utils_print.c
+	A  +   osprey/common/rtkutils/utils_path.h
+	A  +   osprey/common/rtkutils/utils_print.h
+	A  +   osprey/common/rtkutils/utils_version_id.c
+	A  +   osprey/common/rtkutils/utils_string_buffer.h
+	A  +   osprey/common/rtkutils/utils_string.c
+	A  +   osprey/common/rtkutils/utils_version_id.h
+	A  +   osprey/common/rtkutils/libUtils.c
+	A  +   osprey/common/rtkutils/utils_memory.c
+	A  +   osprey/common/rtkutils/utils_option.c
+	A  +   osprey/common/rtkutils/utils_types.h
+	A  +   osprey/common/rtkutils/utils_string.h
+	A  +   osprey/common/rtkutils/utils_messages.h
+	A  +   osprey/common/rtkutils/libUtils.h
+	A  +   osprey/common/rtkutils/utils_memory.h
+	A  +   osprey/common/rtkutils/utils_copyright.h
+	A  +   osprey/common/rtkutils/libUtilsVersion.c
+	A  +   osprey/common/rtkutils/utils_option.h
+	M      osprey/parser/Makefile.gbase
+	M      osprey/targinfo/access/ti_asm.c
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_variants.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	D      osprey/targinfo/parser/utils
+	D      osprey/targinfo/parser/utils/build
+	D      osprey/targinfo/parser/utils/build/LINUX
+	D      osprey/targinfo/parser/utils/build/msvc_static
+	D      osprey/targinfo/parser/utils/build/msvc_static/libutils.sln
+	D      osprey/targinfo/parser/utils/build/msvc_static/libutils.vcproj
+	D      osprey/targinfo/parser/utils/build/Makefile.scutil
+	D      osprey/targinfo/parser/utils/build/MINGW
+	D      osprey/targinfo/parser/utils/build/Makefile.libutils
+	D      osprey/targinfo/parser/utils/build/Makefile.libutils.files
+	D      osprey/targinfo/parser/utils/build/binutils.tools.def
+	D      osprey/targinfo/parser/utils/build/Makefile.libutils.rules
+	D      osprey/targinfo/parser/utils/build/Makefile
+	D      osprey/targinfo/parser/utils/build/msvc_shared
+	D      osprey/targinfo/parser/utils/build/msvc_shared/libutils.sln
+	D      osprey/targinfo/parser/utils/build/msvc_shared/libutils.vcproj
+	D      osprey/targinfo/parser/utils/include
+	D      osprey/targinfo/parser/utils/include/utils_dll.h
+	D      osprey/targinfo/parser/utils/include/MINGW
+	D      osprey/targinfo/parser/utils/include/MINGW/scutil.h
+	D      osprey/targinfo/parser/utils/include/libUtilsVersion.h
+	D      osprey/targinfo/parser/utils/include/utils_hostdefs.h
+	D      osprey/targinfo/parser/utils/include/libUtilsOptions.h
+	D      osprey/targinfo/parser/utils/include/utils_filesystem.h
+	D      osprey/targinfo/parser/utils/include/utils_debug.h
+	D      osprey/targinfo/parser/utils/include/LINUX
+	D      osprey/targinfo/parser/utils/include/LINUX/scutil.h
+	D      osprey/targinfo/parser/utils/include/makefile.version
+	D      osprey/targinfo/parser/utils/include/utils_print.h
+	D      osprey/targinfo/parser/utils/include/utils_path.h
+	D      osprey/targinfo/parser/utils/include/utils_parsecmd.h
+	D      osprey/targinfo/parser/utils/include/utils_string_buffer.h
+	D      osprey/targinfo/parser/utils/include/utils_version_id.h
+	D      osprey/targinfo/parser/utils/include/utils_types.h
+	D      osprey/targinfo/parser/utils/include/utils_string.h
+	D      osprey/targinfo/parser/utils/include/utils_messages.h
+	D      osprey/targinfo/parser/utils/include/libUtils.h
+	D      osprey/targinfo/parser/utils/include/utils_option.h
+	D      osprey/targinfo/parser/utils/include/utils_memory.h
+	D      osprey/targinfo/parser/utils/include/utils_copyright.h
+	D      osprey/targinfo/parser/utils/scutil
+	D      osprey/targinfo/parser/utils/scutil/port
+	D      osprey/targinfo/parser/utils/scutil/port/unix
+	D      osprey/targinfo/parser/utils/scutil/port/unix/src
+	D      osprey/targinfo/parser/utils/scutil/port/unix/src/tmpfile.c
+	D      osprey/targinfo/parser/utils/scutil/port/unix/src/tempnam.c
+	D      osprey/targinfo/parser/utils/scutil/port/unix/src/fndpath.c
+	D      osprey/targinfo/parser/utils/scutil/port/unix/src/basenam.c
+	D      osprey/targinfo/parser/utils/scutil/port/unix/src/fresh.c
+	D      osprey/targinfo/parser/utils/scutil/port/unix/src/lmstubs.c
+	D      osprey/targinfo/parser/utils/scutil/port/unix/src/dirnam.c
+	D      osprey/targinfo/parser/utils/scutil/port/unix/src/mkperm.c
+	D      osprey/targinfo/parser/utils/scutil/port/sysv
+	D      osprey/targinfo/parser/utils/scutil/port/sysv/src
+	D      osprey/targinfo/parser/utils/scutil/port/sysv/src/getcd.c
+	D      osprey/targinfo/parser/utils/scutil/port/sysv/src/getcwd.c
+	D      osprey/targinfo/parser/utils/scutil/port/dos
+	D      osprey/targinfo/parser/utils/scutil/port/dos/src
+	D      osprey/targinfo/parser/utils/scutil/port/dos/src/tmpfile.c
+	D      osprey/targinfo/parser/utils/scutil/port/dos/src/tempnam.c
+	D      osprey/targinfo/parser/utils/scutil/port/dos/src/fndpath.c
+	D      osprey/targinfo/parser/utils/scutil/port/dos/src/basenam.c
+	D      osprey/targinfo/parser/utils/scutil/port/dos/src/getcpu.c
+	D      osprey/targinfo/parser/utils/scutil/port/dos/src/qsort.c
+	D      osprey/targinfo/parser/utils/scutil/port/dos/src/dirnam.c
+	D      osprey/targinfo/parser/utils/scutil/port/dos/src/maindos.c
+	D      osprey/targinfo/parser/utils/scutil/port/dos/src/fpconv.c
+	D      osprey/targinfo/parser/utils/scutil/port/sun
+	D      osprey/targinfo/parser/utils/scutil/port/sun/src
+	D      osprey/targinfo/parser/utils/scutil/port/sun/src/getcd.c
+	D      osprey/targinfo/parser/utils/scutil/port/vms
+	D      osprey/targinfo/parser/utils/scutil/port/vms/src
+	D      osprey/targinfo/parser/utils/scutil/port/vms/src/fcloset.c
+	D      osprey/targinfo/parser/utils/scutil/port/vms/src/pathnames.c
+	D      osprey/targinfo/parser/utils/scutil/port/vms/src/fseekt.c
+	D      osprey/targinfo/parser/utils/scutil/port/vms/src/fwritet.c
+	D      osprey/targinfo/parser/utils/scutil/port/vms/src/freadt.c
+	D      osprey/targinfo/parser/utils/scutil/port/vms/src/tmpf.c
+	D      osprey/targinfo/parser/utils/scutil/port/vms/src/openf.c
+	D      osprey/targinfo/parser/utils/scutil/port/vms/src/types.h
+	D      osprey/targinfo/parser/utils/scutil/port/vms/src/ftellt.c
+	D      osprey/targinfo/parser/utils/scutil/port/vms/src/fflusht.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/toe53.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/mtherr.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/emul.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/asctoe113.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eshup1.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/exp64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/einfin.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eabs.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/etoe96.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/esubm.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eisinf.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/emulm.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/etoe113.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/ui64toax.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/asctoe24.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/enormlz.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eiisnan.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/mul128.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/ultoe.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/cmp64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/efixu64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/ui64toa.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/systime.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/toe24.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/ieeehead.h
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/emovz.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/e24toe.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/sub64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/edivm.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/efix64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/mul64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/uneg64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/etoe48.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/e48toe.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/not64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/e96toe.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/toe113.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/sysdate.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/and64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eisnan.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/asctoe.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eneg.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/fpmath.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/m16m.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/efixu.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/udiv64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eldexp.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/xor64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eshdn1.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eshift.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/asctoeg.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/uadd64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eiiszero.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eiremain.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/or64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eclear.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/asctoe96.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/gettime.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/ecmpm.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/ul64toe.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/ecleaz.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/etoe53.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/e53toe.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/neg128.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/emov.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/toe96.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/esubadd.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eshup6.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/shf128.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eshup8.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/getdate.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/l64toe.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/emovi.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/ushf64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/neg64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/emovo.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/efloor.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/asctoe48.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eround.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/div64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/esqrt.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/atoxi64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/emdnorm.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/add64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/etoe24.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/ltoe.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/toe48.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/uitoax.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eisneg.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eaddm.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/etoasc.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/ucmp64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/fperror.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/enan.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/e113toe.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/atoxi.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/ecmp.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/asctoe53.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/ecleazs.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eshdn6.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/ediv.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/getcpu.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/usub64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/eshdn8.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/efrexp.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/shf64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/atoui64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/efix.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/umul64.c
+	D      osprey/targinfo/parser/utils/scutil/port/ieee/src/xucmp.c
+	D      osprey/targinfo/parser/utils/scutil/port/68k
+	D      osprey/targinfo/parser/utils/scutil/port/68k/src
+	D      osprey/targinfo/parser/utils/scutil/port/68k/src/fwritet.c
+	D      osprey/targinfo/parser/utils/scutil/port/68k/src/freadt.c
+	D      osprey/targinfo/parser/utils/scutil/port/linux86
+	D      osprey/targinfo/parser/utils/scutil/port/n10
+	D      osprey/targinfo/parser/utils/scutil/port/n10/src
+	D      osprey/targinfo/parser/utils/scutil/port/n10/src/recip.c
+	D      osprey/targinfo/parser/utils/scutil/port/vax
+	D      osprey/targinfo/parser/utils/scutil/port/vax/src
+	D      osprey/targinfo/parser/utils/scutil/port/vax/src/Tovax.cmd
+	D      osprey/targinfo/parser/utils/scutil/port/vax/src/fwritet.c
+	D      osprey/targinfo/parser/utils/scutil/port/vax/src/freadt.c
+	D      osprey/targinfo/parser/utils/scutil/st100
+	D      osprey/targinfo/parser/utils/scutil/st100/sgi
+	D      osprey/targinfo/parser/utils/scutil/st100/sgi/include
+	D      osprey/targinfo/parser/utils/scutil/st100/sgi/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/sgi/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/sgi/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/ppc
+	D      osprey/targinfo/parser/utils/scutil/st100/ppc/include
+	D      osprey/targinfo/parser/utils/scutil/st100/ppc/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/ppc/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/ppc/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/tru64
+	D      osprey/targinfo/parser/utils/scutil/st100/tru64/include
+	D      osprey/targinfo/parser/utils/scutil/st100/tru64/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/tru64/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/tru64/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/tru64/src
+	D      osprey/targinfo/parser/utils/scutil/st100/tru64/src/fpconv.c
+	D      osprey/targinfo/parser/utils/scutil/st100/tru64/src/malloc_debug.c
+	D      osprey/targinfo/parser/utils/scutil/st100/dos
+	D      osprey/targinfo/parser/utils/scutil/st100/dos/include
+	D      osprey/targinfo/parser/utils/scutil/st100/dos/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/dos/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/dos/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/n10elf
+	D      osprey/targinfo/parser/utils/scutil/st100/n10elf/include
+	D      osprey/targinfo/parser/utils/scutil/st100/n10elf/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/n10elf/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/n10elf/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/n10elf/src
+	D      osprey/targinfo/parser/utils/scutil/st100/n10elf/src/fpconv.c
+	D      osprey/targinfo/parser/utils/scutil/st100/sx
+	D      osprey/targinfo/parser/utils/scutil/st100/sx/include
+	D      osprey/targinfo/parser/utils/scutil/st100/sx/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/sx/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/sx/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/solaris86
+	D      osprey/targinfo/parser/utils/scutil/st100/solaris86/include
+	D      osprey/targinfo/parser/utils/scutil/st100/solaris86/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/solaris86/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/solaris86/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/solaris86/src
+	D      osprey/targinfo/parser/utils/scutil/st100/solaris86/src/fpconv.c
+	D      osprey/targinfo/parser/utils/scutil/st100/solaris86/src/malloc_debug.c
+	D      osprey/targinfo/parser/utils/scutil/st100/rs6000
+	D      osprey/targinfo/parser/utils/scutil/st100/rs6000/include
+	D      osprey/targinfo/parser/utils/scutil/st100/rs6000/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/rs6000/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/rs6000/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/t3e
+	D      osprey/targinfo/parser/utils/scutil/st100/t3e/include
+	D      osprey/targinfo/parser/utils/scutil/st100/t3e/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/t3e/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/t3e/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/t3e/src
+	D      osprey/targinfo/parser/utils/scutil/st100/t3e/src/util64.c
+	D      osprey/targinfo/parser/utils/scutil/st100/c90
+	D      osprey/targinfo/parser/utils/scutil/st100/c90/include
+	D      osprey/targinfo/parser/utils/scutil/st100/c90/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/c90/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/c90/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/c90/src
+	D      osprey/targinfo/parser/utils/scutil/st100/c90/src/util64.c
+	D      osprey/targinfo/parser/utils/scutil/st100/n10coff
+	D      osprey/targinfo/parser/utils/scutil/st100/n10coff/include
+	D      osprey/targinfo/parser/utils/scutil/st100/n10coff/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/n10coff/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/n10coff/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/n10coff/src
+	D      osprey/targinfo/parser/utils/scutil/st100/n10coff/src/fpconv.c
+	D      osprey/targinfo/parser/utils/scutil/st100/win
+	D      osprey/targinfo/parser/utils/scutil/st100/win/include
+	D      osprey/targinfo/parser/utils/scutil/st100/win/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/win/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/win/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/win/src
+	D      osprey/targinfo/parser/utils/scutil/st100/win/src/fpconv.c
+	D      osprey/targinfo/parser/utils/scutil/st100/sparcelf
+	D      osprey/targinfo/parser/utils/scutil/st100/sparcelf/include
+	D      osprey/targinfo/parser/utils/scutil/st100/sparcelf/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/sparcelf/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/sparcelf/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/sparcelf/src
+	D      osprey/targinfo/parser/utils/scutil/st100/sparcelf/src/malloc_debug.c
+	D      osprey/targinfo/parser/utils/scutil/st100/nt86
+	D      osprey/targinfo/parser/utils/scutil/st100/nt86/include
+	D      osprey/targinfo/parser/utils/scutil/st100/nt86/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/nt86/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/nt86/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/nt86/src
+	D      osprey/targinfo/parser/utils/scutil/st100/nt86/src/fpconv.c
+	D      osprey/targinfo/parser/utils/scutil/st100/interix86
+	D      osprey/targinfo/parser/utils/scutil/st100/interix86/include
+	D      osprey/targinfo/parser/utils/scutil/st100/interix86/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/interix86/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/interix86/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/interix86/src
+	D      osprey/targinfo/parser/utils/scutil/st100/interix86/src/fpconv.c
+	D      osprey/targinfo/parser/utils/scutil/st100/n10coffbe
+	D      osprey/targinfo/parser/utils/scutil/st100/n10coffbe/include
+	D      osprey/targinfo/parser/utils/scutil/st100/n10coffbe/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/n10coffbe/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/n10coffbe/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/n10dos
+	D      osprey/targinfo/parser/utils/scutil/st100/n10dos/include
+	D      osprey/targinfo/parser/utils/scutil/st100/n10dos/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/n10dos/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/n10dos/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/n10dos/src
+	D      osprey/targinfo/parser/utils/scutil/st100/n10dos/src/tmpfile.c
+	D      osprey/targinfo/parser/utils/scutil/st100/n10dos/src/tempnam.c
+	D      osprey/targinfo/parser/utils/scutil/st100/n10dos/src/fpconv.c
+	D      osprey/targinfo/parser/utils/scutil/st100/linux86-64
+	D      osprey/targinfo/parser/utils/scutil/st100/linux86-64/include
+	D      osprey/targinfo/parser/utils/scutil/st100/linux86-64/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/linux86-64/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/linux86-64/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/linux86-64/src
+	D      osprey/targinfo/parser/utils/scutil/st100/linux86-64/src/fpconv.c
+	D      osprey/targinfo/parser/utils/scutil/st100/cenju
+	D      osprey/targinfo/parser/utils/scutil/st100/cenju/include
+	D      osprey/targinfo/parser/utils/scutil/st100/cenju/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/cenju/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/cenju/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/osf86
+	D      osprey/targinfo/parser/utils/scutil/st100/osf86/include
+	D      osprey/targinfo/parser/utils/scutil/st100/osf86/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/osf86/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/osf86/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/osf86/src
+	D      osprey/targinfo/parser/utils/scutil/st100/osf86/src/tmpfile.c
+	D      osprey/targinfo/parser/utils/scutil/st100/osf86/src/fpconv.c
+	D      osprey/targinfo/parser/utils/scutil/st100/n10osf
+	D      osprey/targinfo/parser/utils/scutil/st100/n10osf/include
+	D      osprey/targinfo/parser/utils/scutil/st100/n10osf/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/n10osf/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/n10osf/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/n10osf/src
+	D      osprey/targinfo/parser/utils/scutil/st100/n10osf/src/fpconv.c
+	D      osprey/targinfo/parser/utils/scutil/st100/sv86
+	D      osprey/targinfo/parser/utils/scutil/st100/sv86/include
+	D      osprey/targinfo/parser/utils/scutil/st100/sv86/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/sv86/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/sv86/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/sv86/src
+	D      osprey/targinfo/parser/utils/scutil/st100/sv86/src/fpconv.c
+	D      osprey/targinfo/parser/utils/scutil/st100/hp
+	D      osprey/targinfo/parser/utils/scutil/st100/hp/include
+	D      osprey/targinfo/parser/utils/scutil/st100/hp/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/hp/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/hp/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/sparc
+	D      osprey/targinfo/parser/utils/scutil/st100/sparc/include
+	D      osprey/targinfo/parser/utils/scutil/st100/sparc/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/sparc/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/sparc/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/t90
+	D      osprey/targinfo/parser/utils/scutil/st100/t90/include
+	D      osprey/targinfo/parser/utils/scutil/st100/t90/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/t90/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/t90/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/t90/src
+	D      osprey/targinfo/parser/utils/scutil/st100/t90/src/util64.c
+	D      osprey/targinfo/parser/utils/scutil/st100/linux86
+	D      osprey/targinfo/parser/utils/scutil/st100/linux86/include
+	D      osprey/targinfo/parser/utils/scutil/st100/linux86/include/scutil.h
+	D      osprey/targinfo/parser/utils/scutil/st100/linux86/lib
+	D      osprey/targinfo/parser/utils/scutil/st100/linux86/lib/makefile
+	D      osprey/targinfo/parser/utils/scutil/st100/linux86/src
+	D      osprey/targinfo/parser/utils/scutil/st100/linux86/src/fpconv.c
+	D      osprey/targinfo/parser/utils/scutil/sparc
+	D      osprey/targinfo/parser/utils/scutil/st122
+	D      osprey/targinfo/parser/utils/scutil/linux86
+	D      osprey/targinfo/parser/utils/scutil/n10
+	D      osprey/targinfo/parser/utils/lib
+	D      osprey/targinfo/parser/utils/src
+	D      osprey/targinfo/parser/utils/src/utils_parsecmd.c
+	D      osprey/targinfo/parser/utils/src/utils_string_buffer.c
+	D      osprey/targinfo/parser/utils/src/utils_version_id.c
+	D      osprey/targinfo/parser/utils/src/libUtilsOptions.c
+	D      osprey/targinfo/parser/utils/src/utils_filesystem.c
+	D      osprey/targinfo/parser/utils/src/utils_version.c
+	D      osprey/targinfo/parser/utils/src/utils_debug.c
+	D      osprey/targinfo/parser/utils/src/utils_string.c
+	D      osprey/targinfo/parser/utils/src/libUtils.c
+	D      osprey/targinfo/parser/utils/src/utils_memory.c
+	D      osprey/targinfo/parser/utils/src/utils_option.c
+	D      osprey/targinfo/parser/utils/src/utils_path.c
+	D      osprey/targinfo/parser/utils/src/utils_print.c
+	D      osprey/targinfo/parser/utils/src/libUtilsVersion.c
+	D      osprey/targinfo/parser/utils/examples
+	D      osprey/targinfo/parser/utils/examples/strings.h
+	D      osprey/targinfo/parser/utils/examples/version.c
+	D      osprey/targinfo/parser/utils/examples/option.c
+	D      osprey/targinfo/parser/utils/examples/strings.c
+	D      osprey/targinfo/parser/utils/examples/version.h
+	D      osprey/targinfo/parser/utils/examples/option.h
+	M      osprey/targinfo/parser/gensyn/build/Makefile
+	A  +   osprey/targinfo/parser/gensyn/Makefile.gbase
+	A  +   osprey/targinfo/parser/Makefile.gbase
+	M      osprey/targinfo/Makefile.gbase
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Tue Mar 11 10:24:45 CET 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-merge-4-1-3
+
+Description:
+------------
+	*  deliver mad merge 4.2.0
+
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo.cxx
+	M      osprey/targinfo/stxp70/expand/exp_branch.cxx
+	M      osprey/targinfo/stxp70/test/patterns.txt
+	M      osprey/targinfo/stxp70/proc/stxp70_v3_ext_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_si.cxx
+	M      osprey/targinfo/stxp70/config/gen_intrinsics.inc
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+	M      osprey/targinfo/stxp70/abi/abi_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_decode.cxx
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_variants.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M      osprey/targinfo/stxp70/isa/isa_registers.cxx
+	M      osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_lits.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      osprey/targinfo/stxp70/isa/isa.cxx
+	M      osprey/targinfo/stxp70/emit/targ_em_dwarf.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon Mar 10 16:13:41 CET 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-merge-v3-v4
+
+Description:
+------------
+	* [janiny/dev-air2] Deliver dt25/dev-merge-v3-v4 rev #16033 with authorization branch #40814
+
+
+Modified Files:
+---------------
+	M      osprey/Makefile.gsetup
+	M      osprey/be/opt/opt_cfg_trans.cxx
+	M      osprey/be/com/wn_lower.cxx
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/phases.c
+	M      osprey/driver/special_options.c
+	M      osprey/driver/lang_defs.c
+	M      osprey/driver/stxp70_options.i
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/annotations.h
+	M      osprey/lai/cg_loop.cxx
+	M      osprey/lai/bb_map.h
+	M      osprey/lai/igls.cxx
+	M      osprey/lai/lao/lao_interface.h
+	M      osprey/lai/lao/st200/lao_target.h
+	M      osprey/lai/lao/lao_stub.h
+	M      osprey/lai/calls.cxx
+	M      osprey/lai/loop_invar_hoist.cxx
+	M      osprey/lai/lra.cxx
+	M      osprey/lai/cg_tailmerge.cxx
+	M      osprey/lai/cg_select.cxx
+	M      osprey/lai/cg_flags.cxx
+	M      osprey/lai/bb_map.cxx
+	M      osprey/lai/gra_mon/gra_lrange.cxx
+	M      osprey/lai/gra_mon/gra_color.cxx
+	M      osprey/lai/gra_mon/gra_spill.cxx
+	M      osprey/lai/cg_ssaopt.cxx
+	M      osprey/lai/hb_sched.h
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/cg_automod.cxx
+	M      osprey/lai/hb_sched.cxx
+	M      osprey/lai/op.h
+	M      osprey/lai/cgtarget.h
+	M      osprey/lai/cg_flags.h
+	M      osprey/lai/Makefile.gbase
+	M      osprey/lai/oputil.cxx
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/include/libdwarf.h
+	M      osprey/g++fe/wfe_expr.cxx
+	M      osprey/common/util/paired_lattice.cxx
+	M      osprey/common/util/lbitvalue.h
+	M      osprey/common/util/lbvalrange.h
+	M      osprey/common/util/lbitvalue.cxx
+	M      osprey/common/util/lrange.h
+	M      osprey/common/util/lbvalrange.cxx
+	M      osprey/common/util/paired_lattice.h
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/config_opt.cxx
+	M      osprey/common/com/dyn_dll_api_access.cxx
+	M      osprey/common/com/dyn_isa_api_access.cxx
+	M      osprey/common/com/defs.h
+	M      osprey/libdwarf/pro_section.c
+	M      osprey/targinfo/stxp70/config/config_TARG.h
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/config/config_TARG.h
+	M      osprey/targinfo/st200/config/config_target.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Fri Mar  7 10:34:36 CET 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-air2-mergepqssubsets
+
+Description:
+------------
+	* [janiny/dev-air2] Merge of PQS and Subsets
+
+
+Modified Files:
+---------------
+	M      osprey/be/vho/vho_lower.cxx
+	M      osprey/driver/opt_actions.c
+	D      osprey/lai/pqs_cg_stubs.h
+	M      osprey/lai/variants.cxx
+	A  +   osprey/lai/pqs_target.h
+	M      osprey/lai/ebo_util.h
+	M      osprey/lai/ebo_info.h
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/pqs_cg.cxx
+	M      osprey/lai/calls.cxx
+	M      osprey/lai/gra_live.cxx
+	M      osprey/lai/pqs_defs.h
+	M      osprey/lai/tnutil.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/hb_hazards.cxx
+	M      osprey/lai/pqs.h
+	M      osprey/lai/pqs_cg.h
+	M      osprey/lai/cg_dep_graph.cxx
+	M      osprey/lai/op.h
+	M      osprey/lai/variants.h
+	M      osprey/lai/cgtarget.h
+	M      osprey/lai/pqs.cxx
+	M      osprey/common/com/config_vho.cxx
+	M      osprey/common/com/config_vho.h
+	M      osprey/common/com/tailmerge.h
+	M      osprey/targinfo/stxp70/be/driver_targ.cxx
+	M      osprey/targinfo/stxp70/cg/targ_pqs.cxx
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/stxp70/emit/targ_em_dwarf.cxx
+	M      osprey/targinfo/st200/cg/targ_pqs.cxx
+	M      osprey/targinfo/st200/cg/targ_cg_private.h
+	M      osprey/targinfo/st200/cg/targ_op.cxx
+	D      osprey/targinfo/st200/cg/targ_pqs.h
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu Feb 28 13:37:13 CET 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-air2_targetting
+
+Description:
+------------
+	*  add resources definition plus multiple minor targetting imoprovements
+
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/cg_loop_recur.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_si.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cgemit.cxx
+	M      osprey/targinfo/stxp70/cg/targ_loop_recur.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/stxp70/cg/targ_select.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+	M      osprey/targinfo/stxp70/cg/targ_calls.cxx
+	M      osprey/targinfo/stxp70/isa/isa_variants.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Tue Feb 19 14:00:59 CET 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-air2_targinfo_fixes
+
+Description:
+------------
+	* [dev-air2] deliver targinfo fixes nuder authorisation #39948
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/proc/stxp70_v3_ext_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_si.cxx
+	M      osprey/targinfo/stxp70/config/gen_intrinsics.inc
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_registers.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu Feb 14 13:56:57 CET 2008
+	Author:    villette
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/villette/dev-air2-mad
+
+Description:
+------------
+	*  Resynch of MDS on dev-air2.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/oputil.cxx
+	M      osprey/targinfo/st200/cg/targ_tn.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon Jan 21 11:30:20 CET 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/villette/dev-air2-mad
+
+Description:
+------------
+	deliver dev-air2-mad into dev-air2  
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo_ext/stxp70_ext/vx/proc/vx_si.cxx
+	M      osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_registers.cxx
+	M      osprey/targinfo_ext/template/Makefile.gbase.ext
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/objects.c
+	M      osprey/driver/special_options.c
+	M      osprey/driver/config_platform.h
+	M      osprey/driver/lang_defs.c
+	M      osprey/driver/stxp70_options.i
+	M      osprey/driver/lang_defs.h
+	M      osprey/libair/air/air_services.c
+	M      osprey/libair/air/air.h
+	M      osprey/libair/air/air_stxp70.c
+	M      osprey/libair/air/air.c
+	M      osprey/libair/air/air_disasm.c
+	M      osprey/libair/air/targ_air.h
+	M      osprey/lai/cg_ssa.cxx
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/pqs_cg.cxx
+	M      osprey/lai/top_properties.cxx
+	M      osprey/lai/top_properties.h
+	M      osprey/lai/tnutil.cxx
+	M      osprey/lai/hb_hazards.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/hb_sched.cxx
+	M      osprey/lai/op.h
+	M      osprey/lai/variants.h
+	M      osprey/lai/cgtarget.h
+	M      osprey/lai/range_prop.cxx
+	M      osprey/lai/range_analysis.cxx
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.h
+	M      osprey/targinfo/stxp70/expand/exp_divrem.cxx
+	M      osprey/targinfo/stxp70/expand/exp_memrf.cxx
+	M      osprey/targinfo/stxp70/expand/exp_pred.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.cxx
+	M      osprey/targinfo/stxp70/expand/exp_branch.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+	A  +   osprey/targinfo/stxp70/test
+	A  +   osprey/targinfo/stxp70/test/patterns.txt
+	M      osprey/targinfo/stxp70/proc/proc_properties.cxx
+	D      osprey/targinfo/stxp70/proc/stxp70_ext_si.cxx
+	D      osprey/targinfo/stxp70/proc/stxp70_si.cxx
+	M      osprey/targinfo/stxp70/proc/proc.cxx
+	A  +   osprey/targinfo/stxp70/proc/stxp70_v3_ext_si.cxx
+	A  +   osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx
+	A  +   osprey/targinfo/stxp70/proc/stxp70_v4_si.cxx
+	M      osprey/targinfo/stxp70/config/gen_intrinsics.inc
+	M      osprey/targinfo/stxp70/config/config_target.h
+	M      osprey/targinfo/stxp70/config/config_cache_targ.cxx
+	M      osprey/targinfo/stxp70/config/config_elf_targ.cxx
+	M      osprey/targinfo/stxp70/config/targ_elf.h
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+	M      osprey/targinfo/stxp70/be/driver_targ.cxx
+	M      osprey/targinfo/stxp70/be/betarget.cxx
+	M      osprey/targinfo/stxp70/cg/targ_pqs.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cgemit.cxx
+	M      osprey/targinfo/stxp70/cg/targ_loop_recur.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.h
+	M      osprey/targinfo/stxp70/cg/targ_select.cxx
+	M      osprey/targinfo/stxp70/cg/targ_pqs.h
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+	M      osprey/targinfo/stxp70/cg/targ_calls.cxx
+	M      osprey/targinfo/stxp70/intrn/intrn_test.cxx
+	M      osprey/targinfo/stxp70/abi/abi_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_decode.cxx
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_enums.cxx
+	M      osprey/targinfo/stxp70/isa/isa_relocs.cxx
+	M      osprey/targinfo/stxp70/isa/isa_variants.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M      osprey/targinfo/stxp70/isa/isa_registers.cxx
+	M      osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M      osprey/targinfo/stxp70/isa/isa_lits.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/stxp70/isa/isa.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      osprey/targinfo/stxp70/emit/targ_em_dwarf.cxx
+	M      osprey/targinfo/st200/expand/exp_divrem.cxx
+	A  +   osprey/targinfo/st200/test
+	A  +   osprey/targinfo/st200/test/patterns.txt
+	M      osprey/targinfo/st200/cg/targ_pqs.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+	M      osprey/targinfo/st200/cg/targ_op.cxx
+	M      osprey/targinfo/st200/cg/targ_pqs.h
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_range_prop.cxx
+	M      osprey/targinfo/st200/isa/isa_syntax.cxx
+	M      osprey/targinfo/st200/isa/isa_relocs.cxx
+	M      osprey/targinfo/st200/isa/isa_properties.cxx
+	M      osprey/targinfo/st200/isa/isa_pack.cxx
+	A  +   osprey/targinfo/st200/isa/isa_selector.cxx
+	M      osprey/targinfo/generate/isa_lits_gen.h
+	A  +   osprey/targinfo/generate/isa_selector_gen.h
+	M      osprey/targinfo/generate/gen_util.h
+	M      osprey/targinfo/generate/isa_syntax_gen.cxx
+	M      osprey/targinfo/generate/isa_relocs_gen.cxx
+	M      osprey/targinfo/generate/dyn/dyn_isa_api.c
+	M      osprey/targinfo/generate/isa_bundle_gen.cxx
+	M      osprey/targinfo/generate/isa_operands_gen.cxx
+	M      osprey/targinfo/generate/isa_syntax_gen.h
+	M      osprey/targinfo/generate/isa_relocs_gen.h
+	A  +   osprey/targinfo/generate/isa_selector_gen.cxx
+	M      osprey/targinfo/generate/isa_decode_gen.cxx
+	M      osprey/targinfo/generate/isa_enums_gen.cxx
+	M      osprey/targinfo/parser/src/parser.c
+	M      osprey/targinfo/parser/inc/parser.h
+	M      osprey/targinfo/Makefile.gbase
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu Jan  3 16:44:48 CET 2008
+	Author:    janiny
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/villette/dev-air2-mad
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-reloc-mad
+
+Description:
+------------
+	* add (part of) v4 relocation information in dev-air2-mad.
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/isa/isa_relocs.cxx
+	M      osprey/targinfo/st200/isa/isa_relocs.cxx
+	M      osprey/targinfo/generate/isa_relocs_gen.cxx
+	M      osprey/targinfo/generate/isa_relocs_gen.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed Dec 19 16:15:34 CET 2007
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-air2
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/chauveth/dev-chauveth-air2
+
+Description:
+------------
+	* [dev-chauveth-air2] Setup environment to use GAS and GNU-OBJDUMP from targinfo
+
+
+Modified Files:
+---------------
+	M      osprey/libair/air/air_services.c
+	M      osprey/common/rcparser/libUtilsVersion.h
+	M      osprey/common/rcparser/Makefile.gbase
+	M      osprey/common/rcparser/utils_version_id.h
+	D      osprey/common/com/attribute_map_template.cxx
+	D      osprey/common/com/dyn_isa_api_access.h
+	D      osprey/common/com/dyn_dll_api_access.h
+	D      osprey/common/com/dyn_dll_api_access.cxx
+	D      osprey/common/com/dyn_isa_api_access.cxx
+	M      osprey/targinfo/access/ti_asm.c
+	M      osprey/targinfo/stxp70/abi/abi_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_registers.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_lits.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/generate/isa_syntax_gen.cxx
+	M      osprey/targinfo/parser/gensyn/src/arbsem.c
+	M      osprey/targinfo/parser/src/analyzer.c
+	M      osprey/targinfo/parser/src/ext_engine.c
+	M      osprey/targinfo/parser/src/parser.c
+	M      osprey/targinfo/parser/inc/parser.h
+	M      osprey/targinfo/parser/inc/ext_engine.h
+	M      osprey/targinfo/Makefile.gbase
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jul  2 11:18:56 CEST 2008
 	Author:    bruel
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

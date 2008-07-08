@@ -51,7 +51,6 @@
 #include "whirl2ops.h"
 
 #include "cg.h"
-#include "cgtarget.h"
 #include "opt_alias_mgr.h"
 #include "targ_cg_private.h"
 #include "targ_isa_variants.h"
@@ -371,7 +370,7 @@ Unpredicated_Op (TOP opcode) {
   static TOP *unpredicated_optable = NULL;
   if (! unpredicated_optable) {
     unpredicated_optable = TYPE_MEM_POOL_ALLOC_N(TOP, Malloc_Mem_Pool,
-						 (TOP_count + 1));
+                                                 (TOP_count + 1));
     TOP i;
     for (i = 0; i <= TOP_count; i++) {
       unpredicated_optable[i] = TOP_UNDEFINED;
@@ -379,16 +378,16 @@ Unpredicated_Op (TOP opcode) {
     for (i = 0; i <= TOP_count; i++) {
       TOP predicated_op = st200_Predicated_Load_Op (i);
       if (predicated_op == TOP_UNDEFINED) {
-	predicated_op = st200_Predicated_Store_Op (i);
+        predicated_op = st200_Predicated_Store_Op (i);
       }
       if (predicated_op != TOP_UNDEFINED) {
-	unpredicated_optable[predicated_op] = i;
+        unpredicated_optable[predicated_op] = i;
       }
     }
   }
   return unpredicated_optable[opcode];
 }
-	 
+         
 /* ====================================================================
  *   Predicated_Op
  * ====================================================================
@@ -398,18 +397,18 @@ Predicated_Op (TOP opcode) {
   static TOP *predicated_optable = NULL;
   if (! predicated_optable) {
     predicated_optable = TYPE_MEM_POOL_ALLOC_N(TOP, Malloc_Mem_Pool,
-					       (TOP_count + 1));
+                                               (TOP_count + 1));
     for (TOP i = 0; i <= TOP_count; i++) {
       TOP predicated_op = st200_Predicated_Load_Op (i);
       if (predicated_op == TOP_UNDEFINED) {
-	predicated_op = st200_Predicated_Store_Op (i);
+        predicated_op = st200_Predicated_Store_Op (i);
       }
       predicated_optable[i] = predicated_op;
     }
   }
   return predicated_optable[opcode];
 }
-	 
+         
 /* ====================================================================
  *   CGTARG_Dup_OP_Predicate
  *
@@ -443,7 +442,7 @@ CGTARG_Dup_OP_Predicate (OP *op, TN *new_pred)
 
     for (opndnum = 0; opndnum < OP_opnds (op); opndnum++) {
       if (opndnum != pred_opnd_idx) {
-	new_opnds[new_opndnum++] = OP_opnd (op, opndnum);
+        new_opnds[new_opndnum++] = OP_opnd (op, opndnum);
       }
     }
     for (resnum = 0; resnum < OP_results (op); resnum++) {
@@ -931,13 +930,13 @@ TOP_opnd_register_variant(TOP op, int opnd, ISA_REGISTER_CLASS cl)
 
 
 /*
- * TOP_opnd_swapped_variant
+ * OP_opnd_swapped_variant
  * Returns the TOP corresponding to an invertion of the 2 operands index.
  * For commutative tops on the index, return the same top.
  * For inversible tops, return the inversed top.
  */
 TOP
-TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2)
+OP_opnd_swapped_variant(OP *op, int opnd1, int opnd2)
 {
 #define CASE_TOP(top) case TOP_##top##_r_r_r: \
 			return TOP_##top##_r_r_r
@@ -967,6 +966,8 @@ TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2)
        			return TOP_##top##_r_r_b
 #define CASE_TOP_PBR(top) CASE_TOP_FBR(top)
 
+  TOP top = OP_code(op);
+
   if (opnd1 > opnd2) {
     int tmp = opnd1;
     opnd1 = opnd2;
@@ -993,7 +994,7 @@ TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2)
 	&& TOP_opnd_use_bits(top, 0) == TOP_opnd_use_bits(top, 1))
       return top;
     if (TOP_is_cmp(top) && TOP_is_intop(top)) {
-      VARIANT v = TOP_cmp_variant(top);
+      VARIANT v = OP_cmp_variant(op);
       if (v == V_CMP_EQ || v == V_CMP_NE || v == V_CMP_ANDL
 	  || v == V_CMP_NANDL || v == V_CMP_ORL || v == V_CMP_NORL) {
 	return top;

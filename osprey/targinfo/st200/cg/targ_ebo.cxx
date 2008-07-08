@@ -943,6 +943,8 @@ EBO_select_value (
     Build_OP (TOP_cmpeq_r_r_b, predicate, pred_base, intervening_base, &ops);
     OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
 
+    OPS ops1 = OPS_EMPTY;
+
     if (result_predicate != NULL) {
       /* If predicated, we must generate a predicated select. On
 	 ST200 family this means a select followed by a conditional
@@ -965,6 +967,7 @@ EBO_select_value (
       OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
     }
   }
+
   if (!EBO_Verify_Ops(&ops)) return FALSE;
   BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
 
@@ -1095,7 +1098,12 @@ EBO_simplify_operand0 (
       OP_opnd(op, opnd1_idx) != Zero_TN &&
       opnd2_idx >= 0 &&
       TN_is_register(OP_opnd(op, opnd2_idx))) {
+    // TOP_opnd_swapped_variant does not exist anymore
+#if 0
     new_opcode = TOP_opnd_swapped_variant(opcode, opnd1_idx, opnd2_idx);
+#else
+    new_opcode = OP_opnd_swapped_variant(op, opnd1_idx, opnd2_idx);
+#endif
     if (new_opcode != TOP_UNDEFINED) {
       new_op = Dup_OP(op);
       OP_Change_Opcode(new_op, new_opcode);
@@ -4275,7 +4283,12 @@ do_swapped:
   if (new_opcode == TOP_UNDEFINED) {
     if (swapped) return FALSE;
     // Try to swap operands if possible
+    // TOP_opnd_swapped_variant does not exist anymore
+#if 0
     TOP swapped_opcode = TOP_opnd_swapped_variant(opcode, 0, 1);
+#else
+    TOP swapped_opcode = OP_opnd_swapped_variant(op, 0, 1);
+#endif
     if (swapped_opcode != opcode) return FALSE;
     swapped = TRUE;
     goto do_swapped;
@@ -4906,7 +4919,7 @@ min_max_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   if (OP_fcmp(cond_opinfo->in_op))
       return FALSE;
 
-  VARIANT variant = TOP_cmp_variant(OP_code(cond_opinfo->in_op));
+  VARIANT variant = OP_cmp_variant(cond_opinfo->in_op);
 
   switch (variant) {
     // Special case of move
@@ -5262,7 +5275,7 @@ abs_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
   if (OP_fcmp(cond_opinfo->in_op))
       return FALSE;
 
-  VARIANT variant = TOP_cmp_variant(OP_code(cond_opinfo->in_op));
+  VARIANT variant = OP_cmp_variant(cond_opinfo->in_op);
   switch (variant) {
   case V_CMP_GT:
   case V_CMP_GE:
@@ -5615,7 +5628,7 @@ cmp_move_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
 
   if (!TOP_is_cmp(top)) return FALSE;
 
-  VARIANT variant = TOP_cmp_variant(top);
+  VARIANT variant = OP_cmp_variant(op);
   if (variant != V_CMP_NE) return FALSE;
 
   if (!op_match_compare(op, 
@@ -5748,7 +5761,7 @@ cmp_subsat_to_zero (OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
       ((l2_tninfo2 != NULL) && !EBO_tn_available (OP_bb(op), l2_tninfo2))) 
     return FALSE;
 
-  variant = TOP_cmp_variant(opcode);
+  variant = OP_cmp_variant(op);
   switch (variant) {
   case V_CMP_NE: 
     Expand_Int_Not_Equal(tnr, tn1, tn2, MTYPE_I4, &ops);
@@ -6219,7 +6232,6 @@ and_or_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
 static BOOL
 andl_orl_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
 {
-  TOP top = OP_code(op);
   TN *l1_tn, *l2_tn, *lhs_tn, *rhs_tn;
   EBO_TN_INFO *l1_tninfo, *l2_tninfo, *lhs_tninfo, *rhs_tninfo;
   EBO_OP_INFO *def_opinfo;
@@ -6232,7 +6244,7 @@ andl_orl_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
 			&lhs_tn, &lhs_tninfo, &rhs_tn, &rhs_tninfo))
     return FALSE;
   
-  VARIANT variant = TOP_cmp_variant(top);
+  VARIANT variant = OP_cmp_variant(op);
   if (variant != V_CMP_ORL &&
       variant != V_CMP_NORL &&
       variant != V_CMP_ANDL &&
@@ -6379,7 +6391,6 @@ static BOOL
 andl_orl_sequence_2(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
 {
   BB *bb = OP_bb(op);
-  TOP top = OP_code(op);
   TN *lhs_tn, *rhs_tn;
   EBO_TN_INFO  *lhs_tninfo, *rhs_tninfo;
   EBO_OP_INFO *def_opinfo;
@@ -6395,7 +6406,7 @@ andl_orl_sequence_2(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
 			&lhs_tn, &lhs_tninfo, &rhs_tn, &rhs_tninfo))
     return FALSE;
   
-  VARIANT variant = TOP_cmp_variant(top);
+  VARIANT variant = OP_cmp_variant(op);
   if (variant != V_CMP_ORL &&
       variant != V_CMP_ANDL) return FALSE;
 
@@ -6403,7 +6414,7 @@ andl_orl_sequence_2(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
       op_match_compare(def_opinfo->in_op,
 		       def_opinfo->actual_opnd, 
 		       &l1_lhs_tn, &l1_lhs_tninfo, &l1_rhs_tn, &l1_rhs_tninfo)) {
-    VARIANT l1_variant = TOP_cmp_variant(OP_code(def_opinfo->in_op));
+    VARIANT l1_variant = OP_cmp_variant(def_opinfo->in_op);
     if ((l1_lhs_tninfo == NULL || EBO_tn_available (bb, l1_lhs_tninfo)) &&
 	(l1_rhs_tninfo == NULL || EBO_tn_available (bb, l1_rhs_tninfo))) {
       if (l1_lhs_tn == rhs_tn ||
@@ -6421,7 +6432,7 @@ andl_orl_sequence_2(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
       op_match_compare(def_opinfo->in_op,
 		       def_opinfo->actual_opnd, 
 		       &l1_lhs_tn, &l1_lhs_tninfo, &l1_rhs_tn, &l1_rhs_tninfo)) {
-    VARIANT l1_variant = TOP_cmp_variant(OP_code(def_opinfo->in_op));
+    VARIANT l1_variant = OP_cmp_variant(def_opinfo->in_op);
     if ((l1_lhs_tninfo == NULL || EBO_tn_available (bb, l1_lhs_tninfo)) &&
 	(l1_rhs_tninfo == NULL || EBO_tn_available (bb, l1_rhs_tninfo))) {
       if (l1_lhs_tn == lhs_tn ||
@@ -6476,7 +6487,7 @@ static BOOL
 reduce_predicate_logical_sequence (OP *op, TN **opnd_tn,
 				   EBO_TN_INFO **opnd_tninfo)
 {
-  VARIANT v = TOP_cmp_variant(OP_code(op));
+  VARIANT v = OP_cmp_variant(op);
   BOOL negate_value = FALSE;
   TN *result = OP_result(op, 0);
   TN *value = NULL;
@@ -6579,7 +6590,7 @@ logical_move_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
 
   BOOL notl = FALSE;
   BOOL immediate = FALSE;
-  VARIANT variant = TOP_cmp_variant(top);
+  VARIANT variant = OP_cmp_variant(op);
   switch (variant) {
   case V_CMP_ANDL:
     if (value == 0) {
@@ -6790,7 +6801,7 @@ EBO_Special_Inline_Immediates(OP *op, EBO_OP_INFO *opinfo, int idx)
 {
   TOP opcode;
   EBO_TN_INFO *tninfo;
-
+  OP *saved_op = Dup_OP(op);
   opcode = OP_code(op);
   tninfo = opinfo->actual_opnd[idx];
 
@@ -6914,7 +6925,12 @@ EBO_Special_Inline_Immediates(OP *op, EBO_OP_INFO *opinfo, int idx)
       for (idx2 = 0; idx2 < OP_opnds(op); idx2++) {
 	if (idx == idx2) continue;
 	if (TN_is_constant(OP_opnd(op, idx2))) continue;
+    // TOP_opnd_swapped_variant does not exist anymore
+#if 0
 	new_opcode = TOP_opnd_swapped_variant(opcode, idx, idx2);
+#else
+	new_opcode = OP_opnd_swapped_variant(saved_op, idx, idx2);
+#endif
 	if (new_opcode == TOP_UNDEFINED) continue;
 	if (TN_has_value(replacement_tn)) {
 	  new_opcode = TOP_opnd_immediate_variant(new_opcode, idx2, TN_value(replacement_tn));
@@ -7019,10 +7035,10 @@ EBO_Special_Sequence (
     if (andl_orl_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
     if (andl_orl_sequence_2(op, opnd_tn, opnd_tninfo)) return TRUE;
     if (cmp_subsat_to_zero(op, opnd_tn, opnd_tninfo)) return TRUE;
-    if ((TOP_cmp_variant (opcode) == V_CMP_ANDL
-	|| TOP_cmp_variant (opcode) == V_CMP_NANDL
-	|| TOP_cmp_variant (opcode) == V_CMP_ORL
-	|| TOP_cmp_variant (opcode) == V_CMP_NORL)
+    if ((OP_cmp_variant (op) == V_CMP_ANDL
+	|| OP_cmp_variant (op) == V_CMP_NANDL
+	|| OP_cmp_variant (op) == V_CMP_ORL
+	|| OP_cmp_variant (op) == V_CMP_NORL)
 	&& reduce_predicate_logical_sequence (op, opnd_tn, opnd_tninfo)) return TRUE;
   }
 

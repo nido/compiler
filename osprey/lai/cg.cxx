@@ -136,17 +136,6 @@
 #include "gcov_profile.h"
 #endif
 
-void Print_BB_id ( int id ) 
-{
-  BB *bp;
-  for (bp = REGION_First_BB; bp; bp = BB_next(bp)) {
-	  if (BB_id(bp)==id) {
-		  Print_BB ( bp );
-		  fprintf ( TFile,"\n" );
-	  }
-  }
-}
-
 MEM_POOL MEM_local_region_pool;	/* allocations local to processing a region */
 MEM_POOL MEM_local_region_nz_pool;
 
@@ -1165,10 +1154,8 @@ CG_Generate_Code(
      */
     Set_Error_Phase ( "Assembly" );
     Start_Timer (	T_Emit_CU );
-#ifdef TARG_STxP70
-    CGTARG_Fixup_Immediates();
-    Perform_HwLoop_Checking();
-#endif
+    CGTARG_Fixup_ASM_Code();
+
     EMT_Emit_PU (Get_Current_PU_ST(), pu_dst, rwn);
     Check_for_Dump (TP_EMIT, NULL);
     Stop_Timer ( T_Emit_CU );

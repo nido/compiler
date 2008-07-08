@@ -47,7 +47,7 @@
 #endif
 
 #ifndef UTILS_VERSION_DESCRIPTION
-#define UTILS_VERSION_DESCRIPTION "STS/Compilation team utilities"
+#define UTILS_VERSION_DESCRIPTION "Utilities"
 #endif
 
 #ifndef UTILS_VERSION_LEGAL

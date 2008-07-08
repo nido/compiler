@@ -255,6 +255,7 @@ static BOOL CG_cbpo_facto_cst_overridden = FALSE;
 
 static BOOL CG_tailmerge_overridden = FALSE;
 static BOOL CG_simp_flow_in_tailmerge_overridden = FALSE;
+static BOOL LRA_minregs_overridden = FALSE;
 
 #   ifdef TARG_STxP70
 #      define DEFAULT_TAILMERGE(opt_level, opt_space) 1
@@ -834,7 +835,7 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0, &LRA_do_reorder, NULL },
 #ifdef TARG_ST
   { OVK_BOOL,   OV_INTERNAL, TRUE,"lra_minregs", "",
-    0, 0, 0, &LRA_minregs, NULL,
+    0, 0, 0, &LRA_minregs, &LRA_minregs_overridden,
     "minimize registers used in local register allocation" },
   { OVK_BOOL,   OV_INTERNAL, TRUE,"lra_merge_extract", "",
     0, 0, 0, &LRA_merge_extract, NULL,
@@ -2134,6 +2135,10 @@ CG_Apply_Opt_Size(UINT32 level)
   }
   if(!CG_simp_flow_in_tailmerge_overridden) {
     CG_simp_flow_in_tailmerge = DEFAULT_SIMP_FLOW_TAILMERGE(CG_opt_level, TRUE);
+  }
+  //[dt] in V4 add lra_minregs=1
+  if (Is_Target_stxp70_v4() && !LRA_minregs_overridden) {
+    LRA_minregs=TRUE;
   }
   // TDR: Default to Optimized_Post_Sched schedule for STxP70 in size mode.
   if (!LOCS_POST_Scheduling_overriden) {

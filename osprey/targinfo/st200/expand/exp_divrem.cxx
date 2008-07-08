@@ -439,7 +439,8 @@ Expand_Divide (
   switch (Check_Divide(src1, src2, mtype, ops)) {
   case DIVCHK_BYZERO:
   case DIVCHK_OVERFLOW:
-    Build_OP(TOP_ifixup, result, ops);
+//    Build_OP(TOP_ifixup, result, ops);
+    OPS_Append_Op(ops, Mk_VarOP(TOP_ifixup,1,0,&result,NULL));
     return NULL;
   }
 
@@ -569,8 +570,9 @@ Expand_Rem (
   switch (Check_Divide(src1, src2, mtype, ops)) {
   case DIVCHK_BYZERO:
   case DIVCHK_OVERFLOW:
-    Build_OP(TOP_ifixup, result, ops);
-    return;
+//    Build_OP(TOP_ifixup, result, ops);
+    OPS_Append_Op(ops, Mk_VarOP(TOP_ifixup,1,0,&result,NULL));
+   return;
   }
 
   //
@@ -677,7 +679,8 @@ Expand_Mod (
   switch (Check_Divide(src1, src2, mtype, ops)) {
   case DIVCHK_BYZERO:
   case DIVCHK_OVERFLOW:
-    Build_OP(TOP_ifixup, result, ops);
+//    Build_OP(TOP_ifixup, result, ops);
+    OPS_Append_Op(ops, Mk_VarOP(TOP_ifixup,1,0,&result,NULL));
     return;
   }
 
@@ -736,8 +739,10 @@ Expand_DivRem (
   switch (Check_Divide(src1, src2, mtype, ops)) {
   case DIVCHK_BYZERO:
   case DIVCHK_OVERFLOW:
-    Build_OP(TOP_ifixup, result, ops);
-    Build_OP(TOP_ifixup, result2, ops);
+//    Build_OP(TOP_ifixup, result, ops);
+//    Build_OP(TOP_ifixup, result2, ops);
+    OPS_Append_Op(ops, Mk_VarOP(TOP_ifixup,1,0,&result,NULL));
+    OPS_Append_Op(ops, Mk_VarOP(TOP_ifixup,1,0,&result2,NULL));
     return;
   }
 

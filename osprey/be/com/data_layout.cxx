@@ -90,9 +90,9 @@
 #endif
 #ifdef TARG_ST
 
-// [CG]: we don't use anymore ISA_INST_BYTES
+// [CG]: we don't use anymore ISA_MAX_INST_BYTES
 // we use DEFAULT_TEXT_ALIGNMENT instead
-//#include "targ_isa_bundle.h" // for ISA_INST_BYTES
+//#include "targ_isa_bundle.h" // for ISA_MAX_INST_BYTES
 
 /* Arthur: this is common to all targets */
 SECTION Sections[_SEC_INDEX_MAX] = {

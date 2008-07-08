@@ -39,8 +39,6 @@
  * loader and dll at connection time (see common/com/lai_loader.cxx).
  */
 #include <stdio.h>                          /* NULL pointer */
-#include "topcode.h"
-
 #include "dyn_isa_topcode.h"
 #include "dyn_isa_properties.h"
 #include "dyn_isa_print.h"
@@ -63,9 +61,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-DLL_EXPORTED  const ISA_REGISTER_CLASS_INFO* dyn_get_ISA_REGISTER_CLASS_tab(void);
-DLL_EXPORTED  const mUINT32 get_register_tab_size(void);
 
 /* Management of scheduling information */
 static extension_si_t dyn_ISA_si[1] = {
@@ -129,7 +124,7 @@ static ISA_EXT_Interface_t static_interface = {
    dyn_get_ISA_OPERAND_info_tab,             /* xxx_targ_isa_operands.c   */
    dyn_get_ISA_OPERAND_info_tab_sz,          /* xxx_targ_isa_operands.c   */
    dyn_get_ISA_OPERAND_info_index_tab,       /* xxx_targ_isa_operands.c   */
-   dyn_get_ISA_OPERAND_relocatable_opnd_tab, /* xxx_targ_isa_operands.c   */ 
+   NULL, /* UNUSED relocs field, kept in order to simplify backward compat*/
    dyn_get_ISA_OPERAND_USE_attribute_tab,    /* xxx_targ_isa_operands.c   */
    dyn_get_ISA_OPERAND_USE_attribute_tab_sz, /* xxx_targ_isa_operands.c   */
    dyn_get_ISA_OPERAND_static_rclass_tab,    /* xxx_targ_isa_operands.c   */
@@ -160,10 +155,10 @@ static ISA_EXT_Interface_t static_interface = {
    dyn_get_scheduling_info_tab,              /* xxx_targ_isa_si.c         */
    dyn_get_scheduling_info_tab_sz,           /* xxx_targ_isa_si.c         */
 
-   dyn_get_ISA_ENUM_CLASS_INFO_tab,          /* xxx_targ_isa_enums.c      */
-   dyn_get_ISA_ENUM_CLASS_INFO_tab_sz,       /* xxx_targ_isa_enums.c      */
-   dyn_get_ISA_ENUM_CLASS_VALUE_INFO_tab,    /* xxx_targ_isa_enums.c      */
-   dyn_get_ISA_ENUM_CLASS_VALUE_INFO_tab_sz, /* xxx_targ_isa_enums.c      */
+   dyn_get_ISA_ENUM_CLASS_info_tab,          /* xxx_targ_isa_enums.c      */
+   dyn_get_ISA_ENUM_CLASS_info_tab_sz,       /* xxx_targ_isa_enums.c      */
+   dyn_get_ISA_ENUM_CLASS_VALUE_info_tab,    /* xxx_targ_isa_enums.c      */
+   dyn_get_ISA_ENUM_CLASS_VALUE_info_tab_sz, /* xxx_targ_isa_enums.c      */
 
    dyn_get_ISA_EXEC_unit_prop_tab,           /* xxx_targ_isa_bundle.c     */
 
@@ -172,6 +167,10 @@ static ISA_EXT_Interface_t static_interface = {
    dyn_get_ISA_VARIANT_attribute_tab_sz,     /* xxx_targ_isa_variants.c   */
 
    dyn_get_ISA_HAZARDS_index_tab,            /* xxx_targ_isa_hazards.c    */
+
+   /* Put it for backward compatibility issue. */
+   dyn_get_ISA_EXEC_unit_slots_tab,          /* xxx_targ_isa_bundle.c     */
+   dyn_get_ISA_BUNDLE_slot_count_tab,        /* xxx_targ_isa_bundle.c     */
 };
 
 /* Exporting global pointer on static internal structure.             */

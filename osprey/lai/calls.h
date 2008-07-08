@@ -188,7 +188,8 @@ Is_Callee_Register(TN *tn)
        REGISTER_machine_id(TN_register_class(tn), TN_register(tn))));
 }
 
-extern TN *CGTARG_Gen_Got_Disp_TN (void);
+extern TN *CGTARG_Gen_Got_Disp_TN ( ST *st, OPS *ops );
+extern TN *CGTARG_Gen_GP_Value_TN( ST *st, OPS *ops );
 extern TN *CGTARG_Gen_FP_TN (void);
 extern TN *CGTARG_Gen_GP_TN (void);
 extern TN *CGTARG_Gen_Pfs_TN (void);

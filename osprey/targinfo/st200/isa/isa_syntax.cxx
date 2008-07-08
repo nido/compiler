@@ -31,16 +31,18 @@
 */ 
 
 // AUTOMATICALLY GENERATED FROM MDS DATA BASE !!! 
-// Group TOPS with similar printing format. 
+// Group TOPS with similar printing format.
+// This description is now usable for parsing.
 //////////////////////////////////////////////////
 
 
-#include <stdio.h> 
-#include <stddef.h> 
-#include <string.h> 
-#include <ctype.h> 
-#include "topcode.h" 
-#include "isa_print_gen.h" 
+#include <stdio.h>
+#include <stddef.h>
+#include <string.h>
+#include <ctype.h>
+#include "topcode.h"
+#include "targ_isa_subset.h"
+#include "isa_syntax_gen.h"
 
 static const char *mnemonic_names[531] = { 
   "abss.ph", 	 /* TOP_abss_ph_r_r */  
@@ -581,51 +583,89 @@ static const char *asmname(TOP topcode)
   return mnemonic_names[topcode]; 
 } 
 
-main() 
-{ 
-  ISA_Print_Begin("st200"); 
+main()
+{
+#define MS "[MS]"
+#define OS "[OS]"
+#define PS "[PS]"
+#define TB "[TB]"
 
-  Set_AsmName_Func(asmname); 
+#define NO_OPND "\"\""
+
+  ISA_Syntax_Begin();
+
+  Set_AsmName_Func(asmname);
+
+  Set_Mandatory_Space(MS);
+  Set_Optional_Space(OS);
+  Set_Optional_Printed_Space(PS);
+  Set_Tabulation(TB);
 
   Define_Macro("END_GROUP", ";;");
   Define_Macro("BEGIN_BUNDLE", "## {	 %s:");
   Define_Macro("END_BUNDLE", "## };");
 
-  /* ================================= */ 
+  ISA_Parse_Rules (".Port: {\n"
+		   "/* Array defining extension ports used */\n"
+		   "static unsigned int ExtPort[] = {0,0,0,0,0,0,0,0,1};\n"
+		   "\n"
+		   "/* String defining port used */\n"
+		   "#define DEF_EXT_ID_STR \"-\"\n"
+		   "\n"
+		   "/* String defining extension names */\n"
+		   "#define DEF_EXT_LONG_NAME \"st240\"\n"
+		   "#define DEF_EXT_SHORT_NAME \"st240\"\n"
+		   "\n"
+		   "/* Defines for extension version */\n"
+		   "#define A_MA x\n"
+		   "#define A_MI x\n"
+		   "#define A_BU x\n"
+		   "}\n",
+                   ISA_SUBSET_st240);
 
-  ISA_PRINT_TYPE print_0 = ISA_Print_Type_Create("print_0", "%s $r63"); 
+  ISA_Parse_Rules (".Port: {\n"
+		   "/* Array defining extension ports used */\n"
+		   "static unsigned int ExtPort[] = {0,0,0,0,0,0,0,0,1};\n"
+		   "\n"
+		   "/* String defining port used */\n"
+		   "#define DEF_EXT_ID_STR \"-\"\n"
+		   "\n"
+		   "/* String defining extension names */\n"
+		   "#define DEF_EXT_LONG_NAME \"st231\"\n"
+		   "#define DEF_EXT_SHORT_NAME \"st231\"\n"
+		   "\n"
+		   "/* Defines for extension version */\n"
+		   "#define A_MA x\n"
+		   "#define A_MI x\n"
+		   "#define A_BU x\n"
+		   "}\n",
+                   ISA_SUBSET_st231);
+
+  ISA_Parse_Rules (".Port: {\n"
+		   "/* Array defining extension ports used */\n"
+		   "static unsigned int ExtPort[] = {0,0,0,0,0,0,0,0,1};\n"
+		   "\n"
+		   "/* String defining port used */\n"
+		   "#define DEF_EXT_ID_STR \"-\"\n"
+		   "\n"
+		   "/* String defining extension names */\n"
+		   "#define DEF_EXT_LONG_NAME \"st220\"\n"
+		   "#define DEF_EXT_SHORT_NAME \"st220\"\n"
+		   "\n"
+		   "/* Defines for extension version */\n"
+		   "#define A_MA x\n"
+		   "#define A_MI x\n"
+		   "#define A_BU x\n"
+		   "}\n",
+                   ISA_SUBSET_st220);
+
+  /* ================================= */
+
+  ISA_SYNTAX_RULE rule_0 = ISA_Syntax_Rule_Create("rule_0",true);
+  ISA_Syntax(TB "%s");
   Name(); 
 
-  Instruction_Print_Group(print_0, 
-		 TOP_igoto, 
-		 TOP_return, 
-		 TOP_UNDEFINED); 
-
-  /* ================================= */ 
-
-  ISA_PRINT_TYPE print_1 = ISA_Print_Type_Create("print_1", "%s $r63 = $r63"); 
-  Name(); 
-
-  Instruction_Print_Group(print_1, 
-		 TOP_icall, 
-		 TOP_UNDEFINED); 
-
-  /* ================================= */ 
-
-  ISA_PRINT_TYPE print_2 = ISA_Print_Type_Create("print_2", "%s $r63 = %s"); 
-  Name(); 
-  Operand(0); 
-
-  Instruction_Print_Group(print_2, 
-		 TOP_call_i, 
-		 TOP_UNDEFINED); 
-
-  /* ================================= */ 
-
-  ISA_PRINT_TYPE print_3 = ISA_Print_Type_Create("print_3", "%s"); 
-  Name(); 
-
-  Instruction_Print_Group(print_3, 
+  ISA_Syntax_Group("O_0",rule_0,
 		 TOP_break, 
 		 TOP_dib, 
 		 TOP_idle, 
@@ -637,24 +677,48 @@ main()
 		 TOP_syncins, 
 		 TOP_waitl, 
 		 TOP_wmb, 
-		 TOP_UNDEFINED); 
+		 TOP_UNDEFINED);
 
-  /* ================================= */ 
+  /* ================================= */
 
-  ISA_PRINT_TYPE print_4 = ISA_Print_Type_Create("print_4", "%s %s"); 
+  ISA_SYNTAX_RULE rule_1 = ISA_Syntax_Rule_Create("rule_1",true);
+  ISA_Syntax(TB "%s" MS TB "$r63");
   Name(); 
 
-  Instruction_Print_Group(print_4, 
-		 TOP_dbgsbrk, 
-		 TOP_UNDEFINED); 
+  ISA_Syntax_Group("O_1",rule_1,
+		 TOP_igoto, 
+		 TOP_return, 
+		 TOP_UNDEFINED);
 
-  /* ================================= */ 
+  /* ================================= */
 
-  ISA_PRINT_TYPE print_5 = ISA_Print_Type_Create("print_5", "%s %s"); 
+  ISA_SYNTAX_RULE rule_2 = ISA_Syntax_Rule_Create("rule_2",true);
+  ISA_Syntax(TB "%s" MS TB "$r63" OS "=" OS "$r63");
+  Name(); 
+
+  ISA_Syntax_Group("O_2",rule_2,
+		 TOP_icall, 
+		 TOP_UNDEFINED);
+
+  /* ================================= */
+
+  ISA_SYNTAX_RULE rule_3 = ISA_Syntax_Rule_Create("rule_3",true);
+  ISA_Syntax(TB "%s" MS TB "$r63" OS "=" OS "%s");
   Name(); 
   Operand(0); 
 
-  Instruction_Print_Group(print_5, 
+  ISA_Syntax_Group("O_3",rule_3,
+		 TOP_call_i, 
+		 TOP_UNDEFINED);
+
+  /* ================================= */
+
+  ISA_SYNTAX_RULE rule_4 = ISA_Syntax_Rule_Create("rule_4",true);
+  ISA_Syntax(TB "%s" MS TB "%s");
+  Name(); 
+  Operand(0); 
+
+  ISA_Syntax_Group("O_4",rule_4,
 		 TOP_goto_i, 
 		 TOP_pswclr_r, 
 		 TOP_pswset_r, 
@@ -662,16 +726,83 @@ main()
 		 TOP_st240_sbrk_i, 
 		 TOP_syscall_i, 
 		 TOP_st240_syscall_i, 
-		 TOP_UNDEFINED); 
+		 TOP_UNDEFINED);
 
-  /* ================================= */ 
+  /* ================================= */
 
-  ISA_PRINT_TYPE print_6 = ISA_Print_Type_Create("print_6", "%s %s = %s"); 
+  ISA_SYNTAX_RULE rule_5 = ISA_Syntax_Rule_Create("rule_5",true);
+  ISA_Syntax(TB "%s");
+  Name(); 
+
+  ISA_Syntax_Group("O_5",rule_5,
+		 TOP_dbgsbrk, 
+		 TOP_UNDEFINED);
+
+  /* ================================= */
+
+  ISA_SYNTAX_RULE rule_6 = ISA_Syntax_Rule_Create("rule_6",true);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "," PS "%s");
+  Name(); 
+  Operand(0); 
+  Operand(1); 
+
+  ISA_Syntax_Group("O_6",rule_6,
+		 TOP_brf_i_b, 
+		 TOP_br_i_b, 
+		 TOP_UNDEFINED);
+
+  /* ================================= */
+
+  ISA_SYNTAX_RULE rule_7 = ISA_Syntax_Rule_Create("rule_7",true);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "," PS "%s" OS "=" OS "%s" OS "," PS "%s" OS "," PS "%s");
+  Name(); 
+  Result(0); 
+  Result(1); 
+  Operand(0); 
+  Operand(1); 
+  Operand(2); 
+
+  ISA_Syntax_Group("O_7",rule_7,
+		 TOP_addcg_b_r_r_b_r, 
+		 TOP_divs_b_r_r_b_r, 
+		 TOP_UNDEFINED);
+
+  /* ================================= */
+
+  ISA_SYNTAX_RULE rule_8 = ISA_Syntax_Rule_Create("rule_8",true);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "," PS "%s" OS "[" OS "%s" OS "]");
+  Name(); 
+  Operand(0); 
+  Operand(1); 
+  Operand(2); 
+
+  ISA_Syntax_Group("O_8",rule_8,
+		 TOP_pftc_r_i_b, 
+		 TOP_pftc_r_ii_b, 
+		 TOP_UNDEFINED);
+
+  /* ================================= */
+
+  ISA_SYNTAX_RULE rule_9 = ISA_Syntax_Rule_Create("rule_9",true);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "," PS "[" OS "%s" OS "]" OS "=" OS "%s");
+  Name(); 
+  Result(0); 
+  Operand(0); 
+  Operand(1); 
+
+  ISA_Syntax_Group("O_9",rule_9,
+		 TOP_stwl_r_r_b, 
+		 TOP_UNDEFINED);
+
+  /* ================================= */
+
+  ISA_SYNTAX_RULE rule_10 = ISA_Syntax_Rule_Create("rule_10",true);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "=" OS "%s");
   Name(); 
   Result(0); 
   Operand(0); 
 
-  Instruction_Print_Group(print_6, 
+  ISA_Syntax_Group("O_10",rule_10,
 		 TOP_abss_ph_r_r, 
 		 TOP_addpc_i_r, 
 		 TOP_addpc_ii_r, 
@@ -699,17 +830,18 @@ main()
 		 TOP_unpacku_pbl_r_r, 
 		 TOP_zxtb_r_r, 
 		 TOP_zxth_r_r, 
-		 TOP_UNDEFINED); 
+		 TOP_UNDEFINED);
 
-  /* ================================= */ 
+  /* ================================= */
 
-  ISA_PRINT_TYPE print_7 = ISA_Print_Type_Create("print_7", "%s %s = %s, %s"); 
+  ISA_SYNTAX_RULE rule_11 = ISA_Syntax_Rule_Create("rule_11",true);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "=" OS "%s" OS "," PS "%s");
   Name(); 
   Result(0); 
   Operand(0); 
   Operand(1); 
 
-  Instruction_Print_Group(print_7, 
+  ISA_Syntax_Group("O_11",rule_11,
 		 TOP_absubu_pb_r_r_r, 
 		 TOP_addf_n_r_r_r, 
 		 TOP_addso_r_r_r, 
@@ -1058,18 +1190,19 @@ main()
 		 TOP_zxt_r_r_r, 
 		 TOP_zxt_i_r_r, 
 		 TOP_zxt_ii_r_r, 
-		 TOP_UNDEFINED); 
+		 TOP_UNDEFINED);
 
-  /* ================================= */ 
+  /* ================================= */
 
-  ISA_PRINT_TYPE print_8 = ISA_Print_Type_Create("print_8", "%s %s = %s, %s, %s"); 
+  ISA_SYNTAX_RULE rule_12 = ISA_Syntax_Rule_Create("rule_12",true);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "=" OS "%s" OS "," PS "%s" OS "," PS "%s");
   Name(); 
   Result(0); 
   Operand(0); 
   Operand(1); 
   Operand(2); 
 
-  Instruction_Print_Group(print_8, 
+  ISA_Syntax_Group("O_12",rule_12,
 		 TOP_avg4u_pb_r_r_b_r, 
 		 TOP_avgu_pb_r_r_b_r, 
 		 TOP_extl_pb_r_r_b_r, 
@@ -1087,18 +1220,34 @@ main()
 		 TOP_slct_pb_i_r_b_r, 
 		 TOP_slct_pb_ii_r_b_r, 
 		 TOP_st240_slct_r_r_b_r, 
-		 TOP_UNDEFINED); 
+		 TOP_UNDEFINED);
 
-  /* ================================= */ 
+  /* ================================= */
 
-  ISA_PRINT_TYPE print_9 = ISA_Print_Type_Create("print_9", "%s %s = %s, %s[%s]"); 
+  ISA_SYNTAX_RULE rule_13 = ISA_Syntax_Rule_Create("rule_13",false);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "=" OS "%s" OS "," PS "%s" OS "[" OS "%s" OS "]");
   Name(); 
   Result(0); 
   Operand(0); 
   Operand(1); 
   Operand(2); 
 
-  Instruction_Print_Group(print_9, 
+  ISA_Syntax_Group("O_13",rule_13,
+		 TOP_multi_ldlc_r_i_b_r, 
+		 TOP_multi_ldlc_r_ii_b_r, 
+		 TOP_UNDEFINED);
+
+  /* ================================= */
+
+  ISA_SYNTAX_RULE rule_14 = ISA_Syntax_Rule_Create("rule_14",true);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "=" OS "%s" OS "," PS "%s" OS "[" OS "%s" OS "]");
+  Name(); 
+  Result(0); 
+  Operand(0); 
+  Operand(1); 
+  Operand(2); 
+
+  ISA_Syntax_Group("O_14",rule_14,
 		 TOP_ldbc_r_i_b_r, 
 		 TOP_ldbc_r_ii_b_r, 
 		 TOP_ldbuc_r_i_b_r, 
@@ -1111,19 +1260,32 @@ main()
 		 TOP_ldlc_r_ii_b_p, 
 		 TOP_ldwc_r_i_b_r, 
 		 TOP_ldwc_r_ii_b_r, 
-		 TOP_multi_ldlc_r_i_b_r, 
-		 TOP_multi_ldlc_r_ii_b_r, 
-		 TOP_UNDEFINED); 
+		 TOP_UNDEFINED);
 
-  /* ================================= */ 
+  /* ================================= */
 
-  ISA_PRINT_TYPE print_10 = ISA_Print_Type_Create("print_10", "%s %s = %s[%s]"); 
+  ISA_SYNTAX_RULE rule_15 = ISA_Syntax_Rule_Create("rule_15",false);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "=" OS "%s" OS "[" OS "%s" OS "]");
   Name(); 
   Result(0); 
   Operand(0); 
   Operand(1); 
 
-  Instruction_Print_Group(print_10, 
+  ISA_Syntax_Group("O_15",rule_15,
+		 TOP_multi_ldl_r_i_r, 
+		 TOP_multi_ldl_r_ii_r, 
+		 TOP_UNDEFINED);
+
+  /* ================================= */
+
+  ISA_SYNTAX_RULE rule_16 = ISA_Syntax_Rule_Create("rule_16",true);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "=" OS "%s" OS "[" OS "%s" OS "]");
+  Name(); 
+  Result(0); 
+  Operand(0); 
+  Operand(1); 
+
+  ISA_Syntax_Group("O_16",rule_16,
 		 TOP_ldbu_r_i_r, 
 		 TOP_ldbu_r_ii_r, 
 		 TOP_ldbu_d_r_i_r, 
@@ -1146,81 +1308,29 @@ main()
 		 TOP_ldw_r_ii_r, 
 		 TOP_ldw_d_r_i_r, 
 		 TOP_ldw_d_r_ii_r, 
-		 TOP_multi_ldl_r_i_r, 
-		 TOP_multi_ldl_r_ii_r, 
-		 TOP_UNDEFINED); 
+		 TOP_UNDEFINED);
 
-  /* ================================= */ 
+  /* ================================= */
 
-  ISA_PRINT_TYPE print_11 = ISA_Print_Type_Create("print_11", "%s %s = [%s]"); 
+  ISA_SYNTAX_RULE rule_17 = ISA_Syntax_Rule_Create("rule_17",true);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "=" OS "[" OS "%s" OS "]");
   Name(); 
   Result(0); 
   Operand(0); 
 
-  Instruction_Print_Group(print_11, 
+  ISA_Syntax_Group("O_17",rule_17,
 		 TOP_ldwl_r_r, 
-		 TOP_UNDEFINED); 
+		 TOP_UNDEFINED);
 
-  /* ================================= */ 
+  /* ================================= */
 
-  ISA_PRINT_TYPE print_12 = ISA_Print_Type_Create("print_12", "%s %s, %s"); 
+  ISA_SYNTAX_RULE rule_18 = ISA_Syntax_Rule_Create("rule_18",true);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "[" OS "%s" OS "]");
   Name(); 
   Operand(0); 
   Operand(1); 
 
-  Instruction_Print_Group(print_12, 
-		 TOP_brf_i_b, 
-		 TOP_br_i_b, 
-		 TOP_UNDEFINED); 
-
-  /* ================================= */ 
-
-  ISA_PRINT_TYPE print_13 = ISA_Print_Type_Create("print_13", "%s %s, %s = %s, %s, %s"); 
-  Name(); 
-  Result(0); 
-  Result(1); 
-  Operand(0); 
-  Operand(1); 
-  Operand(2); 
-
-  Instruction_Print_Group(print_13, 
-		 TOP_addcg_b_r_r_b_r, 
-		 TOP_divs_b_r_r_b_r, 
-		 TOP_UNDEFINED); 
-
-  /* ================================= */ 
-
-  ISA_PRINT_TYPE print_14 = ISA_Print_Type_Create("print_14", "%s %s, %s[%s]"); 
-  Name(); 
-  Operand(0); 
-  Operand(1); 
-  Operand(2); 
-
-  Instruction_Print_Group(print_14, 
-		 TOP_pftc_r_i_b, 
-		 TOP_pftc_r_ii_b, 
-		 TOP_UNDEFINED); 
-
-  /* ================================= */ 
-
-  ISA_PRINT_TYPE print_15 = ISA_Print_Type_Create("print_15", "%s %s, [%s] = %s"); 
-  Name(); 
-  Result(0); 
-  Operand(0); 
-  Operand(1); 
-
-  Instruction_Print_Group(print_15, 
-		 TOP_stwl_r_r_b, 
-		 TOP_UNDEFINED); 
-
-  /* ================================= */ 
-
-  ISA_PRINT_TYPE print_16 = ISA_Print_Type_Create("print_16", "%s %s[%s]"); 
-  Name(); 
-  Operand(0); 
-  Operand(1); 
-
-  Instruction_Print_Group(print_16, 
+  ISA_Syntax_Group("O_18",rule_18,
 		 TOP_flushadd_r_i, 
 		 TOP_flushadd_r_ii, 
 		 TOP_flushadd_l1_r_i, 
@@ -1249,19 +1359,32 @@ main()
 		 TOP_prgset_r_ii, 
 		 TOP_prgset_l1_r_i, 
 		 TOP_prgset_l1_r_ii, 
-		 TOP_UNDEFINED); 
+		 TOP_UNDEFINED);
 
-  /* ================================= */ 
+  /* ================================= */
 
-  ISA_PRINT_TYPE print_17 = ISA_Print_Type_Create("print_17", "%s %s[%s] = %s"); 
+  ISA_SYNTAX_RULE rule_19 = ISA_Syntax_Rule_Create("rule_19",false);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "[" OS "%s" OS "]" OS "=" OS "%s");
   Name(); 
   Operand(0); 
   Operand(1); 
   Operand(2); 
 
-  Instruction_Print_Group(print_17, 
+  ISA_Syntax_Group("O_19",rule_19,
 		 TOP_multi_stl_r_r_i, 
 		 TOP_multi_stl_r_r_ii, 
+		 TOP_UNDEFINED);
+
+  /* ================================= */
+
+  ISA_SYNTAX_RULE rule_20 = ISA_Syntax_Rule_Create("rule_20",true);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "[" OS "%s" OS "]" OS "=" OS "%s");
+  Name(); 
+  Operand(0); 
+  Operand(1); 
+  Operand(2); 
+
+  ISA_Syntax_Group("O_20",rule_20,
 		 TOP_stb_r_r_i, 
 		 TOP_stb_r_r_ii, 
 		 TOP_sth_r_r_i, 
@@ -1270,20 +1393,34 @@ main()
 		 TOP_stl_p_r_ii, 
 		 TOP_stw_r_r_i, 
 		 TOP_stw_r_r_ii, 
-		 TOP_UNDEFINED); 
+		 TOP_UNDEFINED);
 
-  /* ================================= */ 
+  /* ================================= */
 
-  ISA_PRINT_TYPE print_18 = ISA_Print_Type_Create("print_18", "%s %s[%s] = %s, %s"); 
+  ISA_SYNTAX_RULE rule_21 = ISA_Syntax_Rule_Create("rule_21",false);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "[" OS "%s" OS "]" OS "=" OS "%s" OS "," PS "%s");
   Name(); 
   Operand(0); 
   Operand(1); 
   Operand(2); 
   Operand(3); 
 
-  Instruction_Print_Group(print_18, 
+  ISA_Syntax_Group("O_21",rule_21,
 		 TOP_multi_stlc_r_b_r_i, 
 		 TOP_multi_stlc_r_b_r_ii, 
+		 TOP_UNDEFINED);
+
+  /* ================================= */
+
+  ISA_SYNTAX_RULE rule_22 = ISA_Syntax_Rule_Create("rule_22",true);
+  ISA_Syntax(TB "%s" MS TB "%s" OS "[" OS "%s" OS "]" OS "=" OS "%s" OS "," PS "%s");
+  Name(); 
+  Operand(0); 
+  Operand(1); 
+  Operand(2); 
+  Operand(3); 
+
+  ISA_Syntax_Group("O_22",rule_22,
 		 TOP_stbc_r_b_r_i, 
 		 TOP_stbc_r_b_r_ii, 
 		 TOP_sthc_r_b_r_i, 
@@ -1292,9 +1429,9 @@ main()
 		 TOP_stlc_p_b_r_ii, 
 		 TOP_stwc_r_b_r_i, 
 		 TOP_stwc_r_b_r_ii, 
-		 TOP_UNDEFINED); 
+		 TOP_UNDEFINED);
 
 
-  ISA_Print_End(); 
+  ISA_Syntax_End(); 
   return 0; 
 } 

@@ -63,12 +63,6 @@ using std::list;
 #include "targ_isa_subset.h"
 #include "isa_registers_gen.h"
 
-// #ifdef DYNAMIC_CODE_GEN
-// namespace DYNA {
-// #include "dyn_isa_registers.h"
-// };
-// #endif
-
 /*
  * For cores that are not extensible, all #define
  * imported from "isa_ext_limits.h" are set to 0. 
@@ -552,11 +546,13 @@ void ISA_Registers_End(void)
   /* Opening files */
   char *hfilename                 = NULL ;
   char *cfilename                 = NULL ;
+  char *sfilename                 = NULL ;
   char *efilename                 = NULL ;
   char *targ_isa_subset_hfilename = NULL ;
 
   FILE *hfile    = NULL ;
   FILE *cfile    = NULL ;
+  FILE *sfile    = NULL ;
   FILE *efile    = NULL ;
 
   const char * const bname = FNAME_TARG_ISA_REGISTERS ;      /* base name */
@@ -567,10 +563,14 @@ void ISA_Registers_End(void)
   cfilename = Gen_Build_Filename(bname,extname,gen_util_file_type_cfile);
   cfile     = Gen_Open_File_Handle(cfilename, "w");
 
-  if(gen_static_code)
-   { efilename = Gen_Build_Filename(bname,extname,gen_util_file_type_efile);
-     efile     = Gen_Open_File_Handle(efilename, "w");
-   }
+  if(gen_static_code) {
+    efilename = Gen_Build_Filename(bname,extname,gen_util_file_type_efile);
+    efile     = Gen_Open_File_Handle(efilename, "w");
+  }
+  else {
+    sfilename = Gen_Build_Filename(FNAME_STUB_ISA_REGISTERS,extname,gen_util_file_type_cfile);
+    sfile     = Gen_Open_File_Handle(sfilename, "w");
+  }
 
   targ_isa_subset_hfilename = Gen_Build_Filename(FNAME_TARG_ISA_SUBSET,NULL,
                                                  gen_util_file_type_hfile);
@@ -578,17 +578,28 @@ void ISA_Registers_End(void)
   /* Now, we're all set to write files. */
   Emit_Header (hfile,bname,interface,extname);
 
-  if(gen_dyn_code) 
-  { char *dyn_hfilename = Gen_Build_Filename(FNAME_ISA_REGISTERS,
+  if(gen_dyn_code) {
+    char *dyn_hfilename = Gen_Build_Filename(FNAME_ISA_REGISTERS,
                                              NULL,
                                              gen_util_file_type_dyn_hfile);
 
+    const char *headers[] = {
+      "<stdio.h>",
+      "<stdlib.h>",
+      "<string.h>",
+      "<stddef.h>",
+      "\"dyn_" FNAME_ISA_REGISTERS ".h\"",
+      "",
+    };
+    
     fprintf(hfile,"#include \"%s\"\n",targ_isa_subset_hfilename);
     fprintf(cfile,"#include \"%s\"\n",dyn_hfilename);
     Gen_Free_Filename(dyn_hfilename);
+
+    Emit_Stub_Header(sfile,headers);
   }                        // Dynamic code
-  else
-  { fprintf(cfile,"#include \"%s\"\n",hfilename);
+  else  {
+    fprintf(cfile,"#include \"%s\"\n",hfilename);
     fprintf(hfile,"#include \"%s\"\n",targ_isa_subset_hfilename);
   }                        // Static code
 
@@ -598,7 +609,7 @@ void ISA_Registers_End(void)
   // [TTh] max register might need to be resized for extension
   // register classes
   if (max_reg < extension_max_registers) {
-	max_reg = extension_max_registers;
+    max_reg = extension_max_registers;
   }
 
   if(gen_static_code) {
@@ -610,6 +621,113 @@ void ISA_Registers_End(void)
                   extension_max_subclasses);
    fprintf(hfile, "\n"
                   "#define ISA_REGISTER_MAX (%d)\n", max_reg);
+  }
+
+  /**************************************************
+   * Stubs
+   **************************************************/
+  if(gen_dyn_code) {
+    fprintf(sfile,
+	    "/* Merging dynamic and static table */\n"
+	    "typedef struct {\n"
+	    "  mUINT32     sz_item               ;         /* Size of one item         */\n"
+	    "  void*      (*dyn_get_tab)(void)   ;         /* Pointer on dynamic table */\n"
+	    "  mUINT32    (*dyn_get_tab_sz)(void);         /* Size of dynamic table    */\n"
+	    "  mUINT32    nb_item_static         ;         /* Nb of items in static tab*/\n"
+	    "} Concat;\n");
+
+    fprintf(sfile,
+	    "static Concat rclass =           /* Register class table             */\n"
+	    "{  \n"
+	    "   (mUINT32)            sizeof(ISA_REGISTER_CLASS_INFO),\n"
+	    "   (void*  (*)(void))   dyn_get_ISA_REGISTER_CLASS_tab,\n"
+	    "   (mUINT32(*)(void))   dyn_get_ISA_REGISTER_CLASS_tab_sz,\n"
+	    "   (mUINT32)            ISA_REGISTER_CLASS_STATIC_COUNT+1U,\n"
+	    "};\n");
+
+    fprintf(sfile,
+	    "static Concat rsubclass =        /* Register subclass table          */\n"
+	    "{\n"
+	    "   (mUINT32)            sizeof(ISA_REGISTER_SUBCLASS_INFO),\n"
+	    "   (void*  (*)(void))   dyn_get_ISA_REGISTER_SUBCLASS_tab,\n"
+	    "   (mUINT32(*)(void))   dyn_get_ISA_REGISTER_SUBCLASS_tab_sz,\n"
+	    "   (mUINT32)            ISA_REGISTER_SUBCLASS_STATIC_COUNT+1U,\n"
+	    "};\n");
+
+    fprintf(sfile,
+	    "static Concat rclassindex =      /* Register class index table       */ \n"
+	    "{                                /* We assume that there is only one */\n"
+	    "                                 /* register set by register class.  */\n"
+	    "                                 /* See \"isa_registers_gen.cxx\"      */\n"
+	    "    (mUINT32)            sizeof(mUINT8),\n"
+	    "    (void*  (*)(void))   dyn_get_ISA_REGISTER_CLASS_index_tab,\n"
+	    "    (mUINT32(*)(void))   dyn_get_ISA_REGISTER_CLASS_tab_sz,\n"
+	    "    (mUINT32)            ISA_REGISTER_CLASS_STATIC_COUNT+1U,\n"
+	    "};\n");
+
+    fprintf(sfile,
+	    "/* Beginning of code ================================================ */\n"
+	    "\n");
+
+    fprintf(sfile,
+	    "/*\n"
+	    " * Table concatenation procedure.\n"
+	    " */\n"
+	    "static void \n"
+	    "concat_proc( Concat *in,     /* Concat structure */\n"
+	    "             void** gbl_ptr  /* Ptr on static tab*/ )\n"
+	    "{\n"
+	    "   mUINT32 nb_added_item = in->dyn_get_tab_sz();\n"
+	    "   void    *tmp_ptr;\n"
+	    "\n"
+	    "   if(0==nb_added_item || NULL==in->dyn_get_tab())\n"
+	    "    return;\n"
+	    "\n"
+	    "   tmp_ptr = calloc(in->sz_item,nb_added_item+in->nb_item_static);\n"
+	    "\n"
+	    "   if(NULL==tmp_ptr)\n"
+	    "    { fprintf(stderr,\"### Error: unable to allocate memory\\n\");\n"
+	    "      exit(-1);\n"
+	    "    }\n"
+	    "\n"
+	    "   /* Copy static part of table */\n"
+	    "   memcpy(tmp_ptr,\n"
+	    "          *gbl_ptr,\n"
+	    "          in->sz_item*in->nb_item_static);\n"
+	    "\n"
+	    "   /* Copy dynamic part of table*/\n"
+	    "   memcpy((char*)tmp_ptr+in->nb_item_static*in->sz_item,\n"
+	    "          in->dyn_get_tab(),\n"
+	    "          in->sz_item*nb_added_item);\n"
+	    "\n"
+	    "   /* Update global pointer on the new table */\n"
+	    "   *gbl_ptr = tmp_ptr;\n"
+	    "\n"
+	    "    return;\n"
+	    "}\n");
+
+    fprintf(sfile,
+	    "/*\n"
+	    " * Exported routine.\n"
+	    " */\n"
+	    "void \n"
+	    "ISA_REGISTER_Initialize_Stub( void )\n"
+	    "{\n"
+	    "  mUINT32  i;\n"
+	    " \n"
+	    "  concat_proc(&rclass,     (void**)(&ISA_REGISTER_CLASS_info));\n"
+	    "  concat_proc(&rclassindex,(void**)(&ISA_REGISTER_CLASS_info_index));\n"
+	    "  concat_proc(&rsubclass,  (void**)(&ISA_REGISTER_SUBCLASS_info));\n"
+	    "\n"
+	    "  /* Update index table */\n"
+	    "  for(i=rclassindex.nb_item_static;    /* First index in dyn. part of table */\n"
+	    "      i<rclassindex.dyn_get_tab_sz()+rclassindex.nb_item_static;\n"
+	    "      i++)\n"
+	    "      { ISA_REGISTER_CLASS_info_index[i]+=rclassindex.nb_item_static;\n"
+	    "      }\n"
+	    "\n"
+	    "  return;\n"
+	    "}\n");
   }
 
   /**************************************************
@@ -714,7 +832,7 @@ void ISA_Registers_End(void)
   const char* tabname =gen_static_code? "ISA_REGISTER_CLASS_info_static" : 
                                         "ISA_REGISTER_CLASS_info_dynamic";
 
-  fprintf(cfile, "BE_EXPORTED ISA_REGISTER_CLASS_INFO %s[] = {\n",tabname);
+  fprintf(cfile, "\nstatic ISA_REGISTER_CLASS_INFO %s[] = {\n",tabname);
   if(gen_static_code)              /* Managed UNDEFINED entry */
     fprintf(cfile, 
             "  { 0x%02x, %3d, %3d, %2d, %1d, %1d, %1d, \"%s\", { 0 } },\n",
@@ -727,15 +845,23 @@ void ISA_Registers_End(void)
 	 ++reg_iter
     ) {
       ISA_REGISTER_SET regset = *reg_iter;
-      fprintf(cfile, "  { 0x%02x, %3d, %3d, %2d, %1d, %1d, %1d, \"%s\",",
+      fprintf(cfile, "  { 0x%02x, %3d, %3d, %2d, %1d, %1d, %1d,",
 	      regset->isa_mask,
 	      regset->min_regnum,
 	      regset->max_regnum,
 	      rclass->bit_size,
 	      rclass->is_ptr,
 	      rclass->can_store,
-	      rclass->multiple_save,
-	      rclass->name);
+	      rclass->multiple_save);
+
+      if(gen_static_code) {
+	fprintf(cfile, " \"%s\",",
+		rclass->name);
+      }
+      else {
+	fprintf(cfile, " \"%s_%s\",",
+		extname,rclass->name);
+      }
 
       int len = fprintf(cfile, "\n    { ");
       for (i = regset->min_regnum; i <= regset->max_regnum; ++i) {
@@ -935,21 +1061,24 @@ void ISA_Registers_End(void)
   for (rsc_iter = subclasses.begin(); rsc_iter != subclasses.end();++rsc_iter) {
     ISA_REGISTER_SUBCLASS subclass = *rsc_iter;
 
-    if(gen_static_code)
+    if(gen_static_code) {
       fprintf(cfile, 
-        "  { \"%s\", ISA_REGISTER_CLASS_%s, %d, %d /*canonical*/,", 
-        subclass->name, 
-        subclass->rclass->name, 
-        subclass->count,
-        subclass->is_canonical ? 1:0);
-    else
+	      "  { \"%s\", ISA_REGISTER_CLASS_%s, %d, %d /*canonical*/,", 
+	      subclass->name, 
+	      subclass->rclass->name, 
+	      subclass->count,
+	      subclass->is_canonical ? 1:0);
+    }
+    else {
       fprintf(cfile,
-        "  { \"%s\", ISA_REGISTER_CLASS_LOCAL_%s_%s, %d , %d /*canonical*/,",
-        subclass->name,
-        extname,
-        subclass->rclass->name,
-        subclass->count,
-        subclass->is_canonical ? 1:0);
+	      "  { \"%s_%s\", ISA_REGISTER_CLASS_LOCAL_%s_%s, %d , %d /*canonical*/,",
+	      extname,
+	      subclass->name,
+	      extname,
+	      subclass->rclass->name,
+	      subclass->count,
+	      subclass->is_canonical ? 1:0);
+    }
 
     int len = fprintf(cfile, "\n    { ");
     for (i = 0; i < subclass->count; ++i) {
@@ -1126,7 +1255,11 @@ void ISA_Registers_End(void)
                  ")\n"
                  "{\n"
                  "  return info->is_canonical ? 1 : 0;\n"
-                 "}\n");
+                 "}\n\n");
+
+  fprintf(hfile, "#ifdef DYNAMIC_CODE_GEN\n");
+  fprintf(hfile, "extern void ISA_REGISTER_Initialize_Stub(void);\n");
+  fprintf(hfile, "#endif\n");
 
   fprintf(hfile, "\nBE_EXPORTED extern void ISA_REGISTER_Initialize(void);\n");
 
@@ -1147,16 +1280,6 @@ void ISA_Registers_End(void)
 		 "}\n");
   }                             // gen_static_code
 
-// #ifdef DYNAMIC_CODE_GEN
-//   fprintf(cfile, "\nstatic const char * ISA_REGISTER_CLASS_static_name_tab[] = {\n");
-//   for (i = DYNA::ISA_REGISTER_CLASS_MIN; i < DYNA::ISA_REGISTER_CLASS_STATIC_MAX; i++) {
-//   fprintf(cfile,
-// 	  "  \"%s\",\n", DYNA::ISA_REGISTER_CLASS_INFO_Name(DYNA::ISA_REGISTER_CLASS_Info(i)));
-//   }
-//   fprintf(cfile,
-// 	  "};\n\n");
-// #endif
-
   if (gen_static_code) {
     fprintf(hfile, "\nBE_EXPORTED extern void ISA_REGISTER_CLASS_Set_Bit_Size(ISA_REGISTER_CLASS, INT);\n");
     
@@ -1174,15 +1297,23 @@ void ISA_Registers_End(void)
   // Closing file handlers.
   Gen_Close_File_Handle(hfile,hfilename);
   Gen_Close_File_Handle(cfile,cfilename);
-  if(efile)
+  if(efile) {
     Gen_Close_File_Handle(efile,efilename);
+  }
+  if(sfile) {
+    Gen_Close_File_Handle(sfile,sfilename);
+  }
 
   // Memory deallocation.
   Gen_Free_Filename(cfilename);
   Gen_Free_Filename(hfilename);
   Gen_Free_Filename(targ_isa_subset_hfilename);
-  if(efilename)
+  if(efilename) {
     Gen_Free_Filename(efilename);
+  }
+  if(sfilename) {
+    Gen_Free_Filename(sfilename);
+  }
 
   return;
 }

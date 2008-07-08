@@ -759,7 +759,7 @@ Disjoint_Predicates(TN *guard1, bool on_false1, TN *guard2, bool on_false2) {
   }
 
   // Look for b2 = (cmp_opnd == 0);
-  if (OP_icmp(def_guard2) && TOP_cmp_variant(OP_code(def_guard2)) == V_CMP_EQ) {
+  if (OP_icmp(def_guard2) && OP_cmp_variant(def_guard2) == V_CMP_EQ) {
     TN *cmp_opnd1 = OP_opnd(def_guard2, OP_find_opnd_use(def_guard2, OU_opnd1));
     TN *cmp_opnd2 = OP_opnd(def_guard2, OP_find_opnd_use(def_guard2, OU_opnd2));
     TN *cmp_opnd = NULL;
@@ -1144,12 +1144,6 @@ OP_Make_movc (
   if (guard && guard != True_TN && TN_register_class(guard) != ISA_REGISTER_CLASS_branch)
     DevWarn("Conditional MOV should use a branch register");
   Build_OP(TOP_movc, dst, guard, src, cmov_ops);
-#if 0
-  if (OPS_length(&cmov_ops) != 1)
-    Is_True(OPS_length(&cmov_ops) == 1, ("Make_movc: Expand_Select produced more than a single operation"));
-  return OPS_first(&cmov_ops);
-#endif
-
 #elif defined TARG_STxP70
   Expand_Copy(dst, guard, src, cmov_ops);
 

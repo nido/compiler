@@ -712,6 +712,12 @@ IGLS_Schedule_Region (BOOL before_regalloc)
   should_we_do_thr = CG_enable_thr;
   L_Save();
 
+#ifdef TARG_ST
+  //TDR - Fix related to windows issue when using ISA_MAX_SLOTS. bug #48051
+  // ti_bundle.c is from targinfo, loaded in be and loaded in CG => issue in definitions
+  TI_BUNDLE_initialize(ISA_MAX_SLOTS);
+#endif
+  
   if (before_regalloc) {
 
     // schedule if (-O > O1) and

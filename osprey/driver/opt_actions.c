@@ -72,6 +72,7 @@ int instrumentation_invoked = UNDEFINED;
 boolean ftz_crt = FALSE;
 
 #ifdef TARG_ST
+ extern int ExtensionSeen;
 int c_std;
 /* TB: to warm if olevel is not enough if uninitialized var warning is
    aked*/
@@ -150,6 +151,10 @@ static struct {
   { "st221",    PROC_ST221 },
   { "st231",    PROC_ST231 },
   { "st240",    PROC_ST240 },
+  { "stxp70_v3",PROC_stxp70_v3 },
+  { "stxp70_v4",PROC_stxp70_v4 },
+  { "stxp70v3", PROC_stxp70_v3 },
+  { "stxp70v4", PROC_stxp70_v4 },
   { NULL,	PROC_NONE }
 };
 
@@ -759,6 +764,10 @@ Check_Target ( void )
   int opt_id;
   int opt_val;
   int flag;
+  string old_dir;
+  string new_P_library_dir;
+  string new_P_startup_dir;
+  char * ptr;
 
   if ( debug ) {
     fprintf ( stderr, "Check_Target ABI=%d ISA=%d Processor=%d\n",
@@ -820,9 +829,56 @@ Check_Target ( void )
     if (!already_provided(flag)) {
       prepend_option_seen (flag);
     }
+    ExtensionSeen=1;
+  }
+
+  //[dt] Best way of detecting default arch from environment
+  char *proc_env_name=NULL;
+  if (proc == UNDEFINED && (proc_env_name = getenv("SXARCHITECTURE")) != NULL) {
+    int i;
+    if (same_string(proc_env_name,"stxp70v4")) 	toggle (&proc, PROC_stxp70_v4);
+    else if (same_string(proc_env_name,"stxp70v3")) 	toggle (&proc, PROC_stxp70_v3);
+    else {
+      for (i = 0; Proc_Map[i].pname != NULL; i++) {
+        if (same_string(proc_env_name, Proc_Map[i].pname)) {
+          toggle (&proc, Proc_Map[i].pid);
+        }
+      }
+    }
+  }
+  switch (proc) {
+    case PROC_stxp70_v4:
+      change_phase_name(P_as,"stxp70v4-as");
+      change_phase_name(P_gas,"stxp70v4-as");
+      change_phase_name(P_ld,"stxp70v4-ld");
+#ifdef BCO_ENABLED
+      change_phase_name(P_ldsimple,"stxp70v4-ld");
+      change_phase_name(P_binopt,"stxp70v4-binopt");
+#endif
+      break;
+    case PROC_stxp70_v3:
+      change_phase_name(P_as,"stxp70v3-as");
+      change_phase_name(P_gas,"stxp70v3-as");
+      change_phase_name(P_ld,"stxp70v3-ld");
+#ifdef BCO_ENABLED
+      change_phase_name(P_ldsimple,"stxp70v3-ld");
+      change_phase_name(P_binopt,"stxp70v3-binopt");
+#endif
+      break;
   }
 
   /*
+   * [TTh/VCdV] Force processor type in presence of user/native
+   * extensions (except x3).
+   */
+//  if (ExtensionSeen) {
+    if (proc == UNDEFINED || proc == PROC_stxp70_v3) {
+      proc = UNDEFINED; /* [HC] to prevent warning emission in toggle if proc==PROC_stxp70_v3 */
+      toggle(&proc, PROC_stxp70_v3_ext);
+    }
+//  }
+  
+    /*
    * [VB] Force no tail recursion when -pg or -finstrument-functions
    */
   if (option_was_seen(O_pg) || option_was_seen(O_finstrument_functions)) {
@@ -833,12 +889,54 @@ Check_Target ( void )
     }
   }
 
+  old_dir = get_phase_dir(P_library);
+  new_P_library_dir = string_copy(old_dir);
+  old_dir = get_phase_dir(P_startup);
+  new_P_startup_dir = string_copy(old_dir);
   switch (proc) {
   case UNDEFINED:
-    toggle(&proc, PROC_stxp70);
+    toggle(&proc, PROC_stxp70_v3);
+    if (NULL != (ptr = strstr(new_P_library_dir,"/stxp70v"))) {
+      ptr[8] = '3';
+      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
+    }
+    if (NULL != (ptr = strstr(new_P_startup_dir,"/stxp70v"))) {
+       ptr[8] = '3';
+       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
+    }
     /* fallthru stxp70 default. */
-  case PROC_stxp70:
-    flag = add_new_option("-TARG:proc=stxp70");
+  case PROC_stxp70_v3:
+    flag = add_new_option("-TARG:proc=stxp70_v3");
+    if (NULL != (ptr = strstr(new_P_library_dir,"/stxp70v"))) {
+      ptr[8] = '3';
+      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
+    }
+    if (NULL != (ptr = strstr(new_P_startup_dir,"/stxp70v"))) {
+       ptr[8] = '3';
+       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
+    }
+    break;
+  case PROC_stxp70_v3_ext:
+    flag = add_new_option("-TARG:proc=stxp70_v3_ext");
+    if (NULL != (ptr = strstr(new_P_library_dir,"/stxp70v"))) {
+      ptr[8] = '3';
+      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
+    }
+    if (NULL != (ptr = strstr(new_P_startup_dir,"/stxp70v"))) {
+       ptr[8] = '3';
+       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
+    }
+    break;
+  case PROC_stxp70_v4:
+    flag = add_new_option("-TARG:proc=stxp70_v4");
+    if (NULL != (ptr = strstr(new_P_library_dir,"/stxp70v"))) {
+      ptr[8] = '4';
+      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
+    }
+    if (NULL != (ptr = strstr(new_P_startup_dir,"/stxp70v"))) {
+       ptr[8] = '4';
+       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
+    }
     break;
   }
 
@@ -1055,11 +1153,11 @@ Check_Target ( void )
 	toggle ( &isa, opt_val );
 	break;
       case ABI_STxP70_embedded:
-	opt_val = ISA_stxp70;
+	opt_val = ISA_stxp70_v3;
 	toggle ( &isa, opt_val );
 	break;
       case ABI_STxP70_fpx:
-	opt_val = ISA_stxp70;
+	opt_val = ISA_stxp70_v3_ext;
 	toggle ( &isa, opt_val );
 	break;
       case ABI_IA32:
@@ -2039,7 +2137,7 @@ string stxp70_core_name, stxp70_soc_name, stxp70_board_name;
 RUNTIME stxp70_runtime = UNDEFINED;
 string stxp70_targetdir ; /* Set iff targetdir is command-line overriden */
 #endif
-string stxp70_libdir;
+string stxp70_libdir = NULL;
 
 void
 Process_STxP70_Targ (string option,  string targ_args )
@@ -2049,9 +2147,26 @@ Process_STxP70_Targ (string option,  string targ_args )
   int flag;
   buffer_t buf;
   string spath;
+  string old_dir;
+  string new_P_library_dir;
+  string new_P_startup_dir;
+  char * ptr;
 
   if (debug)
     fprintf ( stderr, "Process_STxP70_Targ %s%s\n", option,targ_args);
+
+
+  if (strncasecmp (option, "-mcore", 6) == 0) {
+    for (i = 0; Proc_Map[i].pname != NULL; i++) {
+      if (same_string(targ_args, Proc_Map[i].pname)) {
+	toggle (&proc, Proc_Map[i].pid);
+      }
+    }
+    if ( proc == UNDEFINED ) {
+      warning("unsupported processor %s\n", targ_args);
+      proc = PROC_NONE;
+    }
+  }
 
   if (strncasecmp (option, "-mlibdir", 8) == 0) {
     if (is_directory(targ_args)) 
@@ -2075,6 +2190,47 @@ Process_STxP70_Targ (string option,  string targ_args )
   else
     spath = get_phase_dir(P_alt_library);
 
+  old_dir = get_phase_dir(P_library);
+  new_P_library_dir = string_copy(old_dir);
+  old_dir = get_phase_dir(P_startup);
+  new_P_startup_dir = string_copy(old_dir);
+  switch (proc) {
+    case PROC_stxp70_v4:
+      change_phase_name(P_as,"stxp70v4-as");
+      change_phase_name(P_gas,"stxp70v4-as");
+      change_phase_name(P_ld,"stxp70v4-ld");
+#ifdef BCO_ENABLED
+      change_phase_name(P_ldsimple,"stxp70v4-ld");
+      change_phase_name(P_binopt,"stxp70v4-binopt");
+#endif
+      if (NULL != (ptr = strstr(new_P_library_dir,"/stxp70v"))) {
+         ptr[8] = '4';
+         set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
+      }
+      if (NULL != (ptr = strstr(new_P_startup_dir,"/stxp70v"))) {
+         ptr[8] = '4';
+         set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
+      }
+      break;
+    case PROC_stxp70_v3:
+      change_phase_name(P_as,"stxp70v3-as");
+      change_phase_name(P_gas,"stxp70v3-as");
+      change_phase_name(P_ld,"stxp70v3-ld");
+#ifdef BCO_ENABLED
+      change_phase_name(P_ldsimple,"stxp70v3-ld");
+      change_phase_name(P_binopt,"stxp70v3-binopt");
+#endif
+      if (NULL != (ptr = strstr(new_P_library_dir,"/stxp70v"))) {
+         ptr[8] = '3';
+         set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
+      }
+      if (NULL != (ptr = strstr(new_P_startup_dir,"/stxp70v"))) {
+         ptr[8] = '3';
+         set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
+      }
+      break;
+  }
+  
   if (strncasecmp (option, "-mcore", 6) == 0) {
     for (i = 0; Proc_Map[i].pname != NULL; i++) {
       if (same_string(targ_args, Proc_Map[i].pname)) {

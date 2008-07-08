@@ -540,3 +540,17 @@ extern BOOL Is_Dwarf_Section_To_Emit(const char *name)
 	}
         return TRUE;
 }
+
+/**
+ * Check whether or not offsets in dwarf sections should be generated
+ * using symbolic data.
+ *
+ * @pre    true
+ * @post   true
+ * 
+ * @return TRUE if it is required to generate symbolic offsets, FALSE otherwise
+ */
+extern BOOL Dwarf_Require_Symbolic_Offsets()
+{
+  return FALSE;
+}

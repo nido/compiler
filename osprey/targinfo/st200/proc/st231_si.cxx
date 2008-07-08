@@ -556,21 +556,22 @@ main (int argc, char *argv[])
 
   Instruction_Group("group27",
 		TOP_asm_24_i_r_r,
+		TOP_asm_24_ii_r_r,
 		TOP_asm_25_i_r_r,
+		TOP_asm_25_ii_r_r,
 		TOP_asm_26_i_r_r,
+		TOP_asm_26_ii_r_r,
 		TOP_asm_27_i_r_r,
+		TOP_asm_27_ii_r_r,
 		TOP_UNDEFINED);
 
   Result_Available_Time (0, 4);
   Operand_Access_Time (0, 2);
   Resource_Requirement(Resource_st231_ISSUE, 0);
+  Resource_Requirement(Resource_st231_EVEN, 0);
 
 
   Instruction_Group("group28",
-		TOP_asm_24_ii_r_r,
-		TOP_asm_25_ii_r_r,
-		TOP_asm_26_ii_r_r,
-		TOP_asm_27_ii_r_r,
 		TOP_asm_28_ii_r_r,
 		TOP_asm_29_ii_r_r,
 		TOP_asm_30_ii_r_r,

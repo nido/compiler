@@ -40,10 +40,22 @@
 
 #include "ti_si.h"
 #include "ti_errors.h"
+#include "targ_isa_subset.h"
 #include "targ_isa_bundle.h"
 #include "ti_bundle.h"
 
 
+#ifdef TARG_ST
+/* ====================================================================
+ *  TI_BUNDLE_initialize
+ *  Thid function aim to propagate targinfo value pre-computed in case 
+ *  of reentrance in targinfo
+ * ====================================================================
+ */
+void TI_BUNDLE_initialize(int max_slot) {
+	Isa_Max_Slots=max_slot;
+}
+#endif
 /* ====================================================================
  *
  *  TI_BUNDLE_Has_Property

@@ -39,19 +39,20 @@
 //  Interface for packing instructions into an instruction word for all
 //  instructions in the ISA.
 //
-//  void ISA_Pack_Begin( const char* archname, int inst_bit_size )
+//  void ISA_Pack_Begin( const char* archname, int inst_word_size )
 //      Initialize to generate instruction packing information for the 
 //      architecture with the given <archname>.  The information will be 
-//	written to the files targ_isa_pack.[ch].  <inst_bit_size>
-//	indicates how many bits in an instruction (operation) word.
+//	written to the files targ_isa_pack.[ch].  <inst_word_size>
+//	indicates instruction word size. Instruction word is the minimum
+//      addressable bits.
 //
 //  TYPE ISA_PACK_TYPE
 //      An abstract type that describes different types of packing formats.
 //
-//  ISA_PACK_TYPE ISA_Pack_Type_Create( const char* name )
+//  ISA_PACK_TYPE ISA_Pack_Type_Create( const char* name, int size )
 //      Used to create a new ISA_PACK_TYPE.  <name> is the pack_type name.
 //	The rules to pack individual operands/results are added using the
-//      following two routines.
+//      following two routines. <size> gives the coding size in bits of the Pack.
 //
 //  TYPE OPND_ADJ_TYPE
 //	An abstract type that describes different types of operand adjustments.
@@ -101,9 +102,17 @@
 //	instruction, and <unpack_adj> specifies the adjustment when
 //	unpacking a binary instruction.
 //
-//  void Result (int result_index, int bit_position, int width)
+//  void Result (int result_index,
+//               int result_position,
+//               int bit_position,
+//               int width)
 //	The <result_index>'th result of the current packing type is
 //	at <bit_position> in the instruction word and is <width> bits long.
+//
+//	<result_position> will only be non-zero in cases where a result
+//	is split amoung multiple bit fields of an instruction word.
+//	In such cases you would include multiple Operand specifications with
+//	the same <result_index>, one for each field.
 //
 //  void Next_Word (void)
 //	In multiple word instructions, advance to the next word. Subsequent
@@ -131,8 +140,8 @@ typedef struct isa_pack_type *ISA_PACK_TYPE;
 
 typedef struct opnd_adj_type *OPND_ADJ_TYPE;
 
-extern void ISA_Pack_Begin ( const char* archname, int inst_bit_size );
-extern ISA_PACK_TYPE ISA_Pack_Type_Create ( const char* name );
+extern void ISA_Pack_Begin ( const char* archname, int inst_word_size );
+extern ISA_PACK_TYPE ISA_Pack_Type_Create ( const char* name, int size );
 extern OPND_ADJ_TYPE Create_Operand_Adjustment(const char *name,
 					       const char *adj);
 extern void Instruction_Pack_Group (ISA_PACK_TYPE pack_type, ...);
@@ -143,7 +152,12 @@ extern void Operand (int operand_index,
 extern void Adjust_Operand(int operand_index, 
 			   OPND_ADJ_TYPE pack_adj,
 			   OPND_ADJ_TYPE unpack_adj);
-extern void Result (int result_index, int bit_position, int width);
+
+extern void Result (int result_index,
+		    int result_position,
+		    int bit_position,
+		    int width);
+
 extern void Next_Word (void);
 extern void ISA_Pack_End(void);
 

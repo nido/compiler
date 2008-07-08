@@ -90,8 +90,8 @@ private:
   SI_RESOURCE_ID         _f0_unit_id; // floating-point0
   SI_RESOURCE_ID         _b_unit_id;  // branch
   INT32_VECTOR           _reserved;   // Reserved resources
-  ISA_EXEC_UNIT_PROPERTY _bundling_preference[ISA_MAX_SLOTS][ISA_EXEC_MAX];
-  ISA_EXEC_UNIT_PROPERTY _no_of_preferences[ISA_MAX_SLOTS];
+  ISA_EXEC_UNIT_PROPERTY _bundling_preference[ISA_BUNDLE_MAX_SLOTS][ISA_EXEC_MAX];
+  ISA_EXEC_UNIT_PROPERTY _no_of_preferences[ISA_BUNDLE_MAX_SLOTS];
   INT                    _total_no_of_bundles;
   INT                    _no_of_bundles_in_group;
 

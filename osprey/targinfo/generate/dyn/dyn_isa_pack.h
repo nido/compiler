@@ -32,23 +32,46 @@
 
 /**
  *
- * This file is only useful for dynamic code extension.
+ * This file is only useful for generation
+ * of dynamic extension code.
  *
- * More precisely, when building the shared object (dll)
- * the Open64 code generator needs some functions that have
- * been processed in earlier step of its own process.
- *
- * The role devoted to files dyn_stubxxx.c is to emulate these
- * functions when dynamic code generation is activated.
- * 
  */
+
+#ifndef _DYN_TARG_ISA_PACK_H_
+#define _DYN_TARG_ISA_PACK_H_
+
 #ifndef DYNAMIC_CODE_GEN
-#error "File " __FILE__ " can only be used for dynamic code generation\n"
+#error "### DYNAMIC_CODE_GEN not defined\n"
 #endif
 
-#ifndef _DYN_STUB3_H_
-#define _DYN_STUB3_H_
-
-extern void  Initialize_Register_Class_Stub (void);
-
+/* Check that EXTN has been specified on command line */
+#ifndef EXTN
+#error "### Error in dynamic code generation: undefined extension name macro EXTN.\n"
 #endif
+
+/*
+ * Playing with C/C++ proprecessor. Eventually
+ * we've got the following command line:
+ *
+ * #include "xxx_targ_isa_pack.h"
+ *
+ * where xxx stands for the actual extension name.
+ *
+ */
+
+#define  cvt_to_string(a)                       #a
+#define  str_concat(a,b)                        cvt_to_string(a##b)
+
+#define  file_dyn_targ_isa_pack(extname)        str_concat(extname,_targ_isa_pack.h)
+#define  file_name_dyn_op                       file_dyn_targ_isa_pack(EXTN)
+
+#include "targ_isa_pack.h"
+#include file_name_dyn_op                       /* Here is it! */
+
+#undef   file_name_dyn_op                       /* Safer!      */
+#undef   file_dyn_targ_isa_lits                 /* Safer!      */
+#undef   cvt_to_string                          /* Safer!      */
+#undef   str_concat                             /* Safer!      */
+
+#endif /* _DYN_TARG_ISA_PACK_H_ */
+

@@ -981,7 +981,7 @@ r_apply_l_const (
     	print_TN_offset = FALSE;
   }
   else if (TN_is_enum(t)) {
-    if (ISA_PRINT_Operand_Is_Part_Of_Name(OP_code(op), opidx)) {
+    if (ISA_EC_Emit_Name(TN_enum(t))) {
       vstr_sprintf (buf, vstr_len(*buf), "%s", ISA_ECV_Name(TN_enum(t)) );
     } else {
       vstr_sprintf (buf, vstr_len(*buf), "%d", ISA_ECV_Intval(TN_enum(t)) );

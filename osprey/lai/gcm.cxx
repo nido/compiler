@@ -507,7 +507,7 @@ OP_Has_Restrictions(OP *op, BB *source_bb, BB *target_bb, mINT32 motion_type)
     // are not scheduled too early, such that they violate the offset
     // restrictions.
 
-    if ((num_insts * 1.3 * ISA_INST_BYTES) >= DEFAULT_BRP_BRANCH_LIMIT)
+    if ((num_insts * 1.3 * ISA_MAX_INST_BYTES) >= DEFAULT_BRP_BRANCH_LIMIT)
       return TRUE;
   }
 
@@ -3132,7 +3132,7 @@ GCM_For_Loop (LOOP_DESCR *loop, BB_SET *processed_bbs, HBS_TYPE hb_type)
 
 	  INT targ_alignment = (Align_Instructions) ? Align_Instructions:
 	                                              CGTARG_Text_Alignment();
-	  targ_alignment /= ISA_INST_BYTES; // so word sized
+	  targ_alignment /= ISA_MAX_INST_BYTES; // so word sized
 	  INT16 cand_bb_vacant_slots = Find_Vacant_Slots_BB(cand_bb, 
 							    targ_alignment);
 	  INT16 bb_vacant_slots = Find_Vacant_Slots_BB(bb, targ_alignment);
@@ -3314,7 +3314,7 @@ void GCM_Schedule_Region (HBS_TYPE hbs_type)
     // [CG] Check_If_Should_Align_BB() is not used anymore.
     num_of_nops = 0;
 #else
-    num_of_nops = Check_If_Should_Align_BB(bb, ISA_INST_BYTES * cur_pc);
+    num_of_nops = Check_If_Should_Align_BB(bb, ISA_MAX_INST_BYTES * cur_pc);
 #endif
     if (num_of_nops || BB_entry(bb)) {
       Set_BB_num_align_nops(bbsch, num_of_nops);

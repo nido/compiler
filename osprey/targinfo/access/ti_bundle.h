@@ -143,9 +143,10 @@ extern "C" {
 
 #include "topcode.h"
 
+
 typedef struct ti_bundle {
   ISA_BUNDLE_INFO *bundle_info; /* exported interface from targ_info */
-  BOOL slot_filled[ISA_MAX_SLOTS];  
+  BOOL slot_filled[ISA_BUNDLE_MAX_SLOTS];  
 } TI_BUNDLE;
 
 /* TI_BUNDLE accessors:
@@ -188,6 +189,10 @@ TI_BUNDLE_Stop_Bit_Present(TI_BUNDLE *bundle) {
   }
   return FALSE;
 }
+
+#ifdef TARG_ST
+TARGINFO_EXPORTED extern void TI_BUNDLE_initialize(int max_slot);
+#endif
 
 TARGINFO_EXPORTED extern BOOL TI_BUNDLE_Has_Property(
   TI_BUNDLE *bundle,

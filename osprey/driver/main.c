@@ -295,6 +295,9 @@ main (int argc, char *argv[])
 		}
 	}
 
+	/* Check target specifications for consistency: */
+	Check_Target ();
+
 #if defined( TARG_STxP70 )
    /* At this point, add TENV for extension if it exists as if it was
     * on standard command line...
@@ -308,6 +311,11 @@ main (int argc, char *argv[])
          
    		treat_one_arg(&i,newargv);
       }
+   }
+   /* On v4 architecture, refuse to activate binopt
+    */
+   if (proc == PROC_stxp70_v4) {
+      deadcode = FALSE;
    }
    /* At this point, add -Wy,-T,<link_scripts>.reloc in case of
     * binopt activation
@@ -335,7 +343,7 @@ main (int argc, char *argv[])
 	 treat_one_arg(&i,script_argv);
       }
       p = script_files->head;
-      if ((NULL != p ) && ((deadcode==TRUE) || ((olevel>=2) && (deadcode==UNDEFINED)))) {
+      if ((NULL != p ) && ((deadcode==TRUE) || ((olevel>=2) && (deadcode==UNDEFINED) && (proc != PROC_stxp70_v4)))) {
          snprintf(relocatable_str1,1024,"%s.reloc",p->name);
 	 if (!file_exists(p->name)) {
 	    error("Link script file required: %s",p->name);
@@ -351,9 +359,6 @@ main (int argc, char *argv[])
       }
    }
 #endif
-
-	/* Check target specifications for consistency: */
-	Check_Target ();
 
 #ifdef TARG_ST
 	if (dump_machine) {

@@ -50,6 +50,9 @@ static const char source_file[] = __FILE__;
 #include "em_dwarf.h"
 #include "config_elf_targ.h"
 #include "targ_em_dwarf.h"
+#ifdef TARG_ST
+#include "targ_isa_pack.h"
+#endif
 
 #include "config.h"     /* For Target_Byte_Sex */
 
@@ -305,7 +308,10 @@ Em_Dwarf_Begin (BOOL is_64bit, BOOL dwarf_trace, BOOL is_cplus,
   };
 
   dw_dbg = dwarf_producer_init_b (flags, setup_new_section_for_dwarf, 
-		      0, 0, &dw_error);
+#ifdef TARG_ST
+				  ISA_PACK_INST_WORD_SIZE/8,
+#endif
+				  0, 0, &dw_error);
 
 // [CQ1]: Initialization of cie is no more statically known because of
 // reconfigurability and interruption function.
@@ -623,8 +629,23 @@ Em_Dwarf_End_Text_Arange (pSCNINFO scninfo, INT end_offset)
 
 void
 Em_Dwarf_End_Text_Arange_Symbolic(Dwarf_Unsigned last_label,
+#ifdef TARG_ST
+				  Dwarf_Unsigned end_label,
+#endif
 				  Dwarf_Addr     offset_from_last_label)
 {
+#ifdef TARG_ST
+  if (end_label != 0) {
+      dwarf_add_arange_b (dw_dbg,
+			  Offset_From_Text_Start_Label,
+			  0 /* dummy length */, 
+			  Text_Start_Label,
+			  end_label,
+			  0,
+			  &dw_error);
+  }
+  else {
+#endif
   dwarf_add_arange_b (dw_dbg,
 		      Offset_From_Text_Start_Label,
 		      0 /* dummy length */, 
@@ -632,6 +653,9 @@ Em_Dwarf_End_Text_Arange_Symbolic(Dwarf_Unsigned last_label,
 		      last_label,
 		      offset_from_last_label,
 		      &dw_error);
+#ifdef TARG_ST
+  }
+#endif
 }
 
 void
@@ -645,11 +669,22 @@ void
 Em_Dwarf_End_Text_Region_Semi_Symbolic(pSCNINFO       scninfo,
 				       INT            end_offset,
 				       Dwarf_Unsigned last_label,
+#ifdef TARG_ST
+				       Dwarf_Unsigned end_label,
+#endif
 				       Dwarf_Addr     offset_from_last_label)
 {
+#ifdef TARG_ST
+  Em_Dwarf_End_Text_Arange_Symbolic(last_label,
+				    end_label,
+				    offset_from_last_label);
+  dwarf_lne_end_sequence_symbolic (dw_dbg, end_offset - Text_Start_Offset,
+				   last_label, end_label, &dw_error);
+#else
   Em_Dwarf_End_Text_Arange_Symbolic(last_label,
 				    offset_from_last_label);
   Em_Dwarf_End_Text_Lines(scninfo, end_offset - Text_Start_Offset);
+#endif
 }
 
 void Em_Dwarf_Process_PU (Dwarf_Unsigned begin_label,

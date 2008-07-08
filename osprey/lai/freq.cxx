@@ -770,6 +770,10 @@ Pointer_Heuristic(
    */
   variant = CGTARG_Analyze_Compare(br_op, &tn1, &tn2, &cmp);
 #ifdef TARG_ST
+  // TDR To be trunk camparable
+  if (V_br_condition(variant) == V_BR_U4NE || V_br_condition(variant) == V_BR_U4EQ) return FALSE;
+
+  
   /* [CG]: We handle V_BR_FALSE case. */
   if (V_false_br(variant)) invert = !invert;
   variant = V_br_condition(variant);

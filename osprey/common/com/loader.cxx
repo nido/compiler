@@ -771,7 +771,7 @@ void Initialize_ISA_RegisterClasses(Lai_Loader_Info_t &ext_info) {
 	 i.e. this information is not used.
 	 For instance on stxp70, the stxp70 RTK may generate either the mask (1<<ISA_SUBSET_stxp70) or
 	 the mask (1<<ISA_SUBSET_stxp70_ext) while ISA_SUBSET_stxp70_ext is now obsolete. */
-      rc_tab[ext_info.base_REGISTER_CLASS[ext]].isa_mask = (1<<*(ISA_SUBSET_LIST_First(ISA_SUBSET_List)));
+      rc_tab[ext_info.base_REGISTER_CLASS[ext]].isa_mask = (1<<*(ISA_SUBSET_LIST_Begin(ISA_SUBSET_List)));
 
       //TB: Update PREG with regclass
       for (int regcl = ext_info.base_REGISTER_CLASS[ext]; 
@@ -937,7 +937,9 @@ Generate_EXTENSION_ISA_Info(const Extension_dll_t *dll_instance, BOOL verbose) {
   INT magic = isa_ext->magic;
   if (EXTENSION_Is_Supported_ISA_Revision(magic)) {
     if (verbose) {
-      fprintf(TFile, "  ISA API revision: lib=%d, compiler=%d\n", magic, MAGIC_NUMBER_EXT_API);
+      get_extension_name_t get_extname = (get_extension_name_t)Get_dll_Symbol(dll_instance, "get_extension_name");
+      const char *extname = (*get_extname)();
+      fprintf(TFile, "  [Extension '%s'] ISA API revision: lib=%d, compiler=%d\n", extname, magic, MAGIC_NUMBER_EXT_API);
     }
     isa_ext_access = new EXTENSION_ISA_Info(isa_ext);
   }

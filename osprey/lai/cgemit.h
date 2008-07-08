@@ -74,7 +74,7 @@ extern BOOL CG_emit_unwind_directives;
 extern void EMT_Write_Qualified_Name (FILE *f, ST *st);
 
 #ifdef TARG_ST // [CL]
-void New_Debug_Line_Set_Label(INT code_address);
+void New_Debug_Line_Set_Label(INT code_address, BOOL last_line);
 #endif
 
 #endif /* cgemit_INCLUDED */

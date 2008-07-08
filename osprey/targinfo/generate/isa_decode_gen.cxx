@@ -358,26 +358,65 @@ void ISA_Decode_End(void)
 //  See interface description.
 /////////////////////////////////////
 {
+  // Whether we generate code for an extension
+  // or for the core.
+  bool        gen_static_code = Is_Static_Code();
+
+  const char* const extname  = gen_static_code ? NULL: Get_Extension_Name();
+
   list <STATE>::iterator state_iter;
-  char buf[1000];
-#define FNAME "targ_isa_decode"
-  sprintf (buf, "%s.h", FNAME);
-  FILE* hfile = fopen(buf, "w");
-  sprintf (buf, "%s.c", FNAME);
-  FILE* cfile = fopen(buf, "w");
-  sprintf (buf, "%s.Exported", FNAME);
-  FILE* efile = fopen(buf, "w");
 
-  fprintf(cfile, "#include \"topcode.h\"\n"
-		 "#include \"targ_isa_bundle.h\"\n"
-			 "#include \"targ_isa_pack.h\"\n"
-	 "#include \"%s.h\"\n\n", FNAME);
+  char  *hfilename;
+  char  *cfilename;
+  char  *efilename = NULL;
+  FILE  *hfile;
+  FILE  *cfile;
+  FILE  *efile = NULL;
+  char  *htopcodename;           // topcode.h
+  char  *hbundlename;
+  char  *hpackname;
 
-  sprintf (buf, "%s", FNAME);
-  Emit_Header (hfile, buf, interface);
-  fprintf(hfile, "#include \"topcode.h\"\n"
-		 "#include \"targ_isa_bundle.h\"\n"
-		 "#include \"targ_isa_pack.h\"\n");
+  hfilename = Gen_Build_Filename(FNAME_TARG_ISA_DECODE,extname,
+                                 gen_util_file_type_hfile);
+  hfile     = Gen_Open_File_Handle(hfilename,"w");
+
+  // C file
+  cfilename = Gen_Build_Filename(FNAME_TARG_ISA_DECODE,extname,
+                                 gen_util_file_type_cfile);
+  cfile     = Gen_Open_File_Handle(cfilename,"w");
+
+  // Export file
+  if(gen_static_code) 
+   { efilename = Gen_Build_Filename(FNAME_TARG_ISA_DECODE,extname,
+                                    gen_util_file_type_efile);
+     efile     = Gen_Open_File_Handle(efilename,"w");
+   }
+
+  htopcodename = Gen_Build_Filename(FNAME_TOPCODE,extname,
+                                    gen_util_file_type_hfile);
+  hbundlename  = Gen_Build_Filename(FNAME_TARG_ISA_BUNDLE,extname,
+                                    gen_util_file_type_hfile);
+  hpackname    = Gen_Build_Filename(FNAME_TARG_ISA_PACK,extname,
+                                    gen_util_file_type_hfile);
+  
+  fprintf(cfile, 
+    "#include \"%s\"\n"
+    "#include \"%s\"\n"
+    "#include \"%s\"\n"
+    "#include \"%s\"\n\n",
+     htopcodename,
+     hbundlename,
+     hpackname,
+     hfilename); 
+
+  Emit_Header (hfile, FNAME_TARG_ISA_DECODE, interface);
+  fprintf(hfile, 
+    "#include \"%s\"\n"
+    "#include \"%s\"\n"
+    "#include \"%s\"\n",
+    htopcodename,
+    hbundlename,
+    hpackname);
 
   if (initial_state == NULL) {
     fprintf(stderr, "### Error: no initial decode state specified\n");
@@ -390,6 +429,15 @@ void ISA_Decode_End(void)
 
   fprintf(hfile, "\nTARGINFO_EXPORTED extern TOP ISA_Decode_Inst(const ISA_PACK_INST *pinst, ISA_EXEC_UNIT unit);\n");
 
+  for (int i=0;i<(1 << initial_state->u.i.width);i++) {
+    STATE transition;
+    
+    transition = initial_state->u.i.transition[i];
+    if (transition && transition->u.i.tag != NULL) {
+      fprintf(hfile, "\n#define %s %d\n",transition->u.i.tag,i);
+    }
+  }
+  
   fprintf(cfile, "\nTOP ISA_Decode_Inst(const ISA_PACK_INST *pinst, ISA_EXEC_UNIT unit)\n"
 		 "{\n"
 		 "  INT top;\n"
@@ -415,4 +463,19 @@ void ISA_Decode_End(void)
   }
 
   Emit_Footer (hfile);
+
+  // Closing all file handlers.
+  Gen_Close_File_Handle(cfile ,cfilename);
+  Gen_Close_File_Handle(hfile ,hfilename);
+  if(efile) 
+    Gen_Close_File_Handle(efile,efilename);
+
+  // Memory deallocation
+  Gen_Free_Filename(cfilename);
+  Gen_Free_Filename(hfilename);
+  if(efilename)
+    Gen_Free_Filename(efilename);
+  Gen_Free_Filename(htopcodename);
+  Gen_Free_Filename(hbundlename);
+  Gen_Free_Filename(hpackname);
 }

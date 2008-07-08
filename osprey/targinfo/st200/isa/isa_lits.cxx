@@ -47,11 +47,12 @@ main ()
   // ISA_Create_Lit_Class(name, type, [range,...] LIT_RANGE_END) 
 
   ISA_Create_Lit_Class("brknum", UNSIGNED, UnsignedBitRange(12), LIT_RANGE_END);
-  ISA_Create_Lit_Class("btarg", SIGNED, SignedBitRange(23), LIT_RANGE_END);
+  LIT_RANGE lr_btarg = ISA_Create_Lit_Range("lr_btarg", -0x400000LL, 0x3fffffLL, 2);
+  ISA_Create_Lit_Class("btarg", SIGNED, lr_btarg, LIT_RANGE_END);
   ISA_Create_Lit_Class("imm", SIGNED, SignedBitRange(23), LIT_RANGE_END);
   ISA_Create_Lit_Class("isrc2", SIGNED, SignedBitRange(9), LIT_RANGE_END);
   ISA_Create_Lit_Class("sbrknum", UNSIGNED, UnsignedBitRange(21), LIT_RANGE_END);
-  LIT_RANGE lr_wrap32 = ISA_Create_Lit_Range("wrap32", -0x80000000LL, 0xffffffffLL);
+  LIT_RANGE lr_wrap32 = ISA_Create_Lit_Range("lr_wrap32", -0x80000000LL, 0xffffffffLL, 0);
   ISA_Create_Lit_Class("xsrc2", SIGNED, lr_wrap32, LIT_RANGE_END);
  
   ISA_Lits_End(); 

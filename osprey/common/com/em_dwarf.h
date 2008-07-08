@@ -119,6 +119,9 @@ extern void Em_Dwarf_End_Text_Region (pSCNINFO scninfo, INT end_offset);
 extern void Em_Dwarf_End_Text_Region_Semi_Symbolic (pSCNINFO,
 						    INT,
 						    Dwarf_Unsigned,
+#ifdef TARG_ST
+						    Dwarf_Unsigned,
+#endif
 						    Dwarf_Addr);
 #if defined(__cplusplus)
 }

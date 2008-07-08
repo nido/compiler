@@ -471,7 +471,7 @@ Get_BB_When_Length (BB *bb)
   OP *op;
   FOR_ALL_BB_OPs_FWD(bb, op) {
   	if (OP_dummy(op)) continue;
-  	w += OP_Real_Inst_Words(op);
+	w += OP_Real_Unit_Slots(op);
   }
   return w;
 }
@@ -512,7 +512,7 @@ Find_Unwind_Info (void)
     FOR_ALL_BB_OPs_FWD(bb, op) {
 	if (OP_dummy(op)) continue;
 	Analyze_OP_For_Unwind_Info(op, when, bb);
-	when += OP_Real_Inst_Words(op);
+	when += OP_Real_Unit_Slots(op);
     }
     // if the current BB has restored FP and is an exit BB then the
     // next BB is entered from a path where FP was not restored
@@ -1933,7 +1933,7 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process,
     ++ue_iter;
   }
 
-  next_when += OP_Real_Inst_Words(op);
+  next_when += OP_Real_Unit_Slots(op);
 }
 
 

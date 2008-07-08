@@ -1,8 +1,8 @@
 
 
+#include "op.h"
 #include "top_properties.h"
 #include "variants.h"
-#include "op.h"
 #include "tracing.h"
 
 /*
@@ -37,7 +37,7 @@ static int opc_opnd_signed(opc_t opc, int opnd) { return TOP_opnd_use_signed(opc
 static int opc_opnd_bits(opc_t opc, int opnd) { return TOP_opnd_use_bits(opc, opnd); }
 static int opc_ou_opnd_idx(opc_t opc, int ou) { return TOP_Find_Operand_Use(opc, ou); }
 static int opc_cond_variant(opc_t opc) { return TOP_cond_variant(opc); }
-static int opc_cmp_variant(opc_t opc) { return TOP_cmp_variant(opc); }
+static int op_cmp_variant(OP *op) { return OP_cmp_variant(op); }
 
 #define opc_is(opc, prop) TOP_is_##prop(opc)
 
@@ -264,13 +264,15 @@ intm_t TOP_fold_select(opc_t opc, const opnd_t *opnds) {
   return result;
 }
 
-intm_t TOP_fold_icmp(opc_t opc, const opnd_t *opnds) {
+  intm_t OP_fold_icmp(OP *op, const opnd_t *opnds) {
   intm_t result;
+  opc_t opc = OP_code(op);  
   int opnd1 = opc_ou_opnd_idx(opc, OU_opnd1);
   int opnd2 = opc_ou_opnd_idx(opc, OU_opnd2);
   intm_t op1 = fetch(opc, opnds, opnd1);
   intm_t op2 = fetch(opc, opnds, opnd2);
-  VARIANT variant = opc_cmp_variant(opc);
+
+  VARIANT variant = op_cmp_variant(op);
   switch (variant) {
   case V_CMP_NE: result = (op1 != op2); break;
   case V_CMP_EQ: result = (op1 == op2); break;
@@ -396,7 +398,7 @@ static int check_st200_opcodes(void)
  * Constraints on properties.
  */
 #define CHECK(x) FmtAssert((x), ("Inconsistent property: %s", #x))
-#define TOP_CHECK(x) FmtAssert((x), ("TOP %s as inconsistent property: %s", TOP_Name((TOP)opc), #x))
+#define TOP_CHECK(x) FmtAssert((x), ("TOP %s has inconsistent property: %s", TOP_Name((TOP)opc), #x))
 
 
 int TOP_check_properties(opc_t opc)

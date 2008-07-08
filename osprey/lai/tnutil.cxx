@@ -410,9 +410,9 @@ Gen_Register_TN (
  *   We normalize values by sign-extending or zero-extending
  *   from <size> to 8 bytes.
  *   For instance a TN of size 4 with 0x80000000 will have
- *   a 64 bits value of 0xffffffff80000000 is signed or 0x0000000080000000
+ *   a 64 bits value of 0xffffffff80000000 if signed or 0x0000000080000000
  *   if not signed.
- *   The rational is to get always identical values is 2 values differ
+ *   The rational is to get always identical values if 2 values differ
  *   in the upper non significant bits.
  *   It is also done like this in the WHIRL.
  *   Note however that the input constant must already be correctly sign
@@ -535,7 +535,7 @@ TN *
 Gen_Symbol_TN ( 
   ST *st, 
   INT64 offset,
-  INT32 relocs
+  ISA_RELOC relocs
 )
 {
   TN *tn;
@@ -894,7 +894,7 @@ sPrint_TN (
       ST *var = TN_var(tn);
 
       buf += sprintf ( buf, "(sym" );
-      // [JV] On STxP70, some relocs have name starting with '%' ...
+      // [JV] On STxP70, some relocs name starts with '%' ...
       buf += sprintf ( buf, "%s", TN_RELOCS_Name(TN_relocs(tn)) );
 
       /*

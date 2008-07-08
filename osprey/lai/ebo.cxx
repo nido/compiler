@@ -150,6 +150,9 @@ static const char source_file[] = __FILE__;
 #include "ebo_util.h"
 
 #include "config_opt.h" // [HK] for Finite_Math
+#ifdef TARG_ST
+#include "tn.h"
+#endif
 /* ===================================================================== */
 /* Global Data:								 */
 /* ===================================================================== */
@@ -909,14 +912,14 @@ tn_info_entry_dump (EBO_TN_INFO *tninfo)
 
 #ifdef TARG_ST
   if (tninfo->copy_tn != NULL) {
-    fprintf(TFile,"\tcopy of TN: ");
+    fprintf(TFile,"\n\tcopy of TN: ");
     Print_TN (tninfo->copy_tn, TRUE);
     if (tninfo->copy_tninfo != NULL) {
       fprintf(TFile," (Entry Number %d)",
               tninfo->copy_tninfo->sequence_num);
     }
-    fprintf(TFile,"\n");
   }
+  fprintf(TFile,"\n");
 #endif
   if (tninfo->in_op) {
     fprintf(TFile,"\t");
@@ -1473,6 +1476,7 @@ EBO_delete_subset_mem_op(
 
   byte_offset = offset_succ - offset_pred;
 
+  // This code is specific to ST200
   if (OP_load(op) && OP_load(pred_op) &&
       (OP_results(op) == 1) && (OP_results(pred_op) == 2) &&
       (2*size_succ == size_pred)) {
@@ -3695,7 +3699,11 @@ EBO_Fold_Constant_Compare (
   tn0_uval = (UINT64)(tn0_val << 64-bit_size) >> 64-bit_size;
   tn1_uval = (UINT64)(tn1_val << 64-bit_size) >> 64-bit_size;
 
-  VARIANT variant = TOP_cmp_variant(opcode);
+#ifdef TARG_ST
+      VARIANT variant = OP_cmp_variant(op);
+#else
+      VARIANT variant = TOP_cmp_variant(opcode);
+#endif
 
   switch (variant) {
   case V_CMP_EQ: result_val = (tn0_val == tn1_val); break;
@@ -3759,8 +3767,12 @@ EBO_Simplify_Special_Compare (
   tn0 = opnd_tn[op1_idx];
   tn1 = opnd_tn[op2_idx];
 
+#ifdef TARG_ST
+      VARIANT variant = OP_cmp_variant(op);
+#else
+      VARIANT variant = TOP_cmp_variant(opcode);
+#endif
   if (!TN_is_constant(tn0) && (tn1 == Zero_TN)){
-	  VARIANT variant = TOP_cmp_variant(opcode);
 	  switch (variant) {
 	  case V_CMP_GEU: result_val = 1; break;
 	  case V_CMP_LTU: result_val = 0; break;
@@ -3769,7 +3781,6 @@ EBO_Simplify_Special_Compare (
 	  goto  Constant_Created;
   }         
   else if (!TN_is_constant(tn1) && (tn0 == Zero_TN)){ 
-	  VARIANT variant = TOP_cmp_variant(opcode);
 	  switch (variant) {
 	  case V_CMP_LEU: result_val = 1; break;
 	  case V_CMP_GTU: result_val = 0; break;
@@ -3779,7 +3790,6 @@ EBO_Simplify_Special_Compare (
   }
   else if (!TN_is_constant(tn0) && !TN_is_constant(tn1)){
       if (TNs_Are_Equivalent(tn0, tn1)){
-	  VARIANT variant = TOP_cmp_variant(opcode);
 	  switch (variant) {
 	  case V_CMP_NE: 
 	  case V_CMP_LT: 
@@ -3932,7 +3942,7 @@ EBO_Simplify_Compare_Sequence (
     // fix for codex bug #38449
     // if the constant is on the left-hand side
     // the compare variant has to be inverted
-    opcode = TOP_opnd_swapped_variant(opcode, op1_idx, op2_idx);
+    opcode = OP_opnd_swapped_variant(op, op1_idx, op2_idx);
   }
   else if (TN_Has_Value(tn2) && in_op1 && OP_icmp(in_op1)){
     const_val = TN_Value (tn2);
@@ -3961,7 +3971,11 @@ EBO_Simplify_Compare_Sequence (
       ((l2_tninfo2 != NULL) && !EBO_tn_available (OP_bb(op), l2_tninfo2))) 
     return FALSE;
 
+#ifdef TARG_ST
+  variant = OP_cmp_variant(op);
+#else
   variant = TOP_cmp_variant(opcode);
+#endif
   switch (variant) {
   case V_CMP_NE: 
     if (const_val == 0){
@@ -4126,7 +4140,11 @@ EBO_Simplify_Compare_Sequence (
   }
 
   if (op_created) {
-    variant_in = TOP_cmp_variant(in_opcode);
+#ifdef TARG_ST
+      variant_in = OP_cmp_variant(in_op);
+#else
+      variant_in = TOP_cmp_variant(in_opcode);
+#endif
     switch (variant_in) {
     case V_CMP_NE: 
       if (inv_var)
@@ -4313,7 +4331,7 @@ EBO_Simplify_Compare_MinMaxSequence (
     // fix for codex bug #38449
     // if the constant is on the left-hand side
     // the compare variant has to be inverted
-    opcode = TOP_opnd_swapped_variant(opcode, op1_idx, op2_idx);
+    opcode = OP_opnd_swapped_variant(op, op1_idx, op2_idx);
   }
   else if (TN_Has_Value(tn2) && in_op1 
 	   && (OP_imax(in_op1) || OP_imin(in_op1))){
@@ -4395,7 +4413,11 @@ EBO_Simplify_Compare_MinMaxSequence (
     
     
   if (op_created) {
-    variant = TOP_cmp_variant(opcode);
+#ifdef TARG_ST
+      variant = OP_cmp_variant(op);
+#else
+      variant = TOP_cmp_variant(opcode);
+#endif
     switch (variant) {
     case V_CMP_NE: 
       Expand_Int_Not_Equal(tnr, tn_minmax, tn_cst, MTYPE_I4, &ops);
@@ -4431,7 +4453,11 @@ EBO_Simplify_Compare_MinMaxSequence (
     }
   }
   else if (const_created) {
-    variant = TOP_cmp_variant(opcode);
+#ifdef TARG_ST
+      variant = OP_cmp_variant(op);
+#else
+      variant = TOP_cmp_variant(opcode);
+#endif
     switch (variant) {
     case V_CMP_NE: 
       result_val = 1;
@@ -4768,7 +4794,11 @@ EBO_Fold_Constant_Expression (
     }
 
     else if (OP_icmp(op)) {
-      result_val = TOP_fold_icmp(opcode, opnd_tn);
+#ifdef TARG_ST
+      result_val = OP_fold_icmp(op, opnd_tn);
+#else
+      result_val = TOP_fold_icmp(OP_code(op), opnd_tn);
+#endif
       goto Constant_Created;
     }
 
@@ -5559,7 +5589,6 @@ find_duplicate_op (BB *bb,
 #endif
 
     if (hash_op_matches) {
-
       for (opndnum = 0; opndnum < opcount; opndnum++) {
 #ifdef TARG_ST
         // (cbr) operands are inversed guards.
@@ -5568,7 +5597,7 @@ find_duplicate_op (BB *bb,
           break;
         }
 #endif
-
+        
         if (OP_has_predicate(op) && (opndnum == OP_find_opnd_use(op, OU_predicate))) {
          /* Check predicates later. */
           continue;
@@ -5580,7 +5609,16 @@ find_duplicate_op (BB *bb,
             continue;
           }
 
-         /* Items that are constant (i.e. have a NULL tninfo_entry pointer)
+#ifdef TARG_ST
+         // TDR: To cope with new compare model, we must check the condition 
+         if (TOP_is_cmp(OP_code(op)) 
+        		  && (TOP_Find_Operand_Use(OP_code(op), OU_condition) == opndnum) 
+        		  && (TOP_Find_Operand_Use(OP_code(pred_op), OU_condition) == opndnum)
+        		  && (TN_enum(OP_opnd(op,opndnum)) == TN_enum(OP_opnd(pred_op,opndnum)))) {
+        	continue;
+          }
+#endif
+       /* Items that are constant (i.e. have a NULL tninfo_entry pointer)
             must be checked to verify that the constants are the same.
             Note that there are several "reasonable" combinations that
             can come up:

@@ -396,17 +396,17 @@ void RES_WORD::Output_All(FILE* fd)
   else {
     // Important special case.  We don't need a vector of resource words at all
     // and can just use a scalar.
-    fprintf(fd,"static TI_SI_CONST SI_RRW SI_RRW_%s_initializer = " PRINTF_LONGLONG_HEXA ";\n",
+    fprintf(fd,"static TI_SI_CONST SI_RRW SI_RRW_%s_initializer = " PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s;\n",
 	    gen_static_code?"static":"dynamic",
-	    res_words.front()->initializer);
-    fprintf(fd,"static TI_SI_CONST SI_RRW SI_RRW_%s_overuse_mask = " PRINTF_LONGLONG_HEXA ";\n",
+	    res_words.front()->initializer, PRINTF_LONGLONG_SUFFIX( res_words.front()->initializer ) );
+    fprintf(fd,"static TI_SI_CONST SI_RRW SI_RRW_%s_overuse_mask = " PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s;\n",
 	    gen_static_code?"static":"dynamic",
-	    res_words.front()->overuse_mask);
+	    res_words.front()->overuse_mask, PRINTF_LONGLONG_SUFFIX( res_words.front()->overuse_mask ) );
     if (gen_static_code) {
-      fprintf(fd,"TARGINFO_EXPORTED TI_SI_CONST SI_RRW SI_RRW_initializer = " PRINTF_LONGLONG_HEXA ";\n",
-	      res_words.front()->initializer);
-      fprintf(fd,"TARGINFO_EXPORTED TI_SI_CONST SI_RRW SI_RRW_overuse_mask = " PRINTF_LONGLONG_HEXA ";\n",
-	      res_words.front()->overuse_mask);
+      fprintf(fd,"TARGINFO_EXPORTED TI_SI_CONST SI_RRW SI_RRW_initializer = " PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s;\n",
+	      res_words.front()->initializer, PRINTF_LONGLONG_SUFFIX( res_words.front()->initializer ) );
+      fprintf(fd,"TARGINFO_EXPORTED TI_SI_CONST SI_RRW SI_RRW_overuse_mask = " PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s;\n",
+	      res_words.front()->overuse_mask, PRINTF_LONGLONG_SUFFIX( res_words.front()->overuse_mask ) );
     }
     else {
       /* Managing dynamic extension */
@@ -881,7 +881,7 @@ void RES_REQ::Output(FILE* fd)
              max_res_cycle + 1);
 
   for ( i = 0; i <= max_res_cycle; ++i )
-    fprintf(fd,",\n  " PRINTF_LONGLONG_HEXA "",res_vec[i]);
+    fprintf(fd,",\n  " PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s",res_vec[i],PRINTF_LONGLONG_SUFFIX(res_vec[i]));
 
   fprintf(fd,"\n};\n");
 
@@ -896,7 +896,7 @@ void RES_REQ::Output(FILE* fd)
   bool is_first = true;
   for ( i = 0; i <= max_res_cycle; ++i ) {
     Maybe_Print_Comma(fd,is_first);
-    fprintf(fd,"\n  " PRINTF_LONGLONG_HEXA "",res_used_set[i]);
+    fprintf(fd,"\n  " PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s",res_used_set[i],PRINTF_LONGLONG_SUFFIX(res_used_set[i]));
   }
 
   fprintf(fd,"\n};\n");
@@ -1454,7 +1454,8 @@ void INSTRUCTION_GROUP::Output(FILE* fd)
              ii_res_id_set_gname.Gname());
   fprintf(fd,"  {{");
   for ( i = 0; i < sizeof(bad_iis) / sizeof(bad_iis[0]); ++i ) {
-    fprintf(fd, "" PRINTF_LONGLONG_HEXA "", bad_iis[i]);
+    fprintf(fd, PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s", bad_iis[i], PRINTF_LONGLONG_SUFFIX(bad_iis[i]) );
+
     if ( i < sizeof(bad_iis) / sizeof(bad_iis[0]) - 1 ) fprintf(fd, ",");
   }
   fprintf(fd, "}}    , /* Bad IIs */\n");

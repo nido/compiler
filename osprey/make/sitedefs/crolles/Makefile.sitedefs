@@ -1,0 +1,7 @@
+#
+# Define DISTCC_HOSTS and CCACHE
+#
+ifeq ($(BUILD_OS),LINUX)
+CCACHE=distcc
+export DISTCC_HOSTS=crx679 crx825 crx684 crx941 crx746 crx1162 crx1188 crx1103
+endif

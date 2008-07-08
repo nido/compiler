@@ -966,13 +966,14 @@ Fill_Cycle_With_Noops (
   INT template_bit = TI_BUNDLE_Return_Template(bundle);
   FmtAssert (template_bit != -1, ("Illegal template encoding"));
 
+
   INT i;
   FOR_ALL_SLOT_MEMBERS(bundle, i) {
     //
     // Advance until the next after 'op' bundle slot found
     //
     if (!TI_BUNDLE_slot_filled(bundle, i)) {
-#ifdef TARG_ST200
+#if defined(TARG_ST200) || defined(TARG_STxP70)
       // CL: only add a nop if the bundle is currently empty
       // FdF: For st221, no need for empty bundles since the hardware
       // takes care of the latency.
@@ -992,11 +993,18 @@ Fill_Cycle_With_Noops (
       // Set end group and reset bundle vector:
       Set_OP_end_group(noop);
 
-#ifdef TARG_ST200 // [CL]
+#if defined(TARG_ST200) || defined(TARG_STxP70) // [CL]
 	}
       }
       else {
-	Set_OP_end_group(op);
+#ifdef TARG_STxP70
+  /* vcdv: in some cases cmp Gx, ... ; Gx? jr; we have an empty cycle between
+     2 instructions. In this case, a noop is present in the code, it
+     is not a valid bundle and therefore, the noop must not be
+     marked by Set_OP_end_group */
+        if (!OP_dummy(op))
+#endif
+          Set_OP_end_group(op);
       }
       TI_BUNDLE_Clear(bundle);
 #endif
@@ -1206,7 +1214,7 @@ Handle_Bundle_Hazards(
   // these OPs, and continue.
 
   BOOL bundling_reqd = (OP_code(op) != TOP_asm);
-  INT w;
+  INT slot;
 
   // if black_box_op, set the end_group market and quit now.
   if (!bundling_reqd) {
@@ -1297,14 +1305,14 @@ Handle_Bundle_Hazards(
 				stop_bit_reqd, 
 				prop);
 
-#ifdef TARG_ST200 // [CL]
+#ifdef TARG_ST200  // [CL]
     CGTARG_Finish_Bundle(OP_prev(op), bundle);
 #endif
 
     // Bundle is full at this time, reset bundle
     TI_BUNDLE_Clear (bundle);
 
-#ifdef TARG_ST200
+#if defined(TARG_ST200) || defined(TARG_STxP70)  
     Set_OP_end_group(Last_Real_OP(op));
     VECTOR_Reset (*bundle_vector);
 #endif
@@ -1333,8 +1341,8 @@ Handle_Bundle_Hazards(
     // set <end_group> marker
     Set_OP_end_group(Last_Real_OP(op));
     VECTOR_Reset (*bundle_vector);
-#ifdef TARG_ST200 // CL: bundles have variable length
-	          // and can be reset at any time
+#if defined(TARG_ST200) || defined(TARG_STxP70) // CL: bundles have variable length
+    // and can be reset at any time
     TI_BUNDLE_Clear (bundle);
 #endif
 
@@ -1345,8 +1353,8 @@ Handle_Bundle_Hazards(
   Set_OP_bundled (op);
 
   // reserve as many slots as necessary
-  for (w = 0; w < ISA_PACK_Inst_Words(OP_code(op)); w++)
-    TI_BUNDLE_Reserve_Slot (bundle, slot_pos+w, prop);
+  for (slot = 0; slot < ISA_EXEC_Unit_Slots(OP_code(op)); slot++)
+    TI_BUNDLE_Reserve_Slot (bundle, slot_pos+slot, prop);
 
   VECTOR_Add_Element (*bundle_vector, op);
 
@@ -1354,7 +1362,7 @@ Handle_Bundle_Hazards(
   BB_OP_MAP32_Set(omap, op, Clock);
   TI_RES_RES_Reserve_Resources(rr_tab, OP_code(op), Clock);
 
-#ifndef TARG_ST200
+#if !( defined(TARG_ST200) || defined(TARG_STxP70))
   //
   // If op is last in BB, I will have to fill noops until end 
   // of bundle.
@@ -1391,7 +1399,10 @@ Make_Bundles (
 {
   INT ti_err = TI_RC_OKAY;
   BOOL dep_graph_built = FALSE;
-#ifdef TARG_ST200 //CL: under -O0 -g, force new bundle for new source line
+
+#if defined(TARG_ST200) || defined(TARG_STxP70) //CL: under -O0 -g,
+                                                //force new bundle for
+                                                //new source line 
   static SRCPOS last_srcpos = 0;
 #endif
 
@@ -1548,7 +1559,7 @@ Make_Bundles (
       }
 
       // If there is a dependence, first end current group
-#ifdef TARG_ST200
+#if defined(TARG_ST200) || defined(TARG_STxP70)
       // [CG] Treat asm
       BOOL bundling_reqd = (OP_code(op) != TOP_asm);
 
@@ -1589,8 +1600,9 @@ Make_Bundles (
 #endif
 	  Set_OP_end_group(Last_Real_OP(op));
 	  VECTOR_Reset (*bundle_vector);
-#ifdef TARG_ST200 // CL: bundles have variable length
-	          // and can be reset at any time
+#if defined(TARG_ST200) || defined(TARG_STxP70)
+          // CL: bundles have variable length
+          // and can be reset at any time
 	  // Reset the bundle
 	  TI_BUNDLE_Clear (bundle);
 #endif
@@ -1624,7 +1636,10 @@ Make_Bundles (
 	  if (branch_latency > estart) estart = branch_latency;
 	}
 #else
-	if (pending_latency > estart) estart = pending_latency;
+#ifdef TARG_STxP70
+        if (FORCE_NOOPS)
+#endif
+	 if (pending_latency > estart) estart = pending_latency;
 #endif
       }
 
@@ -1633,7 +1648,7 @@ Make_Bundles (
 
     } /* for all OPs other than first */
 
-#ifdef TARG_ST200
+#if defined(TARG_ST200) || defined(TARG_STxP70)
       last_srcpos = OP_srcpos(op);
 #endif
 
@@ -1651,7 +1666,7 @@ Make_Bundles (
 #endif
       Set_OP_end_group(Last_Real_OP(op));
       VECTOR_Reset (*bundle_vector);
-#ifdef TARG_ST200
+#if defined(TARG_ST200) || defined(TARG_STxP70)
       // Reset the bundle
       TI_BUNDLE_Clear (bundle);
 #endif
@@ -1711,7 +1726,7 @@ Make_Bundles (
 #endif
       Set_OP_end_group(op);
       VECTOR_Reset (*bundle_vector);
-#ifdef TARG_ST200
+#if defined(TARG_ST200) || defined(TARG_STxP70)
       // Reset the bundle
       TI_BUNDLE_Clear (bundle);
 #endif
@@ -1794,7 +1809,8 @@ Make_Bundles (
 
   // And, need to complete the last bundle
   if (!TI_BUNDLE_Is_Empty(bundle, &ti_err)) {
-#ifndef TARG_ST200 // CL: ST200 has variable-length bundles
+#if ! ( defined(TARG_ST200) || defined(TARG_STxP70) )
+ // CL: ST200 has variable-length bundles
     while (!TI_BUNDLE_Is_Full(bundle, &ti_err)) {
       Fill_Cycle_With_Noops (bb, BB_last_op(bb), bundle, bundle_vector);
     }
@@ -1856,13 +1872,15 @@ Handle_All_Hazards (BB *bb)
   bundle->bundle_info = TYPE_MEM_POOL_ALLOC (ISA_BUNDLE_INFO, &MEM_local_pool);
   TI_BUNDLE_Clear(bundle);
   
-#ifdef TARG_ST200
+#if defined (TARG_STxP70) || defined (TARG_ST200)
   // Arthur: need to do sort of scheduling but without reordering
   //         instructions.
   //
   Make_Bundles(bb, bundle, &bundle_vector);
 
+#ifdef TARG_ST
   CGTARG_Make_Bundles_Postpass(bb);
+#endif
 
 #else
 

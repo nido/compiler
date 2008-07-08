@@ -108,6 +108,14 @@
 
 BOOL Trace_Dwarf;
 
+#ifdef TARG_ST
+// Since we need to interpret array of bytes with the "dwarf specification" of
+// the target, we have to know internal libdwarf structure. Actually, we need
+// only the size of some operands 
+#include "pro_incl.h"
+#define SIZEOF_SECTION_LENGTH dw_dbg->de_offset_size
+#endif
+
 static Dwarf_P_Debug dw_dbg;
 static Dwarf_Error dw_error;
 static BOOL Disable_DST = FALSE;
@@ -220,6 +228,19 @@ Dwarf_Unsigned Cg_Dwarf_Symtab_Entry(CGD_SYMTAB_ENTRY_TYPE  type,
   }
   return handle;
 }
+
+#ifdef TARG_ST
+// Return TRUE if the size of section <section_name> cannot be statically known.
+// This is the case when generating symbolic offsets in .debug_line section,
+// because offsets are generated using LEB128 type, that use a variable length
+// encoding (known at assembly time depending on label value).
+BOOL Cg_Dwarf_Section_Need_Symbolic_Size(const char *section_name) {
+  if (Dwarf_Require_Symbolic_Offsets() && !strcmp(section_name, ".debug_line")) {
+    return (TRUE);
+  }
+  return (FALSE);
+}
+#endif
 
 Dwarf_Unsigned Cg_Dwarf_Enter_Elfsym(Elf64_Word index)
 {
@@ -2665,7 +2686,7 @@ Cg_Dwarf_Add_Line_Entry (
   // so ignore such cases.
 #ifndef TARG_ST	   // CL: For ST targets, this function is only called
                    //     at bundle starts
-  if ((code_address % ISA_INST_BYTES) != 0) {
+  if ((code_address % ISA_MAX_INST_BYTES) != 0) {
 #if 0
   	if (Object_Code) return;
 #else
@@ -2677,7 +2698,7 @@ Cg_Dwarf_Add_Line_Entry (
 
 #ifdef TARG_ST // [CL]
   if (CG_emit_asm_dwarf) {
-    New_Debug_Line_Set_Label(code_address);
+    New_Debug_Line_Set_Label(code_address, FALSE);
   }
 #endif
 
@@ -2829,11 +2850,6 @@ struct UINT64_unaligned {
 #   include <list>
 #   include <map>
 
-// Since we need to interpret array of bytes with the "dwarf specification" of
-// the target, we have to known internal libdwarf structure. Actually, we need
-// only the size of some operands 
-#   include "pro_incl.h"
-
  static BOOL
  HasReloc(const char* section_name);
 
@@ -2892,8 +2908,6 @@ namespace {
  * Maximum length in bytes of a LEB128 variable
  */
  static const INT DW_LEB128_SIZE_IN_BYTES = 16;
-
-#define SIZEOF_SECTION_LENGTH dw_dbg->de_offset_size
 
  static const char* PADDING_STR = "\t%s\t0x00\n";
 
@@ -4128,7 +4142,11 @@ namespace {
     Dwarf_Unsigned vsp_print_bytes(
 		FILE * asm_file,
 		Dwarf_Unsigned current_reloc_target,
-                Dwarf_Unsigned cur_byte_in);
+                Dwarf_Unsigned cur_byte_in
+#ifdef TARG_ST
+		, INT skip_n_bytes=0
+#endif
+		);
 
 #ifdef TARG_STxP70
 
@@ -4226,13 +4244,15 @@ namespace {
        * Put an end to the redirection.
        *
        * @param  asm_file [out] Will contains the original file pointer
+       * @param  symb_size_update [in] Set to TRUE if section size is symbolic
        *
        * @pre    true
        * @post   true
        *
        */
       void
-      FinalizeCurrentSection(FILE* asm_file);
+      FinalizeCurrentSection(FILE* asm_file,
+			     BOOL symb_size_update = FALSE);
 
       /**
        * Relocate given offset if needed.
@@ -4262,7 +4282,11 @@ Dwarf_Unsigned
 virtual_section_position::vsp_print_bytes(
 		FILE * asm_file,
 	        Dwarf_Unsigned current_reloc_target,
-		Dwarf_Unsigned cur_byte_in)
+		Dwarf_Unsigned cur_byte_in
+#ifdef TARG_ST
+		, INT skip_n_bytes
+#endif
+		)
 {
 
     const int bytes_per_line = 8;
@@ -4275,6 +4299,16 @@ virtual_section_position::vsp_print_bytes(
         {
 #endif
     int i;
+#ifdef TARG_ST
+    if (skip_n_bytes > 0) {
+      // Skip the n first bytes
+      for (i=0; i<skip_n_bytes; i++) {
+	vsp_get_bytes(cur_byte,1);
+	++cur_byte;
+      }
+      nlines_this_reloc = (current_reloc_target - cur_byte) / bytes_per_line;
+    }
+#endif
     for (i = 0; i < nlines_this_reloc; ++i) {
       fprintf(asm_file, "\t%s\t", AS_BYTE);
       int j;
@@ -4302,6 +4336,7 @@ virtual_section_position::vsp_print_bytes(
         } // if Dwarf_Old_Style_Emission
     else
         {
+	    DevAssert(skip_n_bytes==0, ("vsp_print_bytes(): Unexpected skip_n_bytes>0"));
             EmitReloc(asm_file, current_reloc_target - cur_byte, cur_byte);
         }
 #endif
@@ -4513,7 +4548,7 @@ virtual_section_position::EmitPadding(FILE* asm_file, int padding)
 }
 
 void
-virtual_section_position::FinalizeCurrentSection(FILE* asm_file)
+virtual_section_position::FinalizeCurrentSection(FILE* asm_file, BOOL symb_size_update)
 {
     if(m_sectionBegining != NOT_SET)
         {
@@ -4526,7 +4561,13 @@ virtual_section_position::FinalizeCurrentSection(FILE* asm_file)
             // of an empty fde
             m_emittedBytes += vsp_virtpos - m_sectionPos;
             // Overwrite the length
-            int padding = EmitNewLength(asm_file);
+            int padding;
+	    if (symb_size_update) {
+	      padding = 0; // Padding done in Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs()
+	    }
+	    else {
+	      padding = EmitNewLength(asm_file);
+	    }
             // Go at the end of the section
             result = fseek(asm_file, 0, SEEK_END);
             FmtAssert(!result, ("Cannot update section padding"));
@@ -4821,6 +4862,23 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 			section_flags, section_entsize,
 			section_align, NULL);
 
+#ifdef TARG_ST
+  char begin_size_label[64];
+  char end_size_label[64];
+  char end_size_nopad_label[64];
+  BOOL need_symbolic_size = Cg_Dwarf_Section_Need_Symbolic_Size(section_name);
+  if (need_symbolic_size) {
+    // [TTh] Statically computed section size might be incorrect
+    // -> Force symbolic computation resolved at assembly time
+    sprintf(begin_size_label, "L_begin_size_section_%s", &section_name[1]); // Skip '.' prefix
+    sprintf(end_size_label, "L_end_size_section_%s", &section_name[1]);     // Skip '.' prefix
+    sprintf(end_size_nopad_label, "L_end_size_nopad_section_%s", &section_name[1]);     // Skip '.' prefix
+    FmtAssert((SIZEOF_SECTION_LENGTH==4), ("Unsupported SIZEOF_SECTION_LENGTH"));
+    fprintf(asm_file, "\t%s\t%s - %s\n", AS_WORD_UNALIGNED, end_size_label, begin_size_label);
+    fprintf(asm_file, "%s:\n", begin_size_label);
+  }
+#endif
+
   const Dwarf_Unsigned buffer   = 0; // virtual buffer, so 0 ok.
   Dwarf_Unsigned cur_byte =  buffer;
   Dwarf_Unsigned bufsize =  compute_buffer_net_size(buffer_cnt,buffers);
@@ -4861,7 +4919,12 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
       current_reloc_size = reloc_buffer[k].drd_length;
     }
 
-    cur_byte += vsp.vsp_print_bytes(asm_file,current_reloc_target,cur_byte);
+#ifdef TARG_ST
+    // When generating section size as symbolic, the total length bytes must not be dumped
+    // by vsp_print_bytes()
+    BOOL skip_n_bytes = (cur_byte == 0 && need_symbolic_size)?SIZEOF_SECTION_LENGTH:0;
+    cur_byte += vsp.vsp_print_bytes(asm_file,current_reloc_target,cur_byte, skip_n_bytes);
+#endif
 
     if (cur_byte != (buffer) + bufsize) {
 #if defined(Is_True_On)
@@ -4878,11 +4941,18 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
       // If pointer-length reloc, use data8.ua, else dwarf offset
       // size to be relocated, use data4.ua
 #ifdef TARG_ST
-      /* (cbr) shut up -fwritable-strings */
-      const
-#endif
+      // [TTh] Added a third type of reloc, that uses LEB128 encoding
+      const char *reloc_name;
+      if (reloc_buffer[k].drd_type == dwarf_drt_first_of_length_pair_inst_word) {
+	reloc_name = AS_SLEB128;
+      }
+      else {
+        reloc_name = ((reloc_buffer[k].drd_length == 8)?AS_ADDRESS_UNALIGNED: AS_WORD_UNALIGNED);
+      }
+#else
       char *reloc_name = (reloc_buffer[k].drd_length == 8)?
 			AS_ADDRESS_UNALIGNED: AS_WORD_UNALIGNED;
+#endif
 
 #ifdef TARG_STxP70
       if(vsp.m_instructions.end() != vsp.m_curInst &&
@@ -4966,6 +5036,30 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 		Cg_Dwarf_Name_From_Handle(reloc_buffer[k].drd_symbol_index));
 	++k;
 	break;
+#ifdef TARG_ST
+	// [TTh] Relocation : .sleb128 (end - begin) / Min_Inst_word
+      case dwarf_drt_first_of_length_pair_inst_word:
+	{
+	  Is_True(k + 1 < reloc_count, ("unpaired first_of_length_pair_inst_word"));
+	  Is_True((reloc_buffer[k + 1].drd_type ==
+		   dwarf_drt_second_of_length_pair_inst_word),
+		  ("unpaired first_of_length_pair_inst_word"));
+	  // Divide using shift, because '/' not supported by gnuasm...
+	  INT shift=0;
+	  switch(ISA_PACK_INST_WORD_SIZE / 8) {
+	  case 1: shift = 0; break;
+	  case 2: shift = 1; break;
+	  case 4: shift = 2; break;
+	  default: Is_True((0), ("Unsupported inst word for first_of_length_pair_inst_word")); break;
+	  }
+	  fprintf(asm_file, "\t%s\t(%s - %s) >> %d", reloc_name,
+		  Cg_Dwarf_Name_From_Handle(reloc_buffer[k + 1].drd_symbol_index),
+		  Cg_Dwarf_Name_From_Handle(reloc_buffer[k].drd_symbol_index),
+		  shift);
+	  ++k;
+	}
+	break;
+#endif
       case dwarf_drt_second_of_length_pair:
 	Fail_FmtAssertion("unpaired first/second_of_length_pair");
 	break;
@@ -4985,6 +5079,10 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 	// with 32 bit target or with
 	// cygnus semi-64-bit dwarf.
 	ofst = vsp.vsp_get_bytes(cur_byte,4);
+#ifdef TARG_ST
+      } else if (current_reloc_size == LEB128_SYMBOLIC_RELOC_DUMMY_SIZE) {
+	ofst = vsp.vsp_get_bytes(cur_byte,LEB128_SYMBOLIC_RELOC_DUMMY_SIZE);
+#endif
       } else {
 	Fail_FmtAssertion("current_reloc_size %ld, 4 or 8 required!\n", 
 		(long)current_reloc_size);
@@ -5018,7 +5116,18 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
     ++k;
   }
 #ifdef TARG_STxP70
-  vsp.FinalizeCurrentSection(asm_file);
+  vsp.FinalizeCurrentSection(asm_file, need_symbolic_size);
+#endif
+
+#ifdef TARG_ST
+  if (need_symbolic_size) {
+    // [TTh] Add symbol for symbolic computation of size
+    // and generate potential padding
+    fprintf(asm_file, "%s:\n", end_size_nopad_label);
+    fprintf(asm_file, "\t%s\t(%s + %d - %s ) %% %d\n", AS_SPACE, end_size_nopad_label,
+	    dw_dbg->de_offset_size-1, begin_size_label, dw_dbg->de_offset_size);
+    fprintf(asm_file, "%s:\n", end_size_label);
+  }
 #endif
   fflush(asm_file);
 }

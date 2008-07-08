@@ -36,7 +36,12 @@
 
 
 #define VERSION				2
+#ifdef TARG_ST
+/* MIN_INST_LENGTH has been replaced by the field de_min_inst_length
+ * of Dwarf_P_Debug_s structure */
+#else
 #define MIN_INST_LENGTH			4
+#endif
 #define DEFAULT_IS_STMT			false
 			/* line base and range are temporarily defines.
 			   They need to be calculated later */
@@ -100,6 +105,7 @@ struct Dwarf_P_Line_s {
 	    Used only for relocations.  Has index of symbol 
 	    relative to which relocation has to be done 
 	    (the S part in S + A) 
+	    [TARG_ST] or the E part in (E - S) if defined for an end_seq
         */
     Dwarf_Unsigned	    dpl_r_symidx;	
 

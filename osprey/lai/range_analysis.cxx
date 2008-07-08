@@ -866,7 +866,12 @@ RangeAnalysis::Visit_Forward (OP *op, BOOL *succs_done)
 
       LRange_p opnd1 = Value(OP_Opnd1(op));
       LRange_p opnd2 = Value(OP_Opnd2(op));
+      
+#ifdef TARG_ST
+      VARIANT variant = OP_cmp_variant(op);
+#else
       VARIANT variant = TOP_cmp_variant(opcode);
+#endif
       INT cmp_width = 8 * TN_size (OP_Opnd1(op));
 
       if (TOP_is_unsign(opcode)) {
@@ -912,7 +917,7 @@ RangeAnalysis::Visit_Forward (OP *op, BOOL *succs_done)
 	new_value = Norl (opnd1, opnd2);
 	break;
       default:
-	FmtAssert (FALSE, ("Unhandled compare variant in Visit_Forward"));
+	FmtAssert (FALSE, ("Unhandled compare variant in Visit_Forward %d", variant));
 	break;
       }
     } else if (OP_fcmp(op)) {
@@ -1210,7 +1215,11 @@ RangeAnalysis::Visit_Backward (OP *op)
       // Integer compare.
       // Some comparisons only require sign bit.
       
+#ifdef TARG_ST
+      VARIANT variant = OP_cmp_variant(op);
+#else
       VARIANT variant = TOP_cmp_variant(opcode);
+#endif
 
       switch (variant) {
       case V_CMP_GE:

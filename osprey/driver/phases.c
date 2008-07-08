@@ -1325,6 +1325,23 @@ add_file_args (string_list_t *args, phases_t index)
 		} else {
 			add_string(args,"-Mextension=x3");
 		}
+                switch (proc) {
+		  	char str[1024];
+
+			case PROC_stxp70_v4:
+				add_string(args,"--defsym");
+				add_string(args,"STXP70_ARCH=4");
+				sprintf(str,"%s/__sxasv4.mac",SYS_adirname(absolute_program_name));
+				add_string(args,str);
+				if (bundlingas==TRUE) {
+  				  add_string(args,"--bundle");
+				}
+				break;
+                	case PROC_stxp70_v3:
+			default            :
+				add_string(args,"-DSTXP70_ARCH=3"); 
+				break;
+		}
 #endif
 
 		current_phase = P_any_as;
@@ -1754,27 +1771,20 @@ add_script_files_args (string_list_t *args)
 	!option_was_seen (O_T) &&
 	!option_was_seen (O_nostdlib)) {
       extern string stxp70_targetdir ;
-      extern int Useoldlinker;
-      extern int deadcode;
       string spath;
       string ofile;
       
-      if (((Useoldlinker==TRUE) && (deadcode==FALSE))) {
-         add_string(args, "-T");
-         add_string(args, "sx_valid.ld");
-      } else {
-         if (!at_least_one_icache_optim || next_ld_for_icache_is_simple != FALSE) {
+      if (!at_least_one_icache_optim || next_ld_for_icache_is_simple != FALSE) {
+         spath = get_phase_dir(P_library);
+         spath = concat_path (spath, "ldscript");
+         ofile = concat_path (spath, "sx_valid.ld");	      
+         if (!file_exists (ofile)) {
             spath = get_phase_dir(P_library);
-            spath = concat_path (spath, "ldscript");
-            ofile = concat_path (spath, "sx_valid.ld");	      
-            if (!file_exists (ofile)) {
-               spath = get_phase_dir(P_library);
-               ofile = concat_path (spath, "sx_valid.ld");   
-            }
-            if (file_exists (ofile)) {
-               add_string(args, "-T");
-               add_string(args, ofile);
-            }
+            ofile = concat_path (spath, "sx_valid.ld");   
+         }
+         if (file_exists (ofile)) {
+            add_string(args, "-T");
+            add_string(args, ofile);
          }
       }
     }

@@ -206,6 +206,8 @@ extern string get_phase_dir (phases_t index);
 extern string get_phase_ld_library_path (phases_t index);
 /* return phase name */
 extern string get_phase_name (phases_t index);
+/* change phase name */
+extern void change_phase_name (phases_t index, string new_name);
 /* return path and name of phase */
 extern string get_full_phase_name (phases_t index);
 

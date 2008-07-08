@@ -108,14 +108,22 @@ void Emit_Header (FILE *hfile,
    *   - defs.h (modified) has been modified
    *   - defs_exported.h (included in the modified version of defs.h).
    */
-   fprintf(hfile,
+   fprintf(hfile,"%s\n",
      "#ifndef defs_INCLUDED\n"
      "#define defs_INCLUDED\n"
+     "\n"
      "#include \"defs_exported.h\"\n"
-     "#if (defined(_LANGUAGE_C) || defined(__GNUC__)) && !defined(inline)\n"
+     "\n"
+     "/* Redefinition of inline keyword. Flag _FORCE_INLINE_INTO_STATIC_\n"
+     " * is to be used with caution as a last chance solution!!\n"
+     " */\n"
+     "\n"
+     "#if ((defined(_LANGUAGE_C) || defined(__GNUC__)) && !defined(inline)) || \\\n"
+     "      defined(_FORCE_INLINE_INTO_STATIC_)\n"
      "#define inline static __inline\n"
      "#endif\n"
-     "#endif\n\n"
+     "\n"
+     "#endif  /* defs_INCLUDED */\n\n"
     );
 
    return;
@@ -299,6 +307,10 @@ Gen_Build_Filename( const char * const fname,
      str_end = "Exported";
      break;
 
+     case gen_util_file_type_pfile:
+     str_end = "pr";
+     break;
+
      case gen_util_file_type_c_i_file:
      str_end = "inc.c";
      break;
@@ -387,6 +399,72 @@ Emit_C_Footer(FILE *hfile)
 		  "}\n"
 		  "#endif\n"
                   "\n");
+  return;
+}
+
+/////////////////////////////////////
+void
+Emit_Stub_Header         (FILE *file, const char **headers)
+/////////////////////////////////////
+// file (FILE*): stub file handle.
+// header_name : dyn name header to include
+/////////////////////////////////////
+{
+  int i = 0;
+
+  fprintf(file,
+	  "/*\n"
+	  " \n"
+	  "  Copyright (C) 2006 ST Microelectronics, Inc.  All Rights Reserved.\n"
+	  " \n"
+	  "  This program is free software; you can redistribute it and/or modify it\n"
+	  "  under the terms of version 2 of the GNU General Public License as\n"
+	  "  published by the Free Software Foundation.\n"
+	  "  This program is distributed in the hope that it would be useful, but\n"
+	  "  WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+	  "  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
+	  " \n"
+	  "  Further, this software is distributed without any warranty that it is\n"
+	  "  free of the rightful claim of any third person regarding infringement\n"
+	  "  or the like.  Any license provided herein, whether implied or\n"
+	  "  otherwise, applies only to this software file.  Patent licenses, if\n"
+	  "  any, provided herein do not apply to combinations of this program with\n"
+	  "  other software, or any other product whatsoever.\n"
+	  "  You should have received a copy of the GNU General Public License along\n"
+	  "  with this program; if not, write the Free Software Foundation, Inc., 59\n"
+	  "  Temple Place - Suite 330, Boston MA 02111-1307, USA.\n"
+	  " \n"
+	  "  Contact information:  ST Microelectronics, Inc.,\n"
+	  "  , or:\n"
+	  " \n"
+	  "  http://www.st.com\n"
+	  " \n"
+	  "  For further information regarding this notice, see:\n"
+	  " \n"
+	  "  http:\n"
+	  "*/\n"
+	  " \n"
+	  "/**\n"
+	  " *\n"
+	  " * This file is only useful for dynamic code extension.\n"
+	  " *\n"
+	  " * More precisely, when building the shared object (dll)\n"
+	  " * the Open64 code generator needs some functions that have\n"
+	  " * been processed in earlier step of its own process.\n"
+	  " *\n"
+	  " * The role devoted to files dyn_stubxxx.c is to emulate these\n"
+	  " * functions when dynamic code generation is activated.\n"
+	  " *\n"
+	  " */\n"
+	  "#ifndef DYNAMIC_CODE_GEN\n"
+	  "#error \"File \" __FILE__ \" can only be used for dynamic code generation\\n\"\n"
+	  "#endif\n"
+	  " \n");
+  while(*(headers[i]) != '\0') {
+    fprintf(file,"#include %s\n",headers[i]);
+    i++;
+  }
+
   return;
 }
 

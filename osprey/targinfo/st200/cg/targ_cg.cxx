@@ -100,7 +100,7 @@ TY_IDX CGTARG_Spill_Type[MTYPE_MAX_LIMIT+1];
 CLASS_INDEX CGTARG_Spill_Mtype[MTYPE_MAX_LIMIT+1];
 static TOP *CGTARG_Invert_Table;
 
-static ISA_EXEC_UNIT_PROPERTY template_props[ISA_MAX_BUNDLES][ISA_MAX_SLOTS];
+static ISA_EXEC_UNIT_PROPERTY template_props[ISA_MAX_BUNDLES][ISA_BUNDLE_MAX_SLOTS];
 
 static BOOL earliest_regclass_use_initialized = FALSE;
 #ifdef TARG_ST
@@ -162,16 +162,18 @@ CGTARG_Preg_Register_And_Class (
 }
 
 /* ====================================================================
- *   TOP_br_variant
+ *   OP_br_variant
  *
  *   TODO: isa_properties ...
  * ====================================================================
  */
 VARIANT
-TOP_br_variant (
-  TOP opcode
+OP_br_variant (
+  const OP *op
 )
 {
+ TOP opcode=OP_code(op);
+
 #define CASE_TOPB(top) \
           case TOP_##top##_r_r_b: case TOP_##top##_i_r_b: case TOP_##top##_ii_r_b: \
           case TOP_##top##_r_r_r: case TOP_##top##_i_r_r: case TOP_##top##_ii_r_r
@@ -238,7 +240,7 @@ TOP_br_variant (
 
 
 /* ====================================================================
- *   TOP_cmp_variant
+ *   OP_cmp_variant
  *
  *   Returns the variant for the interpretation of the semantic of
  *   opcodes having the TOP_is_cmp property.
@@ -246,9 +248,11 @@ TOP_br_variant (
  *   result is true if OU_opnd1 <variant> OU_opnd2 is true
  * ====================================================================
  */
+
 VARIANT
-TOP_cmp_variant(TOP top)
+OP_cmp_variant(const OP* op)
 {
+  TOP top = OP_code(op);
 #define CASE_TOPB(top) \
           case TOP_##top##_r_r_b: case TOP_##top##_i_r_b: case TOP_##top##_ii_r_b: \
           case TOP_##top##_r_r_r: case TOP_##top##_i_r_r: case TOP_##top##_ii_r_r
@@ -297,7 +301,7 @@ TOP_cmp_variant(TOP top)
     return V_CMP_NORL;
   }
 
-  FmtAssert(0, ("TOP_cmp_variant undefined for TOP %s", TOP_Name(top)));
+  FmtAssert(0, ("OP_cmp_variant undefined for TOP %s", TOP_Name(top)));
   return V_CMP_NONE;
 #undef CASE_TOPB
 }
@@ -607,7 +611,7 @@ CGTARG_Analyze_Compare (
   def_op = TN_Reaching_Value_At_Op(cond_tn1, br, &kind, TRUE);
   
   if (def_op != NULL) {
-    variant = TOP_br_variant(OP_code(def_op));
+    variant = OP_br_variant(def_op);
     if (variant != V_BR_NONE) {
       cond_tn1 = OP_opnd(def_op, 0);
       cond_tn2 = OP_opnds(def_op) >= 2 ? OP_opnd(def_op, 1): NULL;
@@ -728,6 +732,11 @@ CGTARG_Invert_OP(OP* op)
     new_op = Mk_OP(TOP_cmpeq_r_r_b, new_result, opnd, Zero_TN);
   }
   return new_op;
+}
+
+OP*
+CGTARG_Negate_OP(OP* op) {
+  return CGTARG_Invert_OP(op);
 }
 
 /* ====================================================================
@@ -1490,8 +1499,8 @@ CGTARG_Generate_Branch_Cloop(LOOP_DESCR *loop,
                              OP *br_op,
 			     TN *trip_count_tn,
 			     TN *label_tn,
-			     BB *prolog,
-			     BB *tail)
+			     OPS *prolog_ops,
+			     OPS *body_ops)
 #else
 void
 CGTARG_Generate_Branch_Cloop(OP *br_op,
@@ -2060,7 +2069,7 @@ init_templates (void)
 }
 
 static INT
-find_matching_template (ISA_EXEC_UNIT_PROPERTY bundle_props[ISA_MAX_SLOTS],
+find_matching_template (ISA_EXEC_UNIT_PROPERTY bundle_props[ISA_BUNDLE_MAX_SLOTS],
 			INT n_bundle_props,
 			BOOL match_alignment,
 			UINT32 pc,
@@ -2327,7 +2336,8 @@ update_bundle_pc (
   if (OP_code(op) == TOP_asm) {
     pc = (pc + DEFAULT_FUNCTION_ALIGNMENT - 1) & ~(DEFAULT_FUNCTION_ALIGNMENT - 1);
   } else {
-    pc += ISA_PACK_Inst_Words(OP_code(op)) * (ISA_PACK_INST_SIZE / 8);
+    const ISA_PACK_INFO *pinfo = ISA_PACK_Info(OP_code(op));
+    pc += ISA_PACK_Inst_Words(OP_code(op)) * (ISA_PACK_INST_WORD_SIZE / 8);
   }
   return pc;
 }
@@ -3492,6 +3502,20 @@ CGTARG_Code_Motion_To_LoopHead_Is_Legal(const OP* op, BB* loophead)
 {
   return TRUE;
 }
+
+/** 
+ *  Target specific function that does minor local changes to the asm
+ * just before asm output.
+ *
+ * empty on st200.
+ * 
+ */
+void
+CGTARG_Fixup_ASM_Code ()
+{
+  
+}
+
 /** 
  * Verify that op has no loop sideeffects that avoids it to be moved
  * upward.
@@ -3505,4 +3529,31 @@ CGTARG_Code_Motion_To_LoopHead_Is_Legal(const OP* op, BB* loophead)
 BOOL
 CGTARG_OP_Has_Loop_Sideeffects(BB* bb, OP* op) {
   return false;
+}
+
+/** 
+ * This function finds out the bundle template id corresponding to
+ * the slot-mask. order_change variable specifies whether the order had
+ * to be changed.
+ * 
+ * @param mask 
+ * @param order_changed 
+ * 
+ * @return  bundle_id
+ */
+int CGTARG_Detect_Bundle_Id(ISA_EXEC_MASK slot_mask, BOOL* order_changed) {
+  *order_changed = FALSE;
+  return 0;
+}
+
+/** 
+ * fix op in bundle slots before code emission if slot_mask does not
+ * conform to bundle template.
+ * 
+ * @param slot_mask 
+ * @param slot_op 
+ * @param ibundle 
+ */
+void
+CGTARG_FixBundle(ISA_EXEC_MASK slot_mask, OP *slot_op[], INT ibundle){ 
 }

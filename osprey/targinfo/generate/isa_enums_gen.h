@@ -38,7 +38,12 @@
 //
 // Interface to create a enum classes.
 //
-//  void ISA_Create_Enum_Class (const char *ec_name, ...);
+//  typedef enum {
+//    ISA_ENUM_Emit_Name,
+//    ISA_ENUM_Emit_Value
+//  } ISA_ENUM_EMIT;
+//
+//  void ISA_Create_Enum_Class (const char *ec_name, ISA_ENUM_EMIT emit, ...);
 //     Create an ENUM CLASS with the <name>, 
 //	The subsequent arguments are pairs of strings for the value names
 //	and the int bit-value of the enum value.
@@ -53,9 +58,14 @@
 
 #define UNDEFINED -1
 
+typedef enum {
+  ISA_ENUM_Emit_Name,
+  ISA_ENUM_Emit_Value
+} ISA_ENUM_EMIT;
+
 extern void ISA_Enums_Begin (void);
 
-extern void ISA_Create_Enum_Class (const char *ec_name, ...);
+extern void ISA_Create_Enum_Class (const char *ec_name, ISA_ENUM_EMIT emit, ...);
 
 extern void ISA_Enums_End (void);
 

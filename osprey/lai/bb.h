@@ -1096,6 +1096,11 @@ extern void Print_Flow_Graph  ( char *banner, BOOL verbose );
 CG_EXPORTED extern void Print_LOOPINFO( LOOPINFO *info );
 #pragma mips_frequency_hint NEVER Print_LOOPINFO
 
+#ifdef TARG_ST
+extern void Print_BB_id ( int id ); 
+#pragma mips_frequency_hint NEVER Print_BB_id
+#endif
+
 #define BB_length(bb) OPS_length(&(bb)->ops)
 
 

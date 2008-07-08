@@ -63,6 +63,7 @@
 
 #include "em_elf.h"
 
+#if 0
 /*
  * TN relocations info:
  */
@@ -80,6 +81,8 @@ const TN_RELOCS_INFO TN_RELOCS_info[] = {
   { "@gotoff(@dtpndx" },   /* TN_RELOC_GOTOFF_DTPNDX */
   { "@dtprel"         },   /* TN_RELOC_DTPREL        */
 };
+
+#endif
 
 /* ====================================================================
  *   Gen_Predicate_TN
@@ -144,7 +147,7 @@ TN_Relocs_In_Asm (
   const char *str;
   const char *c;
 
-  str = TN_RELOCS_info[TN_relocs(t)].name;
+  str = TN_RELOCS_Syntax(TN_relocs(t));
   FmtAssert (str, ("TN_Relocs_In_Asm: illegal reloc TN (%d)", (int)TN_relocs(t)));
   *buf = vstr_concat (*buf, str);
   for (c = strchr (str, '('); c; c = strchr (c + 1, '('))

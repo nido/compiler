@@ -67,12 +67,37 @@
  * ====================================================================
  */
 TN *
-CGTARG_Gen_Got_Disp_TN (void)
+CGTARG_Gen_Got_Disp_TN (ST *st, OPS *ops)
 {
-  TN *got_disp_tn = Gen_Register_TN (
-		             ISA_REGISTER_CLASS_integer, Pointer_Size);
+#if 0
+  TN *got_disp_tn = Gen_Symbol_TN(st, 0, TN_RELOC_GPSUB);
+#else
+  // [JV] Use TN_RELOC_NONE because TN_RELOC_GPSUB is syntaxically implicit (transparent for compiler)
+  // and is not present in ST200 relocations
+  TN *got_disp_tn = Gen_Symbol_TN(st, 0, TN_RELOC_NONE);
+#endif
+  Set_TN_size(got_disp_tn, Pointer_Size);  
   return got_disp_tn;
 }
+
+/* ====================================================================
+ *   CGTARG_Gen_GP_Value_TN ()
+ * ====================================================================
+ */
+TN *
+CGTARG_Gen_GP_Value_TN( ST *st, OPS *ops )
+{
+#if 0
+  TN *gp_value_tn = Gen_Symbol_TN(st, 0, TN_RELOC_GPIDENT);
+#else
+  // [JV] Use TN_RELOC_NONE because TN_RELOC_GPIDENT is syntaxically implicit (transparent for compiler)
+  // and is not present in ST200 relocations
+  TN *gp_value_tn = Gen_Symbol_TN(st, 0, TN_RELOC_NONE);
+#endif
+  Set_TN_size(gp_value_tn, Pointer_Size);
+  return gp_value_tn;
+}
+
 
 /* ====================================================================
  *   CGTARG_Gen_FP_TN ()

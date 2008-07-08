@@ -143,43 +143,43 @@ static lang_info_t language_info[] = {
 
 #elif defined(linux) && defined(TARG_STxP70)
 
-#define NAMEPREFIX      "stxp70-"
+#define NAMEPREFIX      "stxp70v3-"
 #define BINPATH		"/bin"
-#define LIBPATH		"/lib"
+#define LIBPATH		"/stxp70v3/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
-#define PHASEPATH	LIBPATH"/cmplrs"
-#define GNUPHASEPATH	LIBPATH
+#define PHASEPATH	"/lib/cmplrs"
+#define GNUPHASEPATH	"/lib"
 
 #elif defined(sun) && defined(TARG_STxP70)
 
-#define NAMEPREFIX	"stxp70-"
+#define NAMEPREFIX	"stxp70v3-"
 #define BINPATH		"/bin"
-#define LIBPATH		"/lib"
+#define LIBPATH		"/stxp70v3/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
-#define PHASEPATH	LIBPATH"/cmplrs"
-#define GNUPHASEPATH	LIBPATH
+#define PHASEPATH	"/lib/cmplrs"
+#define GNUPHASEPATH	"/lib"
 
 #elif defined(__CYGWIN__) && defined(TARG_STxP70)
 
-#define NAMEPREFIX	"stxp70-"
+#define NAMEPREFIX	"stxp70v3-"
 #define BINPATH		"/bin"
-#define LIBPATH		"/lib"
+#define LIBPATH		"/stxp70v3/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
-#define PHASEPATH	LIBPATH"/cmplrs"
-#define GNUPHASEPATH	LIBPATH
+#define PHASEPATH	"/lib/cmplrs"
+#define GNUPHASEPATH	"/lib"
 
 #elif defined(__MINGW32__) && defined(TARG_STxP70)
 
-#define NAMEPREFIX	"stxp70-"
+#define NAMEPREFIX	"stxp70v3-"
 #define BINPATH		"/bin"
-#define LIBPATH		"/lib"
+#define LIBPATH		"/stxp70v3/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
-#define PHASEPATH	LIBPATH"/cmplrs"
-#define GNUPHASEPATH	LIBPATH
+#define PHASEPATH	"/lib/cmplrs"
+#define GNUPHASEPATH	"/lib"
 
 #elif defined(linux) && defined(TARG_IA64)
 #if defined(HOST_IA32) && !defined(NUE)
@@ -579,13 +579,14 @@ get_phase_ld_library_path (phases_t index)
 extern string
 get_phase_name (phases_t index)
 {
-#ifdef TARG_STxP70
-   extern int Useoldlinker;
-   extern int deadcode;
-   if ( (!strcmp(phase_info[index].name,"stxp70-ld")) && (Useoldlinker==TRUE) && (deadcode==FALSE))
-      return "stxp70-ld-old";
-#endif
 	return phase_info[index].name;
+}
+
+/* return phase name */
+extern void
+change_phase_name (phases_t index, string new_name)
+{
+	phase_info[index].name = new_name;
 }
 
 /* return path and name of phase */

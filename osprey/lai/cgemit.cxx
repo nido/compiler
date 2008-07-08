@@ -470,7 +470,7 @@ Init_Section (
     if (Align_Instructions) 
       Set_STB_align(st, Align_Instructions);
     else if (EMIT_space)
-      Set_STB_align(st, ISA_INST_BYTES);
+      Set_STB_align(st, ISA_MAX_INST_BYTES);
     else
       Set_STB_align(st, CGTARG_Text_Alignment());
   }
@@ -614,21 +614,34 @@ Get_Offset_From_Full (ST *sym)
  */
 inline INT32 PC_Bundle(INT32 pc)
 {
-  return pc & ~(ISA_INST_BYTES - 1);
+#ifdef TARG_ST
+  // Previous implementation not working if
+  // ISA_MAX_INST_BYTES is not a power of 2.
+  INT32 slot = pc % ISA_MAX_INST_BYTES;
+  return (pc - slot);
+#else
+  return pc & ~(ISA_MAX_INST_BYTES - 1);
+#endif
 }
 
 /* Given a composite PC, return the slot number component.
  */
 inline INT32 PC_Slot(INT32 pc)
 {
-  return pc & (ISA_INST_BYTES - 1);
+#ifdef TARG_ST
+  // Previous implementation not working if
+  // ISA_MAX_INST_BYTES is not a power of 2.
+  return (pc % ISA_MAX_INST_BYTES);
+#else
+  return pc & (ISA_MAX_INST_BYTES - 1);
+#endif
 }
 
 #ifdef TARG_ST
 /* Given a composite PC, return the corresponding physical address */
 inline INT32 PC2Addr(INT32 pc)
 {
-  return PC_Bundle(pc) + PC_Slot(pc)*ISA_INST_BYTES/ISA_MAX_SLOTS;
+  return PC_Bundle(pc) + PC_Slot(pc)*ISA_MAX_INST_BYTES/ISA_MAX_SLOTS;
 }
 
 /* Given a physical address, return the corresponding composite PC */
@@ -636,7 +649,7 @@ inline INT32 Addr2PC(INT32 addr)
 {
   // Note that there is no equivalence with the previous tranformation
   INT32 bundle = PC_Bundle(addr);
-  INT32 slot = ((addr - bundle) * ISA_MAX_SLOTS) / ISA_INST_BYTES;
+  INT32 slot = ((addr - bundle) * ISA_MAX_SLOTS) / ISA_MAX_INST_BYTES;
   return bundle + slot;
 }
 #endif
@@ -656,7 +669,7 @@ PC_Incr (
   ++pc;
 
   if (PC_Slot(pc) == ISA_MAX_SLOTS) {
-    pc += ISA_INST_BYTES - ISA_MAX_SLOTS;
+    pc += ISA_MAX_INST_BYTES - ISA_MAX_SLOTS;
   }
 
   return pc;
@@ -676,7 +689,7 @@ PC_Incr_N (
 {
   UINT slots = PC_Slot(pc) + incr;
   UINT bundles = slots / ISA_MAX_SLOTS;
-  pc = PC_Bundle(pc) + (bundles * ISA_INST_BYTES) + (slots % ISA_MAX_SLOTS);
+  pc = PC_Bundle(pc) + (bundles * ISA_MAX_INST_BYTES) + (slots % ISA_MAX_SLOTS);
   return pc;
 }
 
@@ -867,7 +880,7 @@ Print_Dynsym (
 )
 {
   if (AS_DYNSYM) {
-    fprintf (pfile, "\t%s\t", AS_DYNSYM);
+    fprintf (pfile, "\t%s\t", AS_DYNSYM != NULL ? AS_DYNSYM : "nil");
     EMT_Write_Qualified_Name (pfile, st);
     switch (ST_export(st)) {
       case EXPORT_INTERNAL:
@@ -3209,8 +3222,8 @@ Check_If_Should_Align_BB (
     targ_alignment = Align_Instructions;
   else
     targ_alignment = CGTARG_Text_Alignment();
-  targ_alignment /= ISA_INST_BYTES;	/* so word-sized */
-  targpc /= ISA_INST_BYTES;		/* so word-sized */
+  targ_alignment /= ISA_MAX_INST_BYTES;	/* so word-sized */
+  targpc /= ISA_MAX_INST_BYTES;		/* so word-sized */
 
   //  fprintf(TFile, "  targ_alignment %d\n", targ_alignment);
   //  fprintf(TFile, "  targpc %d\n", targpc);
@@ -3295,8 +3308,8 @@ Check_If_Should_Align_PU (
   else {
     q = CGTARG_Text_Alignment();
   }
-  q /= ISA_INST_BYTES;	                   /* so word-sized */
-  return (q - ((curpc/ISA_INST_BYTES) % q)) % q;
+  q /= ISA_MAX_INST_BYTES;	                   /* so word-sized */
+  return (q - ((curpc/ISA_MAX_INST_BYTES) % q)) % q;
 }
 #endif
 
@@ -3427,7 +3440,13 @@ cache_last_label_info(LABEL_IDX      label_idx,
 
 static void
 end_previous_text_region(pSCNINFO scninfo,
-                         INT      end_offset)
+                         INT      end_offset
+#ifdef TARG_ST
+			 // By default, immediate offset will be used.
+			 // Symbolic offset is used only if end_label!=0
+			 , Dwarf_Unsigned end_label=LABEL_IDX_ZERO
+#endif
+			 )
 {
 #ifdef TARG_ST
   // CL: convert composite PC to actual PC address
@@ -3439,6 +3458,7 @@ end_previous_text_region(pSCNINFO scninfo,
 							       prev_pu_pu_idx,
 							       prev_pu_last_label_name,
 							       prev_pu_last_offset),
+					 end_label,
 					 prev_pu_end_offset_from_last_label);
 #else
   Em_Dwarf_End_Text_Region_Semi_Symbolic(scninfo,
@@ -3484,7 +3504,8 @@ Gen_Label_For_Source_Line() {
 }
 
 // [CL] Create a new label for each new source line
-void New_Debug_Line_Set_Label(INT code_address)
+void New_Debug_Line_Set_Label(INT code_address,
+			      BOOL last_label_of_PU)
 {
 #ifdef TARG_STxP70
     // Do not emitted label line in non -g mode.
@@ -3497,17 +3518,25 @@ void New_Debug_Line_Set_Label(INT code_address)
         }
 #endif
 
+  BOOL delayed_symb_end = FALSE;
   if (Last_Label > 0)
- {
+  {
     cache_last_label_info (Last_Label,
 			   Em_Create_Section_Symbol(PU_section),
 			   current_pu,
 			   PC2Addr(Offset_From_Last_Label));
 
-    pSCNINFO old_PU_section = em_scn[STB_scninfo_idx(PU_base)].scninfo;
-    end_previous_text_region(old_PU_section, 
-			     //  Em_Get_Section_Offset(old_PU_section));
-			     Addr2PC(code_address));
+    // [TTh] Switching to symbolic offset: need to create end label
+    // before closing the text region
+    if (Dwarf_Require_Symbolic_Offsets()) {
+      delayed_symb_end = TRUE;
+    }
+    else {
+      pSCNINFO old_PU_section = em_scn[STB_scninfo_idx(PU_base)].scninfo;
+      end_previous_text_region(old_PU_section, 
+			       //  Em_Get_Section_Offset(old_PU_section));
+			       Addr2PC(code_address));
+    }
   }
 
   Last_Label = Gen_Label_For_Source_Line ();
@@ -3516,24 +3545,30 @@ void New_Debug_Line_Set_Label(INT code_address)
 
 
   if (Assembly || Lai_Code) {
-#ifdef TARG_ST
     fprintf (Output_File, "%s:\n", 
 	     LABEL_name(Last_Label));
-#else
-    fprintf (Output_File, "%s:\t%s\n", 
-	     LABEL_name(Last_Label), ASM_CMNT);
-#endif
-#ifdef TARG_ST
     // [CL]
     Set_LABEL_emitted(Last_Label);
-#endif
   }
 
-  Em_Dwarf_Start_Text_Region_Semi_Symbolic (PU_section, code_address,
-					    Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
-								  Last_Label,
-								  ST_elf_index(text_base)),
-					    PC2Addr(Offset_From_Last_Label));
+  Dwarf_Unsigned new_label;
+  new_label = Cg_Dwarf_Symtab_Entry(CGD_LABIDX,
+				    Last_Label,
+				    ST_elf_index(text_base));
+
+  if (delayed_symb_end) {
+    pSCNINFO old_PU_section = em_scn[STB_scninfo_idx(PU_base)].scninfo; 
+    end_previous_text_region(old_PU_section, 
+			     Addr2PC(code_address),
+			     new_label /* first label of new section used as last label of previous section */
+			     );
+  }
+
+  if (!last_label_of_PU) {
+    Em_Dwarf_Start_Text_Region_Semi_Symbolic (PU_section, code_address,
+					      new_label,
+					      PC2Addr(Offset_From_Last_Label));
+  }
 }
 #endif
 
@@ -3651,11 +3686,11 @@ Setup_Text_Section_For_PU (
       // these bytes will never be executed so just insert 0's and
       // then we don't have to worry about how to generate a nop for
       // the target arch.
-      Em_Add_Zeros_To_Scn (PU_section, i * ISA_INST_BYTES, 1);
+      Em_Add_Zeros_To_Scn (PU_section, i * ISA_MAX_INST_BYTES, 1);
     }
 #endif
     // increment text_PC by 'num' bundles
-    text_PC = text_PC + (i * ISA_INST_BYTES);
+    text_PC = text_PC + (i * ISA_MAX_INST_BYTES);
   }
 #endif
 
@@ -3810,9 +3845,6 @@ r_apply_l_const (
   }
 
   val = TN_offset(t);
-  if ( TN_is_reloc_neg(t) ) {
-    *buf = vstr_concat (*buf, "-");
-  }
 
   if (TN_is_symbol(t)) { // not SP or FP relative
     st = TN_var(t);
@@ -3948,21 +3980,31 @@ r_apply_l_const (
     print_TN_offset = FALSE;
   }
   else if (TN_is_enum(t)) {
-    if (ISA_PRINT_Operand_Is_Part_Of_Name(OP_code(op), opidx)) {
+    if (TN_enum(t)<ISA_ECV_STATIC_MAX) {  /* fix [vcdv] */
       vstr_sprintf (buf, vstr_len(*buf), "%s", ISA_ECV_Name(TN_enum(t)) );
-    } else {
-      vstr_sprintf (buf, vstr_len(*buf), "%d", ISA_ECV_Intval(TN_enum(t)) );
     }
     print_TN_offset = FALSE;	/* because value used instead */
   }
   else if ( TN_has_value(t) ) {
+    long long value = TN_value(t);
+#ifdef TARG_ST
+    /* [VCdV] implementation of NEGATIVE offset literal class. asm output
+       for a negative offset is switch to its oppposite value */
+    const ISA_OPERAND_VALTYP *vtype =
+      ISA_OPERAND_INFO_Operand(ISA_OPERAND_Info(OP_code(op)), opidx);
+    ISA_LIT_CLASS lc = ISA_OPERAND_VALTYP_Literal_Class(vtype);
+    if (ISA_LC_Is_Negative(lc)  ) {
+      value=-value;
+    }
+#endif
+
     if(!hexfmt) { hexfmt = CGEMIT_TN_Value_In_Hexa_Format(op,t); }
     if ( TN_size(t) <= 4 )
       vstr_sprintf (buf, vstr_len(*buf), 
-		(hexfmt ? "0x%x" : "%d"), (mINT32)TN_value(t) );
+		(hexfmt ? "0x%x" : "%d"), (mINT32)value );
     else
       vstr_sprintf (buf, vstr_len(*buf), 
-      		(hexfmt ? "0x%llx" : "%lld"), TN_value(t) );
+      		(hexfmt ? "0x%llx" : "%lld"), value );
     print_TN_offset = FALSE;	/* because value used instead */
   }
   else {
@@ -4007,6 +4049,25 @@ print_prefetch_info(
 }
 
 /* ====================================================================
+ *   r_value
+ *
+ *   Returns TN value depending of its type.
+ * ====================================================================
+ */
+static INT64
+r_value( TN *tn )
+{
+  if(TN_is_constant(tn)) {
+    if(TN_has_value(tn)) { return TN_value(tn); }
+    if(TN_is_symbol(tn)) { return TN_offset(tn); }
+    if(TN_is_label(tn))  { return TN_offset(tn); }
+    if(TN_is_enum(tn))   { return TN_enum(tn); }
+  }
+  if(TN_is_register(tn)) { return TN_register(tn)-1; }
+  return 0;
+}
+
+/* ====================================================================
  *   r_assemble_opnd
  * ====================================================================
  */
@@ -4024,11 +4085,6 @@ r_assemble_opnd (
 
   if (TN_is_constant(t)) {
     *add_name |= r_apply_l_const (op, i, buf);
-  }
-  /* [JV] True_TN must be printed when operand of gmi. */
-  else if (TN_is_true_pred(t) && 
-	   (i == OP_find_opnd_use(op,OU_condition) || i == OP_find_opnd_use(op,OU_predicate)) ) {
-    /* nada. */
   }
   else {
     const char *rname;
@@ -4072,7 +4128,8 @@ r_assemble_opnd (
 #ifdef TARG_IA64
       vstr_sprintf(buf, start, ISA_PRINT_PREDICATE, rname);
 #elif defined( TARG_STxP70 )
-      vstr_sprintf(buf, start, "%s %s", rname, CGEMIT_Asm_Predicate_Suffix(op));
+      // [JV] Now treated in isa_print.
+      vstr_sprintf(buf, start, "%s", rname);
 #else
       if (TOP_is_guard_t(OP_code(op)))
 	vstr_sprintf(buf, start, True_Predicate_Format, rname);
@@ -4151,8 +4208,8 @@ r_assemble_result (
 static INT
 CGEMIT_Print_Intrinsic_OP (
   OP *op,
-  const char **result,
-  const char **opnd,
+  ISA_PRINT_OPND_INFO *result,
+  ISA_PRINT_OPND_INFO *opnd,
   FILE *f
 )
 {
@@ -4164,28 +4221,28 @@ CGEMIT_Print_Intrinsic_OP (
   //
   // For now assume all intrinsics are predicated ? opnd[0]
   //
-  st = fprintf (f, "%s\t", opnd[0]);
+  st = fprintf (f, "%s\t", opnd[0].name);
 
   //
   // print name
   //
-  st += fprintf (f, "%s\t", opnd[1]);
+  st += fprintf (f, "%s\t", opnd[1].name);
 
   //
   // print results
   //
   for (i = 0; i < OP_results(op); i++) {
-    st += fprintf (f, "%s, ", result[i]);
+    st += fprintf (f, "%s, ", result[i].name);
   }
 
   //
   // print opnds
   //
   for (i = 2; i < OP_opnds(op)-1; i++) {
-    st += fprintf (f, "%s, ", opnd[i]);
+    st += fprintf (f, "%s, ", opnd[i].name);
   }
   if (OP_opnds(op) > 2) {
-    st += fprintf (f, "%s", opnd[OP_opnds(op)-1]);
+    st += fprintf (f, "%s", opnd[OP_opnds(op)-1].name);
   }
 
   if (st == -1) {
@@ -4206,8 +4263,8 @@ r_assemble_list (
   BB *bb
 )
 {
-  const char *result[ISA_OPERAND_max_results];
-  const char *opnd[ISA_OPERAND_max_operands];
+  ISA_PRINT_OPND_INFO result[ISA_OPERAND_max_results];
+  ISA_PRINT_OPND_INFO opnd[ISA_OPERAND_max_operands];
   vstring buf = vstr_begin(LBUF_LEN);
   INT i;
   INT lc = 0;
@@ -4244,15 +4301,19 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
 #endif
 
   for (i = 0; i < OP_opnds(op); i++) {
-    opnd[i] = r_assemble_opnd(op, i, &buf, &add_name);
+    TN   *t = OP_opnd(op,i);
+    opnd[i].name = r_assemble_opnd(op, i, &buf, &add_name);
+    opnd[i].value = r_value(t);
+    
   }
 
   for (i = 0; i < OP_results(op); i++) {
-    result[i] = r_assemble_result (op, i, &buf);
+    TN *t = OP_result(op,i);
+    result[i].name = r_assemble_result (op, i, &buf);
+    result[i].value = r_value(t);
   }
 
   if (Assembly) {
-    fputc ('\t', Asm_File);
     lc = TI_ASM_Print_Inst(OP_code(op), result, opnd, Asm_File);
   }
   if (Lai_Code) {
@@ -4470,18 +4531,18 @@ Verify_Operand (
       ISA_LIT_CLASS lc = ISA_OPERAND_VALTYP_Literal_Class(vtype);
       INT64 imm = TN_value(tn);
 
-      if ((TFile != stdout) && !ISA_LC_Value_In_Class(imm, lc)) {
-        Print_OP_No_SrcLine (op);
-      }
+       if ((TFile != stdout) && !ISA_LC_Value_In_Class(imm, lc)) {
+         Print_OP_No_SrcLine (op);
+       }
 #if Is_True_On
-      /* More verbose error in debug mode. */
-      if (!ISA_LC_Value_In_Class(imm, lc)) {
-	fprintf(TFile,  "in operation:");
-	Print_OP_No_SrcLine(op);
-      }
+       /* More verbose error in debug mode. */
+       if (!ISA_LC_Value_In_Class(imm, lc)) {
+         fprintf(TFile,  "in operation:");
+         Print_OP_No_SrcLine(op);
+       }
 #endif
-      FmtAssert(ISA_LC_Value_In_Class(imm, lc),
-		("literal for %s %d is not in range for top: %s", res_or_opnd, opnd, TOP_Name(OP_code(op))));
+       FmtAssert(ISA_LC_Value_In_Class(imm, lc),
+ 		("literal for %s %d is not in range for top: %s", res_or_opnd, opnd, TOP_Name(OP_code(op))));
     } else if (TN_is_label(tn)) {
 
 #ifndef TARG_ST
@@ -4534,6 +4595,62 @@ Verify_Operand (
     FmtAssert(FALSE, ("unhandled vtype in Verify_Operand"));
   }
 }
+
+#ifdef TARG_ST
+/* ====================================================================
+ *   Verify_Instruction_Simple
+ *
+ *   Verify that the specified OP contains valid information for
+ *   the instruction it represents.
+ * ====================================================================
+ */
+void 
+Verify_Instruction_Simple (
+  OP *op
+)
+{
+  INT i;
+  const ISA_OPERAND_INFO *oinfo;
+  TOP top = OP_code(op);
+
+
+  if (TOP_is_dummy(top)  || TOP_is_simulated(top))
+    return;
+
+  // ??? check for valid topcode?
+
+  FmtAssert(ISA_SUBSET_LIST_Member(ISA_SUBSET_List, top),
+	    ("%s is a member of available ISA subsets", 
+	     TOP_Name(top)));
+
+  oinfo = ISA_OPERAND_Info(top);
+
+  INT results = OP_results(op);
+  if (results != OP_fixed_results(op)) {
+    FmtAssert(TOP_is_var_opnds(top) && results > OP_fixed_results(op),
+	      ("wrong number of results (%d) for %s",
+	       results,
+	       TOP_Name(top)));
+    results = OP_fixed_results(op); // can only verify fixed results
+  }
+  for (i = 0; i < results; ++i) {
+    Verify_Operand(oinfo, op, i, TRUE);
+  }
+
+  INT opnds = OP_opnds(op);
+  if (opnds != OP_fixed_opnds(op)) {
+    FmtAssert(TOP_is_var_opnds(top) && opnds > OP_fixed_opnds(op),
+	      ("wrong number of operands (%d) for %s",
+	       opnds,
+	       TOP_Name(top)));
+    opnds = OP_fixed_opnds(op); // can only verify fixed operands
+  }
+  for (i = 0; i < opnds; ++i) {
+    Verify_Operand(oinfo, op, i, FALSE);
+  }
+
+}
+#endif
 
 /* ====================================================================
  *   Verify_Instruction
@@ -4646,17 +4763,22 @@ Assemble_OP (
   if (OP_prefetch(op)) Use_Prefetch = TRUE;
 
 
-#ifdef TARG_ST200 // CL: with variable-length bundles
-                  //     we call Cg_Dwarf_Add_Line_Entry
-                  //     only at bundle starts in
-                  //     Assemble_Bundles
+#ifdef TARG_ST
+  if (ISA_MAX_SLOTS <= 1) {
+    // CL: with variable-length bundles
+    //     we call Cg_Dwarf_Add_Line_Entry
+    //     only at bundle starts in
+    //     Assemble_Bundles
+    Cg_Dwarf_Add_Line_Entry (PC, OP_srcpos(op));
+  }
 #else
   Cg_Dwarf_Add_Line_Entry (PC, OP_srcpos(op));
 #endif
 
+  
   if (Assembly || Lai_Code) {
     r_assemble_list ( op, bb );
-    if (!Object_Code) words = ISA_PACK_Inst_Words(OP_code(op));
+    if (!Object_Code) words = ISA_EXEC_Unit_Slots(OP_code(op));
   }
 
   if (OP_end_group(op) && Assembly) {
@@ -4936,7 +5058,7 @@ Assemble_Simulated_OP (
     if (Object_Code) {
       /* write out the instruction. */
       Em_Add_Bytes_To_Scn (PU_section, (char *)&bundle,
-			   ISA_INST_BYTES * words, ISA_INST_BYTES);
+			   ISA_MAX_INST_BYTES * words, ISA_MAX_INST_BYTES);
     }
   }
 
@@ -5002,7 +5124,7 @@ Assemble_Ops (
 #if 0
     if (Object_Code) {
       Em_Add_Bytes_To_Scn(PU_section, (char *)bundle,
-			  ISA_INST_BYTES * words, ISA_INST_BYTES);
+			  ISA_MAX_INST_BYTES * words, ISA_MAX_INST_BYTES);
     }
 #endif
   }
@@ -5070,12 +5192,9 @@ Assemble_Bundles(BB *bb)
     INT slot;
     OP *slot_op[ISA_MAX_SLOTS];
     INT ibundle;
-#ifdef TARG_ST200
+#ifdef TARG_ST
     // CL: track bundle stop because we have variable length bundles
     int seen_end_group=0;
-#endif
-
-#ifdef TARG_ST200  //[CG]
     if (OP_code(op) == TOP_asm) {
       FmtAssert(!Object_Code, ("can't emit asm in object code")); 
       Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), OP_srcpos(op));
@@ -5093,20 +5212,24 @@ Assemble_Bundles(BB *bb)
 #else
     slot_mask = 0;
 #endif
-#ifdef TARG_ST200
+#ifdef TARG_ST
     for (slot = 0; op && !seen_end_group; op = OP_next(op)) {
 #else
     for (slot = 0; op && slot < ISA_MAX_SLOTS; op = OP_next(op)) {
 #endif
+
+#ifdef TARG_ST
+      INT instr_slots;
+      INT instr_slot;
+#else
       INT words;
       INT w;
-
-#ifdef TARG_ST200
-      seen_end_group = OP_end_group(op);
 #endif
+
 #ifdef TARG_ST
+      seen_end_group = OP_end_group(op);
       FmtAssert(!(OP_dummy(op) && OP_end_group(op)),
-		("Dummy op should not have end group marker"));
+                ("Dummy op should not have end group marker"));
 #endif
 
       if (OP_dummy(op)) continue;		// these don't get emitted
@@ -5117,13 +5240,16 @@ Assemble_Bundles(BB *bb)
 	Assemble_Simulated_OP(op, bb, &new_ops);
 	BB_Insert_Ops_After (bb, op, &new_ops);
 
-	n_inserted_ops += OP_Real_Ops(op) - 1;
+	// [TTh] Fix for bug #44381
+	// For TOP_asm, OP_Real_Ops(op) returns 0.
+	UINT real_ops = OP_Real_Ops(op);
+	if (real_ops > 0) {
+	  n_inserted_ops += real_ops - 1;
+	}
 
-#ifdef TARG_ST200
 	if (OPS_first(&new_ops)) {
 	  seen_end_group = FALSE;
 	}
-#endif
 #else
 	FmtAssert(slot == 0, ("can't bundle a simulated OP in BB:%d (op %s).",
 			      BB_id(bb), TOP_Name(OP_code(op))));
@@ -5143,8 +5269,13 @@ Assemble_Bundles(BB *bb)
 	bundle_has_epilogue = FALSE;
       }
 
+#ifdef TARG_ST
+      instr_slots = ISA_EXEC_Unit_Slots(OP_code(op));
+      for (instr_slot = 0; instr_slot < instr_slots; ++instr_slot) {
+#else
       words = ISA_PACK_Inst_Words(OP_code(op));
       for (w = 0; w < words; ++w) {
+#endif
 	FmtAssert(slot < ISA_MAX_SLOTS, 
 		  ("multi-word inst extends past end of bundle in BB:%d.",
 		   BB_id(bb)));
@@ -5167,7 +5298,7 @@ Assemble_Bundles(BB *bb)
 #endif
         stop_mask = stop_mask << 1;
       }
-#ifdef TARG_ST200
+#ifdef TARG_ST
       stop_mask |= (seen_end_group != 0);
 #endif
 
@@ -5203,7 +5334,7 @@ Assemble_Bundles(BB *bb)
     if (slot == 0) break;
 #endif
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
     // CL: recalibrate to ISA_MAX_SLOTS bundle length
     for(int w=slot; w<ISA_MAX_SLOTS; w++) {
       // [SC] removed. slot_mask <<= ISA_TAG_SHIFT; 
@@ -5211,7 +5342,7 @@ Assemble_Bundles(BB *bb)
     }
 #endif
 
-#ifndef TARG_ST200
+#ifndef TARG_ST
     // CL: now, bundles have variable length
 
     // Emit the warning only when bundle formation phase is enabled (ON by
@@ -5235,13 +5366,15 @@ Assemble_Bundles(BB *bb)
     // That is all very hard to do, and all we achieve is an internal
     // consistency check that the previous bundling was correct.
     // So I give up and fix ibundle here.
-    ibundle = 0;
+    BOOL bundle_order_changed = FALSE;
+    ibundle = CGTARG_Detect_Bundle_Id(slot_mask, &bundle_order_changed);
+
 #else
     for (ibundle = 0; ibundle < ISA_MAX_BUNDLES; ++ibundle) {
       UINT64 this_slot_mask = ISA_EXEC_Slot_Mask(ibundle);
       UINT32 this_stop_mask = ISA_EXEC_Stop_Mask(ibundle);
       if (   (slot_mask & this_slot_mask) == this_slot_mask 
-	  && stop_mask == this_stop_mask) break;
+             && stop_mask == this_stop_mask) break;
     }
 #endif
 
@@ -5284,7 +5417,7 @@ Assemble_Bundles(BB *bb)
     /* Assemble the bundle.
      */
     OP *sl_op;
-#ifdef TARG_ST200
+#ifdef  TARG_ST
     BOOL force_dwarf=FALSE;
     SRCPOS line;
 
@@ -5322,7 +5455,7 @@ Assemble_Bundles(BB *bb)
 	  line = OP_srcpos(sl_op);
 	  break;
 	}
-	slot += ISA_PACK_Inst_Words(OP_code(sl_op));
+	slot += ISA_EXEC_Unit_Slots(OP_code(sl_op));
       } while (slot < n_slot_ops);
     }
 
@@ -5330,7 +5463,7 @@ Assemble_Bundles(BB *bb)
     Cg_Dwarf_Add_Line_Entry (PC2Addr(PC), line, force_dwarf);
 #endif
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
     // [CL] support for debug_frame information
     // loop over the bundle to check if we need to emit special labels
   slot = 0;
@@ -5340,16 +5473,20 @@ Assemble_Bundles(BB *bb)
       Emit_Unwind_Directives_For_OP(sl_op, Asm_File, FALSE,
 				    is_inserted_op[slot]);
 
-      slot += ISA_PACK_Inst_Words(OP_code(sl_op));
+      slot += ISA_EXEC_Unit_Slots(OP_code(sl_op));
   } while (slot < n_slot_ops);
 #endif
+
+  if (bundle_order_changed) {
+    CGTARG_FixBundle(slot_mask, slot_op, ibundle);
+  }
 
     slot = 0;
     do {
       sl_op = slot_op[slot];
       //      Perform_Sanity_Checks_For_OP(sl_op, TRUE);
       slot += Assemble_OP(sl_op, bb, &bundle, slot);
-#ifdef TARG_ST200
+#ifdef TARG_ST
     } while (slot < n_slot_ops);
 #else
     } while (slot < ISA_MAX_SLOTS);
@@ -5364,7 +5501,7 @@ Assemble_Bundles(BB *bb)
 			     ibundle);
 
       Em_Add_Bytes_To_Scn (PU_section, (char *)&bundle, 
-                                        ISA_INST_BYTES, ISA_INST_BYTES);
+                                        ISA_MAX_INST_BYTES, ISA_MAX_INST_BYTES);
     }
 #endif
     if (Assembly) {
@@ -5379,7 +5516,7 @@ Assemble_Bundles(BB *bb)
 #endif
     }
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
     // [CL] loop over the bundle to check if we need
     // to emit special labels after the bundle
     slot = 0;
@@ -5389,7 +5526,7 @@ Assemble_Bundles(BB *bb)
       Emit_Unwind_Directives_For_OP(sl_op, Asm_File, TRUE,
 				    is_inserted_op[slot]);
 
-      slot += ISA_PACK_Inst_Words(OP_code(sl_op));
+      slot += ISA_EXEC_Unit_Slots(OP_code(sl_op));
     } while (slot < n_slot_ops);
 #endif
 
@@ -6070,7 +6207,7 @@ EMT_Assemble_BB (
 #if Is_True_On
   /*  Init_Sanity_Checking_For_BB (); */
 #endif
-
+  
   if ((ISA_MAX_SLOTS > 1) && LOCS_Enable_Bundle_Formation) {
     Assemble_Bundles(bb);
   } else {
@@ -6079,7 +6216,7 @@ EMT_Assemble_BB (
 
 #if 0
   if (Object_Code && BB_exit(bb)) {
-    Em_Add_New_Event (EK_EXIT, PC - 2*ISA_INST_BYTES, 0, 0, 0, PU_section);
+    Em_Add_New_Event (EK_EXIT, PC - 2*ISA_MAX_INST_BYTES, 0, 0, 0, PU_section);
   }
 #endif
 
@@ -6129,8 +6266,13 @@ Recompute_Label_Offset (
 #endif
       	Set_Label_Offset(lab, cur_pc);
       }
+#ifdef TARG_ST
+      INT num_slots = OP_Real_Unit_Slots (op);
+      cur_pc = PC_Incr_N(cur_pc, num_slots);
+#else
       INT num_inst_words = OP_Real_Inst_Words (op);
       cur_pc = PC_Incr_N(cur_pc, num_inst_words);
+#endif
     }
     cur_pcs[isect] = cur_pc;
   }
@@ -6207,7 +6349,11 @@ Pad_BB_With_Noops (
 	OP_scycle(new_op) = OP_scycle(BB_last_op(bb));
 	OP_Change_Opcode(new_op, CGTARG_Noop_Top(unit));
 	BB_Append_Op (bb, new_op);
+#ifdef TARG_ST
+	slot -= OP_Real_Unit_Slots(new_op);
+#else
 	slot -= OP_Real_Inst_Words(new_op);
+#endif
       } while (slot >= 0);
     } while (--num);
   } else {
@@ -6259,7 +6405,7 @@ R_Resolve_Branches (
 	  fprintf(TFile, "insert %d noops at bb %d\n", num, BB_id(bb));
 	}
 	// increment curpc by 'num' bundles
-	curpc += ISA_INST_BYTES * num;
+	curpc += ISA_MAX_INST_BYTES * num;
 	Pad_BB_With_Noops(prev_nonempty_bb, num);
       }
     }
@@ -6271,8 +6417,13 @@ R_Resolve_Branches (
     Gen_Label_For_BB ( bb );
 
     for (op = BB_first_op(bb); op; op = OP_next(op)) {
+#ifdef TARG_ST
+      INT num_slots = OP_Real_Unit_Slots (op);
+      curpc = PC_Incr_N(curpc, num_slots);
+#else
       INT num_inst_words = OP_Real_Inst_Words (op);
       curpc = PC_Incr_N(curpc, num_inst_words);
+#endif
     }
     
     if (curpc != bb_start_pc) prev_nonempty_bbs[isect] = bb;
@@ -6969,16 +7120,18 @@ EMT_Emit_PU (
   // have no debug_line label generated which confuses
   // Cg_Dwarf_Process_PU below
   if (CG_emit_asm_dwarf) {
-    if (Last_Label == 0) {
-      New_Debug_Line_Set_Label(PC2Addr(PC));
+    if (Last_Label == 0 || Dwarf_Require_Symbolic_Offsets()) {
+      New_Debug_Line_Set_Label(PC2Addr(PC), TRUE);
     }
-    cache_last_label_info (Last_Label,
-			   Em_Create_Section_Symbol(PU_section),
-			   current_pu,
-			   PC2Addr(Offset_From_Last_Label));
-    pSCNINFO old_PU_section = em_scn[STB_scninfo_idx(PU_base)].scninfo;
-    end_previous_text_region(old_PU_section, 
-			     PC);
+    if (!Dwarf_Require_Symbolic_Offsets()) {
+      cache_last_label_info (Last_Label,
+			     Em_Create_Section_Symbol(PU_section),
+			     current_pu,
+			     PC2Addr(Offset_From_Last_Label));
+      pSCNINFO old_PU_section = em_scn[STB_scninfo_idx(PU_base)].scninfo;
+      end_previous_text_region(old_PU_section, 
+			       PC);
+    }
   }
 #endif
 
@@ -7012,7 +7165,7 @@ EMT_Emit_PU (
     BOOL has_exc_scopes = PU_has_exc_scopes(ST_pu(pu));
 #if 0
     if (Object_Code)
-    	Em_Add_New_Event (EK_PEND, PC - ISA_INST_BYTES, 0, 0, 0, PU_section);
+    	Em_Add_New_Event (EK_PEND, PC - ISA_MAX_INST_BYTES, 0, 0, 0, PU_section);
 #endif
     /* get exception handling info */ 
     if (!CXX_Exceptions_On && has_exc_scopes) {

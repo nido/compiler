@@ -254,6 +254,81 @@ ISA_PRINT_TYPE ISA_Print_Type_Create (
 }
 
 /////////////////////////////////////
+static void check_format_string( void )
+/////////////////////////////////////
+// Coherency checking.
+//
+// Checks that format string is compatible
+// with the numbers of arguments. Emits
+// a warning if not.
+// Currently, we only check the number of %s
+// (but we accept sequences such as %-5s or %5s).
+//
+// The implemented automaton is rudimentary, but
+// is enough for our purpose.
+/////////////////////////////////////
+{
+   const char *fmt = current_print_desc->type->format_string;
+   char c;
+   unsigned int nb_per_cent = 0;
+   int state;
+
+#define CHECK_FMT_START 0
+#define CHECK_FMT_AFTER_PER_CENT  1
+
+   if(NULL==fmt)
+    { return;
+    }
+   
+   state = CHECK_FMT_START;
+   c = *fmt;
+   while(c!='\0')
+    {
+      switch(state)
+       { case CHECK_FMT_START:
+           if(c=='%') {           // Handling "%% sequences"
+              if (fmt[1]=='%') {  // fmt[1] is always defined.
+                 fmt++;
+               }
+              else {
+                state = CHECK_FMT_AFTER_PER_CENT;
+              }
+            }
+         break;
+
+         case CHECK_FMT_AFTER_PER_CENT:
+           if('s' == c ) {
+              state = CHECK_FMT_START;
+              nb_per_cent++;
+            } else if ('%' == c) {
+              // We may have miss something.
+              // %xxx%. We interpret this second '%' as
+              // the beginning of a new %s.
+              nb_per_cent++;
+            }
+         
+         break;
+
+         default:   // Should not happen!
+         break;
+       }
+     ++fmt;
+     c = *fmt;
+    }
+
+   // Having more args than '%' is not a real problem.
+   if(nb_per_cent > current_print_desc->args ||
+      state != CHECK_FMT_START)
+    { fprintf(stderr,
+        "### format string for group \"%s\": potential problem in format string.\n",
+        current_print_desc->type->name);
+    }
+    
+   return;
+}
+/////////////////////////////////////
+
+/////////////////////////////////////
 void Instruction_Print_Group(ISA_PRINT_TYPE print_type, TOP top, ... )
 /////////////////////////////////////
 //  See interface description.
@@ -261,6 +336,8 @@ void Instruction_Print_Group(ISA_PRINT_TYPE print_type, TOP top, ... )
 {
   va_list ap;
   TOP     opcode;
+
+  check_format_string();
 
   // For static code, variable length list
   // halts on TOP_UNDEFINED. For dynamic code,

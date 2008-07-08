@@ -104,6 +104,19 @@
 #define Set_OP_results(o,n)	((o)->results = (n))
 
 #ifdef TARG_ST
+BOOL 
+Set_OP_opnd_Immediate_Variant(OP *op, INT idx, TN *tn) {
+	TOP top = TOP_UNDEFINED;
+	DevAssert(TN_has_value(tn),("Set_OP_opnd_Immediate_Variant must be called with a Litteral TN\n"));
+	top=TOP_opnd_immediate_variant(OP_code(op),idx,TN_value(tn));
+	if (top!=TOP_UNDEFINED) {
+		Set_OP_opnd(op, idx, tn);
+		OP_Change_Opcode(op,top);
+		return TRUE;
+	}
+	return FALSE;
+}
+
 // ----------------------------------------
 // Copy ASM_OP_ANNOT when duplicating an OP
 // ----------------------------------------
@@ -420,7 +433,7 @@ verify_same_res(OP *op)
 		(TN_is_dedicated(tn2) || (TN_register(tn2) != REGISTER_UNDEFINED)) &&
 		(TN_register_and_class(tn1) == TN_register_and_class(tn2)))))) {
           
-	  FmtAssert(0, ("same result operand mismatch when inserting op"));
+	  FmtAssert(0, ("same result operand mismatch when inserting op (%s)",TOP_Name(OP_code(op))));
 	}
       }
     }
@@ -1353,6 +1366,26 @@ OP_Real_Inst_Words( const OP *op )
 
 /* ====================================================================
  *
+ * OP_Real_Unit_Slots - How many Unit slots does this op really 
+ * represent, i.e. will be emitted.
+ *
+ * ====================================================================
+ */
+
+INT
+OP_Real_Unit_Slots( const OP *op )
+{
+  if ( op == NULL || OP_dummy(op) ) {
+    return 0;
+  }
+  else if ( OP_simulated(op) ) {
+    return Simulated_Op_Real_Inst_Words (op);
+  }
+  return OP_unit_slots(op);
+}
+
+/* ====================================================================
+ *
  * OP_Is_Float_Mem - Is OP a floating point memory operation?
  *
  * ====================================================================
@@ -1662,6 +1695,7 @@ OP_storeval_byte_offset (OP *op, INT opndno)
   return byte_offset;
 }
 
+
 /* ====================================================================
  *
  * OP_loadval_byte_offset
@@ -1692,5 +1726,5 @@ OP_loadval_byte_offset (OP *op, INT resno)
   }
   return byte_offset;
 }
-#endif
 
+#endif

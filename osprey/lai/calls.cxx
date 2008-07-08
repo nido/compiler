@@ -593,21 +593,19 @@ Generate_Entry (BB *bb, BOOL gra_run)
     if (ST_is_not_used(st))
 	;
     else if (Gen_PIC_Call_Shared && CGEXP_gp_prolog_call_shared) {
-	/* pv 466125 */
-	/* we actually ignore the st in this case, but pass it anyways
-	 * so that tn structure is regular. 
-	 */
-	TN *gp_value_tn = Gen_Symbol_TN(st, 0, TN_RELOC_GPIDENT);
-	Set_TN_size(gp_value_tn, Pointer_Size);
-	//Exp_Immediate (GP_TN, gp_value_tn, Pointer_Mtype, &ops);
-	/*	Exp_OP1 (OPC_I4INTCONST, GP_TN, gp_value_tn, &ops); */
-	Exp_Immediate (GP_TN, gp_value_tn, MTYPE_signed(Pointer_Mtype) ? TRUE : FALSE, &ops);
+      /* pv 466125 */
+      /* we actually ignore the st in this case, but pass it anyways
+       * so that tn structure is regular. 
+       */
+      TN *gp_value_tn = CGTARG_Gen_GP_Value_TN(st,&ops);
+      //Exp_Immediate (GP_TN, gp_value_tn, Pointer_Mtype, &ops);
+      /*	Exp_OP1 (OPC_I4INTCONST, GP_TN, gp_value_tn, &ops); */
+      Exp_Immediate (GP_TN, gp_value_tn, MTYPE_signed(Pointer_Mtype) ? TRUE : FALSE, &ops);
     }
     else if (Ep_TN != NULL) {
       /* Create a symbolic expression for ep-gp */
-      TN *cur_pu_got_disp_tn = Gen_Symbol_TN(st, 0, TN_RELOC_GPSUB);
-      TN *got_disp_tn = CGTARG_Gen_Got_Disp_TN ();
-      Set_TN_size(cur_pu_got_disp_tn, Pointer_Size);  
+      TN *cur_pu_got_disp_tn = CGTARG_Gen_Got_Disp_TN (st,&ops);
+      TN *got_disp_tn = Build_TN_Like(cur_pu_got_disp_tn);
       Exp_Immediate (got_disp_tn, cur_pu_got_disp_tn, MTYPE_signed(Pointer_Mtype) ? TRUE : FALSE, &ops);
 
       /* Add it to ep to get the new GP: */
@@ -1607,12 +1605,13 @@ Adjust_GP_Entry (
 
     FmtAssert(FALSE, ("Adjust_GP_Entry: shouldn't reach here"));
 
+#if 0 
     /* The entry's symtab entry */
     ST *st = ENTRYINFO_name (
          ANNOT_entryinfo(ANNOT_Get(BB_annotations(bb),ANNOT_ENTRYINFO)));
     TN *got_disp_tn = CGTARG_Gen_Got_Disp_TN ();
+#endif
   }
-
   return;
 }
 

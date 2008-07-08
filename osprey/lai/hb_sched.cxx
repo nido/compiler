@@ -205,7 +205,11 @@ OP_Is_Cmp_Eq_Ne(OP *op)
   if (OP_icmp(op)) {
     opnd1_idx = OP_find_opnd_use(op, OU_opnd1);
     opnd2_idx = OP_find_opnd_use(op, OU_opnd2);
+#ifdef TARG_ST
+    variant = OP_cmp_variant(op);
+#else
     variant = TOP_cmp_variant(opcode);
+#endif
     if (variant == V_CMP_EQ ||
 	variant == V_CMP_NE) {
       if (TN_has_value(OP_opnd(op, opnd2_idx)))
@@ -1704,7 +1708,7 @@ List_Based_Fwd::Is_OP_Better (OP *cur_op, OP *best_op)
   // added later, so include the expansion factor. 
 
   if (OP_branch_predict(cur_op) && 
-      ((BB_length(OP_bb(cur_op)) * 1.3 * ISA_INST_BYTES) 
+      ((BB_length(OP_bb(cur_op)) * 1.3 * ISA_MAX_INST_BYTES) 
        < DEFAULT_BRP_BRANCH_LIMIT)) 
     return TRUE;
 

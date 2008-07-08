@@ -311,7 +311,10 @@ BUILD_BASE_libcomutil	= $(BUILD_TOT)/common/util
 BUILD_BASE_libdwarf	= $(BUILD_TOT)/libdwarf
 BUILD_BASE_libelfutil	= $(BUILD_TOT)/libelfutil
 BUILD_BASE_libSYS	= $(BUILD_TOT)/libSYS
+BUILD_BASE_librtkutils	= $(BUILD_TOT)/common/rtkutils
 BUILD_BASE_librcparser	= $(BUILD_TOT)/common/rcparser
+BUILD_BASE_libparse	= $(BUILD_TOT)/targinfo/parser
+BUILD_BASE_gensyn	= $(BUILD_TOT)/targinfo/parser/gensyn
 BUILD_BASE_instrumentationC	= $(BUILD_TOT)/instrumentation/libinstrC
 BUILD_BASE_gccfe	= $(BUILD_TOT)/gccfe
 BUILD_BASE_gccfe_gnu	= $(BUILD_TOT)/gccfe/gnu
@@ -331,6 +334,8 @@ BUILD_BASE_driver	= $(BUILD_TOT)/driver
 BUILD_BASE_libgcov	= $(BUILD_TOT)/instrumentation/libgcov
 BUILD_BASE_libunwind	= $(BUILD_TOT)/gccfe/gnu
 BUILD_BASE_targ_info_ext= $(BUILD_TOT)/targinfo_ext
+BUILD_BASE_libair       = $(BUILD_TOT)/libair/air
+BUILD_BASE_parser       = $(BUILD_TOT)/parser
 
 #For extensions, the following makefile adds the
 #needed paths.

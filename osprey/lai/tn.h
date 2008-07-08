@@ -229,6 +229,7 @@ struct TN_LIST;
 
 /* Target-specific TN info */
 #include "targ_tn.h"
+#include "targ_isa_relocs.h"
 
 #ifdef TARG_ST
 #include "pixel_mtypes.h"
@@ -258,7 +259,7 @@ struct tn {
   } u1;
   /* offset 8 */
   mUINT16	flags;		/* Attribute flags */
-  mUINT8	relocs;		/* Relocation flags (for symbol TNs) */
+  ISA_RELOC	relocs;		/* Relocation flags (for symbol TNs) */
   mUINT8	size;		/* Size of the TN in bytes (must be <= 16) */
   /* offset 12 */
   union {
@@ -640,7 +641,7 @@ extern TN *Gen_Unique_Literal_TN (INT64 ivalue, INT size, INT is_signed = 1);
 
 extern TN *Gen_Enum_TN (ISA_ENUM_CLASS_VALUE ecv);
 
-extern  TN *Gen_Symbol_TN ( ST *s, INT64 offset, INT32 relocs);
+extern  TN *Gen_Symbol_TN ( ST *s, INT64 offset, ISA_RELOC relocs);
 CG_EXPORTED extern  TN *Gen_Label_TN ( LABEL_IDX lab, INT64 offset );
 extern  TN *Gen_Tag_TN ( LABEL_IDX tag);
 extern	TN *Gen_Adjusted_TN( TN *tn, INT64 adjust );
@@ -685,18 +686,14 @@ extern void Init_Dedicated_TNs (void);
 /* Format const TN value depending on relocation*/
 extern INT64 CGTARG_TN_Value (TN *t, INT64 base_ofst);
 
-/*
- * Relocation info 
- */
-typedef struct {
-  char *name;
-} TN_RELOCS_INFO;
-CG_EXPORTED extern const TN_RELOCS_INFO TN_RELOCS_info[];
-
+inline const char * TN_RELOCS_Syntax (mUINT8 rc)
+{
+  return ISA_RELOC_Syntax(rc);
+}
 
 inline const char * TN_RELOCS_Name (mUINT8 rc)
 {
-  return TN_RELOCS_info[rc].name;
+  return ISA_RELOC_Name(rc);
 }
 
 extern TN* Gen_Predicate_TN(void);

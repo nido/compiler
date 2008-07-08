@@ -71,8 +71,8 @@ LCDEFS += $(HOSTDEFS) $(TARGDEFS)
 LCXXOPTS = $(STD_COMPILE_OPTS)
 LCXXDEFS += $(HOSTDEFS) $(TARGDEFS)
 
-LCINCS = -I$(BUILD_BASE) -I$(BUILD_TOT)/common/rcparser
-LCXXINCS = -I$(BUILD_BASE) -I$(BUILD_TOT)/common/rcparser
+LCINCS = -I$(BUILD_BASE) -I$(BUILD_TOT)/common/rcparser -I$(BUILD_TOT)/common/rtkutils
+LCXXINCS = -I$(BUILD_BASE) -I$(BUILD_TOT)/common/rcparser -I$(BUILD_TOT)/common/rtkutils
 
 LIBRARY = librcparser.a
 
@@ -84,32 +84,30 @@ STD_LIBRARY_LOC=$(DEF_LIBRARY_LOC)
 endif
 
 CFILES	= \
-	rcparser.c \
-	utils_memory.c \
-	utils_print.c \
-	utils_debug.c \
-	utils_option.c \
-	utils_string.c \
-	utils_version_id.c \
-	libUtils.c \
-	libUtilsOptions.c \
-	libUtilsVersion.c
+	rcparser.c
 
 HFILES	= \
 	rcparser.h \
-	rcparser_message.h \
-	utils_message.h \
-	utils_memory.h \
-	utils_print.h \
-	utils_debug.h \
-	utils_option.h \
-	utils_string.h \
-	utils_version_id.h \
-	libUtils.h \
-	libUtilsOptions.h \
-	libUtilsVersion.h
+	rcparser_message.h
 
 CXXFILES = 
+
+
+ifeq ($(RELEASE_MAJOR),)
+RELEASE_MAJOR=0
+endif
+ifeq ($(RELEASE_MINOR),)
+RELEASE_MINOR=0
+endif
+ifeq ($(RELEASE_PATCHLEVEL),)
+RELEASE_PATCHLEVEL=0
+endif
+
+ifeq ($(BUILD_VARIANT),RELEASE)
+CFLAGS += -D__RELEASE__ -DNDEBUG -DV_MAJ=$(RELEASE_MAJOR) -DV_MIN=$(RELEASE_MINOR) -DV_B=$(RELEASE_PATCHLEVEL)
+else
+CFLAGS += -DV_MAJ=$(RELEASE_MAJOR) -DV_MIN=$(RELEASE_MINOR) -DV_B=$(RELEASE_PATCHLEVEL)
+endif
 
 default: first
 	$(MAKE) local last
@@ -119,10 +117,6 @@ include $(COMMONRULES)
 VPATH =  $(BUILD_BASE) $(BUILD_BASE)/$(BUILD_TARGET_DIR)
 
 first:
-ifeq ($(BUILD_OS), LINUX)
-	cd $(BUILD_AREA)/include && $(MAKE)
-endif
-
 
 first_local:
 

@@ -418,7 +418,7 @@ inline UINT Compute_alignment_exponent(INT align) {
 /* ====================================================================
  *
  * Variants for is_cmp operations
- * as returned by TOP_cmp_variant(top)
+ * as returned by OP_cmp_variant(op)
  *
  * ====================================================================
  */

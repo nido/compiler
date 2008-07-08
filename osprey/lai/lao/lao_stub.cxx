@@ -113,7 +113,7 @@ lao_init(void)
     O64_getInstance_p = (O64_Interface (*)(void))dlsym(lao_handler, "O64_getInstance");
     O64_instance = (*O64_getInstance_p)();
     FmtAssert(O64_Interface_size(O64_instance) == sizeof(O64_Interface_),
-              ("Open64 and LAO interfaces are not compatible. The two components are not synchronized."));
+            ("Open64 and LAO interfaces are not compatible. The two components are not synchronized."));
     // Initialize LAI Interface
     O64_Interface_Initialize();
     interface = O64_Interface_getInstance();
@@ -122,7 +122,7 @@ lao_init(void)
     // Initialize the target dependent LIR<->CGIR interface
     CGIR_LAO_Init();
     // We take the first subset of the subset list which must be the base ISA subset.
-    O64_Processor processor = CGIR_IS_to_Processor(*ISA_SUBSET_LIST_First(ISA_SUBSET_List));
+    O64_Processor processor = CGIR_IS_to_Processor(*ISA_SUBSET_LIST_Begin(ISA_SUBSET_List));
     // Patch the MaxIssue and MinTaken values.
     int maxIssue = CGTARG_Max_Issue_Width();
     int minTaken = CGTARG_Branch_Taken_Penalty();
@@ -599,7 +599,7 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb)
               ("BB has more than MAX_OPERATION_COUNT operations"));
       operations[operationCount++] = CGIR_OP_to_Operation(cgir_op);
     }
-    O64_Processor processor = CGIR_IS_to_Processor(*ISA_SUBSET_LIST_First(ISA_SUBSET_List));
+    O64_Processor processor = CGIR_IS_to_Processor(*ISA_SUBSET_LIST_Begin(ISA_SUBSET_List));
     int unrolled = BB_unrollings(cgir_bb);
     intptr_t regionId = (intptr_t)BB_rid(cgir_bb);
     float frequency = BB_freq(cgir_bb);
@@ -1092,16 +1092,6 @@ CGIR_BB_more(CGIR_BB cgir_bb, CGIR_BB loop_bb, intptr_t traceId, int unrolled, u
   // Set BB loop_head_bb.
   if (loop_bb != NULL) {
     Set_BB_loop_head_bb(cgir_bb, loop_bb);
-#if 0
-    // [CG 2005/03/08]
-    // Do not update OP_unroll_bb(), it must be leaved unchanged as it
-    // is the block containing the op just after unrolling.
-    // Fix from bug 1-6-0-B/36
-    CGIR_OP op = NULL;
-    FOR_ALL_BB_OPs(cgir_bb, op) {
-      Set_OP_unroll_bb(op, loop_bb);
-    }
-#endif
   }
   // Set BB unrollings.
   Set_BB_unrollings(cgir_bb, unrolled);
@@ -1514,7 +1504,7 @@ CGIR_TN_print ( const TN *tn, FILE *file )
       ST *var = TN_var(tn);
       //
       fprintf ( file, "(sym" );
-      fprintf ( file, TN_RELOCS_Name(TN_relocs(tn)) );
+      fprintf ( file, "%s",TN_RELOCS_Name(TN_relocs(tn)) );
       //
       if (ST_class(var) == CLASS_CONST)
       	fprintf ( file, ":%s)", Targ_Print(NULL, ST_tcon_val(var)));

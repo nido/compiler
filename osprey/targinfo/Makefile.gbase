@@ -70,60 +70,46 @@ ifeq ($(BUILD_TARGET), MIPS)
 BUILD_TARGET_DIR = mips
 endif
 
-ifeq ($(BUILD_TARGET), ST100)
-TARGINFO_DIR		= $(BUILD_TOT)/targinfo
-TARGINFO_ACCESS_DIR	= $(TARGINFO_DIR)/access
-TARGINFO_GENERATE_DIR 	= $(TARGINFO_DIR)/generate
-TARGINFO_ISA_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/isa
-TARGINFO_ABI_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/abi
-TARGINFO_PROC_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/proc
-TARGINFO_CG_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/cg
-endif
-
-ifeq ($(BUILD_TARGET), ST200)
-TARGINFO_DIR		= $(BUILD_TOT)/targinfo
-TARGINFO_ACCESS_DIR	= $(TARGINFO_DIR)/access
-TARGINFO_GENERATE_DIR 	= $(TARGINFO_DIR)/generate
-TARGINFO_ISA_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/isa
-TARGINFO_ABI_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/abi
-TARGINFO_PROC_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/proc
-TARGINFO_CG_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/cg
-endif
-
-ifeq ($(BUILD_TARGET), STxP70)
-TARGINFO_DIR		= $(BUILD_TOT)/targinfo
-TARGINFO_ACCESS_DIR	= $(TARGINFO_DIR)/access
-TARGINFO_GENERATE_DIR 	= $(TARGINFO_DIR)/generate
-TARGINFO_ISA_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/isa
-TARGINFO_ABI_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/abi
-TARGINFO_PROC_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/proc
-TARGINFO_CG_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/cg
-endif
-
 ifeq ($(BUILD_TARGET), IA64)
-TARGINFO_DIR		= $(BUILD_BASE)
-TARGINFO_ACCESS_DIR	= $(TARGINFO_DIR)/access
-TARGINFO_GENERATE_DIR 	= $(TARGINFO_DIR)/generate
-TARGINFO_ISA_DIR 	= $(TARGINFO_DIR)/isa/$(BUILD_TARGET_DIR)
-TARGINFO_ABI_DIR 	= $(TARGINFO_DIR)/abi/$(BUILD_TARGET_DIR)
-TARGINFO_PROC_DIR 	= $(TARGINFO_DIR)/proc/$(BUILD_TARGET_DIR)
-TARGINFO_CG_DIR 	= 
+TARGINFO_DIR          = $(BUILD_BASE)
+else
+TARGINFO_DIR          = $(BUILD_TOT)/targinfo
 endif
+TARGINFO_ACCESS_DIR	 = $(TARGINFO_DIR)/access
+TARGINFO_GENERATE_DIR = $(TARGINFO_DIR)/generate
+ifeq ($(BUILD_TARGET), IA64)
+TARGINFO_ISA_DIR      = $(TARGINFO_DIR)/isa/$(BUILD_TARGET_DIR)
+TARGINFO_ABI_DIR      = $(TARGINFO_DIR)/abi/$(BUILD_TARGET_DIR)
+TARGINFO_PROC_DIR     = $(TARGINFO_DIR)/proc/$(BUILD_TARGET_DIR)
+TARGINFO_CG_DIR       = 
+else
+TARGINFO_ISA_DIR      = $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/isa
+TARGINFO_ABI_DIR      = $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/abi
+TARGINFO_PROC_DIR 	 = $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/proc
+TARGINFO_CG_DIR       = $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/cg
+endif
+TARGINFO_PARSER_DIR   = $(TARGINFO_DIR)/parser/src
+TARGINFO_PARSER_DIR  += $(TARGINFO_DIR)/parser/inc
+COMMON_RTKUTILS_DIR   = $(COMMON_DIR)/rtkutils
 
-TARG_INCLUDE_DIR        = $(BUILD_AREA)/include
+TARG_INCLUDE_DIR      = $(BUILD_AREA)/include
+
+LIBAIR_DIR            = $(BUILD_TOT)/libair/air
 
 # These are the directories in which to look for source files.
 
-SRC_DIRS = \
-  $(CURRENT_DIR)		\
-  $(TARGINFO_ACCESS_DIR)	\
-  $(TARGINFO_GENERATE_DIR)	\
-  $(TARGINFO_ISA_DIR)		\
-  $(TARGINFO_PROC_DIR)		\
-  $(TARGINFO_ABI_DIR)		\
-  $(TARGINFO_CG_DIR)		\
-  $(TARG_INCLUDE_DIR) \
-  $(BUILD_TOT)/common/com
+SRC_DIRS = 				\
+  $(CURRENT_DIR)			\
+  $(TARGINFO_ACCESS_DIR)		\
+  $(TARGINFO_GENERATE_DIR)		\
+  $(TARGINFO_ISA_DIR)			\
+  $(TARGINFO_PROC_DIR)			\
+  $(TARGINFO_ABI_DIR)			\
+  $(TARGINFO_CG_DIR)			\
+  $(TARG_INCLUDE_DIR) 			\
+  $(COMMON_COM_DIR) \
+  $(TARGINFO_PARSER_DIR)		\
+  $(LIBAIR_DIR)
 
 VPATH    =  $(SRC_DIRS)
 
@@ -175,12 +161,13 @@ DSOSTARTOPT_N32 = $(DSOSTARTOPT)
 
 LDIRT += *.[ch] *.Exported isa_gen$(BEXE) isa_subset_gen$(BEXE) \
 	isa_operands_gen$(BEXE) isa_properties_gen$(BEXE) isa_variants_gen$(BEXE) \
-	isa_hazards_gen$(BEXE) isa_pack_gen$(BEXE) isa_print_gen$(BEXE) \
+	isa_hazards_gen$(BEXE) isa_pack_gen$(BEXE) \
 	isa_decode_gen$(BEXE) isa_pseudo_gen$(BEXE) \
 	isa_registers_gen$(BEXE) isa_enums_gen$(BEXE) \
 	isa_lits_gen$(BEXE) abi_properties_gen$(BEXE) proc_gen$(BEXE) \
-	proc_properties_gen$(BEXE) isa_bundle_gen$(BEXE) si_gen.so \
-	ii_files so_locations si_gen.a *.o
+	proc_properties_gen$(BEXE) isa_bundle_gen$(BEXE) isa_syntax_gen$(BEXE) \
+	isa_relocs_gen$(BEXE) \
+	si_gen.so ii_files so_locations si_gen.a *.o
 
 
 #----------------------------------------------------------------------
@@ -213,7 +200,9 @@ endif
 endif # ST200
 
 ifeq ($(BUILD_TARGET), STxP70)
-LDIRT += stxp70_si_gen$(BEXE)
+LDIRT += stxp70_v3_si_gen$(BEXE)
+LDIRT += stxp70_v3_ext_si_gen$(BEXE)
+LDIRT += stxp70_v4_si_gen$(BEXE)
 
 # building static library
 ifeq ($(DSO_MODE),STATIC)
@@ -221,11 +210,11 @@ SO_TARGETS = libstxp70.a
 endif
 # building windows dll
 ifeq ($(DSO_MODE),DLL)
-SO_TARGETS = stxp70.dll libtarginfo.dll
+SO_TARGETS = stxp70_v3.dll stxp70_v3_ext.dll stxp70_v4.dll libtarginfo.dll
 endif
 # building "unix" so library
 ifeq ($(DSO_MODE),SO)
-SO_TARGETS = stxp70.so 
+SO_TARGETS = stxp70_v3.so stxp70_v3_ext.so stxp70_v4.so
 endif
 
 BUILTINS_INC_TARGETS = builtins_fpx.h builtins_model_sx.h  builtins_sx.h builtins_model_common.h  builtins_model_x3.h  builtins_x3.h fpx.h x3.h sx.h
@@ -270,6 +259,7 @@ LIB_LOC = $(STD_MONGOOSE_LOC)
 TARGINFO_ACCESS_SRCS = \
 	ti_asm.c		\
 	ti_bundle.c		\
+	ti_hash.c               \
 	ti_latency.c		\
 	ti_errors.c
 
@@ -283,8 +273,11 @@ TARG_INFO_SRCS = \
 	targ_isa_enums.c	\
 	targ_isa_hazards.c	\
 	targ_isa_lits.c		\
+        targ_isa_relocs.c       \
 	targ_isa_print.c	\
+	targ_isa_parse.c	\
 	targ_isa_pack.c		\
+	targ_isa_selector.c	\
 	targ_isa_operands.c	\
 	targ_isa_registers.c	\
 	targ_isa_decode.c	\
@@ -306,8 +299,8 @@ TARGETS = \
 	$(TARGINFO_ACCESS_HDRS) \
 	$(TARG_INFO_HDRS)	\
 	$(TARG_INFO_SRCS)	\
-	$(SO_TARGETS)	\
-	$(TARG_INFO_LIB)
+	$(SO_TARGETS)		\
+	$(TARG_INFO_LIB) 	
 
 ifneq ($(BUILD_COMPILER), EDG)
 TARGETS +=	si_gen.a
@@ -322,6 +315,26 @@ TARGETS += \
 endif
 
 #----------------------------------------------------------------------
+# Specific options transfered to utils build system
+#----------------------------------------------------------------------
+ifeq ($(RELEASE_MAJOR),)
+RELEASE_MAJOR=0
+endif
+ifeq ($(RELEASE_MINOR),)
+RELEASE_MINOR=0
+endif
+ifeq ($(RELEASE_PATCHLEVEL),)
+RELEASE_PATCHLEVEL=0
+endif
+ifeq ($(BUILD_VARIANT),RELEASE)
+UTILS_OPTS= STATUS=RELEASE MAJOR=$(RELEASE_MAJOR) MINOR=$(RELEASE_MINOR) MICRO=$(RELEASE_PATCHLEVEL) TAG=0
+TARG_ISA_PARSE_OPTS= -D__RELEASE__ -DV_MA=$(RELEASE_MAJOR) -DV_MI=$(RELEASE_MINOR) -DV_BU=$(RELEASE_PATCHLEVEL)
+else
+UTILS_OPTS= STATUS=DEVELOPMENT MAJOR=$(RELEASE_MAJOR) MINOR=$(RELEASE_MINOR) MICRO=$(RELEASE_PATCHLEVEL) TAG=0
+TARG_ISA_PARSE_OPTS= -DV_MA=$(RELEASE_MAJOR) -DV_MI=$(RELEASE_MINOR) -DV_BU=$(RELEASE_PATCHLEVEL)
+endif
+
+#----------------------------------------------------------------------
 #  Variables describing additional sources, objects, and libraries
 #----------------------------------------------------------------------
 LLDLIBS = 
@@ -330,12 +343,21 @@ default: first
 	$(MAKE) local last
 
 #----------------------------------------------------------------------
+#  local clobber target
+#----------------------------------------------------------------------
+
+clobber_local:
+
+clobber: clobber_local
+
+#----------------------------------------------------------------------
 #  The commands in this section are done BEFORE any other target is 
 #  built.
 #----------------------------------------------------------------------
 first:
 ifndef PARALLEL
 	cd $(BUILD_AREA)/include && $(MAKE)
+	cd $(BUILD_AREA)/gensyn && $(MAKE)
 endif
 
 #----------------------------------------------------------------------
@@ -401,6 +423,8 @@ ti_latency.h:
 	ln -s $(TARGINFO_ACCESS_DIR)/ti_latency.h ti_latency.h
 ti_errors.h:
 	ln -s $(TARGINFO_ACCESS_DIR)/ti_errors.h ti_errors.h
+ti_hash.h:
+	ln -s $(TARGINFO_ACCESS_DIR)/ti_hash.h ti_hash.h
 
 ti_asm.o: ti_asm.c topcode.h targ_isa_operands.h targ_isa_print.h \
 	  targ_isa_pack.h targ_isa_bundle.h targ_isa_decode.h \
@@ -409,6 +433,9 @@ ti_asm.o: ti_asm.c topcode.h targ_isa_operands.h targ_isa_print.h \
 	$(CC) $(CFLAGS) -c $< -o $@
 
 ti_bundle.o: ti_bundle.c ti_si.h ti_errors.h targ_isa_bundle.h ti_bundle.h 
+	$(CC) $(CFLAGS) -c $< -o $@
+
+ti_hash.o: ti_hash.c ti_hash.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 ti_latency.o: ti_latency.c ti_si.h targ_isa_properties.h targ_isa_hazards.h \
@@ -442,16 +469,19 @@ ifeq ($(BUILD_COMPILER), EDG)
 topcode.Exported: topcode.h
 targ_isa_enums.Exported: targ_isa_enums.h
 targ_isa_lits.Exported: targ_isa_lits.h
+targ_isa_relocs.Exported: targ_isa_relocs.h
 targ_isa_registers.Exported: targ_isa_registers.h
 targ_isa_hazards.Exported: targ_isa_hazards.h
 targ_isa_subset.Exported: targ_isa_subset.h
 targ_isa_properties.Exported: targ_isa_properties.h
 targ_isa_variants.Exported: targ_isa_variants.h
+targ_isa_selector.Exported: targ_isa_selector.h
 targ_isa_operands.Exported: targ_isa_operands.h
 targ_isa_pack.Exported: targ_isa_pack.h
 targ_isa_decode.Exported: targ_isa_decode.h
 targ_isa_pseudo.Exported: targ_isa_pseudo.h
 targ_isa_print.Exported: targ_isa_print.h
+targ_isa_parse.Exported: targ_isa_parse.h
 targ_isa_bundle.Exported: targ_isa_bundle.h
 targ_abi_properties.Exported: targ_abi_properties.h
 targ_proc.Exported: targ_proc.h
@@ -612,6 +642,28 @@ isa_variants.o: isa_variants.cxx isa_variants_gen.h topcode.h
 build_isa_variants.o: targ_isa_variants.c
 	$(BUILD_CC) $(BUILD_CFLAGS) -c targ_isa_variants.c -o $@
 
+## targ_isa_selector.[ch] ##
+
+targ_isa_selector.c: targ_isa_selector.h
+targ_isa_selector.h: isa_selector_gen$(BEXE)
+	$(RUN) ./isa_selector_gen$(BEXE)
+
+isa_selector_gen$(BEXE): isa_selector_gen.o gen_util.o isa_selector.o \
+			 build_topcode.o build_isa_subset.o
+	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
+
+isa_selector_gen.o: isa_selector_gen.cxx isa_selector_gen.h \
+		    topcode.h gen_util.h targ_isa_subset.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+isa_selector.o: isa_selector.cxx isa_selector_gen.h topcode.h \
+		targ_isa_subset.h 
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c -I$(COMMON_COM_DIR) $< -o $@
+
+build_isa_selector.o: targ_isa_selector.c targ_isa_selector.h \
+		      topcode.h targ_isa_subset.h
+	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
+
 ## targ_isa_operands.[ch] ##
 
 targ_isa_operands.c: targ_isa_operands.h
@@ -630,11 +682,11 @@ isa_operands_gen$(BEXE): isa_operands_gen.o gen_util.o isa_operands.o \
 
 isa_operands_gen.o: isa_operands_gen.cxx isa_operands_gen.h \
 		    targ_isa_registers.h targ_isa_enums.h targ_isa_lits.h  \
-		    topcode.h gen_util.h targ_isa_properties.h
+		    targ_isa_relocs.h  topcode.h gen_util.h targ_isa_properties.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_operands.o: isa_operands.cxx isa_operands_gen.h targ_isa_registers.h \
-		targ_isa_enums.h targ_isa_lits.h topcode.h
+		targ_isa_enums.h targ_isa_lits.h targ_isa_relocs.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c -I$(COMMON_COM_DIR) $< -o $@
 
 build_isa_operands.o: targ_isa_operands.c targ_isa_operands.h \
@@ -653,13 +705,16 @@ isa_pack_gen$(BEXE): gen_util.o isa_pack_gen.o gen_util.o isa_pack.o \
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
 isa_pack_gen.o: isa_pack_gen.cxx isa_pack_gen.h topcode.h \
-		targ_isa_properties.h gen_util.h
+		targ_isa_properties.h targ_isa_operands.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_pack.o: isa_pack.cxx isa_pack_gen.h topcode.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 targ_isa_pack.o: targ_isa_pack.c targ_isa_pack.h topcode.h
+
+build_isa_pack.o: targ_isa_pack.c targ_isa_pack.h topcode.h
+	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
 
 ## targ_isa_decode.[ch] ##
 
@@ -668,7 +723,8 @@ targ_isa_decode.h: isa_decode_gen$(BEXE)
 	$(RUN) ./isa_decode_gen$(BEXE)
 
 isa_decode_gen$(BEXE): gen_util.o isa_decode_gen.o gen_util.o \
-			isa_decode.o build_topcode.o build_isa_bundle.o 
+			isa_decode.o build_topcode.o build_isa_subset.o \
+			build_isa_bundle.o 
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
 isa_decode_gen.o: isa_decode_gen.cxx isa_decode_gen.h topcode.h gen_util.h
@@ -701,25 +757,6 @@ isa_pseudo.o: isa_pseudo.cxx isa_pseudo_gen.h topcode.h
 
 targ_isa_pseudo.o: targ_isa_pseudo.c targ_isa_pseudo.h topcode.h
 
-## targ_isa_print.[ch] ##
-
-targ_isa_print.c: targ_isa_print.h
-targ_isa_print.h: isa_print_gen$(BEXE)
-	$(RUN) ./isa_print_gen$(BEXE)
-
-isa_print_gen$(BEXE): gen_util.o isa_print_gen.o isa_print.o build_topcode.o \
-		      build_isa_properties.o
-	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
-
-isa_print_gen.o: isa_print_gen.cxx isa_print_gen.h topcode.h targ_isa_properties.h \
-		 targ_isa_operands.h gen_util.h
-	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
-
-isa_print.o: isa_print.cxx isa_print_gen.h topcode.h
-	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
-
-targ_isa_print.o: targ_isa_print.c targ_isa_print.h topcode.h
-
 ## targ_abi_properties.[ch] ##
 
 targ_abi_properties.c: targ_abi_properties.h
@@ -740,6 +777,64 @@ abi_properties.o: abi_properties.cxx abi_properties_gen.h targ_isa_registers.h
 targ_abi_properties.o: targ_abi_properties.c targ_abi_properties.h \
 		       targ_isa_registers.h
 
+## targ_isa_print.[ch] && %_targ_isa_parse.pr ##
+
+targ_isa_parse.c: targ_isa_parse.h
+	@echo # $@: force dependency
+%_targ_isa_parse.pr: targ_isa_print.h
+	@echo # $@: force dependency
+targ_isa_parse.h: targ_isa_print.h
+	@echo # $@: force dependency
+targ_isa_print.c: targ_isa_print.h
+	@echo # $@: force dependency
+targ_isa_print.h: isa_syntax_gen$(BEXE)
+	$(RUN) ./isa_syntax_gen$(BEXE)
+
+isa_syntax_gen$(BEXE): isa_syntax_gen.o build_isa_registers.o \
+                       build_isa_subset.o build_topcode.o \
+		       build_isa_operands.o build_isa_registers.o \
+	  	       build_isa_enums.o build_isa_lits.o \
+		       build_isa_subset.o build_isa_relocs.o \
+	               gen_util.o isa_syntax.o
+	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
+
+isa_syntax.o: isa_syntax.cxx isa_syntax_gen.h \
+	      targ_isa_registers.h topcode.h \
+	      targ_isa_subset.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+isa_syntax_gen.o: isa_syntax_gen.cxx topcode.h gen_util.h \
+	          isa_syntax_gen.h targ_isa_registers.h   \
+	          targ_isa_operands.h targ_isa_subset.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+targ_isa_print.o: targ_isa_print.c targ_isa_print.h topcode.h
+
+targ_isa_parse.o: targ_isa_parse.c targ_isa_parse.h air.h parser.h
+
+## targ_isa_relocs.[ch] ##
+
+targ_isa_relocs.c: targ_isa_relocs.h
+targ_isa_relocs.h: isa_relocs_gen$(BEXE)
+	$(RUN) ./isa_relocs_gen$(BEXE)
+
+isa_relocs_gen$(BEXE): isa_relocs_gen.o build_isa_lits.o \
+	               gen_util.o isa_relocs.o build_isa_subset.o
+	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
+
+isa_relocs.o: isa_relocs.cxx isa_relocs_gen.h \
+	      targ_isa_lits.h targ_isa_subset.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+isa_relocs_gen.o: isa_relocs_gen.cxx isa_relocs_gen.h \
+	          targ_isa_lits.h targ_isa_subset.h gen_util.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+build_isa_relocs.o: targ_isa_relocs.c targ_isa_relocs.h \
+		      targ_isa_lits.h
+	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
+
+
 ## targ_isa_bundle.[ch] ##
 
 targ_isa_bundle.c: targ_isa_bundle.h
@@ -747,11 +842,13 @@ targ_isa_bundle.h: isa_bundle_gen$(BEXE)
 	$(RUN) ./isa_bundle_gen$(BEXE)
 
 isa_bundle_gen$(BEXE): gen_util.o isa_bundle_gen.o gen_util.o isa_bundle.o \
-			build_topcode.o build_isa_properties.o
+			build_topcode.o build_isa_properties.o build_isa_subset.o \
+			build_isa_pack.o
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
 isa_bundle_gen.o: isa_bundle_gen.cxx isa_bundle_gen.h topcode.h \
-                  targ_isa_properties.h gen_util.h
+                  targ_isa_properties.h targ_isa_subset.h gen_util.h \
+	          targ_isa_pack.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_bundle.o: isa_bundle.cxx isa_bundle_gen.h topcode.h
@@ -1054,11 +1151,21 @@ st2%.dll st2%_dll.a : st2%.o  ti_si.o st2%_DllMain.o
 libst220.a : st220.o
 	$(AR) rc $@ $<
 
+PARSER_INPUT_CFILES = \
+	st220_targ_isa_parse.c \
+	st231_targ_isa_parse.c	\
+	st240_targ_isa_parse.c
 endif # ST200
 
 #----------------------------------------------------------------------
 # STxP70
 #----------------------------------------------------------------------
+
+%_targ_isa_parse.c: %_targ_isa_parse.pr $(BUILD_AREA)/gensyn/gensynLINUX$(BEXE)
+	$(BUILD_AREA)/gensyn/gensynLINUX$(BEXE) $< -t extension -ac $@
+
+%_targ_isa_parse.o: %_targ_isa_parse.c parser.h type_defs.h defs_exported.h astype.h analyzer.h
+	$(CC) $(CFLAGS) $(TARG_ISA_PARSE_OPTS) -c $< -o $@
 
 ifeq ($(BUILD_TARGET), STxP70)
 
@@ -1093,11 +1200,27 @@ stxp%.dll stxp%_dll.a : stxp%.o  ti_si.o stxp%_DllMain.o
 #
 # static library
 #
-lib_stxp70.a : stxp70.o
+lib_stxp70_v3.a : stxp70_v3.o
 	$(AR) rc $@ $<
+
+#
+# Assembly parser files
+#
+PARSER_INPUT_CFILES = \
+	stxp70_v3_ext_fpx_targ_isa_parse.c \
+	stxp70_v3_ext_x3_targ_isa_parse.c  \
+	stxp70_v3_ext_targ_isa_parse.c	\
+	stxp70_v3_targ_isa_parse.c	\
+	stxp70_v4_targ_isa_parse.c	\
+	stxp70_v4_ext_x3_targ_isa_parse.c
 
 endif # STxP70
 
+
+
+LIBTARGINFO_OBJS += $(PARSER_INPUT_CFILES:.c=.o)
+TARGETS          += $(PARSER_INPUT_CFILES)
+TARGETS          += $(PARSER_INPUT_CFILES:.c=.pr)
 
 #----------------------------------------------------------------------
 #  libtarginfo.a library
@@ -1126,7 +1249,6 @@ ifeq ($(BUILD_COMPILER), EDG)
 	$(STD_INSTALL) $(STD_INSTALL_READ_MASK) -F $(HDRS_LOC) $(EXPORT_FILE)
 endif
 	$(STD_INSTALL) $(STD_INSTALL_READ_MASK) -F $(LIB_LOC) $(TARG_INFO_LIB)
-
 
 #----------------------------------------------------------------------
 #  Include the usual commonrules

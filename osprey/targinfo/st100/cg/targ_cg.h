@@ -41,9 +41,9 @@
  *   Branch handling:
  * ====================================================================
  */
-#define MIN_BRANCH_DISP             (2097151 * ISA_INST_BYTES)
-#define DEFAULT_BRP_BRANCH_LIMIT    (256 * ISA_INST_BYTES)
-#define DEFAULT_LONG_BRANCH_LIMIT   (2000000 * ISA_INST_BYTES)
+#define MIN_BRANCH_DISP             (2097151 * ISA_MAX_INST_BYTES)
+#define DEFAULT_BRP_BRANCH_LIMIT    (256 * ISA_MAX_INST_BYTES)
+#define DEFAULT_LONG_BRANCH_LIMIT   (2000000 * ISA_MAX_INST_BYTES)
 
 #if 0
 // Return format string for operand i of op.

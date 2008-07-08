@@ -837,8 +837,6 @@ match_compare_subsph_to_zero (const RangeAnalysis &range_analysis,
   BOOL is_signed;
   LRange_p r1, r2, rhalf;
 
-  TOP opcode = OP_code(l1_op);
-
   if (!OP_icmp(l1_op))
     return FALSE;
 
@@ -878,7 +876,7 @@ match_compare_subsph_to_zero (const RangeAnalysis &range_analysis,
   // otherwise a sign extension has to be provided
   if (rhalf->ContainsOrEqual(r1) && rhalf->ContainsOrEqual(r2)){
     result = OP_result(l1_op, 0);
-    variant = TOP_cmp_variant(opcode);
+    variant = OP_cmp_variant(l1_op);
     switch (variant) {
     case V_CMP_NE: 
       Expand_Int_Not_Equal(result, opnd1, opnd2, MTYPE_I4, ops);

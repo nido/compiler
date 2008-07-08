@@ -6,7 +6,6 @@
   under the terms of version 2 of the GNU General Public License as
   published by the Free Software Foundation.
 
-
   This program is distributed in the hope that it would be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
@@ -602,15 +601,16 @@ add_special_options (void)
 	  deadcode = FALSE;
 	}
 
-#ifdef TARG_STxP70 /* [HC] Old ST linker does not support binopt */
-        if (Useoldlinker == TRUE) {
-          deadcode=FALSE;
-        }
-#endif
 	if (deadcode == UNDEFINED) {
 	  maybe_dynamic();
 	  // [TB]: Activate deadcode even in dynamic mode
 	  deadcode = (olevel >= 2) ? TRUE : FALSE;
+#ifdef TARG_STxP70
+          if (proc == PROC_stxp70_v4) {
+  	     //[HC] For the moment deadcode doesn't exist for stxp70 v4.
+             deadcode = FALSE;
+	  }
+#endif
 	  if (deadcode == TRUE) {
             prepend_option_seen (O__deadcode);
 	  }
@@ -1129,12 +1129,16 @@ add_special_options (void)
 	  }
 
 	  if (!is_toggled(cppundef)) {
-	    if (proc == PROC_stxp70) {
+	    if (proc == PROC_stxp70_v3 || proc == PROC_stxp70_v3_ext) {
               flag = add_string_option(O_D, "__stxp70__");
 	      prepend_option_seen (flag);
  	      flag = add_string_option(O_D, "__STXP70__");
 	      prepend_option_seen (flag);
 	      flag = add_string_option(O_D, "__STxP70__");
+	      prepend_option_seen (flag);
+ 	      flag = add_string_option(O_D, "__STXP70_V3__");
+	      prepend_option_seen (flag);
+	      flag = add_string_option(O_D, "__STxP70_V3__");
 	      prepend_option_seen (flag);
 	      flag = add_string_option(O_D, "__SX");
 	      prepend_option_seen (flag);
@@ -1144,6 +1148,26 @@ add_special_options (void)
 	      flag = add_string_option(O_TARG_, "enable_x3=on");
 	      prepend_option_seen(flag);
 
+	    }
+
+	    if (proc == PROC_stxp70_v4) {
+ 	      flag = add_string_option(O_D, "__STXP70__");
+	      prepend_option_seen (flag);
+	      flag = add_string_option(O_D, "__STxP70__");
+	      prepend_option_seen (flag);
+	      flag = add_string_option(O_D, "__STXP70_V4__");
+	      prepend_option_seen (flag);
+	      flag = add_string_option(O_D, "__STxP70_V4__");
+	      prepend_option_seen (flag);
+	      flag = add_string_option(O_D, "__SX");
+	      prepend_option_seen (flag);
+	      flag = add_string_option(O_D, "__X3");
+	      prepend_option_seen (flag);
+	      flag = add_string_option(O_TARG_, "enable_x3=on");
+	      prepend_option_seen(flag);
+              //  [dt] Set single core by default
+              flag = add_string_option(O_CG_, "max_issue_width=1");
+              prepend_option_seen (flag);
 	    }
 	    
 	    flag = add_string_option(O_D, "__open64__");

@@ -1198,7 +1198,20 @@ void Print_All_BB_Headers ( void )
       fprintf ( TFile,"\n" );
   }
 }
-
+
+#ifdef TARG_ST
+/* ================================================================= */
+void Print_BB_id ( int id ) 
+{
+  BB *bp;
+  for (bp = REGION_First_BB; bp; bp = BB_next(bp)) {
+	  if (BB_id(bp)==id) {
+		  Print_BB ( bp );
+		  fprintf ( TFile,"\n" );
+	  }
+  }
+}
+#endif
 /* ====================================================================
  *
  * Print_Entry_Chain

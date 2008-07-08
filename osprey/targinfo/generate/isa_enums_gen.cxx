@@ -68,9 +68,10 @@ typedef struct {
 } ECV_struct;
 
 typedef struct {
-	const char *ec_name;
-	int first_ecv;
-	int last_ecv;
+	const char   *ec_name;
+        ISA_ENUM_EMIT ec_emit;
+	int           first_ecv;
+	int           last_ecv;
 } EC_struct;
 
 static vector<ECV_struct> all_ecv;
@@ -101,6 +102,9 @@ static const char * const interface[] = {
   " *",
   " *   const char * ISA_EC_Name (ISA_ENUM_CLASS)",
   " *       Returns name of EC.",
+  " *",
+  " *   BOOL ISA_EC_Emit_Name(ISA_ENUM_CLASS ec)",
+  " *       Returns TRUE if must emit name else emit its value.",
   " *",
   " *   ISA_ENUM_CLASS_VALUE ISA_EC_First_Value (ISA_ENUM_CLASS)",
   " *       Returns the first ECV for the specified EC.",
@@ -147,7 +151,7 @@ void ISA_Enums_Begin (void)
   if(gen_static_code) {
     ECV_struct current_ecv = {"","UNDEFINED",UNDEFINED};
     all_ecv.push_back (current_ecv);
-    EC_struct current_ec = {"UNDEFINED",0,0};
+    EC_struct current_ec = {"UNDEFINED",ISA_ENUM_Emit_Name,0,0};
     all_ec.push_back (current_ec);
   }
 
@@ -155,7 +159,7 @@ void ISA_Enums_Begin (void)
 }
 
 /////////////////////////////////////
-void ISA_Create_Enum_Class ( const char* name, ...)
+void ISA_Create_Enum_Class ( const char* name, ISA_ENUM_EMIT emit, ...)
 /////////////////////////////////////
 //  See interface description.
 /////////////////////////////////////
@@ -165,8 +169,9 @@ void ISA_Create_Enum_Class ( const char* name, ...)
   EC_struct current_ec;
   ECV_struct current_ecv;
   current_ec.ec_name = name;
+  current_ec.ec_emit = emit;
   current_ec.first_ecv = all_ecv.size();
-  va_start(ap, name);
+  va_start(ap, emit);
   do {	// loop through ecvs
     ecv_name = va_arg(ap, char*);
     current_ecv.ecv_ecname = name;
@@ -221,15 +226,21 @@ void ISA_Enums_End(void)
 {
   char *hfilename = NULL ;
   char *cfilename = NULL ;
+  char *sfilename = NULL ;
   char *efilename = NULL ;
   FILE *hfile     = NULL ;
   FILE *cfile     = NULL ;
+  FILE *sfile     = NULL ;
   FILE *efile     = NULL ;
 
   const char* const bname = FNAME_TARG_ISA_ENUMS ;      /* base name */
 
-  const char* tabname;
-  const char* ptrname; 
+  const char* static_class_info = "ISA_ENUM_CLASS_static_info";
+  const char* static_class_value_info = "ISA_ENUM_CLASS_VALUE_static_info";
+  const char* dynamic_class_info = "ISA_ENUM_CLASS_dynamic_info";
+  const char* dynamic_class_value_info = "ISA_ENUM_CLASS_VALUE_dynamic_info";
+  const char* class_info_ptrname = "ISA_ENUM_CLASS_info";
+  const char* class_value_info_ptrname = "ISA_ENUM_CLASS_VALUE_info";
 
   vector<EC_struct>::iterator iec;
   vector<ECV_struct>::iterator iecv;
@@ -241,189 +252,257 @@ void ISA_Enums_End(void)
   cfilename = Gen_Build_Filename(bname,extname,gen_util_file_type_cfile);
   cfile     = Gen_Open_File_Handle(cfilename, "w");
 
-  if(gen_static_code)
-   { efilename = Gen_Build_Filename(bname,extname,gen_util_file_type_efile);
-     efile     = Gen_Open_File_Handle(efilename, "w");
-   }
+  if(gen_static_code) {
+    efilename = Gen_Build_Filename(bname,extname,gen_util_file_type_efile);
+    efile     = Gen_Open_File_Handle(efilename, "w");
+  }
+  else {
+        const char *headers[] = {
+      "<stddef.h>",
+      "\"dyn_" FNAME_ISA_ENUMS ".h\"",
+      "",
+    };
+
+    sfilename = Gen_Build_Filename(FNAME_STUB_ISA_ENUMS,
+				   extname,
+				   gen_util_file_type_cfile);
+    sfile     = Gen_Open_File_Handle(sfilename,"w");
+    Emit_Stub_Header(sfile,headers);
+  }
 
   Emit_Header (hfile, bname, interface,extname);
   Emit_C_Header(cfile);
 
-  if(gen_dyn_code)
-   { char *dyn_hfilename = Gen_Build_Filename(FNAME_ISA_ENUMS,NULL,
+  if(gen_dyn_code) {
+    char *dyn_hfilename = Gen_Build_Filename(FNAME_ISA_ENUMS,NULL,
                                               gen_util_file_type_dyn_hfile);
-     fprintf(cfile,"#include <stdio.h>\n");
-     fprintf(cfile,"#include \"%s\"\n",dyn_hfilename);
-     Gen_Free_Filename(dyn_hfilename);
-   }
-  else
-   { fprintf(cfile,"#include \"%s\"\n\n",hfilename);
-   }
-
-  // Currently enumerations are not supported for dynamic extensions.
-  if (gen_dyn_code)
-   {if(all_ecv.begin() != all_ecv.end() ||
-       all_ec.begin()  != all_ec.end())
-      { fprintf(stderr,"### Error: enumerations are not supported yet\n");
-        exit(EXIT_FAILURE);
-      }
-
-    const char* proto1 = 
-   "const ISA_ENUM_CLASS_INFO* dyn_get_ISA_ENUM_CLASS_INFO_tab(void)";
-    const char* proto2 =
-   "const mUINT32 dyn_get_ISA_ENUM_CLASS_INFO_tab_sz(void)";
-    const char* proto3 =
-   "const ISA_ENUM_CLASS_VALUE_INFO* dyn_get_ISA_ENUM_CLASS_VALUE_INFO_tab(void)";
-    const char* proto4 =
-   "const mUINT32 dyn_get_ISA_ENUM_CLASS_VALUE_INFO_tab_sz(void)";
-
-
-    /* Empty routines */
-    fprintf(cfile,
-            "%s {\n"
-            " return (const ISA_ENUM_CLASS_INFO*)NULL;\n"
-            "};\n"
-            "\n"
-            "%s {\n"
-            " return (const mUINT32)0U;\n"
-            "};\n"
-            "\n"
-            "%s {\n"
-            " return (const ISA_ENUM_CLASS_VALUE_INFO*)NULL;\n"
-            "};\n"
-            "\n"
-            "%s {\n"
-            " return (const mUINT32)0U;\n"
-            "};\n"
-            "\n",
-            proto1,
-            proto2,
-            proto3,
-            proto4);
-    fprintf(hfile,
-            "%s;\n"
-            "%s;\n"
-            "%s;\n"
-            "%s;\n"
-            "\n",
-            proto1,
-            proto2,
-            proto3,
-            proto4);
-
-     goto end;
-   }
-
-  fprintf(hfile, "\nenum {\n");
-  for ( iec = all_ec.begin(); iec != all_ec.end(); ++iec) {
-  	fprintf(hfile, "\tISA_EC%s,\n", Print_ECV_EName(iec->ec_name));
+    fprintf(cfile,"#include <stdio.h>\n");
+    fprintf(cfile,"#include \"%s\"\n",dyn_hfilename);
+    Gen_Free_Filename(dyn_hfilename);
   }
-  fprintf(hfile, "\tISA_EC_STATIC_MAX\n");
-  fprintf(hfile, "};\n");
-  fprintf(hfile, "typedef mUINT32 ISA_ENUM_CLASS;\n\n");
-  fprintf(hfile, "BE_EXPORTED extern mUINT32 ISA_EC_MAX;\n\n");
-  fprintf(cfile, "BE_EXPORTED mUINT32 ISA_EC_MAX = ISA_EC_STATIC_MAX;\n\n");
-
-  fprintf(hfile, "\nenum {\n");
-  for ( iecv = all_ecv.begin(); iecv != all_ecv.end(); ++iecv) {
-	// have to use multiple calls since Print_ECV_EName uses a static bufr
-  	fprintf(hfile, "\tISA_ECV%s", Print_ECV_EName (iecv->ecv_ecname));
-  	fprintf(hfile, "%s,\n", Print_ECV_EName (iecv->ecv_name));
+  else {
+    fprintf(cfile,"#include \"%s\"\n\n",hfilename);
   }
-  fprintf(hfile, "\tISA_ECV_STATIC_MAX\n");
-  fprintf(hfile, "};\n");
-  fprintf(hfile, "typedef mUINT32 ISA_ENUM_CLASS_VALUE;\n\n");
-  fprintf(hfile, "BE_EXPORTED extern mUINT32 ISA_ECV_MAX;\n\n");
-  fprintf(cfile, "BE_EXPORTED mUINT32 ISA_ECV_MAX = ISA_ECV_STATIC_MAX;\n\n");
+
+  if(gen_static_code) {
+    fprintf(hfile, "\nenum {\n");
+    for ( iec = all_ec.begin(); iec != all_ec.end(); ++iec) {
+      fprintf(hfile, "\tISA_EC%s,\n", Print_ECV_EName(iec->ec_name));
+    }
+    fprintf(hfile, "\tISA_EC_STATIC_MAX\n");
+    fprintf(hfile, "};\n");
+    fprintf(hfile, "typedef mUINT32 ISA_ENUM_CLASS;\n\n");
+    fprintf(hfile, "extern mUINT32 ISA_EC_MAX;\n\n");
+    fprintf(cfile, "BE_EXPORTED mUINT32 ISA_EC_MAX = ISA_EC_STATIC_MAX;\n\n");
+
+    fprintf(hfile, "\nenum {\n");
+    for ( iecv = all_ecv.begin(); iecv != all_ecv.end(); ++iecv) {
+      // have to use multiple calls since Print_ECV_EName uses a static bufr
+      fprintf(hfile, "\tISA_ECV%s", Print_ECV_EName (iecv->ecv_ecname));
+      fprintf(hfile, "%s,\n", Print_ECV_EName (iecv->ecv_name));
+    }
+    fprintf(hfile, "\tISA_ECV_STATIC_MAX\n");
+    fprintf(hfile, "};\n");
+    fprintf(hfile, "typedef mUINT32 ISA_ENUM_CLASS_VALUE;\n\n");
+    fprintf(hfile, "extern mUINT32 ISA_ECV_MAX;\n\n");
+    fprintf(cfile, "BE_EXPORTED mUINT32 ISA_ECV_MAX = ISA_ECV_STATIC_MAX;\n\n");
+
+  }
+  else {
+    fprintf(sfile, "BE_EXPORTED mUINT32 ISA_EC_MAX = 0;\n\n");
+    fprintf(sfile, "BE_EXPORTED mUINT32 ISA_ECV_MAX = 0;\n\n");
+  }
 
   /*==================================================================*/
 
-  tabname = "ISA_ENUM_CLASS_info_static_tab";
-  ptrname = "ISA_ENUM_CLASS_info";
-    
-  fprintf(hfile, "\ntypedef struct {\n"
-		"  char *name;\n"
-		"  ISA_ENUM_CLASS_VALUE first;\n"
-		"  ISA_ENUM_CLASS_VALUE last;\n"
-		"} ISA_ENUM_CLASS_INFO;\n");
-  fprintf(cfile, "static const ISA_ENUM_CLASS_INFO %s[] = {\n",tabname);
+  if(gen_static_code) {
+    fprintf(hfile, "\ntypedef struct {\n"
+	    "  char *name;\n"
+	    "  BOOL emit_name; /* Emit enum name if true, else emit its value. */\n"
+	    "  ISA_ENUM_CLASS_VALUE first;\n"
+	    "  ISA_ENUM_CLASS_VALUE last;\n"
+	    "} ISA_ENUM_CLASS_INFO;\n");
+  }
+
+  if(gen_static_code) {
+    fprintf(cfile, "static const ISA_ENUM_CLASS_INFO %s[] = {\n",static_class_info);
+  }
+  else {
+    fprintf(cfile, "static const ISA_ENUM_CLASS_INFO %s[] = {\n",dynamic_class_info);
+  }
   for ( iec = all_ec.begin(); iec != all_ec.end(); ++iec) {
-  	fprintf(cfile, "\t{ \"ISA_EC%s\",", Print_ECV_EName(iec->ec_name));
-	tecv = all_ecv[iec->first_ecv];
-	// have to use multiple calls since Print_ECV_EName uses a static bufr
-  	fprintf(cfile, "\tISA_ECV%s", Print_ECV_EName(tecv.ecv_ecname));
-  	fprintf(cfile, "%s,", Print_ECV_EName(tecv.ecv_name));
-	tecv = all_ecv[iec->last_ecv];
-	// have to use multiple calls since Print_ECV_EName uses a static bufr
-  	fprintf(cfile, "\tISA_ECV%s", Print_ECV_EName(tecv.ecv_ecname));
-  	fprintf(cfile, "%s },\n", Print_ECV_EName(tecv.ecv_name));
+    fprintf(cfile, "\t{ \"ISA_EC%s\", %d,",
+	    Print_ECV_EName(iec->ec_name),
+	    iec->ec_emit == ISA_ENUM_Emit_Name ? 1 : 0);
+    tecv = all_ecv[iec->first_ecv];
+    // have to use multiple calls since Print_ECV_EName uses a static bufr
+    fprintf(cfile, "\tISA_ECV%s", Print_ECV_EName(tecv.ecv_ecname));
+    fprintf(cfile, "%s,", Print_ECV_EName(tecv.ecv_name));
+    tecv = all_ecv[iec->last_ecv];
+    // have to use multiple calls since Print_ECV_EName uses a static bufr
+    fprintf(cfile, "\tISA_ECV%s", Print_ECV_EName(tecv.ecv_ecname));
+    fprintf(cfile, "%s },\n", Print_ECV_EName(tecv.ecv_name));
   }
   fprintf(cfile, "};\n");
 
-  fprintf(hfile, 
-          "BE_EXPORTED extern const ISA_ENUM_CLASS_INFO *%s;\n",
-          ptrname);
-  fprintf(efile, 
-          "%s\n",
-          ptrname);
-  fprintf(cfile,
-          "BE_EXPORTED const ISA_ENUM_CLASS_INFO *%s = %s;\n\n",
-          ptrname,tabname);
+  if(gen_static_code) {
+    fprintf(hfile, 
+	    "BE_EXPORTED extern const ISA_ENUM_CLASS_INFO *%s;\n",
+	    class_info_ptrname);
+    fprintf(efile, 
+	    "%s\n",
+	    class_info_ptrname);
+    fprintf(cfile,
+	    "BE_EXPORTED const ISA_ENUM_CLASS_INFO *%s = %s;\n\n",
+	    class_info_ptrname,static_class_info);
+  }
+  else {
+    fprintf(sfile,
+	    "BE_EXPORTED const ISA_ENUM_CLASS_INFO *%s = NULL;\n\n",
+	    class_info_ptrname);
+  }
 
   /*==================================================================*/
   
-  tabname = "ISA_ENUM_CLASS_VALUE_info_static_tab";
-  ptrname = "ISA_ENUM_CLASS_VALUE_info";
+  if(gen_static_code) {
+    fprintf(hfile, "\ntypedef struct {\n"
+	    "  char *name;\n"
+	    "  INT intval;\n"
+	    "} ISA_ENUM_CLASS_VALUE_INFO;\n");
+    fprintf(cfile, "static const ISA_ENUM_CLASS_VALUE_INFO %s[] = {\n",static_class_value_info);
+  }
+  else {
+    fprintf(cfile, "static const ISA_ENUM_CLASS_VALUE_INFO %s[] = {\n",dynamic_class_value_info);
+  }
 
-  fprintf(hfile, "\ntypedef struct {\n"
-		"  char *name;\n"
-		"  INT intval;\n"
-		"} ISA_ENUM_CLASS_VALUE_INFO;\n");
-  fprintf(cfile, "static const ISA_ENUM_CLASS_VALUE_INFO %s[] = {\n",tabname);
   for ( iecv = all_ecv.begin(); iecv != all_ecv.end(); ++iecv) {
   	fprintf(cfile, "\t{ \"%s\",\t%d },\n", iecv->ecv_name, iecv->ecv_int);
   }
   fprintf(cfile, "};\n");
 
-  fprintf(hfile, 
-          "BE_EXPORTED extern const ISA_ENUM_CLASS_VALUE_INFO *%s;\n",
-          ptrname);
-  fprintf(efile, 
-          "%s\n",
-          ptrname);
-  fprintf(cfile,
-          "BE_EXPORTED const ISA_ENUM_CLASS_VALUE_INFO *%s = %s;\n",
-           ptrname,tabname);
+  if(gen_static_code) {
+    fprintf(hfile, 
+	    "BE_EXPORTED extern const ISA_ENUM_CLASS_VALUE_INFO *%s;\n",
+	    class_value_info_ptrname);
+    fprintf(efile, 
+	    "%s\n",
+	    class_value_info_ptrname);
+    fprintf(cfile,
+	    "BE_EXPORTED const ISA_ENUM_CLASS_VALUE_INFO *%s = %s;\n",
+	    class_value_info_ptrname,static_class_value_info);
+  }
+  else {
+    fprintf(sfile,
+	    "BE_EXPORTED const ISA_ENUM_CLASS_VALUE_INFO *%s = NULL;\n",
+	    class_value_info_ptrname);
+  }
 
   /*==================================================================*/
 
-  fprintf(hfile, "inline const char * ISA_EC_Name (ISA_ENUM_CLASS ec)\n"
-		 "{\n"
-		 "  return ISA_ENUM_CLASS_info[ec].name;\n"
-		 "}\n\n");
+  if(gen_static_code) {
+    fprintf(hfile,
+	    "inline const char * ISA_EC_Name (ISA_ENUM_CLASS ec)\n"
+	    "{\n"
+	    "  return ISA_ENUM_CLASS_info[ec].name;\n"
+	    "}\n\n");
+    
+    fprintf(hfile,
+	    "inline BOOL ISA_EC_Emit_Name (ISA_ENUM_CLASS ec)\n"
+	    "{\n"
+	    "  return ISA_ENUM_CLASS_info[ec].emit_name;\n"
+	    "}\n\n");
+    
+    fprintf(hfile,
+	    "inline ISA_ENUM_CLASS_VALUE ISA_EC_First_Value (ISA_ENUM_CLASS ec)\n"
+	    "{\n"
+	    "  return ISA_ENUM_CLASS_info[ec].first;\n"
+	    "}\n\n");
+    
+    fprintf(hfile,
+	    "inline ISA_ENUM_CLASS_VALUE ISA_EC_Last_Value (ISA_ENUM_CLASS ec)\n"
+	    "{\n"
+	    "  return ISA_ENUM_CLASS_info[ec].last;\n"
+	    "}\n\n");
 
-  fprintf(hfile, "inline ISA_ENUM_CLASS_VALUE ISA_EC_First_Value (ISA_ENUM_CLASS ec)\n"
-		 "{\n"
-		 "  return ISA_ENUM_CLASS_info[ec].first;\n"
-		 "}\n\n");
+    fprintf(hfile,
+	    "inline const char * ISA_ECV_Name (ISA_ENUM_CLASS_VALUE ecv)\n"
+	    "{\n"
+	    "  return ISA_ENUM_CLASS_VALUE_info[ecv].name;\n"
+	    "}\n\n");
+    
+    fprintf(hfile,
+	    "inline INT ISA_ECV_Intval (ISA_ENUM_CLASS_VALUE ecv)\n"
+	    "{\n"
+	    "  return ISA_ENUM_CLASS_VALUE_info[ecv].intval;\n"
+	    "}\n\n");
+  }
 
-  fprintf(hfile, "inline ISA_ENUM_CLASS_VALUE ISA_EC_Last_Value (ISA_ENUM_CLASS ec)\n"
-		 "{\n"
-		 "  return ISA_ENUM_CLASS_info[ec].last;\n"
-		 "}\n\n");
-
-  fprintf(hfile, "inline const char * ISA_ECV_Name (ISA_ENUM_CLASS_VALUE ecv)\n"
-		 "{\n"
-		 "  return ISA_ENUM_CLASS_VALUE_info[ecv].name;\n"
-		 "}\n\n");
-
-  fprintf(hfile, "inline INT ISA_ECV_Intval (ISA_ENUM_CLASS_VALUE ecv)\n"
-		 "{\n"
-		 "  return ISA_ENUM_CLASS_VALUE_info[ecv].intval;\n"
-		 "}\n\n");
+  if (gen_dyn_code) {
+    const char* fct_name1 = "dyn_get_ISA_ENUM_CLASS_info_tab";
+    const char* fct_name2 = "dyn_get_ISA_ENUM_CLASS_info_tab_sz";
+    const char* fct_name3 = "dyn_get_ISA_ENUM_CLASS_VALUE_info_tab";
+    const char* fct_name4 = "dyn_get_ISA_ENUM_CLASS_VALUE_info_tab_sz";
 
 
-  end:
+    /* Empty routines */
+    fprintf(cfile,
+	    "const ISA_ENUM_CLASS_INFO* %s(void)\n"
+            "{\n"
+            " return %s;\n"
+            "};\n"
+            "\n",fct_name1,dynamic_class_info);
+
+    fprintf(cfile,
+	    "const mUINT32 %s(void)\n"
+            "{\n"
+            " return (const mUINT32)%d;\n"
+            "};\n"
+            "\n",fct_name2,all_ec.size());
+    fprintf(cfile,
+	    "const ISA_ENUM_CLASS_VALUE_INFO* %s(void)\n"
+            "{\n"
+            " return %s;\n"
+            "};\n"
+            "\n",fct_name3,dynamic_class_value_info);
+
+    fprintf(cfile,
+	    "const mUINT32 %s(void)\n"
+            "{\n"
+            " return (const mUINT32)%d;\n"
+            "};\n"
+            "\n",fct_name4,all_ecv.size());
+
+    fprintf(hfile,
+	    "\n\n"
+	    "extern const ISA_ENUM_CLASS_INFO* %s(void);\n"
+	    "extern const mUINT32 %s(void);\n"
+	    "extern const ISA_ENUM_CLASS_VALUE_INFO* %s(void);\n"
+	    "extern const mUINT32 %s(void);\n"
+            ,fct_name1,fct_name2,fct_name3,fct_name4);
+  }
+
+
+  fprintf(hfile, "#ifdef DYNAMIC_CODE_GEN\n");
+  fprintf(hfile, "extern void ISA_ENUMS_Initialize_Stub(void);\n");
+  fprintf(hfile, "#endif\n");
+  
+
+  if(!gen_static_code) {
+    fprintf(sfile,
+	    "\n"
+	    "/*\n"
+	    " * Exported routine.\n"
+	    " */\n"
+	    "void \n"
+	    "ISA_ENUMS_Initialize_Stub( void )\n"
+	    "{\n"
+	    "  ISA_ENUM_CLASS_info = (ISA_ENUM_CLASS_INFO*)dyn_get_ISA_ENUM_CLASS_info_tab();\n"
+	    "  ISA_EC_MAX = dyn_get_ISA_ENUM_CLASS_info_tab_sz();\n"
+	    "  ISA_ENUM_CLASS_VALUE_info = (ISA_ENUM_CLASS_VALUE_INFO*)dyn_get_ISA_ENUM_CLASS_VALUE_info_tab();\n"
+	    "  ISA_ECV_MAX = dyn_get_ISA_ENUM_CLASS_VALUE_info_tab_sz();\n"
+	    "  return;\n"
+	    "}\n");
+  }
 
   Emit_Footer (hfile);
   Emit_C_Footer(cfile);
@@ -432,10 +511,12 @@ void ISA_Enums_End(void)
   // Closing file handlers.
   if(hfile) Gen_Close_File_Handle(hfile,hfilename);
   if(cfile) Gen_Close_File_Handle(cfile,cfilename);
+  if(sfile) Gen_Close_File_Handle(sfile,sfilename);
   if(efile) Gen_Close_File_Handle(efile,efilename);
 
   // Memory deallocation.
   if(cfilename) Gen_Free_Filename(cfilename);
+  if(sfilename) Gen_Free_Filename(sfilename);
   if(hfilename) Gen_Free_Filename(hfilename);
   if(efilename) Gen_Free_Filename(efilename);
 

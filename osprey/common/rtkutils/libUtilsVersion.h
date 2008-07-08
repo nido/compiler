@@ -12,7 +12,7 @@
 #define UTILS_VERSION_ID libUtils
 
 #undef UTILS_VERSION_DESCRIPTION
-#define UTILS_VERSION_DESCRIPTION "STS/Compilation team utilities"
+#define UTILS_VERSION_DESCRIPTION "Utilities"
 
 extern utilsVersion libUtils_version;
 

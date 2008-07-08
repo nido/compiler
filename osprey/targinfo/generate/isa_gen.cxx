@@ -143,6 +143,9 @@ void ISA_Create (const char *isa_name, ...)
   const char* const name_topcode_ex= Gen_Build_Filename(FNAME_TOPCODE,
                                                         extname,
                                                         gen_util_file_type_efile);
+  const char* const name_topcode_stub= Gen_Build_Filename(FNAME_STUB FNAME_ISA_TOPCODE,
+                                                        extname,
+                                                        gen_util_file_type_cfile);
 
   const char* const prefix = gen_static_code ? "static" : "dynamic";
 
@@ -155,6 +158,7 @@ void ISA_Create (const char *isa_name, ...)
   FILE* hfile = Gen_Open_File_Handle(name_topcode_h ,"w");
   FILE* cfile = Gen_Open_File_Handle(name_topcode_c ,"w");
   FILE* efile = gen_static_code ? Gen_Open_File_Handle(name_topcode_ex,"w") : NULL;
+  FILE* sfile = gen_static_code ? NULL : Gen_Open_File_Handle(name_topcode_stub,"w");
 
   char* instruction_name;
   const char* start_offset_str = gen_static_code ? "STATIC_OFFSET":
@@ -166,15 +170,22 @@ void ISA_Create (const char *isa_name, ...)
   Emit_Header (hfile,FNAME_TOPCODE,interface,extname);
 
   // For extensions, include static header file.
-  if(!gen_static_code)
-   { const char * const static_name = Gen_Build_Filename(FNAME_TOPCODE,
-                                                         NULL,
-                                                         gen_util_file_type_hfile);
+  if(!gen_static_code) {
+    const char * const static_name = Gen_Build_Filename(FNAME_TOPCODE,
+							NULL,
+							gen_util_file_type_hfile);
 
-     Emit_C_Header(cfile);  /* Emit #ifdef _cplusplus directive */
-     fprintf(cfile,"#include \"%s\"\n",static_name);
-     Gen_Free_Filename(const_cast<char*>(static_name));
-   }
+    const char *headers[] = {
+      "\"dyn_" FNAME_ISA_TOPCODE ".h\"",
+      "",
+    };
+
+    Emit_C_Header(cfile);  /* Emit #ifdef _cplusplus directive */
+    fprintf(cfile,"#include \"%s\"\n",static_name);
+    Gen_Free_Filename(const_cast<char*>(static_name));
+    
+    Emit_Stub_Header(sfile,headers);
+  }
 
   // In any case (dynamic or static);
   fprintf(cfile,"#include \"%s\"\n\n",name_topcode_h);
@@ -247,7 +258,7 @@ void ISA_Create (const char *isa_name, ...)
     if(gen_static_code)
       fprintf(cfile,"  \"%s\" ,\n",instruction_name);
     else
-      fprintf(cfile,"  \"%s_%s\" ,\n",extname,instruction_name);
+      fprintf(cfile,"  \"dyn_%s_%s\" ,\n",extname,instruction_name);
 
     instruction_count++;
     free(instname);
@@ -313,8 +324,8 @@ void ISA_Create (const char *isa_name, ...)
 		  "}\n",
                   ISA_top_names);
   }
-  else
-  { /* Managing dynamic extension */
+  else {
+    /* Managing dynamic extension */
     /* First consider the number  */
     /* of dynamic TOP code        */
     fprintf(cfile,
@@ -389,6 +400,19 @@ void ISA_Create (const char *isa_name, ...)
       extname);
     fprintf(hfile,
       "TARGINFO_EXT_EXPORTED extern void dyn_set_TOP_UNDEFINED(TOP top);\n");
+
+
+    fprintf(sfile,
+	    "\n"
+	    "/* Defining and initializing TOP_UNDEFINED for other targinfo generators */\n"
+	    "TOP TOP_UNDEFINED = TOP_static_count;\n");
+
+    fprintf(sfile,
+	    "\n"
+	    "/* Get TOP name from extension top table for other targinfo generators */\n"
+	    "const char* TOP_Name(TOP topcode)\n{\n"
+	    "  return (dyn_get_TOP_name_tab())[(int)topcode];\n"
+	    "}\n");
   }
 
   Emit_Footer (hfile);
@@ -400,11 +424,14 @@ void ISA_Create (const char *isa_name, ...)
   Gen_Close_File_Handle(hfile ,name_topcode_h );
   if(efile) 
     Gen_Close_File_Handle(efile ,name_topcode_ex);
+  if(sfile) 
+    Gen_Close_File_Handle(sfile ,name_topcode_stub);
 
   // Memory deallocation
   Gen_Free_Filename(const_cast<char*> (name_topcode_c));
   Gen_Free_Filename(const_cast<char*> (name_topcode_h));
   Gen_Free_Filename(const_cast<char*> (name_topcode_ex));
+  Gen_Free_Filename(const_cast<char*> (name_topcode_stub));
 
   return;
 }

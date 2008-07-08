@@ -41,23 +41,8 @@
 #include "isa_bundle_gen.h" 
 
 main() 
-{ 
+{
   ISA_Bundle_Begin("st200", 128);
-
-  ISA_Bundle_Pack_Create(ISA_Bundle_Pack_Little_Endian);
-  Pack_Slot(0, 0, 0, 32);
-  Pack_Slot(1, 0, 32, 32);
-  Pack_Slot(2, 0, 64, 32);
-  Pack_Slot(3, 0, 96, 32);
-
- /* ===== Specification for ALONEX_Unit Type ===== */ 
-  ISA_EXEC_UNIT_TYPE ALONEX_Unit = ISA_Exec_Unit_Type_Create("ALONEX_Unit", NULL); 
-  Instruction_Exec_Unit_Group(ALONEX_Unit, 
-		 TOP_prginsadd_r_ii, 
-		 TOP_prginsadd_l1_r_ii, 
-		 TOP_prginsset_r_ii, 
-		 TOP_prginsset_l1_r_ii, 
-		 TOP_UNDEFINED); 
 
  /* ===== Specification for ALONE_Unit Type ===== */ 
   ISA_EXEC_UNIT_TYPE ALONE_Unit = ISA_Exec_Unit_Type_Create("ALONE_Unit", NULL); 
@@ -65,9 +50,13 @@ main()
 		 TOP_asm, 
 		 TOP_prgins, 
 		 TOP_prginsadd_r_i, 
+		 TOP_prginsadd_r_ii, 
 		 TOP_prginsadd_l1_r_i, 
+		 TOP_prginsadd_l1_r_ii, 
 		 TOP_prginsset_r_i, 
+		 TOP_prginsset_r_ii, 
 		 TOP_prginsset_l1_r_i, 
+		 TOP_prginsset_l1_r_ii, 
 		 TOP_retention, 
 		 TOP_syscall_i, 
 		 TOP_st240_syscall_i, 
@@ -90,10 +79,6 @@ main()
 		 TOP_asm_21_ii_r_r, 
 		 TOP_asm_22_ii_r_r, 
 		 TOP_asm_23_ii_r_r, 
-		 TOP_asm_24_ii_r_r, 
-		 TOP_asm_25_ii_r_r, 
-		 TOP_asm_26_ii_r_r, 
-		 TOP_asm_27_ii_r_r, 
 		 TOP_asm_28_ii_r_r, 
 		 TOP_asm_29_ii_r_r, 
 		 TOP_asm_30_ii_r_r, 
@@ -213,10 +198,6 @@ main()
 		 TOP_asm_21_i_r_r, 
 		 TOP_asm_22_i_r_r, 
 		 TOP_asm_23_i_r_r, 
-		 TOP_asm_24_i_r_r, 
-		 TOP_asm_25_i_r_r, 
-		 TOP_asm_26_i_r_r, 
-		 TOP_asm_27_i_r_r, 
 		 TOP_asm_2_r_r_r, 
 		 TOP_asm_3_r_r_r, 
 		 TOP_asm_4_r_r_r, 
@@ -431,6 +412,14 @@ main()
 		 TOP_addf_n_r_r_r, 
 		 TOP_asm_10_r_r_r, 
 		 TOP_asm_11_r_r_r, 
+		 TOP_asm_24_i_r_r, 
+		 TOP_asm_24_ii_r_r, 
+		 TOP_asm_25_i_r_r, 
+		 TOP_asm_25_ii_r_r, 
+		 TOP_asm_26_i_r_r, 
+		 TOP_asm_26_ii_r_r, 
+		 TOP_asm_27_i_r_r, 
+		 TOP_asm_27_ii_r_r, 
 		 TOP_asm_8_r_r_r, 
 		 TOP_asm_9_r_r_r, 
 		 TOP_convfi_n_r_r, 
@@ -613,458 +602,518 @@ main()
 		 TOP_mul_ph_r_r_r, 
 		 TOP_UNDEFINED); 
 
-  ISA_Bundle_Type_Create("Template_0", ".Template_0", 1);
+  ISA_BUNDLE_PACK_INFO bundle_0 = ISA_Bundle_Pack_Create("bundle_0", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,0,0,31);
+  Pack_Template(0,31,1);
+
+  ISA_Bundle_Type_Create("Template_0", ".Template_0", 1, bundle_0, 0x1);
   Alignment(0, 32);
   Slot(0, ALONE_Unit);
   Stop(0);
 
-  ISA_Bundle_Type_Create("Template_1", ".Template_1", 1);
+  ISA_Bundle_Type_Create("Template_1", ".Template_1", 1, bundle_0, 0x1);
   Alignment(0, 32);
   Slot(0, ANY_Unit);
   Stop(0);
 
-  ISA_Bundle_Type_Create("Template_2", ".Template_2", 1);
+  ISA_Bundle_Type_Create("Template_2", ".Template_2", 1, bundle_0, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Stop(0);
 
-  ISA_Bundle_Type_Create("Template_3", ".Template_3", 1);
+  ISA_Bundle_Type_Create("Template_3", ".Template_3", 1, bundle_0, 0x1);
   Alignment(0, 32);
   Slot(0, FIRST_Unit);
   Stop(0);
 
-  ISA_Bundle_Type_Create("Template_4", ".Template_4", 1);
+  ISA_Bundle_Type_Create("Template_4", ".Template_4", 1, bundle_0, 0x1);
   Alignment(0, 32);
   Slot(0, MEM_Unit);
   Stop(0);
 
-  ISA_Bundle_Type_Create("Template_5", ".Template_5", 1);
+  ISA_Bundle_Type_Create("Template_5", ".Template_5", 1, bundle_0, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Stop(0);
 
-  ISA_Bundle_Type_Create("Template_6", ".Template_6", 2);
-  Alignment(0, 64);
-  Slot(0, ALONEX_Unit);
-  Slot(1, ALONEX_Unit);
-  Stop(1);
+  ISA_BUNDLE_PACK_INFO bundle_1 = ISA_Bundle_Pack_Create("bundle_1", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,32,0,31);
+  Pack_Template(0,23,5);
+  Pack_Template(5,28,2);
+  Pack_Slot(1,0,32,31);
+  Pack_Template(7,63,1);
 
-  ISA_Bundle_Type_Create("Template_7", ".Template_7", 2);
-  Alignment(32, 64);
-  Slot(0, ALONEX_Unit);
-  Slot(1, ALONEX_Unit);
-  Stop(1);
-
-  ISA_Bundle_Type_Create("Template_8", ".Template_8", 2);
+  ISA_Bundle_Type_Create("Template_6", ".Template_6", 2, bundle_1, 0xab);
   Alignment(0, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_9", ".Template_9", 2);
+  ISA_BUNDLE_PACK_INFO bundle_2 = ISA_Bundle_Pack_Create("bundle_2", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,0,0,31);
+  Pack_Slot(1,32,32,31);
+  Pack_Template(0,55,5);
+  Pack_Template(5,60,2);
+  Pack_Template(7,63,1);
+
+  ISA_Bundle_Type_Create("Template_7", ".Template_7", 2, bundle_2, 0xaa);
   Alignment(32, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_10", ".Template_10", 2);
+  ISA_BUNDLE_PACK_INFO bundle_3 = ISA_Bundle_Pack_Create("bundle_3", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,0,0,31);
+  Pack_Slot(1,0,32,31);
+  Pack_Template(0,63,1);
+
+  ISA_Bundle_Type_Create("Template_8", ".Template_8", 2, bundle_3, 0x1);
   Alignment(0, 32);
   Slot(0, ANY_Unit);
   Slot(1, ANY_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_11", ".Template_11", 2);
+  ISA_Bundle_Type_Create("Template_9", ".Template_9", 2, bundle_3, 0x1);
   Alignment(32, 64);
   Slot(0, ANY_Unit);
   Slot(1, EVEN_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_12", ".Template_12", 2);
+  ISA_Bundle_Type_Create("Template_10", ".Template_10", 2, bundle_3, 0x1);
   Alignment(0, 32);
   Slot(0, ANY_Unit);
   Slot(1, MEM_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_13", ".Template_13", 2);
+  ISA_Bundle_Type_Create("Template_11", ".Template_11", 2, bundle_3, 0x1);
   Alignment(0, 64);
   Slot(0, ANY_Unit);
   Slot(1, ODD_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_14", ".Template_14", 2);
+  ISA_Bundle_Type_Create("Template_12", ".Template_12", 2, bundle_3, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ANY_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_15", ".Template_15", 2);
+  ISA_Bundle_Type_Create("Template_13", ".Template_13", 2, bundle_3, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ODD_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_16", ".Template_16", 2);
+  ISA_Bundle_Type_Create("Template_14", ".Template_14", 2, bundle_3, 0x1);
   Alignment(0, 32);
   Slot(0, FIRST_Unit);
   Slot(1, ANY_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_17", ".Template_17", 2);
+  ISA_Bundle_Type_Create("Template_15", ".Template_15", 2, bundle_3, 0x1);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, EVEN_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_18", ".Template_18", 2);
+  ISA_Bundle_Type_Create("Template_16", ".Template_16", 2, bundle_3, 0x1);
   Alignment(0, 32);
   Slot(0, FIRST_Unit);
   Slot(1, MEM_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_19", ".Template_19", 2);
+  ISA_Bundle_Type_Create("Template_17", ".Template_17", 2, bundle_3, 0x1);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ODD_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_20", ".Template_20", 2);
+  ISA_Bundle_Type_Create("Template_18", ".Template_18", 2, bundle_1, 0xab);
   Alignment(0, 64);
   Slot(0, MEMX_Unit);
   Slot(1, MEMX_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_21", ".Template_21", 2);
+  ISA_Bundle_Type_Create("Template_19", ".Template_19", 2, bundle_2, 0xaa);
   Alignment(32, 64);
   Slot(0, MEMX_Unit);
   Slot(1, MEMX_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_22", ".Template_22", 2);
+  ISA_Bundle_Type_Create("Template_20", ".Template_20", 2, bundle_3, 0x1);
   Alignment(0, 64);
   Slot(0, MEM_Unit);
   Slot(1, ODD_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_23", ".Template_23", 2);
+  ISA_Bundle_Type_Create("Template_21", ".Template_21", 2, bundle_3, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, ANY_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_24", ".Template_24", 2);
+  ISA_Bundle_Type_Create("Template_22", ".Template_22", 2, bundle_3, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, EVEN_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_25", ".Template_25", 2);
+  ISA_Bundle_Type_Create("Template_23", ".Template_23", 2, bundle_3, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, MEM_Unit);
   Stop(1);
 
-  ISA_Bundle_Type_Create("Template_26", ".Template_26", 3);
+  ISA_BUNDLE_PACK_INFO bundle_4 = ISA_Bundle_Pack_Create("bundle_4", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,32,0,31);
+  Pack_Template(0,23,5);
+  Pack_Template(5,28,2);
+  Pack_Slot(1,0,32,31);
+  Pack_Slot(2,0,64,31);
+  Pack_Template(7,95,1);
+
+  ISA_Bundle_Type_Create("Template_24", ".Template_24", 3, bundle_4, 0xab);
   Alignment(0, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_27", ".Template_27", 3);
+  ISA_BUNDLE_PACK_INFO bundle_5 = ISA_Bundle_Pack_Create("bundle_5", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,0,0,31);
+  Pack_Slot(1,32,32,31);
+  Pack_Template(0,55,5);
+  Pack_Template(5,60,2);
+  Pack_Slot(2,0,64,31);
+  Pack_Template(7,95,1);
+
+  ISA_Bundle_Type_Create("Template_25", ".Template_25", 3, bundle_5, 0xaa);
   Alignment(32, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_28", ".Template_28", 3);
+  ISA_Bundle_Type_Create("Template_26", ".Template_26", 3, bundle_4, 0xab);
   Alignment(0, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
   Slot(2, EVEN_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_29", ".Template_29", 3);
+  ISA_Bundle_Type_Create("Template_27", ".Template_27", 3, bundle_4, 0xab);
   Alignment(0, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
   Slot(2, MEM_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_30", ".Template_30", 3);
+  ISA_Bundle_Type_Create("Template_28", ".Template_28", 3, bundle_5, 0xaa);
   Alignment(32, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
   Slot(2, MEM_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_31", ".Template_31", 3);
+  ISA_Bundle_Type_Create("Template_29", ".Template_29", 3, bundle_5, 0xaa);
   Alignment(32, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
   Slot(2, ODD_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_32", ".Template_32", 3);
+  ISA_BUNDLE_PACK_INFO bundle_6 = ISA_Bundle_Pack_Create("bundle_6", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,0,0,31);
+  Pack_Slot(1,0,32,31);
+  Pack_Slot(2,0,64,31);
+  Pack_Template(0,95,1);
+
+  ISA_Bundle_Type_Create("Template_30", ".Template_30", 3, bundle_6, 0x1);
   Alignment(0, 32);
   Slot(0, ANY_Unit);
   Slot(1, ANY_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_33", ".Template_33", 3);
+  ISA_Bundle_Type_Create("Template_31", ".Template_31", 3, bundle_6, 0x1);
   Alignment(32, 64);
   Slot(0, ANY_Unit);
   Slot(1, EVEN_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_34", ".Template_34", 3);
+  ISA_Bundle_Type_Create("Template_32", ".Template_32", 3, bundle_6, 0x1);
   Alignment(0, 64);
   Slot(0, ANY_Unit);
   Slot(1, ODD_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_35", ".Template_35", 3);
+  ISA_Bundle_Type_Create("Template_33", ".Template_33", 3, bundle_6, 0x1);
   Alignment(0, 64);
   Slot(0, ANY_Unit);
   Slot(1, ODD_Unit);
   Slot(2, MEM_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_36", ".Template_36", 3);
+  ISA_Bundle_Type_Create("Template_34", ".Template_34", 3, bundle_6, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ANY_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_37", ".Template_37", 3);
+  ISA_Bundle_Type_Create("Template_35", ".Template_35", 3, bundle_6, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ANY_Unit);
   Slot(2, EVEN_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_38", ".Template_38", 3);
+  ISA_Bundle_Type_Create("Template_36", ".Template_36", 3, bundle_6, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ANY_Unit);
   Slot(2, MEM_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_39", ".Template_39", 3);
+  ISA_BUNDLE_PACK_INFO bundle_7 = ISA_Bundle_Pack_Create("bundle_7", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,0,0,31);
+  Pack_Slot(1,0,32,31);
+  Pack_Template(0,55,5);
+  Pack_Template(5,60,2);
+  Pack_Slot(2,32,64,31);
+  Pack_Template(7,95,1);
+
+  ISA_Bundle_Type_Create("Template_37", ".Template_37", 3, bundle_7, 0xab);
   Alignment(64, 128);
   Slot(0, EVEN_Unit);
   Slot(1, MEMX_Unit);
   Slot(2, MEMX_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_40", ".Template_40", 3);
+  ISA_Bundle_Type_Create("Template_38", ".Template_38", 3, bundle_6, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ODD_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_41", ".Template_41", 3);
+  ISA_Bundle_Type_Create("Template_39", ".Template_39", 3, bundle_6, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ODD_Unit);
   Slot(2, EVEN_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_42", ".Template_42", 3);
+  ISA_Bundle_Type_Create("Template_40", ".Template_40", 3, bundle_6, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ODD_Unit);
   Slot(2, MEM_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_43", ".Template_43", 3);
+  ISA_BUNDLE_PACK_INFO bundle_8 = ISA_Bundle_Pack_Create("bundle_8", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,0,0,31);
+  Pack_Slot(1,0,32,31);
+  Pack_Slot(2,32,64,31);
+  Pack_Template(0,87,5);
+  Pack_Template(5,92,2);
+  Pack_Template(7,95,1);
+
+  ISA_Bundle_Type_Create("Template_41", ".Template_41", 3, bundle_8, 0xaa);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ANYX_Unit);
   Slot(2, ANYX_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_44", ".Template_44", 3);
+  ISA_Bundle_Type_Create("Template_42", ".Template_42", 3, bundle_7, 0xab);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ANYX_Unit);
   Slot(2, ANYX_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_45", ".Template_45", 3);
+  ISA_Bundle_Type_Create("Template_43", ".Template_43", 3, bundle_6, 0x1);
   Alignment(0, 32);
   Slot(0, FIRST_Unit);
   Slot(1, ANY_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_46", ".Template_46", 3);
+  ISA_Bundle_Type_Create("Template_44", ".Template_44", 3, bundle_6, 0x1);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ANY_Unit);
   Slot(2, EVEN_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_47", ".Template_47", 3);
+  ISA_Bundle_Type_Create("Template_45", ".Template_45", 3, bundle_6, 0x1);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ANY_Unit);
   Slot(2, ODD_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_48", ".Template_48", 3);
+  ISA_Bundle_Type_Create("Template_46", ".Template_46", 3, bundle_6, 0x1);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, EVEN_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_49", ".Template_49", 3);
+  ISA_Bundle_Type_Create("Template_47", ".Template_47", 3, bundle_6, 0x1);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, EVEN_Unit);
   Slot(2, ODD_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_50", ".Template_50", 3);
+  ISA_Bundle_Type_Create("Template_48", ".Template_48", 3, bundle_8, 0xaa);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, MEMX_Unit);
   Slot(2, MEMX_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_51", ".Template_51", 3);
+  ISA_Bundle_Type_Create("Template_49", ".Template_49", 3, bundle_7, 0xab);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, MEMX_Unit);
   Slot(2, MEMX_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_52", ".Template_52", 3);
+  ISA_Bundle_Type_Create("Template_50", ".Template_50", 3, bundle_6, 0x1);
   Alignment(0, 32);
   Slot(0, FIRST_Unit);
   Slot(1, MEM_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_53", ".Template_53", 3);
+  ISA_Bundle_Type_Create("Template_51", ".Template_51", 3, bundle_6, 0x1);
   Alignment(0, 128);
   Slot(0, FIRST_Unit);
   Slot(1, MEM_Unit);
   Slot(2, EVEN_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_54", ".Template_54", 3);
+  ISA_Bundle_Type_Create("Template_52", ".Template_52", 3, bundle_6, 0x1);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, MEM_Unit);
   Slot(2, ODD_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_55", ".Template_55", 3);
+  ISA_Bundle_Type_Create("Template_53", ".Template_53", 3, bundle_6, 0x1);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ODD_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_56", ".Template_56", 3);
+  ISA_Bundle_Type_Create("Template_54", ".Template_54", 3, bundle_6, 0x1);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ODD_Unit);
   Slot(2, EVEN_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_57", ".Template_57", 3);
+  ISA_Bundle_Type_Create("Template_55", ".Template_55", 3, bundle_6, 0x1);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ODD_Unit);
   Slot(2, MEM_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_58", ".Template_58", 3);
+  ISA_Bundle_Type_Create("Template_56", ".Template_56", 3, bundle_4, 0xab);
   Alignment(0, 64);
   Slot(0, MEMX_Unit);
   Slot(1, MEMX_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_59", ".Template_59", 3);
+  ISA_Bundle_Type_Create("Template_57", ".Template_57", 3, bundle_5, 0xaa);
   Alignment(32, 64);
   Slot(0, MEMX_Unit);
   Slot(1, MEMX_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_60", ".Template_60", 3);
+  ISA_Bundle_Type_Create("Template_58", ".Template_58", 3, bundle_4, 0xab);
   Alignment(0, 128);
   Slot(0, MEMX_Unit);
   Slot(1, MEMX_Unit);
   Slot(2, EVEN_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_61", ".Template_61", 3);
+  ISA_Bundle_Type_Create("Template_59", ".Template_59", 3, bundle_5, 0xaa);
   Alignment(32, 64);
   Slot(0, MEMX_Unit);
   Slot(1, MEMX_Unit);
   Slot(2, ODD_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_62", ".Template_62", 3);
+  ISA_Bundle_Type_Create("Template_60", ".Template_60", 3, bundle_6, 0x1);
   Alignment(0, 32);
   Slot(0, MEM_Unit);
   Slot(1, ANY_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_63", ".Template_63", 3);
+  ISA_Bundle_Type_Create("Template_61", ".Template_61", 3, bundle_6, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, ANY_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_64", ".Template_64", 3);
+  ISA_Bundle_Type_Create("Template_62", ".Template_62", 3, bundle_6, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, ANY_Unit);
   Slot(2, MEM_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_65", ".Template_65", 3);
+  ISA_Bundle_Type_Create("Template_63", ".Template_63", 3, bundle_6, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, ANY_Unit);
   Slot(2, ODD_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_66", ".Template_66", 3);
+  ISA_Bundle_Type_Create("Template_64", ".Template_64", 3, bundle_6, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, EVEN_Unit);
   Slot(2, ANY_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_67", ".Template_67", 3);
+  ISA_Bundle_Type_Create("Template_65", ".Template_65", 3, bundle_6, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, EVEN_Unit);
   Slot(2, ODD_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_68", ".Template_68", 3);
+  ISA_Bundle_Type_Create("Template_66", ".Template_66", 3, bundle_6, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, MEM_Unit);
   Slot(2, ODD_Unit);
   Stop(2);
 
-  ISA_Bundle_Type_Create("Template_69", ".Template_69", 4);
+  ISA_BUNDLE_PACK_INFO bundle_9 = ISA_Bundle_Pack_Create("bundle_9", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,32,0,31);
+  Pack_Template(0,127,1);
+  Pack_Template(1,23,5);
+  Pack_Template(6,28,2);
+  Pack_Slot(1,0,32,31);
+  Pack_Slot(2,32,64,31);
+  Pack_Template(8,87,5);
+  Pack_Template(13,92,2);
+  Pack_Slot(3,0,96,31);
+
+  ISA_Bundle_Type_Create("Template_67", ".Template_67", 4, bundle_9, 0x2b57);
   Alignment(0, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1072,7 +1121,18 @@ main()
   Slot(3, ANYX_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_70", ".Template_70", 4);
+  ISA_BUNDLE_PACK_INFO bundle_10 = ISA_Bundle_Pack_Create("bundle_10", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,0,0,31);
+  Pack_Template(0,119,5);
+  Pack_Template(5,124,2);
+  Pack_Template(7,127,1);
+  Pack_Slot(1,32,32,31);
+  Pack_Template(8,55,5);
+  Pack_Template(13,60,2);
+  Pack_Slot(2,0,64,31);
+  Pack_Slot(3,32,96,31);
+
+  ISA_Bundle_Type_Create("Template_68", ".Template_68", 4, bundle_10, 0x2aaa);
   Alignment(32, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1080,7 +1140,16 @@ main()
   Slot(3, ANYX_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_71", ".Template_71", 4);
+  ISA_BUNDLE_PACK_INFO bundle_11 = ISA_Bundle_Pack_Create("bundle_11", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,32,0,31);
+  Pack_Template(0,127,1);
+  Pack_Template(1,23,5);
+  Pack_Template(6,28,2);
+  Pack_Slot(1,0,32,31);
+  Pack_Slot(2,0,64,31);
+  Pack_Slot(3,0,96,31);
+
+  ISA_Bundle_Type_Create("Template_69", ".Template_69", 4, bundle_11, 0x57);
   Alignment(0, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1088,7 +1157,16 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_72", ".Template_72", 4);
+  ISA_BUNDLE_PACK_INFO bundle_12 = ISA_Bundle_Pack_Create("bundle_12", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,0,0,31);
+  Pack_Template(0,127,1);
+  Pack_Slot(1,32,32,31);
+  Pack_Template(1,55,5);
+  Pack_Template(6,60,2);
+  Pack_Slot(2,0,64,31);
+  Pack_Slot(3,0,96,31);
+
+  ISA_Bundle_Type_Create("Template_70", ".Template_70", 4, bundle_12, 0x55);
   Alignment(32, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1096,7 +1174,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_73", ".Template_73", 4);
+  ISA_Bundle_Type_Create("Template_71", ".Template_71", 4, bundle_12, 0x55);
   Alignment(32, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1104,7 +1182,7 @@ main()
   Slot(3, EVEN_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_74", ".Template_74", 4);
+  ISA_Bundle_Type_Create("Template_72", ".Template_72", 4, bundle_11, 0x57);
   Alignment(0, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1112,7 +1190,7 @@ main()
   Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_75", ".Template_75", 4);
+  ISA_Bundle_Type_Create("Template_73", ".Template_73", 4, bundle_11, 0x57);
   Alignment(0, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1120,7 +1198,7 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_76", ".Template_76", 4);
+  ISA_Bundle_Type_Create("Template_74", ".Template_74", 4, bundle_11, 0x57);
   Alignment(0, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1128,7 +1206,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_77", ".Template_77", 4);
+  ISA_Bundle_Type_Create("Template_75", ".Template_75", 4, bundle_11, 0x57);
   Alignment(0, 128);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1136,7 +1214,7 @@ main()
   Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_78", ".Template_78", 4);
+  ISA_Bundle_Type_Create("Template_76", ".Template_76", 4, bundle_11, 0x57);
   Alignment(0, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1144,7 +1222,7 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_79", ".Template_79", 4);
+  ISA_Bundle_Type_Create("Template_77", ".Template_77", 4, bundle_9, 0x2b57);
   Alignment(0, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1152,7 +1230,7 @@ main()
   Slot(3, MEMX_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_80", ".Template_80", 4);
+  ISA_Bundle_Type_Create("Template_78", ".Template_78", 4, bundle_10, 0x2aaa);
   Alignment(32, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1160,7 +1238,7 @@ main()
   Slot(3, MEMX_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_81", ".Template_81", 4);
+  ISA_Bundle_Type_Create("Template_79", ".Template_79", 4, bundle_12, 0x55);
   Alignment(32, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1168,7 +1246,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_82", ".Template_82", 4);
+  ISA_Bundle_Type_Create("Template_80", ".Template_80", 4, bundle_11, 0x57);
   Alignment(0, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1176,7 +1254,7 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_83", ".Template_83", 4);
+  ISA_Bundle_Type_Create("Template_81", ".Template_81", 4, bundle_12, 0x55);
   Alignment(32, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1184,7 +1262,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_84", ".Template_84", 4);
+  ISA_Bundle_Type_Create("Template_82", ".Template_82", 4, bundle_12, 0x55);
   Alignment(32, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1192,7 +1270,7 @@ main()
   Slot(3, EVEN_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_85", ".Template_85", 4);
+  ISA_Bundle_Type_Create("Template_83", ".Template_83", 4, bundle_12, 0x55);
   Alignment(32, 64);
   Slot(0, ANYX_Unit);
   Slot(1, ANYX_Unit);
@@ -1200,7 +1278,14 @@ main()
   Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_86", ".Template_86", 4);
+  ISA_BUNDLE_PACK_INFO bundle_13 = ISA_Bundle_Pack_Create("bundle_13", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,0,0,31);
+  Pack_Template(0,127,1);
+  Pack_Slot(1,0,32,31);
+  Pack_Slot(2,0,64,31);
+  Pack_Slot(3,0,96,31);
+
+  ISA_Bundle_Type_Create("Template_84", ".Template_84", 4, bundle_13, 0x1);
   Alignment(0, 32);
   Slot(0, ANY_Unit);
   Slot(1, ANY_Unit);
@@ -1208,7 +1293,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_87", ".Template_87", 4);
+  ISA_Bundle_Type_Create("Template_85", ".Template_85", 4, bundle_13, 0x1);
   Alignment(0, 32);
   Slot(0, ANY_Unit);
   Slot(1, ANY_Unit);
@@ -1216,7 +1301,7 @@ main()
   Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_88", ".Template_88", 4);
+  ISA_Bundle_Type_Create("Template_86", ".Template_86", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, ANY_Unit);
   Slot(1, EVEN_Unit);
@@ -1224,7 +1309,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_89", ".Template_89", 4);
+  ISA_Bundle_Type_Create("Template_87", ".Template_87", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, ANY_Unit);
   Slot(1, EVEN_Unit);
@@ -1232,7 +1317,7 @@ main()
   Slot(3, EVEN_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_90", ".Template_90", 4);
+  ISA_Bundle_Type_Create("Template_88", ".Template_88", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, ANY_Unit);
   Slot(1, EVEN_Unit);
@@ -1240,7 +1325,16 @@ main()
   Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_91", ".Template_91", 4);
+  ISA_BUNDLE_PACK_INFO bundle_14 = ISA_Bundle_Pack_Create("bundle_14", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,0,0,31);
+  Pack_Template(0,119,5);
+  Pack_Template(5,124,2);
+  Pack_Template(7,127,1);
+  Pack_Slot(1,0,32,31);
+  Pack_Slot(2,0,64,31);
+  Pack_Slot(3,32,96,31);
+
+  ISA_Bundle_Type_Create("Template_89", ".Template_89", 4, bundle_14, 0xaa);
   Alignment(32, 128);
   Slot(0, ANY_Unit);
   Slot(1, EVEN_Unit);
@@ -1248,7 +1342,7 @@ main()
   Slot(3, MEMX_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_92", ".Template_92", 4);
+  ISA_Bundle_Type_Create("Template_90", ".Template_90", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, ANY_Unit);
   Slot(1, EVEN_Unit);
@@ -1256,7 +1350,7 @@ main()
   Slot(3, EVEN_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_93", ".Template_93", 4);
+  ISA_Bundle_Type_Create("Template_91", ".Template_91", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, ANY_Unit);
   Slot(1, ODD_Unit);
@@ -1264,7 +1358,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_94", ".Template_94", 4);
+  ISA_Bundle_Type_Create("Template_92", ".Template_92", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, ANY_Unit);
   Slot(1, ODD_Unit);
@@ -1272,7 +1366,7 @@ main()
   Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_95", ".Template_95", 4);
+  ISA_Bundle_Type_Create("Template_93", ".Template_93", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, ANY_Unit);
   Slot(1, ODD_Unit);
@@ -1280,7 +1374,7 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_96", ".Template_96", 4);
+  ISA_Bundle_Type_Create("Template_94", ".Template_94", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, ANY_Unit);
   Slot(1, ODD_Unit);
@@ -1288,7 +1382,7 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_97", ".Template_97", 4);
+  ISA_Bundle_Type_Create("Template_95", ".Template_95", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, ANY_Unit);
   Slot(1, ODD_Unit);
@@ -1296,7 +1390,16 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_98", ".Template_98", 4);
+  ISA_BUNDLE_PACK_INFO bundle_15 = ISA_Bundle_Pack_Create("bundle_15", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,0,0,31);
+  Pack_Template(0,127,1);
+  Pack_Slot(1,0,32,31);
+  Pack_Template(1,55,5);
+  Pack_Template(6,60,2);
+  Pack_Slot(2,32,64,31);
+  Pack_Slot(3,0,96,31);
+
+  ISA_Bundle_Type_Create("Template_96", ".Template_96", 4, bundle_15, 0x57);
   Alignment(64, 128);
   Slot(0, EVEN_Unit);
   Slot(1, ANYX_Unit);
@@ -1304,7 +1407,7 @@ main()
   Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_99", ".Template_99", 4);
+  ISA_Bundle_Type_Create("Template_97", ".Template_97", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ANY_Unit);
@@ -1312,7 +1415,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_100", ".Template_100", 4);
+  ISA_Bundle_Type_Create("Template_98", ".Template_98", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ANY_Unit);
@@ -1320,7 +1423,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_101", ".Template_101", 4);
+  ISA_Bundle_Type_Create("Template_99", ".Template_99", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ANY_Unit);
@@ -1328,7 +1431,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_102", ".Template_102", 4);
+  ISA_Bundle_Type_Create("Template_100", ".Template_100", 4, bundle_15, 0x57);
   Alignment(64, 128);
   Slot(0, EVEN_Unit);
   Slot(1, MEMX_Unit);
@@ -1336,7 +1439,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_103", ".Template_103", 4);
+  ISA_Bundle_Type_Create("Template_101", ".Template_101", 4, bundle_15, 0x57);
   Alignment(64, 128);
   Slot(0, EVEN_Unit);
   Slot(1, MEMX_Unit);
@@ -1344,7 +1447,7 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_104", ".Template_104", 4);
+  ISA_Bundle_Type_Create("Template_102", ".Template_102", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ODD_Unit);
@@ -1352,7 +1455,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_105", ".Template_105", 4);
+  ISA_Bundle_Type_Create("Template_103", ".Template_103", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ODD_Unit);
@@ -1360,7 +1463,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_106", ".Template_106", 4);
+  ISA_Bundle_Type_Create("Template_104", ".Template_104", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ODD_Unit);
@@ -1368,7 +1471,7 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_107", ".Template_107", 4);
+  ISA_Bundle_Type_Create("Template_105", ".Template_105", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ODD_Unit);
@@ -1376,7 +1479,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_108", ".Template_108", 4);
+  ISA_Bundle_Type_Create("Template_106", ".Template_106", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, EVEN_Unit);
   Slot(1, ODD_Unit);
@@ -1384,7 +1487,16 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_109", ".Template_109", 4);
+  ISA_BUNDLE_PACK_INFO bundle_16 = ISA_Bundle_Pack_Create("bundle_16", ISA_Bundle_Pack_Little_Endian, 32);
+  Pack_Slot(0,0,0,31);
+  Pack_Template(0,127,1);
+  Pack_Slot(1,0,32,31);
+  Pack_Slot(2,32,64,31);
+  Pack_Template(1,87,5);
+  Pack_Template(6,92,2);
+  Pack_Slot(3,0,96,31);
+
+  ISA_Bundle_Type_Create("Template_107", ".Template_107", 4, bundle_16, 0x55);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ANYX_Unit);
@@ -1392,7 +1504,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_110", ".Template_110", 4);
+  ISA_Bundle_Type_Create("Template_108", ".Template_108", 4, bundle_15, 0x57);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ANYX_Unit);
@@ -1400,7 +1512,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_111", ".Template_111", 4);
+  ISA_Bundle_Type_Create("Template_109", ".Template_109", 4, bundle_15, 0x57);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ANYX_Unit);
@@ -1408,7 +1520,7 @@ main()
   Slot(3, EVEN_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_112", ".Template_112", 4);
+  ISA_Bundle_Type_Create("Template_110", ".Template_110", 4, bundle_16, 0x55);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ANYX_Unit);
@@ -1416,7 +1528,7 @@ main()
   Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_113", ".Template_113", 4);
+  ISA_Bundle_Type_Create("Template_111", ".Template_111", 4, bundle_15, 0x57);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ANYX_Unit);
@@ -1424,7 +1536,7 @@ main()
   Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_114", ".Template_114", 4);
+  ISA_Bundle_Type_Create("Template_112", ".Template_112", 4, bundle_16, 0x55);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ANYX_Unit);
@@ -1432,7 +1544,7 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_115", ".Template_115", 4);
+  ISA_Bundle_Type_Create("Template_113", ".Template_113", 4, bundle_13, 0x1);
   Alignment(0, 32);
   Slot(0, FIRST_Unit);
   Slot(1, ANY_Unit);
@@ -1440,7 +1552,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_116", ".Template_116", 4);
+  ISA_Bundle_Type_Create("Template_114", ".Template_114", 4, bundle_13, 0x1);
   Alignment(0, 32);
   Slot(0, FIRST_Unit);
   Slot(1, ANY_Unit);
@@ -1448,7 +1560,7 @@ main()
   Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_117", ".Template_117", 4);
+  ISA_Bundle_Type_Create("Template_115", ".Template_115", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ANY_Unit);
@@ -1456,7 +1568,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_118", ".Template_118", 4);
+  ISA_Bundle_Type_Create("Template_116", ".Template_116", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ANY_Unit);
@@ -1464,7 +1576,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_119", ".Template_119", 4);
+  ISA_Bundle_Type_Create("Template_117", ".Template_117", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, EVEN_Unit);
@@ -1472,7 +1584,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_120", ".Template_120", 4);
+  ISA_Bundle_Type_Create("Template_118", ".Template_118", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, EVEN_Unit);
@@ -1480,7 +1592,7 @@ main()
   Slot(3, EVEN_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_121", ".Template_121", 4);
+  ISA_Bundle_Type_Create("Template_119", ".Template_119", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, EVEN_Unit);
@@ -1488,7 +1600,7 @@ main()
   Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_122", ".Template_122", 4);
+  ISA_Bundle_Type_Create("Template_120", ".Template_120", 4, bundle_14, 0xaa);
   Alignment(32, 128);
   Slot(0, FIRST_Unit);
   Slot(1, EVEN_Unit);
@@ -1496,7 +1608,7 @@ main()
   Slot(3, MEMX_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_123", ".Template_123", 4);
+  ISA_Bundle_Type_Create("Template_121", ".Template_121", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, EVEN_Unit);
@@ -1504,7 +1616,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_124", ".Template_124", 4);
+  ISA_Bundle_Type_Create("Template_122", ".Template_122", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, EVEN_Unit);
@@ -1512,7 +1624,7 @@ main()
   Slot(3, EVEN_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_125", ".Template_125", 4);
+  ISA_Bundle_Type_Create("Template_123", ".Template_123", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, EVEN_Unit);
@@ -1520,7 +1632,7 @@ main()
   Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_126", ".Template_126", 4);
+  ISA_Bundle_Type_Create("Template_124", ".Template_124", 4, bundle_16, 0x55);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, MEMX_Unit);
@@ -1528,7 +1640,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_127", ".Template_127", 4);
+  ISA_Bundle_Type_Create("Template_125", ".Template_125", 4, bundle_15, 0x57);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, MEMX_Unit);
@@ -1536,7 +1648,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_128", ".Template_128", 4);
+  ISA_Bundle_Type_Create("Template_126", ".Template_126", 4, bundle_15, 0x57);
   Alignment(96, 128);
   Slot(0, FIRST_Unit);
   Slot(1, MEMX_Unit);
@@ -1544,7 +1656,7 @@ main()
   Slot(3, EVEN_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_129", ".Template_129", 4);
+  ISA_Bundle_Type_Create("Template_127", ".Template_127", 4, bundle_16, 0x55);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, MEMX_Unit);
@@ -1552,7 +1664,7 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_130", ".Template_130", 4);
+  ISA_Bundle_Type_Create("Template_128", ".Template_128", 4, bundle_13, 0x1);
   Alignment(0, 128);
   Slot(0, FIRST_Unit);
   Slot(1, MEM_Unit);
@@ -1560,7 +1672,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_131", ".Template_131", 4);
+  ISA_Bundle_Type_Create("Template_129", ".Template_129", 4, bundle_13, 0x1);
   Alignment(0, 128);
   Slot(0, FIRST_Unit);
   Slot(1, MEM_Unit);
@@ -1568,7 +1680,7 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_132", ".Template_132", 4);
+  ISA_Bundle_Type_Create("Template_130", ".Template_130", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, FIRST_Unit);
   Slot(1, MEM_Unit);
@@ -1576,7 +1688,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_133", ".Template_133", 4);
+  ISA_Bundle_Type_Create("Template_131", ".Template_131", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ODD_Unit);
@@ -1584,7 +1696,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_134", ".Template_134", 4);
+  ISA_Bundle_Type_Create("Template_132", ".Template_132", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ODD_Unit);
@@ -1592,7 +1704,7 @@ main()
   Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_135", ".Template_135", 4);
+  ISA_Bundle_Type_Create("Template_133", ".Template_133", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ODD_Unit);
@@ -1600,7 +1712,7 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_136", ".Template_136", 4);
+  ISA_Bundle_Type_Create("Template_134", ".Template_134", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ODD_Unit);
@@ -1608,7 +1720,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_137", ".Template_137", 4);
+  ISA_Bundle_Type_Create("Template_135", ".Template_135", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ODD_Unit);
@@ -1616,7 +1728,7 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_138", ".Template_138", 4);
+  ISA_Bundle_Type_Create("Template_136", ".Template_136", 4, bundle_13, 0x1);
   Alignment(0, 64);
   Slot(0, FIRST_Unit);
   Slot(1, ODD_Unit);
@@ -1624,7 +1736,7 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_139", ".Template_139", 4);
+  ISA_Bundle_Type_Create("Template_137", ".Template_137", 4, bundle_11, 0x57);
   Alignment(0, 64);
   Slot(0, MEMX_Unit);
   Slot(1, MEMX_Unit);
@@ -1632,7 +1744,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_140", ".Template_140", 4);
+  ISA_Bundle_Type_Create("Template_138", ".Template_138", 4, bundle_12, 0x55);
   Alignment(32, 64);
   Slot(0, MEMX_Unit);
   Slot(1, MEMX_Unit);
@@ -1640,7 +1752,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_141", ".Template_141", 4);
+  ISA_Bundle_Type_Create("Template_139", ".Template_139", 4, bundle_12, 0x55);
   Alignment(96, 128);
   Slot(0, MEMX_Unit);
   Slot(1, MEMX_Unit);
@@ -1648,7 +1760,7 @@ main()
   Slot(3, EVEN_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_142", ".Template_142", 4);
+  ISA_Bundle_Type_Create("Template_140", ".Template_140", 4, bundle_11, 0x57);
   Alignment(0, 64);
   Slot(0, MEMX_Unit);
   Slot(1, MEMX_Unit);
@@ -1656,7 +1768,7 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_143", ".Template_143", 4);
+  ISA_Bundle_Type_Create("Template_141", ".Template_141", 4, bundle_11, 0x57);
   Alignment(0, 128);
   Slot(0, MEMX_Unit);
   Slot(1, MEMX_Unit);
@@ -1664,7 +1776,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_144", ".Template_144", 4);
+  ISA_Bundle_Type_Create("Template_142", ".Template_142", 4, bundle_11, 0x57);
   Alignment(0, 128);
   Slot(0, MEMX_Unit);
   Slot(1, MEMX_Unit);
@@ -1672,7 +1784,7 @@ main()
   Slot(3, ODD_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_145", ".Template_145", 4);
+  ISA_Bundle_Type_Create("Template_143", ".Template_143", 4, bundle_12, 0x55);
   Alignment(32, 64);
   Slot(0, MEMX_Unit);
   Slot(1, MEMX_Unit);
@@ -1680,7 +1792,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_146", ".Template_146", 4);
+  ISA_Bundle_Type_Create("Template_144", ".Template_144", 4, bundle_12, 0x55);
   Alignment(96, 128);
   Slot(0, MEMX_Unit);
   Slot(1, MEMX_Unit);
@@ -1688,7 +1800,7 @@ main()
   Slot(3, EVEN_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_147", ".Template_147", 4);
+  ISA_Bundle_Type_Create("Template_145", ".Template_145", 4, bundle_15, 0x57);
   Alignment(96, 128);
   Slot(0, MEM_Unit);
   Slot(1, ANYX_Unit);
@@ -1696,7 +1808,7 @@ main()
   Slot(3, EVEN_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_148", ".Template_148", 4);
+  ISA_Bundle_Type_Create("Template_146", ".Template_146", 4, bundle_14, 0xaa);
   Alignment(32, 128);
   Slot(0, MEM_Unit);
   Slot(1, EVEN_Unit);
@@ -1704,7 +1816,7 @@ main()
   Slot(3, ANYX_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_149", ".Template_149", 4);
+  ISA_Bundle_Type_Create("Template_147", ".Template_147", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, ANY_Unit);
@@ -1712,7 +1824,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_150", ".Template_150", 4);
+  ISA_Bundle_Type_Create("Template_148", ".Template_148", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, ANY_Unit);
@@ -1720,7 +1832,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_151", ".Template_151", 4);
+  ISA_Bundle_Type_Create("Template_149", ".Template_149", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, ANY_Unit);
@@ -1728,7 +1840,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_152", ".Template_152", 4);
+  ISA_Bundle_Type_Create("Template_150", ".Template_150", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, EVEN_Unit);
@@ -1736,7 +1848,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_153", ".Template_153", 4);
+  ISA_Bundle_Type_Create("Template_151", ".Template_151", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, EVEN_Unit);
@@ -1744,7 +1856,7 @@ main()
   Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_154", ".Template_154", 4);
+  ISA_Bundle_Type_Create("Template_152", ".Template_152", 4, bundle_14, 0xaa);
   Alignment(32, 128);
   Slot(0, ODD_Unit);
   Slot(1, EVEN_Unit);
@@ -1752,7 +1864,7 @@ main()
   Slot(3, MEMX_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_155", ".Template_155", 4);
+  ISA_Bundle_Type_Create("Template_153", ".Template_153", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, EVEN_Unit);
@@ -1760,7 +1872,7 @@ main()
   Slot(3, ANY_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_156", ".Template_156", 4);
+  ISA_Bundle_Type_Create("Template_154", ".Template_154", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, EVEN_Unit);
@@ -1768,7 +1880,7 @@ main()
   Slot(3, EVEN_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_157", ".Template_157", 4);
+  ISA_Bundle_Type_Create("Template_155", ".Template_155", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, EVEN_Unit);
@@ -1776,7 +1888,7 @@ main()
   Slot(3, MEM_Unit);
   Stop(3);
 
-  ISA_Bundle_Type_Create("Template_158", ".Template_158", 4);
+  ISA_Bundle_Type_Create("Template_156", ".Template_156", 4, bundle_13, 0x1);
   Alignment(32, 64);
   Slot(0, ODD_Unit);
   Slot(1, MEM_Unit);

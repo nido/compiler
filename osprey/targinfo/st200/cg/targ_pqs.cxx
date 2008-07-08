@@ -42,7 +42,7 @@ PQSTARG_classify_instruction (PQS_MANAGER *pqsm, OP *op)
   }
 
   if (OP_icmp (op)) {
-    VARIANT v = TOP_cmp_variant (topcode);
+    VARIANT v = OP_cmp_variant (op);
 
     pqsm->Add_Predicate_Cmp_Def (OP_result (op, 0), qual, v,
 				 OP_Opnd1 (op), OP_Opnd2 (op));

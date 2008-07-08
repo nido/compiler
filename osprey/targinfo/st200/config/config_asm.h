@@ -192,6 +192,9 @@ extern "C" {
 #define AS_FLOAT 	".real4"
 #define AS_DOUBLE 	".real8"
 
+#define AS_SLEB128      ".sleb128"
+#define AS_ULEB128      ".uleb128"
+
 #define AS_DYNSYM	(char *)NULL
 #define AS_END		".endp"
 #define AS_ENT		".proc"

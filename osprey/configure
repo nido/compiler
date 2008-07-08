@@ -202,7 +202,7 @@ chmod 755 config.status
 # Add here any variable you want substituted in the makefile fragments
 # 
 subst_decl ROOT '$(BUILD_AREA)/devimage'
-listsubdir="include targ_info libiberty libelf libelfutil libdwarf libSYS libcmplrs libcomutil librcparser instrumentationC gccfe g++fe wopt be lai ipl ipa lno lw_inline whirl2c ir_tools driver"
+listsubdir="include targ_info libiberty libelf libelfutil libdwarf libSYS libcmplrs libcomutil librtkutils librcparser libparse gensyn instrumentationC gccfe g++fe wopt be lai ipl ipa lno lw_inline whirl2c ir_tools driver libair parser"
 subst_decl SUBDIRS "$listsubdir"
 
 #

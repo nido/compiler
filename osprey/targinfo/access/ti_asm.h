@@ -139,6 +139,7 @@
  *		(quite handy for modifying a bundle field).
  *
  *	    UINT64 TI_ASM_Get_Bundle_Comp(
+ *              INT bundle_id,
  *		const ISA_BUNDLE     *bundle,
  *		ISA_BUNDLE_PACK_COMP  comp
  *          )
@@ -159,6 +160,7 @@
  *		i.e. it is not necessary to zero the field.
  *
  *          UINT64 TI_ASM_Get_Bundle_Reloc_Value(
+ *              INT bundle_id,
  *              const ISA_BUNDLE *bundle,
  *              INT               slot
  *          )
@@ -205,22 +207,26 @@ extern "C" {
 #define TI_ASM_DISASM_ABI_REGS	(0x01)
 #define TI_ASM_DISASM_TRUE_PRED	(0x02)
 
-/* While the ST100 target description is not complete */
-#ifndef TARG_ST
 extern INT TI_ASM_Pack_Inst(
   TOP topcode,
   const INT64 *result,
   const INT64 *opnd,
   ISA_PACK_INST *pinst
 );
-#endif
 
 extern INT TI_ASM_Print_Inst(
   TOP topcode,
-  const char **result,
-  const char **opnd,
+  ISA_PRINT_OPND_INFO *result,
+  ISA_PRINT_OPND_INFO *opnd,
   FILE *f
 );
+
+extern void TI_ASM_Set_Bundle_Comp(
+				   INT bundle_id,
+				   ISA_BUNDLE           *bundle,
+				   ISA_BUNDLE_PACK_COMP  comp,
+				   UINT64                val
+				   );
 
 /* While the ST100 target description is not complete */
 #ifndef TARG_ST
@@ -233,16 +239,11 @@ extern INT TI_ASM_DisAsm_Inst(
   char *bufptr
 );
 
-extern void TI_ASM_Set_Bundle_Comp(
-  ISA_BUNDLE           *bundle,
-  ISA_BUNDLE_PACK_COMP  comp,
-  UINT64                val
-);
-
 extern UINT64 TI_ASM_Get_Bundle_Comp(
-  const ISA_BUNDLE     *bundle,
-  ISA_BUNDLE_PACK_COMP  comp
-);
+				     INT bundle_id,
+				     const ISA_BUNDLE     *bundle,
+				     ISA_BUNDLE_PACK_COMP  comp
+				     );
 
 extern void TI_ASM_Set_Bundle_Reloc_Value(
   ISA_BUNDLE *bundle,
@@ -251,9 +252,11 @@ extern void TI_ASM_Set_Bundle_Reloc_Value(
 );
 
 extern UINT64 TI_ASM_Get_Bundle_Reloc_Value(
-  const ISA_BUNDLE *bundle,
-  INT               slot
-);
+					    INT bundle_id,
+					    const ISA_BUNDLE *bundle,
+					    INT               slot
+					    );
+#endif /* ifndef TARG_ST */
 
 extern TOP TI_ASM_Unpack_Inst(
   const ISA_PACK_INST *inst,
@@ -262,7 +265,6 @@ extern TOP TI_ASM_Unpack_Inst(
   INT64               *opnd,
   BOOL                 xlate_pseudo
 );
-#endif /* ifndef TARG_ST */
 
 #ifdef __cplusplus
 }

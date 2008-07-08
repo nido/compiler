@@ -96,6 +96,38 @@
  * ====================================================================
  */
 
+// [JV] For compatibility.
+#define  TN_RELOC_NONE	          ISA_RELOC_UNDEFINED
+#define  TN_RELOC_GOT_DISP        ISA_RELOC_R_ST200_GPREL_LO9
+#define  TN_RELOC_GOTOFF          ISA_RELOC_R_ST200_GOTOFF_LO9
+#define  TN_RELOC_GOTOFF_FPTR     ISA_RELOC_R_ST200_GOTOFF_FPTR_LO9
+#define  TN_RELOC_NEG_GOT_DISP    ISA_RELOC_R_ST200_NEGGPREL_LO9
+#define  TN_RELOC_TPREL           ISA_RELOC_R_ST200_TPREL_LO9
+#define  TN_RELOC_GOTOFF_TPREL    ISA_RELOC_R_ST200_GOTOFF_TPREL_LO9
+#define  TN_RELOC_GOTOFF_DTPLDM   ISA_RELOC_R_ST200_GOTOFF_DTPLDM_LO9
+#define  TN_RELOC_GOTOFF_DTPNDX   ISA_RELOC_R_ST200_GOTOFF_DTPNDX_LO9
+#define  TN_RELOC_DTPREL          ISA_RELOC_R_ST200_DTPREL_LO9
+
+#define  TN_is_reloc_got_disp(r)          (TN_is_reloc_R_ST200_GPREL_LO9(r))
+#define  Set_TN_is_reloc_got_disp(r)      Set_TN_is_reloc_R_ST200_GPREL_LO9(r)
+#define  TN_is_reloc_gotoff(r)            (TN_is_reloc_R_ST200_GOTOFF_LO9(r))
+#define  Set_TN_is_reloc_gotoff(r)        Set_TN_is_reloc_R_ST200_GOTOFF_LO9(r)
+#define  TN_is_reloc_gotoff_fptr(r)       (TN_is_reloc_R_ST200_GOTOFF_FPTR_LO9(r))
+#define  Set_TN_is_reloc_gotoff_fptr(r)   Set_TN_is_reloc_R_ST200_GOTOFF_FPTR_LO9(r)
+#define  TN_is_reloc_neg_got_disp(r)      (TN_is_reloc_R_ST200_NEGGPREL_LO9(r))
+#define  Set_TN_is_reloc_neg_got_disp(r)  Set_TN_is_reloc_R_ST200_NEGGPREL_LO9(r)
+#define  TN_is_reloc_tprel(r)             (TN_is_reloc_R_ST200_TPREL_LO9(r))
+#define  Set_TN_is_reloc_tprel(r)         Set_TN_is_reloc_R_ST200_TPREL_LO9(r)
+#define  TN_is_reloc_gotoff_tprel(r)      (TN_is_reloc_R_ST200_GOTOFF_TPREL_LO9(r))
+#define  Set_TN_is_reloc_gotoff_tprel(r)  Set_TN_is_reloc_R_ST200_GOTOFF_TPREL_LO9(r)
+#define  TN_is_reloc_gotoff_dtpldm(r)     (TN_is_reloc_R_ST200_GOTOFF_DTPLDM_LO9(r))
+#define  Set_TN_is_reloc_gotoff_dtpldm(r) Set_TN_is_reloc_R_ST200_GOTOFF_DTPLDM_LO9(r)
+#define  TN_is_reloc_gotoff_dtpndx(r)     (TN_is_reloc_R_ST200_GOTOFF_DTPNDX_LO9(r))
+#define  Set_TN_is_reloc_gotoff_dtpndx(r) Set_TN_is_reloc_R_ST200_GOTOFF_DTPNDX_LO9(r)
+#define  TN_is_reloc_dtprel(r)            (TN_is_reloc_R_ST200_DTPREL_LO9(r))
+#define  Set_TN_is_reloc_dtprel(r)        Set_TN_is_reloc_R_ST200_DTPREL_LO9(r)
+
+#if 0
 /* the following represent various relocations on symbolic values.  
  * The values are represented by a symbol table element.
  */
@@ -105,7 +137,7 @@
 #define  TN_RELOC_GOTOFF_FPTR     0x03
 #define  TN_RELOC_GPIDENT         0x04
 #define  TN_RELOC_GPSUB           0x05
-#define  TN_RELOC_NEG_GOT_DISP    0x06  /* R_LX_NEG_GPREL */
+#define  TN_RELOC_NEG_GOT_DISP    0x06  /* R_LX_NEGGPREL */
 #define  TN_RELOC_TPREL           0x07
 #define  TN_RELOC_GOTOFF_TPREL    0x08
 #define  TN_RELOC_GOTOFF_DTPLDM   0x09
@@ -123,7 +155,6 @@
 #define Set_TN_is_reloc_gotoff_fptr(r)  Set_TN_relocs(r,TN_RELOC_GOTOFF_FPTR)
 #define TN_is_reloc_neg_got_disp(r)     (TN_relocs(r) == TN_RELOC_NEG_GOT_DISP)
 #define Set_TN_is_reloc_neg_got_disp(r) Set_TN_relocs(r,TN_RELOC_NEG_GOT_DISP)
-#define TN_is_reloc_neg(r)              (0)
 #define TN_is_reloc_tprel(r)            (TN_relocs(r) == TN_RELOC_TPREL)
 #define Set_TN_is_reloc_tprel(r)        Set_TN_relocs(r, TN_RELOC_TPREL)
 #define TN_is_reloc_gotoff_tprel(r)     (TN_relocs(r) == TN_RELOC_GOTOFF_TPREL)
@@ -134,6 +165,7 @@
 #define Set_TN_is_reloc_gotoff_dtpndx(r) Set_TN_relocs(r, TN_RELOC_GOTOFF_DTPNDX)
 #define TN_is_reloc_dtprel(r)           (TN_relocs(r) == TN_RELOC_DTPREL)
 #define Set_TN_is_reloc_dtprel(r)       Set_TN_relocs(r, TN_RELOC_DTPREL)
+#endif
 
 // ---------------------------------------------------------------------
 inline BOOL TN_is_fcc_register (const TN *tn)

@@ -95,10 +95,12 @@
 //      is of <operand_type> and usage <operand_use>. If <operand_use>
 //	is omitted it defaults to "undefined".
 //
-//  void Relocatable (int operand_index)
+//  void Relocation (int operand_index, int relocation_id )
 //	The <operand_index>'th operand of the current instruction group
-//      is relocatable. Not supported for results, and there can
-//	be only one relocatable operand per topcode.
+//      is relocatable. Operand can receive several relocations.
+//      Not supported for results.
+//      Note: Relocation can be called only when corresponding operand as
+//            been already created (call to Operand).
 //
 //  void Result (int result_index, OPERAND_VALUE_TYPE result_type)
 //	The <result_index>'th result of the current instruction group 
@@ -124,6 +126,7 @@ extern "C" {
 #include "targ_isa_registers.h"
 #include "targ_isa_lits.h"
 #include "targ_isa_enums.h"
+#include "targ_isa_relocs.h"
 
 // Operand/Result types:
 typedef struct operand_value_type *OPERAND_VALUE_TYPE;
@@ -131,7 +134,7 @@ typedef struct operand_value_type *OPERAND_VALUE_TYPE;
 // RTYPE (or the range-description type) is used to annotate a proper
 // range value to the concerned OPERAND_VALUE_TYPE.  
 
-typedef enum {PCREL, SIGNED, UNSIGNED, UNKNOWN} RTYPE; 
+typedef enum {PCREL, SIGNED, UNSIGNED, NEGATIVE, UNKNOWN} RTYPE; 
 
 // FP_TYPE description is used to determine the fp-value in a floating register
 // i.e. FP32_INT => 32-bit int value in a fp- register (fixed-point)
@@ -166,7 +169,9 @@ extern OPERAND_VALUE_TYPE ISA_Lit_Opnd_Type_Create (
 		const char* name, 
 		int size,
 		RTYPE rtype, 
-		ISA_LIT_CLASS lc );
+		ISA_LIT_CLASS lc,
+		ISA_RELOC default_reloc,
+		... );
 extern OPERAND_VALUE_TYPE ISA_Enum_Opnd_Type_Create ( 
 		const char* name, 
 		int size,
@@ -177,7 +182,7 @@ extern void Instruction_Group ( const char *name, ... );
 extern void Operand (int operand_index, 
 		     OPERAND_VALUE_TYPE operand_type,
 		     OPERAND_USE_TYPE operand_use = 0);
-extern void Relocatable (int operand_index);
+extern void Relocation (int operand_index, int relocation_id);
 extern void Result (int result_index, 
 		    OPERAND_VALUE_TYPE result_type,
 		    OPERAND_USE_TYPE result_use = 0);

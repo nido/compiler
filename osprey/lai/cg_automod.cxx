@@ -45,6 +45,13 @@ static M_Mem_Map M_PostIncr2Mem;
 static M_Mem_Map M_PreIncr2Mem;
 static M_Mem_Map M_OffsetIncr2Mem;
 
+
+
+static BOOL
+Opnd_value_in_range(TOP topcode, INT idx, INT64 val) {
+	return TOP_opnd_immediate_variant(topcode,idx,val) != TOP_UNDEFINED;
+}
+
 // *****************************************************************************
 // Hot fix for bug #43867, TTh and VL, 2008/05/13
 
@@ -192,7 +199,7 @@ check_PostIncrOffset(OP *incrop, OP *memop){
 	// Case 2)
 	top_automod = TOP_AM_automod_variant(OP_code(memop), FALSE, is_incr, ISA_REGISTER_CLASS_UNDEFINED);
       }
-      automod_tn = Gen_Literal_TN((is_incr) ? incr_val : -incr_val, 4);
+      automod_tn = Gen_Literal_TN(incr_val, 4);
     }
 
     if (top_automod == TOP_UNDEFINED) {
@@ -201,7 +208,7 @@ check_PostIncrOffset(OP *incrop, OP *memop){
 
     // Check if immediate range is enough
     INT automod_idx = TOP_Find_Operand_Use(top_automod, OU_offset);
-    if (!TOP_opnd_value_in_range(top_automod, automod_idx, TN_value(automod_tn))) {
+    if (!Opnd_value_in_range(top_automod, automod_idx, TN_value(automod_tn))) {
       return FALSE;
     }
 
@@ -305,7 +312,7 @@ check_PreIncrOffset(OP *incrop, OP *memop){
 	// Case 2)
 	top_automod = TOP_AM_automod_variant(OP_code(memop), TRUE, is_incr, ISA_REGISTER_CLASS_UNDEFINED);
       }
-      automod_tn = Gen_Literal_TN((is_incr) ? incr_val : -incr_val, 4);
+      automod_tn = Gen_Literal_TN(incr_val, 4);
     }
 
     if (top_automod == TOP_UNDEFINED) {
@@ -314,7 +321,7 @@ check_PreIncrOffset(OP *incrop, OP *memop){
 
     // Check if immediate range is enough
     INT automod_idx = TOP_Find_Operand_Use(top_automod, OU_offset);
-    if (!TOP_opnd_value_in_range(top_automod, automod_idx, TN_value(automod_tn))) {
+    if (!Opnd_value_in_range(top_automod, automod_idx, TN_value(automod_tn))) {
       return FALSE;
     }
 
@@ -448,8 +455,8 @@ is_NotUsed_PostIncr(DUD_REGION *dud, OP *memop, OP *incrop){
 	    INT64 incr_val = OP_iadd(incrop) ? TN_value(OP_opnd(incrop, incropnd)) : -TN_value(OP_opnd(incrop, incropnd));
 
 	    // Check immediate range & scaling factor
-	    if (!TOP_opnd_value_in_range(OP_code(useop), offset_idx, TN_value(OP_opnd(useop, offset_idx))-incr_val))
-	      return FALSE;
+	    if (!Opnd_value_in_range(OP_code(useop), offset_idx, TN_value(OP_opnd(useop, offset_idx))-incr_val))
+  		  return FALSE;
 
 	    if ((TN_value(OP_opnd(useop, offset_idx)) % TOP_Mem_Bytes(OP_code(useop))) != 0)
 	      return FALSE;
@@ -651,7 +658,7 @@ is_NotUsed_PreIncr(DUD_REGION *dud, OP *memop, OP *incrop){
 	    INT64 incr_val = OP_iadd(incrop) ? TN_value(OP_opnd(incrop, incropnd)) : -TN_value(OP_opnd(incrop, incropnd));
 
 	    // Check immediate range & scaling factor
-	    if (!TOP_opnd_value_in_range(OP_code(useop), offset_idx, TN_value(OP_opnd(useop, offset_idx))-incr_val))
+	    if (!Opnd_value_in_range(OP_code(useop), offset_idx, TN_value(OP_opnd(useop, offset_idx))-incr_val))
 	      return FALSE;
 
 	    if ((TN_value(OP_opnd(useop, offset_idx)) % TOP_Mem_Bytes(OP_code(useop))) != 0)
@@ -968,7 +975,7 @@ postincr_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
 	    INT64 incr_val = OP_iadd(incrop) ? TN_value(OP_opnd(incrop, incropnd)) : -TN_value(OP_opnd(incrop, incropnd));
 
 	    // Check immediate range & scaling factor
-	    if (!TOP_opnd_value_in_range(OP_code(useop), offset_idx, TN_value(OP_opnd(useop, offset_idx))-incr_val))
+	    if (!Opnd_value_in_range(OP_code(useop), offset_idx, TN_value(OP_opnd(useop, offset_idx))-incr_val))
 	      return INT_MAX;
 
 	    if ((TN_value(OP_opnd(useop, offset_idx)) % TOP_Mem_Bytes(OP_code(useop))) != 0)
@@ -1087,7 +1094,7 @@ preincr_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
 	    INT64 incr_val = OP_iadd(incrop) ? TN_value(OP_opnd(incrop, incropnd)) : -TN_value(OP_opnd(incrop, incropnd));
 
 	    // Check immediate range & scaling factor
-	    if (!TOP_opnd_value_in_range(OP_code(useop), offset_idx, TN_value(OP_opnd(useop, offset_idx))-incr_val))
+	    if (!Opnd_value_in_range(OP_code(useop), offset_idx, TN_value(OP_opnd(useop, offset_idx))-incr_val))
 	      return INT_MAX;
 
 	    if ((TN_value(OP_opnd(useop, offset_idx)) % TOP_Mem_Bytes(OP_code(useop))) != 0)
@@ -1203,15 +1210,12 @@ postincr_RepairOffset(DUD_REGION *dud, OP *memop, OP* incrop){
 	    if(useopnd >= 0 && TN_has_value(OP_opnd(useop, useopnd))){
 
 	      TN *useop_tn = Dup_TN(OP_opnd(useop, useopnd));
-
+	      BOOL Change=FALSE;
 	      // Set offset to new value
-	      if (OP_iadd(incrop))
-		Set_TN_value(useop_tn, TN_value(useop_tn) - offset);
-	      else if(OP_isub(incrop))
-		Set_TN_value(useop_tn, TN_value(useop_tn) + offset);
-		      
-	      Set_OP_opnd(useop, useopnd, useop_tn);
-		      
+	      if (OP_iadd(incrop)) 	   Set_TN_value(useop_tn, TN_value(useop_tn) - offset);
+	      else if(OP_isub(incrop)) Set_TN_value(useop_tn, TN_value(useop_tn) + offset);
+	      Change=Set_OP_opnd_Immediate_Variant(useop, useopnd, useop_tn);
+          DevAssert(Change,("postincr_RepairOffset failed in Set_OP_opnd_Immediate_Variant"));
 	    }
 	    else{
 	      // Non constant code repair
@@ -1298,14 +1302,13 @@ preincr_RepairOffset(DUD_REGION *dud, OP *memop, OP* incrop){
 	    if(useopnd >= 0 && TN_has_value(OP_opnd(useop, useopnd))){
 
 	      TN *useop_tn = Dup_TN(OP_opnd(useop, useopnd));
-
+	      BOOL Change=FALSE;
 	      // Set offset to new value
-	      if (OP_iadd(incrop))
-		Set_TN_value(useop_tn, TN_value(useop_tn) + offset);
-	      else if(OP_isub(incrop))
-		Set_TN_value(useop_tn, TN_value(useop_tn) - offset);
-		      
-	      Set_OP_opnd(useop, useopnd, useop_tn);
+	      if (OP_iadd(incrop)) 	   Set_TN_value(useop_tn, TN_value(useop_tn) + offset);
+	      else if(OP_isub(incrop)) Set_TN_value(useop_tn, TN_value(useop_tn) - offset);
+
+	      Change=Set_OP_opnd_Immediate_Variant(useop, useopnd, useop_tn);
+          DevAssert(Change,("postincr_RepairOffset failed in Set_OP_opnd_Immediate_Variant"));
 
 	    }
 	    else{
@@ -1376,7 +1379,6 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
     INT i;
     for (i = 0; i < du_link.size(); i++) {
       OP *useop = du_link.op(i);
-
       if(check_Incrop(useop)
 	 && check_PostIncrOffset(useop, op)
 	 && is_NotDefined_PostIncr(dud, op, useop)
@@ -1400,7 +1402,6 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
 
 	  // Compute cost
 	  int cost = postincr_Cost(dud, op, useop);
-
 	  // Add to candidates
 	  M_Mem_Map_Iter it_post = M_PostIncr2Mem.find(useop);
 	  M_Mem_Map_Iter it_pre = M_PreIncr2Mem.find(useop);
@@ -1550,7 +1551,7 @@ code_Repair(DUD_REGION *dud){
     BB_Move_Op_After(OP_bb(memop), memop, OP_bb(incrop), incrop);
   }
 
-  // base + offset
+// base + offset
   for(it = M_OffsetIncr2Mem.begin(); it != M_OffsetIncr2Mem.end(); ++it){
 
     OP *incrop = (*it).first;
@@ -1581,7 +1582,6 @@ code_Repair(DUD_REGION *dud){
   }
 
 }
-
 
 void Perform_AutoMod_Optimization() {
 
@@ -1699,7 +1699,7 @@ static BOOL BaseOffset_Combine(OP *mem_op, OP *inc_op, OPS *ops) {
       FmtAssert((TN_has_value(baseoffset_tn)),
 		("base offset must be an immediate"));
       INT baseoffset_idx = TOP_Find_Operand_Use(top_baseoffset, OU_offset);
-      if (!TOP_opnd_value_in_range(top_baseoffset, baseoffset_idx, TN_value(baseoffset_tn))) {
+      if (!Opnd_value_in_range(top_baseoffset, baseoffset_idx, TN_value(baseoffset_tn))) {
 	return FALSE;
       }
 
@@ -1819,7 +1819,7 @@ check_OffsetIncrOffset(OP *incrop, OP *memop){
 
       // Check if immediate range is enough
       INT automod_idx = TOP_Find_Operand_Use(top_automod, OU_offset);
-      if (!TOP_opnd_value_in_range(top_automod, automod_idx, TN_value(automod_tn))) {
+      if (!Opnd_value_in_range(top_automod, automod_idx, TN_value(automod_tn))) {
 	return FALSE;
       }
 
@@ -2012,8 +2012,7 @@ baseOffset_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
 	    INT64 incr_val = OP_iadd(incrop) ? TN_value(OP_opnd(incrop, incropnd)) : -TN_value(OP_opnd(incrop, incropnd));
 
 	    // Check immediate range & scaling factor
-	    if (!TOP_opnd_value_in_range(OP_code(useop), offset_idx,
-					 TN_value(OP_opnd(useop, offset_idx))-incr_val))
+	    if (!Opnd_value_in_range(OP_code(useop), offset_idx, TN_value(OP_opnd(useop, offset_idx))-incr_val))
 	      return INT_MAX;
 
 	    if ((TN_value(OP_opnd(useop, offset_idx)) % TOP_Mem_Bytes(OP_code(useop))) != 0)

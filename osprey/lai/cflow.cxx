@@ -1677,7 +1677,12 @@ Initialize_BB_Info(void)
 	   * interface isn't consistent for all archs, so make sure we
 	   * get the behavior we count on.
 	   */
-	  if (cmp == NULL) {
+#ifdef TARG_ST
+	  /*TDR : To be trunk identical: dont take V_BR_U4NE V_BR_U4EQ*/
+	  if (cmp == NULL || V_br_condition(variant) == V_BR_U4NE || V_br_condition(variant) == V_BR_U4EQ ) {
+#else
+      if (cmp == NULL) {
+#endif
 	    variant = CGTARG_Analyze_Branch(br, &tn1, &tn2);
 	    cmp = br;
 	  }
@@ -1978,6 +1983,7 @@ Collapse_Empty_Goto(BB *bp, BB *targ, float in_freq)
   // hardware loop.
   if (BB_HWLoop_tail(bp))
     return targ;
+
 #endif
 
   new_targ = targ;
@@ -2859,8 +2865,8 @@ Convert_Goto_To_Return ( BB *bp )
    */
   if ( BBINFO_kind(targ) != BBKIND_RETURN || offset < 0 ) return FALSE;
 
-  Is_True((offset % ISA_INST_BYTES) == 0,
-	  ("instruction offset not a multiple of %d", ISA_INST_BYTES));
+  Is_True((offset % ISA_MAX_INST_BYTES) == 0,
+	  ("instruction offset not a multiple of %d", ISA_MAX_INST_BYTES));
 
   /* Find the target and instruction and give up if it's not the return
    * Note that an exit block in a region, might not have the exit code
@@ -2868,7 +2874,7 @@ Convert_Goto_To_Return ( BB *bp )
    */
   for (rtn_op = BB_first_op(targ);
        ;
-       rtn_op = OP_next(rtn_op), offset -= ISA_INST_BYTES)
+       rtn_op = OP_next(rtn_op), offset -= ISA_MAX_INST_BYTES)
   {
     if ( rtn_op == NULL ) return FALSE;
     if ( offset == 0 ) break;
@@ -3215,7 +3221,9 @@ Favor_Branches_Condition(void)
 	}
 
 	TOP new_br_top  = CGTARG_Invert(OP_code(br_op));
-	OP* new_cmp_op = CGTARG_Invert_OP(compare_op);
+	// [dt25] : Here we negate the if
+	OP* new_cmp_op = CGTARG_Negate_OP(compare_op);
+//	OP* new_cmp_op = CGTARG_Invert_OP(compare_op);
 
 	INT opnd;
 	INT opnd_count;

@@ -102,6 +102,7 @@ extern void Check_Dwarf_Rel(const Elf64_Rel &);
 extern void Check_Dwarf_Rela(const Elf64_Rela &);
 extern void Check_Dwarf_Rela(const Elf32_Rela &);
 extern BOOL Is_Dwarf_Section_To_Emit(const char *name);
+extern BOOL Dwarf_Require_Symbolic_Offsets();
 
 extern void Init_Unwind_Info (BOOL trace);
 extern void Finalize_Unwind_Info(void);

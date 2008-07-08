@@ -72,7 +72,6 @@ using std::vector;
 
 #ifdef DYNAMIC_CODE_GEN
 #include "dyn_isa_topcode.h"
-#include "dyn_stub3.h"
 #include "dyn_isa_properties.h" /* For TOP_is_...() on dynamic TOPcode */
 #endif
 
@@ -99,6 +98,8 @@ struct operand_value_type {
   bool is_fpu_int;
   int size;
   int index;
+  int default_reloc;
+  vector<int> relocs;
 };
 
 typedef struct operands_group {
@@ -106,7 +107,6 @@ typedef struct operands_group {
   int opnd_count;
   int result_count;
   vector <OPERAND_VALUE_TYPE> operands;
-  int relocatable_opnd;
   vector <OPERAND_VALUE_TYPE> results;
   //  vector <OPERAND_USE_TYPE> opnd_use;
   //  vector <OPERAND_USE_TYPE> res_use;
@@ -118,6 +118,16 @@ typedef struct operands_group {
   bool base;
   bool offset;
   bool storeval;
+  bool is_predicated;
+  bool predicate;
+  bool is_dualopnd;
+  bool opnd1;
+  bool opnd2;
+  bool is_jump;
+  bool target;
+  bool is_cond;
+  bool condition;
+  unsigned int opnd_nb;
   int index;
 } *OPERANDS_GROUP;
 
@@ -171,6 +181,7 @@ static const char * const interface[] = {
   " *       Describes a particular operand/result type, including",
   " *       the type of value it may contain and whether or not is",
   " *       a register, literal or enum. The contents are private.",
+  " *       [JV] Operand type defines now a list of applicable relocations.",
   " *",
   " *   typedef (struct) ISA_OPERAND_INFO",
   " *       Identifies the operand types of a particular instruction.",
@@ -273,6 +284,30 @@ static const char * const interface[] = {
   " *       Return a boolean to specify if the operand specifed",
   " *       by 'otype' is an enum.",
   " *",
+  " *   BOOL ISA_OPERAND_VALTYP_Is_Relocatable(const ISA_OPERAND_VALTYP *otype)",
+  " *       Return a boolean to specify if the operand specifed",
+  " *       by 'otype' is an relocatable.",
+  " *",
+  " *   UINT8 ISA_OPERAND_VALTYP_Default_Reloc(const ISA_OPERAND_VALTYP *otype)",
+  " *       Returns the default reloc associated with operand specified",
+  " *       by 'otype'. It can be syntaxically implicit or not.",
+  " *",
+  " *   UINT8 ISA_OPERAND_VALTYP_Relocs(const ISA_OPERAND_VALTYP *otype)",
+  " *       Returns the total relocations number (default relocation included)",
+  " *       associated with operand specified by 'otype'.",
+  " *",
+  " *   ISA_RELOC ISA_OPERAND_VALTYP_Next(const ISA_OPERAND_VALTYP *otype,",
+  " *                                     ISA_RELOC reloc_id)",
+  " *       Returns next valid relocation of operand specified by 'otype'.",
+  " *",
+  " *   ISA_RELOC ISA_OPERAND_VALTYP_First(const ISA_OPERAND_VALTYP *otype)",
+  " *       Returns first valid relocation of operand specified by 'otype'.",
+  " *",
+  " *   BOOL ISA_OPERAND_VALTYP_Is_Valid_Reloc(const ISA_OPERAND_VALTYP *otype,",
+  " *                                          ISA_RELOC reloc)",
+  " *       Returns true if relocation 'reloc' is valid on operand",
+  " *       specified by 'otype'.",
+  " *",
   " *   BOOL TOP_Can_Have_Immediate(INT64 value, TOP topcode)",
   " *       Return a boolean to specify if the 64-bit integer value can fit",
   " *       in the literal field of an instruction with the given topcode.",
@@ -282,12 +317,6 @@ static const char * const interface[] = {
   " *       number by value and literal class by reference through 'lclass'",
   " *       (a null pointer can be passed for 'lclass' if the literal",
   " *       class is not needed). If there is no immediate operand, return -1.",
-  " *",
-  " *   INT TOP_Relocatable_Operand(TOP topcode, ISA_LIT_CLASS *lclass)",
-  " *       If 'topcode' has a relocatable operand, return its operand",
-  " *       number by value and literal class by reference through 'lclass'",
-  " *       (a null pointer can be passed for 'lclass' if the literal",
-  " *       class is not needed). If there is no relocatable operand, return -1.",
   " *",
   " *   INT TOP_Find_Operand_Use(TOP topcode, ISA_OPERAND_USE use)",
   " *       For the instruction specified by 'topcode', give the",
@@ -329,10 +358,18 @@ OPERAND_USE_TYPE base;
 OPERAND_USE_TYPE offset;
 OPERAND_USE_TYPE storeval;
 
+OPERAND_USE_TYPE predicate;
+OPERAND_USE_TYPE opnd1;
+OPERAND_USE_TYPE opnd2;
+OPERAND_USE_TYPE condition;
+OPERAND_USE_TYPE target;
+
 #if 0
 OPERAND_USE_TYPE implicit;
 OPERAND_USE_TYPE uniq_res;
 #endif
+
+static int error_nb = 0;
 
 /////////////////////////////////////
 void ISA_Operands_Begin( const char* /* name */ )
@@ -353,40 +390,6 @@ void ISA_Operands_Begin( const char* /* name */ )
      memset(referenced_core_reg_classes, 0, (ISA_REGISTER_CLASS_STATIC_MAX+1)*sizeof(bool));
      memset(referenced_core_reg_subclasses, 0, (ISA_REGISTER_SUBCLASS_STATIC_MAX+1)*sizeof(bool));
   }
-#endif
-
-#if 0
-  // Initialize built-in operand uses
-
-  // 1. base for TOP_load,TOP_store
-  base = new operand_use_type;
-  base->name = "base";
-  base->index = max_uses++;
-  all_use_types.push_back(base);
-
-  // 2. offset for TOP_load,TOP_store
-  offset = new operand_use_type;
-  offset->name = "offset";
-  offset->index = max_uses++;
-  all_use_types.push_back(offset);
-
-  // 3. storeval for TOP_store
-  storeval = new operand_use_type;
-  storeval->name = "storeval";
-  storeval->index = max_uses++;
-  all_use_types.push_back(storeval);
-
-  // 4. implicit
-  implicit = new operand_use_type;
-  implicit->name = "implicit";
-  implicit->index = max_uses++;
-  all_use_types.push_back(implicit);
-
-  // 5. uniq_res
-  uniq_res = new operand_use_type;
-  uniq_res->name = "uniq_res";
-  uniq_res->index = max_uses++;
-  all_use_types.push_back(uniq_res);
 #endif
 
   return;
@@ -455,18 +458,27 @@ OPERAND_VALUE_TYPE ISA_Lit_Opnd_Type_Create (
   const char* name, 
   int size,
   RTYPE type,
-  ISA_LIT_CLASS literal_class
+  ISA_LIT_CLASS literal_class,
+  ISA_RELOC default_reloc,
+  ...
 )
 {
-  if (type != SIGNED && type != UNSIGNED && type != PCREL) {
-    fprintf(stderr, "### Error: RTYPE for literal operand %s must be PCREL, SIGNED or UNSIGNED\n",
+  va_list ap;
+  int reloc;
+
+  if (type != SIGNED && type != UNSIGNED && type != PCREL && type != NEGATIVE) {
+    fprintf(stderr, "### Error: RTYPE for literal operand %s must be NEGATIVE, PCREL, SIGNED or UNSIGNED\n",
 		    name);
     exit(EXIT_FAILURE);
   }
 
   OPERAND_VALUE_TYPE result = new operand_value_type;
-
   all_operand_types.push_back(result);
+
+  va_start(ap,default_reloc);
+  while((reloc = va_arg(ap,int)) != ISA_RELOC_UNDEFINED) {
+    result->relocs.push_back(reloc);
+  }
 
   result->name = name;
   result->register_class = ISA_REGISTER_CLASS_UNDEFINED;
@@ -474,11 +486,12 @@ OPERAND_VALUE_TYPE ISA_Lit_Opnd_Type_Create (
   result->literal_class = literal_class;
   result->enum_class = ISA_EC_UNDEFINED;
   result->is_register = false;
-  result->is_signed = (type == SIGNED) || (type == PCREL);
+  result->is_signed = (type == SIGNED) || (type == PCREL) || (type == NEGATIVE);
   result->is_pcrel = (type == PCREL);
   result->is_fpu_int = false;
   result->size = size;
   result->index = max_valtypes++;
+  result->default_reloc = default_reloc;
 
   return result;
 }
@@ -525,18 +538,6 @@ OPERAND_VALUE_TYPE ISA_Enum_Opnd_Type_Create (
  */
 OPERAND_USE_TYPE Create_Operand_Use( const char *name )
 {
-#if 0
-  if (!strcmp(name, "base") ||
-      !strcmp(name, "offset") ||
-      !strcmp(name, "storeval") ||
-      !strcmp(name, "implicit") ||
-      !strcmp(name, "uniq_res")) {
-    fprintf(stderr, "### Error: built-in operand use %s redefined.\n",
-		    name);
-    exit(EXIT_FAILURE);
-  }
-#endif
-
   OPERAND_USE_TYPE result = new operand_use_type;
 
   all_use_types.push_back(result);
@@ -549,6 +550,11 @@ OPERAND_USE_TYPE Create_Operand_Use( const char *name )
   if (!strcmp(name, "base")) base = result;
   if (!strcmp(name, "offset")) offset = result;
   if (!strcmp(name, "storeval")) storeval = result;
+  if (!strcmp(name, "predicate")) predicate = result;
+  if (!strcmp(name, "opnd1")) opnd1 = result;
+  if (!strcmp(name, "opnd2")) opnd2 = result;
+  if (!strcmp(name, "condition")) condition = result;
+  if (!strcmp(name, "target")) target = result;
 
   return result;
 }
@@ -569,7 +575,6 @@ void Instruction_Group( const char *name, ... )
   oper_group->name = name;
   oper_group->opnd_count = 0;
   oper_group->operands = vector<OPERAND_VALUE_TYPE>();
-  oper_group->relocatable_opnd = -1;
   oper_group->result_count = 0;
   oper_group->results = vector<OPERAND_VALUE_TYPE>();
   oper_group->opnd_use = vector<OPERANDS_GROUP_OPERAND_USES>();
@@ -580,6 +585,16 @@ void Instruction_Group( const char *name, ... )
   oper_group->base = false;
   oper_group->offset = false;
   oper_group->storeval = false;
+  oper_group->is_predicated = false;
+  oper_group->predicate = false;
+  oper_group->is_dualopnd = false;
+  oper_group->opnd1 = false;
+  oper_group->opnd2 = false;
+  oper_group->is_jump = false;
+  oper_group->target = false;
+  oper_group->is_cond = false;
+  oper_group->condition = false;
+  oper_group->opnd_nb = 0;
   oper_group->index = max_groups++;
 
   va_start(ap, name);
@@ -591,8 +606,33 @@ void Instruction_Group( const char *name, ... )
 	      "### Error: Instruction_Group %s: redefines group (%s) for %s\n",
 	      name, op_groups[(int)opcode]->name, TOP_Name(opcode));
     }
+
     if (TOP_is_load(opcode)) oper_group->is_load = true;
+
     if (TOP_is_store(opcode)) oper_group->is_store = true;
+
+    if (TOP_is_guard_t(opcode) || TOP_is_guard_f(opcode)) {
+      oper_group->is_predicated = true;
+    }
+
+    if (
+        TOP_is_and(opcode) || TOP_is_or(opcode) || TOP_is_xor(opcode) || 
+        TOP_is_add(opcode) || TOP_is_cmp(opcode) || TOP_is_max(opcode) ||
+        TOP_is_min(opcode) || TOP_is_shl(opcode) || /*TOP_is_shlu(opcode) ||*/
+        TOP_is_shr(opcode) || TOP_is_shru(opcode) || TOP_is_sub(opcode) ||
+	TOP_is_mul(opcode)
+        ) {
+      oper_group->is_dualopnd = true;
+    }
+
+    if(TOP_is_jump(opcode)) {
+      oper_group->is_jump = true;
+    }
+
+    if(TOP_is_cond(opcode)) {
+      oper_group->is_cond = true;
+    }
+
     op_groups[(int)opcode] = oper_group;
   }
 
@@ -601,12 +641,30 @@ void Instruction_Group( const char *name, ... )
       fprintf(stderr, 
 	      "### Error: Instruction_Group %s: redefines group (%s) for %s\n",
 	      name, op_groups[(int)opcode]->name, TOP_Name(opcode));
+      error_nb++;
     }
     if ((TOP_is_load(opcode) && oper_group->is_load == false) ||
 	(TOP_is_store(opcode) && oper_group->is_store == false)) {
       fprintf(stderr, 
-	      "### Error: Instruction_Group %s: %s name is not a memory group opcode\n", name, TOP_Name(opcode));
+	      "### Error: Instruction_Group %s: TOP_%s is not a memory group opcode\n", name, TOP_Name(opcode));
+      error_nb++;
     }
+    if (((TOP_is_guard_t(opcode) || TOP_is_guard_f(opcode)) && oper_group->is_predicated == false)) {
+      fprintf(stderr, 
+	      "### Error: Instruction_Group %s: TOP_%s is not a predicated group opcode\n", name, TOP_Name(opcode));
+      error_nb++;
+    }
+    if (TOP_is_jump(opcode) && oper_group->is_jump == false) {
+      fprintf(stderr, 
+	      "### Error: Instruction_Group %s: TOP_%s is not a 'jump' group opcode\n", name, TOP_Name(opcode));
+      error_nb++;
+    }
+    if (TOP_is_cond(opcode) && oper_group->is_cond == false) {
+      fprintf(stderr, 
+	      "### Error: Instruction_Group %s: TOP_%s is not a 'cond' group opcode\n", name, TOP_Name(opcode));
+      error_nb++;
+    }
+
     op_groups[(int)opcode] = oper_group;
   }
   va_end(ap);
@@ -672,21 +730,14 @@ void Operand (int operand_index,
     if (operand_use == base) cur_oper_group->base = true;
     if (operand_use == offset) cur_oper_group->offset = true;
     if (operand_use == storeval) cur_oper_group->storeval = true;
+    if (operand_use == predicate) cur_oper_group->predicate = true;
+    if (operand_use == opnd1) cur_oper_group->opnd1 = true;
+    if (operand_use == opnd2) cur_oper_group->opnd2 = true;
+    if (operand_use == condition) cur_oper_group->condition = true;
+    if (operand_use == target) cur_oper_group->target = true;
+    if (operand_use != predicate && operand_use != condition)
+      cur_oper_group->opnd_nb++;
   }
-}
-
-/* ====================================================================
- *   Relocatable
- * ====================================================================
- */
-void Relocatable (int operand_index)
-{
-  if (cur_oper_group->relocatable_opnd >= 0) {
-    fprintf(stderr, "### Error: %s has more than one relocatable operand\n",
-		    cur_oper_group->name);
-    exit(EXIT_FAILURE);
-  }
-  cur_oper_group->relocatable_opnd = operand_index;
 }
 
 /* ====================================================================
@@ -834,7 +885,6 @@ void ISA_Operands_End(void)
   TOP           code;
   bool          err;
   const char   *info_index_type;
-  const char   *info_reloc_opnd_type;
   int           first_literal = max_operands;
   int           last_literal = -1;
   int           flag_mask = 0;
@@ -866,10 +916,12 @@ void ISA_Operands_End(void)
   if (err) exit(EXIT_FAILURE);
 
   char *cfilename = NULL;                             /* C file name      */
+  char *sfilename = NULL;                             /* Stub file name   */
   char *hfilename = NULL;                             /* Header file name */
   char *efilename = NULL;                             /* Export file name */
 
   FILE *cfile     = NULL;                             /* C file handler   */
+  FILE *sfile     = NULL;                             /* Stub file handler*/
   FILE *hfile     = NULL;                             /* Header f. handler*/
   FILE *efile     = NULL;                             /* Export f. handler*/
 
@@ -882,6 +934,7 @@ void ISA_Operands_End(void)
     FNAME_TARG_ISA_PROPERTIES,
     FNAME_TARG_ISA_LITS,
     FNAME_TARG_ISA_ENUMS,
+    FNAME_TARG_ISA_RELOCS,
   };
 
   const char *const tabinc_dynamic[] = {              /* Building the list */
@@ -889,6 +942,7 @@ void ISA_Operands_End(void)
     FNAME_ISA_PROPERTIES,                             /* included for dyn. */
     FNAME_ISA_LITS,                                   /* extensions.       */
     FNAME_ISA_ENUMS,
+    FNAME_ISA_RELOCS,
   };
 
 #ifdef DYNAMIC_CODE_GEN
@@ -902,7 +956,7 @@ void ISA_Operands_End(void)
 
       return correct results.
     */
-   Initialize_Register_Class_Stub();
+   ISA_REGISTER_Initialize_Stub();
 #endif
 
   hfilename = Gen_Build_Filename(bname,extname,gen_util_file_type_hfile);
@@ -911,10 +965,21 @@ void ISA_Operands_End(void)
   cfilename = Gen_Build_Filename(bname,extname,gen_util_file_type_cfile);
   cfile     = Gen_Open_File_Handle(cfilename, "w");
 
-  if(gen_static_code)
-   { efilename = Gen_Build_Filename(bname,extname,gen_util_file_type_efile);
-     efile     = Gen_Open_File_Handle(efilename, "w");
-   }
+  if(gen_static_code) {
+    efilename = Gen_Build_Filename(bname,extname,gen_util_file_type_efile);
+    efile     = Gen_Open_File_Handle(efilename, "w");
+  }
+  else {
+    const char *headers[] = {
+      "<stddef.h>",
+      "\"dyn_" FNAME_ISA_OPERANDS ".h\"",
+      "",
+    };
+
+    sfilename = Gen_Build_Filename(FNAME_STUB_ISA_OPERANDS,extname,gen_util_file_type_cfile);
+    sfile     = Gen_Open_File_Handle(sfilename, "w");
+    Emit_Stub_Header(sfile,headers);
+  }
 
 
   fprintf(cfile,"\n");
@@ -969,36 +1034,52 @@ void ISA_Operands_End(void)
                 use_type->name,/* 1 << (use_type->index + 1)*/use_type->mask);
       }
      fprintf(hfile, "#define OU_MAX%-12s 0x%08x\n", "",1 << maxenum);
+     // [vcdv] add error here to avoid wrongly adding new OPERAND_USE
+     // note that ISA_OPERAND_USE is wrongly of type UINT32
+     // modifying the size of the table ISA_OPERAND_INFO->ouse is a
+     // very bad idea for extension compatibility maintenance...
+     if (maxenum>=16) {
+       fprintf(stderr, "### Error: struct ISA_OPERAND_INFO limits number of operands use to mUINT16 values\n");
+       exit(EXIT_FAILURE);
+     }
    }
 
-  if(gen_static_code)
-   { fprintf(hfile, 
-             "\ntypedef struct {\n"
-             "  mUINT8  rclass;\n"
-             "  mUINT8  rsubclass;\n"
-             "  mUINT8  lclass;\n"
-             "  mUINT8  eclass;\n"
-             "  mUINT16 size;\n"
-             "  mUINT8  flags;\n"
-             "} ISA_OPERAND_VALTYP;\n");
+  if(gen_static_code) {
+    fprintf(hfile, 
+	    "\ntypedef struct {\n"
+	    "  mUINT8  rclass;\n"
+	    "  mUINT8  rsubclass;\n"
+	    "  mUINT8  lclass;\n"
+	    "  mUINT8  eclass;\n"
+	    "  mUINT16 size;\n"
+	    "  mUINT8  flags;\n"
+	    "  mUINT8  default_reloc;\n"
+	    "  mUINT8  relocs;\n"
+	    "  mINT8   reloc[ISA_RELOC_STATIC_MAX];\n"
+	    "} ISA_OPERAND_VALTYP;\n");
+    
+    fprintf(hfile,
+	    "\n"
+	    "#define ISA_OPERAND_TYPES_STATIC_COUNT (%d)\n",
+	    all_operand_types.size());
 
-     fprintf(hfile,
-             "\n"
-             "#define ISA_OPERAND_TYPES_STATIC_COUNT (%d)\n",
-             all_operand_types.size());
-
-     fprintf(hfile,
-             "\n"
-             "BE_EXPORTED extern INT ISA_OPERAND_types_count;\n");
-
-     fprintf(cfile,
-             "\n"
-             "BE_EXPORTED INT ISA_OPERAND_types_count = ISA_OPERAND_TYPES_STATIC_COUNT;\n");
-
-     fprintf(efile, 
-	     "ISA_OPERAND_types_count\n"
-             "ISA_OPERAND_operand_types\n");
-    }
+    fprintf(hfile,
+	    "\n"
+	    "BE_EXPORTED extern INT ISA_OPERAND_types_count;\n");
+    
+    fprintf(cfile,
+	    "\n"
+	    "BE_EXPORTED INT ISA_OPERAND_types_count = ISA_OPERAND_TYPES_STATIC_COUNT;\n");
+    
+    fprintf(efile, 
+	    "ISA_OPERAND_types_count\n"
+	    "ISA_OPERAND_operand_types\n");
+  }
+  else {
+    fprintf(sfile,
+	    "\n"
+	    "BE_EXPORTED INT ISA_OPERAND_types_count = 0;\n");
+  }
 
   const char *tabname = gen_static_code ? "ISA_OPERAND_operand_types_static" :
                                           "ISA_OPERAND_operand_types_dynamic";
@@ -1056,34 +1137,37 @@ void ISA_Operands_End(void)
      }
 
 
-    if(is_core_class)              /* Write first part of structure  */
-      fprintf(cfile, 
-        "  { ISA_REGISTER_CLASS_%-10s, ",
-        ISA_REGISTER_CLASS_INFO_Name(rcinfo));
-    else
-      fprintf(cfile,
-        "  { ISA_REGISTER_CLASS_%s_%-10s, ",
-        extname,
-        ISA_REGISTER_CLASS_INFO_Name(rcinfo));
-
-     if(is_core_sub_class)
-       fprintf(cfile,
-         "ISA_REGISTER_SUBCLASS_%-10s,\n",
-          ISA_REGISTER_SUBCLASS_INFO_Name(scinfo));
-     else
-       fprintf(cfile,
-         "ISA_REGISTER_SUBCLASS_%s_%-10s,\n",
-         extname,
-         ISA_REGISTER_SUBCLASS_INFO_Name(scinfo));
+    fprintf(cfile, 
+	    "  { ISA_REGISTER_CLASS_%-10s, ",
+	    ISA_REGISTER_CLASS_INFO_Name(rcinfo));
+    fprintf(cfile,
+	    "ISA_REGISTER_SUBCLASS_%-10s,\n",
+	    ISA_REGISTER_SUBCLASS_INFO_Name(scinfo));
  
-    fprintf(                        /* Write second part of structure */
-        cfile,
-        "    %3d, %s, %2d, 0x%02x }, /* %s */\n",
-        val_type->literal_class,
-        ISA_EC_Name(val_type->enum_class),
-        val_type->size,
-        flags,
-        val_type->name);
+    fprintf(cfile,                       /* Write second part of structure */
+	    "    %3d, %s, %2d, 0x%02x, %3d, %3d,",
+	    val_type->literal_class,
+	    ISA_EC_Name(val_type->enum_class),
+	    val_type->size,
+	    flags,
+	    val_type->default_reloc,
+	    val_type->relocs.size());
+
+     fprintf(cfile," {");
+     for(int rel_id = 0; rel_id < ISA_RELOC_STATIC_MAX; rel_id++) {
+       int find_reloc = 0;
+       int reloc_id = -1;
+       for(vector<int>::iterator reloc = val_type->relocs.begin(); !find_reloc && reloc != val_type->relocs.end(); reloc++) {
+	 if(rel_id == *reloc) {
+	   find_reloc = 1;
+	   reloc_id = *reloc;
+	 }
+       }
+       fprintf(cfile," %3d,",reloc_id);
+     }
+     fprintf(cfile,
+	     "}, }, /* %s */\n",
+	     val_type->name);
   }                                /* End of for loop                 */
   fprintf(cfile, "};\n");          /* Print end of table              */
 
@@ -1097,6 +1181,9 @@ void ISA_Operands_End(void)
        "BE_EXPORTED extern ISA_OPERAND_VALTYP *ISA_OPERAND_operand_types;\n");
   }
   else {
+   fprintf(sfile, 
+	   "BE_EXPORTED ISA_OPERAND_VALTYP *ISA_OPERAND_operand_types = NULL;\n\n");
+
     fprintf(cfile,
        "\n"
        "const ISA_OPERAND_VALTYP *dyn_get_ISA_OPERAND_operand_types_tab( void )\n"
@@ -1194,23 +1281,57 @@ void ISA_Operands_End(void)
     }
     fprintf(cfile, " },\n");
 
+    // Check of operand properties depending on TOP properties
+    if ((oper_group->is_load == true || oper_group->is_store == true) &&
+	(oper_group->base == false || oper_group->offset == false)) {
+      fprintf(stderr, "### Error: base/offset missing for %s\n", 
+	      oper_group->name);
+      error_nb++;
+    }
+    if (oper_group->is_store == true && oper_group->storeval == false) {
+      fprintf(stderr, "### Error: storeval missing for %s\n", 
+	      oper_group->name);
+      error_nb++;
+    }
+    
+    if (oper_group->is_predicated == true && oper_group->predicate == false) {
+      fprintf(stderr, "### Error: predicate missing for %s\n", 
+	      oper_group->name);
+      error_nb++;
+    }
+    
+    if (oper_group->is_dualopnd == true && (oper_group->opnd1 == false ||
+					    oper_group->opnd2 == false)) {
+      
+      fprintf(stderr, "### Error: opnd1 or opnd2 missing for %s\n", 
+	      oper_group->name);
+      error_nb++;
+    }
+    
+    if (oper_group->is_dualopnd == true && oper_group->opnd_nb != 2) {
+      fprintf(stderr, "### Error: arithmetic property set on operation composed of more than two operands for %s\n", 
+	      oper_group->name);
+      error_nb++;
+    }
+    
+    if (oper_group->is_jump == true && oper_group->target == false) {
+      fprintf(stderr, "### Error: jump property: target missing for %s\n", 
+	      oper_group->name);
+      error_nb++;
+    }
+    
+    if (oper_group->is_cond == true && oper_group->condition == false) {
+      fprintf(stderr, "### Error: cond property: condition missing for %s\n", 
+	      oper_group->name);
+      error_nb++;
+    }
+    // End of check
+
     pos = fprintf(cfile, "       {");
     for (i = 0, use_iter = oper_group->opnd_use.begin(); 
 	 i < max_operands;
 	 ++i
     ) {
-
-      if ((oper_group->is_load == true || oper_group->is_store == true) &&
-	  (oper_group->base == false || oper_group->offset == false)) {
-	fprintf(stderr, "### Error: base/offset missing for %s\n", 
-		                                      oper_group->name);
-	exit(EXIT_FAILURE);
-      }
-      if (oper_group->is_store == true && oper_group->storeval == false) {
-	fprintf(stderr, "### Error: storeval missing for %s\n", 
-		                                      oper_group->name);
-	exit(EXIT_FAILURE);
-      }
 
       OPERANDS_GROUP_OPERAND_USES use_type = 0;
       if (use_iter != oper_group->opnd_use.end()) {
@@ -1240,7 +1361,7 @@ void ISA_Operands_End(void)
         OPERAND_VALUE_TYPE val_type = *oper_iter;
         if (val_type == NULL) {
 	  fprintf(stderr, "### Error: result missing for %s\n", oper_group->name);
-	  exit(EXIT_FAILURE);
+	  error_nb++;
         }
 	val_type_index = val_type->index;
 	 ++oper_iter;
@@ -1295,31 +1416,35 @@ void ISA_Operands_End(void)
 
   fprintf(cfile, "};\n");
 
-  if(gen_static_code)
-  { fprintf(cfile, 
-      "\n"
-      "BE_EXPORTED ISA_OPERAND_INFO *ISA_OPERAND_info = %s;\n",
-      tabname);
+  if(gen_static_code) {
+    fprintf(cfile, 
+	    "\n"
+	    "BE_EXPORTED ISA_OPERAND_INFO *ISA_OPERAND_info = %s;\n",
+	    tabname);
     fprintf(hfile,
-      "\n"
-      "BE_EXPORTED extern ISA_OPERAND_INFO *ISA_OPERAND_info;\n");
+	    "\n"
+	    "BE_EXPORTED extern ISA_OPERAND_INFO *ISA_OPERAND_info;\n");
   }
-  else
-  { fprintf(cfile,
-      "const ISA_OPERAND_INFO  *dyn_get_ISA_OPERAND_info_tab ( void )\n"
-      "{ return %s;\n"
-      "}\n"
-      "\n"
-      "const mUINT32 dyn_get_ISA_OPERAND_info_tab_sz( void )\n"
-      "{ return %dU;\n"
-      "}\n"
-      "\n",
-      tabname,static_cast<mUINT32>(all_groups.size()) );
+  else {
+    fprintf(sfile, 
+	    "\n"
+	    "BE_EXPORTED ISA_OPERAND_INFO *ISA_OPERAND_info = NULL;\n");
+
+    fprintf(cfile,
+	    "const ISA_OPERAND_INFO  *dyn_get_ISA_OPERAND_info_tab ( void )\n"
+	    "{ return %s;\n"
+	    "}\n"
+	    "\n"
+	    "const mUINT32 dyn_get_ISA_OPERAND_info_tab_sz( void )\n"
+	    "{ return %dU;\n"
+	    "}\n"
+	    "\n",
+	    tabname,static_cast<mUINT32>(all_groups.size()) );
 
     fprintf(hfile,
-      "\n"
-      "extern const ISA_OPERAND_INFO  *dyn_get_ISA_OPERAND_info_tab    ( void );\n"
-      "extern const mUINT32            dyn_get_ISA_OPERAND_info_tab_sz ( void );\n");
+	    "\n"
+	    "extern const ISA_OPERAND_INFO  *dyn_get_ISA_OPERAND_info_tab    ( void );\n"
+	    "extern const mUINT32            dyn_get_ISA_OPERAND_info_tab_sz ( void );\n");
   }
 
   info_index_type = "mUINT16";
@@ -1342,56 +1467,26 @@ void ISA_Operands_End(void)
   fprintf (cfile, "};\n");
 
   if(gen_static_code) {
-     fprintf (cfile, "\nBE_EXPORTED %s *ISA_OPERAND_info_index = %s;\n", 
-              info_index_type,tabname);
+    fprintf (cfile, "\nBE_EXPORTED %s *ISA_OPERAND_info_index = %s;\n", 
+	     info_index_type,tabname);
     fprintf (hfile,"\nBE_EXPORTED extern %s *ISA_OPERAND_info_index;\n", 
-              info_index_type);
+	     info_index_type);
     fprintf (efile, "ISA_OPERAND_info_index\n");
    }
   else {
-     fprintf(cfile,
-       "\n"
-       "const %s* dyn_get_ISA_OPERAND_info_index_tab ( void )\n"
-       "{ return %s;\n"
-       "};\n",
-       info_index_type,tabname);
-     fprintf(hfile,
-       "\n"
-       "extern const %s* dyn_get_ISA_OPERAND_info_index_tab(void);\n",
-       info_index_type);
-   }
-
-  info_reloc_opnd_type = "mINT8";
-  tabname = gen_static_code ? "ISA_OPERAND_relocatable_opnd_static":
-                              "ISA_OPERAND_relocatable_opnd_dynamic";
-  fprintf(cfile, "\nstatic %s %s[] = {\n",info_reloc_opnd_type,tabname);
-  for (code = 0; code < TOP_count_limit; code++) {
-    OPERANDS_GROUP oper_group = op_groups[code];
-    fprintf(cfile, "  %2d,  /* %s */\n",
-		   oper_group->relocatable_opnd,
-		   TOP_Name((TOP)code));
-  }
-  fprintf (cfile, "};\n\n");
-
-  if(gen_static_code) {
-     fprintf(cfile,
-             "BE_EXPORTED %s *ISA_OPERAND_relocatable_opnd = %s;\n",
-             info_reloc_opnd_type,tabname);
-     fprintf(hfile,
-             "\nBE_EXPORTED extern %s *ISA_OPERAND_relocatable_opnd;\n",
-	     info_reloc_opnd_type);
-     fprintf(efile, "ISA_OPERAND_relocatable_opnd\n");
-   }
-  else {
+    fprintf (sfile, "\nBE_EXPORTED %s *ISA_OPERAND_info_index = NULL;\n",
+	     info_index_type);
     fprintf(cfile,
-      "const %s *dyn_get_ISA_OPERAND_relocatable_opnd_tab( void )\n"
-      "{ return %s;\n"
-      "}\n",
-      info_reloc_opnd_type,tabname);
+	    "\n"
+	    "const %s* dyn_get_ISA_OPERAND_info_index_tab ( void )\n"
+	    "{ return %s;\n"
+	    "};\n",
+	    info_index_type,tabname);
     fprintf(hfile,
-      "extern const %s *dyn_get_ISA_OPERAND_relocatable_opnd_tab( void );\n",
-      info_reloc_opnd_type);
-   }
+	    "\n"
+	    "extern const %s* dyn_get_ISA_OPERAND_info_index_tab(void);\n",
+	    info_index_type);
+  }
 
   // --------------------------------------------------------------------
   //
@@ -1463,6 +1558,42 @@ void ISA_Operands_End(void)
 		 "  const ISA_OPERAND_VALTYP *otype)\n"
 		 "{\n"
 		 "  return (ISA_ENUM_CLASS)otype->eclass;\n"
+		 "}\n");
+
+  fprintf(hfile, "\ninline UINT8 ISA_OPERAND_VALTYP_Default_Reloc(\n"
+		 "  const ISA_OPERAND_VALTYP *otype)\n"
+		 "{\n"
+		 "  return (UINT8)otype->default_reloc;\n"
+		 "}\n");
+
+  fprintf(hfile, "\ninline UINT8 ISA_OPERAND_VALTYP_Relocs(\n"
+		 "  const ISA_OPERAND_VALTYP *otype)\n"
+		 "{\n"
+		 "  return (UINT8)otype->relocs;\n"
+		 "}\n");
+
+  fprintf(hfile, "\ninline ISA_RELOC ISA_OPERAND_VALTYP_Next(\n"
+		 "  const ISA_OPERAND_VALTYP *otype,\n"
+	         "  ISA_RELOC reloc_id)\n"
+		 "{\n"
+	         "  reloc_id++;\n"
+	         "  while(reloc_id < ISA_RELOC_STATIC_MAX && otype->reloc[reloc_id] == -1) {\n"
+	         "    reloc_id++;\n"
+	         "  }\n"
+		 "  return reloc_id;\n"
+		 "}\n");
+
+  fprintf(hfile, "\ninline ISA_RELOC ISA_OPERAND_VALTYP_First(\n"
+		 "  const ISA_OPERAND_VALTYP *otype)\n"
+		 "{\n"
+		 "  return ISA_OPERAND_VALTYP_Next(otype,ISA_RELOC_UNDEFINED);\n"
+		 "}\n");
+
+  fprintf(hfile, "\ninline BOOL ISA_OPERAND_VALTYP_Is_Valid_Reloc(\n"
+		 "  const ISA_OPERAND_VALTYP *otype, ISA_RELOC reloc)\n"
+		 "{\n"
+	         "  if(reloc >= ISA_RELOC_STATIC_MAX) { return -1; }\n"
+	         "  return otype->reloc[reloc] != -1;\n"
 		 "}\n");
 
   fprintf(hfile, "\ninline BOOL ISA_OPERAND_VALTYP_Is_Register("
@@ -1545,7 +1676,6 @@ void ISA_Operands_End(void)
 
   fprintf(hfile, "\ninline BOOL ISA_OPERAND_Any_Use(ISA_OPERAND_USE ouse)\n"
 		 "{\n"
-	  //	 "  return (" PRINTF_LONGLONG_HEXA "ULL & (1ULL << ouse)) != 0;\n"
 		 "  return (" PRINTF_LONGLONG_HEXA " & ouse) != 0;\n"
 		 "}\n",
 		 use_mask);
@@ -1593,24 +1723,22 @@ void ISA_Operands_End(void)
 
   // --------------------------------------------------------------------
   //
-  //       TOP_Relocatable_Operand
+  //       ISA_OPERAND_VALTYP_Is_Relocatable
   //
   // --------------------------------------------------------------------
 
   if(gen_static_code) {
-  fprintf(hfile, "\nTARGINFO_EXPORTED extern INT TOP_Relocatable_Operand(TOP topcode, ISA_LIT_CLASS *lclass);\n");
-  fprintf(efile, "TOP_Relocatable_Operand\n");
-  fprintf(cfile, "\nINT TOP_Relocatable_Operand(TOP topcode, ISA_LIT_CLASS *lclass)\n"
-		 "{\n"
-		 "  TARGINFO_EXPORTED extern mINT8 *ISA_OPERAND_relocatable_opnd;\n"
-		 "  INT iopnd = ISA_OPERAND_relocatable_opnd[(INT)topcode];\n"
-		 "  if (lclass && iopnd >= 0) {\n"
-		 "    const ISA_OPERAND_INFO *opinfo = ISA_OPERAND_Info(topcode);\n"
-		 "    const ISA_OPERAND_VALTYP *vtype = ISA_OPERAND_INFO_Operand(opinfo,iopnd);\n"
-		 "    *lclass = (ISA_LIT_CLASS)ISA_OPERAND_VALTYP_Literal_Class(vtype);\n"
-		 "  }\n"
-		 "  return iopnd;\n"
-		 "}\n");
+  fprintf(hfile,
+	  "\ninline BOOL ISA_OPERAND_VALTYP_Is_Relocatable(const ISA_OPERAND_VALTYP *otype)\n"
+	  "{\n"
+	  "  if(!ISA_OPERAND_VALTYP_Is_Literal(otype)) {\n"
+	  "    return FALSE;\n"
+	  "  }\n"
+	  "  if(otype->default_reloc != ISA_RELOC_UNDEFINED || otype->relocs != 0) {\n"
+	  "    return TRUE;\n"
+	  "  }\n"
+	  "  return FALSE;\n"
+	  "}\n");
 
   fprintf(hfile, "\nBE_EXPORTED extern BOOL TOP_Can_Have_Immediate(INT64 value, TOP topcode);\n");
   fprintf(efile, "TOP_Can_Have_Immediate\n");
@@ -1931,6 +2059,27 @@ void ISA_Operands_End(void)
   
 #endif
 
+  fprintf(hfile, "#ifdef DYNAMIC_CODE_GEN\n");
+  fprintf(hfile, "extern void ISA_OPERANDS_Initialize_Stub(void);\n");
+  fprintf(hfile, "#endif\n");
+
+  if(!gen_static_code) {
+    fprintf(sfile,
+	    "/*\n"
+	    " * Exported routine.\n"
+	    " */\n"
+	    "void \n"
+	    "ISA_OPERANDS_Initialize_Stub( void )\n"
+	    "{\n"
+	    "  ISA_OPERAND_operand_types = (ISA_OPERAND_VALTYP*)dyn_get_ISA_OPERAND_operand_types_tab();\n"
+	    "  ISA_OPERAND_types_count   = dyn_get_ISA_OPERAND_operand_types_tab_sz();\n"
+	    "  ISA_OPERAND_info_index    = (%s*)dyn_get_ISA_OPERAND_info_index_tab();\n"
+	    "  ISA_OPERAND_info          = (ISA_OPERAND_INFO*)dyn_get_ISA_OPERAND_info_tab();\n"
+	    "  return;\n"
+	    "}\n",
+	    info_index_type);
+  }
+
 
   Emit_Footer  (hfile);
   Emit_C_Footer(cfile);
@@ -1938,14 +2087,26 @@ void ISA_Operands_End(void)
  // Closing file handlers.
   Gen_Close_File_Handle(hfile,hfilename);
   Gen_Close_File_Handle(cfile,cfilename);
-  if(efile)
+  if(efile) {
     Gen_Close_File_Handle(efile,efilename);
+  }
+  if(sfile) {
+    Gen_Close_File_Handle(sfile,sfilename);
+  }
 
   // Memory deallocation.
   Gen_Free_Filename(cfilename);
   Gen_Free_Filename(hfilename);
-  if(efilename)
+  if(efilename) {
     Gen_Free_Filename(efilename);
+  }
+  if(sfilename) {
+    Gen_Free_Filename(sfilename);
+  }
+
+  if(error_nb != 0) {
+    exit(EXIT_FAILURE);
+  }
 
   return;
 }

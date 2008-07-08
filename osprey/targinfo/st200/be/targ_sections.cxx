@@ -40,7 +40,7 @@
 #include "sections.h"
 #include "be_symtab.h"
 #include "targ_sections.h"
-#include "targ_isa_bundle.h" // for ISA_INST_BYTES
+#include "targ_isa_bundle.h" // for ISA_MAX_INST_BYTES
 
 /* ====================================================================
  *    SEC_is_gprel

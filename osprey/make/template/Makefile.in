@@ -57,12 +57,16 @@ CORE_EXTENSIONS=@CORE_EXTENSIONS@
 #  Please Specify dependencies for each new <directory> in the variable
 #  DEPS_FOR_<directory>.
 #
-INCLUDE_SUBDIRS = \
-	include \
+INCLUDE_SUBDIRS =   \
+	include     \
+	librtkutils \
+	gensyn      \
 	targ_info
 
 DEPS_FOR_include	=
-DEPS_FOR_targ_info	= include
+DEPS_FOR_librtkutils	= 
+DEPS_FOR_gensyn		= librtkutils
+DEPS_FOR_targ_info	= include gensyn
 
 #
 #  Next, all of the libraries are built because the tools depend on them.
@@ -70,15 +74,17 @@ DEPS_FOR_targ_info	= include
 #  DEPS_FOR_<directory>.
 #
 #### Only these for now by default #####
-LIBRARY_SUBDIRS =  \
-        libiberty  \
-	libelf     \
-	libcmplrs  \
-	libcomutil \
-	libdwarf   \
-	libelfutil \
-   librcparser \
-	libSYS     \
+LIBRARY_SUBDIRS =   \
+        libiberty   \
+	libelf      \
+	libcmplrs   \
+	libcomutil  \
+	libdwarf    \
+	libelfutil  \
+	librcparser \
+	libSYS      \
+	libparse    \
+	libair      \
 	instrumentationC
 
 DEPS_FOR_libiberty	= include
@@ -87,8 +93,10 @@ DEPS_FOR_libcmplrs	= include
 DEPS_FOR_libcomutil	= include
 DEPS_FOR_libdwarf	= include
 DEPS_FOR_libelfutil	= include
+DEPS_FOR_librcparser	=
 DEPS_FOR_libSYS		= include
-DEPS_FOR_librcparser	= 
+DEPS_FOR_libparse  	= targ_info
+DEPS_FOR_libair         = include targ_info
 DEPS_FOR_instrumentationC =
 
 #
@@ -108,9 +116,10 @@ TOOL_SUBDIRS = \
 	ipa \
 	lno \
 	lw_inline \
-        whirl2c \
-        ir_tools \
-	driver 
+        whirl2c   \
+        ir_tools  \
+	parser    \
+	driver
 
 #	dwarfdump \
 #	elfdump \
@@ -122,7 +131,7 @@ endif
 
 DEPS_FOR_gccfe		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
 DEPS_FOR_g++fe		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) gccfe
-DEPS_FOR_be		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
+DEPS_FOR_be		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) gccfe
 DEPS_FOR_lai		:= be
 DEPS_FOR_wopt		:= be
 DEPS_FOR_ipl		:= be
@@ -135,7 +144,8 @@ DEPS_FOR_elfdump	:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
 DEPS_FOR_dwarfdump	:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
 DEPS_FOR_ir_tools	:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) be
 DEPS_FOR_driver		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
-DEPS_FOR_targ_info_ext := $(INCLUDE_SUBDIRS) gccfe
+DEPS_FOR_targ_info_ext  := $(INCLUDE_SUBDIRS) gccfe
+DEPS_FOR_parser         := $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
 
 #
 #  Comes last, some additional target libraries built by the target compiler.

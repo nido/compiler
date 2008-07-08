@@ -330,7 +330,6 @@ struct bb;
  *			       OP stuff
  * ---------------------------------------------------------------------
  */
-
 /* Define the maximum number of fixed operands and results an OP can
  * have. Note that OPs with variable numbers of operands, e.g. asm,
  * may have more operands and/or results.
@@ -367,6 +366,11 @@ typedef struct op {
 				 * !!! THIS FIELD MUST BE LAST !!!
 				 */
 } OP;
+
+#ifdef TARG_ST
+extern void Verify_Instruction_Simple ( OP *op );
+#endif
+
 
 /* Return the 'sizeof' the OP struct needed for the specified number
  * of operands and results. For the sake of simplicity, the result of 
@@ -467,6 +471,8 @@ typedef int TN_effect;
 #define Set_OP_Pred_False(o, opnd) false
 #define OP_Pred_False(o, opnd) false
 #endif /* TARG_STxP70 */
+
+BOOL Set_OP_opnd_Immediate_Variant(OP *op, INT idx, TN *tn);
 
 #endif /* TARG_ST */
 
@@ -826,6 +832,7 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_immediate_opnd(o,lc)	(TOP_Immediate_Operand(OP_code(o), lc))
 #define OP_has_immediate(o)	(OP_immediate_opnd(o, NULL) >= 0)
 #define OP_inst_words(o)	(ISA_PACK_Inst_Words(OP_code(o)))
+#define OP_unit_slots(o)	(ISA_EXEC_Unit_Slots(OP_code(o)))
 #define OP_find_opnd_use(o,u)	(TOP_Find_Operand_Use(OP_code(o),(u)))
 #define OP_has_result(o)        (OP_results(o) != 0)
 #ifdef TARG_ST // [CL]
@@ -937,7 +944,6 @@ inline TN *OP_base_update_tn(OP *op)
 
 extern TOP TOP_opnd_register_variant(TOP top, int opnd, ISA_REGISTER_CLASS regclass);
 extern TOP TOP_opnd_immediate_variant(TOP top, int opnd, INT64 imm);
-extern TOP TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2);
 extern TOP TOP_result_register_variant(TOP top, int rslt, ISA_REGISTER_CLASS regclass);
 extern INT TOP_opnd_use_bits(TOP top, int opnd);
 extern BOOL TOP_opnd_use_signed(TOP top, int opnd);
@@ -945,7 +951,14 @@ extern BOOL TOP_opnd_use_signed(TOP top, int opnd);
 extern BOOL TOP_opnd_value_in_range (TOP top, int opnd, INT64 imm);
 extern TOP TOP_AM_automod_variant(TOP top, BOOL post_mod, BOOL inc_mod, ISA_REGISTER_CLASS regclass);
 extern VARIANT TOP_cond_variant(TOP top);
+#ifdef TARG_ST
+extern VARIANT OP_cmp_variant(const OP* op);
+extern VARIANT OP_br_variant(const OP* op);
+extern TOP OP_opnd_swapped_variant(OP *op, int opnd1, int opnd2);
+#else
 extern VARIANT TOP_cmp_variant(TOP top);
+extern TOP TOP_opnd_swapped_variant(TOP top, int opnd1, int opnd2);
+#endif
 
 #endif
 
@@ -1507,63 +1520,177 @@ CG_EXPORTED extern OP *Mk_VarOP (
 
 inline void Build_OP(TOP opc, OPS *ops)
 {
-  OPS_Append_Op(ops, Mk_OP(opc));
+
+  DevAssert((opc!=TOP_UNDEFINED), ("Build_OP fails on TOP_UNDEFINED\n"));
+  DevAssert(((TOP_fixed_results(opc)+TOP_fixed_opnds(opc))==0),
+            ("Wrong nber of parameter (Top %s) for Build_OP %d instead of %d\n",
+             TOP_Name(opc),
+             0, TOP_fixed_results(opc)+TOP_fixed_opnds(opc)));
+
+  OP* op = Mk_OP(opc);
+  
+#ifdef TARG_ST
+#ifdef Is_True_On
+  Verify_Instruction_Simple(op);
+#endif
+#endif
+
+  OPS_Append_Op(ops, op);
 }
 
 inline void Build_OP(TOP opc, struct tn *t1, OPS *ops)
 {
-  OPS_Append_Op(ops, Mk_OP(opc, t1));
+  DevAssert((opc!=TOP_UNDEFINED), ("Build_OP fails on TOP_UNDEFINED\n"));
+  DevAssert(((TOP_fixed_results(opc)+TOP_fixed_opnds(opc))==1),
+            ("Wrong nber of parameter (Top %s) for Build_OP %d instead of %d\n",
+             TOP_Name(opc),
+             1, TOP_fixed_results(opc)+TOP_fixed_opnds(opc)));
+  OP* op = Mk_OP(opc, t1);
+#ifdef TARG_ST
+#ifdef Is_True_On
+  Verify_Instruction_Simple(op);
+#endif
+#endif
+  OPS_Append_Op(ops, op);
 }
 
 inline void Build_OP(TOP opc, struct tn *t1, struct tn *t2, OPS *ops)
 {
-  OPS_Append_Op(ops, Mk_OP(opc, t1, t2));
+  DevAssert((opc!=TOP_UNDEFINED), ("Build_OP fails on TOP_UNDEFINED\n"));
+  DevAssert(((TOP_fixed_results(opc)+TOP_fixed_opnds(opc))==2),
+            ("Wrong nber of parameter (Top %s) for Build_OP %d instead of %d\n",
+             TOP_Name(opc),
+             2, TOP_fixed_results(opc)+TOP_fixed_opnds(opc)));
+  OP* op = Mk_OP(opc, t1, t2);
+#ifdef TARG_ST
+#ifdef Is_True_On
+  Verify_Instruction_Simple(op);
+#endif
+#endif
+  OPS_Append_Op(ops, op);
 }
 
 inline void Build_OP(TOP opc, struct tn *t1, struct tn *t2, struct tn *t3, 
 			      OPS *ops)
 {
-  OPS_Append_Op(ops, Mk_OP(opc, t1, t2, t3));
+  DevAssert((opc!=TOP_UNDEFINED), ("Build_OP fails on TOP_UNDEFINED\n"));
+  DevAssert(((TOP_fixed_results(opc)+TOP_fixed_opnds(opc))==3),
+            ("Wrong nber of parameter (Top %s) for Build_OP %d instead of %d\n",
+             TOP_Name(opc),
+             3, TOP_fixed_results(opc)+TOP_fixed_opnds(opc)));
+  OP* op = Mk_OP(opc, t1, t2, t3);
+#ifdef TARG_ST
+#ifdef Is_True_On
+  Verify_Instruction_Simple(op);
+#endif
+#endif
+  OPS_Append_Op(ops, op);
 }
 
 inline void Build_OP(TOP opc, struct tn *t1, struct tn *t2, struct tn *t3, 
 			      struct tn *t4, OPS *ops)
 {
-  OPS_Append_Op(ops, Mk_OP(opc, t1, t2, t3, t4));
+  DevAssert((opc!=TOP_UNDEFINED), ("Build_OP fails on TOP_UNDEFINED\n"));
+  DevAssert(((TOP_fixed_results(opc)+TOP_fixed_opnds(opc))==4),
+            ("Wrong nber of parameter (Top %s) for Build_OP %d instead of %d\n",
+             TOP_Name(opc),
+             4, TOP_fixed_results(opc)+TOP_fixed_opnds(opc)));
+  OP* op = Mk_OP(opc, t1, t2, t3, t4);
+#ifdef TARG_ST
+#ifdef Is_True_On
+  Verify_Instruction_Simple(op);
+#endif
+#endif
+  OPS_Append_Op(ops, op);
 }
 
 inline void Build_OP(TOP opc, struct tn *t1, struct tn *t2, struct tn *t3, 
 			      struct tn *t4, struct tn *t5, OPS *ops)
 {
-  OPS_Append_Op(ops, Mk_OP(opc, t1, t2, t3, t4, t5));
+  DevAssert((opc!=TOP_UNDEFINED), ("Build_OP fails on TOP_UNDEFINED\n"));
+  DevAssert(((TOP_fixed_results(opc)+TOP_fixed_opnds(opc))==5),
+            ("Wrong nber of parameter (Top %s) for Build_OP %d instead of %d\n",
+             TOP_Name(opc),
+             5, TOP_fixed_results(opc)+TOP_fixed_opnds(opc)));
+  OP* op = Mk_OP(opc, t1, t2, t3, t4, t5);
+#ifdef TARG_ST
+#ifdef Is_True_On
+  Verify_Instruction_Simple(op);
+#endif
+#endif
+  OPS_Append_Op(ops, op);
 }
 
 inline void Build_OP(TOP opc, struct tn *t1, struct tn *t2, struct tn *t3, 
 			      struct tn *t4, struct tn *t5, struct tn *t6, 
 			      OPS *ops)
 {
-  OPS_Append_Op(ops, Mk_OP(opc, t1, t2, t3, t4, t5, t6));
+  DevAssert((opc!=TOP_UNDEFINED), ("Build_OP fails on TOP_UNDEFINED\n"));
+  DevAssert(((TOP_fixed_results(opc)+TOP_fixed_opnds(opc))==6),
+            ("Wrong nber of parameter (Top %s) for Build_OP %d instead of %d\n",
+             TOP_Name(opc),
+             6, TOP_fixed_results(opc)+TOP_fixed_opnds(opc)));
+  OP* op = Mk_OP(opc, t1, t2, t3, t4, t5, t6);
+#ifdef TARG_ST
+#ifdef Is_True_On
+  Verify_Instruction_Simple(op);
+#endif
+#endif
+  OPS_Append_Op(ops, op);
 }
 
 inline void Build_OP(TOP opc, struct tn *t1, struct tn *t2, struct tn *t3, 
 			      struct tn *t4, struct tn *t5, struct tn *t6, 
 			      struct tn *t7, OPS *ops)
 {
-  OPS_Append_Op(ops, Mk_OP(opc, t1, t2, t3, t4, t5, t6, t7));
+  DevAssert((opc!=TOP_UNDEFINED), ("Build_OP fails on TOP_UNDEFINED\n"));
+  DevAssert(((TOP_fixed_results(opc)+TOP_fixed_opnds(opc))==7),
+            ("Wrong nber of parameter (Top %s) for Build_OP %d instead of %d\n",
+             TOP_Name(opc),
+             7, TOP_fixed_results(opc)+TOP_fixed_opnds(opc)));
+  OP* op = Mk_OP(opc, t1, t2, t3, t4, t5, t6, t7);
+#ifdef TARG_ST
+#ifdef Is_True_On
+  Verify_Instruction_Simple(op);
+#endif
+#endif
+  OPS_Append_Op(ops, op);
 }
 
 inline void Build_OP(TOP opc, struct tn *t1, struct tn *t2, struct tn *t3, 
 			      struct tn *t4, struct tn *t5, struct tn *t6, 
 			      struct tn *t7, struct tn *t8, OPS *ops)
 {
-  OPS_Append_Op(ops, Mk_OP(opc, t1, t2, t3, t4, t5, t6, t7, t8));
+  DevAssert((opc!=TOP_UNDEFINED), ("Build_OP fails on TOP_UNDEFINED\n"));
+  DevAssert(((TOP_fixed_results(opc)+TOP_fixed_opnds(opc))==8),
+            ("Wrong nber of parameter (Top %s) for Build_OP %d instead of %d\n",
+             TOP_Name(opc),
+             8, TOP_fixed_results(opc)+TOP_fixed_opnds(opc)));
+  OP* op = Mk_OP(opc, t1, t2, t3, t4, t5, t6, t7, t8);
+#ifdef TARG_ST
+#ifdef Is_True_On
+  Verify_Instruction_Simple(op);
+#endif
+#endif
+  OPS_Append_Op(ops, op);
 }
 inline void Build_OP(TOP opc, struct tn *t1, struct tn *t2, struct tn *t3, 
 			      struct tn *t4, struct tn *t5, struct tn *t6, 
 			      struct tn *t7, struct tn *t8, struct tn *t9, 
 			      OPS *ops)
 {
-  OPS_Append_Op(ops, Mk_OP(opc, t1, t2, t3, t4, t5, t6, t7, t8, t9));
+  DevAssert((opc!=TOP_UNDEFINED), ("Build_OP fails on TOP_UNDEFINED\n"));
+  DevAssert(((TOP_fixed_results(opc)+TOP_fixed_opnds(opc))==9),
+            ("Wrong nber of parameter (Top %s) for Build_OP %d instead of %d\n",
+             TOP_Name(opc),
+             9, TOP_fixed_results(opc)+TOP_fixed_opnds(opc)));
+  OP* op = Mk_OP(opc, t1, t2, t3, t4, t5, t6, t7, t8, t9);
+#ifdef TARG_ST
+#ifdef Is_True_On
+  Verify_Instruction_Simple(op);
+#endif
+#endif
+  OPS_Append_Op(ops, op);
 }
 
 #ifdef TARG_ST
@@ -1644,6 +1771,10 @@ inline OP *Last_Real_OP(OP *op)
 // Count the number of real ops/instruction-words emitted by the op.
 extern INT16 OP_Real_Ops( const OP *op );
 extern INT OP_Real_Inst_Words( const OP *op );
+#ifdef TARG_ST
+// Count the number of real unit slots used by the op.
+extern INT OP_Real_Unit_Slots( const OP *op );
+#endif
 
 /* ======================================================================
  * Macros to traverse the OPs within a basic block. Use of these macros

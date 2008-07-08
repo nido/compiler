@@ -68,7 +68,6 @@ using std::list;
 
 #ifdef DYNAMIC_CODE_GEN
 #include "dyn_isa_registers.h"
-#include "dyn_stub3.h"      // See explanations in ABI_Begin().
 #else
 #include "targ_isa_registers.h"  
 #endif
@@ -213,7 +212,7 @@ void ABI_Properties_Begin(const char * /* name */)
 
       to return correct results.
     */
-   Initialize_Register_Class_Stub();
+   ISA_REGISTER_Initialize_Stub();
 #endif
 
    return;
@@ -642,9 +641,9 @@ void ABI_Properties_End(void)
       ABI_PROPERTY prop = *prop_iter;
       assert(prop->is_flag);
       if (prop->v != 0) {
-	fprintf(hfile, "#define ABI_PROPERTY_%-20s " PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s\n",
+	fprintf(hfile, "#define ABI_PROPERTY_%-20s " PRINTF_LONGLONG_FORMAT( "0x", "0*", "x" ) "%s\n",
 		prop->name,
-		// no "%0*llx" with MSVisual... // Type_Size(prop_count[true][prop->is_reg]) / 4,
+		Type_Size(prop_count[true][prop->is_reg]) / 4,
 		prop->v,
 		Type_Suffix(prop_count[true][prop->is_reg]));
       }
@@ -675,8 +674,8 @@ void ABI_Properties_End(void)
 	ABI_PROPERTY prop = *prop_iter;
 	mask |= prop->v;
       }
-      fprintf(cfile, "    " PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s,\n",
-		     // no "%0*llx" with MSVisual... // Type_Size(count) / 4,
+      fprintf(cfile, "    " PRINTF_LONGLONG_FORMAT( "0x", "0*", "x" ) "%s,\n",
+		     Type_Size(count) / 4,
 		     mask,
 		     Type_Suffix(count));
     }
