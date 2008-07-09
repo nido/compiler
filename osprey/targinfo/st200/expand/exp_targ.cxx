@@ -734,7 +734,7 @@ Expand_Add (
     if (TN_has_value(src2)) {
       INT64 val = TN_value(src2);
       new_opcode = TOP_opnd_immediate_variant(TOP_add_r_r_r, 1, val);
-    }
+     }
     // symbolic constant, gp-relative or sp-relative
     else if (TN_is_symbol(src2)) {
       //
@@ -754,23 +754,26 @@ Expand_Add (
 	  || TN_is_reloc_gotoff_tprel (src2)
 	  || TN_is_reloc_gotoff_dtpldm (src2)
 	  || TN_is_reloc_gotoff_dtpndx (src2)) {
-	new_opcode = TOP_add_i_r_r;
+	// use an extended-immediate addition to avoid the 9-bit 
+	// short-immediate truncation
+	new_opcode = TOP_add_ii_r_r;
       }
       else if (ST_on_stack(TN_var(src2))) {
-#if 1
         // (cbr) if the offset is 0 and the symbol is on the stack
         // then just do a copy.
         if (base == SP_Sym && ofst == 0) {
           Expand_Copy (result, NULL, src1, ops);
           return;
         }
-#endif
 	// On stack symbolic offset becomes an immediate
 	// in the final code
-	new_opcode = TOP_add_i_r_r;
+	// fix for codex bug #38647, check for the immediate size
+	if (ISA_LC_Value_In_Class (ofst, LC_isrc2))
+	  new_opcode = TOP_add_i_r_r;
+	else
+	  new_opcode = TOP_add_ii_r_r;
       }
       else {
-        // just makea and hope that 16bit offset suffices:
 	Expand_Immediate(tmp, src2, mtype, ops);
         src2 = tmp;
 	new_opcode = TOP_add_r_r_r;
