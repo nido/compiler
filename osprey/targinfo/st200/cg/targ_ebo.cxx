@@ -943,8 +943,6 @@ EBO_select_value (
     Build_OP (TOP_cmpeq_r_r_b, predicate, pred_base, intervening_base, &ops);
     OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
 
-    OPS ops1 = OPS_EMPTY;
-
     if (result_predicate != NULL) {
       /* If predicated, we must generate a predicated select. On
 	 ST200 family this means a select followed by a conditional
@@ -967,7 +965,6 @@ EBO_select_value (
       OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
     }
   }
-
   if (!EBO_Verify_Ops(&ops)) return FALSE;
   BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
 
@@ -1099,11 +1096,7 @@ EBO_simplify_operand0 (
       opnd2_idx >= 0 &&
       TN_is_register(OP_opnd(op, opnd2_idx))) {
     // TOP_opnd_swapped_variant does not exist anymore
-#if 0
-    new_opcode = TOP_opnd_swapped_variant(opcode, opnd1_idx, opnd2_idx);
-#else
     new_opcode = OP_opnd_swapped_variant(op, opnd1_idx, opnd2_idx);
-#endif
     if (new_opcode != TOP_UNDEFINED) {
       new_op = Dup_OP(op);
       OP_Change_Opcode(new_op, new_opcode);
@@ -4284,11 +4277,7 @@ do_swapped:
     if (swapped) return FALSE;
     // Try to swap operands if possible
     // TOP_opnd_swapped_variant does not exist anymore
-#if 0
-    TOP swapped_opcode = TOP_opnd_swapped_variant(opcode, 0, 1);
-#else
     TOP swapped_opcode = OP_opnd_swapped_variant(op, 0, 1);
-#endif
     if (swapped_opcode != opcode) return FALSE;
     swapped = TRUE;
     goto do_swapped;
@@ -6801,7 +6790,7 @@ EBO_Special_Inline_Immediates(OP *op, EBO_OP_INFO *opinfo, int idx)
 {
   TOP opcode;
   EBO_TN_INFO *tninfo;
-  OP *saved_op = Dup_OP(op);
+
   opcode = OP_code(op);
   tninfo = opinfo->actual_opnd[idx];
 
@@ -6926,11 +6915,7 @@ EBO_Special_Inline_Immediates(OP *op, EBO_OP_INFO *opinfo, int idx)
 	if (idx == idx2) continue;
 	if (TN_is_constant(OP_opnd(op, idx2))) continue;
     // TOP_opnd_swapped_variant does not exist anymore
-#if 0
-	new_opcode = TOP_opnd_swapped_variant(opcode, idx, idx2);
-#else
-	new_opcode = OP_opnd_swapped_variant(saved_op, idx, idx2);
-#endif
+	new_opcode = OP_opnd_swapped_variant(op, idx, idx2);
 	if (new_opcode == TOP_UNDEFINED) continue;
 	if (TN_has_value(replacement_tn)) {
 	  new_opcode = TOP_opnd_immediate_variant(new_opcode, idx2, TN_value(replacement_tn));
