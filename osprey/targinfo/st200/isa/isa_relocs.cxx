@@ -47,7 +47,7 @@ main()
   // ISA_Create_Reloc_Type( name, main symbol, second symbol, addend, pcrel,
   //                        gprel, gotrel)
   RELOC_TYPE rel_none = 
-    ISA_Create_Reloc_Type("s",R_NO_MAIN_SYMBOL,R_NO_SECOND_SYMBOL,R_NO_ADDEND,
+    ISA_Create_Reloc_Type("none",R_NO_MAIN_SYMBOL,R_NO_SECOND_SYMBOL,R_NO_ADDEND,
 			  R_NO_PCREL,R_NO_GPREL,R_NO_GOTREL);
   RELOC_TYPE rel_s = 
     ISA_Create_Reloc_Type("s",R_MAIN_SYMBOL,R_NO_SECOND_SYMBOL,R_NO_ADDEND,
@@ -65,7 +65,7 @@ main()
     ISA_Create_Reloc_Type("s_a_gp",R_MAIN_SYMBOL,R_NO_SECOND_SYMBOL,R_ADDEND,
 			  R_NO_PCREL,R_GPREL,R_NO_GOTREL);
   RELOC_TYPE rel_s_a_got = 
-    ISA_Create_Reloc_Type("s_a_gp",R_MAIN_SYMBOL,R_NO_SECOND_SYMBOL,R_ADDEND,
+    ISA_Create_Reloc_Type("s_a_got",R_MAIN_SYMBOL,R_NO_SECOND_SYMBOL,R_ADDEND,
 			  R_NO_PCREL,R_NO_GPREL,R_GOTREL);
 
   BITFIELD bf_12_9 = ISA_Create_BitField("bf_12_9",12,9);

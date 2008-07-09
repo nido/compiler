@@ -902,13 +902,17 @@ main (int argc, char *argv[])
 
   Instruction_Group("group41",
 		TOP_asm_24_i_r_r,
-		TOP_asm_24_ii_r_r,
 		TOP_asm_25_i_r_r,
-		TOP_asm_25_ii_r_r,
 		TOP_asm_26_i_r_r,
-		TOP_asm_26_ii_r_r,
 		TOP_asm_27_i_r_r,
-		TOP_asm_27_ii_r_r,
+		TOP_UNDEFINED);
+
+  Result_Available_Time (0, 5);
+  Operand_Access_Time (0, 2);
+  Resource_Requirement(Resource_st240_ISSUE, 0);
+
+
+  Instruction_Group("group42",
 		TOP_convfi_n_r_r,
 		TOP_convif_n_r_r,
 		TOP_UNDEFINED);
@@ -920,7 +924,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st240_LANE0, 0);
 
 
-  Instruction_Group("group42",
+  Instruction_Group("group43",
 		TOP_pswmask_ii_r_r,
 		TOP_UNDEFINED);
 
@@ -935,7 +939,11 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st240_LANE0, 0);
 
 
-  Instruction_Group("group43",
+  Instruction_Group("group44",
+		TOP_asm_24_ii_r_r,
+		TOP_asm_25_ii_r_r,
+		TOP_asm_26_ii_r_r,
+		TOP_asm_27_ii_r_r,
 		TOP_asm_28_ii_r_r,
 		TOP_asm_29_ii_r_r,
 		TOP_asm_30_ii_r_r,
@@ -957,7 +965,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st240_EVEN, 0);
 
 
-  Instruction_Group("group44",
+  Instruction_Group("group45",
 		TOP_ldwl_r_r,
 		TOP_pswmask_i_r_r,
 		TOP_UNDEFINED);
@@ -970,7 +978,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st240_LANE0, 0);
 
 
-  Instruction_Group("group45",
+  Instruction_Group("group46",
 		TOP_asm_28_i_r_r,
 		TOP_asm_29_i_r_r,
 		TOP_asm_30_i_r_r,
@@ -990,7 +998,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st240_ODD, 0);
 
 
-  Instruction_Group("group46",
+  Instruction_Group("group47",
 		TOP_ldbu_r_ii_r,
 		TOP_ldb_r_ii_r,
 		TOP_ldhu_r_ii_r,
@@ -1010,7 +1018,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st240_LANE0, 0);
 
 
-  Instruction_Group("group47",
+  Instruction_Group("group48",
 		TOP_ldbu_r_i_r,
 		TOP_ldb_r_i_r,
 		TOP_ldhu_r_i_r,
@@ -1027,7 +1035,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st240_LANE0, 0);
 
 
-  Instruction_Group("group48",
+  Instruction_Group("group49",
 		TOP_multi_ldlc_r_ii_b_r,
 		TOP_UNDEFINED);
 
@@ -1044,7 +1052,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st240_LANE0, 0);
 
 
-  Instruction_Group("group49",
+  Instruction_Group("group50",
 		TOP_multi_ldlc_r_i_b_r,
 		TOP_UNDEFINED);
 
@@ -1058,7 +1066,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st240_LANE0, 0);
 
 
-  Instruction_Group("group50",
+  Instruction_Group("group51",
 		TOP_multi_ldl_r_ii_r,
 		TOP_UNDEFINED);
 
@@ -1074,7 +1082,7 @@ main (int argc, char *argv[])
   Resource_Requirement(Resource_st240_LANE0, 0);
 
 
-  Instruction_Group("group51",
+  Instruction_Group("group52",
 		TOP_multi_ldl_r_i_r,
 		TOP_UNDEFINED);
 
