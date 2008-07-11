@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jul 11 16:36:17 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-48104
+
+Description:
+------------
+	* [trunk] Fix for bug #48104: Invalid adress mode when compiling plumhall test suites.
+	Deliver fixes/codex-48104 rev #17540 with authorization branch #48528
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/expand/exp_memrf.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jul  8 17:32:44 CEST 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
