@@ -3973,6 +3973,7 @@ EBO_Simplify_Compare_Sequence (
 
 #ifdef TARG_ST
   variant = OP_cmp_variant(op);
+  if (opcode != OP_code(op)) variant=Invert_CMP_Variant(variant);
 #else
   variant = TOP_cmp_variant(opcode);
 #endif
@@ -4415,6 +4416,7 @@ EBO_Simplify_Compare_MinMaxSequence (
   if (op_created) {
 #ifdef TARG_ST
       variant = OP_cmp_variant(op);
+      if (opcode != OP_code(op)) variant=Invert_CMP_Variant(variant);
 #else
       variant = TOP_cmp_variant(opcode);
 #endif
@@ -4455,6 +4457,7 @@ EBO_Simplify_Compare_MinMaxSequence (
   else if (const_created) {
 #ifdef TARG_ST
       variant = OP_cmp_variant(op);
+      if (opcode != OP_code(op)) variant=Invert_CMP_Variant(variant);
 #else
       variant = TOP_cmp_variant(opcode);
 #endif
