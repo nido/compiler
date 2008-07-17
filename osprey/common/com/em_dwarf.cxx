@@ -792,11 +792,6 @@ const DebugRegId DebugRegId_undef = (DebugRegId)-1;
 typedef map<INT, Dwarf_Unsigned> HashValueToCIEIndex;
 
 /**
- * Contains CIE index for PU hash value.
- */
-static HashValueToCIEIndex indexes;
-
-/**
  * Number of bit store in one byte of the dwarf LEB128 representation
  */
 static const INT DW_BIT_BY_LEB = 7;
@@ -1246,8 +1241,11 @@ template<CIECreation fct>
 static Dwarf_Unsigned
 GenericCIEIndex(PU& pu)
 {
-    // Following static variables are not shared amongs instances of the
-    // function, and it is exactly what we want.
+    /**
+     * Contains CIE index for PU hash value.
+     */
+    static HashValueToCIEIndex indexes;
+
     Dwarf_Unsigned cieIndex;
     INT hashValue = HashValue(pu);
     if(indexes.find(hashValue) == indexes.end())

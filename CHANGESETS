@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jul 17 11:19:05 CEST 2008
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-47473
+
+Description:
+------------
+	*  [trunk] Deliver fix for Codex #47473 (C++ debug_frame info absent) at rev #17567 with authorization #47476)
+
+
+Modified Files:
+---------------
+	M      osprey/common/com/em_dwarf.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jul 16 09:22:10 CEST 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
