@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jul 18 16:50:21 CEST 2008
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-47988
+
+Description:
+------------
+	*  [trunk] Deliver fix for Codex bug #47988 GDB C++ testsuite regressions with st200cc-4-0-0-B at rev #17592 with authorization #47992
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgemit.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jul 17 11:19:05 CEST 2008
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

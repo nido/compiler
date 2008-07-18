@@ -7120,10 +7120,14 @@ EMT_Emit_PU (
   // have no debug_line label generated which confuses
   // Cg_Dwarf_Process_PU below
   if (CG_emit_asm_dwarf) {
-    if (Last_Label == 0 || Dwarf_Require_Symbolic_Offsets()) {
-      New_Debug_Line_Set_Label(PC2Addr(PC), TRUE);
+    bool No_Label = FALSE;
+    if (Last_Label == 0) {
+      No_Label = TRUE;
     }
-    if (!Dwarf_Require_Symbolic_Offsets()) {
+    if (Last_Label == 0 || Dwarf_Require_Symbolic_Offsets()) {
+      New_Debug_Line_Set_Label(PC2Addr(PC), No_Label == FALSE);
+    }
+    if (!Dwarf_Require_Symbolic_Offsets() && (No_Label == FALSE)) {
       cache_last_label_info (Last_Label,
 			     Em_Create_Section_Symbol(PU_section),
 			     current_pu,
