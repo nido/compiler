@@ -149,6 +149,10 @@ static const char source_file[] = __FILE__;
 #include "ebo_special.h"
 #include "ebo_util.h"
 
+#ifdef TARG_ST
+#include "cg_affirm.h"
+#endif
+
 #include "config_opt.h" // [HK] for Finite_Math
 #ifdef TARG_ST
 #include "tn.h"
@@ -776,6 +780,12 @@ inline BOOL op_is_needed_globally(OP *op)
 #endif
       return TRUE;
     }
+#ifdef TARG_ST
+    // FdF Copy operation with AFFIRM property are also needed, until
+    // EBO_main (codex #47949)
+    if (EBO_in_pre && OP_Is_Affirm(op))
+      return TRUE;
+#endif
     return FALSE;
   }
 #ifdef TARG_ST
