@@ -7121,10 +7121,10 @@ EMT_Emit_PU (
   // Cg_Dwarf_Process_PU below
   if (CG_emit_asm_dwarf) {
     bool No_Label = FALSE;
-    if (Last_Label == 0) {
+    if (Last_Label == LABEL_IDX_ZERO) {
       No_Label = TRUE;
     }
-    if (Last_Label == 0 || Dwarf_Require_Symbolic_Offsets()) {
+    if (No_Label || Dwarf_Require_Symbolic_Offsets()) {
       New_Debug_Line_Set_Label(PC2Addr(PC), No_Label == FALSE);
     }
     if (!Dwarf_Require_Symbolic_Offsets() && (No_Label == FALSE)) {

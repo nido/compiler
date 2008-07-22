@@ -846,7 +846,7 @@ Em_Get_Symbol_Type (Elf64_Word symindex)
 
 	symtable = (Elf64_Sym *)SCNINFO_buffer(Symtab_Info);
 	if (symindex >= (SCNINFO_size(Symtab_Info) / sizeof(Elf64_Sym)))
-	    ErrMsg (EC_Elf_Idx, symindex, "Em_Get_Symbol_Name");
+	    ErrMsg (EC_Elf_Idx, symindex, "Em_Get_Symbol_Type");
 	return ELF64_ST_TYPE(symtable[symindex].st_info);
     }
     else {
@@ -854,7 +854,7 @@ Em_Get_Symbol_Type (Elf64_Word symindex)
 
 	symtable = (Elf32_Sym *)SCNINFO_buffer(Symtab_Info);
 	if (symindex >= (SCNINFO_size(Symtab_Info) / sizeof(Elf32_Sym)))
-	    ErrMsg (EC_Elf_Idx, symindex, "Em_Get_Symbol_Name");
+	    ErrMsg (EC_Elf_Idx, symindex, "Em_Get_Symbol_Type");
 	return ELF32_ST_TYPE(symtable[symindex].st_info);
     }
 }
