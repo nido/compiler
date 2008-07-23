@@ -1,6 +1,34 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jul 23 09:32:44 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/chauveth/dev-libair-for-gbu
+
+Description:
+------------
+	*  libair modifications for v4 binary utilities
+
+
+Modified Files:
+---------------
+	M      osprey/libair/air/air_services.c
+	M      osprey/libair/air/air_disasm.h
+	M      osprey/libair/air/air_services.h
+	M      osprey/libair/air/air_disasm.c
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_relocs.cxx
+	M      osprey/targinfo/stxp70/isa/isa_registers.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_lits.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jul 23 08:31:52 CEST 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
