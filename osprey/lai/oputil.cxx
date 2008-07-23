@@ -1056,6 +1056,8 @@ else
   if (OP_black_hole(op)) fprintf (TFile, " black_hole");
   if (OP_Get_Flag_Effects(op) & OP_FE_WRITE) fprintf (TFile, " flag_write");
   if (OP_Get_Flag_Effects(op) & OP_FE_READ) fprintf (TFile, " flag_read");
+  if (OP_prologue(op)) fprintf (TFile, " prologue");
+  if (OP_epilogue(op)) fprintf (TFile, " epilogue");
 #endif
 
   if (wn = Get_WN_From_Memory_OP(op)) {

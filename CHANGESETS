@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jul 23 15:40:18 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-48220
+
+Description:
+------------
+	* [trunk] Fix for bug #48220: [DWARF] Incorrect line number information (function entry).
+	Deliver fixes/codex-48220 rev #17665 with authorization branch #48476
+
+	-> Insure that prologue and epilogue flags
+	   are correcly set for corresponding operations
+
+Modified Files:
+---------------
+	M      osprey/lai/oputil.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jul 23 09:32:44 CEST 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
