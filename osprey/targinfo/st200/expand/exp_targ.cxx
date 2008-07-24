@@ -3411,6 +3411,7 @@ Expand_Recip_Sqrt (
  *   Exp_COPY
  *
  *   Generate a register transfer copy from 'src_tn' to 'tgt_tn'.
+ *  Note that this copy is a physical copy rather than a logical one
  * ======================================================================*/
 void
 Exp_COPY (

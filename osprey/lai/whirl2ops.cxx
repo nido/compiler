@@ -5612,7 +5612,16 @@ Handle_ASM (const WN* asm_wn)
       if (TN_register_class(tn) != Register_Class_For_Mtype(WN_rtype(load))) {
 	/* We may need to convert to the correct register class. */
 	TN* tmp = Build_RCLASS_TN (Register_Class_For_Mtype(WN_rtype(load)));
-	Exp_COPY(tmp, tn, &reload_ops);
+
+        /* exp_copy is a physical copy. We need here a logical
+         *   copy. For booleans (guards), it might not be the same.
+         *  see bug #47469 .
+         */
+        if (WN_rtype(load) == MTYPE_B) {
+          Expand_Bool_To_Int(tmp, tn, MTYPE_I4, &reload_ops);
+        } else {
+          Exp_COPY(tmp, tn, &reload_ops);
+        }
 	tn = tmp;
       }
 #endif
