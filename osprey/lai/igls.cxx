@@ -987,6 +987,20 @@ IGLS_Schedule_Region (BOOL before_regalloc)
               Sched->Init(bb, (hbs_type | HBS_CRITICAL_PATH_PREF_LOAD));
               Sched->Schedule_BB(bb, NULL, TRUE);
               break;
+            case Optimized_Double_Load_Sched:
+              Sched->Init(bb, hbs_type, max_sched, NULL, NULL);
+              Sched->Schedule_BB(bb, NULL, TRUE);
+              Sched->Init(bb, hbs_type);
+              Sched->Schedule_BB(bb, NULL, FALSE);
+              Sched->Init(bb, (hbs_type | HBS_CRITICAL_PATH_PREF_LOAD | HBS_PREF_LOAD));
+              Sched->Schedule_BB(bb, NULL, TRUE);
+              break;
+            case Optimized_Load_Sched :
+              Sched->Init(bb, hbs_type, max_sched, NULL, NULL);
+              Sched->Schedule_BB(bb, NULL, TRUE);
+              Sched->Init(bb, (hbs_type | HBS_CRITICAL_PATH_PREF_LOAD | HBS_PREF_LOAD));
+              Sched->Schedule_BB(bb, NULL, TRUE);
+              break;
             }
 #else
           Sched->Init(bb, hbs_type, max_sched, NULL, NULL);

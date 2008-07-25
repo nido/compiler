@@ -921,8 +921,10 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE,"all_scheduler", "all_sched",
     0, 0, 0, &IGLS_Enable_All_Scheduling, NULL },
   
+#ifdef TARG_ST
   { OVK_INT32,	OV_INTERNAL, TRUE,"post_scheduler", "post_sched",
-    2, 0, 5, &LOCS_POST_Scheduling, &LOCS_POST_Scheduling_overriden },
+    2, 0, 7, &LOCS_POST_Scheduling, &LOCS_POST_Scheduling_overriden },
+#endif
 
   // Hyperblock formation (HB) options.
 
@@ -2051,7 +2053,7 @@ CG_Apply_Opt_Level(UINT32 level)
   }
   // TDR: Default to Optimized_Double_Post_Sched schedule for STxP70 in speed mode.
   if (!LOCS_POST_Scheduling_overriden) {
-    LOCS_POST_Scheduling = Optimized_Double_Post_Sched; 
+	  LOCS_POST_Scheduling = Optimized_Double_Load_Sched;
   }
 
 #endif
@@ -2142,7 +2144,7 @@ CG_Apply_Opt_Size(UINT32 level)
   }
   // TDR: Default to Optimized_Post_Sched schedule for STxP70 in size mode.
   if (!LOCS_POST_Scheduling_overriden) {
-    LOCS_POST_Scheduling = Optimized_Post_Sched; 
+	  LOCS_POST_Scheduling = Optimized_Load_Sched; 
   }
 
 #endif

@@ -72,11 +72,16 @@
 #define HBS_FROM_GCM_FROM_BB		0x0800
 #define HBS_FROM_GCM_TO_BB		0x1000
 #define HBS_MINIMIZE_BUNDLES		0x2000
+#ifdef TARG_ST
 #define HBS_HEURISTIC_CRITICAL_PATH     0x4000
 #define HBS_CRITICAL_PATH_PREF_LOAD     0x8000
+#define HBS_PREF_LOAD     			0x10000
 
-
+typedef UINT32 HBS_TYPE;
+#else
 typedef UINT16 HBS_TYPE;
+#endif
+
 
 // Accessors:
 #define OP_VECTOR_element(v,i)	((OP *)VECTOR_element(v,i))

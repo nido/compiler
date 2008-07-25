@@ -1716,6 +1716,15 @@ List_Based_Fwd::Is_OP_Better (OP *cur_op, OP *best_op)
     return (OPSCH_dfsnum(cur_opsch) < OPSCH_dfsnum(best_opsch));
   }
 
+#ifdef TARG_ST
+  // [TDR] - To limit micro-arch effect, we have better schedule 
+  // loads early in the block 
+  if(_hbs_type & HBS_PREF_LOAD) {
+	  if(OP_load(best_op)) return FALSE;
+	  if(OP_load(cur_op)) return TRUE;
+  }
+#endif
+  
   if (_hbs_type & HBS_CRITICAL_PATH) {
     INT cur_slack, best_slack;
     cur_slack = OPSCH_lstart(cur_opsch) - OPSCH_estart(cur_opsch);

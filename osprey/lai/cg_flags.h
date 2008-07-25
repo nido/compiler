@@ -347,6 +347,8 @@ extern BOOL LOCS_Enable_Scheduling;
 #define Double_Post_Sched 3
 #define Optimized_Post_Sched 4
 #define Optimized_Double_Post_Sched 5
+#define Optimized_Load_Sched 6
+#define Optimized_Double_Load_Sched 7
 extern INT32 LOCS_POST_Scheduling;
 #endif 
 
