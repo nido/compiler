@@ -441,3 +441,15 @@ CGEMIT_Qualified_Name(ST *st, vstring *buf)
   }
 }
 #endif
+
+/** 
+ * returns whether END_GROUP (;;) must be preceeded by a \n
+ * 
+ * 
+ * @return 
+ */
+extern bool
+CGEMIT_NewLine_Before_ISA_PRINT_END_GROUP (void)
+{
+  return true;
+}

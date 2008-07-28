@@ -132,7 +132,7 @@ extern char* CGTARG_Modify_Asm_String (char* asm_string,
  *   may have to clean up the asm string 
  * --------------------------------------------------------------------
  */
-extern void CGTARG_Postprocess_Asm_String (char*);
+extern char* CGTARG_Postprocess_Asm_String (char*);
 
 /* ====================================================================
  *                    Code Generation stuff

@@ -4421,7 +4421,6 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
       && (vstr_len(comment) > 0 || strlen(cycle_info) > 0)) {
     fprintf (Output_File, "\t%s %s%s", ASM_CMNT, cycle_info, vstr_str(comment));
   }
-  fputc ('\n', Output_File);
 #else
     fprintf (Output_File, "  %s\n", vstr_str(comment));
 #endif
@@ -4779,6 +4778,16 @@ Assemble_OP (
   if (Assembly || Lai_Code) {
     r_assemble_list ( op, bb );
     if (!Object_Code) words = ISA_EXEC_Unit_Slots(OP_code(op));
+
+#ifdef TARG_ST
+    /* print a newline between instructions in a bundle
+     * for st200, a newline is also required before the ISA_PRINT_END_GROUP
+     * separator.
+     */
+    if (!OP_end_group(op) || CGEMIT_NewLine_Before_ISA_PRINT_END_GROUP()) {
+      fputc ('\n', Output_File);
+    }
+#endif
   }
 
   if (OP_end_group(op) && Assembly) {
@@ -4800,6 +4809,7 @@ Assemble_OP (
 #endif
   }
 
+  
 #if 0
   if (Object_Code) {
     ISA_PACK_INST inst[ISA_PACK_MAX_INST_WORDS];
@@ -4909,7 +4919,7 @@ Generate_Asm_String (
 #endif
   }
 
-  CGTARG_Postprocess_Asm_String(asm_string);
+  asm_string = CGTARG_Postprocess_Asm_String(asm_string);
 
   return asm_string;
 }

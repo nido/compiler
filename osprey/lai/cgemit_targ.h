@@ -119,4 +119,7 @@ extern void CGEMIT_End_File_In_Asm (void);
 // the asm output. Moved from r_qualified_name in cgemit.cxx.
 // The returned string 
 extern void CGEMIT_Qualified_Name(ST *st, vstring *buf);
+
+/* returns whether END_GROUP (;;) must be preceeded by a \n */
+extern bool CGEMIT_NewLine_Before_ISA_PRINT_END_GROUP (void);
 #endif
