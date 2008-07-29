@@ -5615,10 +5615,10 @@ Handle_ASM (const WN* asm_wn)
 
         /* exp_copy is a physical copy. We need here a logical
          *   copy. For booleans (guards), it might not be the same.
-         *  see bug #47469 .
+         *  [see bug #47469 on stxp70_v4 only]
          */
-        if (WN_rtype(load) == MTYPE_B) {
-          Expand_Bool_To_Int(tmp, tn, MTYPE_I4, &reload_ops);
+        if (TN_size(tn) == 1) {  /* boolean */
+          Expand_Bool_To_Int(tmp, tn, WN_rtype(load), &reload_ops);
         } else {
           Exp_COPY(tmp, tn, &reload_ops);
         }
