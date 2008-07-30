@@ -4416,11 +4416,23 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
 #endif
 
 #ifdef TARG_ST
+  if (! CGEMIT_NewLine_Before_ISA_PRINT_END_GROUP() &&
+      OP_end_group(op) && Assembly) {
+    fprintf(Output_File, "\t %s", ISA_PRINT_END_GROUP);
+  }
+
   if ((Assembly || Lai_Code)
       && List_Notes
       && (vstr_len(comment) > 0 || strlen(cycle_info) > 0)) {
-    fprintf (Output_File, "\t%s %s%s", ASM_CMNT, cycle_info, vstr_str(comment));
+      fprintf (Output_File, "\t %s %s%s", ASM_CMNT, cycle_info, vstr_str(comment));
   }
+  fputc ('\n', Output_File);
+
+  if (CGEMIT_NewLine_Before_ISA_PRINT_END_GROUP() &&
+      OP_end_group(op) && Assembly) {
+    fprintf(Output_File, "\t %s\n", ISA_PRINT_END_GROUP);
+  }
+
 #else
     fprintf (Output_File, "  %s\n", vstr_str(comment));
 #endif
@@ -4779,26 +4791,18 @@ Assemble_OP (
     r_assemble_list ( op, bb );
     if (!Object_Code) words = ISA_EXEC_Unit_Slots(OP_code(op));
 
-#ifdef TARG_ST
-    /* print a newline between instructions in a bundle
-     * for st200, a newline is also required before the ISA_PRINT_END_GROUP
-     * separator.
-     */
-    if (!OP_end_group(op) || CGEMIT_NewLine_Before_ISA_PRINT_END_GROUP()) {
-      fputc ('\n', Output_File);
-    }
-#endif
   }
 
   if (OP_end_group(op) && Assembly) {
-    fprintf(Asm_File, "\t %s", ISA_PRINT_END_GROUP);
 #ifdef TARG_ST
     if (Trace_Sched && List_Notes) {
-      fprintf(Asm_File, " %s (bundle %d)", ASM_CMNT, Bundle_Count);
+      fprintf(Asm_File, " %s (bundle %d)\n", ASM_CMNT, Bundle_Count);
       Bundle_Count ++;
     }
-#endif
+#else
+    fprintf(Asm_File, "\t %s", ISA_PRINT_END_GROUP);
     fputc('\n', Asm_File);
+#endif
 #ifdef TARG_ST
     // [SC]: Output symbol after the group.
     if (Symbol_Def_After_Group) {
