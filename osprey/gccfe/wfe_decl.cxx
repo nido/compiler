@@ -2108,7 +2108,7 @@ Traverse_Aggregate_Constructor (
   TY_IDX ty = Get_TY(type);
 
 #ifdef TARG_ST
-  INITV_IDX block_body_initv;
+  INITV_IDX block_body_initv = 0; // VL: Initialization fixes art #44102
 
   /* (cbr) if forward declaration reset the proper ty */
   if (ST_type (st) && ST_type(st) != ty && !TY_size(ST_type(st))) {

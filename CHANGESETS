@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Aug  1 08:54:47 CEST 2008
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-44102
+
+Description:
+------------
+	* [trunk] Fix for bug #44102: [Bluetooth] Segfault in gfecc while compiling some files in Bluetooth_sw (+ assert).
+	Deliver fixes/codex-44102 rev #17781 with authorization branch #49589
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/wfe_decl.cxx
+	M      osprey/g++fe/wfe_decl.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jul 30 16:11:13 CEST 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

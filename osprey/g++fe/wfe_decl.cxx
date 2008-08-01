@@ -2669,7 +2669,7 @@ Traverse_Aggregate_Constructor (
   TY_IDX ty = Get_TY(type);
 
 #ifdef TARG_ST
-  INITV_IDX block_body_initv;
+  INITV_IDX block_body_initv = 0; // VL: Initialization fixes art #44102
 #endif
 
   INITV_IDX last_aggregate_initv_save;
