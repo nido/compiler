@@ -83,6 +83,8 @@ typedef std::pair<BBs, BB_NODE*> TgtOfBBs;
 typedef std::map<BB_NODE*, TgtOfBBs> OldTgtOfBBs;
 typedef OldTgtOfBBs::const_iterator CItOldTgtOfBBs;
 
+typedef std::set<int> BBIdList;   // List of basic block identifiers.
+
 /**
  * Map the identifier of created label with the list of basic blocks, which jump
  * on that label
@@ -94,6 +96,11 @@ static LabelToBBs g_createdLabels;
  * simplification and the simplified target
  */
 static OldTgtOfBBs g_oldTgtOfBBs;
+
+/**
+ * List of suppressed basic blocks.
+ */
+static BBIdList suppressed_bb_set;
 
 //------------------------------------------------------------------------------
 // Tailmerge functions to be targeted declaration
@@ -533,6 +540,7 @@ FinalizeTailmerge(CFG& a_cfg)
 
     a_cfg.Invalidate_and_update_aux_info();
 
+    suppressed_bb_set.clear();
 }
 
 /**
@@ -550,7 +558,7 @@ FinalizeTailmerge(CFG& a_cfg)
 static void
 RemoveUselessLabels(CFG& a_cfg)
 {
-    CItLabelToBBs itLabel;
+    ItLabelToBBs itLabel;
     Labels labelsToRemove;
     for(itLabel = g_createdLabels.begin(); itLabel != g_createdLabels.end();
         ++itLabel)
@@ -608,16 +616,36 @@ CheckLabelUsage(LABEL_IDX label, BB_NODE& a_bb, CFG& a_cfg)
 static void
 RemoveLabels(const Labels& labelsToRemove, CFG& a_cfg)
 {
+    using namespace TAILMERGE_NAMESPACE;   
     CItLabels it;
+
     for(it = labelsToRemove.begin(); it != labelsToRemove.end(); ++it)
         {
-            BB_NODE* bb = a_cfg.Get_bb_from_label(*it);
-            DevAssert(bb && bb->Firststmt() &&
-                      WN_operator(bb->Firststmt()) == OPR_LABEL &&
-                      WN_label_number(bb->Firststmt()) == *it,
-                      ("First statement is not the sought label"));
-            TAILMERGE_NAMESPACE::RemoveOp<CFG, BB_NODE, WN>(a_cfg, *bb,
-                                                            bb->Firststmt());
+            BB_NODE* bb   = a_cfg.Get_bb_from_label(*it);
+            int      bbid = BasicBlockId<CFG, BB_NODE> (a_cfg,*bb);
+
+            DbgPrintTailmerge((debugOutput,"Removing label %d (BB %d)\n",
+             *it, bbid));
+
+            DevAssert(bb,("First statement is not the sought label"));
+
+            // Either the basic block is not empty and we remove
+            // the label,
+            if(!IsEmpty<BB_NODE>(*bb))
+             { DevAssert(WN_operator(bb->Firststmt()) == OPR_LABEL &&
+                         WN_label_number(bb->Firststmt()) == *it,
+                         ("First statement is not the sought label"));
+
+               RemoveOp<CFG, BB_NODE, WN>(a_cfg, *bb, bb->Firststmt());
+             }
+            // or we have to check that this block is in fact a block
+            // that has alreay been suppressed in RemoveBBs routine.
+            else 
+             {   DevAssert(suppressed_bb_set.find(bbid)!=suppressed_bb_set.end(),
+                           ("First statement is not the sought label"));
+             }
+             
+            // In any case, the label is not valid any more.
             bb->Set_labnam(INVALID_LABEL);
         }
 }
@@ -884,15 +912,17 @@ RestoreTrivialPath(CFG& a_cfg, BB_NODE* src, BB_NODE* tgt, BB_NODE* oldTgt,
 {
     WN* op = NULL;
     BB_NODE* newtgt;
+    bool is_jump_op = false;
     using namespace TAILMERGE_NAMESPACE;
     DbgPrintTailmerge((debugOutput, "-> Pred BB%d\n",
                        BasicBlockId<CFG, BB_NODE>(a_cfg, *src)));
     
     if(!IsEmpty<BB_NODE>(*src) && (op = GetLastOp<BB_NODE, WN>(*src)) &&
-       IsJump<CFG, BB_NODE, WN>(op))
+       (is_jump_op = IsJump<CFG, BB_NODE, WN>(op)))
         {
             newtgt = a_cfg.Get_bb_from_label(WN_label_number(op));
-            DbgPrintTailmerge((debugOutput, "-> Has jump\n"));
+            DbgPrintTailmerge((debugOutput, "-> Has jump (%d)\n",
+                              BasicBlockId<CFG,BB_NODE>(a_cfg,*newtgt)));
         }
     else
         {
@@ -902,7 +932,7 @@ RestoreTrivialPath(CFG& a_cfg, BB_NODE* src, BB_NODE* tgt, BB_NODE* oldTgt,
         {
             DbgPrintTailmerge((debugOutput,  "-> restore trivial path\n"));
             bRemove = false;
-            if(op)
+            if(op && is_jump_op)
                 {
                     RemoveOp<CFG, BB_NODE, WN>(a_cfg, *src, op);
                 }
@@ -1078,6 +1108,8 @@ static void
  RemoveBBs<CFG, CNode<BB_NODE, WN>::BasicBlocks>(CFG& a_cfg, CNode<BB_NODE, WN>::BasicBlocks& a_toRemove,
                                                  bool isEasy)
 {
+    using namespace TAILMERGE_NAMESPACE;
+
     if(isEasy)
         {
             CNode<BB_NODE, WN>::ItBasicBlocks it;
@@ -1088,16 +1120,21 @@ static void
                     // The simplier version to handle that suppression is to
                     // set the related basic block as empty
                     if(g_oldTgtOfBBs.find(*it) == g_oldTgtOfBBs.end())
-                        {
-                            (*it)->Set_firststmt(NULL);
-                            (*it)->Set_laststmt(NULL);
+                        { (*it)->Set_firststmt(NULL);
+                          (*it)->Set_laststmt(NULL);
+
+                          // We maintain a set of suppressed bbs for
+                          // RemoveLabels routine. Other solution would be
+                          // to remove the block from g_createdLabels map.
+                          int bbid = BasicBlockId<CFG, BB_NODE>(a_cfg,**it);
+                          suppressed_bb_set.insert(bbid);
                         }
                     //      a_cfg.Remove_bb(*it);
                 }
         }
     // It is complicate to remove empty basic blocks at this points (basic
     // blocks statements are not all set) and a little use.
-    // Deadcode while do the proper job
+    // Deadcode will do the proper job.
 }
 
 template<>
