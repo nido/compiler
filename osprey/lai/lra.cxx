@@ -2061,7 +2061,9 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 	      TN *tn2 = OP_result(op, resnum2);
 	      if (TN_register_class(tn2) == TN_register_class(tn)) {
 		LIVE_RANGE *clr2 = LR_For_TN(tn2);
-		if (LR_ovcoal_root(clr2) == clr_root) {
+		// Note: clr2 == NULL means that tn2 is defined by current op
+		//       -> it will then not belongs to coalescing tree of clr
+		if ((clr2 != NULL) && (LR_ovcoal_root(clr2) == clr_root)) {
 		  // Same coalescing class, need to detach one of them
 		  if (LR_ovcoal_is_ancestor(clr2, clr)) {
 		    Remove_LR_ovcoal_child(LR_ovcoal_parent(clr2), clr2);
