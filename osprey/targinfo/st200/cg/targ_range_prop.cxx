@@ -46,16 +46,6 @@
 #define SWAP_TN(tn1, tn2) do { TN *tmp = tn1; tn1 = tn2; tn2 = tmp; } while (0)
 #define IS_POWER_OF_2(x) ({ __typeof__(x) x_ = x ; x_ && !(x_ & (x_-1)) ; })
 
-static OP *single_use (const RangeAnalysis &range_analysis,
-		       TN *tn)
-{
-  OP_LIST *uses = range_analysis.Uses (tn);
-  if (uses && ! OP_LIST_rest (uses))
-    return OP_LIST_first (uses);
-  else
-    return NULL;
-}
-
 static BOOL no_uses_p (const RangeAnalysis &range_analysis, TN *tn)
 {
   return TN_is_ssa_var (tn) && range_analysis.Uses (tn) == NULL;
@@ -238,9 +228,26 @@ match_addcg (const RangeAnalysis &range_analysis,
       return TRUE;
     }      
   }
+  else if (Range_single_use(range_analysis, opnd_b) &&
+	   rb_in->isZero ()) {
+    if (Range_single_use(range_analysis, opnd_r1) &&
+	r1_in->hasValue () && r1_in->getValue () == 1) {
+      TN *new_b = Build_RCLASS_TN(ISA_REGISTER_CLASS_branch);
+      Exp_Immediate(new_b, Gen_Literal_TN(1, TN_size(new_b)), FALSE, ops);
+      Build_OP (TOP_addcg_b_r_r_b_r, result_r, result_b, Zero_TN, opnd_r2, new_b, ops);
+      return TRUE;
+    }
+    else if (Range_single_use(range_analysis, opnd_r2) &&
+	     r2_in->hasValue () && r2_in->getValue () == 1) {
+      TN *new_b = Build_RCLASS_TN(ISA_REGISTER_CLASS_branch);
+      Exp_Immediate(new_b, Gen_Literal_TN(1, TN_size(new_b)), FALSE, ops);
+      Build_OP (TOP_addcg_b_r_r_b_r, result_r, result_b, Zero_TN, opnd_r1, new_b, ops);
+      return TRUE;
+    }
+  }
   return FALSE;
 }
-
+ 
 static BOOL
 match_mul64h_sequence (const RangeAnalysis &range_analysis,
 		       const OP *l1_op,
@@ -328,7 +335,7 @@ match_convib_sequence (const RangeAnalysis &range_analysis,
   // The single use condition is to mitigate register pressure
   // increase, it is not necessary to enable the transformation.
   if (! l1_op || ! OP_icmp(l1_op)
-      || ! single_use (range_analysis, opnd)) return FALSE;
+      || ! Range_single_use (range_analysis, opnd)) return FALSE;
 
   TOP new_opcode = TOP_result_register_variant(OP_code (l1_op), 0, ISA_REGISTER_CLASS_branch);
   TN *opnd1 = OP_Opnd1 (l1_op);

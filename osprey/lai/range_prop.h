@@ -50,6 +50,7 @@
 
 #include "range_analysis.h"
 
+extern OP *Range_single_use(const RangeAnalysis &range_analysis, TN *tn);
 extern void RangePropagate();
 
 extern BOOL TARG_RangePropagate (const RangeAnalysis &range_analysis,

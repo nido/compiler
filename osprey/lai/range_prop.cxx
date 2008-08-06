@@ -113,6 +113,23 @@ Trace_RangePropagate_End ()
 }
 
 /*
+ * Range_single_use()
+ *
+ * Check if a tn is used only once
+ * and returns the corresponding op
+ * or NULL instead
+ */
+OP *Range_single_use (const RangeAnalysis &range_analysis,
+		       TN *tn)
+{
+  OP_LIST *uses = range_analysis.Uses (tn);
+  if (uses && ! OP_LIST_rest (uses))
+    return OP_LIST_first (uses);
+  else
+    return NULL;
+}
+
+/*
  * op_has_non_ssa_def()
  *
  * Returns true if one of the results is not a SSA variable.
@@ -146,16 +163,47 @@ op_can_be_replaced(OP *op)
 }
 
 static BOOL
-validate_replacement (OP *op,
+validate_replacement (const RangeAnalysis &range_analysis,
+		      OP *op,
 		      OPS *ops)
 {
-  if (OPS_length (ops) != 1
-      || OPs_Are_Equivalent (op, OPS_first (ops))
+  if (OPs_Are_Equivalent (op, OPS_first (ops))
       // Do not replace register copies: they may be
       // completely removed by preferencing later.
       || OP_copy (op)) {
     return FALSE;
   }
+
+
+  // Determine the number n of single-used operands of the op to be replaced,
+  // which are not used in the replacing sequence ops.
+  // Then allow a replacement sequence of at most n + 1 instructions.
+  // This ensures that the replacement sequence will not degrade performance,
+  // relying on the dead-code removal pass to remove the unused ops
+  MEM_POOL pool;
+  MEM_POOL_Initialize (&pool, "local set pool", TRUE);
+  TN_SET *s_use_tns = TN_SET_Create_Empty (OP_opnds(op), &pool);
+
+  for (int i = 0; i < OP_opnds(op); i++) {
+    TN *opnd = OP_opnd(op, i);
+    if (TN_is_register(opnd) && Range_single_use(range_analysis, opnd))
+      s_use_tns = TN_SET_Union1D (s_use_tns, opnd, &pool);
+  }
+
+  OP *opr;
+  FOR_ALL_OPS_OPs_FWD(ops, opr) {
+    for (int i = 0; i < OP_opnds(opr); i++) {
+      TN *opnd = OP_opnd(opr, i);
+      if (TN_is_register(opnd) && TN_SET_MemberP(s_use_tns, opnd))
+	s_use_tns = TN_SET_Difference1D (s_use_tns, opnd);
+    }
+  }
+    
+  if (OPS_length(ops) > TN_SET_Size(s_use_tns) + 1)
+    return FALSE;
+
+  MEM_POOL_Delete (&pool);
+
   // ?? Do not convert register copy to move-immediate.
   // If we do this, we lose the opportunity to remove the
   // register copy.
@@ -180,25 +228,27 @@ validate_replacement (OP *op,
 }
 
 static BOOL
-Try_To_Simplify_Operand0 (OP *op,
+Try_To_Simplify_Operand0 (const RangeAnalysis &range_analysis,
+			  OP *op,
 			  TN *result,
 			  TN *opnd1,
 			  TN *opnd2,
 			  OPS *ops)
 {
   return (EBO_Try_To_Simplify_Operand0 (op, result, opnd1, opnd2, ops)
-	  && validate_replacement (op, ops));
+	  && validate_replacement (range_analysis, op, ops));
 }
     
 static BOOL
-Try_To_Simplify_Operand1 (OP *op,
+Try_To_Simplify_Operand1 (const RangeAnalysis &range_analysis,
+			  OP *op,
 			  TN *result,
 			  TN *opnd1,
 			  TN *opnd2,
 			  OPS *ops)
 {
   return (EBO_Try_To_Simplify_Operand1 (op, result, opnd1, opnd2, ops)
-	  && validate_replacement (op, ops));
+	  && validate_replacement (range_analysis, op, ops));
 }
 
 static TN *
@@ -267,7 +317,7 @@ unneeded_extension (RangeAnalysis &range_analysis,
 		  Gen_Literal_TN (shiftcount, 4, FALSE),
 		  mtype,
 		  dirn, ops);
-    if (validate_replacement (op, ops)) {
+    if (validate_replacement (range_analysis, op, ops)) {
       return TRUE;
     }
   }
@@ -382,7 +432,7 @@ RangePropagateOp (RangeAnalysis &range_analysis,
   // First let target-specific code try it.
 
   if (TARG_RangePropagate (range_analysis, op, &ops)
-      && validate_replacement (op, &ops)) {
+      && validate_replacement (range_analysis, op, &ops)) {
     next = OPS_first (&ops);
     return TRUE;
   }
@@ -410,7 +460,7 @@ RangePropagateOp (RangeAnalysis &range_analysis,
     if (opnd1 && TN_is_register (opnd1)) {
       TN *new_opnd1 = Literal_Value (range_analysis, opnd1);
       if (new_opnd1 &&
-	  Try_To_Simplify_Operand0 (op, result, new_opnd1, opnd2,
+	  Try_To_Simplify_Operand0 (range_analysis, op, result, new_opnd1, opnd2,
 				    &ops)) {
 	next = OPS_first (&ops);
 	return TRUE;
@@ -419,7 +469,7 @@ RangePropagateOp (RangeAnalysis &range_analysis,
     if (opnd2 && TN_is_register (opnd2)) {
       TN *new_opnd2 = Literal_Value (range_analysis, opnd2);
       if (new_opnd2 &&
-	  Try_To_Simplify_Operand1 (op, result, opnd1, new_opnd2,
+	  Try_To_Simplify_Operand1 (range_analysis, op, result, opnd1, new_opnd2,
 				    &ops)) {
 	next = OPS_first (&ops);
 	return TRUE;
@@ -501,7 +551,7 @@ RangePropagateOp (RangeAnalysis &range_analysis,
 	  else
 	    Exp_Immediate (result, opnd1, ! is_signed, &ops);
 	}
-	if (validate_replacement (op, &ops)) {
+	if (validate_replacement (range_analysis, op, &ops)) {
 	  return TRUE;
 	}
       }
@@ -527,7 +577,7 @@ RangePropagateOp (RangeAnalysis &range_analysis,
 	  Exp_COPY (result, selected_opnd, &ops);
 	else
 	  Exp_Immediate (result, selected_opnd, FALSE, &ops);
-	if (validate_replacement (op, &ops)) {
+	if (validate_replacement (range_analysis, op, &ops)) {
 	  return TRUE;
 	}
       }
@@ -544,7 +594,7 @@ RangePropagateOp (RangeAnalysis &range_analysis,
       INT tzcnt = OP_imul(op) ? tzcnt1 + tzcnt2 : Min(tzcnt1, tzcnt2);
       if (tzcnt >= rres->bits ()) {
 	Exp_Immediate (result, Gen_Literal_TN(0, TN_size(result)), FALSE, &ops);	
-	if (validate_replacement (op, &ops)) 
+	if (validate_replacement (range_analysis, op, &ops)) 
 	  return TRUE;
       }
     }
@@ -557,13 +607,13 @@ RangePropagateOp (RangeAnalysis &range_analysis,
       if (rres->hasValue ()) {
 	INT64 value = rres->getValue ();
 	Exp_Immediate (result, Gen_Literal_TN(value, TN_size(result)), FALSE, &ops);	
-	if (validate_replacement (op, &ops)) 
+	if (validate_replacement (range_analysis, op, &ops)) 
 	  return TRUE;
       }
     }
 
     if (match_compare_sub_to_zero (range_analysis, op, &ops)) {
-      if (validate_replacement (op, &ops)) 
+      if (validate_replacement (range_analysis, op, &ops)) 
 	return TRUE;
     }
 
@@ -576,10 +626,11 @@ RangePropagateOp (RangeAnalysis &range_analysis,
       // test if op can reduce to a copy to zero
       if (TN_has_value (opnd2)) {
 	  INT64 leftshift = TN_value (opnd2);
-	  if ( leftshift >= rres->bits() ) 
-	      Exp_Immediate (result, Gen_Literal_TN(0, TN_size(result)), FALSE, &ops);
-	  if (validate_replacement (op, &ops)) {
+	  if ( leftshift >= rres->bits() ) {
+	    Exp_Immediate (result, Gen_Literal_TN(0, TN_size(result)), FALSE, &ops);
+	    if (validate_replacement (range_analysis, op, &ops)) {
 	      return TRUE;
+	    }
 	  }
       } 
     }
@@ -619,7 +670,7 @@ RangePropagateOp (RangeAnalysis &range_analysis,
 	  Expand_Binary_Xor (result, opnd, Gen_Literal_TN(val, TN_size (result)), mtype, &ops);
 	else if (OP_iand(op))
 	  Expand_Binary_And (result, opnd, Gen_Literal_TN(val, TN_size (result)), mtype, &ops);
-	if (validate_replacement (op, &ops)) {
+	if (validate_replacement (range_analysis, op, &ops)) {
 	  return TRUE;
 	}
       }

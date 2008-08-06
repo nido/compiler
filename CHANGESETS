@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Aug  6 16:52:58 CEST 2008
+	Author:    knochelh
+	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
+	Branch:    http://svn.open64.codex.cro.st.com/svnroot/open64/branches/fixes/codex-46701
+
+Description:
+------------
+	* [trunk] Fix for bug #46701: st200 addcg simplification.
+        Deliver fixes/codex-46701 rev #17822 with authorization branch #47455
+
+
+Modified Files:
+---------------
+	M      osprey/lai/range_prop.h
+	M      osprey/lai/range_prop.cxx
+	M      osprey/targinfo/st200/cg/targ_range_prop.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Aug  6 15:50:48 CEST 2008
 	Author:    janiny
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
