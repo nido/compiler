@@ -687,7 +687,7 @@ static OPTION_DESC Options_CG[] = {
     "activate special phase of load immediat commonalization" },
   { OVK_BOOL, 	OV_INTERNAL, TRUE, "automod", "",
     TRUE, 0, 0, &CG_AutoMod, &CG_AutoMod_overridden },
-  { OVK_BOOL,   OV_INTERNAL, TRUE, "automod_relax_pdom", "",
+  { OVK_BOOL,   OV_INTERNAL, TRUE, "relax_automod_pdom", "",
     TRUE, 0, 0, &CG_AutoMod_RelaxPdom, &CG_AutoMod_RelaxPdom_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "tailmerge", "", 
     0, 0, 255,	&CG_tailmerge, &CG_tailmerge_overridden,
@@ -1470,6 +1470,7 @@ Configure_CG_Options(void)
       }
     }
 
+#ifdef TARG_STxP70
   if ((Opt_Level >= 2) && !CG_AutoMod_overridden) {
     CG_AutoMod = TRUE;
   }
@@ -1477,6 +1478,9 @@ Configure_CG_Options(void)
   if (!CG_AutoMod_RelaxPdom_overridden) {
     CG_AutoMod_RelaxPdom = FALSE;
   }
+#else
+  CG_AutoMod = FALSE;
+#endif
 
 #else
   if (CG_opt_level > 2 && !OPT_unroll_size_overridden )

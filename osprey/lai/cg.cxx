@@ -802,10 +802,10 @@ CG_Generate_Code(
       EBO_Process_Region (region ? REGION_get_rid(rwn) : NULL);
 #ifdef TARG_ST
       if (CG_AutoMod) {
-          GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
-	Perform_AutoMod_Optimization();
-	EBO_Process_Region (region ? REGION_get_rid(rwn) : NULL);
-	GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
+        GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
+        Perform_AutoMod_Optimization();
+        EBO_Process_Region (region ? REGION_get_rid(rwn) : NULL);
+        GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
       }
 #endif
 #if defined TARG_IA64 || (defined TARG_ST && defined SUPPORTS_PREDICATION)

@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Aug  8 11:04:26 CEST 2008
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lv21/dev-automod-enh
+
+Description:
+------------
+	* [trunk] Deliver lv21/dev-automod-enh rev #17848 with authorization branch #48519
+          Integration of automod code as factyorized by Francois. Also integrates a fix
+          for bug #49724 (spurious warning when using -CG:automod option)
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cg_automod.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Aug  6 17:40:43 CEST 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
