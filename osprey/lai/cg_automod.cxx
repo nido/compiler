@@ -53,6 +53,52 @@ Opnd_value_in_range(TOP topcode, INT idx, INT64 val) {
 }
 
 // *****************************************************************************
+// VL - 2008/08/08
+// This function checks if the head of a loop has more than one predecessor
+// in the loop itself. In such a case, this may indicate that nested loops
+// share the same head block, which may cause underlying assumptions to be 
+// unrelevant (see esp. BB_loop_head_bb comparison in Memop_to_Incrop). 
+// This was motivated by weird CFG/loop shapes exposed with IPA on STxP70, 
+// EFR/Lsp_lsf function, recorded as #49789.
+                                                                                                 
+BOOL Is_WellFormed_Loop(BB* loop_head)
+{
+  BBLIST *bl;
+  BB* loc_bb;
+  BB* loc_head;
+  int num_pred=0;
+  int i;
+                                                                                                                 
+  // Initially, the buggy case was exposed in two inner loops.
+  // Though, we want this checking to be effective in any case, 
+  // thus to be applied even if not the innermost loop.
+  //if (!BB_innermost(head)) return TRUE;
+
+  // Checks all predecessors of loop head...
+  FOR_ALL_BB_PREDS (loop_head, bl) {
+    loc_bb=BBLIST_item(bl);
+
+    if( BB_loop_head_bb(loc_bb) && !BB_loophead(loc_bb)) {
+      loc_head = BB_loop_head_bb(loc_bb);
+
+      // a predecessor of loop head is detected inside loop
+      if (loc_head==loop_head) {
+        // fprintf(TFile, "Loop with head BB %d reached from loop block %d\n", 
+        //                                    BB_id(loop_head), BB_id(loc_bb));
+        num_pred++;
+      }
+    }
+  }
+
+  // We have more than one branche from loop body to loop head
+  if(num_pred>1) {
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+// *****************************************************************************
 // Hot fix for bug #43867, TTh and VL, 2008/05/13
                                                                                                  
 // This function will return FALSE if post domination is not relevant for
@@ -1075,6 +1121,10 @@ void Perform_AutoMod_Optimization() {
 
     // Restrict to innermost loop to avoid processing large amount of code
     // if (!BB_innermost(head)) continue;
+
+    // Checkings accurate and transformation safe only in well formed loop/nest. 
+    // See further comments in function definition.
+    if (!Is_WellFormed_Loop(head)) continue;
 
     BB_REGION bbRegion(LOOP_DESCR_bbset(loop), &loop_descr_pool);
 

@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Aug 18 10:01:42 CEST 2008
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-49798
+
+Description:
+------------
+	* [trunk] Fix for bug #49798: [IPA-xP70] Incorrect automod in lsp_lsf EFR routine (IPA activated)..
+	Deliver fixes/codex-49798 rev #17869 with authorization branch #50038
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_automod.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Aug  8 11:04:26 CEST 2008
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
