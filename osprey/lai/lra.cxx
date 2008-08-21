@@ -1888,6 +1888,14 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
         LRA_TN_Allocate_Register (tn, REGISTER_UNDEFINED);
         if (LR_def_cnt(clr) == 0) {
 
+#ifdef TARG_ST
+	  if (in_lra && !TN_is_dedicated(tn)) {
+	    // FdF 20080618: Set an assert, this case always mean
+	    // wrong transformation.
+	    Is_True(0, ("TN%d(PREG%d) used before definition in BB:%d",
+			TN_number(tn), TN_To_PREG(tn), BB_id(bb)));
+	  }
+#endif
 	  if (!OP_dummy(op) && in_lra && (!BB_entry(bb) || (TFile != stdout))) {
 	    /* This can happen only if we have a use before a definition. */
             /* Note: ignore things in the first block, where we may

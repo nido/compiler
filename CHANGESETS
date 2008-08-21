@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Aug 21 14:20:38 CEST 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/ferriere/dev-warnlra
+
+Description:
+------------
+	* [trunk] In debug mode, add an assertion on lra warning 'used before definition'
+	Deliver ferriere/dev-warnlra rev #17908 with authorization branch #46692
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_ssa.cxx
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/lra.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Aug 21 13:59:03 CEST 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

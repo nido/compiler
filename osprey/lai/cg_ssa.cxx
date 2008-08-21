@@ -4427,7 +4427,14 @@ SSA_Remove_Pseudo_OPs (
 	  //	  Print_OP_No_SrcLine(op);
 	}
 	OPS ops = OPS_EMPTY;
-	Expand_Copy(OP_result(op, 0), OP_opnd(op, 0), OP_opnd(op, 1), &ops);
+	// FdF 20080704: Do not lose the UNC_DEF property that may
+	// have been set when building the congurence classes.
+	if (OP_cond_def_kind(op) == OP_ALWAYS_UNC_DEF) {
+	  Exp_COPY(OP_result(op, 0), OP_opnd(op, 1), &ops);
+	  Set_OP_ssa_move(OPS_last(&ops));
+	}
+	else
+	  Expand_Copy(OP_result(op, 0), OP_opnd(op, 0), OP_opnd(op, 1), &ops);
 	BB_Remove_Op(bb, op);
 	OP *prev_next = next_op;
 	next_op = OPS_first(&ops);

@@ -1508,7 +1508,8 @@ EBO_delete_subset_mem_op(
     }
 
 #ifdef TARG_ST
-    EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False (op, OP_find_opnd_use(op, OU_predicate)),
+    EBO_Exp_COPY(OP_cond_def_kind(op) == OP_ALWAYS_UNC_DEF ? NULL : OP_Predicate(op),
+		 OP_Pred_False (op, OP_find_opnd_use(op, OU_predicate)),
                  succ_result, pred_result, &ops);
 #else
     EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL),
@@ -2294,9 +2295,9 @@ delete_memory_op (
 
     for (i = 0; i < OP_results(op); i++) {
 #ifdef TARG_ST
-      EBO_Exp_COPY(predicate_tn, 
-                   OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                   OP_result(op, i), OP_result(opinfo->in_op, i), &ops);
+      EBO_Exp_COPY(OP_cond_def_kind(op) == OP_ALWAYS_UNC_DEF ? NULL : predicate_tn, 
+		   OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
+		   OP_result(op, i), OP_result(opinfo->in_op, i), &ops);
 #else
       EBO_Exp_COPY(predicate_tn, OP_result(op, i), OP_result(opinfo->in_op, i), &ops);
 #endif
@@ -2393,7 +2394,7 @@ delete_memory_op (
 #ifdef TARG_ST
     // Handle multi ops.
     for (i = 0; i < OP_results(op); i++) {
-      EBO_Exp_COPY(predicate_tn,
+      EBO_Exp_COPY(OP_cond_def_kind(op) == OP_ALWAYS_UNC_DEF ? NULL : predicate_tn,
                    OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
                    OP_result(op, i), OP_opnd(opinfo->in_op, storeval_idx+i), &ops);
     }
