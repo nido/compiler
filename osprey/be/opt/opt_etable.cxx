@@ -395,6 +395,10 @@ EXP_OCCURS::Init(void)
   _temp._temp_cr = NULL;  // also clear def_occur as a side effect
   Set_rehash_cost(0);
   Set_Next(NULL);
+#ifdef TARG_ST
+  // FdF 20080528: PRE on Iload/Istore for zero offset
+  Set_offset(0);
+#endif
 }
 
 STMTREP*
@@ -2251,7 +2255,7 @@ ETABLE::Alloc_and_generate_cur_expr(const CODEREP *result_expr,
   Set_phi_pred_cr( nth_pred, newcr );
 
   Is_True(Def_before_use(newcr, nth_pred),
-	  ("ETABLE::Alloc_and_generate_cur_expr: Generated use before def"));
+  	  ("ETABLE::Alloc_and_generate_cur_expr: Generated use before def"));
 
   return newcr;
 }
@@ -2339,6 +2343,45 @@ ETABLE::Perform_deferred_ocopy_and_get_new_exprs(EXP_WORKLST *const worklist)
 	    worklist->Pre_kind() == PK_LPRE,
 	    ("ETABLE::Perform_deferred_ocopy_and_get_new_exprs: "
 	     "Found store, but store isn't inserted"));
+#ifdef TARG_ST
+    // FdF 20080528: PRE on Iload/Istore for zero offset
+    CODEREP *rhs = stmt->Rhs();
+    // It may be the case that worklist->Exp() was already an ADD with an constant offset:
+    //     LDID I4 I4 sym2v65535 0 ty=802  <u=0 cr53> flags:0xa b=-1
+    //   LDC I4 2097152 <u=0 cr19> flags:0x0 b=-1
+    // I4ADD <u=1 cr59> isop_flags:0x40 flags:0x1 b=E2
+    //ILOAD 128 
+    if ((occ->Get_offset() != 0) &&
+	(occ->Occurrence()->Opr() == OPR_ADD) &&
+	(occ->Occurrence()->Opnd(1)->Kind() == CK_CONST))
+      Is_True((rhs->Opr() == OPR_ADD) &&
+	      (rhs->Opnd(1)->Kind() == CK_CONST) &&
+	      (rhs->Opnd(1)->Const_val() == occ->Get_offset()+occ->Occurrence()->Opnd(1)->Const_val()),
+	      ("ETABLE::Perform_deferred_ocopy_and_get_new_exprs: "
+	       "Expression does not match updated expression for PRE on Iload/Istore"));
+    else {
+      if (occ->Get_offset() != 0) {
+	Is_True((rhs->Opr() == OPR_ADD) &&
+		(rhs->Opnd(1)->Kind() == CK_CONST) &&
+		(rhs->Opnd(1)->Const_val() == occ->Get_offset()),
+		("ETABLE::Perform_deferred_ocopy_and_get_new_exprs: "
+		 "Expression does not match updated expression for PRE on Iload/Istore"));
+	rhs = rhs->Opnd(0);
+      }
+      Is_True(worklist->Is_the_same_as(rhs) ||
+	      ((rhs->Opr() == OPR_CVT ||
+		rhs->Opr() == OPR_CVTL) &&
+	       worklist->Is_the_same_as(rhs->Opnd(0))),
+	      ("ETABLE::Perform_deferred_ocopy_and_get_new_exprs: "
+	       "Store to temp must save current expression"));
+      Is_True(occ->Occurrence() == rhs ||
+	      ((rhs->Opr() == OPR_CVT ||
+		rhs->Opr() == OPR_CVTL) &&
+	       occ->Occurrence() == rhs->Opnd(0)),
+	      ("ETABLE::Perform_deferred_ocopy_and_get_new_exprs: "
+	       "Occurrence coderep must match RHS of statement"));
+    }
+#else
     Is_True(worklist->Is_the_same_as(stmt->Rhs()) ||
 	    ((stmt->Rhs()->Opr() == OPR_CVT ||
 	      stmt->Rhs()->Opr() == OPR_CVTL) &&
@@ -2351,7 +2394,7 @@ ETABLE::Perform_deferred_ocopy_and_get_new_exprs(EXP_WORKLST *const worklist)
 	     occ->Occurrence() == stmt->Rhs()->Opnd(0)),
 	    ("ETABLE::Perform_deferred_ocopy_and_get_new_exprs: "
 	     "Occurrence coderep must match RHS of statement"));
-
+#endif
     // Now stmt is the inserted store to temp. We need to rehash its
     // RHS and Bottom_up_cr() the result if it got folded.
     BOOL     tree_changed = occ->Rehash_changed_expr();
@@ -3235,6 +3278,14 @@ ETABLE::Recursive_rehash_and_replace(CODEREP           *x,
       expr = Recursive_rehash_and_replace(x->Istr_base(), occur, repl, 
 					  FALSE, depth+1);
       if (expr) {
+#ifdef TARG_ST
+	// FdF 20080528: PRE on Iload/Istore for zero offset
+	if (x->Istr_base() == occur->Occurrence() && (occur->Get_offset() != 0)) {
+	  if (Tracing())
+	    fprintf(TFile ,"Set_offset for Istr_base from %d to %d\n", x->Offset(), x->Offset()-occur->Get_offset());
+	  cr->Set_offset(x->Offset()-occur->Get_offset());
+	}
+#endif
 	need_rehash = TRUE;
 	cr->Set_istr_base(expr);
 	cr->Set_ilod_base(NULL);
@@ -3246,6 +3297,14 @@ ETABLE::Recursive_rehash_and_replace(CODEREP           *x,
       expr = Recursive_rehash_and_replace(x->Ilod_base(), occur, repl,
 					  FALSE, depth+1);
       if (expr) {
+#ifdef TARG_ST
+	// FdF 20080528: PRE on Iload/Istore for zero offset
+	if (x->Ilod_base() == occur->Occurrence() && (occur->Get_offset() != 0)) {
+	  if (Tracing())
+	    fprintf(TFile ,"Set_offset for Ilod_base from %d to %d\n", x->Offset(), x->Offset()-occur->Get_offset());
+	  cr->Set_offset(x->Offset()-occur->Get_offset());
+	}
+#endif
 	need_rehash = TRUE;
 	cr->Set_ilod_base(expr);
 	cr->Set_istr_base(NULL); 
@@ -3489,11 +3548,15 @@ ETABLE::Replace_occurs(EXP_OCCURS *occur, OCCUR_REPLACEMENT *repl)
 	  stmt->Rhs()->E_num() != occur->Occurrence()->E_num())
       { 
 	CODEREP *new_rhs = Rehash_and_replace(stmt->Rhs(), occur, repl, FALSE);
-
+#ifdef TARG_ST
+	// FdF 20080528: PRE on Iload/Istore for zero offset
+	if (new_rhs != NULL)
+	  stmt->Set_rhs(new_rhs);
+#else
 	Is_True(new_rhs != NULL,
 		("ETABLE::Replace_occurs: RHS must need rehash"));
 	stmt->Set_rhs(new_rhs);
-
+#endif
 	// Let the IV update status of the statement be reanalyzed.
 	//
 	stmt->Reset_iv_update();

@@ -386,6 +386,16 @@ CSE::Save_real_occurrence(EXP_OCCURS *occur)
 {
   CODEREP *tempcr = occur->Temp_cr();
   CODEREP *rhs    = occur->Occurrence();
+
+#ifdef TARG_ST
+  // FdF 20080528: PRE on Iload/Istore for zero offset
+  if (occur->Get_offset() != 0) {
+    if (Tracing())
+      fprintf(TFile, "Save_real_occurrence: Generating expression with offset %d\n", occur->Get_offset());
+    OPCODE addop = OPCODE_make_op(OPR_ADD, rhs->Dtyp(), MTYPE_V);
+    rhs = Htable()->Add_bin_node_and_fold(addop, rhs, Htable()->Add_const(rhs->Dtyp(), occur->Get_offset()));
+  }
+#endif
   
   /* CVTL-RELATED start (correctness) */
   // Add necessary CVT/CVTL
@@ -1193,6 +1203,70 @@ CSE::Do_cse_pass_1(void)
     }
 }
 
+#ifdef TARG_ST
+// FdF 20080528: PRE on Iload/Istore for zero offset
+#define ABS(a) (((a) >= 0) ? a : -a)
+#define NEAREST_ZERO(a, b) ((ABS(a) <= ABS(b)) ? a : b)
+
+// Check that all uses of cse_cr are on a IVAR, and compute the
+// nearest to zero value of the offset used on these accesses.
+static BOOL
+CR_in_ivar_only(CODEREP *cr, CODEREP *occ_cr, int *nearest_zero_offset)
+{
+  // Used elsewhere than an Iload/Istore
+  if (cr == occ_cr)
+    return FALSE;
+
+  switch(cr->Kind()) {
+  case CK_CONST:
+  case CK_RCONST:
+  case CK_LDA:
+  case CK_VAR:
+    // Not used
+    return TRUE;
+
+  case CK_IVAR: {
+    BOOL ivar_only = TRUE;
+    const OPERATOR ivar_opr = cr->Opr();
+    if (ivar_opr == OPR_PARM)
+      ivar_only = CR_in_ivar_only(cr->Ilod_base(), occ_cr, nearest_zero_offset);
+    else if (cr->Ilod_base()) {
+      if (cr->Ilod_base() == occ_cr)
+	// Used on Iload, adjust nearest zero offset
+	*nearest_zero_offset = NEAREST_ZERO(*nearest_zero_offset, cr->Offset());
+      else
+	// Check usage in child
+	ivar_only = CR_in_ivar_only(cr->Ilod_base(), occ_cr, nearest_zero_offset);
+    }
+    else
+      FmtAssert(0, ("CR_in_ivar_only: Cannot have Istr_base"));
+    if (ivar_only && (ivar_opr == OPR_MLOAD)) {
+      // Check usage on child
+      if (cr->Mload_size())
+	ivar_only = CR_in_ivar_only(cr->Mload_size(), occ_cr, nearest_zero_offset);
+      else
+	FmtAssert(0, ("CR_in_ivar_only: Cannot have Mstore_size"));
+    }
+    if (ivar_only && (ivar_opr == OPR_ILOADX))
+      ivar_only = CR_in_ivar_only(cr->Index(), occ_cr, nearest_zero_offset);
+    return ivar_only;
+  }
+
+  case CK_OP: {
+    // Check usage on children
+    for (INT32 i=0; i < cr->Kid_count(); i++) 
+      if (!CR_in_ivar_only(cr->Opnd(i), occ_cr, nearest_zero_offset))
+	return FALSE;
+    return TRUE;
+  }
+
+  default:
+    Is_True(0, ("CR_is_only_used_in_ivar: unexpected coderep kind"));
+    return FALSE;
+  }
+}
+#endif
+
 // ======================================================================
 // Do_cse_pass_2 - second pass of main routine for this file that generates
 // code to save expressions to temps and later reload them; it also generates
@@ -1212,12 +1286,86 @@ CSE::Do_cse_pass_2(void)
   CODEREP *tempcr;
   STMTREP *savestmt;
 
+#ifdef TARG_ST
+  // FdF 20080528: PRE on Iload/Istore for zero offset
+  // Add a pass to check if all real occurences are used in an
+  // Iload/Istore. If true, and none has a zero offset, modifies the
+  // new expression so that one operation has a zero offset
+
+  BOOL ivar_only = FALSE;
+  INT32 nearest_zero_offset = 0;
+
+  if ((WOPT_Pre_LoadStore_offset > 0) &&
+      (_worklist->Exp()->Kind() == CK_OP) &&
+      ((_worklist->Exp()->Opr() == OPR_ADD) ||
+       (_worklist->Exp()->Opr() == OPR_SUB))) {
+    // FdF 20080527: More work is needed to handle expressions other
+    // than ADD/SUB
+    ivar_only = TRUE;
+    nearest_zero_offset = INT_MAX;
+
+    EXP_ALL_OCCURS_ITER exp_occ_ivar_iter(_worklist->Real_occurs().Head(),
+					  NULL, /* no LFTR */
+					  NULL, /* no PHI */
+					  NULL, /* no PHI Pred */
+					  NULL /* no exit occur*/ );
+
+    FOR_ALL_NODE(occur, exp_occ_ivar_iter, Init()) {
+      switch (occur->Occ_kind()) {
+      case EXP_OCCURS::OCC_REAL_OCCUR:
+	// Recursive traversal of LHS and RHS of enclose_stmt
+	if (occur->Occurs_as_hoisted())
+	  ivar_only = FALSE;
+	else {
+	  STMTREP *stmt = occur->Enclosed_in_stmt();
+	  BB_NODE *bb = stmt->Bb();
+	  if (ivar_only &&
+	      (stmt->Rhs() != NULL) &&
+	      !CR_in_ivar_only(stmt->Rhs(), occur->Occurrence(), &nearest_zero_offset)) {
+	    ivar_only = FALSE;
+	  }
+	  if (ivar_only && (stmt->Lhs() != NULL)) {
+	    if (OPERATOR_is_scalar_istore (stmt->Opr()) || stmt->Opr() == OPR_ISTOREX ||
+		stmt->Opr() == OPR_MSTORE)
+	      if (!CR_in_ivar_only(stmt->Lhs()->Istr_base(), occur->Occurrence(), &nearest_zero_offset))
+		ivar_only = FALSE;
+	  }
+	  if (ivar_only && (stmt->Opr() == OPR_MSTORE))
+	    if (!CR_in_ivar_only(stmt->Lhs()->Mstore_size(), occur->Occurrence(), &nearest_zero_offset))
+	      ivar_only = FALSE;
+	  if (ivar_only && (stmt->Opr() == OPR_ISTOREX))
+	    if (!CR_in_ivar_only(stmt->Lhs()->Index(), occur->Occurrence(), &nearest_zero_offset))
+	      ivar_only = FALSE;
+	}
+	break;
+      default:
+	break;
+      }
+      if (!ivar_only)
+	break;
+    }
+
+    if (!ivar_only ||
+	(nearest_zero_offset < -(INT32)WOPT_Pre_LoadStore_offset) ||
+	(nearest_zero_offset > WOPT_Pre_LoadStore_offset))
+      nearest_zero_offset = 0;
+
+    if (nearest_zero_offset != 0) {
+      if (Tracing())
+	fprintf(TFile, "ivar_only is %s, nearest_zero_offset = %d\n", ivar_only ? "TRUE" : "FALSE", nearest_zero_offset);
+    }
+  }
+#endif
+
   FOR_ALL_NODE(occur, exp_occ_iter, Init()) {
 
     switch (occur->Occ_kind()) {
 
       case EXP_OCCURS::OCC_REAL_OCCUR:
-
+#ifdef TARG_ST
+	// FdF 20080528: PRE on Iload/Istore for zero offset
+	occur->Set_offset(nearest_zero_offset);
+#endif
 	if (occur->Sunk_lvalue()) {
 	  if (occur->Occurs_as_lvalue()) {
 	    // sunk def (LPRE only), do nothing (SPRE will delete it later
@@ -1346,6 +1494,10 @@ CSE::Do_cse_pass_2(void)
 
       case EXP_OCCURS::OCC_PHI_PRED_OCCUR:
 	{
+#ifdef TARG_ST
+	  // FdF 20080528: PRE on Iload/Istore for zero offset
+	  occur->Set_offset(nearest_zero_offset);
+#endif
 	  if (occur->Save_to_temp()) {
 	    Is_True(occur->Def_occur() == NULL, 
 		("CSE::Do_cse_pass_2: at a save location, version's OCCUR not NULL"));

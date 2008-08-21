@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Aug 21 13:59:03 CEST 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-45624
+
+Description:
+------------
+	* [trunk] Fix for bug #45624: [Automod, MP1x] Non-optimal use of automod addressing modes
+	Deliver fixes/codex-45624 rev #r17904 with authorization branch #48478
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_etable.cxx
+	M      osprey/be/opt/opt_etable.h
+	M      osprey/be/opt/opt_cse.cxx
+	M      osprey/common/com/config_wopt.cxx
+	M      osprey/common/com/config_wopt.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Aug 18 10:01:42 CEST 2008
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
