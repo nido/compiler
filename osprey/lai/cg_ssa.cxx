@@ -4428,7 +4428,7 @@ SSA_Remove_Pseudo_OPs (
 	}
 	OPS ops = OPS_EMPTY;
 	// FdF 20080704: Do not lose the UNC_DEF property that may
-	// have been set when building the congurence classes.
+	// have been set when building the congruence classes.
 	if (OP_cond_def_kind(op) == OP_ALWAYS_UNC_DEF) {
 	  Exp_COPY(OP_result(op, 0), OP_opnd(op, 1), &ops);
 	  Set_OP_ssa_move(OPS_last(&ops));

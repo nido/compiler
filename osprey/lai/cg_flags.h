@@ -364,6 +364,7 @@ extern BOOL LRA_minregs;
 extern BOOL LRA_merge_extract;
 extern BOOL LRA_resched_check;
 extern BOOL LRA_overlap_coalescing;
+extern BOOL LRA_no_uninit_strict_check;
 #endif
 
 /* GRA: */

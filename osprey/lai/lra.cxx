@@ -1889,7 +1889,7 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
         if (LR_def_cnt(clr) == 0) {
 
 #ifdef TARG_ST
-	  if (in_lra && !TN_is_dedicated(tn)) {
+	  if (in_lra && !LRA_no_uninit_strict_check && !OP_prologue(op) && !TN_is_dedicated(tn)) {
 	    // FdF 20080618: Set an assert, this case always mean
 	    // wrong transformation.
 	    Is_True(0, ("TN%d(PREG%d) used before definition in BB:%d",
