@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Aug 25 17:36:27 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-49903
+
+Description:
+------------
+	* [trunk] Fix for bug #49903: instruction scheduler does not hide the load latency.
+	Deliver fixes/codex-49903 rev #17946 with authorization branch #49976
+
+
+Modified Files:
+---------------
+	M      osprey/lai/hb_sched.cxx
+	M      osprey/lai/op.h
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/st200/cg/targ_op.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Aug 22 13:51:03 CEST 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

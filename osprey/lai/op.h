@@ -1291,6 +1291,7 @@ extern BOOL CGTARG_Is_Long_Latency (TOP *opcode);
 #endif
 
 #ifdef TARG_ST
+extern BOOL OP_is_ext_op(OP *op);
 extern BOOL OP_Is_Barrier(OP *op);
 extern BOOL OP_Is_Counted_Loop(OP* op);
 extern BOOL OP_Has_Latency(OP *op);

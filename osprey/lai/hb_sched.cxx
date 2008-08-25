@@ -1527,6 +1527,13 @@ HB_Schedule::Put_Sched_Vector_Into_BB (BB *bb, BBSCH *bbsch, BOOL is_fwd)
       BB_Append_Op(bb, OP_VECTOR_element(_sched_vector, i));
     }
   }
+#ifdef TARG_ST
+  //[TDR] - Fix for bug #49903, When entering a new BB, computed_max_sched must be updated
+  // to the stored value of _max_sched otherwise computed_max_sched may end up with value
+  // of previous block
+  else 
+      computed_max_sched=_max_sched;
+#endif
 }
 
 // ======================================================================
@@ -1720,8 +1727,11 @@ List_Based_Fwd::Is_OP_Better (OP *cur_op, OP *best_op)
   // [TDR] - To limit micro-arch effect, we have better schedule 
   // loads early in the block 
   if(_hbs_type & HBS_PREF_LOAD) {
-	  if(OP_load(best_op)) return FALSE;
-	  if(OP_load(cur_op)) return TRUE;
+      // [TDR] - Fix for bug #49718 : The micro-arch limitation
+      // only apply on core load/store. Also, fpx instruction
+      // induce long latency so should be treated in the standard flow  
+      if (!OP_is_ext_op(best_op) && OP_load(best_op)) return FALSE;
+      if (!OP_is_ext_op(cur_op)  && OP_load(cur_op)) return TRUE;
   }
 #endif
   
