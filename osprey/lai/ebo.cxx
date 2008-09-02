@@ -1759,6 +1759,8 @@ hoist_predicate_of_duplicate_complement (
                     &ops1);
 #endif
       OP_srcpos(OPS_last(&ops1)) = OP_srcpos(pred_op);
+      //TDR - Fix for bug #50656: Set the property OP_ALWAYS_UNC_DEF to the first definition
+      Set_OP_cond_def_kind(OPS_last(&ops1), OP_ALWAYS_UNC_DEF);
       if (EBO_in_loop) EBO_Set_OP_omega (OPS_last(&ops1), predicate1_info, opinfo->actual_opnd[val_idx]);
       OPS_Append_Ops( &ops, &ops1);
 
@@ -1776,6 +1778,7 @@ hoist_predicate_of_duplicate_complement (
                     &ops1);
 #endif
       OP_srcpos(OPS_last(&ops1)) = OP_srcpos(op);
+
       if (EBO_in_loop) EBO_Set_OP_omega (OPS_last(&ops1), predicate2_info, opnd_tninfo[val_idx]);
       OPS_Append_Ops( &ops, &ops1);
 #ifdef TARG_ST
