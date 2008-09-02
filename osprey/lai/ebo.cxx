@@ -2807,6 +2807,66 @@ EBO_delete_duplicate_op (
 }
 
 #ifdef TARG_ST
+  
+static
+/* =====================================================================
+ *    EBO_Constant_Offset_Propagate
+ *
+ *    Look for constant propagation in offsets
+ * =====================================================================
+ */
+BOOL
+EBO_Constant_Offset_Propagate(
+    OP *op,
+    TN **opnd_tn,
+    EBO_TN_INFO **opnd_tninfo
+)
+{
+    INT l0_offset_idx;
+    TN *tn_offset;
+    BB *bb = OP_bb(op);
+    INT opndnum = OP_opnds(op);
+    TOP opcode = OP_code(op);
+
+#ifdef TARG_ST200
+    if (!OP_address(op)) return FALSE;
+#else
+    if (!OP_load(op) && !OP_store(op) && !OP_prefetch(op))
+        return FALSE;
+#endif
+
+    if (EBO_Trace_Execution) {
+        INT i;
+        fprintf(TFile, "%sin BB:%d Propagate offset constant value OP :- %s ", EBO_trace_pfx, BB_id(bb), TOP_Name(OP_code(op)));
+        for (i = 0; i < opndnum; i++) {
+            fprintf(TFile, " ");
+            Print_TN(opnd_tn[i], FALSE);
+        }
+        fprintf(TFile, "\n");
+    }
+    if (OP_automod(op))    return FALSE;
+
+    l0_offset_idx = OP_find_opnd_use(op, OU_offset);
+    if (l0_offset_idx < 0) return FALSE; 
+
+    tn_offset = opnd_tn[l0_offset_idx];
+    if(!TN_Has_Value(tn_offset)) return FALSE; 
+    if(!TN_Is_Constant(tn_offset)) return FALSE;
+    if(!TN_is_register(OP_Offset(op))) return FALSE;
+    OP *new_op = Dup_OP(op);
+    TOP new_opcode = TOP_opnd_immediate_variant(opcode, l0_offset_idx, TN_value(tn_offset));
+    //TDR : We assert in case of undef imm variant
+    DevAssert((new_opcode != TOP_UNDEFINED), ("No Immediate variant valid for top %s with offset 0x%x", TOP_Name(OP_code(op)),TN_value(tn_offset)));
+    if (new_opcode == TOP_UNDEFINED) return FALSE;
+    Set_OP_opr(new_op, new_opcode);
+    OP_srcpos(new_op) = OP_srcpos(op);
+    Set_OP_opnd (new_op, l0_offset_idx, tn_offset);
+    if (OP_memory(op)) Copy_WN_For_Memory_OP(new_op, op);
+    BB_Insert_Op_After(bb, op, new_op);
+    if (EBO_Trace_Optimization) fprintf(TFile, "Propagate offset constant value\n");
+    return TRUE;
+}
+  
 /* =====================================================================
  *    EBO_Address_Sequence
  *
@@ -6298,8 +6358,12 @@ Find_BB_TNs (BB *bb)
       }
 
 #ifdef TARG_ST
+      // TDR - Fix for bug #32432
       if (!op_replaced) {
-	op_replaced = EBO_Address_Sequence (op, opnd_tn, opnd_tninfo);
+          op_replaced = EBO_Constant_Offset_Propagate(op, opnd_tn, opnd_tninfo);
+      }
+      if (!op_replaced) {
+          op_replaced = EBO_Address_Sequence (op, opnd_tn, opnd_tninfo);
       }
 #endif
       if (!op_replaced &&
@@ -6400,6 +6464,10 @@ Find_BB_TNs (BB *bb)
         }
 #endif
 #ifdef TARG_ST
+    // TDR - Fix for bug #32432
+    if (!op_replaced) {
+      op_replaced = EBO_Constant_Offset_Propagate (op, opnd_tn, opnd_tninfo);
+    }
 	if (!op_replaced) {
 	  op_replaced = EBO_Address_Sequence (op, opnd_tn, opnd_tninfo);
 	}

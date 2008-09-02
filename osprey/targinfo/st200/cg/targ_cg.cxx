@@ -2527,9 +2527,10 @@ void CGTARG_Make_Bundles_Postpass(BB *bb)
  *   Generate sequence that correspond to pseudo MAKE.
  * ====================================================================
  */
-void
+BOOL
 CGTARG_Pseudo_Make_Expand() {
   /* No pseudo MAKE (TOP_MAKE) selected on ST200. */
+    return false;
 }
 
 /* ====================================================================

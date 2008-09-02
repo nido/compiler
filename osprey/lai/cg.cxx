@@ -1045,7 +1045,16 @@ CG_Generate_Code(
 
 #ifdef TARG_ST
   CGTARG_Resize_Instructions ();
-  CGTARG_Pseudo_Make_Expand();
+  BOOL modified = CGTARG_Pseudo_Make_Expand();
+  //[TDR] - Fix for bug #32432 : After Make Expand, some small constants may be propagated by EBO
+  if (CG_enable_peephole && modified) {
+    Set_Error_Phase("Extended Block Optimizer (After Make Expand)");
+    Start_Timer(T_EBO_CU);
+    EBO_Post_Process_Region (region ? REGION_get_rid(rwn) : NULL);
+    CGTARG_Pseudo_Make_Expand();
+    Stop_Timer ( T_EBO_CU );
+    Check_for_Dump ( TP_EBO, NULL );
+  }
 #endif
 
 #ifdef LAO_ENABLED

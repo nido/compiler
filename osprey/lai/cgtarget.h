@@ -881,7 +881,7 @@ extern void CGTARG_Make_Bundles_Postpass(BB *bb);
 // Perform target-specific instruction size adjustments.
 extern void CGTARG_Resize_Instructions ();
 // Perform pseudo MAKE expansion.
-extern void CGTARG_Pseudo_Make_Expand ();
+extern BOOL CGTARG_Pseudo_Make_Expand ();
 // Perform target-specific ASM adjustment.
 extern void  CGTARG_Fixup_ASM_Code ();
 #endif
