@@ -811,6 +811,8 @@ inline BOOL op_is_needed_globally(OP *op)
   // considered otherwise.
   if (OP_xfer(op))
     return TRUE;
+  // TDR check that we deal with an instruction already inserted in a bb
+  if (bb)
 #endif
   if (op == BB_exit_sp_adj_op(bb) || op == BB_entry_sp_adj_op(bb))
     return TRUE;
