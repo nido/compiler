@@ -122,6 +122,11 @@ extern void WFE_Weak_Finish();
 #ifdef TARG_ST
   /* (cbr) process aliases */
 extern void WFE_Alias_Finish(void);
+
+/* Checker wether or not a machine mode is a dynamic one with
+ * an equivalent type
+ */
+extern int Is_Dynamic_MachineMode_With_Equiv(machine_mode_t mode);
 #endif
 
 /* get the current function declaration.  This just comes from a static

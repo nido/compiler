@@ -151,8 +151,12 @@ extern ST *WFE_Vararg_Start_ST;
 /* get the current function declaration.  This just comes from a static
  * global variable in the absence of nested function declarations.
  */
-
 extern tree Current_Function_Decl(void);
+
+/* Checker wether or not a machine mode is a dynamic one with
+ * an equivalent type
+ */
+extern int Is_Dynamic_MachineMode_With_Equiv(machine_mode_t mode);
 #endif
 
 #ifdef __cplusplus

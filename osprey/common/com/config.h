@@ -1096,7 +1096,19 @@ BE_EXPORTED extern BOOL Enable_Expand_Builtin;
 BE_EXPORTED extern BOOL Enable_Expand_Builtin_Set;
 /* TB: extension is present? */
 BE_EXPORTED extern char *Extension_Names;
-BE_EXPORTED extern BOOL Extension_Is_Present ;
+BE_EXPORTED extern BOOL Extension_Is_Present;
+/* Control of extension native support */
+#define EXTENSION_NATIVE_CODEGEN                0x1
+#define EXTENSION_NATIVE_REG_PLACEMENT          0x2
+#define EXTENSION_NATIVE_CLRGEN                 0x4
+#define EXTENSION_NATIVE_TYEQUIV_UNSIGNED_ONLY  0x8
+BE_EXPORTED extern INT32 Enable_Extension_Native_Support;
+BE_EXPORTED extern BOOL Enable_Extension_Native_Support_Set;
+BE_EXPORTED extern BOOL Meta_Instruction_Threshold_Set;
+BE_EXPORTED extern INT32 Meta_Instruction_Threshold ;
+BE_EXPORTED extern BOOL Meta_Instruction_By_Size_Set;
+BE_EXPORTED extern BOOL Meta_Instruction_By_Size;
+
 #endif
 
 BE_EXPORTED extern INT32 Align_Instructions;	/* Align frequent blocks and funcs */

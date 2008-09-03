@@ -43,6 +43,10 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "ggc.h"
 #include "target.h"
 
+#ifdef TARG_ST
+extern int Is_Dynamic_MachineMode_With_Equiv(machine_mode_t mode);
+#endif
+
 /* Nonzero if we've already printed a "missing braces around initializer"
    message within this initializer.  */
 static int missing_braces_mentioned;
@@ -4362,6 +4366,20 @@ convert_for_assignment (type, rhs, errtype, fundecl, funname, parmnum)
     }
   else if (codel == BOOLEAN_TYPE && coder == POINTER_TYPE)
     return convert (type, rhs);
+#ifdef TARG_ST
+  /* [TTh] Enable some conversions with vector types */
+  else if ((codel == VECTOR_TYPE && Is_Dynamic_MachineMode_With_Equiv (TYPE_MODE (type))) ||
+	   (coder == VECTOR_TYPE && Is_Dynamic_MachineMode_With_Equiv (TYPE_MODE (rhstype)))) {
+    return convert(type, rhs);
+  }
+  else if (codel == REFERENCE_TYPE && TREE_CODE (TREE_TYPE (type)) == VECTOR_TYPE &&
+	   Is_Dynamic_MachineMode_With_Equiv (TYPE_MODE (TREE_TYPE (type)))) {
+    /* Special case for extension multi-result builtins: reference used for output */
+    rhs = convert(TREE_TYPE(type), rhs);
+    rhs = build1 (ADDR_EXPR, build_pointer_type (TREE_TYPE (rhs)), rhs);
+    return rhs;
+  }
+#endif
 
   if (!errtype)
     {

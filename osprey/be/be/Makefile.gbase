@@ -90,6 +90,7 @@ TARG_PURPLE2_DIR = $(TARGDIR)/purple2
 TARG_PROMPF_ANL_DIR = $(TARGDIR)/prompf_anl
 TARG_IPL_DIR = $(TARGDIR)/ipl
 TARG_LNO_DIR = $(TARGDIR)/lno
+TARG_GCCFE_DIR = $(TARGDIR)/gccfe
 
 TARG_INFO_INC_DIR = $(TARG_TARG_INFO_DIR)
 TARG_INFO_LIB_DIR = $(TARG_TARG_INFO_DIR)
@@ -129,6 +130,8 @@ COMMON_DIR 		= $(BUILD_TOT)/common
 COMMON_COM_DIR 		= $(COMMON_DIR)/com
 COMMON_UTIL_DIR		= $(COMMON_DIR)/util
 COMMON_INSTR_DIR 	= $(BUILD_TOT)/common/instrument
+GCCFE_GNU_TARG_DIR      = $(BUILD_TOT)/gccfe/gnu/$(BUILD_TARGET_DIR)
+
 
 ifeq ($(BUILD_TARGET), IA64)
 BE_BE_TARG_DIR		= $(BE_BE_DIR)/$(BUILD_TARGET_DIR)
@@ -187,6 +190,10 @@ HEADER_DIRS = \
   $(COMMON_INSTR_DIR)
 
 HEADER_DIRS += $(TARGDIR)/include/libelf
+
+# Next dir should be the last one, to avoid conflicts
+# between header files with same name.
+HEADER_DIRS += $(TARG_GCCFE_DIR) $(GCCFE_GNU_TARG_DIR)
 
 #----------------------------------------------------------------------
 # Build derived files
@@ -257,6 +264,7 @@ COMMON_COM_CXX_SRCS = \
   lai_loader.cxx      \
   dyn_dll_api_access.cxx	\
   dyn_isa_api_access.cxx	\
+  builtins_map.cxx     \
 
 COMMON_COM_PCH_CXX_SRCS = \
   const.cxx		\
@@ -391,6 +399,7 @@ BE_COM_PCH_CXX_SRCS = \
   wn_mp.cxx		\
   wn_mp_dg.cxx		\
   wn_verifier.cxx       \
+  ext_lower.cxx         \
   $(DERIVED_SRCS)
 
 GENERATED_FILES = \

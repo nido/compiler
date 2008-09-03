@@ -549,6 +549,15 @@ static WN *WFE_Append_Expr_Stmt(WN *wn)
   WFE_Stmt_Append (wn, Get_Srcpos ());
   return wn;
 }
+
+// [TTh] Return TRUE if parameter <mode> is a dynamic one that
+// is associated with an equivalent type, FALSE otherwise.
+int Is_Dynamic_MachineMode_With_Equiv(machine_mode_t mode)
+{
+  // Always FALSE as C++ not supported on xp70 and extension
+  // not present on other targets
+  return (0);
+}
 #endif
 
 // Round up an object size to the size it would require in the parameter

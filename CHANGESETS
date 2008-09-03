@@ -1,6 +1,441 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Sep  3 08:43:33 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x
+
+Description:
+------------
+	* [trunk] Native support of MP1x extension (xp70 specific) 
+	Deliver tt2/dev-MP1x rev #18083 with authorization branch #43476
+
+
+Modified Files:
+---------------
+	M      osprey/be/be/driver.cxx
+	M      osprey/be/be/Makefile.gbase
+	M      osprey/be/com/wn_lower.h
+	M      osprey/be/com/opt_cvtl_rule.cxx
+	A  +   osprey/be/com/ext_lower.cxx
+	M      osprey/ir_tools/Makefile.gbase
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/cgexp.h
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/lai/Makefile.gbase
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/gccfe/gnu/machmode.h
+	M      osprey/gccfe/gnu/c-typeck.c
+	M      osprey/gccfe/gnu/emit-rtl.c
+	M      osprey/gccfe/gnu/expr.c
+	M      osprey/gccfe/gnu/convert.c
+	M      osprey/gccfe/Makefile.gbase
+	M      osprey/gccfe/wfe_misc.cxx
+	M      osprey/gccfe/wfe_decl.h
+	M      osprey/gccfe/wfe_loader.cxx
+	M      osprey/g++fe/wfe_expr.cxx
+	M      osprey/g++fe/Makefile.gbase
+	M      osprey/g++fe/wfe_decl.h
+	M      osprey/common/util/tracing.c
+	M      osprey/common/util/tracing.h
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/dyn_dll_api.h
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/opcode_gen_core.cxx
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/dyn_dll_api_access.h
+	M      osprey/common/com/config.h
+	M      osprey/common/com/wn_simp_code.h
+	M      osprey/common/com/loader.h
+	A  +   osprey/common/com/builtins_map.cxx
+	M      osprey/common/com/dyn_dll_api_access.cxx
+	A  +   osprey/common/com/ext_info.h
+	M      osprey/common/com/lai_loader_api.h
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+	M      osprey/targinfo/stxp70/config/config_TARG.cxx
+	M      osprey/targinfo/stxp70/config/config_TARG.h
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+	M      osprey/targinfo/stxp70/be/betarget.cxx
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/st200/expand/exp_targ.cxx
+	M      osprey/targinfo/st200/config/config_TARG.cxx
+	M      osprey/targinfo/st200/config/config_TARG.h
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon Sep  1 16:46:54 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-MP1x-codegen
+
+Description:
+------------
+	*  improve MPx option handling to deactivate native codegen selection when useless.
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/ext_lower.cxx
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/config.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon Sep  1 16:06:59 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x-reg-placement
+
+Description:
+------------
+	* Avoid generation of conversions for non-extension types (fix perf regression on Tx extension) 
+
+Modified Files:
+---------------
+	M      osprey/gccfe/wfe_expr.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu Aug 28 17:22:10 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-MP1x-codegen
+
+Description:
+------------
+	*  update meta instruction model to include both size/cycles as a
+	cost model.
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/ext_lower.cxx
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/dyn_dll_api.h
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/config.h
+	M      osprey/common/com/lai_loader_api.h
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Tue Aug 26 16:55:54 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-MP1x-codegen
+
+Description:
+------------
+	*  cleaning, option handling, handling of 32x32 multiplier 
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/EXT_lower.cxx
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/config.h
+	M      osprey/common/com/ext_info.h
+	M      osprey/common/com/lai_loader_api.h
+	M      osprey/targinfo/stxp70/config/config_TARG.cxx
+	M      osprey/targinfo/stxp70/config/config_TARG.h
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/config/config_TARG.cxx
+	M      osprey/targinfo/st200/config/config_TARG.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon Aug 25 13:33:33 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-MP1x-codegen
+
+Description:
+------------
+	*  remove use of Start_New_Basic_Block in target specific code.
+	   fix bug when multiple user extension are simultaneously loaded.
+	   fix bug with use of dedicated TNs in meta instructions.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/whirl2ops.h
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed Aug 20 12:30:58 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-MP1x-codegen
+
+Description:
+------------
+	*  fix for clr
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/EXT_lower.cxx
+	M      osprey/driver/stxp70_options.i
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Tue Jul 29 09:31:00 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-MP1x-codegen
+
+Description:
+------------
+	*  implementation of CLR isnruction selection.
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/EXT_lower.cxx
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/dyn_dll_api.h
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/config.h
+	M      osprey/common/com/dyn_dll_api_access.cxx
+	M      osprey/common/com/ext_info.h
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu Jul 24 17:20:21 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x-reg-placement
+
+Description:
+------------
+	* [tt2/dev-MP1x] Deliver tt2/dev-MP1x-reg-placement rev #17690 with authorization branch #47649
+	  -> Fix handling of option -TENV:extension_native_support=0 :
+	       Insure errors are cleanly detected by front-end instead
+	       of raising an assertino failure afterward
+	  -> Removed useless piece of code in EXT_lower.cxx
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/EXT_lower.cxx
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/gccfe/gnu/c-typeck.c
+	M      osprey/gccfe/gnu/expr.c
+	M      osprey/gccfe/gnu/convert.c
+	M      osprey/gccfe/wfe_misc.cxx
+	M      osprey/gccfe/wfe_decl.h
+	M      osprey/g++fe/wfe_expr.cxx
+	M      osprey/g++fe/wfe_decl.h
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/ext_info.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed Jul 23 11:19:11 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x-reg-placement
+
+Description:
+------------
+	* [tt2/dev-MP1x] Deliver tt2/dev-MP1x-reg-placement rev #17645 with authorization branch #47649
+	  -> Cleanup code in front-end: added more check to insure relaxation is done
+	     only for extension type + enable conversion from I4 to extension type through equivalent type
+	  -> Add missing conversion in register placement (for instance, I4 -> MPx_VX need to go
+	     through I4 -> I8 -> MPx_VX)
+
+Modified Files:
+---------------
+	M      osprey/be/com/EXT_lower.cxx
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/gccfe/gnu/machmode.h
+	M      osprey/gccfe/gnu/c-typeck.c
+	M      osprey/gccfe/gnu/expr.c
+	M      osprey/gccfe/gnu/convert.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed Jul 23 08:53:55 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-MP1x-codegen
+
+Description:
+------------
+	*  add codegeneration for extensions
+
+
+Modified Files:
+---------------
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/dyn_dll_api.h
+	M      osprey/common/com/lai_loader_api.h
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon Jul 21 11:18:12 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x-reg-placement
+
+Description:
+------------
+	* [tt2/dev-MP1x] Deliver tt2/dev-MP1x-reg-placement rev #17597 with authorization branch #47649
+	  -> Perform memory access optimisation during analysis walk to insure that is done even
+	     when there is no candidate PREG for type migration + maintain line information attached to stmt 
+	  -> Remove useless code in rt_lower_wn.cxx and factorize code in betarget
+
+Modified Files:
+---------------
+	M      osprey/be/com/rt_lower_wn.cxx
+	M      osprey/be/com/EXT_lower.cxx
+	M      osprey/targinfo_ext/stxp70_ext/vx/config/vx_mtypes.cxx
+	M      osprey/targinfo/stxp70/be/betarget.cxx
+	M      osprey/targinfo/generate/dyn/dyn_type_api.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu Jul 17 12:40:29 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x-reg-placement
+
+Description:
+------------
+	* [tt2/dev-MP1x] Deliver tt2/dev-MP1x-reg-placement rev #17578 with authorization branch #47649
+	  - Disable generation of SELECT with extension type in WN simplifier (fix)
+	  - Fix some unexpected removal of conversions
+	  - Added internal option to disable extension native support: -TENV:extension_native_support=0|1 (enabled by default)
+	  - Fix handling of STID during conversion pass (some PREGs were not replaced as they ought to be)
+
+
+Modified Files:
+---------------
+	M      osprey/be/be/driver.cxx
+	M      osprey/be/com/rt_lower_wn.cxx
+	M      osprey/be/com/EXT_lower.cxx
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/config.h
+	M      osprey/common/com/wn_simp_code.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed Jul 16 11:02:52 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-MP1x-codegen
+
+Description:
+------------
+	*  deliver codegen to mpx branch
+
+
+Modified Files:
+---------------
+	M      osprey/be/be/Makefile.gbase
+	M      osprey/be/com/EXT_lower.cxx
+	D      osprey/be/com/MPx_lower.cxx
+	M      osprey/targinfo_ext/stxp70_ext/vx/config/vx_mtypes.cxx
+	M      osprey/lai/cgexp.h
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/dyn_dll_api.h
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/dyn_dll_api_access.h
+	M      osprey/common/com/dyn_dll_api_access.cxx
+	M      osprey/common/com/lai_loader_api.h
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/st200/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/st200/expand/exp_targ.cxx
+	M      osprey/targinfo/generate/dyn/dyn_type_api.c
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu Jul 10 08:56:09 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x-reg-placement
+
+Description:
+------------
+	* [tt2/dev-MP1x] Deliver tt2/dev-MP1x-reg-placement rev #17506 with authorization branch #47649
+	  Changes to MP1x native support:
+	  - Extended and cleaned type equivalence in front-end:
+	    - Support ull variables for multi-result and in-out builtins (reference passing),
+	    - Support direct assignment of constant value to MPx variables
+	  - Updated register placement algorithm 
+	  Note: There is still some cleanup to do and some code changes inherited from aX prototype that might need to be removed/updated
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/opt_cvtl_rule.cxx
+	M      osprey/be/com/EXT_lower.cxx
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/gccfe/gnu/c-typeck.c
+	M      osprey/gccfe/gnu/emit-rtl.c
+	M      osprey/gccfe/gnu/expr.c
+	M      osprey/gccfe/gnu/convert.c
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/loader.h
+	M      osprey/common/com/wn_simp_code.h
+	M      osprey/common/com/ext_info.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep  2 11:27:56 CEST 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

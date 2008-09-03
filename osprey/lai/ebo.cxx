@@ -2855,8 +2855,6 @@ EBO_Constant_Offset_Propagate(
     if(!TN_is_register(OP_Offset(op))) return FALSE;
     OP *new_op = Dup_OP(op);
     TOP new_opcode = TOP_opnd_immediate_variant(opcode, l0_offset_idx, TN_value(tn_offset));
-    //TDR : We assert in case of undef imm variant
-    DevAssert((new_opcode != TOP_UNDEFINED), ("No Immediate variant valid for top %s with offset 0x%x", TOP_Name(OP_code(op)),TN_value(tn_offset)));
     if (new_opcode == TOP_UNDEFINED) return FALSE;
     Set_OP_opr(new_op, new_opcode);
     OP_srcpos(new_op) = OP_srcpos(op);

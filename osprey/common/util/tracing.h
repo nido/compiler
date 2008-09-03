@@ -227,7 +227,7 @@ BE_EXPORTED extern char *Sharps;	/* Sharps w/NL, full page width */
 #define TP_SELECT       61	/* Select generation */
 #define TP_RANGE        62      /* Range analysis */
 #define TP_LICM         63      /* Loop invariant Code motion */
-#define TP_EXTLOAD      64      /* Extension loader */
+#define TP_EXTENSION    64      /* Extension support (loader, native support) */
 #define TP_TAIL         65	/* Tailmerge */
 #define TP_AFFIRM	66	/* __builtin_assume and AFFIRM property. */
 #endif

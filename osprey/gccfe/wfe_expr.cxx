@@ -90,6 +90,8 @@ extern "C" {
 #include "wfe_loader.h" // TB: For maching between gcc buitins and OPEN64
 		      // intrinsics for dynamic builtins
 #include "intrn_info.h" //To get proto info for INTRINSIC
+#include "ext_info.h"
+#include "loader.h"
 #endif
 
 //#define WFE_DEBUG
@@ -501,6 +503,14 @@ static WN *WFE_Append_Expr_Stmt(WN *wn)
     wn = WN_CreateEval (wn);
   WFE_Stmt_Append (wn, Get_Srcpos ());
   return wn;
+}
+
+// [TTh] Return TRUE if parameter <mode> is a dynamic one that
+// is associated with an equivalent type, FALSE otherwise.
+int Is_Dynamic_MachineMode_With_Equiv(machine_mode_t mode)
+{
+  return (IS_DYNAMIC_MACHINE_MODE ( mode ) &&
+	  EXTENSION_Get_Equivalent_Mtype (MachineMode_To_Mtype (mode)) != MTYPE_UNKNOWN);
 }
 #endif
 
@@ -2429,6 +2439,18 @@ WFE_Expand_Expr (tree exp,
       {
 	arg0 = TREE_OPERAND (exp, 0);
 	enum tree_code code0 = TREE_CODE (arg0);
+#ifdef TARG_ST
+	// [TTh] Special case to handle equivalent type conversion
+	// for extension when dealing with multi-result parameters:
+	//  Ignore conversion here, they will be added afterwards
+	// TODO: should check if parameter of an extension builtins?
+	if (code0 == NOP_EXPR &&
+	    EXTENSION_Are_Equivalent_Mtype (TY_mtype (Get_TY (TREE_TYPE (arg0))),
+					    TY_mtype (Get_TY (TREE_TYPE (TREE_OPERAND (arg0, 0)))))) {
+	  arg0  = TREE_OPERAND (arg0, 0);
+	  code0 = TREE_CODE (arg0);
+	}
+#endif
 	switch (code0) {
 	  case VAR_DECL:
 	  case PARM_DECL:
@@ -3158,10 +3180,31 @@ WFE_Expand_Expr (tree exp,
 	else {
 	  if (mtyp != WN_rtype(wn)) {
 #ifdef TARG_ST
-	    // [TTh] Conversion not allowed for extension mtypes
-	    if (MTYPE_is_dynamic(mtyp) || MTYPE_is_dynamic(WN_rtype(wn))) {
-	      error("forbidden type conversion from '%s' to '%s'", MTYPE_name(WN_rtype(wn)), MTYPE_name(mtyp));
-	      exit (RC_USER_ERROR); // Early exit required as WN will have incorrect type
+	    // [TTh] Conversion not allowed for extension mtypes, except if equivalent type exist.
+	    if ((MTYPE_is_dynamic(mtyp) || MTYPE_is_dynamic(WN_rtype(wn))) &&
+		!EXTENSION_Are_Equivalent_Mtype(mtyp, WN_rtype(wn))) {
+	      BOOL ok = FALSE;
+	      if (MTYPE_is_dynamic(mtyp)) {
+		TYPE_ID equiv = EXTENSION_Get_Equivalent_Mtype(mtyp);
+		if (equiv != MTYPE_UNKNOWN &&
+		    MTYPE_is_integral(equiv) && MTYPE_is_integral(WN_rtype(wn))) {
+		  wn = WN_Cvt(WN_rtype(wn), equiv, wn);
+		  ok = TRUE;
+		}
+	      }
+	      else if (MTYPE_is_dynamic(WN_rtype(wn))) {
+		TYPE_ID equiv = EXTENSION_Get_Equivalent_Mtype(WN_rtype(wn));
+		if (equiv != MTYPE_UNKNOWN &&
+		    MTYPE_is_integral(equiv) && MTYPE_is_integral(mtyp)) {
+		  wn = WN_Cvt(WN_rtype(wn), equiv, wn);
+		  ok = TRUE;
+		}
+	      }
+
+	      if (!ok) {
+		error("forbidden type conversion from '%s' to '%s'", MTYPE_name(WN_rtype(wn)), MTYPE_name(mtyp));
+		exit (RC_USER_ERROR); // Early exit required as WN will have incorrect type
+	      }
 	    }
 #endif
 	    wn = WN_Cvt(WN_rtype(wn), mtyp, wn);
@@ -4835,7 +4878,16 @@ WFE_Expand_Expr (tree exp,
 	  //Create an ILOAD for multiple result
 	  if (built_info && INTRN_is_by_reference(built_info)) {
 	    if (INTRN_is_inout_param(gcc_index, built_info)) {
-	      arg_mtype  = TY_mtype(TY_pointed(arg_ty_idx));
+
+	      // [TTh] Insure conversion are not removed by the front-end
+	      if (TREE_CODE (TREE_OPERAND (TREE_VALUE (list), 0)) == NOP_EXPR) {
+		tree cvt = TREE_OPERAND (TREE_VALUE (list), 0);
+		arg_mtype = TY_mtype (Get_TY (TREE_TYPE (TREE_OPERAND (cvt, 0))));
+	      }
+	      else {
+		arg_mtype  = TY_mtype(TY_pointed(arg_ty_idx));
+	      }
+
 	      BOOL Fold_ILOAD_save = WN_Simp_Fold_ILOAD;
 	      WN_Simp_Fold_ILOAD = TRUE;
 	      arg_wn = WN_CreateIload (OPR_ILOAD, arg_mtype /*rtype*/,
@@ -4843,6 +4895,13 @@ WFE_Expand_Expr (tree exp,
 				       0 /*offset */, TY_pointed(arg_ty_idx) /* pointed type */, 
 				       arg_ty_idx /* addr type */, 
 				       arg_wn /*addr*/);
+
+	      if (arg_mtype != TY_mtype(TY_pointed(arg_ty_idx))) {
+		// Insert conversion
+		TYPE_ID new_arg_mtype = TY_mtype(TY_pointed(arg_ty_idx));
+		arg_wn = WN_Cvt(arg_mtype, new_arg_mtype, arg_wn);
+		arg_mtype = new_arg_mtype;
+	      }
 	      WN_Simp_Fold_ILOAD = Fold_ILOAD_save;;
 	      arg_ty_idx = TY_pointed(arg_ty_idx);
 	    }
@@ -4925,6 +4984,20 @@ WFE_Expand_Expr (tree exp,
             TYPE_ID arg_pointed_mtype = TY_mtype(TY_pointed(arg_ty_idx));
 	    BOOL Fold_ILOAD_save = WN_Simp_Fold_ILOAD;
 	    WN_Simp_Fold_ILOAD = TRUE;
+
+	    // [TTh] Insert potential conversion
+	    if (TREE_CODE (TREE_OPERAND (TREE_VALUE (list), 0)) == NOP_EXPR) {
+	      tree cvt = TREE_OPERAND (TREE_VALUE (list), 0);
+	      TY_IDX  cvt_src_ty    = Get_TY (TREE_TYPE (TREE_OPERAND (cvt, 0)));
+	      TYPE_ID cvt_src_mtype = TY_mtype (cvt_src_ty);
+	      TY_IDX  cvt_dst_ty    = Get_TY (TREE_TYPE (cvt));
+	      TYPE_ID cvt_dst_mtype = TY_mtype (cvt_dst_ty);
+	      if (MTYPE_is_dynamic(cvt_src_mtype) || MTYPE_is_dynamic(cvt_dst_mtype)) {
+		wn1 = WN_Cvt(arg_pointed_mtype, cvt_src_mtype, wn1);
+		arg_pointed_mtype = cvt_src_mtype;
+	      }
+	    }
+	    
 	    wn1 = WN_CreateIstore(OPR_ISTORE, MTYPE_V, arg_pointed_mtype, 0/*offset*/, 
 				  arg_ty_idx/*pointer ty_idx*/, wn1 /*value*/, arg_wn /*addr*/);
 	    WN_Simp_Fold_ILOAD = Fold_ILOAD_save;;

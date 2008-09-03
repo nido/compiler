@@ -1016,7 +1016,7 @@ Expand_Shift (
       break;
     }
     Expand_Extract(low_src1, high_src1, src1, ops);
-    Exp_Intrinsic_Op (intr_id, 2, 3, results, opnds, ops, 0);
+    Exp_Intrinsic_Op (intr_id, 2, 3, results, opnds, ops, 0, NULL);
     Expand_Compose(result, low_res, high_res, ops);
     return;
   }
@@ -3479,7 +3479,7 @@ Exp_Intrinsic_Call (
     case INTRN___ST200PRGINS:
       if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_prgins)) {
 	    /* We fall back to the usual intrinsic generation */
-	    Exp_Intrinsic_Op(id, 0, 0, NULL, NULL, ops, srcpos) ;
+        Exp_Intrinsic_Op(id, 0, 0, NULL, NULL, ops, srcpos, NULL) ;
       } else {
 	// [SC] Expand to a loop of prginsset instructions.
 	// Here, the icache size is hard-coded.  Should move this
@@ -3504,7 +3504,7 @@ Exp_Intrinsic_Call (
 	break ;
     default:
       /* Default is intrinsic op */
-      Exp_Intrinsic_Op(id,num_results,num_opnds,result,opnd,ops,srcpos);
+      Exp_Intrinsic_Op(id,num_results,num_opnds,result,opnd,ops,srcpos, NULL);
     }
 }
 

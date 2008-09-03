@@ -190,6 +190,7 @@ TARG_COMUTIL_DIR	= $(TARGDIR)/libcomutil
 TARG_CMPLRS_DIR		= $(TARGDIR)/libcmplrs
 TARG_LIBIBERTY_DIR      = $(TARGDIR)/libiberty
 TARG_GNU_DIR		= $(TARGDIR)/gccfe/gnu
+TARG_GCCFE_DIR          = $(TARGDIR)/gccfe
 
 # These are the directories in which to look for source files.
 
@@ -225,6 +226,7 @@ INC_DIRS =		\
   $(GNU_CONFIG_TARG_DIR) \
   $(TARG_TARG_INFO_DIR) \
   $(GNU_COMMON_DIR)/include \
+  $(TARG_GCCFE_DIR)	\
   .
 
 #----------------------------------------------------------------------
@@ -285,6 +287,7 @@ COMMON_COM_CXX_SRCS =	\
   wutil.cxx		\
   xstats.cxx            \
   loader.cxx		\
+  builtins_map.cxx	\
   dyn_dll_api_access.cxx \
   dyn_isa_api_access.cxx \
   gccfe_targinfo_interface.cxx

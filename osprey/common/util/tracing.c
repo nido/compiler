@@ -208,7 +208,7 @@ static PDESC Phases[] = {
   { TP_SELECT,		"SLC",	"Select if-conversion" },
   { TP_RANGE,           "RAN",  "Range analysis" },
   { TP_LICM,            "LIM",  "Loop Invariant Code Motion" },
-  { TP_EXTLOAD,		"EXT",	"Extension loader" },
+  { TP_EXTENSION,	"EXT",	"Extension support" },
   { TP_TAIL,		"TAL",	"Tailmerge" },
   { TP_AFFIRM,		"AFF",  "Affirm" },
 #endif

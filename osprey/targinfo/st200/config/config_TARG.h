@@ -148,6 +148,8 @@ BE_EXPORTED extern INT32 Warn_Misaligned_Load, Warn_Misaligned_Store;
 
 //[VCdV]
 BE_EXPORTED extern int Activate_Hwloop;
+#define ACTIVATE_HWLOOP_GENERATION   0x1
+#define ACTIVATE_JRGTUDEC_GENERATION 0x2
 
 // [SC]: Cycle time overrides.
 BE_EXPORTED extern OPTION_LIST *Cycle_Time_Overrides;
@@ -187,6 +189,8 @@ BE_EXPORTED extern INT32 CG_LOOP_Packing_flags;
 #ifdef TARG_ST
 #include "targ_isa_registers.h" // gets access to typedef ISA_REGISTER_CLASS
 BE_EXPORTED extern ISA_REGISTER_CLASS Pointer_Register_Class;
+
+extern void CGTARG_InitializeMetaInstructionMap();
 #endif
 
 #endif /* config_TARG_INCLUDED */

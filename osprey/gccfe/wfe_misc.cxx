@@ -89,6 +89,7 @@ extern "C" {
 #ifdef TARG_ST
 //TB : for WFE_Loader_Initialize_Register
 #include "wfe_loader.h"
+#include "ext_info.h"
 #endif
 int WFE_Keep_Zero_Length_Structs = FALSE;
 
@@ -579,6 +580,14 @@ WFE_File_Init (INT argc, char **argv)
    * processed within Prepare_Source()
    */
   GCCTARG_Mark_Disabled_Gcc_Reg();
+
+  /* [TTh] In FE, we need to disable equivalent types here because 
+   * their initializations have been done prior to the setting of
+   * Enable_Extension_Native_Support flag (Prepare_Source()
+   */
+  if (!Enable_Extension_Native_Support) {
+    EXTENSION_Disable_Equivalent_Mtype();
+  }
 #endif
 
   Restore_Cmd_Line_Ctrls();

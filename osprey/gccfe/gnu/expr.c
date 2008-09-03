@@ -46,6 +46,10 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "intl.h"
 #include "tm_p.h"
 
+#ifdef TARG_ST
+extern int Is_Dynamic_MachineMode_With_Equiv(machine_mode_t mode);
+#endif
+
 /* Decide whether a function's arguments should be processed
    from first to last or from last to first.
 
@@ -586,6 +590,22 @@ convert_move (to, from, unsignedp)
 
   if (VECTOR_MODE_P (to_mode) || VECTOR_MODE_P (from_mode))
     {
+#ifdef TARG_ST
+      /* [TTh] Enable conversion for dynamic types */
+      if (GET_MODE_BITSIZE (from_mode) != GET_MODE_BITSIZE (to_mode))
+	{
+	  if(VECTOR_MODE_P (to_mode) && Is_Dynamic_MachineMode_With_Equiv (to_mode))
+	    {
+	      from = convert_modes (GET_MODE_INNER (to_mode), from_mode, from, 0);
+	      from_mode = GET_MODE (from);
+	    }
+	  else if (VECTOR_MODE_P (from_mode) && Is_Dynamic_MachineMode_With_Equiv (from_mode))
+	    {
+	      to = convert_modes (GET_MODE_INNER (from_mode), to_mode, to, 0);
+	      to_mode = GET_MODE (to);
+	    }
+	}
+#endif
       if (GET_MODE_BITSIZE (from_mode) != GET_MODE_BITSIZE (to_mode))
 	abort ();
 
@@ -1429,6 +1449,15 @@ convert_modes (mode, oldmode, x, unsignedp)
      subreg operation.  */
   if (VECTOR_MODE_P (mode) && GET_MODE (x) == VOIDmode)
     {
+#ifdef TARG_ST
+      /* [TTh] Relax conversion for dynamic types */
+      if (Is_Dynamic_MachineMode_With_Equiv (mode) &&
+	  (GET_MODE_BITSIZE (mode) != GET_MODE_BITSIZE (oldmode)))
+	{
+	  x = convert_modes (GET_MODE_INNER (mode), oldmode, x, 0);
+	  oldmode = GET_MODE (x);
+	}
+#endif
       if (GET_MODE_BITSIZE (mode) != GET_MODE_BITSIZE (oldmode))
 	abort ();
       return simplify_gen_subreg (mode, x, oldmode, 0);

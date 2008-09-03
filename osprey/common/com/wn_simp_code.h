@@ -35,6 +35,9 @@
 #if defined(BACK_END) && defined(WN_SIMP_WORKING_ON_WHIRL)
 #include "be_symtab.h"
 #endif
+#ifdef TARG_ST
+#include "ext_info.h"
+#endif
 
 /*===================================================================================
 
@@ -1575,6 +1578,13 @@ static BOOL convert_precise(TYPE_ID t1, TYPE_ID t2)
    BOOL r = FALSE;
    INT32 precise_bits;
 
+#ifdef TARG_ST
+   if (MTYPE_is_dynamic(t1) || MTYPE_is_dynamic(t2))
+     // [TTh] A conversion between equivalent types preserves the exact value
+     return (t1 == t2 || ((SIMP_TYPE_SIZE(t1) == SIMP_TYPE_SIZE(t2)) &&
+			  EXTENSION_Are_Equivalent_Mtype(t1, t2)));
+#endif
+
    if (TYPEISIN(t1,TESTABLE_TYPE) && TYPEISIN(t2,TESTABLE_TYPE)) {
       switch (t1) {
        case MTYPE_U1:
@@ -1764,7 +1774,12 @@ static simpnode  simp_cvt(OPCODE opc, simpnode k0, simpnode k1,
 	 } else {
 	    newopc = OPCODE_UNKNOWN;
 	 }
-	 if (newopc != OPCODE_UNKNOWN) {
+	 if (newopc != OPCODE_UNKNOWN
+#ifdef TARG_ST
+	     && !MTYPE_is_dynamic(dest_type)
+	     && !MTYPE_is_dynamic(source_type)
+#endif
+	     ) {
 	    SHOW_RULE("t1CVT(t2CVT(a)) -> t1CVT(a)");
 	    r = SIMPNODE_SimpCreateExp1(newopc,k0k0);
 	    SIMP_DELETE(k0);
@@ -5332,7 +5347,11 @@ simpnode SIMPNODE_SimplifyExp1(OPCODE opc, simpnode k0)
        * OP (SELECT(X,c1,c2)) ->
        * SELECT(X,OP(c1),OP(C2))
        */
-      if (SIMP_Is_Constant(k1) && SIMP_Is_Constant(k2)) {
+      if (SIMP_Is_Constant(k1) && SIMP_Is_Constant(k2)
+#ifdef TARG_ST
+	  && !MTYPE_is_dynamic(OPCODE_rtype(opc))
+#endif
+	  ) {
 	 result = SIMPNODE_SimpCreateExp3(OPC_FROM_OPR(OPR_SELECT,OPCODE_rtype(opc)),
 					  SIMPNODE_kid0(k0),
 					  SIMPNODE_SimpCreateExp1(opc,k1),

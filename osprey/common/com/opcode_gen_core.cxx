@@ -2571,6 +2571,9 @@ Is_Valid_Opcode_For_Dynamic_Mtype(OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
     // (RTYPE): any dynamic (DESC): V 
     valid = Is_MTYPE_V(desc);
     break;
+  case OPR_CVT:
+    valid = TRUE;
+    break;
   case OPR_ISTORE:
   case OPR_STID:
     // (RTYPE): any dynamic (DESC): V 

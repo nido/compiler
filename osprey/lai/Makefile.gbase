@@ -151,6 +151,7 @@ TARG_LIBIBERTY = $(TARGDIR)/libiberty
 TARG_TARG_INFO_DIR	= $(TARGDIR)/targ_info
 TARG_WOPT_DIR           = $(TARGDIR)/wopt
 LIBINSTR_DIR		= $(BUILD_TOT)/instrumentation/libinstrC
+GCCFE_GNU_TARG_DIR      = $(BUILD_TOT)/gccfe/gnu/$(BUILD_TARGET_DIR)
 
 BE_DIR 			= $(BUILD_TOT)/be
 BE_COM_DIR 		= $(BE_DIR)/com
@@ -232,6 +233,10 @@ HEADER_DIRS = 		\
   $(LIBINSTR_DIR)	
 
 HEADER_DIRS += $(TARGDIR)/include/libelf
+
+# Next dir should be the last one, to avoid conflicts
+# between header files with same name.
+HEADER_DIRS += $(GCCFE_GNU_TARG_DIR)
 
 #CGG_DEV{
 ifeq ($(BUILD_TARGET),ST200)

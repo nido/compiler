@@ -5320,6 +5320,13 @@ gen_rtx_CONST_VECTOR (mode, v)
   rtx inner_zero = CONST0_RTX (GET_MODE_INNER (mode));
   int i;
 
+#ifdef TARG_ST
+    // [TTh] Currently, we don't have pre-computed rtx node for extension type
+    if (mode >= STATIC_COUNT_MACHINE_MODE) {
+	return gen_rtx_raw_CONST_VECTOR (mode, v);
+    }
+#endif
+
   for (i = GET_MODE_NUNITS (mode) - 1; i >= 0; i--)
     if (RTVEC_ELT (v, i) != inner_zero)
       return gen_rtx_raw_CONST_VECTOR (mode, v);

@@ -46,6 +46,9 @@
 
 #include "opt_cvtl_rule.h"
 #include "wn.h"
+#ifdef TARG_ST
+#include "ext_info.h"
+#endif
 
 #define  nop {NOT_AT_ALL,OPCODE_LAST+1}
 
@@ -209,11 +212,12 @@ INT Need_type_conversion(TYPE_ID from_ty, TYPE_ID to_ty, OPCODE *opc)
   if (!(MTYPE_is_integral(from_ty) && MTYPE_is_integral(to_ty))) {
     if (from_ty == to_ty) return NOT_AT_ALL;
 #ifdef TARG_ST
-    // Reconfigurability: No support for conversion with dynamic type.
+    // Reconfigurability: Check if the conversion deals with dynamic type,
+    // and then if it is an allowed conversion.
     if (MTYPE_is_dynamic(from_ty) || MTYPE_is_dynamic(to_ty)) {
-      FmtAssert(0, ("Need_type_conversion():Conversion including dynamic"
-		    " mtypes that are not equal are not yet supported",
-		    __FILE__, __LINE__));
+      FmtAssert(EXTENSION_Are_Equivalent_Mtype(from_ty, to_ty),
+		("Need_type_conversion(): Conversion from %s to %s is not supported",
+		 MTYPE_name(from_ty), MTYPE_name(to_ty)));
     }
 #endif
     if (opc != NULL) 
@@ -230,8 +234,7 @@ INT Need_type_conversion(TYPE_ID from_ty, TYPE_ID to_ty, OPCODE *opc)
     }
     else {
       FmtAssert(0, ("Need_type_conversion():Conversion including dynamic"
-		    " mtypes that are not equal are not yet supported",
-		    __FILE__, __LINE__));
+		    " mtypes that are not equal are not yet supported"));
       return NOT_AT_ALL;
     }
   }

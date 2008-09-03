@@ -31,6 +31,10 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "toplev.h"
 #include "langhooks.h"
 
+#ifdef TARG_ST
+extern int Is_Dynamic_MachineMode_With_Equiv(machine_mode_t mode);
+#endif
+
 /* Convert EXPR to some pointer or reference type TYPE.
 
    EXPR must be pointer, reference, integer, enumeral, or literal zero;
@@ -96,7 +100,14 @@ convert_to_real (type, expr)
       return convert (type,
 		      fold (build1 (REALPART_EXPR,
 				    TREE_TYPE (TREE_TYPE (expr)), expr)));
-
+#ifdef TARG_ST
+    case VECTOR_TYPE:
+      /* [TTh] Relax constraint with dynamic types */
+      if (Is_Dynamic_MachineMode_With_Equiv ( TYPE_MODE (TREE_TYPE (expr)))) {
+	  return convert_to_real(type, convert_to_integer(c_common_type_for_mode(GET_MODE_INNER ( TREE_CODE (TREE_TYPE (expr))), 0), expr));
+      }
+      /* Fall through */
+#endif
     case POINTER_TYPE:
     case REFERENCE_TYPE:
       error ("pointer value used where a floating point value was expected");
@@ -411,8 +422,17 @@ convert_to_integer (type, expr)
       if (GET_MODE_SIZE (TYPE_MODE (type))
 	  != GET_MODE_SIZE (TYPE_MODE (TREE_TYPE (expr))))
 	{
+#ifdef TARG_ST
+	  /* [TTh] Relax constraint for dynamic mode */
+	  if (!Is_Dynamic_MachineMode_With_Equiv ( TYPE_MODE (intype)))
+	    {
+	      error ("can't convert between vector values of different size");
+	      return error_mark_node;
+	    }
+#else
 	  error ("can't convert between vector values of different size");
 	  return error_mark_node;
+#endif
 	}
       return build1 (NOP_EXPR, type, expr);
 
@@ -491,8 +511,23 @@ convert_to_vector (type, expr)
       if (GET_MODE_SIZE (TYPE_MODE (type))
 	  != GET_MODE_SIZE (TYPE_MODE (TREE_TYPE (expr))))
 	{
+#ifdef TARG_ST
+	  /* [TTh] Relax the size constraint for dynamically added machine modes.
+	   * Note that we cannot handle the size problem here because the next
+	   * call to fold() on the generated expression will simplify the
+	   * conversion tree and call for a new conversion (endless loop).
+	   */
+	  if (!Is_Dynamic_MachineMode_With_Equiv (TYPE_MODE (type))) {
+	    error ("can't convert between vector values of different size");
+	    return error_mark_node;
+	  }
+/* 	  else { */
+/* 	      return  convert_to_vector(type, convert_to_integer(c_common_type_for_mode(DImode, 0), expr)); */
+/* 	  } */
+#else
 	  error ("can't convert between vector values of different size");
 	  return error_mark_node;
+#endif
 	}
       return build1 (NOP_EXPR, type, expr);
 

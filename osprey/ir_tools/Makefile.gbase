@@ -138,6 +138,7 @@ COMMON_COM_TARG_DIR= $(BUILD_TOT)/common/com/$(BUILD_TARGET_DIR)
 endif
 endif
 TARG_TARG_INFO_DIR	= $(TARGDIR)/targ_info
+TARG_GCCFE_DIR		= $(TARGDIR)/gccfe
 
 COMMON_COM_DIR= $(BUILD_TOT)/common/com
 
@@ -165,7 +166,8 @@ INC_DIRS =		\
 	$(COMMON_UTIL_TARG_DIR) \
 	$(COMMON_TARGINFO_CONFIG_DIR) \
 	$(TARG_TARG_INFO_DIR) \
-	$(COMMON_TARG_INFO_ACCESS_DIR)
+	$(COMMON_TARG_INFO_ACCESS_DIR) \
+	$(TARG_GCCFE_DIR)
 
 LDIRT = ir_a2b ir_sel
 
@@ -223,6 +225,7 @@ COMMON_COM_CXX_SRC =	\
 	wn_util.cxx	\
 	wutil.cxx	\
 	xstats.cxx	\
+	builtins_map.cxx \
 	loader.cxx      \
 	dyn_dll_api_access.cxx \
 	dyn_isa_api_access.cxx \

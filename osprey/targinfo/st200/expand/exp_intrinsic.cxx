@@ -7060,7 +7060,8 @@ Exp_Intrinsic_Op (
   TN *result[],
   TN *opnd[],
   OPS *ops,
-  SRCPOS srcpos
+  SRCPOS srcpos,
+  BB* bb
 )
 {
   switch (id) {

@@ -52,6 +52,9 @@ extern machine_mode_t COUNT_MACHINE_MODE;
 #ifdef TARG_ST
 // Last machine mode statically defined 
 #define MACHINE_MODE_STATIC_LAST (STATIC_COUNT_MACHINE_MODE-1)
+
+/* Nonzero if MODE has been dynamically defined */
+#define IS_DYNAMIC_MACHINE_MODE(MODE) (MODE > MACHINE_MODE_STATIC_LAST)
 #endif
 
 #ifndef NUM_MACHINE_MODES

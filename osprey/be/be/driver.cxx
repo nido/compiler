@@ -1267,6 +1267,11 @@ Do_WOPT_and_CG_with_Regions (PU_Info *current_pu, WN *pu)
 #endif
 	rwn = WN_Lower(rwn, actions, NULL, 
 		       "Lowering in preparation to RT_Lower");
+#ifdef TARG_STxP70
+	if (Enable_Extension_Native_Support) {
+	  rwn = EXT_lower_wn(rwn);
+	}
+#endif
 	RT_lower_wn(rwn);
       }
 #endif /* TARG_ST */

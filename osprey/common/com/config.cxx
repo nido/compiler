@@ -457,6 +457,15 @@ BOOL Enable_Expand_Builtin = FALSE;
 BOOL Enable_Expand_Builtin_Set = FALSE;
 char *Extension_Names = NULL;
 BOOL Extension_Is_Present = FALSE;
+#define EXTENSION_NATIVE_SUPPORT_DEFAULT (EXTENSION_NATIVE_CODEGEN \
+					  + EXTENSION_NATIVE_REG_PLACEMENT \
+					  + EXTENSION_NATIVE_CLRGEN)
+INT32 Enable_Extension_Native_Support = EXTENSION_NATIVE_SUPPORT_DEFAULT;
+BOOL Enable_Extension_Native_Support_Set = FALSE;
+BOOL Meta_Instruction_Threshold_Set = FALSE;
+INT32 Meta_Instruction_Threshold = INT_MAX;
+BOOL Meta_Instruction_By_Size_Set = FALSE;
+BOOL Meta_Instruction_By_Size = FALSE;
 #endif
 
 BOOL Indexed_Loads_Allowed = FALSE;
@@ -704,6 +713,19 @@ static OPTION_DESC Options_TENV[] = {
   { OVK_NAME,   OV_INTERNAL,    FALSE, "extension", NULL,
     0, 0, 0,    &Extension_Names, &Extension_Is_Present,
     "List of extension names to be used" },
+  { OVK_INT32,   OV_INTERNAL,    FALSE, "extension_native_support", NULL,
+    EXTENSION_NATIVE_SUPPORT_DEFAULT, 0, 0xf, &Enable_Extension_Native_Support,
+    &Enable_Extension_Native_Support_Set,
+    "Enable support of automatic codegen for compatible extension" },
+
+  { OVK_INT32,   OV_INTERNAL,    FALSE, "meta_instruction_threshold", NULL,
+    INT_MAX, 0, INT_MAX,    &Meta_Instruction_Threshold,
+    &Meta_Instruction_Threshold_Set,
+    "Threshold on the accepatable cost for selecting a meta instruction" },
+  { OVK_BOOL,   OV_INTERNAL,    FALSE, "meta_instruction_by_size", NULL,
+    0, 0, 0,    &Meta_Instruction_By_Size,
+    &Meta_Instruction_By_Size_Set,
+    "Selects meta instruction by size" },
 #endif
 
   { OVK_COUNT }		/* List terminator -- must be last */

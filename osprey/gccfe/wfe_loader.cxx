@@ -451,7 +451,7 @@ static TYPE_ID  EXTENSION_REGISTER_CLASS_to_MTYPE(ISA_REGISTER_CLASS rclass) {
   if (rclass > ISA_REGISTER_CLASS_STATIC_MAX && rclass  <= ISA_REGISTER_CLASS_MAX) {
     return (Rclass_to_Mtype[rclass - ISA_REGISTER_CLASS_STATIC_MAX - 1]);
   }
-  FmtAssert((0),("Unexpexted Register class out of extension bounds: %d", rclass));
+  FmtAssert((0),("Unexpected Register class out of extension bounds: %d", rclass));
 }
 
 //TB: For a given PREG, return the associated MTYPE

@@ -35,9 +35,9 @@
 
 
 
-#include "../gccfe/extension_include.h"
+#include "extension_include.h"
+#include "loader.h"
 #include "erglob.h"
-#include "dyn_dll_api_access.h"
 //TB Extend PREG registers to extension
 extern "C"
 {
@@ -45,6 +45,9 @@ extern "C"
   BE_EXPORTED extern   INT Get_Last_Dedicated_Preg_Offset_Func(void);
   BE_EXPORTED extern   void Set_Last_Dedicated_Preg_Offset(INT offset);
 }
+
+BE_EXPORTED extern void  EXTENSION_add_INTRINSIC_to_Map(const char* c, INTRINSIC i);
+
 #ifdef BACK_END
 #include "dyn_isa_api.h"
 extern "C" { extern const ISA_EXT_Interface_t* get_ISA_extension_instance();};
@@ -59,9 +62,11 @@ extern "C" { extern const ISA_EXT_Interface_t* get_ISA_extension_instance();};
 #include <stdio.h>
 #include <stdarg.h>
 
-#include "loader.h"
+#include "opcode.h"
 #include "lai_loader_api.h"
 #include "pixel_mtypes.h"
+#include "ext_info.h"
+#include "config_TARG.h"
 
 /* Include local helpers. */
 #include "attribute_map_template.cxx"
@@ -90,6 +95,7 @@ int *extension_Preg_To_RegNum_table;
 INT *extension_RegClass_To_Preg_Min_Offset_table;
 // Table containing MMODE to MTYPE mapping
 static TYPE_ID *Extension_MachineMode_To_Mtype_Array;
+static int Extension_MachineMode_To_Mtype_Array_Size=0;
 
 /*
  * Table containing all loaded extension
@@ -98,8 +104,49 @@ static Extension_dll_t *extension_tab = (Extension_dll_t*)NULL;
 static int extension_count = 0;
 
 
+#include <map>
+typedef std::map<OPCODE, INTRINSIC_Vector_t*> INTRINSIC_OPCODE_MAP_t;
+static INTRINSIC_OPCODE_MAP_t Intrinsic_from_OPCODE;
+
+/** 
+ * return a vector of intrinsic ids corresponding to opcode.
+ * 
+ * @param opc 
+ * 
+ * @return 
+ */
+extern INTRINSIC_Vector_t* Get_Intrinsic_from_OPCODE(OPCODE opc) {
+  if (Intrinsic_from_OPCODE.count(opc)>0)
+    return Intrinsic_from_OPCODE[opc];
+  return NULL;
+}
+
+/** 
+ * add the intrinsic idx given in parameter to the
+ * Intrinsic_from_OPCODE map
+ * 
+ * @param opc 
+ * @param intrn 
+ * 
+ */
+extern void Add_Intrinsic_for_OPCODE(OPCODE opc, INT intrn) {
+  if (! Intrinsic_from_OPCODE.count(opc)>0) {
+    Intrinsic_from_OPCODE[opc] = new INTRINSIC_Vector_t();
+  }
+  Intrinsic_from_OPCODE[opc]->push_back(intrn);
+}
+
 mUINT8 pixel_size_per_type[MTYPE_MAX_LIMIT+1];
 
+// Information on type equivalence and corresponding conversion builtins
+// between C native types and extension
+typedef struct {
+  TYPE_ID   ctype;
+  INTRINSIC intrn_to_ext;
+  INTRINSIC intrn_to_c;
+  INTRINSIC clr_intrn;
+} equiv_type_t;
+static equiv_type_t equiv_type_tab[MTYPE_MAX_LIMIT+1];
 
 static void Add_Mtype(machine_mode_t mmode, const char *name, 
 		      enum mode_class mclass, unsigned short mbitsize, 
@@ -115,7 +162,7 @@ static void Add_Mtype(machine_mode_t mmode, const char *name,
     return;
   }
   FmtAssert (mtype < MTYPE_MAX_LIMIT,
-	     ("Two many MTYPES. Limit is %d", MTYPE_MAX_LIMIT));
+	     ("Too many MTYPES. Limit is %d", MTYPE_MAX_LIMIT));
 
   MTYPE_COUNT++;
   Machine_Types[MTYPE_COUNT].id = mtype;
@@ -182,8 +229,10 @@ static void Add_Mtype(machine_mode_t mmode, const char *name,
  * instance.  Returns the base MTYPE for this extension and a mapping
  * between mtypes and local register class for this extension.
  */
-TYPE_ID Add_MTypes(const Extension_dll_t *dll_instance, int **mtype_to_locrclass,  int *mtype_count, BOOL verbose)
-{
+TYPE_ID Add_MTypes(const Extension_dll_t *dll_instance,
+		   int **mtype_to_locrclass,
+		   int *mtype_count,
+		   BOOL verbose) {
   unsigned int i;
   unsigned int count = dll_instance->hooks->get_modes_count();
   const extension_machine_types_t* modes = dll_instance->hooks->get_modes();
@@ -233,6 +282,116 @@ TYPE_ID Add_MTypes(const Extension_dll_t *dll_instance, int **mtype_to_locrclass
   return base_mtype + 1;
 }
 
+/*
+ * Add a single intrinsic to the intrinsic list
+ */
+static void
+Add_Intrinsic(const Extension_dll_t *dll_instance,
+	      const extension_builtins_t* btypes,
+	      BOOL verbose) {
+  INT intrn_id = INTRINSIC_COUNT + 1;
+  
+  intrn_info[intrn_id].is_by_val           = btypes->is_by_val;
+  intrn_info[intrn_id].is_pure             = btypes->is_pure;
+  intrn_info[intrn_id].has_no_side_effects = btypes->has_no_side_effects;
+  intrn_info[intrn_id].never_returns       = btypes->never_returns;
+  intrn_info[intrn_id].is_actual           = btypes->is_actual;
+  intrn_info[intrn_id].is_cg_intrinsic     = btypes->is_cg_intrinsic;
+  intrn_info[intrn_id].c_name              = (char*)btypes->c_name;
+  intrn_info[intrn_id].specific_name       = (char*)NULL;
+  intrn_info[intrn_id].runtime_name        = (char*)btypes->runtime_name;
+
+
+  EXTENSION_add_INTRINSIC_to_Map(intrn_info[intrn_id].runtime_name, intrn_id);
+
+  // Complete proto info for this intrinsic
+  proto_intrn_info_t *proto_info =
+    &Proto_Intrn_Info_Array[INTRINSIC_COUNT - INTRINSIC_STATIC_COUNT];
+  proto_info->argument_count = btypes->arg_count;
+  
+  FmtAssert(btypes->arg_count <= INTRN_MAX_ARG,
+	    ("Intrinsic %s exceeds the limit of supported number of parameters (%d)\n.",
+	     btypes->c_name, INTRN_MAX_ARG));
+  // Add Mtype info: Convert machine mode proto info coming from the
+  // dll into MTYPE. We need this info only for out and inout
+  // parameters.
+  TYPE_ID outmtype[INTRN_MAX_ARG];
+  for (int arg = 0; arg < btypes->arg_count; arg++) {
+    outmtype[arg] = MachineMode_To_Mtype(btypes->arg_type[arg]);
+  }
+  INTRN_INOUT_TYPE inouttype[INTRN_MAX_ARG];
+  int nb_out = 0;
+  int nb_in = 0;
+  for (int arg = 0; arg < btypes->arg_count; arg++) {
+    FmtAssert(btypes->arg_inout[arg] != BUILTARG_UNDEF,
+	      ("Undef parameter type for intrinsic %s\n.", btypes->c_name));
+    if (btypes->arg_inout[arg] == BUILTARG_OUT || btypes->arg_inout[arg] == BUILTARG_INOUT)
+      nb_out++;
+    if (btypes->arg_inout[arg] == BUILTARG_IN || btypes->arg_inout[arg] == BUILTARG_INOUT)
+      nb_in++;
+    // enum INTRN_INOUT_TYPE and enum BUILTARG_INOUT_TYPE are in the
+    // same order, so just cast to map.
+    inouttype[arg] = (INTRN_INOUT_TYPE)btypes->arg_inout[arg];
+  }
+  
+  proto_info->arg_type = TYPE_MEM_POOL_ALLOC_N(TYPE_ID, Malloc_Mem_Pool, btypes->arg_count);
+  memcpy(proto_info->arg_type, outmtype, btypes->arg_count*sizeof(TYPE_ID));
+  proto_info->arg_inout =  TYPE_MEM_POOL_ALLOC_N(INTRN_INOUT_TYPE, Malloc_Mem_Pool, btypes->arg_count);
+  memcpy(proto_info->arg_inout, inouttype, btypes->arg_count*sizeof(TYPE_ID));
+  
+  proto_info->argument_count = btypes->arg_count;
+  proto_info->arg_out_count  = nb_out;
+  proto_info->arg_in_count   = nb_in;
+    
+  if (btypes->return_type != VOIDmode && (nb_out != 0)) {
+    char err_msg[256];
+    sprintf(err_msg,
+	    "Incompatible prototype for built-in %s. "
+	    "A built-in cannot have out parameters and not returning void.",
+	    btypes->c_name);
+    RaiseErrorIncompatibleLibrary(dll_instance->dllname, err_msg);
+  }
+  
+  // Initialize returned type
+  proto_info->return_type = MachineMode_To_Mtype(btypes->return_type);
+  intrn_info[intrn_id].return_kind = INTRN_return_kind_for_mtype(MachineMode_To_Mtype(btypes->return_type));
+
+  // Keep information about convert intrinsic
+  if (Enable_Extension_Native_Support) {
+    if (is_DYN_INTRN_CLR(*btypes)) {
+      TYPE_ID ext_ty =  MachineMode_To_Mtype(btypes->return_type);
+      equiv_type_tab[ext_ty].clr_intrn = intrn_id;
+    }
+
+    if (is_DYN_INTRN_CONVERT_TO_CTYPE(*btypes)) {
+      TYPE_ID ext_ty = MachineMode_To_Mtype(btypes->arg_type[0]);
+      TYPE_ID c_ty   = MachineMode_To_Mtype(btypes->return_type);
+      equiv_type_tab[ext_ty].ctype = MTYPE_is_signed(c_ty)?MTYPE_complement(c_ty):c_ty; // Register unsigned type
+      equiv_type_tab[ext_ty].intrn_to_c = intrn_id;
+    }
+    else if (is_DYN_INTRN_CONVERT_FROM_CTYPE(*btypes)) {
+      TYPE_ID c_ty   = MachineMode_To_Mtype(btypes->arg_type[0]);
+      TYPE_ID ext_ty = MachineMode_To_Mtype(btypes->return_type);
+      equiv_type_tab[ext_ty].ctype = MTYPE_is_signed(c_ty)?MTYPE_complement(c_ty):c_ty; // Register unsigned type
+      equiv_type_tab[ext_ty].intrn_to_ext = intrn_id;
+    }
+
+    if (btypes->wn_table != NULL)  {
+      int k=0;
+      while ( (OPCODE)(btypes->wn_table[k].wn_opc) != OPCODE_UNKNOWN ) {
+        OPCODE opc =  (OPCODE)(btypes->wn_table[k].wn_opc);
+        Add_Intrinsic_for_OPCODE(opc, intrn_id);
+        k++;
+      }
+    }
+  }
+
+  if (verbose) {
+    fprintf(TFile, "    intrinsic[%d] = %s\n",
+	    (intrn_id), (char*)btypes->runtime_name);
+  }
+  INTRINSIC_COUNT++;
+}
 
 /*
  * Extend intrinsic list with all intrinsics defined by the
@@ -248,80 +407,10 @@ void Add_Intrinsics(const Extension_dll_t *dll_instance, BOOL verbose)
 	    dll_instance->extname, count, INTRINSIC_COUNT + 1);
   }
   for (i = 0; i < count; i++) {
-    intrn_info[i + INTRINSIC_COUNT + 1].is_by_val = btypes[i].is_by_val;
-    intrn_info[i + INTRINSIC_COUNT + 1].is_pure = btypes[i].is_pure;
-    intrn_info[i + INTRINSIC_COUNT + 1].has_no_side_effects = btypes[i].has_no_side_effects;
-    intrn_info[i + INTRINSIC_COUNT + 1].never_returns = btypes[i].never_returns;
-    intrn_info[i + INTRINSIC_COUNT + 1].is_actual = btypes[i].is_actual;
-    intrn_info[i + INTRINSIC_COUNT + 1].is_cg_intrinsic = btypes[i].is_cg_intrinsic;
-    intrn_info[i + INTRINSIC_COUNT + 1].c_name = (char*)btypes[i].c_name;
-    intrn_info[i + INTRINSIC_COUNT + 1].specific_name = (char*)NULL;
-    intrn_info[i + INTRINSIC_COUNT + 1].runtime_name =(char*)btypes[i].runtime_name;
-    //TB: Complete proto info for this intrinsic
-    Proto_Intrn_Info_Array[i + INTRINSIC_COUNT - INTRINSIC_STATIC_COUNT].argument_count = btypes[i].arg_count;
-
-    // Add Mtype info: Convert machine mode proto info coming from the
-    //dll into MTYPE. We need this info only for out and inout
-    //parameters.
-    //Out parameters
-    TYPE_ID outmtype[INTRN_MAX_ARG];
-    for (int arg = 0; arg < btypes[i].arg_count; arg++) {
-      TYPE_ID  mtype = MachineMode_To_Mtype(btypes[i].arg_type[arg]);
-      outmtype[arg] = mtype;
-    }
-
-    INTRN_INOUT_TYPE inouttype[INTRN_MAX_ARG];
-    int nb_out = 0;
-    int nb_in = 0;
-    FmtAssert(btypes[i].arg_count <= INTRN_MAX_ARG,
-	      ("Intrinsic %s exceed the limit of supported number of parameters (%d)\n.",
-	       btypes[i].c_name, INTRN_MAX_ARG));
-    for (int arg = 0; arg < btypes[i].arg_count; arg++) {
-      FmtAssert(btypes[i].arg_inout[arg] != BUILTARG_UNDEF,
-		("Undef parameter type for intrinsic %s\n.", btypes[i].c_name));
-      if (btypes[i].arg_inout[arg] == BUILTARG_OUT || btypes[i].arg_inout[arg] == BUILTARG_INOUT)
-	nb_out++;
-      if (btypes[i].arg_inout[arg] == BUILTARG_IN || btypes[i].arg_inout[arg] == BUILTARG_INOUT)
-	nb_in++;
-      // enum INTRN_INOUT_TYPE and enum BUILTARG_INOUT_TYPE are in the
-      // same order, so just cast to mapp.
-      inouttype[arg] = (INTRN_INOUT_TYPE)btypes[i].arg_inout[arg];
-    }
-
-    
-    Proto_Intrn_Info_Array[i + INTRINSIC_COUNT - INTRINSIC_STATIC_COUNT].arg_type = 
-      TYPE_MEM_POOL_ALLOC_N(TYPE_ID, Malloc_Mem_Pool, btypes[i].arg_count);
-    memcpy(Proto_Intrn_Info_Array[i + INTRINSIC_COUNT - INTRINSIC_STATIC_COUNT].arg_type, 
-	   outmtype, btypes[i].arg_count*sizeof(TYPE_ID));
-    Proto_Intrn_Info_Array[i + INTRINSIC_COUNT - INTRINSIC_STATIC_COUNT].arg_inout = 
-      TYPE_MEM_POOL_ALLOC_N(INTRN_INOUT_TYPE, Malloc_Mem_Pool, btypes[i].arg_count);
-    memcpy(Proto_Intrn_Info_Array[i + INTRINSIC_COUNT - INTRINSIC_STATIC_COUNT].arg_inout, 
-	   inouttype, btypes[i].arg_count*sizeof(TYPE_ID));
-
-    Proto_Intrn_Info_Array[i + INTRINSIC_COUNT - INTRINSIC_STATIC_COUNT].argument_count = btypes[i].arg_count;
-    Proto_Intrn_Info_Array[i + INTRINSIC_COUNT - INTRINSIC_STATIC_COUNT].arg_out_count = nb_out;
-    Proto_Intrn_Info_Array[i + INTRINSIC_COUNT - INTRINSIC_STATIC_COUNT].arg_in_count = nb_in;
-
-    if (btypes[i].return_type != VOIDmode && (nb_out != 0)) {
-      char err_msg[256];
-      sprintf(err_msg,
-	      "Incompatible prototype for built-in %s. "
-	      "A built-in cannot have out parameters and not returning void.",
-	      btypes[i].c_name);
-      RaiseErrorIncompatibleLibrary(dll_instance->dllname, err_msg);
-    }
-
-    //Initialize returned type
-    Proto_Intrn_Info_Array[i + INTRINSIC_COUNT - INTRINSIC_STATIC_COUNT].return_type = MachineMode_To_Mtype(btypes[i].return_type);
-    intrn_info[i + INTRINSIC_COUNT + 1].return_kind = INTRN_return_kind_for_mtype(MachineMode_To_Mtype(btypes[i].return_type));
-
-    if (verbose) {
-      fprintf(TFile, "    intrinsic[%d] = %s\n",
-	      (i + INTRINSIC_COUNT + 1), (char*)btypes[i].runtime_name);
-    }
+    Add_Intrinsic(dll_instance, &btypes[i], verbose);
   }
-  INTRINSIC_COUNT += count;
 }
+
 //TB: Add a new pass to create new MTYPE for mutiple result intrinsics
 void Add_Composed_Mtype() {
   //Run thru added intrinsics to create new composed mtype
@@ -380,9 +469,11 @@ void Init_Mtypes(int nb_mtype_to_add) {
     FmtAssert(FALSE,
 	      ("Too much dynamic MTYPEs to add. Compilation aborted."));
   }
-  if (nb_mtype_to_add)
+  if (nb_mtype_to_add) {
     //TB: Allocate mtype to mmode mapping for extension
     Extension_MachineMode_To_Mtype_Array = TYPE_MEM_POOL_ALLOC_N(TYPE_ID, Malloc_Mem_Pool, nb_mtype_to_add);
+    Extension_MachineMode_To_Mtype_Array_Size = nb_mtype_to_add;
+  }
 }
 
 
@@ -493,7 +584,7 @@ Load_Extension_dll(const char *basename,
   const extension_hooks_t *hooks = (*get_instance)();
   if (hooks == NULL) {
     FmtAssert((FALSE),
-	      ("Symbol 'type_ext_interface' not found in extension dll '%s'\n",
+	      ("Symbol 'get_type_extension_instance' not found in extension dll '%s'\n",
 	       ext_dll.dllname));
   }
 
@@ -607,13 +698,20 @@ Initialize_Extension_Loader ()
   int nb_ext_mtypes;
   int nb_ext_intrinsics;
 
+  CGTARG_InitializeMetaInstructionMap();
+  
+
+  for (i=0; i<=MTYPE_MAX_LIMIT; i++) {
+    equiv_type_tab[i].ctype        = MTYPE_UNKNOWN;
+    equiv_type_tab[i].intrn_to_c   = INTRINSIC_INVALID;
+    equiv_type_tab[i].intrn_to_ext = INTRINSIC_INVALID;
+    equiv_type_tab[i].clr_intrn    = INTRINSIC_INVALID;
+  }
+
   if (Extension_Is_Present) {
  
-
-    BOOL verbose = Get_Trace(TP_EXTLOAD, 0xffffffff);
+    BOOL verbose = Get_Trace(TP_EXTENSION, TRACE_EXTENSION_LOADER_MASK);
     
-    // TODO: Load dlls...
-    // ----------------
     Load_Extension_dlls(&extension_tab, &extension_count, verbose);
 
     // Compute total count for mtypes and intrinsics
@@ -633,6 +731,13 @@ Initialize_Extension_Loader ()
     }
     //TB: Add a new pass to create new MTYPE for mutiple result intrinsics
     Add_Composed_Mtype();
+
+    /* No opcode->intrinsic correspondence found, deactivates
+       optimization pass to avoid any unwanted side effect */
+    if (Intrinsic_from_OPCODE.empty() &&
+        !Enable_Extension_Native_Support_Set) {
+      Enable_Extension_Native_Support&= ~EXTENSION_NATIVE_CODEGEN;
+    }
   }
   else {  // !Extension_Is_Present
     Init_Mtypes(0);
@@ -641,7 +746,7 @@ Initialize_Extension_Loader ()
 }
 
 /*
- * This function is responsible for settting PREG info To be called by
+ * This function is responsible for setting PREG info To be called by
  * the inliner or ir_b2a (not the front end neither the back end)
  */
 void
@@ -967,6 +1072,15 @@ void RaiseErrorIncompatibleLibrary(const char *name, const char *error_msg) {
   ErrMsg(EC_Lib_Ext_Load, name, err_msg);
 }
 
+bool EXTENSION_Is_Extension_Present(const char* name) {
+  int i;
+  for (i=0; i<extension_count; i++) {
+    if (!(strcmp(name, extension_tab[i].extname))) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
 
 /*
  * Return the register class associated to the specified PREG number .
@@ -977,7 +1091,7 @@ ISA_REGISTER_CLASS EXTENSION_PREG_to_REGISTER_CLASS(PREG_NUM preg) {
   if (preg > Get_Static_Last_Dedicated_Preg_Offset() && preg  <= Get_Last_Dedicated_Preg_Offset_Func()) {
     return (extension_Preg_To_RegClass_table[preg - Get_Static_Last_Dedicated_Preg_Offset() - 1]);
   }
-  FmtAssert((0),("Unexpexted PREG out of extension bounds: %d", preg));
+  FmtAssert((0),("Unexpected PREG out of extension bounds: %d", preg));
 }
 
 /*
@@ -1012,7 +1126,88 @@ TYPE_ID MachineMode_To_Mtype(machine_mode_t mode) {
   case DFmode:
     return MTYPE_F8;
   default:
-    FmtAssert((0),("Unexpexted mode to mtype conversion %d ", mode));
+    FmtAssert((0),("Unexpected mode to mtype conversion %d ", mode));
   }
   return MTYPE_UNKNOWN;
+}
+
+machine_mode_t Mtype_To_MachineMode(TYPE_ID mtype) {
+  if (mtype > MTYPE_STATIC_LAST) {
+    int i;
+    for (i = 0;
+	 i < Extension_MachineMode_To_Mtype_Array_Size;
+	 i++) {
+      if (Extension_MachineMode_To_Mtype_Array[i] == mtype) {
+	return (STATIC_COUNT_MACHINE_MODE + i);
+      }
+    }
+  }
+  FmtAssert(0, ("Mtype_To_MachineMode() does not support standard mtype yet"));
+  return 0;
+}
+				     
+/*
+ * Return the INTRINSIC that map a conversion from <src_ty> to <tgt_ty>.
+ * At least one of the type is expected to be an extension one.
+ */
+INTRINSIC EXTENSION_Get_Convert_Intrinsic(TYPE_ID src_ty, TYPE_ID tgt_ty) {
+  INTRINSIC id = INTRINSIC_INVALID;
+  if (MTYPE_is_dynamic(src_ty)) {
+    if (equiv_type_tab[src_ty].ctype == tgt_ty
+	|| ((!(Enable_Extension_Native_Support & EXTENSION_NATIVE_TYEQUIV_UNSIGNED_ONLY))
+	    && MTYPE_complement(equiv_type_tab[src_ty].ctype) == tgt_ty)) {
+      id = equiv_type_tab[src_ty].intrn_to_c;
+    }
+  }
+  else if (MTYPE_is_dynamic(tgt_ty)) {
+    if (equiv_type_tab[tgt_ty].ctype == src_ty
+	|| ((!(Enable_Extension_Native_Support & EXTENSION_NATIVE_TYEQUIV_UNSIGNED_ONLY))
+	    && MTYPE_complement(equiv_type_tab[tgt_ty].ctype) == src_ty)) {
+      id = equiv_type_tab[tgt_ty].intrn_to_ext;
+    }
+  }
+  return id;
+}
+
+/*
+ * Return TRUE if conversion from src to tgt is allowed, FALSE otherwise.
+ * At least one of the type is expected to be an extension one.
+ */
+BOOL EXTENSION_Are_Equivalent_Mtype(TYPE_ID src_ty, TYPE_ID tgt_ty) {
+  return (EXTENSION_Get_Convert_Intrinsic(src_ty, tgt_ty) != INTRINSIC_INVALID);
+}
+
+TYPE_ID EXTENSION_Get_Equivalent_Mtype(TYPE_ID ext_ty) {
+  if (!MTYPE_is_dynamic(ext_ty)) {
+    return MTYPE_UNKNOWN;
+  }
+  return (equiv_type_tab[ext_ty].ctype);
+}
+
+
+/** 
+ * return clr intrinsic for mtype, if defined.
+ * 
+ * @param ty 
+ * 
+ * @return 
+ */
+INTRINSIC EXTENSION_Get_CLR_Intrinsic(TYPE_ID ty) {
+  if (MTYPE_is_dynamic(ty)) {
+    return equiv_type_tab[ty].clr_intrn;
+  }
+  return INTRINSIC_INVALID;
+}
+
+
+void EXTENSION_Disable_Equivalent_Mtype() {
+  int i;
+  for (i = 0; i <= MTYPE_LAST; i++) {
+    if (equiv_type_tab[i].ctype != MTYPE_UNKNOWN) {
+      equiv_type_tab[i].ctype        = MTYPE_UNKNOWN;
+      equiv_type_tab[i].intrn_to_c   = INTRINSIC_INVALID;
+      equiv_type_tab[i].intrn_to_ext = INTRINSIC_INVALID;
+      equiv_type_tab[i].clr_intrn    = INTRINSIC_INVALID;
+    }
+  }
 }

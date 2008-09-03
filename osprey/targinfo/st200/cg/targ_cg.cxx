@@ -81,7 +81,7 @@
 #include "register_preg.h"
 
 #ifdef TARG_ST
-#include "../../../gccfe/gnu/st200/insn-config.h" /* for MAX_RECOG_OPERANDS */
+#include "insn-config.h" /* for MAX_RECOG_OPERANDS */
 #endif
 
 /* Import from targ_cgemit.cxx. */

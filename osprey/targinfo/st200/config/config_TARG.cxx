@@ -316,3 +316,12 @@ Configure_Source_TARG ( char *filename )
   /**  NOTE: filename CAN BE NULL */
 {
 }
+
+/** 
+ * Initialization of OPCODE -> INTRINSIC map for meta instructions.
+ * Function is used to block mapping of meta instructions that are
+ * already implemented by the trunk.
+ * 
+ */
+void CGTARG_InitializeMetaInstructionMap() {
+}

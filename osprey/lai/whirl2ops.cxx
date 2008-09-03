@@ -104,12 +104,7 @@
 #include "register_preg.h" /* For CGTARG_Regclass_Preg_Min() */
 #include "config_opt.h" /* For OPT_Enable_Warn_Assume */
 #include "cg_affirm.h"
-#endif
-
-#if   defined ( TARG_ST200  )
-#include "../gccfe/gnu/st200/insn-config.h" /* for MAX_RECOG_OPERANDS */
-#elif defined ( TARG_STxP70 )
-#include "../gccfe/gnu/stxp70/insn-config.h" /* for MAX_RECOG_OPERANDS */
+#include "insn-config.h" /* for MAX_RECOG_OPERANDS */
 #endif
 
 #ifdef TARG_ST200
@@ -4050,7 +4045,8 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
   OP *Last_OP = OPS_last(&New_OPs);
   BB *Last_BB = Cur_BB;
 
-  Exp_Intrinsic_Op (id, numrests, numopnds, res, kids, &New_OPs, current_srcpos);
+  Exp_Intrinsic_Op (id, numrests, numopnds, res, kids, &New_OPs, current_srcpos,
+                    Last_BB);
 
 #ifdef ENABLE_64_BITS
   if (Enable_64_Bits_Ops) {
@@ -5568,6 +5564,7 @@ Handle_ASM (const WN* asm_wn)
               ("not an asm_constraint pragma"));
 
     const char* constraint = WN_pragma_asm_constraint(out_pragma);
+
     PREG_NUM preg = WN_pragma_asm_copyout_preg(out_pragma);
     ST* pref_st = NULL;
     WN* load = Find_Asm_Out_Parameter_Load(WN_next(asm_wn), preg, &pref_st);
@@ -5709,6 +5706,7 @@ Handle_ASM (const WN* asm_wn)
   if (WN_Asm_Volatile(asm_wn)) {
 	Set_OP_volatile(asm_op);
   }
+
   OPS_Append_Op(&New_OPs, asm_op);
   OP_MAP_Set(OP_Asm_Map, asm_op, asm_info);
 #ifdef TARG_ST
