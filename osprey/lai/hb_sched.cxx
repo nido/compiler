@@ -1263,6 +1263,93 @@ HB_Schedule::Add_OP_To_Sched_Vector (OP *op, BOOL is_fwd)
   }
 }
 
+#ifdef TARG_ST
+// ======================================================================
+// This function takes 2 input operations, one of them being an extract.
+// It returns a pointer to this operation if scheduling it earlier than
+// the other operation might lower the register pressure.
+// It returns NULL otherwise (no preference).
+// 
+// Note that this function is expected to be called during the backward 
+// walk, and is relying on already scheduled operations.
+//
+// It is relevant to have a special handling of EXTRACT op for the 
+// following reasons:
+// - Those simulated operations are likely to be replaced by nothing,
+//   if the source and target TNs are coalesced,
+// - Scheduling them as early as possible can lower register pressure,
+//   if it is the last use of the source and if some of the results
+//   are unused.
+//
+// Note:
+//   If CG_sched_extract_earliest == SCHED_EXTRACT_EARLIEST_AGGRESSIVE_ON
+//   the transformation is enabled even with liveout GTN.
+// ======================================================================
+static OP*
+Schedule_Extract_Op_Earlier(OP *op1, OP *op2, BB *cur_bb, HB_Schedule *cur_sched) {
+  OP *extract_op, *other_op;
+  ARC_LIST *input_arcs;
+  ARC_LIST *output_arcs;
+  
+  if (OP_extract(op1)) {
+    extract_op = op1;
+    other_op   = op2;
+  } else {
+    extract_op = op2;
+    other_op   = op1;
+  }
+  
+  BOOL pref_extract = TRUE;
+  
+  INT extract_opnd_idx = OP_is_predicated(extract_op)?1:0;
+  
+  if ((CG_sched_extract_earliest == SCHED_EXTRACT_EARLIEST_AGGRESSIVE_ON) ||
+      (!TN_is_global_reg(OP_opnd(extract_op, extract_opnd_idx)) ||
+       (BB_live_out(cur_bb) && (!GTN_SET_MemberP(BB_live_out(cur_bb), OP_opnd(extract_op, extract_opnd_idx)))))) {
+    // Search if the operand of extract operation is used afterwards.
+    // If not, it is interesting to schedule it as early as possible,
+    // especially if some of the results are unused.
+    //
+    // To detect use points of operands, looks into the dependency graph
+    // at all successor nodes of predecessor nodes of the extract op.
+    // 1.Walk along input arcs of extract op
+    for (input_arcs = OP_preds(extract_op);
+	 input_arcs != NULL && pref_extract;
+	 input_arcs = ARC_LIST_rest(input_arcs)) {
+      ARC *inarc = ARC_LIST_first(input_arcs);
+      OP *pred_op = ARC_pred(inarc);
+      if (ARC_kind(inarc) == CG_DEP_REGIN) {
+      
+	// 2.Walk along output arcs of predecessors of extract op
+	for (output_arcs = OP_succs(pred_op);
+	     output_arcs != NULL;
+	     output_arcs = ARC_LIST_rest(output_arcs)) {
+	  ARC *outarc;
+	  outarc = ARC_LIST_first(output_arcs);
+	  if (ARC_kind(outarc) == CG_DEP_REGIN &&
+	      inarc != outarc) {
+	    OP *succ_op = ARC_succ(outarc);
+	    INT out_opnd_idx = ARC_opnd(outarc);
+	    if (OP_opnd(succ_op, out_opnd_idx) == OP_opnd(extract_op, extract_opnd_idx)) {
+	      OPSCH *succ_opsch = OP_opsch(succ_op, cur_sched->hb_map());
+	      if (OPSCH_scheduled(succ_opsch) ||
+		  succ_op == other_op) {
+		pref_extract = FALSE;
+		break;
+	      }
+	    }
+	  }
+	}
+      }
+    }
+    if (pref_extract) {
+      return (extract_op);
+    }
+  }
+  return NULL;
+}
+#endif
+
 // ======================================================================
 // Compare two OPs to see which one is better for scheduling.
 // ======================================================================
@@ -1292,6 +1379,19 @@ Priority_Selector::Is_OP_Better (OP *cur_op, OP *best_op)
     //    if (pref_wn && WN_pf_manual(pref_wn)) manual_pref = TRUE;
     manual_pref = TRUE;
   }
+
+#ifdef TARG_ST
+  // [TTh] Special handling for EXTRACT ops: scheduling them earlier
+  // in current BB might lower the register pressure and remove some
+  // live-range conflicts.
+  if ((CG_sched_extract_earliest != SCHED_EXTRACT_EARLIEST_OFF) &&
+      (OP_extract(cur_op) || OP_extract(best_op))) {
+    OP *elected = Schedule_Extract_Op_Earlier(cur_op, best_op, _curbb, _cur_sched);
+    if (elected) {
+      return ((elected==cur_op)?FALSE:TRUE);
+    }
+  }
+#endif
 
   if (cur_scycle > best_scycle)  {
 

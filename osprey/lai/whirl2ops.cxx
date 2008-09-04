@@ -5777,7 +5777,7 @@ Handle_AFFIRM(WN *wn_affirm) {
       DevWarn("No variable found in __builtin_assume (line %d). Ignored.", Srcpos_To_Line(WN_Get_Linenum(wn_affirm)));
     }
     if (Get_Trace(TP_CGEXP, 8))
-      fprintf(TFile, "*** Cannot analyze WHIRL node WN_AFFIRM ***\n", Current_PU_Count());
+      fprintf(TFile, "*** Cannot analyze WHIRL node WN_AFFIRM ***\n");
   }
   else {
     TN *result = Handle_LDID(ldid, NULL, WN_opcode (ldid));

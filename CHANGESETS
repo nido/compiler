@@ -1,6 +1,35 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep  4 10:22:08 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-42298
+
+Description:
+------------
+	* [trunk] Fix for bug #42298: [QMx] Limited coalescing due to inefficient EXTRACT scheduling.
+		-> Updated pre-pass backward scheduler to handle EXTRACT operations
+		   in a specific way: Schedule them earlier in the BB if it seems
+		   relevant to decrease register pressure and reduce live-range conflicts
+		   Added option: -CG:sched_extract_earliest=[0|1|2]
+		     Value = 0 : No specific scheduling for EXTRACT ops
+		     Value = 1 : Standard mode [default]
+		     Value = 2 : Aggressive mode
+	Deliver fixes/codex-42298 rev #18117 with authorization branch #50467
+
+
+Modified Files:
+---------------
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/hb_sched.cxx
+	M      osprey/lai/cg_flags.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Sep  3 08:43:33 CEST 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

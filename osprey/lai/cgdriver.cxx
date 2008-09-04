@@ -273,6 +273,7 @@ static BOOL LOCS_POST_Scheduling_overriden;
  */
 INT32 CG_sched_mask = 0;
 INT32 CG_LRA_mask = 0;
+INT32 CG_sched_extract_earliest = SCHED_EXTRACT_EARLIEST_ON;
 #endif
 
 /* Keep	a copy of the command line options for assembly	output:	*/
@@ -1250,6 +1251,9 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LRA_mask", "", 
     0, 0, 0xffffffff,	&CG_LRA_mask, NULL,
     "Control LRA optimization (mask)" },
+  { OVK_INT32,	OV_INTERNAL, TRUE, "sched_extract_earliest", "",
+    1, 0, 2,	&CG_sched_extract_earliest, NULL,
+    "Schedule EXTRACT ops as early as possible in BB to reduce reg pressure (0:off, 1:on, 2:on + aggressive mode)" },
 #endif
 
   { OVK_COUNT }

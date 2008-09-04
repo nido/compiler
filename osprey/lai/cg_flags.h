@@ -538,6 +538,13 @@ extern INT CG_simp_flow_in_tailmerge;
 #ifdef TARG_ST
 extern INT32 CG_sched_mask;
 extern INT32 CG_LRA_mask;
+
+enum {
+  SCHED_EXTRACT_EARLIEST_OFF = 0,
+  SCHED_EXTRACT_EARLIEST_ON,
+  SCHED_EXTRACT_EARLIEST_AGGRESSIVE_ON
+};
+extern INT32 CG_sched_extract_earliest;
 #endif
 
 #endif /* cg_flags_INCLUDED */
