@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep  4 13:13:56 CEST 2008
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-27321
+
+Description:
+------------
+	* [trunk] Fix for bug #27321: Sub-optimal scheduling in small structure copy expansion.
+	Deliver fixes/codex-27321 rev #18133 with authorization branch #50150
+
+
+Modified Files:
+---------------
+	M      osprey/be/vho/vho_lower.cxx
+	M      osprey/common/com/config_vho.cxx
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/config_vho.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Sep  4 10:22:08 CEST 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

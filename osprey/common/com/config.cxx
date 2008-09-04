@@ -217,7 +217,8 @@ static BOOL	UseMemcpy_Set = FALSE;
 INT32   Scalar_Struct_Limit = -1;
 BOOL UnrollLoops = TRUE;
 BOOL UnrollLoops_Set = FALSE;
-INT32	MinStructCopyParallel =    0;		/* 0 or 1 = do not generate parallel moves for struct copies */
+INT32	MinStructCopyParallel     =    0;	/* 0 or 1 = do not generate parallel moves for struct copies */
+BOOL    MinStructCopyParallel_Set =    FALSE;
 #endif
 
 INT32 iolist_reuse_limit = 100;
@@ -576,6 +577,8 @@ static OPTION_DESC Options_TENV[] = {
   { OVK_INT32,	OV_INTERNAL,	FALSE, "struct_copy_mem_intr_size", "struct_copy_mem",
     -1, 0, 4096,	&MinStructCopyMemIntrSize, &MinStructCopyMemIntrSize_Set },
 #ifdef TARG_ST
+  { OVK_INT32,  OV_INTERNAL,    FALSE, "struct_copy_parallel", NULL,
+    -1, 0, 4096,        &MinStructCopyParallel, &MinStructCopyParallel_Set },
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "use_memcpy", 	"",
     0, 0, 0,	&UseMemcpy, &UseMemcpy_Set },
   { OVK_INT32,	OV_INTERNAL,	FALSE, "scalar_struct_limit", NULL,
@@ -1701,7 +1704,7 @@ Configure_Source ( char	*filename )
   //  MinStructCopyMemIntrSize = 0;
   if (Opt_Level > 2) {
     MinStructCopyLoopSize = 32;
-    MinStructCopyParallel = 3;
+    if(!MinStructCopyParallel_Set) MinStructCopyParallel = 3;
   }    
 #endif
 

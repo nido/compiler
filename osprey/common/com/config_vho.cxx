@@ -62,6 +62,7 @@
 
 BOOL    VHO_Force_Lowering              = FALSE;
 BOOL    VHO_Struct_Opt                  = TRUE;
+BOOL	VHO_Struct_Limit		= 4;
 BOOL    VHO_Combine_Loads               = FALSE;
 BOOL    VHO_Recycle_Pregs               = FALSE;
 INT32   VHO_Switch_Density              = 12;
@@ -109,6 +110,8 @@ static OPTION_DESC Options_VHO[] = {
     FALSE, 0, 0, &VHO_Force_Lowering,  NULL },
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "struct_opt",         "struct_opt",
     TRUE, 0, 0,  &VHO_Struct_Opt,      NULL },
+  { OVK_INT32,   OV_INTERNAL,    FALSE, "struct_limit",      "struct_limit",
+    4, 0, INT32_MAX,  &VHO_Struct_Limit,    NULL },
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "recycle_pregs",      "recycle_pregs",
     FALSE, 0, 0, &VHO_Recycle_Pregs,   NULL },
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "combine_loads",      "combine_loads",

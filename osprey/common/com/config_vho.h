@@ -56,6 +56,7 @@
 
 extern BOOL  VHO_Force_Lowering;
 extern BOOL  VHO_Struct_Opt;
+extern INT32 VHO_Struct_Limit;
 extern BOOL  VHO_Recycle_Pregs;
 extern BOOL  VHO_Combine_Loads;
 extern INT32 VHO_Switch_Density;

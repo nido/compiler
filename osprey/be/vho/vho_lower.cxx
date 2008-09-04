@@ -263,8 +263,6 @@ static FB_FREQ   VHO_Switch_Default_Freq;  /* goto switch default freq       */
 
 /* Variables related to struct lowering */
 
-INT32  VHO_Struct_Limit = 4;               /* max # of fields/statements     */
-
 // static INT32  VHO_Struct_Alignment;      /* Alignment of struct           */
 static BOOL   VHO_Struct_Can_Be_Lowered;    /* FALSE if cannot be lowered    */
 static INT32  VHO_Struct_Nfields;           /* # of fields                   */
