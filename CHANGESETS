@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Sep  5 09:17:38 CEST 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-50978
+
+Description:
+------------
+	* [trunk] Fix for bug #50978: Quest test failure (st231, -Os)
+	Deliver fixes/codex-50978 rev #18153 with authorization branch #51043
+
+
+Modified Files:
+---------------
+	M      osprey/lai/hb_sched.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Sep  4 15:13:28 CEST 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

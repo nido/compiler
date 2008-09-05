@@ -440,8 +440,11 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
   for (arcs = OP_succs(op1); arcs != NULL; arcs = ARC_LIST_rest(arcs)) {
     ARC *arc = ARC_LIST_first(arcs);
     if (ARC_succ(arc) == op2 &&
-	(ARC_kind(arc) == CG_DEP_REGIN || ARC_kind(arc) == CG_DEP_REGANTI))
+	(ARC_kind(arc) == CG_DEP_REGIN || ARC_kind(arc) == CG_DEP_REGANTI)) {
       isRegInAnti = TRUE;
+      // FdF 20080902: No need to continue
+      break;
+    }
   }
   if (!isRegInAnti)
     return FALSE;
@@ -486,7 +489,10 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
   if (OP_result(addiu_op,0 /*???*/) != OP_opnd(ldst_op, base_opndnum) ||
       (OP_store(ldst_op) &&
 #ifdef TARG_ST
-       OP_result(addiu_op,0 /*???*/) == OP_opnd(ldst_op, TOP_Find_Operand_Use(OP_code(ldst_op), OU_storeval))
+       // FdF 20080903: Use TN_Are_Equivalent instead of direct
+       // pointer equality to catch cases where different TNs are
+       // allocated to the same register (bug codex-50978)
+       TNs_Are_Equivalent(OP_result(addiu_op,0 /*???*/), OP_Storeval(ldst_op))
 #else
        OP_result(addiu_op,0 /*???*/) == OP_opnd(ldst_op,0)
 #endif
