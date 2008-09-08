@@ -1239,10 +1239,12 @@ REGISTER_Has_Expected_Rank(REGISTER reg, INT multireg_size, INT expected_rank) {
 }
 
 /* Walk through all children of 'root_lr', and detach the ones that belongs to
- * rank range [ref_rank_min, ref_rank_max] and that redefine their contents.
+ * rank range [ref_rank_min, ref_rank_max] and that have been redefined since the
+ * last definition of 'used_lr'.
  */
 static void
 Detach_Conflicting_LR_From_Overlap_Coalescing_Class(LIVE_RANGE *root_lr,
+						    LIVE_RANGE *used_lr,
 						    INT ref_rank_min,
 						    INT ref_rank_max) {
   LIVE_RANGE *cur_lr, *next_lr, *last_lr;
@@ -1264,25 +1266,29 @@ Detach_Conflicting_LR_From_Overlap_Coalescing_Class(LIVE_RANGE *root_lr,
       can_conflict = !((cur_rank_min > ref_rank_max) || (cur_rank_max < ref_rank_min));
     }
     if (can_conflict) {
-      if ((LR_def_cnt(cur_lr) >  1) ||
-	  (LR_def_cnt(cur_lr) == 1         &&
-	   TN_is_global_reg(LR_tn(cur_lr)) &&
-	   LR_exposed_use(cur_lr) > 0)) {
-	// Current node has multiple definitions
-	if (LR_ovcoal_last_ver(cur_lr) > LR_ovcoal_last_ver(root_lr)) {
-	  
-	  // Detach current node from coalescing tree
+      if (cur_lr != used_lr &&
+	  ((LR_def_cnt(cur_lr) >  1) ||
+	   (LR_def_cnt(cur_lr) == 1         &&
+	    TN_is_global_reg(LR_tn(cur_lr)) &&
+	    LR_exposed_use(cur_lr) > 0))) {
+	// Current node is not the read one (used_lr) and has multiple definitions
+	if (LR_ovcoal_last_ver(cur_lr) > LR_ovcoal_last_ver(used_lr)) {
+	  // Conflicting definition of cur_lr: detach it from coalescing tree
 	  if (Do_LRA_Trace(Trace_LRA_Detail)) {
-	    fprintf (TFile, OVCOAL_MSG" Detach TN%d from its parent (redefinition)\n",
-		     TN_number(LR_tn(cur_lr)));
+	    fprintf (TFile, OVCOAL_MSG" Detach TN%d from its parent TN%d (redefinition)\n",
+		     TN_number(LR_tn(cur_lr)), TN_number(LR_tn(root_lr)));
 	  }
 	  Remove_LR_ovcoal_child(LR_ovcoal_parent(cur_lr), cur_lr);
 	}
       }
       if (LR_ovcoal_parent(cur_lr) && LR_ovcoal_child(cur_lr)) {
-	// Recursive walk of the children of current one, if the latter one
-	// has not been detached
-	Detach_Conflicting_LR_From_Overlap_Coalescing_Class(cur_lr, ref_rank_min, ref_rank_max);
+	// Perform a recursive walk of the children of cur_lr if the latter
+	// one has not been detached.
+	// Note: if the detached LR was an ancestor of 'used_lr', we would
+	//       have to visit its children as well,  but it cannot happen
+	//       because the pruning of ancestors has already been done in
+	//       Update_Overlap_Coalescing_Info_For_Use()
+	Detach_Conflicting_LR_From_Overlap_Coalescing_Class(cur_lr, used_lr, ref_rank_min, ref_rank_max);
       }
     }
   } while (cur_lr != last_lr);
@@ -1298,13 +1304,13 @@ static void
 Update_Overlap_Coalescing_Info_For_Use(LIVE_RANGE *clr) {
   LIVE_RANGE *iter_lr   = clr;
   LIVE_RANGE *parent_lr = LR_ovcoal_parent(clr);
-  // Walk up the overlap coalescing class tree, and check at each stage if the
-  // parent has been modified since the definition of the child. In this case,
-  // the child must not be allocated to the same register as the parent, and
-  // must therefore be removed from the coalescing class.
+  // Walk up the overlap coalescing class tree, and check for each ancestor
+  // if it has been redefined since the last definition of the used LR.
+  // If it is the case, it is required to split the coalescing tree in
+  // 2 parts: one with the ancestor LR, and another one with the use_LR.
   while (parent_lr) {
-    if (LR_ovcoal_last_ver(parent_lr) != LR_ovcoal_init_ver(iter_lr)) {
-      // parent TN redefined since the copy/extract, no overlap coalescing possible
+    if (LR_ovcoal_last_ver(parent_lr) > LR_ovcoal_last_ver(clr)) {
+      // No overlap coalescing possible
       if (Do_LRA_Trace(Trace_LRA_Detail)) {
 	fprintf (TFile, OVCOAL_MSG" Detach TN%d from its parent  (redefinition)\n",
 		 TN_number(LR_tn(iter_lr)));
@@ -1329,7 +1335,7 @@ Update_Overlap_Coalescing_Info_For_Use(LIVE_RANGE *clr) {
       clr_rank_min = LR_ovcoal_rank(clr);
       clr_rank_max = clr_rank_min + TN_nhardregs(LR_tn(clr)) - 1;
     }
-    Detach_Conflicting_LR_From_Overlap_Coalescing_Class(iter_lr, clr_rank_min, clr_rank_max);
+    Detach_Conflicting_LR_From_Overlap_Coalescing_Class(iter_lr, clr, clr_rank_min, clr_rank_max);
   }
 }
 
@@ -1916,15 +1922,15 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
         LR_last_use(clr) = opnum;
 #endif
         LR_use_cnt(clr)++;
-#ifdef TARG_ST
-	if (LRA_overlap_coalescing) {
-	  // [TTh] Check that no LR from the overlap coalescing class 
-	  // has been redefined since the definition of current LR.
-	  // otherwise it is require to split the coalescing class.
-	  Update_Overlap_Coalescing_Info_For_Use(clr);
-	}
-#endif
       }
+#ifdef TARG_ST
+      if (LRA_overlap_coalescing) {
+	// [TTh] Check that no LR from the overlap coalescing class 
+	// has been redefined since the definition of current LR.
+	// otherwise it is require to split the coalescing class.
+	Update_Overlap_Coalescing_Info_For_Use(clr);
+      }
+#endif
     }
 
     /* process the result TN */
@@ -2055,8 +2061,26 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 	  }
 	}
 	else {
-	  // LR potentially redefined, increment its version
-	  Set_LR_ovcoal_last_ver(clr, Generate_Overlap_Coalescing_Version());
+	  // LR potentially redefined: increment its version or inherits the one
+	  // from the source TN in case of preference copy between  2 TNs of the
+	  // same coalescing tree (the latter case happens for  instance  when a
+	  // GTN is copied into a local TN, that is then updated and finally
+	  // copied  back into the initial GTN).
+	  LIVE_RANGE *src_lr = NULL;
+	  BOOL done = FALSE;
+	  if (OP_Is_Preference_Copy(op)) {
+	    src_lr = LR_For_TN(OP_opnd(op, OP_Copy_Operand(op)));
+	    if (src_lr && !LR_early_clobber(src_lr) &&
+		LR_ovcoal_root(src_lr) == LR_ovcoal_root(clr)) {
+	      // Inherits version from source TN
+	      Set_LR_ovcoal_last_ver(clr, LR_ovcoal_last_ver(src_lr));
+	      done = TRUE;
+	    }
+	  }
+	  if (!done) {
+	    // Increment LR version
+	    Set_LR_ovcoal_last_ver(clr, Generate_Overlap_Coalescing_Version());
+	  }
 	}
 	
 	// It is not allowed to have several LRs of the same coal class

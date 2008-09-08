@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Sep  8 13:02:25 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-44936
+
+Description:
+------------
+	* [trunk] Fix for bug #44936: [MP1x] Suboptimal coalescing for in/out parameters.
+		-> LRA: refined building of overlap coalescing tree to maximize coalescing
+		        opportunities, and to handle two-way copies between TNs of the same
+			coalescing tree
+	Deliver fixes/codex-44936 rev #18165 with authorization branch #50870
+
+
+Modified Files:
+---------------
+	M      osprey/lai/lra.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Sep  5 09:17:38 CEST 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
