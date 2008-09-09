@@ -205,6 +205,8 @@ const char *CFLOW_cold_threshold;
 BOOL CFLOW_Enable_Favor_Branches_Condition = FALSE;
 // [TB]
 BOOL CFLOW_Space = FALSE;
+BOOL CFLOW_depgraph_use = TRUE;
+BOOL CFLOW_enable_last_pass = FALSE;
 #endif
 
 // ====================================================================

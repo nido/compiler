@@ -145,6 +145,8 @@ static BOOL eh_label_removed;
 #define TRACE_DOM	0x0200	/* used in dominate.c */
 #ifdef TARG_ST
 #define TRACE_MERGE_OPS	0x0400
+#define TRACE_HOIST_OPS	0x0800
+#define TRACE_REDUNDANT_RETURN	0x1000
 #endif
 
 BOOL CFLOW_Trace;
@@ -159,6 +161,8 @@ BOOL CFLOW_Trace_Freq;
 BOOL CFLOW_Trace_Dom;
 #ifdef TARG_ST
 static BOOL CFLOW_Trace_Merge_Ops;
+static BOOL CFLOW_Trace_Hoist_Ops;
+static BOOL CFLOW_Trace_Redundant_Return;
 #endif
 
 /* We need to keep some auxilary information for each BB for the various
@@ -1212,6 +1216,7 @@ Finalize_BB(BB *bp)
 	    Exp_Noop(&ops);
 	  }
 	  BB_Append_Ops(bp, &ops);
+	  OP_scycle(BB_last_op(bp)) = OP_scycle(BB_first_op(bp));
 	}
       }
     }
@@ -1274,7 +1279,7 @@ Finalize_BB(BB *bp)
       BB *succ_bb = BBINFO_succ_bb(bp, 0);
       BB *next_bb = BB_next(bp);
 
-      Is_True(   BBlist_Len(BB_succs(bp)) == 1
+      Is_True(   BB_succs_len(bp) == 1
 	      && BBLIST_item(BB_succs(bp)) == succ_bb,
 	      ("BB:%d preds/succs don't match BBINFO", BB_id(bp)));
       Is_True(!freqs_computed || BBLIST_prob(BB_Find_Succ(bp, succ_bb)) == 1.0,
@@ -1462,7 +1467,7 @@ Initialize_BB_Info(void)
      */
     bbinfo_size = sizeof(BBINFO);
     if (bbkind == BBKIND_VARGOTO || bbkind == BBKIND_INDGOTO) {
-      INT incr =  (BBlist_Len(BB_succs(bb)) - BBINFO_NSUCCS)
+      INT incr =  (BB_succs_len(bb) - BBINFO_NSUCCS)
 		* sizeof(struct succedge);
       if (incr > 0) bbinfo_size += incr;
     }
@@ -2257,7 +2262,7 @@ Convert_Indirect_Goto_To_Direct ( BB *bp )
    * verify it anyway.
    */
   BBLIST_prob(BB_Find_Succ(bp, target)) = 1.0;
-  Is_True(   BBlist_Len(BB_succs(bp)) == 1
+  Is_True(   BB_succs_len(bp) == 1
 	  && BBLIST_item(BB_succs(bp)) == target
 	  && BB_in_preds(target, bp),
 	  ("BB:%d preds/succs don't match BBINFO", BB_id(bp)));
@@ -2486,7 +2491,7 @@ convert_it:
      */
     if (targ != dead) Unlink_Pred_Succ(bp, dead);
     BBLIST_prob(BB_Find_Succ(bp, targ)) = 1.0;
-    Is_True(   BBlist_Len(BB_succs(bp)) == 1
+    Is_True(   BB_succs_len(bp) == 1
 	    && BBLIST_item(BB_succs(bp)) == targ
 	    && BB_in_preds(targ, bp),
 	    ("BB:%d preds/succs don't match BBINFO", BB_id(bp)));
@@ -3020,7 +3025,12 @@ Convert_Goto_To_Return ( BB *bp )
  * ====================================================================
  */
 static BOOL
+#ifdef TARG_STxP70
+Optimize_Branches(BOOL before_regalloc)
+#else
 Optimize_Branches(void)
+#endif
+  
 {
   INT pass;
   mBOOL *used_branch_around;
@@ -3055,6 +3065,21 @@ Optimize_Branches(void)
 	  }
 	  changed = TRUE;
         } else {
+#ifdef TARG_STxP70
+	  /* bv11 */
+	  if (!before_regalloc) {
+	    OP *br_op = BB_branch_op(bp);
+	    TN *br_cond = OP_opnd(br_op, OP_find_opnd_use(br_op, OU_condition));
+	    FmtAssert(TN_register_class(br_cond) == ISA_REGISTER_CLASS_gr ||
+		      OP_Is_Counted_Loop(br_op),
+		      ("Optimize_branches: cond of wrong class"));
+	    if ((TN_register_class(br_cond) == ISA_REGISTER_CLASS_gr) &&
+		(strcmp(REGISTER_name(TN_register_class(br_cond),
+				      TN_register(br_cond)), "G3") == 0)) {
+	      break;
+	    }
+	  }
+#endif
 	  if (freqs_computed) {
 	    edge_freq = BBINFO_succ_prob(bp, 0) * BB_freq(bp);
 	  }
@@ -4401,44 +4426,89 @@ OP_equiv(OP *op1, OP *op2) {
 static BOOL
 Merge_Ops_in_Preds(BB *b) {
 #define MAX_PRED_BBS 10
-  OP *cur_op[MAX_PRED_BBS];
+  OP *cur_op[MAX_PRED_BBS], *cur_op_tmp;
   BOOL merged = FALSE;
+  INT pred_count = BB_preds_len(b);
 
-  if (BBlist_Len(BB_preds(b)) > MAX_PRED_BBS)
-    return FALSE;
-
-  INT pred_count = BBlist_Len(BB_preds(b));
-  OP *common_op = NULL;
-  BBLIST *bblst;
-  INT i = 0;
-
-  /* Initialize cur_op with the last op of each predecessor of b, not
-     counting the branch operation. */
-
-  FOR_ALL_BB_PREDS (b, bblst) {
-    BB *pbb = BBLIST_item(bblst);
-    cur_op[i] = BB_last_op(pbb);
-    if (cur_op[i] && OP_br(cur_op[i]))
-      cur_op[i] = OP_prev(cur_op[i]);
-    i ++;
+  /* Stop if BB b has only one predecessor and if merged BB will be too large.
+   */
+  if (pred_count == 1) {
+    BB *pred = BBLIST_item(BB_preds(b));
+    if (BB_length(b) + BB_length(pred) >= CG_split_BB_length) {
+      return FALSE;
+    }
   }
 
-  Is_True(i == pred_count, ("Internal error in Merge_Ops_in_Preds\n"));
+  if (pred_count > MAX_PRED_BBS)
+    return FALSE;
 
-  /* While operations are the same in all predecessors, move them to b
-     and remove them from predecessors. */
+  OP *common_op = NULL;
+  BBLIST *bblst;
+  BOOL find;
+  BB *bb_tmp;
 
-  do {
+  cur_op[0] = BB_last_op(BBLIST_item(BB_preds(b)));
+  if (cur_op[0] && OP_br(cur_op[0]))
+    cur_op[0] = OP_prev(cur_op[0]);
 
-    /* Check if cur_op is the same in all predecessors. */
-
+  while (cur_op[0]) {
+    int i = 0;
     common_op = cur_op[0];
-    for (i = 1; i < pred_count; i ++) {
-      if (!OP_equiv(common_op, cur_op[i])) {
-	common_op = NULL;
-	break;
+
+    FOR_ALL_BB_PREDS (b, bblst) {
+      BB *pbb = BBLIST_item(bblst);
+      if (BB_id(pbb) == BB_id(OP_bb(cur_op[0]))){
+	continue;
+      }
+      find = FALSE;
+      i++;
+    
+      cur_op[i] = BB_last_op(pbb);
+      if (cur_op[i] && OP_br(cur_op[i]))
+	cur_op[i] = OP_prev(cur_op[i]);
+    
+      if (CG_opt_level >= 2 && CFLOW_depgraph_use) {
+	CG_DEP_Compute_Graph (pbb, 
+			      INCLUDE_ASSIGNED_REG_DEPS,
+			      NON_CYCLIC,
+			      INCLUDE_MEMREAD_ARCS,
+			      INCLUDE_MEMIN_ARCS,
+			      NO_CONTROL_ARCS,
+			      NULL);
+	if (CFLOW_Trace_Merge_Ops) CG_DEP_Trace_Graph (pbb);
+	
+	while (cur_op[i]) {
+	  if (OP_equiv(cur_op[0], cur_op[i])) {
+	    find = TRUE;
+	    break;
+	  }
+	  cur_op_tmp = OP_prev(cur_op[i]); 
+	  while (cur_op_tmp) {
+	    if(OP_succs(cur_op_tmp) != NULL) {
+	      cur_op_tmp = OP_prev(cur_op_tmp);
+	    }
+	    else break;
+	  }
+	  cur_op[i] = cur_op_tmp;
+	}
+	
+	CG_DEP_Delete_Graph (pbb);
+	if (find == TRUE) continue;
+	else {
+	  common_op = NULL;
+	  break;
+	}
+      }
+      else {
+	if (!OP_equiv(cur_op[0], cur_op[i])) {
+	  common_op = NULL;
+	  break;
+	}
       }
     }
+    
+    cur_op_tmp = OP_prev(cur_op[0]);
+    bb_tmp = OP_bb(cur_op[0]);
 
     if (common_op) {
 
@@ -4458,7 +4528,6 @@ Merge_Ops_in_Preds(BB *b) {
 	  #pragma mips_frequency_hint NEVER
 	  fprintf(TFile, " %d", BB_id(OP_bb(op)));
 	}
-	cur_op[i] = OP_prev(cur_op[i]);
 	BB_Remove_Op(OP_bb(op), op);
       }
 
@@ -4469,8 +4538,35 @@ Merge_Ops_in_Preds(BB *b) {
       merged = TRUE;
     }
 
-  } while (common_op);
-
+    if (CG_opt_level >= 2 && CFLOW_depgraph_use) {
+      CG_DEP_Compute_Graph (bb_tmp, 
+			    INCLUDE_ASSIGNED_REG_DEPS,
+			    NON_CYCLIC,
+			    INCLUDE_MEMREAD_ARCS,
+			    INCLUDE_MEMIN_ARCS,
+			    NO_CONTROL_ARCS,
+			    NULL);
+      if (CFLOW_Trace_Merge_Ops) CG_DEP_Trace_Graph (bb_tmp);
+      
+      while (cur_op_tmp) {
+	if(OP_succs(cur_op_tmp) != NULL) {
+	  cur_op_tmp = OP_prev(cur_op_tmp);
+	}
+	else break;
+      }
+      CG_DEP_Delete_Graph (bb_tmp);
+      cur_op[0] = cur_op_tmp;
+    }
+    else {
+      if (common_op) {
+	cur_op[0] = cur_op_tmp;
+      }
+      else {
+	cur_op[0] = NULL;
+      }
+    }
+  }
+  
   if (merged && !CG_localize_tns) {
     GRA_LIVE_Compute_Liveness_For_BB(b);
     FOR_ALL_BB_PREDS (b, bblst) {
@@ -4481,6 +4577,7 @@ Merge_Ops_in_Preds(BB *b) {
 
   return merged;
 }
+
 
 /* ====================================================================
  *
@@ -4502,7 +4599,7 @@ Merge_Common_Ops ()
 
   for (b = REGION_First_BB; b; b = next_b) {
     next_b = BB_next(b);
-    if (BBlist_Len(BB_preds(b)) > 1) {
+    if (BB_preds_len(b) > 1) {
       BBLIST *bblst;
       BBKIND kind = BBINFO_kind(BBLIST_item(BB_preds(b)));
 
@@ -4528,6 +4625,289 @@ Merge_Common_Ops ()
 
   return merged;
 }
+
+/* bv11 */
+/* ====================================================================
+ *
+ * Utility functions for Hoist_Common_Ops
+ *
+ * ====================================================================
+ */
+/* bv11 */
+
+static BOOL
+OP_no_move_before_regalloc(OP *op, BB *b) {
+
+  int i;
+  TN *tn;
+
+  if (OP_no_move_before_gra(op)) return TRUE;
+
+  if ((BBINFO_kind(b) == BBKIND_RETURN) &&
+      (OP_copy(op))) {
+
+    for (i = 0; i < OP_results(op); i++) {
+      tn = OP_result(op, i);
+      if ((TN_is_register(tn)) && (TN_is_dedicated(tn))) return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+
+static BOOL
+OP_no_move_after_regalloc(OP *op, BB *b) {
+
+  int i, j;
+  TN *tn, *tn2;
+
+  for (i = 0; i < OP_results(op); i++) {
+    tn = OP_result(op, i);
+    if ((Is_Predicate_REGISTER_CLASS(TN_register_class(tn))) &&
+	(BBINFO_kind(b) == BBKIND_LOGIF)) {
+      OP *ifop = BB_last_op(b);
+      for (j = 0; j < OP_opnds(ifop); j++) {
+	tn2 = OP_opnd(ifop, i);
+	if (TN_register(tn) == TN_register(tn2)) return TRUE;
+      }
+    }
+  }
+  
+  return FALSE;
+}
+
+
+static BOOL
+Hoist_Ops_in_Succs(BB *b, BOOL before_regalloc) {
+
+#define MAX_SUCC_BBS 10
+
+  OP *cur_op[MAX_SUCC_BBS], *cur_op_tmp;
+  BOOL merged = FALSE;
+  OP *common_op = NULL;
+  BBLIST *bblst;
+  OP *last_op;
+  BOOL before;
+  INT succ_count = BB_succs_len(b);
+  BOOL find;
+  BB *bb_tmp;
+
+  /* Stop if BB b has only one successor and if merged BB will be too large.
+   */
+  if (succ_count == 1) {
+    BB *suc = BBLIST_item(BB_succs(b));
+    if (BB_length(b) + BB_length(suc) >= CG_split_BB_length) {
+      return FALSE;
+    }
+  }
+
+  if (succ_count > MAX_SUCC_BBS)
+    return FALSE;
+
+  last_op = BB_last_op(b);
+  if (OP_br(last_op)) {
+    before = TRUE;
+  }
+  else {
+    last_op = NULL;
+    before = FALSE;
+  }
+
+  cur_op[0] = BB_first_op(BBLIST_item(BB_succs(b)));
+  if (CG_opt_level >= 2 && CFLOW_depgraph_use) {
+    while (cur_op[0] && ((OP_code(cur_op[0]) == TOP_spadjust) ||
+			 (cur_op[0] == BB_exit_sp_adj_op(OP_bb(cur_op[0]))) ||
+			 (OP_epilogue(cur_op[0])) ||
+			 (before_regalloc &&
+			  OP_no_move_before_regalloc(cur_op[0],
+						     BBLIST_item(BB_succs(b)))) ||
+			 ((!before_regalloc) &&
+			  OP_no_move_after_regalloc(cur_op[0], b)))) {
+      cur_op[0] = OP_next(cur_op[0]);
+    }
+  }
+  
+  while (cur_op[0]) {
+    int i = 0;
+    common_op = cur_op[0];
+
+    FOR_ALL_BB_SUCCS (b, bblst) {
+      BB *pbb = BBLIST_item(bblst);
+      if (BB_id(pbb) == BB_id(OP_bb(cur_op[0]))){
+	continue;
+      }
+      find = FALSE;
+      i++;
+    
+      cur_op[i] = BB_first_op(pbb);
+      if (CG_opt_level >= 2 && CFLOW_depgraph_use) {
+	CG_DEP_Compute_Graph (pbb, 
+			      INCLUDE_ASSIGNED_REG_DEPS,
+			      NON_CYCLIC,
+			      INCLUDE_MEMREAD_ARCS,
+			      INCLUDE_MEMIN_ARCS,
+			      NO_CONTROL_ARCS,
+			      NULL);
+	if (CFLOW_Trace_Hoist_Ops) CG_DEP_Trace_Graph (pbb);
+	
+	while (cur_op[i]) {
+	  if (OP_equiv(cur_op[0], cur_op[i])) {
+	    find = TRUE;
+	    break;
+	  }
+	  cur_op_tmp = OP_next(cur_op[i]); 
+	  while (cur_op_tmp) {
+	    if(OP_preds(cur_op_tmp) != NULL) {
+	      cur_op_tmp = OP_next(cur_op_tmp);
+	    }
+	    else break;
+	  }
+	  cur_op[i] = cur_op_tmp;
+	}
+	
+	CG_DEP_Delete_Graph (pbb);
+	if (find == TRUE) continue;
+	else {
+	  common_op = NULL;
+	  break;
+	}
+      }
+      else {
+	if (!OP_equiv(cur_op[0], cur_op[i])) {
+	  common_op = NULL;
+	  break;
+	}
+      }
+    }
+
+    cur_op_tmp = OP_next(cur_op[0]);
+    bb_tmp = OP_bb(cur_op[0]);
+    
+    if (common_op) {
+
+      /* Move to b, remove from all successors. */
+      if (CFLOW_Trace_Hoist_Ops) {
+	#pragma mips_frequency_hint NEVER
+	fprintf(TFile, "Operation %s removed from BBs", TOP_Name(OP_code(common_op)));
+      }
+      OP *new_common = Dup_OP(common_op);
+      if (OP_memory(common_op)) Copy_WN_For_Memory_OP(new_common, common_op);
+      OP_scycle(new_common) = 0; // Reset cycle to 0 for safeness at postscheduling time.
+
+      BB_Insert_Op(b, last_op, new_common, before);
+      for (i = 0; i < succ_count; i ++) {
+	OP* op = cur_op[i];
+	if (CFLOW_Trace_Hoist_Ops) {
+	  #pragma mips_frequency_hint NEVER
+	  fprintf(TFile, " %d", BB_id(OP_bb(op)));
+	}
+	BB_Remove_Op(OP_bb(op), op);
+      }
+
+      if (CFLOW_Trace_Hoist_Ops) {
+	#pragma mips_frequency_hint NEVER
+	fprintf(TFile, ", moved into BB %d\n", BB_id(b));
+      }
+      merged = TRUE;
+    }
+
+    if (CG_opt_level >= 2 && CFLOW_depgraph_use) {
+      CG_DEP_Compute_Graph (bb_tmp, 
+			    INCLUDE_ASSIGNED_REG_DEPS,
+			    NON_CYCLIC,
+			    INCLUDE_MEMREAD_ARCS,
+			    INCLUDE_MEMIN_ARCS,
+			    NO_CONTROL_ARCS,
+			    NULL);
+      if (CFLOW_Trace_Hoist_Ops) CG_DEP_Trace_Graph (bb_tmp);
+      
+      while (cur_op_tmp) {
+	if((OP_code(cur_op_tmp) == TOP_spadjust) ||
+	   (cur_op_tmp == BB_exit_sp_adj_op(OP_bb(cur_op_tmp))) ||
+	   (OP_epilogue(cur_op_tmp)) ||
+	   (OP_preds(cur_op_tmp) != NULL) ||
+	   (before_regalloc &&
+	    OP_no_move_before_regalloc(cur_op_tmp, bb_tmp)) ||
+	   ((!before_regalloc) &&
+	    OP_no_move_after_regalloc(cur_op_tmp, b))) {
+	  cur_op_tmp = OP_next(cur_op_tmp);
+	}
+	else break;
+      }
+      CG_DEP_Delete_Graph (bb_tmp);
+      cur_op[0] = cur_op_tmp;
+    }
+    else {
+      if (common_op) {
+	cur_op[0] = cur_op_tmp;
+      }
+      else {
+	cur_op[0] = NULL;
+      }
+    }
+  }
+  
+  if (merged && !CG_localize_tns) {
+    GRA_LIVE_Compute_Liveness_For_BB(b);
+    FOR_ALL_BB_SUCCS (b, bblst) {
+      BB *pbb = BBLIST_item(bblst);
+      GRA_LIVE_Compute_Liveness_For_BB(pbb);
+    }
+  }
+
+  return merged;
+}
+
+
+/* ====================================================================
+ *
+ * Hoist_Common_Ops
+ *
+ * Attempt to hoist common operations -- Move identical operations in
+ * blocks with a unique common predecessor to this common predecessor.
+ *
+ * The return value indicates if we made any changes.
+ *
+ * ====================================================================
+ */
+static BOOL
+Hoist_Common_Ops (BOOL before_regalloc)
+{
+  BB *b;
+  BB *lastbb;
+  BOOL hoisted = FALSE;
+
+  for (b = REGION_First_BB; b; b = BB_next(b)) {
+    lastbb = b;
+  }
+  for (b = lastbb; b; b = BB_prev(b)) {
+    if ((BB_succs_len(b)) > 1) {
+      BOOL stop = FALSE;
+      BBLIST *bblst;
+
+      /* Check if all successors have this block as their unique
+	 direct predecessor. */
+      FOR_ALL_BB_SUCCS (b, bblst) {
+	BB *pbb = BBLIST_item(bblst);
+      
+	if (((BB_preds_len(pbb))>1) ||
+	    (BBINFO_kind(pbb) == BBKIND_CALL) ||
+	    (BBINFO_kind(pbb) == BBKIND_TAIL_CALL)) {
+	  stop = TRUE;
+	  break;
+	}
+      }
+      if (stop == FALSE) {
+	if (Hoist_Ops_in_Succs(b, before_regalloc))
+	  hoisted = TRUE;
+      }
+    }
+  }
+
+  return hoisted;
+}
+
 
 /* ====================================================================
  *
@@ -4600,6 +4980,132 @@ Merge_Empty_Blocks ( BOOL in_cgprep )
   return merged;
 }
 
+/* ====================================================================
+ *
+ * Delete_Redundant_Return_Blocks
+ *
+ * Attempt to merge RETURN BB consisting of nothing but a return instruction.
+ *
+ * The return value indicates if we made any changes.
+ *
+ * ====================================================================
+ */
+static BOOL
+Delete_Redundant_Return_Blocks ()
+{
+#define MAX_RETURN_BBS 10
+
+  BB *next_b;
+  BB *b;
+  BOOL change = FALSE;
+  int i1 = 0, i2 = 0, i, j;
+  BB *return_bb1[MAX_RETURN_BBS]; /* return bbs with BB_prev == one 
+				     of its predecessors */
+  BB *return_bb2[MAX_RETURN_BBS]; /* return bbs with BB_prev != all 
+				     its predecessors */
+  BBLIST *bblst;
+
+  for (b = REGION_First_BB; b; b = next_b) {
+    next_b = BB_next(b);
+    if (BBINFO_kind(b) == BBKIND_RETURN &&
+	BB_length(b)==1) {
+      BB *prev = BB_prev(b);
+      BOOL appended_list1 = FALSE;
+      FOR_ALL_BB_PREDS (b, bblst) {
+	BB *pbb = BBLIST_item(bblst);
+	if (BB_id(pbb) == BB_id(prev)) {
+	  return_bb1[i1] = b;
+	  appended_list1 = TRUE;
+	  i1++;
+	  if (i1 == MAX_RETURN_BBS) return FALSE;
+	  break;
+	}
+      }
+      if (appended_list1 == FALSE) {
+	return_bb2[i2] = b;
+	i2++;
+	if (i2 == MAX_RETURN_BBS) return FALSE;
+      }
+    }
+  }
+  if (CFLOW_Trace_Redundant_Return) {
+    if (i1 > 0) {
+      fprintf(TFile, "List of return bbs having one of its predecessors equal to the previous bb:");
+    }
+    for (i = 0; i < i1; i++) {
+      fprintf(TFile, " %d,",BB_id(return_bb1[i]));
+    }
+    if (i1 > 0) {
+      fprintf(TFile, "\n");
+    }
+    if (i2 > 0) {
+      fprintf(TFile, "List of return bbs having none of its predecessors equal to the previous bb:");
+    }
+    for (i = 0; i < i2; i++) {
+      fprintf(TFile, " %d,",BB_id(return_bb2[i]));
+    }
+    if (i2 > 0) {
+      fprintf(TFile, "\n");
+    }
+  }
+  if (i1+i2 > 1) {
+    if (i1 == 0) {
+      return_bb1[i1] = return_bb2[i2-1];
+      i1++;
+      i2--;
+    }
+
+    LABEL_IDX label;
+    TN *lab_tn;
+    if (BB_has_label(return_bb1[0])) {
+      ANNOTATION *ant;
+      for (ant = ANNOT_First(BB_annotations(return_bb1[0]), ANNOT_LABEL);
+	   ant != NULL;
+	   ant = ANNOT_Next(ant, ANNOT_LABEL))
+	{
+	  label = ANNOT_label(ant);
+	  FmtAssert((Get_Label_BB(label) == return_bb1[0]),
+		    ("Inconsistent ST for BB:%2d label", 
+		     BB_id(return_bb1[0])));
+	  break;
+	}
+    }
+    else {
+      /* Create a label for return_bb1[0] */
+      label = Gen_Label_For_BB(return_bb1[0]);
+    }
+    lab_tn = Gen_Label_TN(label, 0);
+
+    for(i=0; i<i2; i++) {
+      while(BB_preds(return_bb2[i])) {
+	BB *pbb = BBLIST_item(BB_preds(return_bb2[i]));
+	OP *br = BB_branch_op(pbb);
+	if (br != NULL) {
+	  INT tfirst;
+	  INT tcount;
+	  CGTARG_Branch_Info(br, &tfirst, &tcount);
+	  FmtAssert(tcount == 1, ("unexpected number of branch targets"));
+	  Set_OP_opnd(br, tfirst, lab_tn);
+
+	  /* Update BB successor info */
+	  Unlink_Pred_Succ(pbb, return_bb2[i]);
+	  for (j = 0; j < BBINFO_nsuccs(pbb); ++j) {
+	    if (BBINFO_succ_bb(pbb, j) == return_bb2[i]) {
+	      Link_Pred_Succ_with_Prob(pbb, return_bb1[0],
+				       BBINFO_succ_prob(pbb, j));
+	      Set_BBINFO_succ_bb(pbb, j, return_bb1[0]);
+	    }
+	  }
+	}
+	else return FALSE;
+      }
+      Delete_BB(return_bb2[i], CFLOW_Trace_Redundant_Return);
+      change = TRUE;
+    }
+  }
+
+  return change;
+}
 #endif
 /* ====================================================================
  * ====================================================================
@@ -7174,7 +7680,11 @@ Clone_Blocks ( BOOL in_cgprep )
  * ====================================================================
  */
 void
+#ifdef TARG_ST
+CFLOW_Optimize(INT32 flags, const char *phase_name, BOOL before_regalloc)
+#else
 CFLOW_Optimize(INT32 flags, const char *phase_name)
+#endif
 {
   BOOL change;
 #ifdef TARG_ST
@@ -7277,7 +7787,11 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
       fprintf(TFile, "\n%s CFLOW_Optimize: optimizing branches\n%s",
 		     DBar, DBar);
     }
+#ifdef TARG_STxP70
+    change = Optimize_Branches(before_regalloc);
+#else
     change = Optimize_Branches();
+#endif
     if (CFLOW_Trace_Branch) {
       #pragma mips_frequency_hint NEVER
       if (change) {
@@ -7415,6 +7929,28 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
     flow_change |= change;
   }
 
+  /* bv11 */
+  if (current_flags & CFLOW_HOIST_OPS) {
+    if (CFLOW_Trace_Hoist_Ops) {
+      #pragma mips_frequency_hint NEVER
+      fprintf(TFile, "\n%s CFLOW_Optimize: hoist common operations\n%s",
+		     DBar, DBar);
+    }
+    change = Hoist_Common_Ops(before_regalloc);
+    if (change) {
+      GRA_LIVE_Recalc_Liveness(NULL);
+    }
+    if (CFLOW_Trace_Hoist_Ops) {
+      #pragma mips_frequency_hint NEVER
+      if (change) {
+	Print_Cflow_Graph("CFLOW_Optimize flow graph -- after hoisting common operations");
+      } else {
+	fprintf(TFile, "No changes.\n");
+      }
+    }
+    flow_change |= change;
+  }
+
   if (current_flags & CFLOW_MERGE_EMPTY) {
     if (CFLOW_Trace_Merge) {
       #pragma mips_frequency_hint NEVER
@@ -7426,6 +7962,24 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
       #pragma mips_frequency_hint NEVER
       if (change) {
 	Print_Cflow_Graph("CFLOW_Optimize flow graph -- after merging empty blocks");
+      } else {
+	fprintf(TFile, "No changes.\n");
+      }
+    }
+    flow_change |= change;
+  }
+
+  if (current_flags & CFLOW_REDUNDANT_RETURN) {
+    if (CFLOW_Trace_Redundant_Return) {
+      #pragma mips_frequency_hint NEVER
+      fprintf(TFile, "\n%s CFLOW_Optimize: delete redundant return blocks\n%s",
+		     DBar, DBar);
+    }
+    change = Delete_Redundant_Return_Blocks();
+    if (CFLOW_Trace_Redundant_Return) {
+      #pragma mips_frequency_hint NEVER
+      if (change) {
+	Print_Cflow_Graph("CFLOW_Optimize flow graph -- after deleting redundant return blocks");
       } else {
 	fprintf(TFile, "No changes.\n");
       }
@@ -7493,7 +8047,7 @@ nothing:
     // Optim We hope to catch more opportunities to remove unuseful
     // GOTO BB Need to be done after Finalize_All_BBs, because some
     // new opportunities might have been created by BB finalization
-     CFLOW_Optimize(CFLOW_MERGE, "CFLOW more CFLOW_MERGE passes to find code size opportunity");
+    CFLOW_Optimize(CFLOW_MERGE, "CFLOW more CFLOW_MERGE passes to find code size opportunity", before_regalloc);
   }
 #endif
 }
@@ -7533,6 +8087,8 @@ CFLOW_Initialize(void)
     CFLOW_Trace_Dom = Get_Trace(TP_FLOWOPT, TRACE_DOM);
 #ifdef TARG_ST
     CFLOW_Trace_Merge_Ops = Get_Trace(TP_FLOWOPT, TRACE_MERGE_OPS);
+    CFLOW_Trace_Hoist_Ops = Get_Trace(TP_FLOWOPT, TRACE_HOIST_OPS);
+    CFLOW_Trace_Redundant_Return = Get_Trace(TP_FLOWOPT, TRACE_REDUNDANT_RETURN);
 #endif
     CFLOW_Trace_Branch |= CFLOW_Trace_Detail;
     CFLOW_Trace_Unreach |= CFLOW_Trace_Detail;

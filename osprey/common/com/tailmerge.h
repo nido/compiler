@@ -1773,6 +1773,23 @@ class CExtendedTailmerge : public CTailmerge<Cfg, BasicBlock, Operation>
                                  typename ExtTmNode::BasicBlocks& toBeRemoved);
 
     /**
+     * Check whether parent_bb is already a predecessor of target_bb
+     *
+     * @param  pred_bb [in] the predecessor to be tested
+     * @param  target_bb [in] the block whose predecessors are to be checked
+     *
+     * @pre    true
+     * @post   result = pred_bb is a predecessor of target_bb
+     *
+     * @return true if pred_bb is a predecessor of target_bb
+     *
+     * @todo   Targetting to be done
+     */
+
+    bool
+    IsInPred(BasicBlock& pred_bb, BasicBlock& target_bb);
+
+    /**
      * Specify whether SimplifyControlFlowGraph must be called before applying
      * tailmerge algorithm or not
      */
@@ -2642,6 +2659,7 @@ CExtendedTailmerge<Cfg, BasicBlock, Operation>::
     typename ExtTmNode::CItBasicBlocks it;
     const SSimplifyInfo& simplifyInfo = bbsSimplifyInfo.find(&simpleBb)->second;
     bool canBeRemoved = true;
+    bool tryUnchain = true;
     DbgPrintTailmerge((debugOutput, "*** Start %s for BB%d\n", __FUNCTION__,
                        BasicBlockId(CFG(), simpleBb)));
 
@@ -2661,17 +2679,46 @@ CExtendedTailmerge<Cfg, BasicBlock, Operation>::
             const SSimplifyInfo& predInfo = bbsSimplifyInfo.find(*it)->second;
             DbgPrintTailmerge((debugOutput, "Examined BB%d\n",
                                        BasicBlockId(CFG(), **it)));
-            if(*it == &simpleBb ||
-               !(predInfo.isSimple ||
-                 ReplaceSimpleJump(CFG(), **it, *(simplifyInfo.target),
-                                   simpleBb)))
-                {
-                    DbgPrintTailmerge((debugOutput, "BB%d not removable\n",
-                                       BasicBlockId(CFG(), simpleBb)));
 
+            if(*it == &simpleBb)
+                {
+                    DbgPrintTailmerge((debugOutput, "-> BB%d not removable\n",
+                                       BasicBlockId(CFG(), simpleBb)));
+                                                                                                            
                     canBeRemoved = false;
                 }
+
+            if( !predInfo.isSimple ) 
+		{
+
+                    DbgPrintTailmerge((debugOutput, "Tries to replace simple jump for src=BB%d tgt=BB%d org=BB%d\n",
+                               BasicBlockId(CFG(), **it),
+                               BasicBlockId(CFG(), *(simplifyInfo.target)),
+                               BasicBlockId(CFG(), simpleBb )));
+
+                    // We check if target block already has the source block as predecessor.
+                    // In this case we will not remove it and rely on next pass of CFG jump to
+                    // jump elimination for cleanup (#45232) - Since ReplaceSimpleJump may
+                    // actually modify edges, it must be called after tryUnchain is evaluated
+
+                    tryUnchain=!IsInPred(**it, *(simplifyInfo.target));
+
+                    if(!tryUnchain || 
+                       !ReplaceSimpleJump(CFG(), **it, *(simplifyInfo.target), simpleBb) )
+                        {
+                            DbgPrintTailmerge((debugOutput, "-> BB%d not removable\n",
+                                              BasicBlockId(CFG(), simpleBb)));
+                                                                                                            
+                            canBeRemoved = false;
+                        }
+		    else  
+                        {
+                            DbgPrintTailmerge((debugOutput, "-> BB%d possibly removable\n",
+                                              BasicBlockId(CFG(), simpleBb)));
+                        }
+                }
         }
+
     if(canBeRemoved)
         {
             DbgPrintTailmerge((debugOutput, "Set BB%d as removable\n",
@@ -2682,6 +2729,12 @@ CExtendedTailmerge<Cfg, BasicBlock, Operation>::
         {
             DevAssert(simplifyInfo.succ, ("A basic block cannot be simple if it"
                                           " has not a successor"));
+
+	    DbgPrintTailmerge((debugOutput, "Simple jump replaced for src=BB%d tgt=BB%d org=BB%d\n",
+                               BasicBlockId(CFG(), simpleBb), 
+			       BasicBlockId(CFG(), *(simplifyInfo.target)), 
+			       BasicBlockId(CFG(), *(simplifyInfo.succ)) ));
+
             ReplaceSimpleJump(CFG(), simpleBb, *(simplifyInfo.target),
                               *(simplifyInfo.succ));
         }
@@ -2692,6 +2745,34 @@ CExtendedTailmerge<Cfg, BasicBlock, Operation>::
 //------------------------------------------------------------------------------
 // Function definition
 //------------------------------------------------------------------------------
+
+template<typename Cfg, typename BasicBlock, typename Operation>
+bool
+CExtendedTailmerge<Cfg, BasicBlock, Operation>::
+  IsInPred(BasicBlock& pred_bb, BasicBlock& target_bb)
+{
+    bool     isInPred = false;
+    typename ExtTmNode::BasicBlocks listOfPreds;
+    typename ExtTmNode::ItBasicBlocks itBb;
+
+
+    GetPredecessorsList(listOfPreds, CFG(), (target_bb));
+
+    for(itBb = listOfPreds.begin(); itBb != listOfPreds.end(); ++itBb)
+        {
+            DbgPrintTailmerge((debugOutput, "Check same target for src and org at BB%d\n",
+                                             BasicBlockId(CFG(), **itBb) ));
+            if( BasicBlockId(CFG(), **itBb) == BasicBlockId(CFG(), pred_bb ) )
+                {
+                    DbgPrintTailmerge((debugOutput, "Same target for src and org at BB%d\n",
+                                                     BasicBlockId(CFG(), **itBb) ));
+                    isInPred = true;
+                }
+        }
+
+    return(isInPred);
+}
+
 template<typename List>
 static bool
 CheckSame(const List& l1, const List& l2)

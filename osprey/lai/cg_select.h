@@ -43,6 +43,8 @@
 #ifndef SELECT_H_INCLUDED
 #define SELECT_H_INCLUDED
 
+#include "cg_sched_est.h"
+
 /* ====================================================================
  *   flags:
  * ====================================================================
@@ -60,6 +62,7 @@ extern float CG_ifc_factor;
 extern BOOL CG_ifc_freq; 
 extern BOOL CG_ifc_cycles; 
 extern BOOL CG_ifc_space;
+extern BOOL CG_ifc_logif;
 
 inline float CGTARG_Ifc_Factor(void)
 {
@@ -114,5 +117,7 @@ extern void Expand_CondStoreOP (OP *, TN *, OPS *);
 
 /* TOP used to merge guards. used for heuristics. */
 extern TOP Get_TOP_Merge_Preds();
+extern void CG_SCHED_EST_Add_Merge_Pred(CG_SCHED_EST *se);
+
 
 #endif /* SELECT_H_INCLUDED */

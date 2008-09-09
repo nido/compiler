@@ -608,12 +608,16 @@ CG_Generate_Code(
     if (CG_enable_ssa && CG_enable_select)
       CFLOW_Optimize(  (CFLOW_ALL_OPTS|CFLOW_IN_CGPREP)
 		       & ~(CFLOW_FREQ_ORDER | CFLOW_REORDER | CFLOW_CLONE),
-		       "CFLOW (first pass)");
+		       "CFLOW (first pass)", TRUE);
     else
-#endif
+      CFLOW_Optimize(  (CFLOW_ALL_OPTS|CFLOW_IN_CGPREP)
+		       & ~(CFLOW_FREQ_ORDER | CFLOW_REORDER),
+		       "CFLOW (first pass)", TRUE);
+#else
     CFLOW_Optimize(  (CFLOW_ALL_OPTS|CFLOW_IN_CGPREP)
 		       & ~(CFLOW_FREQ_ORDER | CFLOW_REORDER),
-		       "CFLOW (first pass)");
+		     "CFLOW (first pass)");
+#endif
     if (frequency_verify && CG_PU_Has_Feedback)
       FREQ_Verify("CFLOW (first pass)");
   }
@@ -750,7 +754,8 @@ CG_Generate_Code(
     if (CG_enable_ssa && CG_enable_select && !CG_localize_tns) {
 #ifdef TARG_ST
       // FdF 2005/11/02: Perform cloning after if-conversion.
-      CFLOW_Optimize(CFLOW_MERGE|CFLOW_CLONE, "CFLOW (after ssa)");
+      CFLOW_Optimize(CFLOW_MERGE|CFLOW_CLONE,
+		     "CFLOW (after ssa)", TRUE);
 #else
       CFLOW_Optimize(CFLOW_MERGE, "CFLOW (after ssa)");
 #endif
@@ -791,7 +796,11 @@ CG_Generate_Code(
 
     /* Optimize control flow (second pass) */
     if (CFLOW_opt_after_cgprep) {
+#ifdef TARG_ST
+      CFLOW_Optimize(CFLOW_ALL_OPTS, "CFLOW (second pass)", TRUE);
+#else
       CFLOW_Optimize(CFLOW_ALL_OPTS, "CFLOW (second pass)");
+#endif
       if (frequency_verify)
 	FREQ_Verify("CFLOW (second pass)");
     }
@@ -829,7 +838,11 @@ CG_Generate_Code(
       // inconditional.
       /* Optimize control flow (third pass) */
       if (CFLOW_opt_after_cgprep) {
+#ifdef TARG_ST
+	CFLOW_Optimize(CFLOW_ALL_OPTS, "CFLOW (third pass)", TRUE);
+#else
 	CFLOW_Optimize(CFLOW_ALL_OPTS, "CFLOW (third pass)");
+#endif
 	if (frequency_verify)
 	  FREQ_Verify("CFLOW (third pass)");
       }
@@ -926,7 +939,7 @@ CG_Generate_Code(
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);	
     GRA_LIVE_Rename_TNs();
     Set_Error_Phase( "LAO RegAlloc Optimizations" );
-    lao_optimize_pu(CG_LAO_optimizations & OptimizeActivation_RegAlloc);
+    lao_optimize_pu(CG_LAO_optimizations & OptimizeActivation_RegAlloc, TRUE);
     Check_for_Dump (TP_ALLOC, NULL);
     if (CG_LAO_allocation > 0) {
     // Full register allocation performed by LAO.
@@ -1032,8 +1045,15 @@ CG_Generate_Code(
   Tailmerge(1);
 #endif
 
+#ifdef TARG_ST
+  if (CFLOW_enable_last_pass || CFLOW_Space) {
+    CFLOW_Optimize(CFLOW_MERGE_OPS|CFLOW_MERGE_EMPTY|CFLOW_HOIST_OPS, "CFLOW (merge ops)", FALSE);
+    CFLOW_Optimize(CFLOW_BRANCH|CFLOW_UNREACHABLE|CFLOW_MERGE_EMPTY|CFLOW_REDUNDANT_RETURN, "CFLOW (after merge ops)", FALSE);
+  }
+#else
   if (CFLOW_Space)
     CFLOW_Optimize(CFLOW_MERGE_OPS|CFLOW_MERGE_EMPTY, "CFLOW (merge ops)");
+#endif
 
   if (CG_enable_peephole) {
     Set_Error_Phase("Extended Block Optimizer");

@@ -178,6 +178,8 @@ static BOOL CFLOW_Enable_Clone_overridden = FALSE;
 //TB
 static BOOL CFLOW_Enable_Favor_Branches_Condition_overridden = FALSE;
 static BOOL CFLOW_Space_overridden = FALSE;
+static BOOL CFLOW_depgraph_use_overridden = FALSE;
+static BOOL CFLOW_enable_last_pass_overridden = FALSE;
 static BOOL EMIT_space_overridden = FALSE;
 static BOOL CG_ifc_freq_overriden = FALSE;
 static BOOL CG_ifc_cycles_overridden = FALSE;
@@ -243,6 +245,10 @@ BOOL CG_cbpo_optimize_load_imm_cst = FALSE;
 static BOOL CG_cbpo_optimize_load_imm_cst_overridden = FALSE;
 BOOL CG_cbpo_facto_cst = FALSE;
 static BOOL CG_cbpo_facto_cst_overridden = FALSE;
+
+BOOL  CG_ifc_subpart = FALSE ;
+static BOOL CG_ifc_subpart_overridden = FALSE;
+
 
 
 #   ifdef TARG_STxP70
@@ -768,6 +774,10 @@ static OPTION_DESC Options_CG[] = {
   // [TB]
   { OVK_BOOL,	OV_INTERNAL, FALSE,"cflow_space", "",
     0, 0, 0, &CFLOW_Space, &CFLOW_Space_overridden },
+  { OVK_BOOL,	OV_INTERNAL, FALSE,"cflow_depgraph_use", "",
+    0, 0, 0, &CFLOW_depgraph_use, &CFLOW_depgraph_use_overridden },
+  { OVK_BOOL,	OV_INTERNAL, FALSE,"cflow_enable_last_pass", "",
+    0, 0, 0, &CFLOW_enable_last_pass, &CFLOW_enable_last_pass_overridden },
 #endif
 
   // Frequency heuristic/feedback options.
@@ -1189,6 +1199,12 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0,	&CG_enable_select, &CG_enable_select_overridden,
     "Enable if conversion using select op"},
 
+    { OVK_BOOL,	OV_INTERNAL, TRUE, "ifc_subpart", "",
+      0, 0, 0,	&CG_ifc_subpart, &CG_ifc_subpart_overridden,
+      "Enable if conversion using select op only on then or else part"},
+    
+    
+    
   { OVK_BOOL,	OV_INTERNAL, TRUE, "range_propagation", "",
     0, 0, 0,	&CG_enable_range_propagation, &CG_enable_range_propagation_overridden,
     "Enable range analysis"},
@@ -1237,6 +1253,10 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE, "ifc_space", "",
     0, 0, 0,	&CG_ifc_space, &CG_ifc_space_overridden,
     "Take into account code size for if convertion"},
+    
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "ifc_logif", "",
+    0, 0, 0,	&CG_ifc_logif, NULL,
+    "Do not if-convert multiple logif"},
 #endif /* TARG_ST (SSA) */
 
 #ifdef TARG_ST
@@ -1718,6 +1738,12 @@ Configure_CG_Options(void)
   // boosting
   if (!CFLOW_Enable_Favor_Branches_Condition_overridden) {
     CFLOW_Enable_Favor_Branches_Condition = TRUE;
+  }
+#endif
+
+#ifdef TARG_STxP70
+  if ((CG_opt_level >= 1) && !CFLOW_enable_last_pass_overridden) {
+    CFLOW_enable_last_pass = TRUE;
   }
 #endif
 

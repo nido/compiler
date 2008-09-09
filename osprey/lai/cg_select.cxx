@@ -98,7 +98,6 @@
 #include "cxx_memory.h"
 #include "cflow.h"
 #include "opt_alias_interface.h"
-#include "cg_sched_est.h"
 #include "cg_ssa.h"
 #include "cg_select.h"
 #include "DaVinci.h"
@@ -197,6 +196,7 @@ BOOL CG_ifc_factor_overridden = FALSE;
 float CG_ifc_factor; /* in Configure_CG_Target */
 static float select_factor;
 static int branch_penalty;
+BOOL CG_ifc_logif = TRUE;
 
 //TB:
 BOOL CG_ifc_space = FALSE;
@@ -766,6 +766,7 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, BB *head, BB* true_bb, BB* fal
   OPS_Append_Op(cmov_ops, psi_op);
 }
 
+
 static phi_t *
 BB_Alloc_Phi ()
 {
@@ -1148,6 +1149,9 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
   }
 #endif
 
+  //TDR Add an option to control multiple logif 
+  if (!CG_ifc_logif) return FALSE;
+  
   //TDR In size, a logif transfomration is not profitable without bundles.
   if (!CG_ifc_cycles) {
     return PROC_has_bundles();
@@ -1377,8 +1381,7 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
     CG_SCHED_EST_Append_Scheds(sehead, se2);
 
   // a new instruction to merge predicate will be added.
-if (will_need_predicate_merge)
-  CG_SCHED_EST_Add_Op_Resources(sehead, Get_TOP_Merge_Preds());
+  if (will_need_predicate_merge) CG_SCHED_EST_Add_Merge_Pred(sehead);
 
   cyclesh = CG_SCHED_EST_Cycles(sehead);
 
@@ -1397,7 +1400,7 @@ if (will_need_predicate_merge)
     CG_SCHED_EST_Delete(se2);
 
   // cost of if converted region. prob is one. 
-  float est_cost_after = cyclesh / select_factor;
+  float est_cost_after =  cyclesh  / select_factor;
 
   if (Trace_Select_Candidates) {
     fprintf (Select_TFile, "ifc region: BBs %f / %f\n", cyclesh, select_factor);
@@ -1432,8 +1435,9 @@ Check_Suitable_Chain (BB* ipdom, BB* bb, BB_SET* path, bool allow_dup)
   return TRUE;
 }
 
-static BOOL
-Is_Hammock (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail, bool allow_dup) 
+
+static BOOL 
+Is_Hammock_Legacy (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail, bool allow_dup) 
 {
   BBLIST *edge;
   BOOL found_taken = FALSE;
@@ -1465,10 +1469,41 @@ Is_Hammock (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail, bool allow_dup)
 
   if ((target == *tail || Check_Suitable_Chain (*tail, target, t_set, allow_dup)) &&
       (fall_thru == *tail || Check_Suitable_Chain (*tail, fall_thru, ft_set, allow_dup)))
-    return Check_Profitable_Select(head, t_set, ft_set, *tail);
+    return TRUE;
   else
     return FALSE;
 }
+
+static BOOL
+Is_Hammock (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail, bool allow_dup) 
+{
+	if (Is_Hammock_Legacy(head,t_set,ft_set,tail,allow_dup))
+		return Check_Profitable_Select(head, t_set, ft_set, *tail);
+	return FALSE;
+}	
+
+static BOOL
+Is_Hammock_ft (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail, bool allow_dup) 
+{
+	if (Is_Hammock_Legacy(head,t_set,ft_set,tail,allow_dup)) {
+		  BB *fall_thru,*target;
+		  BB_Fall_Thru_and_Target_Succs(head, &fall_thru, &target);
+		  BB_SET_ClearD(t_set);
+		  clear_spec_lists();
+		  Check_Suitable_Chain (*tail, fall_thru, ft_set, allow_dup);
+		  BB *my_bb,*last_bb;
+		  FOR_ALL_BB_SET_members(ft_set,my_bb) {
+			  if(! BBlist_Has_One_Element(BB_preds(my_bb) )) return FALSE;
+			  last_bb=my_bb;
+		  }
+		  //Check that the order still correct
+		  if(BB_next(last_bb) != target) return FALSE;
+		  return Check_Profitable_Select(head, t_set, ft_set, *tail);
+	}
+	return FALSE;
+}
+
+
 
 /* ================================================================
  *
@@ -3181,6 +3216,66 @@ Simplify_Logifs(BB *bb1, BB *bb2)
  *
  * ================================================================
  */
+//TDR
+static void
+Select_Fold_ft (BB *head, BB_SET *ft_set, BB *tail)
+{
+  OP *phi;
+  BB *target_bb, *fall_thru_bb;
+  BB_Fall_Thru_and_Target_Succs(head, &fall_thru_bb, &target_bb);
+
+  if (Trace_Select_Gen) {
+    fprintf (TFile, "in function %s\n", Cur_PU_Name);
+    fprintf (TFile, "\nStart Select_Fold FT from BB%d\n", BB_id(head));
+    fprintf (TFile, "\n fall_thrus are\n");
+    BB_SET_Print (ft_set, Select_TFile);
+    fprintf (TFile, "\n tail is\n");
+    Print_BB_Header (tail, TRUE, TRUE);
+  }
+
+  TN *cond_tn1,*cond_tn2;
+  OP *br_op = BB_branch_op(head);
+  VARIANT variant = CGTARG_Analyze_Branch(br_op, &cond_tn1, &cond_tn2);
+  BOOL false_br = V_false_br(variant)?TRUE:FALSE;
+
+  // can remove the branch op
+  BB_Remove_Op(head, br_op);
+  BB * my_bb;
+  FOR_ALL_BB_SET_members(ft_set,my_bb) {
+	  OP * op= BB_first_op(my_bb);
+	  for ( ; op; op = OP_next(op)) {
+	      int p_i = OP_find_opnd_use(op, OU_predicate);
+	      Set_OP_opnd(op,p_i,cond_tn1);
+	      Set_OP_Pred_False(op,p_i);
+	  }
+	  //Update Phis functions in tail block.
+	  FOR_ALL_BB_PHI_OPs(tail, phi) {
+        Change_PHI_Predecessor (phi, my_bb, head);
+      }
+	  
+  }
+  Promote_BB_Chain (head, BB_SET_Choose(ft_set), tail);
+  //Report the conditional jump to tail block
+  Add_Goto(head,tail);
+  br_op = BB_branch_op(head);
+  int p_i = OP_find_opnd_use(br_op, OU_condition);
+  Set_OP_opnd(br_op,p_i,cond_tn1);
+  Set_OP_Pred_False(br_op,p_i);
+
+  /*Update Probability*/
+  BBLIST *edge = BB_Find_Succ(head, target_bb);
+  Link_Pred_Succ_with_Prob(head, tail, 1 - BBLIST_prob(edge), FALSE, TRUE);
+
+  //Update phis
+  variant = CGTARG_Analyze_Branch(br_op, &cond_tn1, &cond_tn2);
+
+   if (Trace_Select_Gen) {
+	   fprintf (TFile, "\nEnd Select_Fold_FT from BB%d\n", BB_id(head));
+	   Print_All_BBs();
+   }
+}
+
+
 static void
 Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
 {
@@ -3577,9 +3672,28 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
       else {
         cand_vec[BB_MAP32_Get(postord_map, bb)-1] = NULL;
       }
-    }
-
-      clear_spec_lists();
+    } else {
+        //TDR New version to change only ft_set
+        BB_SET_ClearD(t_set);BB_SET_ClearD(ft_set);
+        if (CG_ifc_subpart && Is_Hammock_ft(bb, t_set,ft_set, &bbb, allow_dup)) {
+            Initialize_Hammock_Memory();
+            if (Trace_Select_Candidates) {
+              fprintf (Select_TFile, "<select> hammock FallThru selected\n");
+            }
+            Select_Fold_ft (bb, ft_set, bbb);
+            GRA_LIVE_Recalc_Liveness(rid);
+            region_changed = true;
+            Finalize_Hammock_Memory();
+            if (BB_kind (bb) == BBKIND_LOGIF) {
+              cand_vec[BB_MAP32_Get(postord_map, bb)-1] = bb;
+              cand_vec[BB_MAP32_Get(postord_map, bbb)-1] = NULL;
+            }
+            else {
+              cand_vec[BB_MAP32_Get(postord_map, bb)-1] = NULL;
+            }
+        }
+    }    
+    clear_spec_lists();
   }
 
   if (region_changed) {

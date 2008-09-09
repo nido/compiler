@@ -3559,3 +3559,15 @@ int CGTARG_Detect_Bundle_Id(ISA_EXEC_MASK slot_mask, BOOL* order_changed) {
 void
 CGTARG_FixBundle(ISA_EXEC_MASK slot_mask, OP *slot_op[], INT ibundle){ 
 }
+
+
+/** 
+ * Verify that loop does not contain if-converted code
+ * @param bb
+ *
+ * @return true/false
+ */
+BOOL
+CGTARG_do_not_unroll_p(BB* bb) {
+    return FALSE;
+}

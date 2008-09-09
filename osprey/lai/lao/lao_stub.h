@@ -391,4 +391,4 @@ extern void lao_init(void);
 extern void lao_fini(void);
 extern void lao_init_pu(void);
 extern void lao_fini_pu(void);
-extern bool lao_optimize_pu(unsigned);
+extern bool lao_optimize_pu(unsigned, bool);

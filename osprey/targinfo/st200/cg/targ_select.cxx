@@ -42,6 +42,13 @@
 #include "tn.h"
 #include "targ_cg_private.h"
 #include "cg_ssa.h"
+#include "cg_sched_est.h"
+
+void CG_SCHED_EST_Add_Merge_Pred(CG_SCHED_EST *se) {
+  se->cached_resource_cycles = 0;
+  se->cached_crit_path_len = 0;
+  TI_RES_COUNT_Subtract_Op_Resources(se->res_count, TOP_and_r_r_r);
+}
 
 TOP Get_TOP_Merge_Preds()
 {

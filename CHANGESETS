@@ -1,6 +1,141 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep  9 11:25:08 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-cflow-ifc
+
+Description:
+------------
+	* [trunk] Deliver dt25/dev-cflow-ifc rev #18192 with authorization branch #47467
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_select.h
+	M      osprey/lai/cg_loop.cxx
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/igls.cxx
+	M      osprey/lai/gcm.cxx
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/lao/lao_stub.h
+	M      osprey/lai/cg_select.cxx
+	M      osprey/lai/cg_flags.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/cflow.h
+	M      osprey/lai/cgtarget.h
+	M      osprey/lai/cg_flags.h
+	M      osprey/common/com/tailmerge.h
+	M      osprey/targinfo/stxp70/config/cg_flags_arch.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_select.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_select.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu Sep  4 10:40:35 CEST 2008
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-cflow-ifc
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bv11/dev-cflow-ifc
+
+Description:
+------------
+	* One more pass of cflow, just after the last one, in order to optimize branches and to delete unreachable blocks and redundant return blocks (pass guarded by the same condition as the last pass of cflow: (CFLOW_enable_last_pass || CFLOW_Space), where CFLOW_enable_last_pass has by default the value true for STxP70 and the value false for ST200 and it can be modified by option).
+	* Modification of tailmerge.h (revision #18121) in order to resolve bug #45232. 
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/cflow.h
+	M      osprey/common/com/tailmerge.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Thu Aug 28 08:49:31 CEST 2008
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-cflow-ifc
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bv11/dev-cflow-ifc
+
+Description:
+------------
+	*  Added a test at the beginning of Hoist_Ops_In_Succs/Merge_Ops_In_Preds that verifies that if there is only one successor/predecessor and if the size of the bb after merging will be bigger than the size limit, then no transformation is done.
+	* Last pass of cflow is blocked for ST200 except when optimizing for size. It can be forced (or blocked for stxp70) using the option -CG:cflow_enable_last_pass=true/false.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_flags.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/cg_flags.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed Aug 27 11:07:22 CEST 2008
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-cflow-ifc
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bv11/dev-cflow-ifc
+
+Description:
+------------
+	* Improvements after first review of the branch.
+	  Do not compute any more dependence graphs in -O1 or when using option: -CG:cflow_depgraph_use=false. 
+
+
+Modified Files:
+---------------
+	M      osprey/lai/igls.cxx
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/lao/lao_stub.h
+	M      osprey/lai/cg_flags.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/cg_flags.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon Aug  4 14:57:44 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-cflow-ifc
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bv11/dev-cflow-ifc
+
+Description:
+------------
+	* [dt25/dev-cflow-ifc] Deliver bv11/dev-cflow-ifc rev #17711 with authorization branch #49048
+
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/igls.cxx
+	M      osprey/lai/gcm.cxx
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/lao/lao_stub.h
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/cflow.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep  9 11:10:26 CEST 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

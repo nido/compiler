@@ -6418,6 +6418,11 @@ void CG_LOOP::Determine_Unroll_Factor()
 
 #endif
 
+#ifdef TARG_ST
+  if (!pragma_unroll && CGTARG_do_not_unroll_p(head)) unroll_times_max=1;
+#endif
+
+  
   if (unroll_times_max < 2) {
 #ifdef TARG_ST
     if (reason == NULL)

@@ -216,6 +216,8 @@ extern BOOL CG_enable_select;
 extern float CG_ifc_factor;
 
 #ifdef TARG_ST
+extern BOOL CG_ifc_logif;
+extern BOOL CG_ifc_subpart;
 extern BOOL CG_enable_range_propagation;
 // In range analysis, ee will lower values at most this number of times.
 // After this, they decay to Bottom.
@@ -282,6 +284,8 @@ extern const char *CFLOW_cold_threshold;
 extern BOOL CFLOW_Enable_Favor_Branches_Condition;
 // TB
 extern BOOL CFLOW_Space;
+extern BOOL CFLOW_depgraph_use;
+extern BOOL CFLOW_enable_last_pass;
 #endif
 
 /* FREQ: */

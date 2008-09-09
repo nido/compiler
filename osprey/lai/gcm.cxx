@@ -1308,8 +1308,13 @@ GCM_Fill_Branch_Delay_Slots (void)
      * are't profitiable at this stage. so don't waste the compile time.
      */
 
+#ifdef TARG_ST
+    CFLOW_Optimize(CFLOW_BRANCH | CFLOW_UNREACHABLE | CFLOW_FILL_DELAY_SLOTS,
+		   "CFLOW (from gcm)", FALSE);
+#else
     CFLOW_Optimize(CFLOW_BRANCH | CFLOW_UNREACHABLE | CFLOW_FILL_DELAY_SLOTS,
 		   "CFLOW (from gcm)");
+#endif
   }
 
   // Finish with reg_live after cflow so that it can benefit from the info.

@@ -109,10 +109,15 @@
  *   void CFLOW_Initialize(void)
  *	Perform one-time initialization.
  *
- *   void CFLOW_Optimize(INT32 flags, const char *phase_name)
+ *   void CFLOW_Optimize(INT32 flags, const char *phase_name
+ *                       [, BOOL before_regalloc])
  *	Perform control flow based optimizations according to the
  *	<flags> mask. <phase_name> is a string which identifies
  *	this cflow pass -- it is only used in messages.
+ *      <before_regalloc> is a boolean which indicates if
+ *      CFLOW_Optimize is called before or after registers allocation
+ *      (argument available only when TARG_ST is defined)
+ *   
  *
  * ====================================================================
  * ====================================================================
@@ -147,16 +152,24 @@ extern BOOL CFLOW_Trace_Dom;
 #define CFLOW_MERGE_EMPTY		(0x00000200)
 #define CFLOW_MERGE_OPS			(0x00000400)
 #define CFLOW_FAVOR_BRANCH_COND		(0x00000800)
+#define CFLOW_HOIST_OPS			(0x00001000)
+#define CFLOW_REDUNDANT_RETURN		(0x00002000)
 #define CFLOW_ALL_OPTS \
 	(CFLOW_UNREACHABLE|CFLOW_BRANCH|CFLOW_MERGE|CFLOW_REORDER\
-	|CFLOW_FREQ_ORDER|CFLOW_CLONE|CFLOW_FAVOR_BRANCH_COND)
+	 |CFLOW_FREQ_ORDER|CFLOW_CLONE|CFLOW_FAVOR_BRANCH_COND\
+	 |CFLOW_MERGE_EMPTY|CFLOW_MERGE_OPS|CFLOW_HOIST_OPS)
 #else
 #define CFLOW_ALL_OPTS \
 	(CFLOW_UNREACHABLE|CFLOW_BRANCH|CFLOW_MERGE|CFLOW_REORDER\
 	|CFLOW_FREQ_ORDER|CFLOW_CLONE)
 #endif
 
+#ifdef TARG_ST
+extern void CFLOW_Optimize(INT32 flags, const char *phase_name,
+			   BOOL before_regalloc);
+#else
 extern void CFLOW_Optimize(INT32 flags, const char *phase_name);
+#endif
 extern void CFLOW_Initialize(void);
 
 #endif /* cflow_INCLUDED */

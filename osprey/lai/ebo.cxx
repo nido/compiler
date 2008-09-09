@@ -7611,7 +7611,11 @@ EBO_Process ( BB *first_bb )
   clear_bb_flag (first_bb);
 
   if (rerun_cflow) {
+#ifdef TARG_ST
+    CFLOW_Optimize(CFLOW_BRANCH | CFLOW_UNREACHABLE, "CFLOW (from ebo)", TRUE);
+#else
     CFLOW_Optimize(CFLOW_BRANCH | CFLOW_UNREACHABLE, "CFLOW (from ebo)");
+#endif
   }
 
   EBO_Finish();

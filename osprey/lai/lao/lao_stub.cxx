@@ -1400,7 +1400,7 @@ make_pseudo_loopdescr(BB *entry, BB_List &bodyBBs, BB_List &exitBBs, MEM_POOL *p
 
 // Optimize the complete PU through the LAO.
 bool
-lao_optimize_pu(unsigned activation)
+lao_optimize_pu(unsigned activation, bool before_regalloc)
 {
   bool result = false;
   MEM_POOL lao_loop_pool;
@@ -1435,7 +1435,11 @@ lao_optimize_pu(unsigned activation)
   if (result) {
     GRA_LIVE_Recalc_Liveness(NULL);
     GRA_LIVE_Rename_TNs();
+#ifdef TARG_ST
+    CFLOW_Optimize(CFLOW_MERGE_EMPTY, "CFLOW after LAO", before_regalloc);
+#else
     CFLOW_Optimize(CFLOW_MERGE_EMPTY, "CFLOW after LAO");
+#endif
   }
   //
   Free_Dominators_Memory();
