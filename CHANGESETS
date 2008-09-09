@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep  9 11:10:26 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-43452
+
+Description:
+------------
+	*  HW loop mapping not impacted by function level optimization level 
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Sep  8 13:02:25 CEST 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
