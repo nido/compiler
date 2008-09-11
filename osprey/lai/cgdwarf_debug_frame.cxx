@@ -269,58 +269,6 @@ BOOL TN_Is_Unwind_Reg (TN *tn)
   return (PU_saved_dbgid.find(Get_Debug_Reg_Id(tn)) != PU_saved_dbgid.end());
 }
 
-OP* Find_Def_Of_TN (TN *tn, OP *cur_op, BB *bb)
-{
-  OP* result = NULL;
-  OP* tmp;
-
-  bool check = FALSE;
-
-  // Browse BB bottom-up, skip OPs until we find cur_op. From this
-  // point, check the results of previous OPs to see if one defines tn
-  FOR_ALL_BB_OPs_REV(bb, tmp) {
-    if (check && tmp != cur_op) {
-      INT i;
-      for (i = 0; i < OP_results(tmp); ++i) {
-	TN* opRes = OP_result(tmp, i);
-	if (opRes == tn) {
-	  result = tmp;
-	  break;
-	}
-      }
-    }
-    // Until we do not cross op, we do not perform any check, since we are
-    // seeking for definition a previous definition
-    else if (tmp == cur_op) {
-      check = true;
-    }
-  }
-  return result;
-
-#if 0 // [CL] The map-based approach from IA64 is also buggy
-
-	// Initially tried to use TN_Reaching_Value_At_Op,
-	// but that misses some cases cause the live-in sets are not
-	// kept up-to-date by cgemit time.  Also requires a lot
-	// of traversing the bb and op lists.
-	// So instead, just create map of tn to defining op,
-	// which is a little more space but less time
-	// and is more accurate.
-	OP *op = (OP*) TN_MAP_Get (tn_def_op, tn);
-	if ( op == NULL && REGISTER_SET_MemberP(
-			 REGISTER_CLASS_function_value(TN_register_class(tn)),
-       		     	 TN_register(tn) ) )
-	{
-		// okay if store of function return val
-		return NULL;
-	}
-	if (op == NULL && Trace_Unwind)
-		fprintf(TFile, "couldn't find def of tn %d\n", TN_number(tn));
-	return op;
-#endif
-
-}
-
 // search for save-tn that "tn" is copied from.
 TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
 {
@@ -344,7 +292,7 @@ TN* Get_Copied_Save_TN (TN *tn, OP *cur_op, BB *bb)
     }
     
 	// else find tn that this is a copy of.
-    OP *op = Find_Def_Of_TN (tn, cur_op, bb);
+    OP *op = OP_Find_TN_Def_In_BB (cur_op, tn);
 
 #ifdef DEBUG_UNWIND
     if (op) {

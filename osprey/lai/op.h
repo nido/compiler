@@ -879,6 +879,17 @@ extern INT CGTARG_Copy_Operand(OP *op);
 #ifdef TARG_ST
 /* ====================================================================
  *
+ * OP_Find_TN_Def_In_BB - Return the definer op of <tn> within a BB scope
+ * by walking backward starting from <op>. BB is implicitly defined as
+ * being <op> container.
+ * Return NULL if not found.
+ *
+ * ====================================================================
+ */
+extern OP * OP_Find_TN_Def_In_BB(const OP *op, TN *tn);
+
+/* ====================================================================
+ *
  * OP_opnd_is_multi - return TRUE if opnd is part of a multi-register
  * operand.
  *

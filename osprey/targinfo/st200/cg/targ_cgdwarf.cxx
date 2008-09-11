@@ -289,7 +289,7 @@ void Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	  goto case1_OK;
 	} else {
 	  // [CL] frame size is in a register defined earlier
-	  frame_op = Find_Def_Of_TN (frame_tn, op, bb);
+	  frame_op = OP_Find_TN_Def_In_BB (op, frame_tn);
 	  if (frame_op && OP_move(frame_op)) {
 	    frame_tn = OP_opnd(frame_op,0);
 	    if (TN_is_constant(frame_tn)) {

@@ -1315,6 +1315,35 @@ OP_Real_Ops( const OP *op )
 #ifdef TARG_ST
 /* ====================================================================
  *
+ * OP_Find_TN_Def_In_BB - see interface.
+ *
+ * ====================================================================
+ */
+OP *
+OP_Find_TN_Def_In_BB(const OP *op, TN *tn) {
+  if (!TN_is_register(tn)) {
+    return NULL;
+  }
+  
+  if (TN_register(tn) != REGISTER_UNDEFINED) {
+    // Search register definer
+    ISA_REGISTER_CLASS rc = TN_register_class(tn);
+    REGISTER r = TN_register(tn);
+    for (OP *tmp = OP_prev(op); tmp != NULL; tmp = OP_prev(tmp)) {
+      if (OP_Defs_Reg (tmp, rc, r)) return tmp;
+    }
+  }
+  else {
+    // Search TN definer
+    for (OP *tmp = OP_prev(op); tmp != NULL; tmp = OP_prev(tmp)) {
+      if (OP_Defs_TN (tmp, tn)) return tmp;
+    }
+  }
+  return NULL;
+}
+
+/* ====================================================================
+ *
  * OP_opnd_is_multi - see interface.
  *
  * ====================================================================

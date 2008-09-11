@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep 11 09:04:50 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-50948
+
+Description:
+------------
+	* [trunk] Fix for bug #50948: [DWARF] assertion failure on MP3 standalone (-Os) .
+	Deliver fixes/codex-50948 rev #18215 with authorization branch #50957
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgdwarf_debug_frame.cxx
+	M      osprey/lai/op.h
+	M      osprey/lai/oputil.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+	M      osprey/targinfo/st200/cg/targ_cgdwarf.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep  9 11:25:08 CEST 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
