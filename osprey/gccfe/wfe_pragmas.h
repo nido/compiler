@@ -47,6 +47,8 @@ WN* Has_Function_Pragma_Inline(WN* call_wn);
 WN* Has_Function_Pragma_NoInline(WN* call_wn);
 WN* Has_File_Pragma_Inline(WN* call_wn);
 WN* Has_File_Pragma_NoInline(WN* call_wn);
+int Has_Function_Pragma(const char *fname, WN_PRAGMA_ID id);
+WN* Get_Function_Pragma_Block(const char *fname);
 void Clear_Callsite_Pragma_List(CLEAR_INLINE_PRAGMA warn);
 void Clear_Function_Pragma_List(CLEAR_INLINE_PRAGMA warn);
 void Clear_File_Pragma_List(CLEAR_INLINE_PRAGMA warn);

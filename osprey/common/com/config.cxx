@@ -458,9 +458,6 @@ BOOL Enable_Expand_Builtin = FALSE;
 BOOL Enable_Expand_Builtin_Set = FALSE;
 char *Extension_Names = NULL;
 BOOL Extension_Is_Present = FALSE;
-#define EXTENSION_NATIVE_SUPPORT_DEFAULT (EXTENSION_NATIVE_CODEGEN \
-					  + EXTENSION_NATIVE_REG_PLACEMENT \
-					  + EXTENSION_NATIVE_CLRGEN)
 INT32 Enable_Extension_Native_Support = EXTENSION_NATIVE_SUPPORT_DEFAULT;
 BOOL Enable_Extension_Native_Support_Set = FALSE;
 BOOL Meta_Instruction_Threshold_Set = FALSE;

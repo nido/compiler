@@ -114,3 +114,7 @@ DECL_WFE_PRAGMA(WFE_PRAGMA_LOOPMAXITERCOUNT, "loopmaxitercount", 1, WN_PRAGMA_LO
 DECL_WFE_PRAGMA(WFE_PRAGMA_LOOPMAX, "loopmax", 1, WN_PRAGMA_LOOPMAXITERCOUNT, 1, "(I)", "pragma loopmax[itercount] (n) - where n >=0")
 
 DECL_WFE_PRAGMA(WFE_PRAGMA_LOOPPACK, "looppack", 1, WN_PRAGMA_LOOPPACK, 1, "(I)", "pragma looppack (n) - where 0 <= n <= 2, n gives the level of packing to be performed")
+
+DECL_WFE_PRAGMA(WFE_PRAGMA_FORCE_EXTGEN, "force_extgen", 0, WN_PRAGMA_FORCE_EXTGEN, 1, "(A*)", "pragma force_extgen (ident,...)")
+
+DECL_WFE_PRAGMA(WFE_PRAGMA_DISABLE_EXTGEN, "disable_extgen", 0, WN_PRAGMA_DISABLE_EXTGEN, 1, "(A*)", "pragma disable_extgen (ident,...)")

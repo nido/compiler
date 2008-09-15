@@ -1,6 +1,53 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Sep 15 09:41:56 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x-pragmas
+
+Description:
+------------
+	* [trunk] Deliver tt2/dev-MP1x-pragmas rev #18294 with authorization branch #51612
+	MP1x support:
+		On stxp70, an option has been added to disable the extension
+		 code generation for the whole unit:
+		 	-Mnoextgen.
+		Two pragmas have also been added to disable/force the extension
+		 code generation in the compiler. The pragma have a higher priority
+		 than the command line option:
+
+		#pragma disable_extgen(fct1, ...)
+		-> Disable extension code generation and type equivalence for the listed functions
+
+		#pragma force_extgen(fct1, ...)
+		-> Force extension code generation and type equivalence for the listed functions.
+		   This has to be used in conjunction with the global option -Mnoextgen.
+
+
+Modified Files:
+---------------
+	M      osprey/be/be/driver.cxx
+	M      osprey/be/com/wn_lower.h
+	M      osprey/be/com/ext_lower.cxx
+	M      osprey/driver/OPTIONS
+	M      osprey/gccfe/wfe_pragmas.h
+	M      osprey/gccfe/wfe_pragmas.def
+	M      osprey/gccfe/wfe_pragmas.cxx
+	M      osprey/gccfe/wfe_misc.cxx
+	M      osprey/gccfe/wfe_decl.cxx
+	M      osprey/common/com/wn_pragmas.h
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/config.h
+	M      osprey/common/com/loader.h
+	M      osprey/common/com/ext_info.h
+	M      osprey/common/com/wn_pragmas.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Sep 11 09:04:50 CEST 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

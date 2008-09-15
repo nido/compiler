@@ -356,18 +356,22 @@ typedef enum {
   WN_PRAGMA_ASM_CLOBBER,        /* clobber string for an ASM statement */
 
 #ifdef TARG_ST
-  /* st200 pragmas */
+  /* Additional generic pragmas */
   WN_PRAGMA_LOOPDEP,
   WN_PRAGMA_LOOPMOD,
-  WN_PRAGMA_PIPELINE,
-  WN_PRAGMA_PRELOAD,
   WN_PRAGMA_LOOPTRIP,		/* estimated trip count for the loop. Scope: loop. */
   WN_PRAGMA_LOOPSEQ,		/* preserve the user given order for the access to the referenced object. Scope: loop. */
-  WN_PRAGMA_STREAM_ALIGNMENT,	/* Gives the alignment of the memory streams in a loop. */
-  WN_PRAGMA_HWLOOP,		/* hwloop pragmas. Scope: loop. */
   WN_PRAGMA_LOOPMINITERCOUNT,	/* loop minimum iteration number. Scope: loop. */
   WN_PRAGMA_LOOPMAXITERCOUNT,	/* loop maximum iteration number. Scope: loop. */
+  /* st200 specific pragmas */
+  WN_PRAGMA_PIPELINE,
+  WN_PRAGMA_PRELOAD,
+  WN_PRAGMA_STREAM_ALIGNMENT,	/* Gives the alignment of the memory streams in a loop. */
   WN_PRAGMA_LOOPPACK,		/* request packing within the associated loop. Scope: loop. */
+  /* stxp70 specific pragmas */
+  WN_PRAGMA_HWLOOP,		/* hwloop pragmas. Scope: loop. */
+  WN_PRAGMA_FORCE_EXTGEN,	/* Force extension code generation. Scope: function. */
+  WN_PRAGMA_DISABLE_EXTGEN,	/* Disable extension code generation. Scope: function. */
 #endif
 
   MAX_WN_PRAGMA			/* last one in enum			*/

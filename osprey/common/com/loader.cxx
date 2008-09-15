@@ -58,6 +58,7 @@ extern "C" { extern const ISA_EXT_Interface_t* get_ISA_extension_instance();};
 #include "tracing.h"
 #include "dso.h"
 #include "mtypes.h"
+#include "wn.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -147,6 +148,7 @@ typedef struct {
   INTRINSIC clr_intrn;
 } equiv_type_t;
 static equiv_type_t equiv_type_tab[MTYPE_MAX_LIMIT+1];
+static INT equiv_type_enabled = 1;
 
 static void Add_Mtype(machine_mode_t mmode, const char *name, 
 		      enum mode_class mclass, unsigned short mbitsize, 
@@ -356,18 +358,18 @@ Add_Intrinsic(const Extension_dll_t *dll_instance,
   proto_info->return_type = MachineMode_To_Mtype(btypes->return_type);
   intrn_info[intrn_id].return_kind = INTRN_return_kind_for_mtype(MachineMode_To_Mtype(btypes->return_type));
 
-  // Keep information about convert intrinsic
-  if (Enable_Extension_Native_Support) {
+  // Build tables used for code generation
+  {
     if (is_DYN_INTRN_CLR(*btypes)) {
       TYPE_ID ext_ty =  MachineMode_To_Mtype(btypes->return_type);
       equiv_type_tab[ext_ty].clr_intrn = intrn_id;
     }
-
+    
     if (is_DYN_INTRN_CONVERT_TO_CTYPE(*btypes)) {
-      TYPE_ID ext_ty = MachineMode_To_Mtype(btypes->arg_type[0]);
-      TYPE_ID c_ty   = MachineMode_To_Mtype(btypes->return_type);
-      equiv_type_tab[ext_ty].ctype = MTYPE_is_signed(c_ty)?MTYPE_complement(c_ty):c_ty; // Register unsigned type
-      equiv_type_tab[ext_ty].intrn_to_c = intrn_id;
+    TYPE_ID ext_ty = MachineMode_To_Mtype(btypes->arg_type[0]);
+    TYPE_ID c_ty   = MachineMode_To_Mtype(btypes->return_type);
+    equiv_type_tab[ext_ty].ctype = MTYPE_is_signed(c_ty)?MTYPE_complement(c_ty):c_ty; // Register unsigned type
+    equiv_type_tab[ext_ty].intrn_to_c = intrn_id;
     }
     else if (is_DYN_INTRN_CONVERT_FROM_CTYPE(*btypes)) {
       TYPE_ID c_ty   = MachineMode_To_Mtype(btypes->arg_type[0]);
@@ -375,13 +377,13 @@ Add_Intrinsic(const Extension_dll_t *dll_instance,
       equiv_type_tab[ext_ty].ctype = MTYPE_is_signed(c_ty)?MTYPE_complement(c_ty):c_ty; // Register unsigned type
       equiv_type_tab[ext_ty].intrn_to_ext = intrn_id;
     }
-
+    
     if (btypes->wn_table != NULL)  {
       int k=0;
       while ( (OPCODE)(btypes->wn_table[k].wn_opc) != OPCODE_UNKNOWN ) {
-        OPCODE opc =  (OPCODE)(btypes->wn_table[k].wn_opc);
-        Add_Intrinsic_for_OPCODE(opc, intrn_id);
-        k++;
+	OPCODE opc =  (OPCODE)(btypes->wn_table[k].wn_opc);
+	Add_Intrinsic_for_OPCODE(opc, intrn_id);
+	k++;
       }
     }
   }
@@ -732,10 +734,15 @@ Initialize_Extension_Loader ()
     //TB: Add a new pass to create new MTYPE for mutiple result intrinsics
     Add_Composed_Mtype();
 
-    /* No opcode->intrinsic correspondence found, deactivates
-       optimization pass to avoid any unwanted side effect */
-    if (Intrinsic_from_OPCODE.empty() &&
-        !Enable_Extension_Native_Support_Set) {
+    /* (Partially) Disable extension native support when:
+     * - Compiling at optimization level < 2
+     * - No opcode->intrinsic correspondence found (useless walk)
+     */
+    if (Opt_Level < 2 && !Enable_Extension_Native_Support_Set) {
+      Enable_Extension_Native_Support&= ~(EXTENSION_NATIVE_CODEGEN |
+					  EXTENSION_NATIVE_CLRGEN);
+    }
+    else if (Intrinsic_from_OPCODE.empty()) {
       Enable_Extension_Native_Support&= ~EXTENSION_NATIVE_CODEGEN;
     }
   }
@@ -773,6 +780,35 @@ Initialize_Extension_Loader_Register () {
       delete isa_ext_access;
     }
   }
+}
+
+/*
+ * Initialize PU specific options
+ */
+void Initialize_Extension_Loader_PU(WN *pu) {
+  /*
+   * Enable/disable extension type equivalences on a function basis,
+   * based on both Enable_Extension_Native_Support value and pragma
+   * value
+   */
+  INT type_equiv_enabled = (Enable_Extension_Native_Support != 0);
+  if (WN_operator(pu) == OPR_FUNC_ENTRY && WN_func_pragmas(pu)) {
+    WN_PRAGMA_ID invert_id;
+    if (type_equiv_enabled) {
+      invert_id = WN_PRAGMA_DISABLE_EXTGEN;
+    } else {
+      invert_id = WN_PRAGMA_FORCE_EXTGEN;
+    }
+    WN *wn;
+    for (wn = WN_first(WN_func_pragmas(pu)); wn; wn = WN_next(wn)) {
+      if (((WN_opcode(wn) == OPC_PRAGMA) || (WN_opcode(wn) == OPC_XPRAGMA))
+	  && ((WN_PRAGMA_ID)WN_pragma(wn) == invert_id)) {
+	type_equiv_enabled = !type_equiv_enabled;
+	break;
+      }
+    }
+  }
+  EXTENSION_Set_Equivalent_Mtype_Status(type_equiv_enabled);
 }
 #endif
 #ifdef BACK_END
@@ -1150,20 +1186,22 @@ machine_mode_t Mtype_To_MachineMode(TYPE_ID mtype) {
  * Return the INTRINSIC that map a conversion from <src_ty> to <tgt_ty>.
  * At least one of the type is expected to be an extension one.
  */
-INTRINSIC EXTENSION_Get_Convert_Intrinsic(TYPE_ID src_ty, TYPE_ID tgt_ty) {
+INTRINSIC EXTENSION_Get_Convert_Intrinsic(TYPE_ID src_ty, TYPE_ID tgt_ty, BOOL ignore_sign) {
   INTRINSIC id = INTRINSIC_INVALID;
-  if (MTYPE_is_dynamic(src_ty)) {
-    if (equiv_type_tab[src_ty].ctype == tgt_ty
-	|| ((!(Enable_Extension_Native_Support & EXTENSION_NATIVE_TYEQUIV_UNSIGNED_ONLY))
-	    && MTYPE_complement(equiv_type_tab[src_ty].ctype) == tgt_ty)) {
-      id = equiv_type_tab[src_ty].intrn_to_c;
+  if (equiv_type_enabled) {
+    if (MTYPE_is_dynamic(src_ty)) {
+      if (equiv_type_tab[src_ty].ctype == tgt_ty
+	  || (ignore_sign
+	      && MTYPE_complement(equiv_type_tab[src_ty].ctype) == tgt_ty)) {
+	id = equiv_type_tab[src_ty].intrn_to_c;
+      }
     }
-  }
-  else if (MTYPE_is_dynamic(tgt_ty)) {
-    if (equiv_type_tab[tgt_ty].ctype == src_ty
-	|| ((!(Enable_Extension_Native_Support & EXTENSION_NATIVE_TYEQUIV_UNSIGNED_ONLY))
-	    && MTYPE_complement(equiv_type_tab[tgt_ty].ctype) == src_ty)) {
-      id = equiv_type_tab[tgt_ty].intrn_to_ext;
+    else if (MTYPE_is_dynamic(tgt_ty)) {
+      if (equiv_type_tab[tgt_ty].ctype == src_ty
+	  || (ignore_sign
+	      && MTYPE_complement(equiv_type_tab[tgt_ty].ctype) == src_ty)) {
+	id = equiv_type_tab[tgt_ty].intrn_to_ext;
+      }
     }
   }
   return id;
@@ -1174,14 +1212,20 @@ INTRINSIC EXTENSION_Get_Convert_Intrinsic(TYPE_ID src_ty, TYPE_ID tgt_ty) {
  * At least one of the type is expected to be an extension one.
  */
 BOOL EXTENSION_Are_Equivalent_Mtype(TYPE_ID src_ty, TYPE_ID tgt_ty) {
-  return (EXTENSION_Get_Convert_Intrinsic(src_ty, tgt_ty) != INTRINSIC_INVALID);
+  BOOL equiv = FALSE;
+  if (equiv_type_enabled) {
+    BOOL ignore_sign = ! (Enable_Extension_Native_Support & EXTENSION_NATIVE_TYEQUIV_UNSIGNED_ONLY);
+    equiv = (EXTENSION_Get_Convert_Intrinsic(src_ty, tgt_ty, ignore_sign) != INTRINSIC_INVALID);
+  }
+  return equiv;
 }
 
 TYPE_ID EXTENSION_Get_Equivalent_Mtype(TYPE_ID ext_ty) {
-  if (!MTYPE_is_dynamic(ext_ty)) {
-    return MTYPE_UNKNOWN;
+  TYPE_ID ty = MTYPE_UNKNOWN;
+  if (equiv_type_enabled && MTYPE_is_dynamic(ext_ty)) {
+    ty = equiv_type_tab[ext_ty].ctype;
   }
-  return (equiv_type_tab[ext_ty].ctype);
+  return ty;
 }
 
 
@@ -1200,14 +1244,13 @@ INTRINSIC EXTENSION_Get_CLR_Intrinsic(TYPE_ID ty) {
 }
 
 
-void EXTENSION_Disable_Equivalent_Mtype() {
-  int i;
-  for (i = 0; i <= MTYPE_LAST; i++) {
-    if (equiv_type_tab[i].ctype != MTYPE_UNKNOWN) {
-      equiv_type_tab[i].ctype        = MTYPE_UNKNOWN;
-      equiv_type_tab[i].intrn_to_c   = INTRINSIC_INVALID;
-      equiv_type_tab[i].intrn_to_ext = INTRINSIC_INVALID;
-      equiv_type_tab[i].clr_intrn    = INTRINSIC_INVALID;
-    }
-  }
+INT EXTENSION_Get_Equivalent_Mtype_Status() {
+  return equiv_type_enabled;
 }
+
+
+void EXTENSION_Set_Equivalent_Mtype_Status(INT val) {
+  equiv_type_enabled = val;
+}
+
+

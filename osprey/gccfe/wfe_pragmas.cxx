@@ -39,6 +39,9 @@ extern "C" {
 #include "gnu/real.h"
 #endif
 }
+#ifdef TARG_ST
+#include <map>
+#endif
 
 #include "defs.h"
 #include "errors.h"
@@ -251,6 +254,63 @@ WN* Has_File_Pragma_NoInline(WN* call_wn)
   return Has_This_Inline_Pragma(ST_name(WN_st_idx(call_wn)),
 				WN_PRAGMA_KAP_OPTION_NOINLINE,
 				file_pragma_list);
+}
+
+//
+// The following map and functions are used to associate a list of pragmas
+// to a given function name. When translating to WHIRL, each list of pragmas
+// will be attached to the pragma field of the corresponding function WN, if
+// defined in the source file.
+//
+struct ltstr
+{
+  bool operator()(const char* s1, const char* s2) const
+  {
+    return strcmp(s1, s2) < 0;
+  }
+};
+static std::map<const char*, WN*, ltstr> function_to_pragma_map;
+typedef std::map<const char*, WN*, ltstr>::iterator pragma_map_iterator;
+
+// Associate a pragma WN to a function name
+static void Associate_Pragma_To_Function_Name(WN *wn, const char *fname) {
+  WN *blk;
+  pragma_map_iterator it;
+  it = function_to_pragma_map.find(fname);
+  if (it == function_to_pragma_map.end()) {
+     blk = WN_CreateBlock();
+     function_to_pragma_map[fname] = blk;
+  } else {
+    blk = (*it).second;
+  }
+  WN_INSERT_BlockFirst(blk, wn);
+}
+
+// Return true if a pragma identified by id is associated to the function <fname>.
+// Return false otherwise.
+int Has_Function_Pragma(const char *fname, WN_PRAGMA_ID id) {
+  pragma_map_iterator it;
+  it = function_to_pragma_map.find(fname);
+  if (it != function_to_pragma_map.end()) {
+    WN *blk = (*it).second;
+    for (WN *wn = WN_first(blk); wn; wn = WN_next(wn)) {
+      if ((WN_PRAGMA_ID)WN_pragma(wn) == id) {
+	return TRUE;
+      }
+    }
+  }
+  return 0;
+}
+
+// Return the block WN that contains pragma associated with function <fname>.
+// Return NULL if not defined.
+WN *Get_Function_Pragma_Block(const char *fname) {
+  pragma_map_iterator it;
+  it = function_to_pragma_map.find(fname);
+  if (it != function_to_pragma_map.end()) {
+    return (*it).second;
+  }
+  return NULL;
 }
 
 // Remove pragma from pragma_list and updates pragma_list if necessary
@@ -575,6 +635,21 @@ void WFE_Expand_Pragma(tree stmt)
     args[0] = Get_Integer_Value(TREE_VALUE(pragma_args));
     if ((args[0] < 0) || (args[0] > 2))
       WFE_Pragma_Error(wfe_pragma);
+    break;
+
+  case WFE_PRAGMA_FORCE_EXTGEN:
+  case WFE_PRAGMA_DISABLE_EXTGEN:
+    // Those pragmas take a list of function identifiers
+    // They will not be generated in place, but instead will be duplicated
+    // and attached to each of the specified functions.
+    for(tree arg = pragma_args; arg; arg = TREE_CHAIN(arg)) {
+      const char *name = IDENTIFIER_POINTER(TREE_VALUE(arg));
+      pwn = WN_CreatePragma(wfe_pragma_wn_id(wfe_pragma),
+			    arg_st != NULL ? ST_st_idx(arg_st): (ST_IDX) NULL,
+			    NULL, NULL);
+      Associate_Pragma_To_Function_Name(pwn, xstrdup(name));
+    }
+    return;
     break;
 
   default:

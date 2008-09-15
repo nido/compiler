@@ -768,6 +768,24 @@ EXT_LOWER_stmt_wn_gen(WN *tree, WN* (*expr_fct)(WN *tree, BOOL* modified))
   return tree;
 }
 
+/**
+ * Return True if a pragma with the specified id is attached to 
+ * to the function WN. Return False otherwise.
+ */
+static BOOL
+Is_Function_Pragma_Defined(WN *func, WN_PRAGMA_ID id) {
+  if (WN_func_pragmas(func)) {
+    WN *wn;
+    for (wn = WN_first(WN_func_pragmas(func)); wn; wn = WN_next(wn)) {
+      if (((WN_opcode(wn) == OPC_PRAGMA) || (WN_opcode(wn) == OPC_XPRAGMA))
+	  && ((WN_PRAGMA_ID)WN_pragma(wn) == id)) {
+	return TRUE;
+      }
+    }
+  }
+  return FALSE;
+}
+
 /* ====================================================================
  * Top level routine for lowering OPERATORs not supported in the target
  * ISA to INTRINSIC_OPs corresponding to target's runtime support.
@@ -778,8 +796,21 @@ EXT_LOWER_stmt_wn_gen(WN *tree, WN* (*expr_fct)(WN *tree, BOOL* modified))
 WN *
 EXT_lower_wn(WN *tree)
 {
+  FmtAssert((WN_operator(tree) == OPR_FUNC_ENTRY),
+	    ("Unexpected node type in EXT_lower_wn"));
 
-  if (! Enable_Extension_Native_Support) {
+  INT32 local_ext_gen_mask = Enable_Extension_Native_Support;
+
+  if (! local_ext_gen_mask) {
+    if (Is_Function_Pragma_Defined(tree, WN_PRAGMA_FORCE_EXTGEN)) {
+      local_ext_gen_mask = EXTENSION_NATIVE_SUPPORT_DEFAULT;
+    }
+  }
+  else if (Is_Function_Pragma_Defined(tree, WN_PRAGMA_DISABLE_EXTGEN)) {
+    local_ext_gen_mask = 0;
+  }
+
+  if (! local_ext_gen_mask) {
     // native support deactivated.
     return tree;
   }
@@ -787,16 +818,13 @@ EXT_lower_wn(WN *tree)
   bool simpfold = WN_Simp_Fold_ILOAD;
   WN_Simp_Fold_ILOAD = TRUE;
 
-  //  Start_Timer(T_Lower_CU);
   Set_Error_Phase("EXT Lowering");
 
   WN_Lower_Checkdump("EXT Lowering", tree, 0);
 
-
-  if ( Enable_Extension_Native_Support & EXTENSION_NATIVE_CODEGEN) {
+  if ( local_ext_gen_mask & EXTENSION_NATIVE_CODEGEN) {
     tree = EXT_LOWER_stmt_wn_gen(tree, EXT_LOWER_expr);
   }
-  //  Stop_Timer(T_Lower_CU);
 
   WN_Lower_Checkdump("After EXT lowering", tree, 0);
 
@@ -806,9 +834,8 @@ EXT_lower_wn(WN *tree)
 
   WN_Lower_Checkdump("EXT reg placement Lowering", tree, 0);
 
-  if ( Enable_Extension_Native_Support & EXTENSION_NATIVE_REG_PLACEMENT) {
+  if ( local_ext_gen_mask & EXTENSION_NATIVE_REG_PLACEMENT) {
     CandidateMap candidate_map;
-    FmtAssert((WN_operator(tree) == OPR_FUNC_ENTRY), ("Unexpected node type in EXT_lower_wn"));
     verbose_reg_placement = Get_Trace(TP_EXTENSION, TRACE_EXTENSION_REG_PLACEMENT_MASK);
     VERBOSE_REG_PLACEMENT("REG_PLACEMENT: Processing function ## '%s' ##\n", ST_name(WN_st_idx(tree)));
     WN_func_body(tree) = EXT_LOWER_find_register_candidate(WN_func_body(tree), &candidate_map);
@@ -817,14 +844,13 @@ EXT_lower_wn(WN *tree)
       WN_func_body(tree) = EXT_LOWER_convert_valid_candidate (WN_func_body(tree), &candidate_map);
     }
   }
-  //  Stop_Timer(T_Lower_CU);
 
   WN_Lower_Checkdump("After EXT reg placement lowering", tree, 0);
 
   Set_Error_Phase("EXT CLR detection Lowering");
 
 
-  if ( Enable_Extension_Native_Support & EXTENSION_NATIVE_CLRGEN) {
+  if ( local_ext_gen_mask & EXTENSION_NATIVE_CLRGEN) {
     tree = EXT_LOWER_stmt_wn_gen(tree, EXT_LOWER_CLR_detect_expr);
   }
   

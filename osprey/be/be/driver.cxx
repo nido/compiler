@@ -129,10 +129,8 @@
 #include "mem_ctr.h"
 #ifdef TARG_ST
 #include "W_alloca.h"             // alloca
-#endif
-#ifdef TARG_ST
-//TB: loader stuff
-BE_EXPORTED extern void Initialize_Extension_Loader(void);
+#include "loader.h"
+#include "ext_info.h"
 #endif
 extern void* Initialize_Targ_Info(void);
 
@@ -1267,8 +1265,9 @@ Do_WOPT_and_CG_with_Regions (PU_Info *current_pu, WN *pu)
 #endif
 	rwn = WN_Lower(rwn, actions, NULL, 
 		       "Lowering in preparation to RT_Lower");
-#ifdef TARG_STxP70
-	if (Enable_Extension_Native_Support) {
+#ifdef TARG_ST
+	/* Extension specific lowering */
+	if (Extension_Is_Present) {
 	  rwn = EXT_lower_wn(rwn);
 	}
 #endif
@@ -1758,6 +1757,9 @@ Preprocess_PU (PU_Info *current_pu)
   if (ST_asm_function_st(*WN_st(pu))) {
     Instrumentation_Enabled = FALSE;
   }
+
+  /* PU specific initialization of extension loader */
+  Initialize_Extension_Loader_PU(pu);
 #endif
 
 
@@ -2217,7 +2219,7 @@ main (INT argc, char **argv)
 #endif
   /* decide which phase to call */
   load_components (argc, argv);
-#ifdef TARG_STxP70
+#ifdef TARG_ST
   // [TTh] Perform early exit when checking extension compatibility
   if (Run_extension_check_only) {
     if ( Show_Progress ) {

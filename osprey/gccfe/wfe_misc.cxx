@@ -586,7 +586,7 @@ WFE_File_Init (INT argc, char **argv)
    * Enable_Extension_Native_Support flag (Prepare_Source()
    */
   if (!Enable_Extension_Native_Support) {
-    EXTENSION_Disable_Equivalent_Mtype();
+    EXTENSION_Set_Equivalent_Mtype_Status(0);
   }
 #endif
 
