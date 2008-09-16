@@ -3946,7 +3946,7 @@ vho_lower_expr ( WN * wn, WN * block, BOOL_INFO * bool_info )
     {
       WN      *wn0   = vho_lower_expr (WN_kid0(wn), block, NULL);
       WN      *wn1   = vho_lower_expr (WN_kid1(wn), block, NULL);
-      if (!Enable_Rotate || WN_rtype(wn) != MTYPE_U4){
+      if (!Enable_Rotate || WN_rtype(wn) != MTYPE_U4 || WN_desc(wn) != MTYPE_U4){
 	TYPE_ID  desc  = WN_desc(wn);
 	TYPE_ID  rtype = WN_rtype(wn);
 	TYPE_ID  shift_rtype = WN_rtype(wn1);
@@ -3965,7 +3965,7 @@ vho_lower_expr ( WN * wn, WN * block, BOOL_INFO * bool_info )
     {
       WN      *wn0   = vho_lower_expr (WN_kid0(wn), block, NULL);
       WN      *wn1   = vho_lower_expr (WN_kid1(wn), block, NULL);
-      if (!Enable_Rotate || WN_rtype(wn) != MTYPE_U4){
+      if (!Enable_Rotate || WN_rtype(wn) != MTYPE_U4 || WN_desc(wn) != MTYPE_U4){
 	TYPE_ID  desc  = WN_desc(wn);
 	TYPE_ID  rtype = WN_rtype(wn);
 	TYPE_ID  shift_rtype = WN_rtype(wn1);
