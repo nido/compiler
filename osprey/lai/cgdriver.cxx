@@ -249,6 +249,7 @@ static BOOL CG_cbpo_facto_cst_overridden = FALSE;
 BOOL  CG_ifc_subpart = FALSE ;
 static BOOL CG_ifc_subpart_overridden = FALSE;
 
+BOOL  CG_safe_memmove = FALSE ;
 
 
 #   ifdef TARG_STxP70
@@ -1118,6 +1119,8 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0,	&CG_gen_callee_saved_regs_mask, &CG_gen_callee_saved_regs_mask_overriden, "Use push/pop instructions for callee saved registers. If disabled use spill code." },
   { OVK_INT32,	OV_INTERNAL, TRUE,"max_issue_width", "",
     0, 0, INT32_MAX, &CGTARG_max_issue_width, &CGTARG_max_issue_width_overriden },
+  { OVK_BOOL,   OV_INTERNAL, TRUE,"safe_memmove", "safe_memmove",
+    0, 0, 0, &CG_safe_memmove, NULL },
 #endif /* TARG_ST (Misc.) */
 
 
@@ -1793,7 +1796,6 @@ Configure_CG_Options(void)
     FmtAssert(0, ("CG: Max issue width %d invalid, must be >= %d", 
 		  CGTARG_max_issue_width, 1));
   }
-  
 #endif
 
 #ifndef TARG_STxP70

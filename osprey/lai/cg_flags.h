@@ -200,6 +200,7 @@ extern BOOL CG_gen_callee_saved_regs_mask; /* generate register mask */
 #ifdef TARG_ST
 // [CL] force spill of return address (RA) so that unwinding/backtracing is still possible
 extern BOOL CG_save_return_address;
+extern BOOL CG_safe_memmove;
 #endif
 extern BOOL CG_tail_call;
 extern BOOL CG_unique_exit;

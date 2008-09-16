@@ -6932,6 +6932,47 @@ EBO_Remove_Noops(BB *bb)
       }
   }
 }
+
+
+static void 
+EBO_Replace_Memmove(BB *bb)
+{
+  OP *op;
+  OP * next_op = NULL;
+  if (!CG_safe_memmove) return;
+  for (op = BB_first_op(bb); op != NULL; op = next_op) {
+    next_op = OP_next(op);
+    if(OP_call(op) || OP_jump(op) || OP_ijump(op)) {
+        ANNOTATION *ant = ANNOT_Get (BB_annotations(bb), ANNOT_CALLINFO);
+        if (ant != NULL) {
+            ST *call_sym = CALLINFO_call_st(ANNOT_callinfo(ant));
+            if (call_sym != NULL) {
+                if (!strcmp(ST_name(call_sym),"memmove")) {
+                    // With a memmove, we should check dependency between pointers
+                    // If there is no overlap => can use memcpy instead
+                    //   - If pointer are not on sam type
+                    //   - If pointers come from malloc without modif
+                    //   - Restricted pointer
+                    ST *newst = New_ST(GLOBAL_SYMTAB);
+                    ST_Init(newst, Save_Str("memcpy"), ST_sym_class(call_sym), ST_sclass(call_sym), ST_export(call_sym), (TY_IDX)ST_pu_type(call_sym));
+                    TY_IDX pu_idx = ST_pu_type(call_sym);
+                    Set_ST_pu(newst,ST_pu(call_sym));
+                    CALLINFO_call_st(ANNOT_callinfo(ant)) = newst;
+                    int i;
+                    TN *new_tn = Gen_Symbol_TN(newst, TN_offset(OP_opnd(op,1)), TN_relocs(OP_opnd(op,1)));
+                    Set_OP_opnd(op,1,new_tn);
+                }
+            }      
+        }
+    }
+    if (EBO_Trace_Optimization) {
+      #pragma mips_frequency_hint NEVER
+      fprintf(TFile, "%sin BB:%d replace memmove ", EBO_trace_pfx, BB_id(bb));
+      Print_OP_No_SrcLine(op);
+    }
+  }
+}
+
 #endif
 
 /* -----------------------------------------------------------------------
@@ -7513,6 +7554,7 @@ EBO_Add_BB_to_EB (BB * bb)
   EBO_Inline_Immediates(bb, normal_conditions);
   EBO_Remove_Copy_Ops (bb, normal_conditions);
   EBO_Remove_Noops(bb);
+  EBO_Replace_Memmove(bb);
 #else
   EBO_Remove_Unused_Ops(bb, normal_conditions);
 #endif

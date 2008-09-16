@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep 16 10:12:35 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-safe-memmove
+
+Description:
+------------
+	* [trunk] Deliver dt25/dev-safe-memmove rev #18339 with authorization branch #51579
+
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cg_flags.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep 16 09:24:12 CEST 2008
 	Author:    knochelh
 	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
