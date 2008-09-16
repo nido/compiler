@@ -609,44 +609,28 @@ Create_Intrinsic_from_OP(TYPE_ID res,
                              intrinsic, nbkids, kids);
 }
 
-
-/** 
- * Lower reccursively tree to find potential instrinsic mappings.
- * 
- * @param tree 
- * 
- * @return lowered tree
+/**
+ * Return the best intrinsic found within an intrinsic vector,
+ * if any valuable one is found.
+ *
+ * @param itrn_indexes
+ *
+ * @return
  */
-static WN *
-EXT_LOWER_expr(WN *tree, BOOL* modified)
-{
-  WN *kids[MAX_RECOG_OPERANDS];
-  int i, nb_operands = WN_kid_count(tree);
-
-  // lower kids first
-  for (i=0; i<nb_operands; i++){
-    WN_kid(tree, i) = EXT_LOWER_expr(WN_kid(tree, i), modified);
-  }
-  
-  // get intrinsic idx if any.
-  OPCODE opc = WN_opcode(tree);
-
-  INT itrnidx;
+static INTRINSIC
+Find_Best_Intrinsic(INTRINSIC_Vector_t* itrn_indexes) {
+  int i;
+  INTRINSIC itrnidx;
   INT cost = INT_MAX;
-  INTRINSIC_Vector_t* itrn_indexes =  Get_Intrinsic_from_OPCODE(opc);
-
-  /* No intrinsic correspond to opcode */
-  if (itrn_indexes == NULL) {
-    return tree;
-  }
-    
+  
   /* select the best mapping for opcode */
   for (i=0; i<itrn_indexes->size(); i++) {
     INT new_cost;
-    INT new_itrnidx = (*itrn_indexes)[i];
+    INTRINSIC new_itrnidx = (*itrn_indexes)[i];
     /* operator mapped on core */
-    if ( new_itrnidx == OPCODE_MAPPED_ON_CORE)
-      return tree;
+    if ( new_itrnidx == OPCODE_MAPPED_ON_CORE) {
+      return INTRINSIC_INVALID;
+    }
     if (! EXTENSION_Is_Meta_INTRINSIC(new_itrnidx)) {
       /* for non meta intrinsic, cost is set to 0 */
       itrnidx = new_itrnidx;
@@ -666,14 +650,61 @@ EXT_LOWER_expr(WN *tree, BOOL* modified)
       }
     }
   }
-
-  if (cost > Meta_Instruction_Threshold)
-    return tree;
-
-  FmtAssert((nb_operands<=MAX_RECOG_OPERANDS),
-            ("intrinsic nboperand %d cannot exceed %d", nb_operands,
-             MAX_RECOG_OPERANDS));
   
+  if (cost > Meta_Instruction_Threshold) {
+    return INTRINSIC_INVALID;
+  }
+  
+  INT nb_arg = INTRN_proto_info(itrnidx)->argument_count;
+  FmtAssert((nb_arg<=MAX_RECOG_OPERANDS),
+            ("intrinsic nboperand %d cannot exceed %d",
+	     nb_arg, MAX_RECOG_OPERANDS));
+
+  return itrnidx;
+}
+
+/** 
+ * Lower reccursively tree to find potential instrinsic mappings.
+ * 
+ * @param tree 
+ * @param modified 
+ * 
+ * @return lowered tree
+ */
+static WN *
+EXT_LOWER_expr(WN *tree, BOOL* modified)
+{
+  WN *kids[MAX_RECOG_OPERANDS];
+  int i, nb_operands = WN_kid_count(tree);
+
+  // lower kids first
+  for (i=0; i<nb_operands; i++){
+    WN_kid(tree, i) = EXT_LOWER_expr(WN_kid(tree, i), modified);
+  }
+  
+  // get intrinsic idx if any.
+  OPCODE opc = WN_opcode(tree);
+
+  INTRINSIC itrnidx;
+  INT cost = INT_MAX;
+  INTRINSIC_Vector_t* itrn_indexes =  Get_Intrinsic_from_OPCODE(opc);
+
+  /* Conversion are handled later, during CVT walk */
+  if (OPCODE_operator(opc) == OPR_CVT) {
+    return tree;
+  }
+
+  /* No intrinsic correspond to opcode */
+  if (itrn_indexes == NULL) {
+    return tree;
+  }
+
+  itrnidx = Find_Best_Intrinsic(itrn_indexes);
+
+  if (itrnidx == INTRINSIC_INVALID) {
+    return tree;
+  }
+
   TYPE_ID rettype = INTRN_return_type(INTRN_proto_info(itrnidx));
 
   FmtAssert((rettype != MTYPE_UNKNOWN), ("no rettype for intrinsic !"));
@@ -693,21 +724,25 @@ EXT_LOWER_expr(WN *tree, BOOL* modified)
 }
 
 /** 
- * This function detects CVT(INTCONST(0)) pattern and replace it, when
- * possible, with INTRINSIC_OP(CLR).
+ * This function detects and replaces CVT WNs when possible:
+ * - CVT1 ( INTCONST (0) ) --> INTRINSIC_OP(CLR),
+ * - CVT1 ( CVT2 )         --> INTRINSIC_OP(CVT2)
+ *   where CVT1 is a convert to extension type,
+ *         CVT2 is a convert between 2 core types (for instance, I4 to I8)
  * 
  * @param tree 
+ * @param modified 
  * 
  * @return 
  */
 static WN *
-EXT_LOWER_CLR_detect_expr(WN *tree, BOOL *modified)
+EXT_LOWER_CVT_expr(WN *tree, BOOL *modified)
 {
   int i, nb_operands = WN_kid_count(tree);
 
   // lower kids first
   for (i=0; i<nb_operands; i++){
-    WN_kid(tree, i) = EXT_LOWER_CLR_detect_expr(WN_kid(tree, i), modified);
+    WN_kid(tree, i) = EXT_LOWER_CVT_expr(WN_kid(tree, i), modified);
   }
   
   OPERATOR opr = WN_operator(tree);
@@ -715,11 +750,55 @@ EXT_LOWER_CLR_detect_expr(WN *tree, BOOL *modified)
   if (opr == OPR_CVT) {
     WN* kid0 = WN_kid(tree, 0);
     if (WN_operator(kid0) == OPR_INTCONST) {
+      /* Conversion of constant 0 to extension type mapped to CLR */
       INT64 value = WN_const_val(kid0);
       INT clr_intrn = EXTENSION_Get_CLR_Intrinsic(WN_rtype(tree));
       if (value==0 && clr_intrn!=-1) {
         *modified = TRUE;
         return Create_Intrinsic_from_OP(WN_rtype(tree), clr_intrn, 0, NULL);
+      }
+    }
+    else if (WN_operator(kid0) == OPR_CVT) {
+      if (MTYPE_is_dynamic(WN_rtype(tree))) {
+	/* Try to optimize conversion to extension type,
+	 * like: X8I8CVT(I8I4CVT) --> X8I4CVT */
+	INTRINSIC_Vector_t* itrn_indexes =  Get_Intrinsic_from_OPCODE(WN_opcode(kid0));
+	if (itrn_indexes != NULL) {
+	  INTRINSIC itrnidx = Find_Best_Intrinsic(itrn_indexes);
+	  if (itrnidx != INTRINSIC_INVALID) {
+	    TYPE_ID rettype = INTRN_return_type(INTRN_proto_info(itrnidx));
+	    if (rettype == WN_rtype(tree)) {
+	      /* convert kid to the proper intrinsic type */
+	      WN *kids[1];
+	      kids[0] = Create_Convert_Node(INTRN_proto_info(itrnidx)->arg_type[0],
+					    WN_kid0(kid0));
+	      *modified = TRUE;
+	      /* create intrinsic op */
+	      return (Create_Intrinsic_from_OP(rettype, itrnidx, 1, kids));
+	    }
+	  }
+	}
+      }
+      else if (MTYPE_is_dynamic(WN_desc(kid0))) {
+	/* Try to optimize conversion from extension type,
+	 * like: I4I8CVT(I8X8CVT) --> I4X8CVT */
+	INTRINSIC_Vector_t* itrn_indexes =  Get_Intrinsic_from_OPCODE(WN_opcode(tree));
+	if (itrn_indexes != NULL) {
+	  INTRINSIC itrnidx = Find_Best_Intrinsic(itrn_indexes);
+	  if (itrnidx != INTRINSIC_INVALID) {
+	    TYPE_ID rettype = INTRN_return_type(INTRN_proto_info(itrnidx));
+	    TYPE_ID paramtype = INTRN_proto_info(itrnidx)->arg_type[0];
+	    if (paramtype == WN_desc(kid0)) {
+	      WN *kids[1];
+	      kids[0] = WN_kid0(kid0);
+	      *modified = TRUE;
+	      /* create intrinsic op */
+	      return Create_Convert_Node
+		(WN_rtype(tree),
+		 (Create_Intrinsic_from_OP(rettype, itrnidx, 1, kids)));
+	    }
+	  }
+	}
       }
     }
   }
@@ -847,14 +926,13 @@ EXT_lower_wn(WN *tree)
 
   WN_Lower_Checkdump("After EXT reg placement lowering", tree, 0);
 
-  Set_Error_Phase("EXT CLR detection Lowering");
+  Set_Error_Phase("EXT CVT Lowering");
 
-
-  if ( local_ext_gen_mask & EXTENSION_NATIVE_CLRGEN) {
-    tree = EXT_LOWER_stmt_wn_gen(tree, EXT_LOWER_CLR_detect_expr);
+  if ( local_ext_gen_mask & EXTENSION_NATIVE_CVTGEN) {
+    tree = EXT_LOWER_stmt_wn_gen(tree, EXT_LOWER_CVT_expr);
   }
   
-  WN_Lower_Checkdump("After CLR detection Lowering", tree, 0);
+  WN_Lower_Checkdump("After EXT CVT Lowering", tree, 0);
   
   WN_verifier(tree);
   

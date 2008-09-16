@@ -130,7 +130,7 @@ extern INTRINSIC_Vector_t* Get_Intrinsic_from_OPCODE(OPCODE opc) {
  * @param intrn 
  * 
  */
-extern void Add_Intrinsic_for_OPCODE(OPCODE opc, INT intrn) {
+extern void Add_Intrinsic_for_OPCODE(OPCODE opc, INTRINSIC intrn) {
   if (! Intrinsic_from_OPCODE.count(opc)>0) {
     Intrinsic_from_OPCODE[opc] = new INTRINSIC_Vector_t();
   }
@@ -291,7 +291,7 @@ static void
 Add_Intrinsic(const Extension_dll_t *dll_instance,
 	      const extension_builtins_t* btypes,
 	      BOOL verbose) {
-  INT intrn_id = INTRINSIC_COUNT + 1;
+  INTRINSIC intrn_id = INTRINSIC_COUNT + 1;
   
   intrn_info[intrn_id].is_by_val           = btypes->is_by_val;
   intrn_info[intrn_id].is_pure             = btypes->is_pure;
@@ -740,7 +740,7 @@ Initialize_Extension_Loader ()
      */
     if (Opt_Level < 2 && !Enable_Extension_Native_Support_Set) {
       Enable_Extension_Native_Support&= ~(EXTENSION_NATIVE_CODEGEN |
-					  EXTENSION_NATIVE_CLRGEN);
+					  EXTENSION_NATIVE_CVTGEN);
     }
     else if (Intrinsic_from_OPCODE.empty()) {
       Enable_Extension_Native_Support&= ~EXTENSION_NATIVE_CODEGEN;

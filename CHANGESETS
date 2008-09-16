@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep 16 08:41:47 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x-convert
+
+Description:
+------------
+	* [trunk] Deliver tt2/dev-MP1x-convert rev #18326 with authorization branch #51813
+	  -> MPx native support: ensure that conversion builtins are introduced only when required, i.e. when the code contains explicit use of MPx type
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/ext_lower.cxx
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/config.h
+	M      osprey/common/com/ext_info.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Sep 15 09:41:56 CEST 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
