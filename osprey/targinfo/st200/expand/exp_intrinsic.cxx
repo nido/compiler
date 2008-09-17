@@ -125,7 +125,9 @@ Expand__builtin__divh(
     TN *r0_20_8 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *r0_20_9 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
-    TN *c0x8000 = Gen_Literal_TN(__EXTS32TOS64(0x8000), 4) ;
+    TN *c0x8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+    TN *c0x8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x8000), 4) ;
+    Build_OP (    TOP_mov_ii_r,      c0x8000,        c0x8000_ltn,    ops) ;
     TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
 #undef __EXTS32TOS64
     Build_OP (	TOP_shl_i_r_r,	r0_16_0,	i0,	c16,	ops) ;
@@ -171,7 +173,7 @@ Expand__builtin__divh(
     Build_OP (	TOP_divs_b_r_r_b_r,	r0_20_19,	b0_2_19,	r0_20_18,	r0_19_2,	b0_2_18,	ops) ;
     Build_OP (	TOP_targ_addcg_b_r_r_b_r,	r0_17_19,	b0_0_19,	r0_15_18,	r0_15_18,	b0_0_18,	ops) ;
     Build_OP (	TOP_targ_addcg_b_r_r_b_r,	r0_15_20,	b0_2_20,	r0_17_19,	r0_17_19,	b0_2_19,	ops) ;
-    Build_OP (	TOP_cmpltu_i_r_r,	r0_20_20,	r0_20_19,	c0x8000,	ops) ;
+    Build_OP (	TOP_cmpltu_r_r_r,	r0_20_20,	r0_20_19,	c0x8000,	ops) ;
     Build_OP (	TOP_orc_r_r_r,	r0_15_21,	r0_15_20,	Zero_TN,	ops) ;
     Build_OP (	TOP_sh1add_r_r_r,	r0_15_22,	r0_15_21,	r0_20_20,	ops) ;
     Build_OP (	TOP_sub_r_r_r,	r0_20_23,	Zero_TN,	r0_15_22,	ops) ;
@@ -274,7 +276,9 @@ Expand__builtin__divuh(
     TN *r0_18_7 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *r0_18_9 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
-    TN *c0x8000 = Gen_Literal_TN(__EXTS32TOS64(0x8000), 4) ;
+    TN *c0x8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+    TN *c0x8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x8000), 4) ;
+    Build_OP (    TOP_mov_ii_r,      c0x8000,        c0x8000_ltn,    ops) ;
     TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
 #undef __EXTS32TOS64
     Build_OP (	TOP_shl_i_r_r,	r0_16_0,	i0,	c16,	ops) ;
@@ -313,7 +317,7 @@ Expand__builtin__divuh(
     Build_OP (	TOP_divs_b_r_r_b_r,	r0_11_17,	b0_0_17,	r0_11_16,	i1,	b0_0_16,	ops) ;
     Build_OP (	TOP_targ_addcg_b_r_r_b_r,	r0_18_17,	b0_2_17,	r0_15_16,	r0_15_16,	b0_2_16,	ops) ;
     Build_OP (	TOP_targ_addcg_b_r_r_b_r,	r0_15_18,	b0_0_18,	r0_18_17,	r0_18_17,	b0_0_17,	ops) ;
-    Build_OP (	TOP_cmpltu_i_r_r,	r0_11_18,	r0_11_17,	c0x8000,	ops) ;
+    Build_OP (	TOP_cmpltu_r_r_r,	r0_11_18,	r0_11_17,	c0x8000,	ops) ;
     Build_OP (	TOP_orc_r_r_r,	r0_15_19,	r0_15_18,	Zero_TN,	ops) ;
     Build_OP (	TOP_sh1add_r_r_r,	r0_16_20,	r0_15_19,	r0_11_18,	ops) ;
     Build_OP (	TOP_zxth_r_r,	o0,	r0_16_20,	ops) ;
@@ -1700,8 +1704,12 @@ Expand__st200mulfrac(
       TN *r0_26_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *r0_27_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
 #define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
-      TN *c0x7fffffff = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-      TN *c0x80000000 = Gen_Literal_TN(__EXTS32TOS64(0x80000000), 4) ;
+      TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
+      Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+      TN *c0x80000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+      TN *c0x80000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x80000000), 4) ;
+      Build_OP (    TOP_mov_ii_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
       TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
       TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
 #undef __EXTS32TOS64
@@ -1709,7 +1717,7 @@ Expand__st200mulfrac(
       Build_OP (    TOP_mulhs_r_r_r,    r0_27_2,        i0,     i1,     ops) ;
       Build_OP (    TOP_mulhhs_r_r_r,   r0_24_3,        i0,     i1,     ops) ;
       Build_OP (    TOP_mullhus_r_r_r,  r0_25_3,        i0,     i1,     ops) ;
-      Build_OP (    TOP_cmpeq_i_r_r,  r0_20_2,        i0,     c0x80000000,    ops) ;
+      Build_OP (    TOP_cmpeq_r_r_r,  r0_20_2,        i0,     c0x80000000,    ops) ;
       Build_OP (    TOP_cmpeq_r_r_r,  r0_21_2,        i0,     i1,     ops) ;
       Build_OP (    TOP_convib_r_b,        b0_2_2, Zero_TN,        ops) ;
       Build_OP (    TOP_andl_r_r_b,   b0_0_3, r0_20_2,        r0_21_2,        ops) ;
@@ -1721,7 +1729,7 @@ Expand__st200mulfrac(
       Build_OP (    TOP_shru_i_r_r,     r0_17_5,        r0_17_4,        c31,    ops) ;
       Build_OP (    TOP_or_r_r_r,       r0_16_6,        r0_16_4,        r0_21_5,        ops) ;
       Build_OP (    TOP_add_r_r_r,      r0_16_7,        r0_16_6,        r0_17_5,        ops) ;
-      Build_OP (    TOP_slctf_i_r_b_r,    o0,     b0_0_3, r0_16_7,        c0x7fffffff,    ops) ;      
+      Build_OP (    TOP_slctf_r_r_b_r,    o0,     b0_0_3, r0_16_7,        c0x7fffffff,    ops) ;      
   }
 } /* Expand__st200mulfrac */
 
@@ -1819,7 +1827,7 @@ Expand__st220mulhhs(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c0xffff0000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0xffff0000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffff0000), 4) ;
-    Build_OP (	TOP_mov_i_r,	c0xffff0000,	c0xffff0000_ltn,	ops) ;
+    Build_OP (	TOP_mov_ii_r,	c0xffff0000,	c0xffff0000_ltn,	ops) ;
 #undef __EXTS32TOS64
     Build_OP (	TOP_and_r_r_r,	r0_17_0,	i1,	c0xffff0000,	ops) ;
     Build_OP (	TOP_mul64h_r_r_r,	o0,	i0,	r0_17_0,	ops) ;
@@ -1850,7 +1858,7 @@ Expand__st220mulhs(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c0xffff0000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0xffff0000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffff0000), 4) ;
-    Build_OP (	TOP_mov_i_r,	c0xffff0000,	c0xffff0000_ltn,	ops) ;
+    Build_OP (	TOP_mov_ii_r,	c0xffff0000,	c0xffff0000_ltn,	ops) ;
 #undef __EXTS32TOS64
     Build_OP (	TOP_and_r_r_r,	r0_8_0,	i1,	c0xffff0000,	ops) ;
     Build_OP (	TOP_mul32_r_r_r,	o0,	i0,	r0_8_0,	ops) ;
@@ -2064,10 +2072,10 @@ Expand__absch(
 #define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
     TN *c0x7fff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x7fff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fff), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x7fff,        c0x7fff_ltn,    ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x7fff,        c0x7fff_ltn,    ops) ;
     TN *c0xffff8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0xffff8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffff8000), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
 #undef __EXTS32TOS64
     Build_OP (    TOP_cmpeq_r_r_b,  b0_0_0, i0,     c0xffff8000,    ops) ;
     Build_OP (    TOP_sub_r_r_r,      r0_20_0,        Zero_TN,        i0,     ops) ;
@@ -2109,10 +2117,10 @@ Expand__abscl(
 #define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
   TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
   TN *c0x80000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x80000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x80000000), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
   TN *c_1 = Gen_Literal_TN(__EXTS32TOS64(-1), 4) ;
 #undef __EXTS32TOS64
   Build_OP (    TOP_cmpgtu_r_r_b, b0_0_0, il0,    Zero_TN,     ops) ;
@@ -2161,10 +2169,10 @@ Expand__abscw(
 #define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
     TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
     TN *c0x80000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x80000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x80000000), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
 #undef __EXTS32TOS64
     Build_OP (    TOP_cmpeq_r_r_b,  b0_0_0, i0,     c0x80000000,    ops) ;
     Build_OP (    TOP_cmplt_r_r_b,  b0_1_0, i0,     Zero_TN,     ops) ;
@@ -2284,10 +2292,10 @@ Expand__addch(
 #define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
     TN *c0x7fff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x7fff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fff), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x7fff,        c0x7fff_ltn,    ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x7fff,        c0x7fff_ltn,    ops) ;
     TN *c0xffff8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0xffff8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffff8000), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
 #undef __EXTS32TOS64
     Build_OP (    TOP_add_r_r_r,      r0_16_0,        i0,     i1,     ops) ;
     Build_OP (    TOP_max_r_r_r,      r0_16_1,        r0_16_0,        c0xffff8000,    ops) ;
@@ -2331,7 +2339,7 @@ Expand__addcl(
 #define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
   TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
   TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
 #undef __EXTS32TOS64
   Build_OP (    TOP_convib_r_b,        b0_0_0, Zero_TN,        ops) ;
@@ -2381,7 +2389,7 @@ Expand__addcw(
 #define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
     TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
     TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
 #undef __EXTS32TOS64
     Build_OP (    TOP_convib_r_b,        b0_0_0, Zero_TN,        ops) ;
@@ -2538,14 +2546,14 @@ Expand__bitcnth(
 #define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
   TN *c0x0f0f = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x0f0f_ltn = Gen_Literal_TN(__EXTS32TOS64(0x0f0f), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x0f0f,        c0x0f0f_ltn,    ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x0f0f,        c0x0f0f_ltn,    ops) ;
   TN *c0x1f = Gen_Literal_TN(__EXTS32TOS64(0x1f), 4) ;
   TN *c0x3333 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x3333_ltn = Gen_Literal_TN(__EXTS32TOS64(0x3333), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x3333,        c0x3333_ltn,    ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x3333,        c0x3333_ltn,    ops) ;
   TN *c0x5555 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x5555_ltn = Gen_Literal_TN(__EXTS32TOS64(0x5555), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x5555,        c0x5555_ltn,    ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x5555,        c0x5555_ltn,    ops) ;
   TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
   TN *c2 = Gen_Literal_TN(__EXTS32TOS64(2), 4) ;
   TN *c4 = Gen_Literal_TN(__EXTS32TOS64(4), 4) ;
@@ -2599,14 +2607,14 @@ Expand__bitcntw(
 #define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
   TN *c0x0f0f0f0f = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x0f0f0f0f_ltn = Gen_Literal_TN(__EXTS32TOS64(0x0f0f0f0f), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x0f0f0f0f,    c0x0f0f0f0f_ltn,        ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x0f0f0f0f,    c0x0f0f0f0f_ltn,        ops) ;
   TN *c0x33333333 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x33333333_ltn = Gen_Literal_TN(__EXTS32TOS64(0x33333333), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x33333333,    c0x33333333_ltn,        ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x33333333,    c0x33333333_ltn,        ops) ;
   TN *c0x3f = Gen_Literal_TN(__EXTS32TOS64(0x3f), 4) ;
   TN *c0x55555555 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x55555555_ltn = Gen_Literal_TN(__EXTS32TOS64(0x55555555), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x55555555,    c0x55555555_ltn,        ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x55555555,    c0x55555555_ltn,        ops) ;
   TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
   TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
   TN *c2 = Gen_Literal_TN(__EXTS32TOS64(2), 4) ;
@@ -2724,28 +2732,28 @@ Expand__bitrevw(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
   TN *c0x00FF00FF = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x00FF00FF_ltn = Gen_Literal_TN(__EXTS32TOS64(0x00FF00FF), 4) ;
-  Build_OP (	TOP_mov_i_r,	c0x00FF00FF,	c0x00FF00FF_ltn,	ops) ;
+  Build_OP (	TOP_mov_ii_r,	c0x00FF00FF,	c0x00FF00FF_ltn,	ops) ;
   TN *c0x0F0F0F0F = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x0F0F0F0F_ltn = Gen_Literal_TN(__EXTS32TOS64(0x0F0F0F0F), 4) ;
-  Build_OP (	TOP_mov_i_r,	c0x0F0F0F0F,	c0x0F0F0F0F_ltn,	ops) ;
+  Build_OP (	TOP_mov_ii_r,	c0x0F0F0F0F,	c0x0F0F0F0F_ltn,	ops) ;
   TN *c0x33333333 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x33333333_ltn = Gen_Literal_TN(__EXTS32TOS64(0x33333333), 4) ;
-  Build_OP (	TOP_mov_i_r,	c0x33333333,	c0x33333333_ltn,	ops) ;
+  Build_OP (	TOP_mov_ii_r,	c0x33333333,	c0x33333333_ltn,	ops) ;
   TN *c0x55555555 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x55555555_ltn = Gen_Literal_TN(__EXTS32TOS64(0x55555555), 4) ;
-  Build_OP (	TOP_mov_i_r,	c0x55555555,	c0x55555555_ltn,	ops) ;
+  Build_OP (	TOP_mov_ii_r,	c0x55555555,	c0x55555555_ltn,	ops) ;
   TN *c0xAAAAAAAA = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0xAAAAAAAA_ltn = Gen_Literal_TN(__EXTS32TOS64(0xAAAAAAAA), 4) ;
-  Build_OP (	TOP_mov_i_r,	c0xAAAAAAAA,	c0xAAAAAAAA_ltn,	ops) ;
+  Build_OP (	TOP_mov_ii_r,	c0xAAAAAAAA,	c0xAAAAAAAA_ltn,	ops) ;
   TN *c0xCCCCCCCC = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0xCCCCCCCC_ltn = Gen_Literal_TN(__EXTS32TOS64(0xCCCCCCCC), 4) ;
-  Build_OP (	TOP_mov_i_r,	c0xCCCCCCCC,	c0xCCCCCCCC_ltn,	ops) ;
+  Build_OP (	TOP_mov_ii_r,	c0xCCCCCCCC,	c0xCCCCCCCC_ltn,	ops) ;
   TN *c0xF0F0F0F0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0xF0F0F0F0_ltn = Gen_Literal_TN(__EXTS32TOS64(0xF0F0F0F0), 4) ;
-  Build_OP (	TOP_mov_i_r,	c0xF0F0F0F0,	c0xF0F0F0F0_ltn,	ops) ;
+  Build_OP (	TOP_mov_ii_r,	c0xF0F0F0F0,	c0xF0F0F0F0_ltn,	ops) ;
   TN *c0xFF00FF00 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0xFF00FF00_ltn = Gen_Literal_TN(__EXTS32TOS64(0xFF00FF00), 4) ;
-  Build_OP (	TOP_mov_i_r,	c0xFF00FF00,	c0xFF00FF00_ltn,	ops) ;
+  Build_OP (	TOP_mov_ii_r,	c0xFF00FF00,	c0xFF00FF00_ltn,	ops) ;
   TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
   TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
   TN *c2 = Gen_Literal_TN(__EXTS32TOS64(2), 4) ;
@@ -2907,7 +2915,7 @@ Expand__clamplw(
 #define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
   TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
   TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
 #undef __EXTS32TOS64
   Build_OP (    TOP_cmplt_r_r_r,  r0_23_0,        ih0,    Zero_TN,     ops) ;
@@ -2941,10 +2949,10 @@ Expand__clampwh(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c0x7fff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x7fff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fff), 4) ;
-    Build_OP (	TOP_mov_i_r,	c0x7fff,	c0x7fff_ltn,	ops) ;
+    Build_OP (	TOP_mov_ii_r,	c0x7fff,	c0x7fff_ltn,	ops) ;
     TN *c0xffff8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0xffff8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffff8000), 4) ;
-    Build_OP (	TOP_mov_i_r,	c0xffff8000,	c0xffff8000_ltn,	ops) ;
+    Build_OP (	TOP_mov_ii_r,	c0xffff8000,	c0xffff8000_ltn,	ops) ;
 #undef __EXTS32TOS64
     Build_OP (	TOP_max_r_r_r,	r0_16_0,	i0,	c0xffff8000,	ops) ;
     Build_OP (	TOP_min_r_r_r,	o0,	r0_16_0,	c0x7fff,	ops) ;
@@ -3079,10 +3087,10 @@ Expand__edgesh(
 #define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
   TN *c0x7fff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x7fff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fff), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x7fff,        c0x7fff_ltn,    ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x7fff,        c0x7fff_ltn,    ops) ;
   TN *c0xffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0xffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffff), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0xffff,        c0xffff_ltn,    ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0xffff,        c0xffff_ltn,    ops) ;
   TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
 #undef __EXTS32TOS64
   Build_OP (    TOP_shru_i_r_r,     r0_20_0,        i1,     c1,     ops) ;
@@ -3115,7 +3123,7 @@ Expand__edgesw(
 #define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
   TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
   TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
 #undef __EXTS32TOS64
   Build_OP (    TOP_shru_i_r_r,     r0_20_0,        i1,     c1,     ops) ;
@@ -3928,12 +3936,12 @@ Expand__mafcw(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
   TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-  Build_OP (	TOP_mov_i_r,	c0x7fffffff,	c0x7fffffff_ltn,	ops) ;
+  Build_OP (	TOP_mov_ii_r,	c0x7fffffff,	c0x7fffffff_ltn,	ops) ;
   TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
   TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
 #undef __EXTS32TOS64
   Build_OP (	TOP_mulll_r_r_r,	r0_20_2,	i1,	i2,	ops) ;
-  Build_OP (	TOP_mov_i_r,	r0_30_1,	c0x7fffffff,	ops) ;
+  Build_OP (	TOP_mov_r_r,	r0_30_1,	c0x7fffffff,	ops) ;
   Build_OP (	TOP_convib_r_b,	b0_0_1,	Zero_TN,	ops) ;
   Build_OP (	TOP_shr_i_r_r,	r0_26_1,	i0,	c31,	ops) ;
   Build_OP (	TOP_shr_i_r_r,	r0_25_2,	r0_20_2,	c31,	ops) ;
@@ -4218,10 +4226,10 @@ Expand__mpfcw(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
     TN *c0x40000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x40000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x40000000), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x40000000,    c0x40000000_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x40000000,    c0x40000000_ltn,        ops) ;
     TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
 #undef __EXTS32TOS64
     Build_OP (    TOP_mulll_r_r_r,    r0_16_2,        i0,     i1,     ops) ;
@@ -4261,10 +4269,10 @@ Expand__mpfcwl(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
       TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-      Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+      Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
       TN *c0x80000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *c0x80000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x80000000), 4) ;
-      Build_OP (    TOP_mov_i_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
+      Build_OP (    TOP_mov_ii_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
       TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
       TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
       TN *c_1 = Gen_Literal_TN(__EXTS32TOS64(-1), 4) ;
@@ -4302,10 +4310,10 @@ Expand__mpfcwl(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
       TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-      Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+      Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
       TN *c0x80000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *c0x80000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x80000000), 4) ;
-      Build_OP (    TOP_mov_i_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
+      Build_OP (    TOP_mov_ii_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
       TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
       TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
       TN *c_1 = Gen_Literal_TN(__EXTS32TOS64(-1), 4) ;
@@ -4418,7 +4426,7 @@ Expand__mpfrch(
     TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
     TN *c16384 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c16384_ltn = Gen_Literal_TN(__EXTS32TOS64(16384), 4) ;
-    Build_OP (    TOP_mov_i_r,      c16384,        c16384_ltn,    ops) ;
+    Build_OP (    TOP_mov_ii_r,      c16384,        c16384_ltn,    ops) ;
 #undef __EXTS32TOS64
     Build_OP (	TOP_mulll_r_r_r,	r0_21_2,	i0,	i1,	ops) ;
     Build_OP (	TOP_add_r_r_r,	r0_21_1,	r0_21_2,	c16384,	ops) ;
@@ -4434,13 +4442,13 @@ Expand__mpfrch(
 #define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
     TN *c0x4000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x4000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x4000), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x4000,        c0x4000_ltn,    ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x4000,        c0x4000_ltn,    ops) ;
     TN *c0x7fff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x7fff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fff), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x7fff,        c0x7fff_ltn,    ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x7fff,        c0x7fff_ltn,    ops) ;
     TN *c0xffff8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0xffff8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffff8000), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
     TN *c15 = Gen_Literal_TN(__EXTS32TOS64(15), 4) ;
 #undef __EXTS32TOS64
     Build_OP (    TOP_mulll_r_r_r,    r0_26_2,        i0,     i1,     ops) ;
@@ -4578,10 +4586,10 @@ Expand__mulfch(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c0x7fff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x7fff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fff), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x7fff,        c0x7fff_ltn,    ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x7fff,        c0x7fff_ltn,    ops) ;
     TN *c0xffff8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0xffff8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffff8000), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
     TN *c15 = Gen_Literal_TN(__EXTS32TOS64(15), 4) ;
 #undef __EXTS32TOS64
     Build_OP (	TOP_mulll_r_r_r,	r0_26_2,	i0,	i1,	ops) ;
@@ -4624,13 +4632,13 @@ Expand__mulfcm(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
       TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-      Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+      Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
       TN *c0x80000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *c0x80000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x80000000), 4) ;
-      Build_OP (    TOP_mov_i_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
+      Build_OP (    TOP_mov_ii_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
       TN *c0xffff8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *c0xffff8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffff8000), 4) ;
-      Build_OP (    TOP_mov_i_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
+      Build_OP (    TOP_mov_ii_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
       TN *c15 = Gen_Literal_TN(__EXTS32TOS64(15), 4) ;
       TN *c17 = Gen_Literal_TN(__EXTS32TOS64(17), 4) ;
 #undef __EXTS32TOS64
@@ -4656,10 +4664,10 @@ Expand__mulfcm(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
       TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-      Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+      Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
       TN *c0x80000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *c0x80000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x80000000), 4) ;
-      Build_OP (    TOP_mov_i_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
+      Build_OP (    TOP_mov_ii_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
       TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
       TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
       TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
@@ -4704,10 +4712,10 @@ Expand__mulfcw(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
       TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-      Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+      Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
       TN *c0x80000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *c0x80000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x80000000), 4) ;
-      Build_OP (    TOP_mov_i_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
+      Build_OP (    TOP_mov_ii_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
       TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
       TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
 #undef __EXTS32TOS64
@@ -4739,10 +4747,10 @@ Expand__mulfcw(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
       TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-      Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+      Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
       TN *c0x80000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
       TN *c0x80000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x80000000), 4) ;
-      Build_OP (    TOP_mov_i_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
+      Build_OP (    TOP_mov_ii_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
       TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
       TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
 #undef __EXTS32TOS64
@@ -5318,10 +5326,10 @@ Expand__nearclw(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
   TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
   TN *c0x80000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x80000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x80000000), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
   TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
 #undef __EXTS32TOS64
   Build_OP (	TOP_cmpeq_r_r_b,	b0_0_0,	ih0,	c0x7fffffff,	ops) ;
@@ -5358,13 +5366,13 @@ Expand__nearcwh(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
   TN *c0x7fff0000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x7fff0000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fff0000), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x7fff0000,    c0x7fff0000_ltn,        ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x7fff0000,    c0x7fff0000_ltn,        ops) ;
   TN *c0x8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x8000), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x8000,        c0x8000_ltn,    ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x8000,        c0x8000_ltn,    ops) ;
   TN *c0xffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0xffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffff), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0xffff,        c0xffff_ltn,    ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0xffff,        c0xffff_ltn,    ops) ;
   TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
 #undef __EXTS32TOS64
   Build_OP (	TOP_add_r_r_r,	r0_20_0,	i0,	c0x8000,	ops) ;
@@ -5400,7 +5408,7 @@ Expand__nearlw(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
   TN *c0x80000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x80000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x80000000), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
   TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
 #undef __EXTS32TOS64
   Build_OP (	TOP_shru_i_r_r,	r0_21_0,	il0,	c31,	ops) ;
@@ -5432,10 +5440,10 @@ Expand__nearwh(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
   TN *c0x8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x8000), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x8000,        c0x8000_ltn,    ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x8000,        c0x8000_ltn,    ops) ;
   TN *c0xffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0xffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffff), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0xffff,        c0xffff_ltn,    ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0xffff,        c0xffff_ltn,    ops) ;
   TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
 #undef __EXTS32TOS64
   Build_OP (	TOP_add_r_r_r,	r0_21_0,	i0,	c0x8000,	ops) ;
@@ -5471,10 +5479,10 @@ Expand__negch(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c0x7fff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x7fff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fff), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x7fff,        c0x7fff_ltn,    ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x7fff,        c0x7fff_ltn,    ops) ;
     TN *c0xffff8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0xffff8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffff8000), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
 #undef __EXTS32TOS64
     Build_OP (	TOP_cmpeq_r_r_b,	b0_0_0,	i0,	c0xffff8000,	ops) ;
     Build_OP (	TOP_sub_r_r_r,	r0_20_0,	Zero_TN,	i0,	ops) ;
@@ -5511,10 +5519,10 @@ Expand__negcl(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
   TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
   TN *c0x80000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x80000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x80000000), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
   TN *c_1 = Gen_Literal_TN(__EXTS32TOS64(-1), 4) ;
 #undef __EXTS32TOS64
   Build_OP (	TOP_cmpgtu_r_r_b,	b0_0_0,	il0,	Zero_TN,	ops) ;
@@ -5553,10 +5561,10 @@ Expand__negcw(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
     TN *c0x80000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x80000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x80000000), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x80000000,    c0x80000000_ltn,        ops) ;
 #undef __EXTS32TOS64
     Build_OP (	TOP_cmpeq_r_r_b,	b0_0_0,	i0,	c0x80000000,	ops) ;
     Build_OP (	TOP_sub_r_r_r,	r0_20_0,	Zero_TN,	i0,	ops) ;
@@ -6070,7 +6078,7 @@ Expand__roundclw(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
     TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
 #undef __EXTS32TOS64
     Build_OP (	TOP_cmpeq_r_r_b,	b0_0_0,	ih0,	c0x7fffffff,	ops) ;
@@ -6102,7 +6110,7 @@ Expand__roundcwh(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c0x8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x8000), 4) ;
-    Build_OP (	TOP_mov_i_r,	c0x8000,	c0x8000_ltn,	ops) ;
+    Build_OP (	TOP_mov_ii_r,	c0x8000,	c0x8000_ltn,	ops) ;
     TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
 #undef __EXTS32TOS64
     Build_OP (	TOP_mov_r_r,	r0_20_0,	c0x8000,	ops) ;
@@ -6116,10 +6124,10 @@ Expand__roundcwh(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c0x7fff0000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x7fff0000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fff0000), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x7fff0000,    c0x7fff0000_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x7fff0000,    c0x7fff0000_ltn,        ops) ;
     TN *c0x8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x8000), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x8000,        c0x8000_ltn,    ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x8000,        c0x8000_ltn,    ops) ;
     TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
 #undef __EXTS32TOS64
     Build_OP (	TOP_add_r_r_r,	r0_20_0,	i0,	c0x8000,	ops) ;
@@ -6175,7 +6183,7 @@ Expand__roundwh(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
   TN *c0x8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0x8000), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x8000,        c0x8000_ltn,    ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x8000,        c0x8000_ltn,    ops) ;
   TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
 #undef __EXTS32TOS64
   Build_OP (	TOP_add_r_r_r,	r0_21_0,	i0,	c0x8000,	ops) ;
@@ -6214,10 +6222,10 @@ Expand__shlch(
 #define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
     TN *c0x00007fff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x00007fff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x00007fff), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x00007fff,    c0x00007fff_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x00007fff,    c0x00007fff_ltn,        ops) ;
     TN *c0xffff8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0xffff8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffff8000), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
 #undef __EXTS32TOS64
     Build_OP (    TOP_shl_r_r_r,      r0_16_1,        i0,     i1,        ops) ;
     Build_OP (    TOP_max_r_r_r,      r0_16_2,        r0_16_1,        c0xffff8000,    ops) ;
@@ -6277,7 +6285,7 @@ Expand__shlcw(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
   TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-  Build_OP (	TOP_mov_i_r,	c0x7fffffff,	c0x7fffffff_ltn,	ops) ;
+  Build_OP (	TOP_mov_ii_r,	c0x7fffffff,	c0x7fffffff_ltn,	ops) ;
   TN *c31 = Gen_Literal_TN(__EXTS32TOS64(31), 4) ;
 #undef __EXTS32TOS64
   Build_OP (	TOP_shr_i_r_r,	r0_18_0,	i0,	c31,	ops) ;
@@ -6564,10 +6572,10 @@ Expand__subch(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c0x7fff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x7fff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fff), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x7fff,        c0x7fff_ltn,    ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x7fff,        c0x7fff_ltn,    ops) ;
     TN *c0xffff8000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0xffff8000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffff8000), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0xffff8000,    c0xffff8000_ltn,        ops) ;
 #undef __EXTS32TOS64
     Build_OP (	TOP_sub_r_r_r,	r0_16_0,	i0,	i1,	ops) ;
     Build_OP (	TOP_max_r_r_r,	r0_16_1,	r0_16_0,	c0xffff8000,	ops) ;
@@ -6609,7 +6617,7 @@ Expand__subcl(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
   TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
   TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-  Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+  Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
   TN *c_1 = Gen_Literal_TN(__EXTS32TOS64(-1), 4) ;
 #undef __EXTS32TOS64
   Build_OP (	TOP_xor_r_r_r,	r0_20_0,	ih0,	ih1,	ops) ;
@@ -6657,7 +6665,7 @@ Expand__subcw(
 #define __EXTS32TOS64(x)		(((long long)(x)<<32) >> 32)
     TN *c0x7fffffff = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
     TN *c0x7fffffff_ltn = Gen_Literal_TN(__EXTS32TOS64(0x7fffffff), 4) ;
-    Build_OP (    TOP_mov_i_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
+    Build_OP (    TOP_mov_ii_r,      c0x7fffffff,    c0x7fffffff_ltn,        ops) ;
 #undef __EXTS32TOS64
     Build_OP (	TOP_xor_r_r_r,	r0_20_0,	i0,	i1,	ops) ;
     Build_OP (	TOP_sub_r_r_r,	r0_22_0,	i0,	i1,	ops) ;

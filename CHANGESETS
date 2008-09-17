@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Sep 17 09:38:06 CEST 2008
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-51375
+
+Description:
+------------
+	* [trunk] Fix for bug #51374: In debug mode, compiler asserts on \'literal not in range\' .
+	Deliver fixes/codex-51375 rev #18369 with authorization branch #51833
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/expand/exp_intrinsic.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep 16 10:12:35 CEST 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
