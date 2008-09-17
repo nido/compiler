@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Sep 17 15:25:40 CEST 2008
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/chauveth/dev-stxp70v4-linker-relaxation
+
+Description:
+------------
+	* [trunk] Deliver chauveth/dev-stxp70v4-linker-relaxation rev #18407 with authorization branch #49733
+
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/phases.c
+	M      osprey/libair/air/air_services.c
+	M      osprey/libair/air/air_services.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Sep 17 09:38:06 CEST 2008
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

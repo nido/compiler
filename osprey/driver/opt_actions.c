@@ -896,45 +896,69 @@ Check_Target ( void )
   switch (proc) {
   case UNDEFINED:
     toggle(&proc, PROC_stxp70_v3);
-    if (NULL != (ptr = strstr(new_P_library_dir,"/stxp70v"))) {
-      ptr[8] = '3';
+    if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4/lib"))) {
+      ptr[7] = '3';
+      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
+    } else if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4\\lib"))) {
+      ptr[7] = '3';
       set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
     }
-    if (NULL != (ptr = strstr(new_P_startup_dir,"/stxp70v"))) {
-       ptr[8] = '3';
+    if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v4/lib"))) {
+       ptr[7] = '3';
+       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
+    } else if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v4\\lib"))) {
+       ptr[7] = '3';
        set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
     }
     /* fallthru stxp70 default. */
   case PROC_stxp70_v3:
     flag = add_new_option("-TARG:proc=stxp70_v3");
-    if (NULL != (ptr = strstr(new_P_library_dir,"/stxp70v"))) {
-      ptr[8] = '3';
+    if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4/lib"))) {
+      ptr[7] = '3';
+      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
+    } else if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4\\lib"))) {
+      ptr[7] = '3';
       set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
     }
-    if (NULL != (ptr = strstr(new_P_startup_dir,"/stxp70v"))) {
-       ptr[8] = '3';
+    if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v4/lib"))) {
+       ptr[7] = '3';
+       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
+    } else if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v4\\lib"))) {
+       ptr[7] = '3';
        set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
     }
     break;
   case PROC_stxp70_v3_ext:
     flag = add_new_option("-TARG:proc=stxp70_v3_ext");
-    if (NULL != (ptr = strstr(new_P_library_dir,"/stxp70v"))) {
-      ptr[8] = '3';
+    if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4/lib"))) {
+      ptr[7] = '3';
+      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
+    } else if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4\\lib"))) {
+      ptr[7] = '3';
       set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
     }
-    if (NULL != (ptr = strstr(new_P_startup_dir,"/stxp70v"))) {
-       ptr[8] = '3';
+    if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v4/lib"))) {
+       ptr[7] = '3';
+       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
+    } else if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v4\\lib"))) {
+       ptr[7] = '3';
        set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
     }
     break;
   case PROC_stxp70_v4:
     flag = add_new_option("-TARG:proc=stxp70_v4");
-    if (NULL != (ptr = strstr(new_P_library_dir,"/stxp70v"))) {
-      ptr[8] = '4';
+    if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v3/lib"))) {
+      ptr[7] = '4';
+      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
+    } else if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v3\\lib"))) {
+      ptr[7] = '4';
       set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
     }
-    if (NULL != (ptr = strstr(new_P_startup_dir,"/stxp70v"))) {
-       ptr[8] = '4';
+    if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v3/lib"))) {
+       ptr[7] = '4';
+       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
+    } else if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v3\\lib"))) {
+       ptr[7] = '4';
        set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
     }
     break;
