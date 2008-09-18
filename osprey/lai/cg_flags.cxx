@@ -104,9 +104,10 @@ BOOL CG_enable_range_propagation = FALSE;
 INT32 CG_range_recompute_limit = 2;
 BOOL CG_enable_cbpo;
 
-INT32 CG_LAO_optimizations = 0;
+INT32 CG_LAO_activation = 0;
 INT32 CG_LAO_regiontype = 0;
 INT32 CG_LAO_conversion = 0;
+INT32 CG_LAO_coalescing = 0;
 INT32 CG_LAO_predication = 0;
 INT32 CG_LAO_scheduling = 0;
 INT32 CG_LAO_allocation = 0;

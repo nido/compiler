@@ -139,7 +139,7 @@ set_defaults (void)
 	    prepend_option_seen(flag);
 #ifdef LAO_ENABLED
 	    // Only when LAO is enabled.
-	    flag = add_string_option(O_CG_, "LAO_optimization=0");
+	    flag = add_string_option(O_CG_, "LAO_activation=0");
 	    prepend_option_seen(flag);
 #endif
 	}

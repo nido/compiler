@@ -1,6 +1,62 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep 18 13:05:54 CEST 2008
+	Author:    bd3
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bd3/dev-lao
+
+Description:
+------------
+	*  Upgrade to recent MDS and LAO.
+
+
+Modified Files:
+---------------
+	M      osprey/driver/special_options.c
+	M      osprey/lai/igls.cxx
+	M      osprey/lai/lao/lao_interface.h
+	M      osprey/lai/lao/st200/lao_cgir.cxx
+	M      osprey/lai/lao/st200/lao_target.h
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/lao/lao_stub.h
+	M      osprey/lai/lra.cxx
+	M      osprey/lai/cg_flags.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cg_flags.h
+	M      DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@18415 --new=https://codex.cro.st.com/svnroot/open64/branches/bd3/dev-lao@18418 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@18415 https://codex.cro.st.com/svnroot/open64/branches/bd3/dev-lao@18418" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/special_options.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/special_options.c?p2=branches/bd3/dev-lao/osprey/driver/special_options.c&r1=18415&r2=18418&roottype=svn&root=open64&diff_format=h
+osprey/lai/igls.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/igls.cxx?p2=branches/bd3/dev-lao/osprey/lai/igls.cxx&r1=18415&r2=18418&roottype=svn&root=open64&diff_format=h
+osprey/lai/lao/lao_interface.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lao/lao_interface.h?p2=branches/bd3/dev-lao/osprey/lai/lao/lao_interface.h&r1=18415&r2=18418&roottype=svn&root=open64&diff_format=h
+osprey/lai/lao/st200/lao_cgir.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lao/st200/lao_cgir.cxx?p2=branches/bd3/dev-lao/osprey/lai/lao/st200/lao_cgir.cxx&r1=18415&r2=18418&roottype=svn&root=open64&diff_format=h
+osprey/lai/lao/st200/lao_target.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lao/st200/lao_target.h?p2=branches/bd3/dev-lao/osprey/lai/lao/st200/lao_target.h&r1=18415&r2=18418&roottype=svn&root=open64&diff_format=h
+osprey/lai/lao/lao_stub.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lao/lao_stub.cxx?p2=branches/bd3/dev-lao/osprey/lai/lao/lao_stub.cxx&r1=18415&r2=18418&roottype=svn&root=open64&diff_format=h
+osprey/lai/lao/lao_stub.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lao/lao_stub.h?p2=branches/bd3/dev-lao/osprey/lai/lao/lao_stub.h&r1=18415&r2=18418&roottype=svn&root=open64&diff_format=h
+osprey/lai/lra.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lra.cxx?p2=branches/bd3/dev-lao/osprey/lai/lra.cxx&r1=18415&r2=18418&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_flags.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_flags.cxx?p2=branches/bd3/dev-lao/osprey/lai/cg_flags.cxx&r1=18415&r2=18418&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg.cxx?p2=branches/bd3/dev-lao/osprey/lai/cg.cxx&r1=18415&r2=18418&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgdriver.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgdriver.cxx?p2=branches/bd3/dev-lao/osprey/lai/cgdriver.cxx&r1=18415&r2=18418&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_flags.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_flags.h?p2=branches/bd3/dev-lao/osprey/lai/cg_flags.h&r1=18415&r2=18418&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/bd3/dev-lao/DEPENDENCIES&r1=18415&r2=18418&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Sep 17 15:25:40 CEST 2008
 	Author:    chauveth
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

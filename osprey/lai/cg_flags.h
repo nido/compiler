@@ -225,9 +225,10 @@ extern BOOL CG_enable_range_propagation;
 extern INT32 CG_range_recompute_limit;
 extern BOOL CG_enable_rename_after_GRA;
 #endif
-CG_EXPORTED extern INT32 CG_LAO_optimizations;	/* LAO optimizations enable */
+CG_EXPORTED extern INT32 CG_LAO_activation;	/* LAO activation */
 CG_EXPORTED extern INT32 CG_LAO_regiontype;	/* LAO scheduling region type */
-CG_EXPORTED extern INT32 CG_LAO_conversion;	/* LAO SSA construction and destruction */
+CG_EXPORTED extern INT32 CG_LAO_conversion;	/* LAO SSA construction flags */
+CG_EXPORTED extern INT32 CG_LAO_coalescing;	/* LAO SSA coalescing flags */
 CG_EXPORTED extern INT32 CG_LAO_predication;	/* LAO predication algorithm */
 CG_EXPORTED extern INT32 CG_LAO_scheduling;	/* LAO scheduling algorithm */
 CG_EXPORTED extern INT32 CG_LAO_allocation;	/* LAO allocation algorithm */

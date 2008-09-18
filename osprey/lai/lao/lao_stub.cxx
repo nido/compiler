@@ -130,7 +130,7 @@ lao_init(void)
     O64_Interface_setMinTaken(interface, processor, minTaken);
     if (Gen_GP_Relative) {
       O64_Register registre = CGIR_CRP_to_Register(TN_class_reg(GP_TN));
-      O64_Interface_setReserved(interface, (Target_ABI - 1)/*FIXME!*/, registre);
+      O64_Interface_setReserved(interface, (Target_ABI)/*FIXME!*/, registre);
     }
     // Initialize the LAO register latencies with Open64 values.
     for (int op = 0; op < TOP_UNDEFINED; op++) {
@@ -759,10 +759,9 @@ CGIR_LD_to_LoopScope(CGIR_LD cgir_ld)
 	    for (ARC_LIST *arcs = OP_succs(op); arcs; arcs = ARC_LIST_rest(arcs)) {
 	      ARC *arc = ARC_LIST_first(arcs);
 	      CG_DEP_KIND kind = ARC_kind(arc);
-	      if (ARC_is_mem(arc) && kind != CG_DEP_MEMVOL ||
-		  kind == CG_DEP_MISC || kind == CG_DEP_PREFIN) {
+	      if (   ARC_is_mem(arc) && kind != CG_DEP_MEMVOL
+                  || kind == CG_DEP_MISC || kind == CG_DEP_PREFIN) {
 		unsigned type = DependenceKind_Other;
-		if (kind == CG_DEP_MISC) type = DependenceKind_Seq;
 		if (kind == CG_DEP_MEMIN) type = DependenceKind_Flow;
 		if (kind == CG_DEP_MEMOUT) type = DependenceKind_Output;
 		if (kind == CG_DEP_MEMANTI) type = DependenceKind_Anti;
@@ -1331,10 +1330,11 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, unsigned act
   unsigned optimizations =
       O64_Interface_optimize(interface,
                              OptimizeItem_Activation, activation,
-                             OptimizeItem_Convention, (Target_ABI - 1),	/*FIXME!*/
+                             OptimizeItem_Convention, (Target_ABI),	/*FIXME!*/
                              //OptimizeItem_StackModel, stackModel,
                              OptimizeItem_RegionType, CG_LAO_regiontype,
                              OptimizeItem_Conversion, CG_LAO_conversion,
+                             OptimizeItem_Coalescing, CG_LAO_coalescing,
                              OptimizeItem_Scheduling, CG_LAO_scheduling,
                              OptimizeItem_Allocation, CG_LAO_allocation,
                              OptimizeItem_Formulation, CG_LAO_formulation,

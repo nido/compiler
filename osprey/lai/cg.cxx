@@ -323,7 +323,7 @@ CG_PU_Initialize (
 #endif
 
 #ifdef LAO_ENABLED
-  if (CG_LAO_optimizations != 0) lao_init_pu();
+  if (CG_LAO_activation != 0) lao_init_pu();
 #endif
 
   return;
@@ -338,7 +338,7 @@ CG_PU_Finalize(void)
 {
 
 #ifdef LAO_ENABLED
-  if (CG_LAO_optimizations != 0) lao_fini_pu();
+  if (CG_LAO_activation != 0) lao_fini_pu();
 #endif
 
   TAG_Finish();
@@ -890,7 +890,7 @@ CG_Generate_Code(
 
 #ifdef LAO_ENABLED
   // Call the LAO for software pipelining and prepass scheduling.
-  if (CG_LAO_optimizations & OptimizeActivation_PrePass) {
+  if (CG_LAO_activation & OptimizeActivation_PrePass) {
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
     GRA_LIVE_Rename_TNs();
     LAO_Schedule_Region(TRUE /* before register allocation */, frequency_verify);
@@ -934,12 +934,12 @@ CG_Generate_Code(
 
   // Register Allocation Phase
 #ifdef LAO_ENABLED
-  if (CG_LAO_optimizations & OptimizeActivation_RegAlloc) {
+  if (CG_LAO_activation & OptimizeActivation_RegAlloc) {
     // Live analysis and tn renaming
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);	
     GRA_LIVE_Rename_TNs();
     Set_Error_Phase( "LAO RegAlloc Optimizations" );
-    lao_optimize_pu(CG_LAO_optimizations & OptimizeActivation_RegAlloc, TRUE);
+    lao_optimize_pu(CG_LAO_activation & OptimizeActivation_RegAlloc, TRUE);
     Check_for_Dump (TP_ALLOC, NULL);
     if (CG_LAO_allocation > 0) {
     // Full register allocation performed by LAO.
@@ -1016,7 +1016,7 @@ CG_Generate_Code(
 #endif
 
 #ifdef LAO_ENABLED
-  } /* !CG_LAO_optimizations */
+  } /* !CG_LAO_activation */
 #endif
 
   if (!region) {
@@ -1078,7 +1078,7 @@ CG_Generate_Code(
 #endif
 
 #ifdef LAO_ENABLED
-  if (CG_LAO_optimizations & (OptimizeActivation_PostPass|
+  if (CG_LAO_activation & (OptimizeActivation_PostPass|
                               OptimizeActivation_Encode)) {
     GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
     LAO_Schedule_Region(FALSE /* after register allocation */, frequency_verify);

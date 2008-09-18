@@ -6,7 +6,6 @@
 
 
 
-
 /*
  * OptimizeActivation --	Activation of LAO phases.
  */
@@ -17,6 +16,7 @@ typedef enum {
   OptimizeActivation_PrePass = 0x8, // Pre-pass optimizations.
 } OptimizeActivation;
 typedef uint16_t short_OptimizeActivation;
+#define OptimizeActivation_default 0
 
 
 /*
@@ -29,6 +29,7 @@ typedef enum {
   OptimizeRegionType_InnerLoop = 0x8, // Inner loop region.
 } OptimizeRegionType;
 typedef uint8_t short_OptimizeRegionType;
+#define OptimizeRegionType_default OptimizeRegionType_SuperBlock
 
 
 /*
@@ -40,23 +41,25 @@ typedef enum {
   OptimizeProfiling_Path = 0x4, // Dynamic path profiling.
 } OptimizeProfiling;
 typedef uint8_t short_OptimizeProfiling;
+#define OptimizeProfiling_default 0
 
 
 /*
  * OptimizeScheduling --	Enumeration of the pre- and post-scheduler levels.
  */
 typedef enum {
-  OptimizeScheduling_, // No scheduling.
-  OptimizeScheduling_GrahamList, // Graham list scheduling.
-  OptimizeScheduling_Insertion, // Insertion scheduling.
+  OptimizeScheduling_None, // No scheduling.
+  OptimizeScheduling_Unwinding, // Unwinding modulo scheduling.
+  OptimizeScheduling_Insertion, // Insertion modulo scheduling.
+  OptimizeScheduling_Iterative, // Iterative modulo scheduling.
   OptimizeScheduling_Formulation, // RCMSP Formulation scheduling.
   OptimizeScheduling__
 } OptimizeScheduling;
 typedef uint8_t short_OptimizeScheduling;
-extern const char *
-OptimizeScheduling_NAME_[];
-#define OptimizeScheduling_NAME_(type) OptimizeScheduling_NAME_[type]
+#define OptimizeScheduling_default OptimizeScheduling_Insertion
 
+extern const char *
+OptimizeScheduling_(OptimizeScheduling THIS);
 
 /*
  * OptimizeAllocation --	Enumeration of the register allocation types.
@@ -66,6 +69,7 @@ typedef enum {
   OptimizeAllocation_TreeScanning = 0x2, // Tree Scan of Rastello et al.
   OptimizeAllocation_GraphColoring = 0x4, // Some Graph Coloring allocator.
 } OptimizeAllocation;
+#define OptimizeAllocation_default 0
 
 
 /*
@@ -76,25 +80,25 @@ typedef enum {
   OptimizeConversion_Cleaning = 0x2, // Code Cleaning during SSA construction.
   OptimizeConversion_SemiPruned = 0x4, // Semi-pruned improved SSA construction.
   OptimizeConversion_SigmaGoTo = 0x8, // Sigma operations for the GoTo conditions.
-  OptimizeConversion_Coalescing = 0x10, // Sreedhar coalescing before SSA destruction.
-  OptimizeConversion_PCopies = 0x20, // Use parallel copies when destructing SSA.
-  OptimizeConversion_Sreedhar = 0x40, // Sreedhar method III for congruence classes.
-  OptimizeConversion_Exact = 0x80, // Exact method for congruence classes.
-  OptimizeConversion_Budimlic = 0x100, // Use Budimlic to build congruence classes.
-  OptimizeConversion_SSAWebs = 0x200, // Use SSAWebs to build congruence classes.
-  OptimizeConversion_DForest = 0x400, // Use Dominance Forest to check interferences.
-  OptimizeConversion_Traces = 0x800, // Print extra traces.
-  OptimizeConversion_TrackValues = 0x1000, // Track variables with equivalent values.
 } OptimizeConversion;
+#define OptimizeConversion_default OptimizeConversion_Folding | OptimizeConversion_Cleaning
+
 
 
 /*
  * OptimizeCoalescing --	SSA form coalescing flags.
  */
 typedef enum {
-  OptimizeCoalescing_Sreedhar = 0x1, // Sreedhar coalesing based on conguence classes.
-  OptimizeCoalescing_Dominance = 0x2, // Use Dominance instead of Interference.
+  OptimizeCoalescing_Sreedhar = 0x1, // Sreedhar CSSA conversion.
+  OptimizeCoalescing_Boissinot = 0x2, // Boissinot CSSA conversion.
+  OptimizeCoalescing_Decoalesce = 0x4, // Decoalesce the SSA-webs (Budimlic).
+  OptimizeCoalescing_Virtualize = 0x8, // Virtualize COPY insertion (Method III).
+  OptimizeCoalescing_Congruence = 0x10, // Congruence-based coalescing.
+  OptimizeCoalescing_SeqCopies = 0x20, // Use sequential copies (parallel by default).
 } OptimizeCoalescing;
+#define OptimizeCoalescing_default OptimizeCoalescing_Sreedhar | OptimizeCoalescing_Virtualize | OptimizeCoalescing_SeqCopies
+
+
 
 
 /*
@@ -106,7 +110,6 @@ typedef enum {
   OptimizeNumbering_Avail = 0x4, // AVAIL-based removal (else use Dominance).
 } OptimizeNumbering;
 
-
 /*
  * OptimizePropagation --	Data-flow facts Propagation flags.
  */
@@ -114,20 +117,17 @@ typedef enum {
   OptimizePropagation_Constant = 0x1, // Sparse conditional constant propagation.
 } OptimizePropagation;
 
-
 /*
  * OptimizePredication --	Code Predication level.
  */
 typedef enum {
-  OptimizePredication_, // Disable code predication.
+  OptimizePredication_None, // Disable code predication.
   OptimizePredication_Select, // Select-only code predication.
   OptimizePredication__
 } OptimizePredication;
 typedef uint8_t short_OptimizePredication;
 extern const char *
-OptimizePredication_NAME_[];
-#define OptimizePredication_NAME_(type) OptimizePredication_NAME_[type]
-
+OptimizePredication_(OptimizePredication THIS);
 
 /*
  * OptimizeFormulation --	Enumerate the Formulation flags.
@@ -143,8 +143,11 @@ typedef enum {
   OptimizeFormulation_Acyclic = 0x100, // Apply to acyclic problems.
 } OptimizeFormulation;
 typedef uint16_t short_OptimizeFormulation;
-#define OptimizeFormulations_isOptimize(flags) ( flags & ( OptimizeFormulation_Makespan | OptimizeFormulation_Lifetime ) )
+#define OptimizeFormulation_default OptimizeFormulation_Integral | OptimizeFormulation_Makespan | OptimizeFormulation_Scanning
 
+
+
+#define OptimizeFormulations_isOptimize(flags) ( flags & ( OptimizeFormulation_Makespan | OptimizeFormulation_Lifetime ) )
 
 
 
@@ -159,6 +162,7 @@ typedef enum {
   OptimizeScoreboarding_Iterate = 0x2, // Iterate forward data-flow problem.
   OptimizeScoreboarding_Priority = 0x4, // Pre-order Operation(s) by priority.
 } OptimizeScoreboarding;
+#define OptimizeScoreboarding_default OptimizeScoreboarding_Iterate
 
 
 /*
@@ -171,7 +175,6 @@ typedef enum {
   OptimizeRCMSProblem_Renaming = 0x8, // Pass modulo renaming-limiting arcs.
   OptimizeRCMSProblem_Margins = 0x10, // Pass margin-enforcing arcs.
 } OptimizeRCMSProblem;
-
 
 /*
  * OptimizeItem --	Enumerate the Optimize items.
@@ -201,9 +204,7 @@ typedef enum {
 } OptimizeItem;
 typedef uint8_t short_OptimizeItem;
 extern const char *
-OptimizeItem_NAME_[];
-#define OptimizeItem_NAME_(type) OptimizeItem_NAME_[type]
-
+OptimizeItem_(OptimizeItem THIS);
 
 /*
  * ConfigureCompensation --	Enumeration of the code compensation levels.
@@ -211,24 +212,22 @@ OptimizeItem_NAME_[];
  * Code compensation results from code motion down a branch.
  */
 typedef enum {
-  ConfigureCompensation_, // No code compensation.
+  ConfigureCompensation_None, // No code compensation.
   ConfigureCompensation_Local, // Local code compensation.
   ConfigureCompensation_Global, // Global code compensation.
   ConfigureCompensation__
 } ConfigureCompensation;
 typedef uint8_t short_ConfigureCompensation;
 extern const char *
-ConfigureCompensation_NAME_[];
-#define ConfigureCompensation_NAME_(type) ConfigureCompensation_NAME_[type]
-
+ConfigureCompensation_(ConfigureCompensation THIS);
 
 /*
  * ConfigureSpeculation --	Enumeration of the control speculation levels.
- * 
+ *
  * Speculation is the execution of code under a more general condition than original.
  */
 typedef enum {
-  ConfigureSpeculation_, // No control speculation.
+  ConfigureSpeculation_None, // No control speculation.
   ConfigureSpeculation_SafeArith, // Speculation of safe arithmetic operations.
   ConfigureSpeculation_SafeAccess, // Speculation of safe memory accesses.
   ConfigureSpeculation_SafeVariant, // Speculation of operations with safe variant.
@@ -237,9 +236,7 @@ typedef enum {
 } ConfigureSpeculation;
 typedef uint8_t short_ConfigureSpeculation;
 extern const char *
-ConfigureSpeculation_NAME_[];
-#define ConfigureSpeculation_NAME_(type) ConfigureSpeculation_NAME_[type]
-
+ConfigureSpeculation_(ConfigureSpeculation THIS);
 
 /*
  * ConfigureRelaxation --	Enumeration of the inductive relaxation levels.
@@ -247,22 +244,20 @@ ConfigureSpeculation_NAME_[];
  * Inductive relaxation enables to relax dependences on simple induction variables.
  */
 typedef enum {
-  ConfigureRelaxation_, // No inductive relaxation.
+  ConfigureRelaxation_None, // No inductive relaxation.
   ConfigureRelaxation_Local, // Local inductive relaxation.
   ConfigureRelaxation_Global, // Global inductive relaxation.
   ConfigureRelaxation__
 } ConfigureRelaxation;
 typedef uint8_t short_ConfigureRelaxation;
 extern const char *
-ConfigureRelaxation_NAME_[];
-#define ConfigureRelaxation_NAME_(type) ConfigureRelaxation_NAME_[type]
-
+ConfigureRelaxation_(ConfigureRelaxation THIS);
 
 /*
  * ConfigureRenaming --	Enumeration of the register renaming levels.
  */
 typedef enum {
-  ConfigureRenaming_, // No register renaming.
+  ConfigureRenaming_None, // No register renaming.
   ConfigureRenaming_Normal, // Normal register renaming.
   ConfigureRenaming_Local, // Local register modulo renaming.
   ConfigureRenaming_Global, // Global register modulo renaming.
@@ -271,9 +266,7 @@ typedef enum {
 } ConfigureRenaming;
 typedef uint8_t short_ConfigureRenaming;
 extern const char *
-ConfigureRenaming_NAME_[];
-#define ConfigureRenaming_NAME_(type) ConfigureRenaming_NAME_[type]
-
+ConfigureRenaming_(ConfigureRenaming THIS);
 
 /*
  * ConfigureBoosting --	Enumeration of the operation boosting levels.
@@ -281,16 +274,14 @@ ConfigureRenaming_NAME_[];
  * Boosting is the enabling of control speculation by code predication.
  */
 typedef enum {
-  ConfigureBoosting_, // No operation boosting.
+  ConfigureBoosting_None, // No operation boosting.
   ConfigureBoosting_Reuse, // Reuse branch predicates.
   ConfigureBoosting_Combine, // Combine branch predicates.
   ConfigureBoosting__
 } ConfigureBoosting;
 typedef uint8_t short_ConfigureBoosting;
 extern const char *
-ConfigureBoosting_NAME_[];
-#define ConfigureBoosting_NAME_(type) ConfigureBoosting_NAME_[type]
-
+ConfigureBoosting_(ConfigureBoosting THIS);
 
 /*
  * ConfigureAliasing --	Memory aliasing level.
@@ -307,15 +298,13 @@ typedef enum {
 } ConfigureAliasing;
 typedef uint8_t short_ConfigureAliasing;
 extern const char *
-ConfigureAliasing_NAME_[];
-#define ConfigureAliasing_NAME_(type) ConfigureAliasing_NAME_[type]
-
+ConfigureAliasing_(ConfigureAliasing THIS);
 
 /*
  * ConfigurePreLoading --	Memory pre-loading level.
  */
 typedef enum {
-  ConfigurePreLoading_, // Disable pre-loading.
+  ConfigurePreLoading_None, // Disable pre-loading.
   ConfigurePreLoading_Simple, // Pre-loading of simple induction LOADs.
   ConfigurePreLoading_Variant, // Pre-loading of variant address LOADs.
   ConfigurePreLoading_Indirect, // Pre-loading of indirect LOADs.
@@ -324,9 +313,7 @@ typedef enum {
 } ConfigurePreLoading;
 typedef uint8_t short_ConfigurePreLoading;
 extern const char *
-ConfigurePreLoading_NAME_[];
-#define ConfigurePreLoading_NAME_(type) ConfigurePreLoading_NAME_[type]
-
+ConfigurePreLoading_(ConfigurePreLoading THIS);
 
 /*
  * ConfigureItem --	Enumerate the Configure items.
@@ -353,9 +340,7 @@ typedef enum {
 } ConfigureItem;
 typedef uint8_t short_ConfigureItem;
 extern const char *
-ConfigureItem_NAME_[];
-#define ConfigureItem_NAME_(type) ConfigureItem_NAME_[type]
-
+ConfigureItem_(ConfigureItem THIS);
 
 /*
  * DependenceKind --	Enumerates the Dependence kinds.
@@ -367,7 +352,7 @@ typedef enum {
   DependenceKind_Output, // Output memory dependence arc.
   DependenceKind_Spill, // Spill memory dependence arc.
   DependenceKind_Other, // Other memory dependence arc.
-  DependenceKind_Seq, // Sequentialize the volatile operations.
+  DependenceKind_Relax, // Induction relaxed dependence arc.
   DependenceKind_RAW, // Register Read After Write dependence arc.
   DependenceKind_WAR, // Register Write After Read dependence arc.
   DependenceKind_WAW, // Register Write After Write dependence arc.
@@ -381,9 +366,8 @@ typedef enum {
 } DependenceKind;
 typedef uint8_t short_DependenceKind;
 extern const char *
-DependenceKind_NAME_[];
+DependenceKind_(DependenceKind THIS);
 #define DependenceKind(kind) ((kind) & (DependenceKind_Definite - 1))
-#define DependenceKind_NAME_(kind) DependenceKind_NAME_[(kind)]
 #define DependenceKind_mayAdjust(kind) ((kind) <= DependenceKind_WAW)
 #define DependenceKind_mayRefine(kind) ((kind) <= DependenceKind_Spill)
 

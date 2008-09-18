@@ -1042,8 +1042,8 @@ LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
 {
   if (before_regalloc) {
     Set_Error_Phase( "LAO Prepass Optimizations" );
-    if (CG_LAO_optimizations & OptimizeActivation_PrePass) {
-      lao_optimize_pu(CG_LAO_optimizations & OptimizeActivation_PrePass,
+    if (CG_LAO_activation & OptimizeActivation_PrePass) {
+      lao_optimize_pu(CG_LAO_activation & OptimizeActivation_PrePass,
 		      before_regalloc);
       if (frequency_verify)
 	FREQ_Verify("LAO Prepass Optimizations");
@@ -1052,9 +1052,9 @@ LAO_Schedule_Region (BOOL before_regalloc, BOOL frequency_verify)
   else {
     // Call the LAO for postpass scheduling.
     Set_Error_Phase( "LAO Postpass Optimizations" );
-    if (CG_LAO_optimizations & (OptimizeActivation_PostPass|
+    if (CG_LAO_activation & (OptimizeActivation_PostPass|
                                 OptimizeActivation_Encode)) {
-      lao_optimize_pu(CG_LAO_optimizations & (OptimizeActivation_PostPass|
+      lao_optimize_pu(CG_LAO_activation & (OptimizeActivation_PostPass|
                                               OptimizeActivation_Encode),
 		      before_regalloc);
       if (frequency_verify)

@@ -1078,7 +1078,7 @@ Check_Allow_Reschedule()
   if (Trip_Count != 1) return FALSE;
   if (CG_LRA_mask & 0x0200) return FALSE;
 
-  if (!CG_LAO_optimizations) return TRUE;
+  if (!CG_LAO_activation) return TRUE;
   
   if (CG_LRA_mask & 0x20000) return TRUE; /* Force even if LAO */
 

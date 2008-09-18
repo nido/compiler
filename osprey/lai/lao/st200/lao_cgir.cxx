@@ -50,7 +50,7 @@ CGIR_IS_to_Processor(ISA_SUBSET is) {
   O64_Processor lao_processor;
   lao_processor = IS__Processor[is];
   Is_True(is >= ISA_SUBSET_MIN && is <= ISA_SUBSET_MAX, ("ISA_SUBSET out of range"));
-  Is_True(lao_processor != Processor__, ("Cannot map ISA_SUBSET to Processor"));
+  Is_True(lao_processor != Processor__UNDEF, ("Cannot map ISA_SUBSET to Processor"));
   return lao_processor;
 }
 
@@ -59,7 +59,7 @@ O64_Immediate
 CGIR_LC_to_Immediate(ISA_LIT_CLASS ilc) {
   O64_Immediate lao_immediate = LC__Immediate[ilc];
   Is_True(ilc >= 0 && ilc <= ISA_LC_MAX, ("ISA_LIT_CLASS out of range"));
-  Is_True(lao_immediate != Immediate__, ("Cannot map ISA_LIT_CLASS to Immediate"));
+  Is_True(lao_immediate != Immediate__UNDEF, ("Cannot map ISA_LIT_CLASS to Immediate"));
   return lao_immediate;
 }
 
@@ -68,7 +68,7 @@ O64_RegFile
 CGIR_IRC_to_RegFile(ISA_REGISTER_CLASS irc) {
   O64_RegFile lao_regFile = IRC__RegFile[irc];
   Is_True(irc >= ISA_REGISTER_CLASS_MIN && irc <= ISA_REGISTER_CLASS_MAX, ("ISA_REGISTER_CLASS out of range"));
-  Is_True(lao_regFile != RegFile__, ("Cannot map ISA_REGISTER_CLASS to RegFile"));
+  Is_True(lao_regFile != RegFile__UNDEF, ("Cannot map ISA_REGISTER_CLASS to RegFile"));
   return lao_regFile;
 }
 
@@ -91,7 +91,7 @@ O64_Operator
 CGIR_TOP_to_Operator(TOP top) {
   O64_Operator lao_operator = TOP__Operator[top];
   Is_True(top >= 0 && top < TOP_count, ("TOPcode out of range"));
-  Is_True(lao_operator != Operator__, ("Cannot map TOPcode to Operator"));
+  Is_True(lao_operator != Operator__UNDEF, ("Cannot map TOPcode to Operator"));
   return lao_operator;
 }
 
@@ -155,8 +155,9 @@ CGIR_LAO_Init(void) {
     IS__Processor[ISA_SUBSET_st240] = Processor_st240_cpu;
     // initialize the TOP__Operator array
     TOP__Operator = TYPE_MEM_POOL_ALLOC_N(O64_Operator, Malloc_Mem_Pool, (TOP_count + 1));
-    TOP__Operator[TOP_UNDEFINED] = Operator__;
-    for (int i = 0; i < TOP_count; i++) TOP__Operator[i] = Operator__;
+    for (int i = 0; i < TOP_count; i++) TOP__Operator[i] = Operator__UNDEF;
+    Is_True(TOP_UNDEFINED >= 0 && TOP_UNDEFINED <= TOP_count, ("TOP_UNDEFINED out of bounds"));
+    TOP__Operator[TOP_UNDEFINED] = Operator__UNDEF;
     TOP__Operator[TOP_abss_ph_r_r] = Operator_st200_abss_ph_1general_2general;
     TOP__Operator[TOP_absubu_pb_r_r_r] = Operator_st200_absubu_pb_1general_2general_3general;
     TOP__Operator[TOP_addcg_b_r_r_b_r] = Operator_st200_addcg_1general_2branch_3general_4general_5branch;
@@ -699,9 +700,9 @@ CGIR_LAO_Init(void) {
     }
     // initialize LC__Immediate
     LC__Immediate =  TYPE_MEM_POOL_ALLOC_N(O64_Immediate, Malloc_Mem_Pool, ISA_LC_MAX+1);
-    for (int i = 0; i <= ISA_LC_MAX; i++) LC__Immediate[i] = Immediate__;
+    for (int i = 0; i <= ISA_LC_MAX; i++) LC__Immediate[i] = Immediate__UNDEF;
     Is_True(ISA_LC_UNDEFINED == 0, ("ISA_LC_UNDEFINED != 0. Unedxpected."));
-    LC__Immediate[ISA_LC_UNDEFINED] = Immediate_st200_;
+    LC__Immediate[ISA_LC_UNDEFINED] = Immediate__UNDEF;
     LC__Immediate[LC_btarg] = Immediate_st200_btarg;
     LC__Immediate[LC_isrc2] = Immediate_st200_isrc2;
     LC__Immediate[LC_imm] = Immediate_st200_imm;
@@ -709,7 +710,7 @@ CGIR_LAO_Init(void) {
     LC__Immediate[LC_xsrc2] = Immediate_st200_xsrc2;
     LC__Immediate[LC_brknum] = Immediate_st200_brknum;
     // initialize IRC__RegFile
-    for (int i = 0; i <= ISA_REGISTER_CLASS_MAX; i++) IRC__RegFile[i] = RegFile__;
+    for (int i = 0; i <= ISA_REGISTER_CLASS_MAX; i++) IRC__RegFile[i] = RegFile__UNDEF;
     IRC__RegFile[ISA_REGISTER_CLASS_integer] = RegFile_st200_GR;
     IRC__RegFile[ISA_REGISTER_CLASS_branch] = RegFile_st200_BR;
     // initialize RegFile__IRC

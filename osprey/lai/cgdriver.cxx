@@ -200,9 +200,10 @@ static BOOL IPFEC_Enable_LICM_overridden = FALSE;
 static BOOL CG_enable_cbpo_overriden = FALSE;
 static BOOL CG_affirm_opt_overridden = FALSE;
 
-static BOOL CG_LAO_optimizations_overridden = FALSE;
+static BOOL CG_LAO_activation_overridden = FALSE;
 static BOOL CG_LAO_regiontype_overridden = FALSE;
 static BOOL CG_LAO_conversion_overridden = FALSE;
+static BOOL CG_LAO_coalescing_overridden = FALSE;
 static BOOL CG_LAO_predication_overridden = FALSE;
 static BOOL CG_LAO_scheduling_overridden = FALSE;
 static BOOL CG_LAO_allocation_overridden = FALSE;
@@ -1126,16 +1127,20 @@ static OPTION_DESC Options_CG[] = {
 
 #ifdef TARG_ST
   // LAO TARG_ST part
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_optimizations", "",
-    0, 0, 65535,	&CG_LAO_optimizations, &CG_LAO_optimizations_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_optimization", "",
+    0, 0, 65535,	&CG_LAO_activation, &CG_LAO_activation_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_activation", "",
+    0, 0, 65535,	&CG_LAO_activation, &CG_LAO_activation_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_regiontype", "",
     1, 0, 2,	&CG_LAO_regiontype, &CG_LAO_regiontype_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_conversion", "",
-    0, 0, 65536,	&CG_LAO_conversion, &CG_LAO_conversion_overridden },
+    0, 0, 65535,	&CG_LAO_conversion, &CG_LAO_conversion_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_coalescing", "",
+    0, 0, 65535,	&CG_LAO_coalescing, &CG_LAO_coalescing_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_predication", "",
     0, 0, 127,	&CG_LAO_predication, &CG_LAO_predication_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_scheduling", "",
-    2, 0, 3,	&CG_LAO_scheduling, &CG_LAO_scheduling_overridden },
+    2, 0, 4,	&CG_LAO_scheduling, &CG_LAO_scheduling_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_allocation", "",
     2, 0, 3,	&CG_LAO_allocation, &CG_LAO_allocation_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_formulation", "",
@@ -1671,18 +1676,18 @@ Configure_CG_Options(void)
     CG_enable_cbpo = FALSE;
   }
 
-  /* If not overidden, set LAO_optimization according to Opt_Level. */
+  /* If not overidden, set LAO_activation according to Opt_Level. */
 
 #ifdef LAO_ENABLED
-  if (!CG_LAO_optimizations_overridden && (Opt_Level > 2))
-    CG_LAO_optimizations = OptimizeActivation_PrePass
-                         + OptimizeActivation_PostPass;
+  if (!CG_LAO_activation_overridden && (Opt_Level > 2))
+    CG_LAO_activation = OptimizeActivation_PrePass
+                      + OptimizeActivation_PostPass;
 
   // [FdF]: Ignore LAO options if opt_level < 2
   
-  if ((CG_LAO_optimizations != 0) && (CG_opt_level < 2)) {
+  if ((CG_LAO_activation != 0) && (CG_opt_level < 2)) {
     DevWarn("CG: Ignoring LAO options, need optimization level -O2 or higher");
-    CG_LAO_optimizations = 0;
+    CG_LAO_activation = 0;
   }
 #endif
 
@@ -2272,7 +2277,7 @@ CG_Init (void)
   //    Configure_prefetch_ahead();
 
 #ifdef LAO_ENABLED
-  if (CG_LAO_optimizations != 0) {
+  if (CG_LAO_activation != 0) {
     if (!CG_LAO_regiontype_overridden) CG_LAO_regiontype = 1;
     if (!CG_LAO_conversion_overridden) CG_LAO_conversion = 0;
     if (!CG_LAO_predication_overridden) CG_LAO_predication = 0;
@@ -2327,7 +2332,7 @@ CG_Fini (void)
 #endif
 
 #ifdef LAO_ENABLED
-  if (CG_LAO_optimizations != 0) {
+  if (CG_LAO_activation != 0) {
     lao_fini();
   }
 #endif
