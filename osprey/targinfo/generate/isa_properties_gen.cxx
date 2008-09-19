@@ -589,7 +589,7 @@ void ISA_Properties_End(void)
       ISA_PROPERTY property = *isi;
       int word_idx = property->bit_position / mask_word_size;
       int bit_pos = property->bit_position % mask_word_size;
-      fprintf (hfile, "#define TOP_is_%s(t)\t (ISA_PROPERTIES_flags[(INT)t].mask[%d] & " PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s)\n",
+      fprintf (hfile, "#define TOP_is_%s(t)\t ((ISA_PROPERTIES_flags[(INT)t].mask[%d] & " PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s) !=0)\n",
 	       property->name, word_idx, (1ULL << bit_pos), mask_int_suffix);
     }
   } else {

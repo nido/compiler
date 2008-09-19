@@ -525,10 +525,10 @@ RangePropagateOp (RangeAnalysis &range_analysis,
 
       // Min/Max.
 
-      BOOL is_signed = TOP_is_unsign (opcode);
+      BOOL is_unsigned = TOP_is_unsign (opcode);
       LRange_p r1 = range_analysis.Get_Value (opnd1);
       LRange_p r2 = range_analysis.Get_Value (opnd2);
-      if (is_signed) {
+      if (is_unsigned) {
 	r1 = MakeUnsigned (r1, TN_bitwidth (opnd1));
 	r2 = MakeUnsigned (r2, TN_bitwidth (opnd1));
       }
@@ -543,13 +543,13 @@ RangePropagateOp (RangeAnalysis &range_analysis,
 	  if (TN_is_register (opnd2))
 	    Exp_COPY (result, opnd2, &ops);
 	  else
-	    Exp_Immediate (result, opnd2, ! is_signed, &ops);
+	    Exp_Immediate (result, opnd2, ! is_unsigned, &ops);
 	} else {
 	  // opnd1 must be the maximum
 	  if (TN_is_register (opnd1))
 	    Exp_COPY (result, opnd1, &ops);
 	  else
-	    Exp_Immediate (result, opnd1, ! is_signed, &ops);
+	    Exp_Immediate (result, opnd1, ! is_unsigned, &ops);
 	}
 	if (validate_replacement (range_analysis, op, &ops)) {
 	  return TRUE;

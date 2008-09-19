@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Sep 19 16:35:08 CEST 2008
+	Author:    knochelh
+	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
+	Branch:    http://svn.open64.codex.cro.st.com/svnroot/open64/branches/fixes/codex-51796
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-51796 rev #18470 with authorization branch #51819
+
+
+Modified Files:
+---------------
+	M      osprey/lai/range_prop.cxx
+	M      osprey/targinfo/generate/isa_properties_gen.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Sep 19 14:26:04 CEST 2008
 	Author:    bidaultt
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
