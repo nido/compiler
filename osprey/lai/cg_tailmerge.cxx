@@ -538,6 +538,13 @@ AreEquivalent<OP>(OP* op1, OP* op2)
                         {
                             result &= TNequiv(OP_opnd(op1, i), OP_opnd(op2, i));
                         }
+                    // VL 2008-09-16: we must check that instructions guarded by same guard pair
+                    // have the same predicate too - fix for codex bug #51929
+                    if(result && OP_has_predicate(op1))
+                        {
+                            result &= (OP_Pred_False(op1, OP_find_opnd_use(op1, OU_predicate)) ==
+                                       OP_Pred_False(op2, OP_find_opnd_use(op2, OU_predicate)));
+                        }
                 }
         }
     return result;
