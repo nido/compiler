@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Sep 19 16:55:26 CEST 2008
+	Author:    knochelh
+	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
+	Branch:    http://svn.open64.codex.cro.st.com/svnroot/open64/branches/fixes/codex-51840
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-51840 rev #18475 with authorization branch #51898
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/cg/targ_range_prop.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Sep 19 16:35:08 CEST 2008
 	Author:    knochelh
 	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk

@@ -977,6 +977,71 @@ match_rotl_sequence (const RangeAnalysis &range_analysis,
   return TRUE;
 }
 
+static BOOL
+match_shrrnp_sequence (const RangeAnalysis &range_analysis,
+		       OP *l1_op,
+		       OPS *ops)
+{
+  // Match
+  //   r2 = add r1, c1
+  //   r3 = shr r2, c2
+  //   (where c1 = 2^n with 0 <= n < 31
+  //   and c2 = n + 1)
+  // and transform to
+  //   r3 = shrrnp r1, c2
+  //  
+  //
+  OP *l2_op;
+  TN *opnd1, *opnd2, *result;
+  INT64 shiftcount, val_add;
+  LRange_p r1, r2;
+
+  if (!ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shrrnp_i_r_r))
+    return FALSE;
+
+  TOP opcode = OP_code(l1_op);
+
+  if (!OP_ishr(l1_op))
+    return FALSE;
+
+  opnd1 = OP_Opnd1(l1_op);
+  opnd2 = OP_Opnd2(l1_op);
+
+  r1 = range_analysis.Get_Value (opnd2);
+      
+  if (r1->hasValue ())
+    shiftcount = r1->getValue ();
+  else
+    return FALSE;
+
+  l2_op = TN_ssa_def (opnd1);
+
+  if (!l2_op) return FALSE;
+
+
+  if (!OP_iadd(l2_op))
+    return FALSE;
+
+  opnd1 = OP_Opnd1(l2_op);
+  opnd2 = OP_Opnd2(l2_op);
+
+  r2 = range_analysis.Get_Value (opnd2);
+      
+  if (r2->hasValue ())
+    val_add = r2->getValue ();
+  else
+    return FALSE;
+
+  if (!(IS_POWER_OF_2(val_add) && (r2->getTzcnt () < 31) && (r2->getTzcnt () == shiftcount - 1)))
+    return FALSE;
+
+  // if we get here, then we have a shrrnp pattern
+  result = OP_result (l1_op, 0);
+
+  Build_OP (TOP_shrrnp_i_r_r, result, opnd1, Gen_Literal_TN (shiftcount, TN_size(result)) , ops);
+  return TRUE;
+}
+
 
 
 class PermMask {
@@ -1508,6 +1573,9 @@ TARG_RangePropagate (const RangeAnalysis &range_analysis,
       return TRUE;
     }
     if (match_rotl_sequence (range_analysis, op, ops)) {
+      return TRUE;
+    }
+    if (match_shrrnp_sequence (range_analysis, op, ops)) {
       return TRUE;
     }
     if (match_zeroextend_sequence (range_analysis, op, ops)) {
