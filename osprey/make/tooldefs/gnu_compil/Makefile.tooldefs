@@ -69,6 +69,7 @@ COMP_GNU_LOC=$(GNU_LOC)/gcc/gcc-3.2.3/bin/
 else
 COMP_GNU_LOC=$(GNU_LOC)/gcc/gcc-3.4.4/bin/
 endif
+BINUTILS_GNU_LOC=$(COMP_GNU_LOC)
 YACC_LOC=$(GNU_LOC)/.package/bison-1.35/bin/
 LEX_LOC=
 INSTALL_LOC=

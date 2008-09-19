@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Sep 19 14:26:04 CEST 2008
+	Author:    bidaultt
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bidaultt/dev-FILE_OFFSET
+
+Description:
+------------
+	*  Add -D_FILE_OFFSET=64 by default to the build system
+
+
+Modified Files:
+---------------
+	M      osprey/make/tooldefs/gnu_compil/Makefile.tooldefs
+	M      osprey/make/gcommondefs
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Sep 19 13:34:23 CEST 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

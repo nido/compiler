@@ -71,6 +71,11 @@ COMMONTARGS= clobber clean rmtargets fluff tags
 
 SIZEDEFS = -D_LONGLONG
 
+#[TB] Add -D_FILE_OFFSET_BITS=64 for building 32 bit linux executable compatible with 64 bit linux machine
+ifeq ($(BUILD_OS), LINUX)
+ SIZEDEFS += -D_FILE_OFFSET_BITS=64
+endif
+
 ifeq ($(BUILD_ABI), I64BIT)
  SIZEDEFS += -D_LP64
 endif
