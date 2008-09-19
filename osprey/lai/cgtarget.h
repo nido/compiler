@@ -919,6 +919,7 @@ extern void  CGTARG_Get_Info_For_Common_Base_Opt( INT *min_offset_alignment, INT
 extern BOOL CGTARG_offset_is_extended(TN *offset, INT64 *val);
 extern BOOL CGTARG_need_extended_Opcode(OP *op, TOP *etop);
 extern BOOL CGTARG_is_expensive_load_imm(OP* op);
+extern void EBO_Combine_Imm_Base_Offset();
 extern INT CGTARG_expensive_load_imm_immediate_index(OP* op);
 extern INT CGTARG_expensive_load_imm_base_index(OP* op);
 extern BOOL CGTARG_sequence_is_cheaper_than_load_imm(OPS* ops, OP* op);

@@ -7100,3 +7100,8 @@ EBO_Special_Sequence (
 
   return FALSE;
 }
+
+void EBO_Combine_Imm_Base_Offset()
+{
+    
+}

@@ -286,6 +286,7 @@ extern BOOL EBO_Trace_Optimization;
 extern BOOL EBO_Trace_Block_Flow;
 extern BOOL EBO_Trace_Data_Flow;
 extern BOOL EBO_Trace_Hash_Search;
+extern BOOL EBO_Trace_Imm_Opt;
 
 /* ===================================================================== */
 /* Define macros that will allow us to treat Zero_TN as having a value of 0. */

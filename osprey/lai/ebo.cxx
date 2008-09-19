@@ -199,6 +199,7 @@ BOOL EBO_Trace_Optimization = FALSE;
 BOOL EBO_Trace_Block_Flow   = FALSE;
 BOOL EBO_Trace_Data_Flow    = FALSE;
 BOOL EBO_Trace_Hash_Search  = FALSE;
+BOOL EBO_Trace_Imm_Opt      = FALSE;
 
 #ifdef TARG_ST
 static BOOL EBO_Extract_Compose_Sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo);
@@ -2809,7 +2810,6 @@ EBO_delete_duplicate_op (
 }
 
 #ifdef TARG_ST
-  
 static
 /* =====================================================================
  *    EBO_Constant_Offset_Propagate
@@ -4660,6 +4660,7 @@ EBO_OP_dont_fold(OP *op)
   return TRUE;
 }
 #endif
+
 
 /* =====================================================================
  *    EBO_Fold_Constant_Expression
@@ -7588,6 +7589,7 @@ EBO_Process ( BB *first_bb )
   EBO_Trace_Block_Flow   = Get_Trace(TP_EBO, 0x004);
   EBO_Trace_Data_Flow    = Get_Trace(TP_EBO, 0x008);
   EBO_Trace_Hash_Search  = Get_Trace(TP_EBO, 0x010);
+  EBO_Trace_Imm_Opt      = Get_Trace(TP_EBO, 0x020);
 
   FmtAssert(((EBO_first_tninfo == NULL) && (EBO_first_opinfo == NULL)),
                   ("Initial pointers not NULL %o %o",EBO_first_tninfo,EBO_first_opinfo));
@@ -7658,6 +7660,15 @@ EBO_Process ( BB *first_bb )
 #else
     CFLOW_Optimize(CFLOW_BRANCH | CFLOW_UNREACHABLE, "CFLOW (from ebo)");
 #endif
+  }
+
+  // TDR - New optimization to combine literrals in order to save computations
+  if (!EBO_in_before_unrolling && !EBO_in_after_unrolling && !EBO_in_peep) {
+      EBO_Combine_Imm_Base_Offset();
+      if (EBO_Trace_Block_Flow) {
+          fprintf(TFile, "%s CFG After EBO_Combine_Imm_Base_Offset%s\n%s\n", DBar, __FUNCTION__, DBar);
+          Print_All_BBs ();
+      }
   }
 
   EBO_Finish();

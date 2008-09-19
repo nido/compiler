@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Sep 19 13:34:23 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-immediates
+
+Description:
+------------
+	* [trunk] Deliver dt25/dev-immediates rev #18456 with authorization branch #50141
+
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo_info.h
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/cgtarget.h
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Sep 19 13:07:26 CEST 2008
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
