@@ -3852,6 +3852,17 @@ Can_Append_Succ(
   }
 
 #ifdef TARG_STxP70
+  /*TDR 51959 : Reject if the suc is the end of the HWloop as it impose
+   * to have the next block has to be end label */
+  if (delete_suc && BB_HWLoop_tail(suc)) {
+      if (trace) {
+        #pragma mips_frequency_hint NEVER
+          fprintf(TFile, "rejecting %s of BB:%d into BB:%d (would change end of HW loop)\n", 
+                  oper_name, BB_id(suc), BB_id(b));
+      }
+      return FALSE;
+  }
+
   /* FdF 20060724: Reject if removing the succ will create a GOTO to
    * the start of an hardware loop
    */
