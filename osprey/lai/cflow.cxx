@@ -4654,9 +4654,7 @@ OP_no_move_before_regalloc(OP *op, BB *b) {
 
   if (OP_no_move_before_gra(op)) return TRUE;
 
-  if ((BBINFO_kind(b) == BBKIND_RETURN) &&
-      (OP_copy(op))) {
-
+  if (BBINFO_kind(b) == BBKIND_RETURN) {
     for (i = 0; i < OP_results(op); i++) {
       tn = OP_result(op, i);
       if ((TN_is_register(tn)) && (TN_is_dedicated(tn))) return TRUE;
@@ -4668,16 +4666,23 @@ OP_no_move_before_regalloc(OP *op, BB *b) {
 
 
 static BOOL
-OP_no_move_after_regalloc(OP *op, BB *b) {
+OP_no_move_after_regalloc(OP *op, BB *pb, BB *lb) {
 
   int i, j;
   TN *tn, *tn2;
 
+  if (BBINFO_kind(lb) == BBKIND_RETURN) {
+    for (i = 0; i < OP_results(op); i++) {
+      tn = OP_result(op, i);
+      if ((TN_is_register(tn)) && (TN_is_dedicated(tn))) return TRUE;
+    }
+  }
+
   for (i = 0; i < OP_results(op); i++) {
     tn = OP_result(op, i);
     if ((Is_Predicate_REGISTER_CLASS(TN_register_class(tn))) &&
-	(BBINFO_kind(b) == BBKIND_LOGIF)) {
-      OP *ifop = BB_last_op(b);
+	(BBINFO_kind(pb) == BBKIND_LOGIF)) {
+      OP *ifop = BB_last_op(pb);
       for (j = 0; j < OP_opnds(ifop); j++) {
 	tn2 = OP_opnd(ifop, j);
 	if ((TN_is_register(tn)) && (TN_is_register(tn2)) &&
@@ -4735,7 +4740,8 @@ Hoist_Ops_in_Succs(BB *b, BOOL before_regalloc) {
 			  OP_no_move_before_regalloc(cur_op[0],
 						     BBLIST_item(BB_succs(b)))) ||
 			 ((!before_regalloc) &&
-			  OP_no_move_after_regalloc(cur_op[0], b)))) {
+			  OP_no_move_after_regalloc(cur_op[0], b,
+						    BBLIST_item(BB_succs(b)))))) {
       cur_op[0] = OP_next(cur_op[0]);
     }
   }
@@ -4842,7 +4848,7 @@ Hoist_Ops_in_Succs(BB *b, BOOL before_regalloc) {
 	   (before_regalloc &&
 	    OP_no_move_before_regalloc(cur_op_tmp, bb_tmp)) ||
 	   ((!before_regalloc) &&
-	    OP_no_move_after_regalloc(cur_op_tmp, b))) {
+	    OP_no_move_after_regalloc(cur_op_tmp, b, bb_tmp))) {
 	  cur_op_tmp = OP_next(cur_op_tmp);
 	}
 	else break;

@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Sep 22 16:50:02 CEST 2008
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-51933
+
+Description:
+------------
+	*  Modified the tests (that were not correct) that avoid to hoist instructions which build the return value of a function.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cflow.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Sep 22 16:26:48 CEST 2008
 	Author:    bv11
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
