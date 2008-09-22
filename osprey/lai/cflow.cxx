@@ -4679,8 +4679,9 @@ OP_no_move_after_regalloc(OP *op, BB *b) {
 	(BBINFO_kind(b) == BBKIND_LOGIF)) {
       OP *ifop = BB_last_op(b);
       for (j = 0; j < OP_opnds(ifop); j++) {
-	tn2 = OP_opnd(ifop, i);
-	if (TN_register(tn) == TN_register(tn2)) return TRUE;
+	tn2 = OP_opnd(ifop, j);
+	if ((TN_is_register(tn)) && (TN_is_register(tn2)) &&
+	    (TN_register(tn) == TN_register(tn2))) return TRUE;
       }
     }
   }

@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Sep 22 16:26:48 CEST 2008
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bv11/dev-cflow-mpxfix
+
+Description:
+------------
+	* Hot fix on cflow (errors in code: index i instead of index j, missing tests TN_is_register).  
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cflow.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Sep 19 16:55:26 CEST 2008
 	Author:    knochelh
 	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
