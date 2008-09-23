@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep 23 16:09:12 BST 2008
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-51780
+
+Description:
+------------
+	*  Fix for bug #51780 Compiler assertion failure in inline.cxx.
+	Delivered fixes/codex-51780 rev #18541 with authorization art #51945.
+
+
+Modified Files:
+---------------
+	M      osprey/ipa/inline/inline.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@18538 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-51780@18541 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@18538 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-51780@18541" 
+
+Diff links to modified files:
+-----------------------------
+osprey/ipa/inline/inline.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/inline/inline.cxx?p2=branches/fixes/codex-51780/osprey/ipa/inline/inline.cxx&r1=18538&r2=18541&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep 23 15:40:59 BST 2008
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -859,9 +859,15 @@ Inliner_Sort_PUs (PU_Info *pu_tree)
   for (current_pu = pu_tree; current_pu != NULL; current_pu = PU_Info_next (current_pu)) {
     NODE_INDEX ni = AUX_PU_node (Aux_Pu_Table[ST_pu (St_Table[PU_Info_proc_sym(current_pu)])]);
     INT32 dfnum = (ni != INVALID_NODE_INDEX) ? pu_map[ni] : unknown_dfnum--;
-    FmtAssert (pu_sort_map.find (dfnum) == pu_sort_map.end (),
-	       ("Key %d (ni %d) already present in map", dfnum, ni));
-    pu_sort_map.insert (PU_SORT_INFO(dfnum, current_pu));
+    if (! pu_sort_map.insert (PU_SORT_INFO(dfnum, current_pu)).second) {
+      // [SC] Bug #51780: In an unusual situation, where one PU has an asm name
+      // identical to another PU, we can have two PUs with the same symbol and
+      // hence we can get the same node index as an earlier PU.
+      // In that case, give later PUs an unique dfnum so that we do not lose them
+      // when we recreate the pu_tree.
+      dfnum = unknown_dfnum--;
+      pu_sort_map.insert (PU_SORT_INFO(dfnum, current_pu));
+    }
   }
   CXX_DELETE_ARRAY (pu_map, Malloc_Mem_Pool);
   // Now iterate over the map, in sorted order reconstructing the PU list.
