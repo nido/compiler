@@ -1719,10 +1719,17 @@ static DST_INFO_IDX
 DST_Create_var(ST *var_st, tree decl)
 {
     USRCPOS src;
+#ifdef TARG_ST
+    // Enable srcpos generation as part of fix for bug #48429.
+    // (see also cgdwarf.cxx)
+    USRCPOS_srcpos(src) = Get_Srcpos();
+#else
     // For now, the source location appears bogus
     // (or at least odd) for files other than the base
     // file, so lets leave it out. Temporarily.
     //USRCPOS_srcpos(src) = Get_Srcpos();
+    USRCPOS_clear(src);
+#endif
 
     int is_external = TREE_PUBLIC(decl);
 #ifdef TARG_ST
@@ -1730,7 +1737,6 @@ DST_Create_var(ST *var_st, tree decl)
     int is_declaration = DECL_EXTERNAL(decl);
 #endif
 
-    USRCPOS_clear(src);
     DST_INFO_IDX dst;
     DST_INFO_IDX type;
 

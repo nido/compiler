@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep 23 13:06:09 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-48429
+
+Description:
+------------
+	* [trunk] Fix for bug #48429: [DWARF] STxP70 V4 - C declaration in header file not found in debug info.
+		-> Fixed generation of dynamic debug section size for V4
+		-> Added generation of line information for global variables (including registration of
+		   included source files containing only variable definition (no code))
+	Deliver fixes/codex-48429 rev #18516 with authorization branch #49117
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgdwarf.cxx
+	M      osprey/gccfe/wfe_dst.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Sep 22 16:50:02 CEST 2008
 	Author:    bv11
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -230,6 +230,9 @@ Dwarf_Unsigned Cg_Dwarf_Symtab_Entry(CGD_SYMTAB_ENTRY_TYPE  type,
 }
 
 #ifdef TARG_ST
+// Forward declaration of local function
+static void Cg_Dwarf_Register_Source_File(USRCPOS usrcpos);
+
 // Return TRUE if the size of section <section_name> cannot be statically known.
 // This is the case when generating symbolic offsets in .debug_line section,
 // because offsets are generated using LEB128 type, that use a variable length
@@ -1075,7 +1078,11 @@ put_variable(DST_flag flag, DST_VARIABLE *attr, Dwarf_P_Die die)
   }
   else /* definition */ {
     which_pb pbtype;
-
+#ifdef TARG_ST
+    // Fix for bug #48429: Insure that corresponding source file
+    // has been added to dwarf info
+    Cg_Dwarf_Register_Source_File(DST_VARIABLE_decl_decl(attr));
+#endif
     put_decl(DST_VARIABLE_def_decl(attr), die);
     if (DST_IS_external(flag)) 
       pbtype = pb_pubname;
@@ -2568,6 +2575,57 @@ void Cg_Dwarf_Gen_Asm_File_Table (void)
 
 }
 
+#ifdef TARG_ST
+/*
+ * Register the source file referenced by the argument in dwarf information
+ * if not yet done.
+ * This piece of code has been extracted from Cg_Dwarf_Add_Line_Entry() to
+ * accessible to other functions.
+ */
+static void
+Cg_Dwarf_Register_Source_File(USRCPOS usrcpos) {
+
+  if (USRCPOS_srcpos(usrcpos) == 0) {
+    return;
+  }
+  
+  INT file_idx = USRCPOS_filenum(usrcpos);
+  INT include_idx;
+  // file change
+  if ( ! file_table[file_idx].already_processed) {
+    // new file
+    include_idx = file_table[file_idx].incl_index;
+    if ( ! incl_table[include_idx].already_processed) {
+      // new include
+      if (CG_emit_asm_dwarf) {
+        Em_Dwarf_Add_Include (include_idx, 
+                              incl_table[include_idx].path_name);
+      }
+      incl_table[include_idx].already_processed = TRUE;
+    }
+      
+    if (CG_emit_asm_dwarf) {
+      Em_Dwarf_Add_File (file_idx, 
+                         file_table[file_idx].filename,
+                         include_idx,
+                         file_table[file_idx].mod_time,
+                         file_table[file_idx].file_size);
+    }
+    file_table[file_idx].already_processed = TRUE;
+    /* (cbr) be consistant with solaris when cross compiling */
+    /* See corresponding change in Cg_Dwarf_Add_Line_Entry() */
+    //#ifndef linux 
+    // for irix, only need .file when new file,
+    // as subsequent .locs use file number.
+//       if (Assembly) {
+// 	CGEMIT_Prn_File_Dir_In_Asm(usrcpos,
+// 				   incl_table[include_idx].path_name,
+// 				   file_table[file_idx].filename);
+//       }
+  }
+}
+#endif
+
 static void
 print_source (SRCPOS srcpos)
 {
@@ -2709,6 +2767,23 @@ Cg_Dwarf_Add_Line_Entry (
   USRCPOS last_usrcpos;
   USRCPOS_srcpos(last_usrcpos) = last_srcpos;
   if (USRCPOS_filenum(last_usrcpos) != USRCPOS_filenum(usrcpos)) {
+#ifdef TARG_ST
+    Cg_Dwarf_Register_Source_File(usrcpos);
+
+    /* (cbr) be consistant with solaris when cross compiling */
+    //#ifdef linux
+    // For linux, emit .file whenever file changes,
+    // as it applies to all following  line directives,
+    // whatever the spelling.
+    if (Assembly) {
+      INT file_idx = USRCPOS_filenum(usrcpos);
+      INT include_idx = file_table[file_idx].incl_index;
+      include_idx = file_table[file_idx].incl_index;
+      CGEMIT_Prn_File_Dir_In_Asm(usrcpos,
+                                 incl_table[include_idx].path_name,
+                                 file_table[file_idx].filename);
+    }
+#else
     INT file_idx = USRCPOS_filenum(usrcpos);
     INT include_idx;
     // file change
@@ -2717,22 +2792,14 @@ Cg_Dwarf_Add_Line_Entry (
       include_idx = file_table[file_idx].incl_index;
       if ( ! incl_table[include_idx].already_processed) {
 	// new include
-#ifdef TARG_ST
-  if (CG_emit_asm_dwarf) {
-#else
 	if (Object_Code) {
-#endif
 	  Em_Dwarf_Add_Include (include_idx, 
 				incl_table[include_idx].path_name);
 	}
 	incl_table[include_idx].already_processed = TRUE;
       }
 
-#ifdef TARG_ST
-  if (CG_emit_asm_dwarf) {
-#else
       if (Object_Code) {
-#endif
 	Em_Dwarf_Add_File (file_idx, 
 			   file_table[file_idx].filename,
 			   include_idx,
@@ -2740,8 +2807,6 @@ Cg_Dwarf_Add_Line_Entry (
 			   file_table[file_idx].file_size);
       }
       file_table[file_idx].already_processed = TRUE;
-#ifndef TARG_ST
-      /* (cbr) be consistant with solaris when cross compiling */
       //#ifndef linux 
       // for irix, only need .file when new file,
       // as subsequent .locs use file number.
@@ -2750,20 +2815,6 @@ Cg_Dwarf_Add_Line_Entry (
 				   incl_table[include_idx].path_name,
 				   file_table[file_idx].filename);
       }
-#endif
-    }
-
-#ifdef TARG_ST
-    /* (cbr) be consistant with solaris when cross compiling */
-    //#ifdef linux
-    // For linux, emit .file whenever file changes,
-    // as it applies to all following  line directives,
-    // whatever the spelling.
-    if (Assembly) {
-      include_idx = file_table[file_idx].incl_index;
-      CGEMIT_Prn_File_Dir_In_Asm(usrcpos,
-				 incl_table[include_idx].path_name,
-				 file_table[file_idx].filename);
     }
 #endif
   }
@@ -4874,7 +4925,7 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
     sprintf(end_size_label, "L_end_size_section_%s", &section_name[1]);     // Skip '.' prefix
     sprintf(end_size_nopad_label, "L_end_size_nopad_section_%s", &section_name[1]);     // Skip '.' prefix
     FmtAssert((SIZEOF_SECTION_LENGTH==4), ("Unsupported SIZEOF_SECTION_LENGTH"));
-    fprintf(asm_file, "\t%s\t%s - %s\n", AS_WORD_UNALIGNED, end_size_label, begin_size_label);
+    fprintf(asm_file, "\t%s\t%s - %s\n", AS_WORD_UNALIGNED, end_size_nopad_label, begin_size_label);
     fprintf(asm_file, "%s:\n", begin_size_label);
   }
 #endif
@@ -5124,8 +5175,8 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
     // [TTh] Add symbol for symbolic computation of size
     // and generate potential padding
     fprintf(asm_file, "%s:\n", end_size_nopad_label);
-    fprintf(asm_file, "\t%s\t(%s + %d - %s ) %% %d\n", AS_SPACE, end_size_nopad_label,
-	    dw_dbg->de_offset_size-1, begin_size_label, dw_dbg->de_offset_size);
+    fprintf(asm_file, "\t%s\t(%d - (%s - %s ) %% %d) %% %d\n", AS_SPACE, dw_dbg->de_offset_size,
+	    end_size_nopad_label, begin_size_label, dw_dbg->de_offset_size, dw_dbg->de_offset_size );
     fprintf(asm_file, "%s:\n", end_size_label);
   }
 #endif
