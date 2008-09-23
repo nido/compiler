@@ -225,7 +225,7 @@ COMMON_COM_CXX_SRC =	\
 	wn_util.cxx	\
 	wutil.cxx	\
 	xstats.cxx	\
-	builtins_map.cxx \
+	extension_intrinsic.cxx \
 	loader.cxx      \
 	dyn_dll_api_access.cxx \
 	dyn_isa_api_access.cxx \

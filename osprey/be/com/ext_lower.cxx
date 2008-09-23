@@ -46,10 +46,17 @@ Contact information:
 #include "insn-config.h" /* for MAX_RECOG_OPERANDS */
 
 #include "symtab_access.h"
+#include "wintrinsic.h"
+#include "extension_intrinsic.h"
+#include "register.h"
 
-static bool verbose_reg_placement = false;
+/* contains options mask that controls the different phases of
+   ext_lower (by default equals Enable_Extension_Native_Support
+   global option) */
+static  INT32 local_ext_gen_mask;
+
+static BOOL verbose_reg_placement = false;
 #define VERBOSE_REG_PLACEMENT(...) if (verbose_reg_placement) { fprintf(TFile, __VA_ARGS__); }
-
 
 /** 
  * Auxiliary function used to replace a stmt by another
@@ -60,7 +67,7 @@ static bool verbose_reg_placement = false;
  * 
  * @return 
  */
-static bool
+static BOOL
 replace_stmt(WN* BB, WN* previous_stmt, WN* new_stmt)
 {
 
@@ -113,19 +120,19 @@ create_cvt_var(PREG_NUM var, TYPE_ID ext_type)
  * to an extension type.
  */
 typedef struct {
-  bool     valid;            // wether or not the association is valid
+  BOOL     valid;            // wether or not the association is valid
   TYPE_ID  c_type;           // original type
   TYPE_ID  equiv_ext_type;   // candidate extension type
   PREG_NUM replacement_preg; // replacement PREG, with extension type
 } CandidatePreg;
 typedef std::map <PREG_NUM, CandidatePreg*> CandidateMap;
 
-// static bool
+// static BOOL
 // CandidateMap_Is_Defined_Preg (CandidateMap *cmap, PREG_NUM var) {
 //   return ((*cmap)[var] != NULL);
 // }
 
-static bool
+static BOOL
 CandidateMap_Is_Valid_Preg (CandidateMap *cmap, PREG_NUM var) {
   CandidatePreg* corresp = (*cmap)[var];
   return (corresp!=NULL && corresp->valid);
@@ -212,7 +219,7 @@ CandidateMap_Get_Associated_Extension_Preg(CandidateMap *cmap, PREG_NUM var) {
  * 
  * @return 
  */
-static bool
+static BOOL
 Is_Dedicated(PREG_NUM num) {
   return ((int)num<= Last_Dedicated_Preg_Offset);
 }
@@ -578,10 +585,12 @@ Create_Convert_Node(TYPE_ID dst, WN* tree)
   return tree;
 }
 
+/* forward declaration */
+static WN *EXT_LOWER_expr(WN *tree, WN** new_stmts, BOOL* modified);
 
 /** 
  * auxiliary function that builds an intrinsic WN.
- * 
+ *
  * @param res 
  * @param intrinsic 
  * @param nbkids 
@@ -590,23 +599,43 @@ Create_Convert_Node(TYPE_ID dst, WN* tree)
  * @return 
  */
 static WN*
-Create_Intrinsic_from_OP(TYPE_ID res,
-                                     INTRINSIC intrinsic, int nbkids,
-                                     WN *kids[])
+Create_Intrinsic_from_OP(INTRINSIC intrnidx, int nbkids, WN *kids[],
+                         TYPE_ID dsttype, WN** new_stmts, BOOL* modified)
 {
+  static int tmp_idx = 0;
+  const char * tmp_var = "_tmp_multires_";
+
   int i;
-  
-  for (i=0; i<nbkids; i++)
+  FmtAssert((intrnidx!=INTRINSIC_INVALID),("intrnidx must be valid"));
+
+  proto_intrn_info_t * proto = INTRN_proto_info(intrnidx);
+
+  /* intrinsic is functional (we can use intrinsic_op) */
+  if (proto->arg_out_count==0)
     {
-      kids[i] = WN_CreateParm (WN_rtype(kids[i]),
-                               kids[i],
-                               Be_Type_Tbl(WN_rtype(kids[i])),
-                               WN_PARM_BY_VALUE | WN_PARM_READ_ONLY);
+      *modified = true;
+      for (i=0; i<nbkids; i++)
+        {
+          WN* tmp = Create_Convert_Node(proto->arg_type[i], kids[i]);
+          kids[i] = WN_CreateParm (WN_rtype(tmp),
+                                   tmp,
+                                   Be_Type_Tbl(WN_rtype(tmp)),
+                                   WN_PARM_BY_VALUE | WN_PARM_READ_ONLY);
+        }
+      WN* introp = WN_Create_Intrinsic(OPCODE_make_op(OPR_INTRINSIC_OP,
+                                                      INTRN_return_type(proto), 
+                                                      MTYPE_V),
+                                       intrnidx, nbkids, kids);
+      return  Create_Convert_Node(dsttype, introp);
     }
-  return WN_Create_Intrinsic(OPCODE_make_op(OPR_INTRINSIC_OP,
-                                            res, 
-                                            MTYPE_V),
-                             intrinsic, nbkids, kids);
+  else  /* we have to create a specific stmt (intrinsic_call) */
+    {
+
+      DevWarn("Multi-Res patterns Not Yet Implemented %d\n", intrnidx);
+      return NULL;
+    }
+
+  return NULL;
 }
 
 /**
@@ -672,20 +701,35 @@ Find_Best_Intrinsic(INTRINSIC_Vector_t* itrn_indexes) {
  * @return lowered tree
  */
 static WN *
-EXT_LOWER_expr(WN *tree, BOOL* modified)
+EXT_LOWER_expr(WN *tree, WN** new_stmts, BOOL* modified)
 {
   WN *kids[MAX_RECOG_OPERANDS];
-  int i, nb_operands = WN_kid_count(tree);
+  int i, nb_operands;
+  WN* stmt;
+  WN* dsttree = NULL;
 
-  // lower kids first
-  for (i=0; i<nb_operands; i++){
-    WN_kid(tree, i) = EXT_LOWER_expr(WN_kid(tree, i), modified);
+  INT intrnidx;
+  // target specific expression lowering
+
+  if ( local_ext_gen_mask & EXTENSION_NATIVE_TARGET_CODEGEN) {
+    intrnidx = targ_pattern_rec(tree, &nb_operands, kids);
+    if (intrnidx != INTRINSIC_INVALID) {
+      dsttree = Create_Intrinsic_from_OP(intrnidx, nb_operands, kids,
+                                         WN_rtype(tree), new_stmts, modified);
+      if (dsttree!=NULL) {
+        tree= dsttree;
+      }
+    }
   }
-  
+  nb_operands = WN_kid_count(tree);
+  // lower kids
+  for (i=0; i<nb_operands; i++){
+    WN_kid(tree, i) = EXT_LOWER_expr(WN_kid(tree, i), new_stmts, modified);
+  }
+
   // get intrinsic idx if any.
   OPCODE opc = WN_opcode(tree);
 
-  INTRINSIC itrnidx;
   INT cost = INT_MAX;
   INTRINSIC_Vector_t* itrn_indexes =  Get_Intrinsic_from_OPCODE(opc);
 
@@ -698,29 +742,26 @@ EXT_LOWER_expr(WN *tree, BOOL* modified)
   if (itrn_indexes == NULL) {
     return tree;
   }
+    
+  intrnidx = Find_Best_Intrinsic(itrn_indexes);
 
-  itrnidx = Find_Best_Intrinsic(itrn_indexes);
-
-  if (itrnidx == INTRINSIC_INVALID) {
+  if (intrnidx == INTRINSIC_INVALID) {
     return tree;
   }
 
-  TYPE_ID rettype = INTRN_return_type(INTRN_proto_info(itrnidx));
-
-  FmtAssert((rettype != MTYPE_UNKNOWN), ("no rettype for intrinsic !"));
-
-  /* convert all kids to the proper intrinsic type */
   for (i=0; i<nb_operands; i++) {
-    kids[i] = Create_Convert_Node(INTRN_proto_info(itrnidx)->arg_type[i],
-                                  WN_kid(tree, i));
+    kids[i] = WN_kid(tree, i);
   }
-  
   *modified = TRUE;
 
   /* create intrinsic op */
-  return Create_Convert_Node
-    (WN_rtype(tree),
-     Create_Intrinsic_from_OP(rettype, itrnidx, nb_operands, kids));
+  dsttree = Create_Intrinsic_from_OP(intrnidx, nb_operands, kids, 
+                                     WN_rtype(tree), new_stmts, modified); 
+  
+  if (dsttree!=NULL)
+    return dsttree;
+  return tree;
+  
 }
 
 /** 
@@ -736,13 +777,13 @@ EXT_LOWER_expr(WN *tree, BOOL* modified)
  * @return 
  */
 static WN *
-EXT_LOWER_CVT_expr(WN *tree, BOOL *modified)
+EXT_LOWER_CVT_expr(WN *tree, WN** new_stmts, BOOL *modified)
 {
   int i, nb_operands = WN_kid_count(tree);
 
   // lower kids first
   for (i=0; i<nb_operands; i++){
-    WN_kid(tree, i) = EXT_LOWER_CVT_expr(WN_kid(tree, i), modified);
+    WN_kid(tree, i) = EXT_LOWER_CVT_expr(WN_kid(tree, i), new_stmts, modified);
   }
   
   OPERATOR opr = WN_operator(tree);
@@ -753,9 +794,10 @@ EXT_LOWER_CVT_expr(WN *tree, BOOL *modified)
       /* Conversion of constant 0 to extension type mapped to CLR */
       INT64 value = WN_const_val(kid0);
       INT clr_intrn = EXTENSION_Get_CLR_Intrinsic(WN_rtype(tree));
-      if (value==0 && clr_intrn!=-1) {
-        *modified = TRUE;
-        return Create_Intrinsic_from_OP(WN_rtype(tree), clr_intrn, 0, NULL);
+
+      if (value==0 && clr_intrn!=INTRINSIC_INVALID) {
+        return Create_Intrinsic_from_OP(clr_intrn, 0, NULL,
+                                        WN_rtype(tree), new_stmts, modified);
       }
     }
     else if (WN_operator(kid0) == OPR_CVT) {
@@ -770,11 +812,11 @@ EXT_LOWER_CVT_expr(WN *tree, BOOL *modified)
 	    if (rettype == WN_rtype(tree)) {
 	      /* convert kid to the proper intrinsic type */
 	      WN *kids[1];
-	      kids[0] = Create_Convert_Node(INTRN_proto_info(itrnidx)->arg_type[0],
-					    WN_kid0(kid0));
+	      kids[0] = WN_kid0(kid0);
 	      *modified = TRUE;
 	      /* create intrinsic op */
-	      return (Create_Intrinsic_from_OP(rettype, itrnidx, 1, kids));
+	      return Create_Intrinsic_from_OP(itrnidx, 1, kids,
+                                              rettype, new_stmts, modified);
 	    }
 	  }
 	}
@@ -786,16 +828,14 @@ EXT_LOWER_CVT_expr(WN *tree, BOOL *modified)
 	if (itrn_indexes != NULL) {
 	  INTRINSIC itrnidx = Find_Best_Intrinsic(itrn_indexes);
 	  if (itrnidx != INTRINSIC_INVALID) {
-	    TYPE_ID rettype = INTRN_return_type(INTRN_proto_info(itrnidx));
 	    TYPE_ID paramtype = INTRN_proto_info(itrnidx)->arg_type[0];
 	    if (paramtype == WN_desc(kid0)) {
 	      WN *kids[1];
 	      kids[0] = WN_kid0(kid0);
 	      *modified = TRUE;
 	      /* create intrinsic op */
-	      return Create_Convert_Node
-		(WN_rtype(tree),
-		 (Create_Intrinsic_from_OP(rettype, itrnidx, 1, kids)));
+	      return Create_Intrinsic_from_OP(itrnidx, 1, kids,
+                                              WN_rtype(tree), new_stmts, modified);
 	    }
 	  }
 	}
@@ -822,26 +862,41 @@ EXT_LOWER_CVT_expr(WN *tree, BOOL *modified)
  * @return 
  */
 static WN *
-EXT_LOWER_stmt_wn_gen(WN *tree, WN* (*expr_fct)(WN *tree, BOOL* modified))
+EXT_LOWER_stmt_wn_gen(WN *tree, WN* (*expr_fct)(WN *tree, WN** new_stmts,
+                                                BOOL* modified))
 {
   INT i;
   BOOL modified = FALSE;
+  WN* curblock;
 
   WN_ITER* itr = WN_WALK_StmtIter(tree);
   for ( ; itr; itr = WN_WALK_StmtNext(itr)) {
     WN* wn = itr->wn;
-    
+    if (WN_opcode(wn) == OPC_BLOCK) {
+      curblock = wn;
+    }
+
     DevAssert((wn!=NULL), ("Unexpected NULL stmt"));
     if (wn!=NULL) {
       for (i = 0; i < WN_kid_count(wn); i++) {
         if (WN_kid(wn,i)!=NULL &&
             OPCODE_is_expression(WN_opcode(WN_kid(wn,i)))) {
-          WN_kid(wn,i) = (*expr_fct)(WN_kid(wn,i), &modified);
+          BOOL kidmod = FALSE;
+          WN* new_stmts = NULL;
+          WN_kid(wn,i) = (*expr_fct)(WN_kid(wn,i), &new_stmts, &kidmod);
+          modified|= kidmod;
+          if (kidmod && new_stmts != NULL) {
+            // check if any stmt needs to be inserted 
+            // handling of curblock to be checked !!!
+//             fprintf(stderr, "Insert newly created stmts\n");
+//             extern void dump_tree(WN *wn);
+//             dump_tree(new_stmts);
+            WN_INSERT_BlockBefore(curblock, wn, new_stmts);
+          }
         }
       }
     }
   }
-  
   if (modified)
     return  WN_Simplify_Tree(tree);
   return tree;
@@ -878,7 +933,7 @@ EXT_lower_wn(WN *tree)
   FmtAssert((WN_operator(tree) == OPR_FUNC_ENTRY),
 	    ("Unexpected node type in EXT_lower_wn"));
 
-  INT32 local_ext_gen_mask = Enable_Extension_Native_Support;
+  local_ext_gen_mask = Enable_Extension_Native_Support;
 
   if (! local_ext_gen_mask) {
     if (Is_Function_Pragma_Defined(tree, WN_PRAGMA_FORCE_EXTGEN)) {
@@ -894,7 +949,7 @@ EXT_lower_wn(WN *tree)
     return tree;
   }
 
-  bool simpfold = WN_Simp_Fold_ILOAD;
+  BOOL simpfold = WN_Simp_Fold_ILOAD;
   WN_Simp_Fold_ILOAD = TRUE;
 
   Set_Error_Phase("EXT Lowering");
@@ -902,6 +957,7 @@ EXT_lower_wn(WN *tree)
   WN_Lower_Checkdump("EXT Lowering", tree, 0);
 
   if ( local_ext_gen_mask & EXTENSION_NATIVE_CODEGEN) {
+    init_pattern_rec();
     tree = EXT_LOWER_stmt_wn_gen(tree, EXT_LOWER_expr);
   }
 

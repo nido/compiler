@@ -36,6 +36,7 @@
 
 
 #include "extension_include.h"
+#include "extension_intrinsic.h"
 #include "loader.h"
 #include "erglob.h"
 //TB Extend PREG registers to extension
@@ -45,8 +46,6 @@ extern "C"
   BE_EXPORTED extern   INT Get_Last_Dedicated_Preg_Offset_Func(void);
   BE_EXPORTED extern   void Set_Last_Dedicated_Preg_Offset(INT offset);
 }
-
-BE_EXPORTED extern void  EXTENSION_add_INTRINSIC_to_Map(const char* c, INTRINSIC i);
 
 #ifdef BACK_END
 #include "dyn_isa_api.h"

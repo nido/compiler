@@ -264,7 +264,7 @@ COMMON_COM_CXX_SRCS = \
   lai_loader.cxx      \
   dyn_dll_api_access.cxx	\
   dyn_isa_api_access.cxx	\
-  builtins_map.cxx     \
+  extension_intrinsic.cxx
 
 COMMON_COM_PCH_CXX_SRCS = \
   const.cxx		\
@@ -416,6 +416,7 @@ endif
 BE_COM_CXX_SRCS += $(BE_COM_PCH_CXX_SRCS)
 
 BE_COM_TARG_CXX_SRCS = \
+  targ_pattern_rec.cxx \
   betarget.cxx
 
 # For ST targets renamed sections.cxx into targ_sections.cxx

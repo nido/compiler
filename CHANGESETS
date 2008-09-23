@@ -1,6 +1,35 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep 23 15:57:13 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mpx-mac-support
+
+Description:
+------------
+	*  Implementation  of mac like instructions selection for mpx detection
+
+
+Modified Files:
+---------------
+	M      osprey/be/be/Makefile.gbase
+	M      osprey/be/com/ext_lower.cxx
+	M      osprey/ir_tools/Makefile.gbase
+	M      osprey/gccfe/Makefile.gbase
+	M      osprey/g++fe/Makefile.gbase
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/config.h
+	D      osprey/common/com/builtins_map.cxx
+	A  +   osprey/common/com/extension_intrinsic.cxx
+	A  +   osprey/common/com/extension_intrinsic.h
+	A  +   osprey/targinfo/stxp70/be/targ_pattern_rec.cxx
+	A  +   osprey/targinfo/st200/be/targ_pattern_rec.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep 23 13:06:09 CEST 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
