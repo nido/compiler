@@ -12433,15 +12433,16 @@ static WN *lower_call(WN *block, WN *tree, LOWER_ACTIONS actions)
   // Fix for bug #23772. If lowering of actuals is done at that lower hilo
   // time, this means actuals are lowered two times and code are duplicated.
   // Thus, we block that lower for lower hilo action
-  if(!Action(LOWER_HILO))
-      {
+  // [SC] Since later we only lower the kids from 0..num_actuals-1,
+  // here lower the remaining kids, if any.  Note bug #51835: for an
+  // indirect call, the address expression is also a kid that appears after
+  // num_actuals; here we must do hilo-lowering on that kid.
+  for (i = Action(LOWER_HILO) ? num_actuals : 0; i < WN_kid_count(tree); i++)
+#else
+  for (i = 0; i < WN_kid_count(tree); i++)
 #endif
-          for (i = 0; i < WN_kid_count(tree); i++)
-              WN_actual(tree, i) = lower_expr(block, WN_actual(tree, i),
-                                              actions);
-#ifdef TARG_ST
-      }
-#endif
+    WN_actual(tree, i) = lower_expr(block, WN_actual(tree, i),
+				    actions);
 
 #if 1
   if (traceCall) {

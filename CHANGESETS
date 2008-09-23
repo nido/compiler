@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep 23 15:40:59 BST 2008
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-51835
+
+Description:
+------------
+	*  Fix for bug #51835 Assertion failure due to incorrect whirl
+	lowering of indirect function call.
+	Delivered fixes/codex-51835 rev #18535 with authorization art #51949.
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/wn_lower.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@18530 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-51835@18535 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@18530 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-51835@18535" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/com/wn_lower.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/wn_lower.cxx?p2=branches/fixes/codex-51835/osprey/be/com/wn_lower.cxx&r1=18530&r2=18535&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep 23 15:57:13 CEST 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
