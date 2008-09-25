@@ -789,6 +789,15 @@ add_special_options (void)
 	  }
 	}
 #endif
+#ifdef TARG_STxP70
+	if (relax == UNDEFINED) {
+	  /* TB: in relocatable mode, desactivate --relax */
+	  relax = ((proc == PROC_stxp70_v4) && (olevel >= 1) && (shared != RELOCATABLE)) ? TRUE : FALSE;
+	  if (relax == TRUE) {
+            prepend_option_seen (O__relax);
+	  }
+	}
+#endif
 #ifdef TARG_ST
 	/* TB: with -fprofile-arcs option, tell be where to generate .gcno files */
 	if (option_was_seen(O_fprofile_arcs) || option_was_seen(O_fprofile_arcs_cgir)) {

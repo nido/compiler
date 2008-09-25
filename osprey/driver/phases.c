@@ -1998,14 +1998,6 @@ add_final_ld_args (string_list_t *args)
       
 #ifdef TARG_STxP70
 
-    /* Incase of STxP70 v4 architecture activate the --relax linker *
-     * switch. Unless explicitely required to not relax at all      */
-    if ((proc == PROC_stxp70_v4) &&
-        ((relax == UNDEFINED && olevel >= 1) || (relax == TRUE))
-       ) {
-      add_string(args,"--relax");
-    }
-    
 #ifndef COSY_LIB /* [HC] dealing with newlib. Keep former code for CoSy compat. */
       /* build -lc option depending on lib-nofloat option */
     char* libc=get_libc_option("c");
