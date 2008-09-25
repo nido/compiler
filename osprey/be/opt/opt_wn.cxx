@@ -646,8 +646,20 @@ Mtype_from_AUX_STAB_ENTRY( AUX_STAB_ENTRY *sym ) {
     // For dynamic mtypes, the mclass field cannot be used.
     // Retrieve the mtype directly from the symbol.
     rtype = sym->Mtype();
-    FmtAssert((MTYPE_byte_size(rtype) == sym->Byte_size()),
-	      ("Incorrect MTYPE size"));
+
+    // ipl operates in H WHIRL and be (MAIN_OPT
+    // phase) in M WHIRL. Depending on the WHIRL level, 
+    // Byte_size information isn't always correct for
+    // pregs. In particular, for a so-called "ldid return"
+    // preg, information is not accurate until after running
+    // LOWER_RETURN_VAL lowering.
+    //
+    // We skip the following test for a preg.
+
+    if(!(sym->Is_preg())) {
+      FmtAssert((MTYPE_byte_size(rtype) == sym->Byte_size()),
+                ("Incorrect MTYPE size"));
+    }
   }
   else {
     rtype = Mtype_from_mtype_class_and_size(sym->Mclass(), sym->Byte_size());

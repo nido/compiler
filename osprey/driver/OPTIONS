@@ -190,21 +190,10 @@
 	NA__"show default values"
 % gcc has -v show version as well as phases, so take that meaning
 #ifdef BCO_ENABLED
-#ifdef TARG_STxP70
-% Thierry: transmit also -v to icache optim 
-% STxP70: do not pass to ld that do not support these options.
--v	{show_flag = TRUE; show_version = TRUE;} ALL	cpp,binopt	self "-show"
-#else
 % Thierry: transmit also -v to icache optim 
 -v	{show_flag = TRUE; show_version = TRUE;} ALL	cpp,ld,binopt	self "-show"
-#endif
-#else
-#ifdef TARG_STxP70
-% STxP70: do not pass to ld that do not support these options.
--v	{show_flag = TRUE; show_version = TRUE;} ALL	cpp	self "-show"
 #else
 -v	{show_flag = TRUE; show_version = TRUE;} ALL	cpp,ld	self "-show"
-#endif
 #endif
 	"show phases and version as they are being invoked"
 -fullwarn toggle(&msglevel,2);		Cc,FTN,as  cpp	self "-m2"
@@ -1698,19 +1687,12 @@ I-template_used		;		CC	cfe	self
 #endif
 
 % IPA-related options:
-#ifdef TARG_STxP70
--ipa	;		ALL	NONE	""
-	NA__STxP70__"Perform interprocedural analysis and optimization"
-
--IPA	;		ALL	NONE	""
-	NA__STxP70__"Perform interprocedural analysis and optimization"
-#else
 -ipa	toggle(&ipa,TRUE);		ALL	ipap	self
 	NA__STxP70__"Perform interprocedural analysis and optimization"
 
 -IPA	toggle(&ipa,TRUE);		ALL	NONE	"-ipa"
 	NA__STxP70__"Perform interprocedural analysis and optimization"
-#endif
+
 #ifdef TARG_ST
 -ipalibs	toggle(&ipalibs,TRUE);toggle(&ipa,TRUE);		ALL	ipap	self
 	NA__"Link with IPA-instrumented libraries"
@@ -3042,6 +3024,8 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
    "activate STxP70 extensions"
 -Mextrcdir*%D  Process_extrcdir(optargs); 	ALL	as,ld	"-Mextrcdir=%s"
    "set stxp70extrc file directory"
+-Mextrcdir=*%D  Process_extrcdir(optargs); 	ALL	as,ld	"-Mextrcdir=%s"
+   ""
 -Mnoextgen ;					ALL	CMP	"-TENV:extension_native_support=0"
 	"disable extended code generation for extension"
 -Mfarcall   farcall=TRUE;			ALL	CMP	"-TARG:farcall=on"

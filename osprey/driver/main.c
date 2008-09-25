@@ -176,7 +176,7 @@ main (int argc, char *argv[])
 	time0 = times(&tm0);
 	save_command_line(argc, argv);		/* for prelinker    */	
 #ifdef TARG_STxP70
-   command_line_copy(argc,argv);       /* in case V[<ver>] is invoked */
+	command_line_copy(argc,argv);       /* in case V[<ver>] is invoked */
 #endif
 	program_name = drop_path(argv[0]);	/* don't print path */
 	orig_program_name = string_copy(argv[0]);
@@ -231,14 +231,42 @@ main (int argc, char *argv[])
 			i++;
 		} else {
 #ifdef TARG_STxP70
-			// [HC]: Trial to take .ld files as link script files and automatically
-			//       inserting -T ahead.
-			char * suffix_ptr;
-         
-			if ((NULL!=(suffix_ptr=get_suffix(argv[i]))) && 
-			    !strcmp(suffix_ptr,"ld")) {
-				add_script_file(argv[i]);
-				add_option_seen (O_T);
+         // [HC]: Try to take .ld files as link script files and automatically
+         //       inserting -T ahead.
+         // [YJ]: We used to call directly the following routines (with the
+         //       appropriate arguments):
+         //         add_script_file and add_option_seen
+         //
+         //       However, this method doesn't work anymore for IPA.
+         //       Hereafter, we modify the current argument so as to emulate
+         //       what happens with argument -Txxx.ld       
+         char  *suffix_ptr;
+         int    org_index;
+         char  *sav;
+         char  *tmp;
+
+         if ((NULL!=(suffix_ptr=get_suffix(argv[i]))) && 
+             !strcmp(suffix_ptr,"ld")) {
+
+            org_index=i;
+            sav = argv[i];
+
+            tmp = malloc(strlen("-T")+strlen(argv[i])+1);
+            if(NULL==tmp) { 
+             internal_error("memory allocation error.");
+             exit(1);
+            }
+            strcpy(tmp,"-T");
+            strcat(tmp,argv[i]);
+            argv[i] = tmp;
+
+            treat_one_arg(&i,argv);
+
+            argv[org_index] = sav; // Restore initial state in argv table.
+            i = org_index ;        // In particular, it is very important
+                                   // to restore i (otherwise next argument
+                                   // won't be parsed).
+            free(tmp);
 			} else {
 #endif
 			source_kind = get_source_kind(argv[i]);
@@ -299,6 +327,14 @@ main (int argc, char *argv[])
 	Check_Target ();
 
 #if defined( TARG_STxP70 )
+
+   /* Temporary: deactivate IPA for STxP70.
+    */
+    if(TRUE==ipa) {
+       error("ipa is not supported yet for the STxP70 target");
+       exit(RC_USER_ERROR);
+    }
+
    /* At this point, add TENV for extension if it exists as if it was
     * on standard command line...
     */

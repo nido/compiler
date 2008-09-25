@@ -1922,24 +1922,6 @@ static const char* get_extra_args(const char* ipaa_filename)
   }
 #else
 #ifdef TARG_STxP70
-  if (Target_ABI == ABI_STxP70_embedded) {
-    switch (ld_ipa_opt[LD_IPA_SHARABLE].flag) {
-    case F_MAKE_SHARABLE:
-      args.push_back("-fpic");
-      break;
-    case F_CALL_SHARED:
-    case F_CALL_SHARED_RELOC:
-      args.push_back("-fpic");
-      break;
-    case F_NON_SHARED:
-      args.push_back("-fembedded");
-      break;
-    case F_RELOCATABLE:
-      if (IPA_Enable_Relocatable_Opt == TRUE)
-	args.push_back("-fpic");
-      break;
-    }
-  }
 #else
   switch (ld_ipa_opt[LD_IPA_SHARABLE].flag) {
   case F_MAKE_SHARABLE:

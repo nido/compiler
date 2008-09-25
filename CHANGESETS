@@ -1,6 +1,92 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep 25 18:04:37 CEST 2008
+	Author:    janiny
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-stxp70-ipa
+
+Description:
+------------
+	* [trunk] Deliver STxP70 ipa work. Note that ipa is not activated in this deliver.
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_wn.cxx
+	M      osprey/be/be/driver.cxx
+	M      osprey/be/be/Makefile.gbase
+	M      osprey/ir_tools/Makefile.gbase
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/phases.c
+	M      osprey/driver/main.c
+	M      osprey/driver/stxp70_options.i
+	M      osprey/gccfe/Makefile.gbase
+	M      osprey/gccfe/wfe_loader.h
+	M      osprey/gccfe/wfe_loader.cxx
+	M      osprey/include/sys/elf_whirl.h
+	M      osprey/g++fe/Makefile.gbase
+	M      osprey/common/com/ir_bwrite.cxx
+	M      osprey/common/com/config_elf_targ.h
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/loader.h
+	M      osprey/ipa/common/ipc_main.cxx
+	M      osprey/ipa/common/ipc_compile.cxx
+	M      osprey/ipa/common/ipc_symtab.cxx
+	M      osprey/ipa/inline/inline_summarize.h
+	M      osprey/targinfo/stxp70/config/config_TARG.cxx
+	M      osprey/targinfo/stxp70/config/config_asm.h
+	M      osprey/targinfo/stxp70/config/config_TARG.h
+	M      osprey/targinfo/stxp70/config/config_elf_targ.cxx
+	M      osprey/targinfo/stxp70/config/targ_elf.h
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+	M      osprey/targinfo/st200/config/config_elf_targ.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@18576 --new=https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-stxp70-ipa@18597 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@18576 https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-stxp70-ipa@18597" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/opt/opt_wn.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_wn.cxx?p2=branches/janiny/dev-stxp70-ipa/osprey/be/opt/opt_wn.cxx&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/be/be/driver.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/be/driver.cxx?p2=branches/janiny/dev-stxp70-ipa/osprey/be/be/driver.cxx&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/be/be/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/be/Makefile.gbase?p2=branches/janiny/dev-stxp70-ipa/osprey/be/be/Makefile.gbase&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/ir_tools/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ir_tools/Makefile.gbase?p2=branches/janiny/dev-stxp70-ipa/osprey/ir_tools/Makefile.gbase&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/driver/OPTIONS	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/OPTIONS?p2=branches/janiny/dev-stxp70-ipa/osprey/driver/OPTIONS&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/driver/phases.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/phases.c?p2=branches/janiny/dev-stxp70-ipa/osprey/driver/phases.c&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/driver/main.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/main.c?p2=branches/janiny/dev-stxp70-ipa/osprey/driver/main.c&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/driver/stxp70_options.i	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/stxp70_options.i?p2=branches/janiny/dev-stxp70-ipa/osprey/driver/stxp70_options.i&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/Makefile.gbase?p2=branches/janiny/dev-stxp70-ipa/osprey/gccfe/Makefile.gbase&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_loader.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_loader.h?p2=branches/janiny/dev-stxp70-ipa/osprey/gccfe/wfe_loader.h&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_loader.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_loader.cxx?p2=branches/janiny/dev-stxp70-ipa/osprey/gccfe/wfe_loader.cxx&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/include/sys/elf_whirl.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/include/sys/elf_whirl.h?p2=branches/janiny/dev-stxp70-ipa/osprey/include/sys/elf_whirl.h&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/Makefile.gbase?p2=branches/janiny/dev-stxp70-ipa/osprey/g++fe/Makefile.gbase&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/common/com/ir_bwrite.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/ir_bwrite.cxx?p2=branches/janiny/dev-stxp70-ipa/osprey/common/com/ir_bwrite.cxx&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/common/com/config_elf_targ.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config_elf_targ.h?p2=branches/janiny/dev-stxp70-ipa/osprey/common/com/config_elf_targ.h&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/common/com/loader.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/loader.cxx?p2=branches/janiny/dev-stxp70-ipa/osprey/common/com/loader.cxx&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/common/com/loader.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/loader.h?p2=branches/janiny/dev-stxp70-ipa/osprey/common/com/loader.h&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/ipa/common/ipc_main.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/common/ipc_main.cxx?p2=branches/janiny/dev-stxp70-ipa/osprey/ipa/common/ipc_main.cxx&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/ipa/common/ipc_compile.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/common/ipc_compile.cxx?p2=branches/janiny/dev-stxp70-ipa/osprey/ipa/common/ipc_compile.cxx&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/ipa/common/ipc_symtab.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/common/ipc_symtab.cxx?p2=branches/janiny/dev-stxp70-ipa/osprey/ipa/common/ipc_symtab.cxx&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/ipa/inline/inline_summarize.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/inline/inline_summarize.h?p2=branches/janiny/dev-stxp70-ipa/osprey/ipa/inline/inline_summarize.h&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_TARG.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_TARG.cxx?p2=branches/janiny/dev-stxp70-ipa/osprey/targinfo/stxp70/config/config_TARG.cxx&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_asm.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_asm.h?p2=branches/janiny/dev-stxp70-ipa/osprey/targinfo/stxp70/config/config_asm.h&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_TARG.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_TARG.h?p2=branches/janiny/dev-stxp70-ipa/osprey/targinfo/stxp70/config/config_TARG.h&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_elf_targ.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_elf_targ.cxx?p2=branches/janiny/dev-stxp70-ipa/osprey/targinfo/stxp70/config/config_elf_targ.cxx&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/targ_elf.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/targ_elf.h?p2=branches/janiny/dev-stxp70-ipa/osprey/targinfo/stxp70/config/targ_elf.h&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_target.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_target.cxx?p2=branches/janiny/dev-stxp70-ipa/osprey/targinfo/stxp70/config/config_target.cxx&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/config/config_elf_targ.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/config/config_elf_targ.cxx?p2=branches/janiny/dev-stxp70-ipa/osprey/targinfo/st200/config/config_elf_targ.cxx&r1=18576&r2=18597&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Sep 25 08:34:12 CEST 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

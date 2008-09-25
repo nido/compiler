@@ -752,8 +752,9 @@ Initialize_Extension_Loader ()
 }
 
 /*
- * This function is responsible for setting PREG info To be called by
- * the inliner or ir_b2a (not the front end neither the back end)
+ * This function is responsible for setting PREG info. To be called by
+ * the inliner or ir_b2a (neither the front end nor the back end).
+ * Also called by ipl (IPA first pass - summary phase) and ipa_link.
  */
 void
 Initialize_Extension_Loader_Register () {
@@ -1164,6 +1165,20 @@ TYPE_ID MachineMode_To_Mtype(machine_mode_t mode) {
     FmtAssert((0),("Unexpected mode to mtype conversion %d ", mode));
   }
   return MTYPE_UNKNOWN;
+}
+
+/* 
+ * The following function is used by the IPA process during the
+ * first pass. We need a read access to information enclosed
+ * in dlls.
+ */
+void
+Get_Loader_Extension_Table( Extension_dll_t **ext_tab, mUINT32 *ext_count )
+{ 
+    *ext_tab   = extension_tab;
+    *ext_count = (mUINT32)extension_count;
+
+     return;
 }
 
 machine_mode_t Mtype_To_MachineMode(TYPE_ID mtype) {

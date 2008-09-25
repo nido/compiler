@@ -53,6 +53,10 @@
 #include "ipc_main.h"			// for ipa_dot_so_init
 #include "ir_bread.h"                   // low-level WHIRL I/O routines
 
+#ifdef TARG_ST
+#include "config_elf_targ.h"            // for ELF_WHIRL_has_subset_section
+#endif
+
 static void
 get_global_symtab (IPC_GLOBAL_TABS &gtabs, FILE_INFO &finfo,
 		   an_object_file_ptr p_obj,
@@ -304,6 +308,12 @@ process_whirl (an_object_file_ptr p_obj, int nsec, const Shdr* section_table,
     int                    strtab_idx = 0;
     int                    found_summary = 0;
     int                    pu_section_idx = 0;
+#ifdef TARG_ST
+    int                    whirl_subset_idx = 0;   // index of whirl subset section.
+    BOOL                   should_have_subset_sect;
+
+    should_have_subset_sect = ELF_WHIRL_has_subset_section();
+#endif
 
     if (ld_ipa_opt[LD_IPA_HIDES].flag == HS_DEFAULT)
 	ld_ipa_opt[LD_IPA_HIDES].flag = HS_EXPORTS;
@@ -317,7 +327,7 @@ process_whirl (an_object_file_ptr p_obj, int nsec, const Shdr* section_table,
 	    check_revision (ld_get_section_base (p_obj, i),
 			    section_table[i].sh_size, file_name);
 	} 
-	
+
 	if (section_table[i].sh_type != SHT_MIPS_WHIRL)
 	    continue;
 
@@ -334,10 +344,45 @@ process_whirl (an_object_file_ptr p_obj, int nsec, const Shdr* section_table,
 	case WT_PU_SECTION:
 	    pu_section_idx = i;
 	    break;
+#ifdef TARG_ST
+        case WT_SUBSET:
+            whirl_subset_idx = i;
+            if(!should_have_subset_sect) {
+              DevWarn("Unexpected section of type WT_SUBSET in ELF WHIRL file %s",
+                      file_name);
+            }
+            break;
+#endif
 	default:
 	    break;
 	}
     }
+
+#ifdef TARG_ST
+    // The following code enable us to check that section .WHIRL.subset
+    // describes a list of subsets compatible with subsets described in
+    // other input objects files.
+    //
+    // Some targets don't need/support a subset section. In such
+    // a case coherency check is skipped.
+
+    if(should_have_subset_sect) {
+
+      if(0==whirl_subset_idx) {
+        ErrMsg(EC_IR_Scn_Read, ".WHIRL.subset", file_name);
+      } else {
+	 read_one_section(whirl_subset_idx, p_obj);
+
+         char *base      = ld_get_section_base(p_obj,whirl_subset_idx);
+         Elf64_Word size = section_table[whirl_subset_idx].sh_size;
+          
+         if(FALSE==ELF_WHIRL_check_subset(base,size))
+           ErrMsg(EC_IR_Scn_Read, 
+                  "incorrect or incompatible .WHIRL.subset",
+                  file_name);
+      }
+    }  // should_have_subset_section
+#endif
 
     if (gsymtab_idx == 0 || strtab_idx == 0 || pu_section_idx == 0)
 	ErrMsg (EC_IR_Scn_Read, "symbol table or pu_info", file_name);

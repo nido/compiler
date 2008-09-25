@@ -63,6 +63,10 @@
 #define WT_DST		0x7	    /* WHIRL Debug Symbol Table */
 #define WT_LOCALMAP	0x8	    /* IPAA local map */
 
+#ifdef TARG_ST
+#define WT_SUBSET       0x9         /* Subset Info */
+#endif
+
 /*
  * Special WHIRL section names.
  */
@@ -74,5 +78,9 @@
 #define MIPS_WHIRL_SUMMARY	".WHIRL.summary"
 #define MIPS_WHIRL_DST		".WHIRL.dst"
 #define MIPS_WHIRL_LOCALMAP	".WHIRL.localmap"
+
+#ifdef TARG_ST
+#define MIPS_WHIRL_SUBSET       ".WHIRL.subset"
+#endif
 
 #endif /* __SYS_ELF_WHIRL_H__ */

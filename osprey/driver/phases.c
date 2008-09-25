@@ -1185,6 +1185,15 @@ add_file_args (string_list_t *args, phases_t index)
 		  add_string(args,"--");
 		add_string(args, source_file);
 
+#ifdef TARG_STxP70
+		{ 	char str[32];
+		  	extern unsigned int corecfg;
+         
+			sprintf(str,"-TARG:corecfg=%#x",corecfg);
+			add_string(args,str);
+		}
+#endif
+
 		/* ipl_cmds must be added last */
 		if (ipl_cmds != 0) {
 		    add_string (args, "-cmds");
@@ -1468,6 +1477,7 @@ add_file_args (string_list_t *args, phases_t index)
 		if (show_version) {
 			add_string(args, "-V");
 		}
+
 		/* add lib paths for standard libraries */
 		append_libraries_to_list (args);
 
@@ -2737,6 +2747,12 @@ run_ld (void)
 	add_script_files_args(args);
 #endif
 
+#ifdef TARG_STxP70
+       if (option_was_seen(O_fshort_double) && (ipa == TRUE)) {
+          add_string(args,"-TARG:double_is_short");
+       }
+#endif
+
 #ifdef BCO_ENABLED /* Thierry */
 	if (deadcode == TRUE || icache_opt==TRUE) {
 	  /* next ld phase is a simple link*/
@@ -3517,6 +3533,15 @@ add_ipl_cmd_string (int iflag)
       if ( shared == NON_SHARED ) {
 	add_string (ipl_cmds, "-non_shared");
       }
+#ifdef TARG_STxP70
+      // [YJ] In any cases, we add corecfg information.
+      { extern unsigned int corecfg;
+        char str[32];
+
+        sprintf(str,"-corecfg=%#x",corecfg);
+        add_string(ipl_cmds,str);
+      }
+#endif
     }
     
     /* If this is not one of the driver-recognized options, then
@@ -3565,10 +3590,32 @@ add_ipl_cmd_string (int iflag)
     // [CL] handle derived options which are not normally passed to any phase
     // and which have "" as implied options
     // In this case, rebuild the initial option as provided by the user
+
     if (strlen(name) > 0 && is_derived_option(iflag)
 	&& option_phases(iflag)==0
 	&& !has_implied_option(get_derived_parent(iflag))) {
       name = concat_strings (get_option_name(get_derived_parent(iflag)), name);
+    }
+#endif
+
+#ifdef TARG_STxP70
+     if(strlen(name)>0 && 0==strcmp(name,"-Mextension"))  {
+         extern char Mextension_str[256];
+
+         if(Mextension_str[0]!='\0')
+            name = (string) Mextension_str;
+         else
+            name = (string) "-Mextension=x3";
+    }
+
+    // We have already had -corecfg information in the *cc file. 
+    // Thus adding -Mconfig is redundant. Skip process.
+    if(strlen(name)>0 && 0==strcmp(name,"-Mconfig")) {
+        return;
+    }
+
+    if(iflag==O_fshort_double) {
+        name = (string) "-fshort-double";
     }
 #endif
 

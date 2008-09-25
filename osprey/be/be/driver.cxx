@@ -132,6 +132,7 @@
 #include "loader.h"
 #include "ext_info.h"
 #endif
+ 
 extern void* Initialize_Targ_Info(void);
 
 // symbols defined in cg.so
@@ -2216,9 +2217,13 @@ main (INT argc, char **argv)
 #ifdef TARG_ST
   //TB: initialized mtypes and builtins for extensions 
   Initialize_Extension_Loader ();
+  if(Run_ipl)
+    Initialize_Extension_Loader_Register();
 #endif
+
   /* decide which phase to call */
   load_components (argc, argv);
+
 #ifdef TARG_ST
   // [TTh] Perform early exit when checking extension compatibility
   if (Run_extension_check_only) {

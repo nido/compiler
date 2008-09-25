@@ -42,6 +42,7 @@
 #include "config_list.h" 
 #ifdef TARG_ST 
 #include "config_target.h"
+#include "flags.h"                      /* for Common_Option_Groups */
 #else
 #include "config_targ.h"		/* for Target_ABI */
 #endif
@@ -155,6 +156,7 @@ void ipa_initialize_external_symbols(struct external_symbols_list* ipa_external_
 #ifdef TARG_ST
 // TB: Extension loader initialization (loader.h).
 BE_EXPORTED extern void Initialize_Extension_Loader(void);
+BE_EXPORTED extern void Initialize_Extension_Loader_Register(void);
 #endif
 
 void
@@ -176,19 +178,6 @@ ipa_dot_so_init ()
     Init_Operator_To_Opcode_Table ();
 
 #ifdef TARG_ST
-    //TB: initialized mtypes and builtins for extensions 
-    Initialize_Extension_Loader ();
-#endif
-
-    Initialize_Symbol_Tables (TRUE);
-    Initialize_Auxiliary_Tables ();
-    
-    MEM_POOL_Initialize (&Type_Merge_Pool, "TY Merge Pool", 0);
-    Initialize_Type_Merging_Hash_Tables (&Type_Merge_Pool);
-	
-    Set_FILE_INFO_ipa (File_info);	// mark the symtab IPA-generated
-
-#ifdef TARG_ST
     // [CL] all this processing should be made
     // upon initialization, so that proper 
     // code generation options are selected before
@@ -204,8 +193,28 @@ ipa_dot_so_init ()
     IPA_Enable_DST = TRUE;
 #endif
 
+    //YJ: the following sequence of code performs the following
+    //    actions:
+    //    1) parsing of command line arguments filtered by ld.
+    //    In particular, we have to detect the subsets/extensions
+    //    dlls that must be loaded.
+    //    2) [TB] initialization of mtypes and builtins
+    //    for subsets/extensions.
+    //    3) initialization of subset/extension registers
+    //    and pregs.
+
     Process_IPA_Options (argc, argv);
-#endif
+    Initialize_Extension_Loader ();
+    Initialize_Extension_Loader_Register ();
+#endif    /* TARG_ST */
+
+    Initialize_Symbol_Tables (TRUE);
+    Initialize_Auxiliary_Tables ();
+    
+    MEM_POOL_Initialize (&Type_Merge_Pool, "TY Merge Pool", 0);
+    Initialize_Type_Merging_Hash_Tables (&Type_Merge_Pool);
+	
+    Set_FILE_INFO_ipa (File_info);	// mark the symtab IPA-generated
 
     if (ld_ipa_opt[LD_IPA_SHARABLE].flag == F_CALL_SHARED_RELOC)
         IPA_Enable_Relocatable_Opt = TRUE;

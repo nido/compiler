@@ -695,6 +695,50 @@ WN_write_globals (Output_File *fl)
 
 } // WN_write_globals
 
+#ifdef TARG_ST
+namespace {    // Anonymous namespace.
+/*
+ *
+ * Write out information on subset. This information is essentially
+ * target dependent.
+ *
+ */
+void 
+WN_write_subset_info (Output_File *fl)
+{
+    // Create a next "subset" section.
+    char      *buf;
+    Elf64_Word size;
+    Section   *cur_section;
+    UINT32     align = sizeof(mINT64);
+    MEM_POOL  *pool  = Malloc_Mem_Pool; 
+
+    cur_section = get_section (WT_SUBSET, MIPS_WHIRL_SUBSET, fl);
+
+    // Alignment on an INT64 boundary is safer since
+    // we call a target dependent routine.
+    fl->file_size = ir_b_align (fl->file_size, align, 0);
+
+    cur_section->shdr.sh_offset = fl->file_size;
+
+    // Get buffer that contains subset info.
+    ELF_WHIRL_subset_info_buf(pool,&buf,&size);
+    
+    // Write down this buffer.
+    if(buf) 
+      ir_b_save_buf((const void*)buf,size,align,0U,fl);
+
+    cur_section->shdr.sh_size = fl->file_size - cur_section->shdr.sh_offset;
+    cur_section->shdr.sh_addralign = sizeof(mINT64);
+
+    if(buf) {
+      MEM_POOL_FREE(pool,(void*)buf);
+    }
+}       // WN_write_subset_info
+
+}       // End of anonymous namespace
+#endif  // TARG_ST
+
 
 void
 WN_write_symtab (PU_Info *pu, Output_File *fl)
@@ -1443,6 +1487,13 @@ Write_Global_Info (PU_Info *pu_tree)
     CXX_DELETE(stbuffer, stbuffer->pool());
 #else
     WN_write_strtab(Index_To_Str (0), STR_Table_Size (), ir_output);
+#endif
+
+#ifdef TARG_ST
+    // Not all targets have a subset section and it's useless
+    // to create an ELF empty section.
+    if(ELF_WHIRL_has_subset_section())
+       WN_write_subset_info(ir_output);
 #endif
 
 }

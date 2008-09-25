@@ -39,6 +39,10 @@
 extern "C" {
 #endif
 
+#ifdef TARG_ST
+#include "mempool.h"
+#endif
+
 /* ====================================================================
  * ====================================================================
  *
@@ -57,6 +61,12 @@ BE_EXPORTED extern void
 Config_Target_From_ELF (Elf64_Word e_flags, BOOL *is_64bit, INT *isa);
 BE_EXPORTED extern Elf32_Word Config_ELF_From_Target (BOOL is_64bit, BOOL old_abi, INT isa);
 BE_EXPORTED extern Elf32_Half Get_Elf_Target_Machine (void);
+
+#ifdef TARG_ST
+BE_EXPORTED extern BOOL ELF_WHIRL_has_subset_section (void);
+BE_EXPORTED extern void ELF_WHIRL_subset_info_buf    (MEM_POOL *pool, char **buf, Elf64_Word *size);
+BE_EXPORTED extern BOOL ELF_WHIRL_check_subset       (char *base, Elf64_Word size);
+#endif
 
 #ifdef __cplusplus
 }

@@ -58,6 +58,7 @@
 #include "targ_elf.h"
 #include "config_target.h"
 #include "config.h"
+#include "mempool.h"
 #endif
 
 /* ====================================================================
@@ -252,4 +253,60 @@ Get_Elf_Target_Machine (void)
   return EM_ST200;
 }
 
+
+/* =====================================================================
+ *   ELF_WHIRL_has_subset_section
+ *
+ *   Returns TRUE if WHIRL files generated in IPA process (ipl) contains
+ *   a specific section (.WHIRL.subset) containing target specific
+ *   information on subsets.
+ *
+ *   Subset section isn't implemented yet for ST200.
+ * =====================================================================
+ */
+BOOL
+ELF_WHIRL_has_subset_section (void)
+{
+    return FALSE;
+}
+
+/* ======================================================================
+ *   ELF_WHIRL_subset_info_buf
+ *
+ *   Returns a buffer that contains subset information for ELF WHIRL
+ *   file.
+ *
+ *   Input:  pool (MEM_POOL*)  memory pool where buffer is to be allocated.
+ *   Output: buf  (char**)     buffer address or NULL.
+ *           size (Elf64_Word) buffer size or 0.
+ *
+ *   Should never be called.
+ * =====================================================================
+ */
+void
+ELF_WHIRL_subset_info_buf (MEM_POOL *pool, char **buf, Elf64_Word *size)
+{
+     *buf  = NULL;
+     *size = (Elf64_Word)0;
+
+      FmtAssert(FALSE,
+               ("Routine ELF_WHIRL_subset_info_buf should never be called"));
+      return;
+}
+
+/* ======================================================================
+ *   ELF_WHIRL_check_subset
+ *
+ *   Check that a subset section in correct.
+ *
+ *   Should never be called.
+ * =====================================================================
+ */
+BOOL
+ELF_WHIRL_check_subset (char *base, Elf64_Word size)
+{
+    FmtAssert(FALSE,
+             ("Routine ELF_WHIRL_check_subset should never be called"));
+    return TRUE;
+}
 
