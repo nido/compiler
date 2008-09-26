@@ -74,19 +74,7 @@ void Configure_CG_Target() {
   // Bundle formation is OFF by default
   LOCS_Enable_Bundle_Formation = TRUE;
 
-  // GCM settings: ON by default
-  GCM_Enable_Scheduling = FALSE;
-  GCM_Speculative_Loads = FALSE;
-  GCM_Predicated_Loads = FALSE;
-  GCM_Motion_Across_Calls = FALSE;
-  GCM_Min_Reg_Usage = TRUE;
-  GCM_Pointer_Spec = FALSE;
-  GCM_Eager_Ptr_Deref = FALSE;
-  GCM_Test = FALSE;
-  GCM_Enable_Cflow = FALSE;
-  GCM_PRE_Enable_Scheduling = FALSE;
-  GCM_POST_Enable_Scheduling = FALSE;
-  GCM_Enable_Fill_Delay_Slots = FALSE;
+  // GCM settings: ON by default => See cgdriver for specification
 
   // Reorder while LRA
   LRA_do_reorder = FALSE;

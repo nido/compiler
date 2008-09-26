@@ -128,7 +128,7 @@ Verify_HB(
         }
       }
 
-#ifdef TARG_ST200
+#ifdef TARG_ST
       // (cbr) This code crashes if the region is a loop. need to test
       // if the block has already been processed, meaning we are in a loop.
       // Don't recurse in that case.

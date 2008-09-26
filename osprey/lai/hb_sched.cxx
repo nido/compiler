@@ -1010,7 +1010,7 @@ Compute_Fwd_OPSCH (BB *bb, BB_MAP value_map, INT *max_lstart)
       ARC *arc = ARC_LIST_first(arcs);
       OP *succ_op = ARC_succ(arc);
       OPSCH *succ_opsch = OP_opsch(succ_op, value_map);
-      if (!Is_Ldst_Addiu_Pair (opsch, succ_opsch, op, succ_op)) {
+      if (!Is_Ldst_Addiu_Pair (opsch, succ_opsch, op, succ_op) ) {
         INT cur_estart = Calculate_Adjust_Latency(arc) + op_estart;
         if (OPSCH_estart(succ_opsch) < cur_estart) {
           OPSCH_estart(succ_opsch) = cur_estart;
@@ -1445,7 +1445,7 @@ Priority_Selector::Is_OP_Better (OP *cur_op, OP *best_op)
     if (OPSCH_estart(cur_opsch) < OPSCH_estart(best_opsch)) return FALSE;
 
 #ifdef TARG_ST
-    if (Is_Ldst_Addiu_Pair(cur_opsch, best_opsch, cur_op, best_op)) {
+    if (Is_Ldst_Addiu_Pair(cur_opsch, best_opsch, cur_op, best_op) &&  !OP_Is_Cmp_Eq_Ne(cur_op) && !OP_Is_Cmp_Eq_Ne(best_op)) {
       // FdF 15/12/2003: return the one which is the source of a REGIN
       // dependence or the destination of a REGANTI dependence.
       ARC_LIST *arcs;

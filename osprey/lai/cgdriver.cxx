@@ -247,11 +247,13 @@ static BOOL CG_cbpo_optimize_load_imm_cst_overridden = FALSE;
 BOOL CG_cbpo_facto_cst = FALSE;
 static BOOL CG_cbpo_facto_cst_overridden = FALSE;
 
+static BOOL GCM_PRE_Enable_Scheduling_overridden = FALSE;
+static BOOL GCM_Forw_Circ_Motion_overridden = FALSE;
+
 BOOL  CG_ifc_subpart = FALSE ;
 static BOOL CG_ifc_subpart_overridden = FALSE;
 
 BOOL  CG_safe_memmove = FALSE ;
-
 
 #   ifdef TARG_STxP70
 #      define DEFAULT_LOAD_IMM(opt_level, opt_space) TRUE
@@ -866,11 +868,16 @@ static OPTION_DESC Options_CG[] = {
 
   // Global Code Motion (GCM) options.
 
-  {OVK_BOOL,	OV_INTERNAL, TRUE, "gcm", "gcm",
+  {OVK_BOOL,    OV_INTERNAL, TRUE, "gcm", "gcm",
     0, 0, 0, &GCM_Enable_Scheduling, NULL },
+#ifdef TARG_ST
   {OVK_BOOL,	OV_INTERNAL, TRUE, "pre_gcm", "pre_gcm",
+    0, 0, 0, &GCM_PRE_Enable_Scheduling, &GCM_PRE_Enable_Scheduling_overridden },
+#else
+  {OVK_BOOL,    OV_INTERNAL, TRUE, "pre_gcm", "pre_gcm",
     0, 0, 0, &GCM_PRE_Enable_Scheduling, NULL },
-  {OVK_BOOL,	OV_INTERNAL, TRUE, "post_gcm", "post_gcm",
+#endif
+  {OVK_BOOL,    OV_INTERNAL, TRUE, "post_gcm", "post_gcm",
     0, 0, 0, &GCM_POST_Enable_Scheduling, NULL },
   {OVK_BOOL,	OV_INTERNAL, TRUE, "force_post_gcm", "force_post_gcm",
     0, 0, 0, &GCM_POST_Force_Scheduling, NULL },
@@ -892,10 +899,15 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0, &GCM_Speculative_Loads, NULL},
   {OVK_BOOL,	OV_INTERNAL, TRUE, "predicated_loads", "",
     0, 0, 0, &GCM_Predicated_Loads, NULL},
+#ifdef TARG_ST
   {OVK_BOOL,	OV_INTERNAL, TRUE, "forw_circ_motion", "",
+    0, 0, 0, &GCM_Forw_Circ_Motion, &GCM_Forw_Circ_Motion_overridden},
+#else
+  {OVK_BOOL,    OV_INTERNAL, TRUE, "forw_circ_motion", "",
     0, 0, 0, &GCM_Forw_Circ_Motion, NULL},
-  {OVK_BOOL,	OV_INTERNAL, TRUE, "gcm_minimize_reg_usage", "",
-    0, 0, 0, &GCM_Min_Reg_Usage, NULL},
+#endif
+  {OVK_BOOL,    OV_INTERNAL, TRUE, "gcm_minimize_reg_usage", "",
+    0, 0, 0, &GCM_Min_Reg_Usage,  NULL},
   {OVK_BOOL,	OV_INTERNAL, TRUE, "gcm_test", "",
     0, 0, 0, &GCM_Test, NULL},
   {OVK_BOOL,	OV_INTERNAL, TRUE, "skip_gcm", "",
@@ -1753,9 +1765,7 @@ Configure_CG_Options(void)
   if ((CG_opt_level >= 1) && !CFLOW_enable_last_pass_overridden) {
     CFLOW_enable_last_pass = TRUE;
   }
-#endif
 
-#ifdef TARG_STxP70
   /* always push pop unless user override the value. */
   if (!CG_gen_callee_saved_regs_mask_overriden)
       CG_gen_callee_saved_regs_mask = TRUE;
@@ -2099,8 +2109,14 @@ CG_Apply_Opt_Level(UINT32 level)
   if (!LOCS_POST_Scheduling_overriden) {
 	  LOCS_POST_Scheduling = Optimized_Double_Load_Sched;
   }
-
 #endif
+#ifdef TARG_ST
+    // TDR: Modify global code motion default values
+  if (!GCM_PRE_Enable_Scheduling_overridden)   	GCM_PRE_Enable_Scheduling = FALSE;
+  if (!GCM_Forw_Circ_Motion_overridden)         GCM_Forw_Circ_Motion = FALSE;
+#endif
+  
+  
 }
 
 /* ====================================================================
@@ -2190,7 +2206,6 @@ CG_Apply_Opt_Size(UINT32 level)
   if (!LOCS_POST_Scheduling_overriden) {
 	  LOCS_POST_Scheduling = Optimized_Load_Sched; 
   }
-
 #endif
 }
 #endif

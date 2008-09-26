@@ -1,6 +1,33 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Sep 26 11:21:35 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-hbs
+
+Description:
+------------
+	* [trunk] Deliver dt25/dev-hbs rev #18610 with authorization branch #50917
+
+
+Modified Files:
+---------------
+	M      osprey/lai/gcm.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/hb_sched.cxx
+	M      osprey/lai/hb_block_select.cxx
+	M      osprey/lai/cgtarget.h
+	M      osprey/targinfo/stxp70/config/cg_flags_arch.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/config/cg_flags_arch.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Sep 25 18:04:37 CEST 2008
 	Author:    janiny
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

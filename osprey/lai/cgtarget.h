@@ -926,6 +926,7 @@ extern BOOL CGTARG_sequence_is_cheaper_than_load_imm(OPS* ops, OP* op);
 extern TOP CGTARG_TOP_To_Multi(TOP top);
 extern TOP CGTARG_TOP_From_Multi(TOP top);
 extern BOOL CGTARG_should_factorize(OP* first, OP* last);
+extern BOOL CGTARG_gcm_should_not_move_op(OP *op);
 #endif
 
 // Checks to see if <stop> bit is available at <slot> position in the

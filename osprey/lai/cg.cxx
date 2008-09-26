@@ -711,12 +711,16 @@ CG_Generate_Code(
   }
   
   if (CG_opt_level > 1 && !CG_localize_tns) {
-#if defined(TARG_IA64)
+#if defined(TARG_IA64) || defined(TARG_ST)
     //
     // Perform hyperblock formation (if-conversion). 
     // Depending on the flags makes Hyperblocks or Superblocks.
     //
-    if (CGTARG_Can_Predicate() || CGTARG_Can_Select()) {
+#ifdef TARG_ST
+      if (HB_formation && (CGTARG_Can_Predicate() || CGTARG_Can_Select())) {
+#else
+      if (CGTARG_Can_Predicate() || CGTARG_Can_Select()) {
+#endif
       // Initialize the predicate query system in the hyperblock 
       // formation phase
       HB_Form_Hyperblocks(region ? REGION_get_rid(rwn) : NULL, NULL);
