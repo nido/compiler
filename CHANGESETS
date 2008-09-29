@@ -1,6 +1,31 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Sep 29 10:27:28 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-51901
+
+Description:
+------------
+	* [trunk] Fix for bug #51901: [EXT] Various problems when using several user-defined extensions.
+		-> Fix in extension loader: the renumbering of extension intrinsic types was
+		                            not done for some data structures
+		-> Fix in driver: stxp70extrc file of toolset directory was parsed at each new
+		                  -Mextension command line switch. It is now parsed only at
+				  first occurence.
+	Deliver fixes/codex-51901 rev #18631 with authorization branch #51919
+
+
+Modified Files:
+---------------
+	M      osprey/driver/stxp70_options.i
+	M      osprey/common/com/loader.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Sep 29 09:40:18 CEST 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

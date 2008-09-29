@@ -319,7 +319,7 @@ Add_Intrinsic(const Extension_dll_t *dll_instance,
   // parameters.
   TYPE_ID outmtype[INTRN_MAX_ARG];
   for (int arg = 0; arg < btypes->arg_count; arg++) {
-    outmtype[arg] = MachineMode_To_Mtype(btypes->arg_type[arg]);
+    outmtype[arg] = MachineMode_To_Mtype(DLL_TO_GLOBAL_MMODE(dll_instance, btypes->arg_type[arg]));
   }
   INTRN_INOUT_TYPE inouttype[INTRN_MAX_ARG];
   int nb_out = 0;
@@ -338,8 +338,8 @@ Add_Intrinsic(const Extension_dll_t *dll_instance,
   
   proto_info->arg_type = TYPE_MEM_POOL_ALLOC_N(TYPE_ID, Malloc_Mem_Pool, btypes->arg_count);
   memcpy(proto_info->arg_type, outmtype, btypes->arg_count*sizeof(TYPE_ID));
-  proto_info->arg_inout =  TYPE_MEM_POOL_ALLOC_N(INTRN_INOUT_TYPE, Malloc_Mem_Pool, btypes->arg_count);
-  memcpy(proto_info->arg_inout, inouttype, btypes->arg_count*sizeof(TYPE_ID));
+  proto_info->arg_inout = TYPE_MEM_POOL_ALLOC_N(INTRN_INOUT_TYPE, Malloc_Mem_Pool, btypes->arg_count);
+  memcpy(proto_info->arg_inout, inouttype, btypes->arg_count*sizeof(INTRN_INOUT_TYPE));
   
   proto_info->argument_count = btypes->arg_count;
   proto_info->arg_out_count  = nb_out;
@@ -355,14 +355,14 @@ Add_Intrinsic(const Extension_dll_t *dll_instance,
   }
   
   // Initialize returned type
-  proto_info->return_type = MachineMode_To_Mtype(btypes->return_type);
-  intrn_info[intrn_id].return_kind = INTRN_return_kind_for_mtype(MachineMode_To_Mtype(btypes->return_type));
+  TYPE_ID ret_mtype = MachineMode_To_Mtype(DLL_TO_GLOBAL_MMODE(dll_instance, btypes->return_type));
+  proto_info->return_type = ret_mtype;
+  intrn_info[intrn_id].return_kind = INTRN_return_kind_for_mtype(ret_mtype);
 
   // Build tables used for code generation
   {
     if (is_DYN_INTRN_CLR(*btypes)) {
-      TYPE_ID ext_ty =  MachineMode_To_Mtype(btypes->return_type);
-      equiv_type_tab[ext_ty].clr_intrn = intrn_id;
+      equiv_type_tab[ret_mtype].clr_intrn = intrn_id;
     }
     
     if (is_DYN_INTRN_CONVERT_FROM_U32(*btypes)) {
@@ -371,14 +371,14 @@ Add_Intrinsic(const Extension_dll_t *dll_instance,
     }
     
     if (is_DYN_INTRN_CONVERT_TO_CTYPE(*btypes)) {
-    TYPE_ID ext_ty = MachineMode_To_Mtype(btypes->arg_type[0]);
-    TYPE_ID c_ty   = MachineMode_To_Mtype(btypes->return_type);
-    equiv_type_tab[ext_ty].ctype = MTYPE_is_signed(c_ty)?MTYPE_complement(c_ty):c_ty; // Register unsigned type
-    equiv_type_tab[ext_ty].intrn_to_c = intrn_id;
+      TYPE_ID ext_ty = proto_info->arg_type[0];
+      TYPE_ID c_ty   = ret_mtype;
+      equiv_type_tab[ext_ty].ctype = MTYPE_is_signed(c_ty)?MTYPE_complement(c_ty):c_ty; // Register unsigned type
+      equiv_type_tab[ext_ty].intrn_to_c = intrn_id;
     }
     else if (is_DYN_INTRN_CONVERT_FROM_CTYPE(*btypes)) {
-      TYPE_ID c_ty   = MachineMode_To_Mtype(btypes->arg_type[0]);
-      TYPE_ID ext_ty = MachineMode_To_Mtype(btypes->return_type);
+      TYPE_ID c_ty   = proto_info->arg_type[0];
+      TYPE_ID ext_ty = ret_mtype;
       equiv_type_tab[ext_ty].ctype = MTYPE_is_signed(c_ty)?MTYPE_complement(c_ty):c_ty; // Register unsigned type
       equiv_type_tab[ext_ty].intrn_to_ext = intrn_id;
     }
