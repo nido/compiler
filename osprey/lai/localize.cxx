@@ -670,6 +670,22 @@ Get_Local_TN_For_Global (TN *global_tn, TN_MAP spill_tns, BB *bb, BOOL reuse)
   return tninfo;
 }
 
+#ifdef TARG_ST
+/*
+ * [TTh] If specified op is marked as belonging to the prologue, then
+ * propagate this information to all operations of ops list.
+ */
+static void
+Propagate_Prologue_Info(OPS *ops, OP *op) {
+  OP *walker;
+  if (OP_prologue(op)) {
+    FOR_ALL_OPS_OPs_FWD(ops, walker) {
+      Set_OP_prologue(walker);
+    }
+  }
+}
+#endif
+
 /*
  * Iterate over BBs and insert spills of any global TNs in the BB, 
  * so all TNs become local.
@@ -735,6 +751,9 @@ Insert_Spills_Of_Globals (void)
 	    TN *new_tn = Build_TN_Like(tn);
 	    Set_OP_opnd(op, opndnum, new_tn);
 	    Exp_COPY(new_tn, tn, &ops);
+#ifdef TARG_ST
+	    Propagate_Prologue_Info(&ops, op);
+#endif
 	    BB_Insert_Ops(OP_bb(op), op, &ops, TRUE);
 	  }
 	}
@@ -748,6 +767,9 @@ Insert_Spills_Of_Globals (void)
 	    TN *new_tn = Build_TN_Like(tn);
 	    Set_OP_result(op, resnum, new_tn);
 	    Exp_COPY(tn, new_tn, &ops);
+#ifdef TARG_ST
+	    Propagate_Prologue_Info(&ops, op);
+#endif
 	    BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
 	  }
 	}
@@ -832,6 +854,9 @@ Insert_Spills_Of_Globals (void)
         OPS_Init(&spill_ops);
         CGSPILL_Store_To_Memory (tninfo->local_tn, spill_loc,
                                  &spill_ops, CGSPILL_LCL, bb);
+#ifdef TARG_ST
+	Propagate_Prologue_Info(&spill_ops, tninfo->last_def);
+#endif
         CGSPILL_Insert_Ops_After (bb, tninfo->last_def, &spill_ops);
       } 
       if (tninfo->exposed_use != NULL) {
@@ -840,6 +865,9 @@ Insert_Spills_Of_Globals (void)
         OPS_Init(&spill_ops);
         CGSPILL_Load_From_Memory (tninfo->exposed_use_tn, spill_loc,
                                   &spill_ops, CGSPILL_LCL, bb);
+#ifdef TARG_ST
+	Propagate_Prologue_Info(&spill_ops, tninfo->exposed_use);
+#endif
         CGSPILL_Insert_Ops_Before (bb, tninfo->exposed_use, &spill_ops);
       }
     }

@@ -5098,6 +5098,9 @@ Assemble_Ops (
   OP *op;
 
 #ifdef TARG_ST
+  BOOL first_op = TRUE;
+  BOOL previous_op_is_prologue = BB_entry(bb);
+
   Bundle_Count = 0;
   if ((BB_first_op(bb) != NULL) && (OP_scycle(BB_first_op(bb)) != -1))
     Bundle_Count = OP_scycle(BB_first_op(bb));
@@ -5112,6 +5115,20 @@ Assemble_Ops (
     INT words;
 
     if (OP_dummy(op)) continue;		// these don't get emitted
+
+#ifdef TARG_ST
+    // Fix for bug #49902: Force the generation of a new line entry
+    // at the end of the prologue.
+    // Equivalent fix is present in Assemble_Bundles()
+    if (first_op) {
+      previous_op_is_prologue = OP_prologue(op);
+      first_op = FALSE;
+    }
+    else if (previous_op_is_prologue && !OP_prologue(op)) {
+      Cg_Dwarf_Add_Line_Entry (PC, OP_srcpos(op), TRUE);
+      previous_op_is_prologue = FALSE;
+    }
+#endif
 
     if (OP_simulated(op)) {
 #ifdef TARG_ST
@@ -5178,6 +5195,7 @@ Assemble_Bundles(BB *bb)
 
 #ifdef TARG_ST
   // [CL] track prologue and epilogue
+  BOOL first_bundle = TRUE;
   BOOL bundle_has_prologue;
   BOOL bundle_has_epilogue;
   BOOL previous_bundle_has_prologue=FALSE;
@@ -5546,7 +5564,13 @@ Assemble_Bundles(BB *bb)
 
 #ifdef TARG_ST
     // [CL]
-    previous_bundle_has_prologue = bundle_has_prologue;
+    if (first_bundle) {
+      previous_bundle_has_prologue = bundle_has_prologue;
+      first_bundle = FALSE;
+    }
+    else if (!bundle_has_prologue) {
+      previous_bundle_has_prologue = bundle_has_prologue;
+    }
     if (bundle_has_epilogue) {
       epilogue_has_started = TRUE;
     }

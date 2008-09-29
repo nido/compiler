@@ -1,6 +1,34 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Sep 29 09:18:45 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-49902
+
+Description:
+------------
+	* [trunk] Fix for bug #49902: [DWARF] Bad dwarf function address when compiled in optimized mode -O2.
+		-> 2 fixes for debuggging information generation:
+i		  (1) In cgemit.cxx/Assemble_Ops(), Force the generation of a debug line
+		      when the last operation of the prologue has been reached. 
+	              (This fix does not impact architecture with bundling)
+		  (2) In whirl2ops, Insure that all ops of the prologue are marked.
+		      Previously, with multi-BB prologue, only the last BB was correctly handled.
+		      Localize phase has also been updated to propagate the prologue information, when relevant.
+	Deliver fixes/codex-49902 rev #18623 with authorization branch #52025
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/localize.cxx
+	M      osprey/lai/whirl2ops.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Sep 26 11:21:35 CEST 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

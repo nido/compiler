@@ -823,6 +823,26 @@ Process_OPs_For_Stmt (void)
 #endif
 }
 
+#ifdef TARG_ST
+/* [TTh] Annotate operations of previously generated BBs
+ * as belonging to the prologue.
+ */
+static void
+Annotate_Previous_BB_As_Prologue(void)
+{
+  BB *prev_bb;
+  prev_bb = BB_prev(Cur_BB);
+  while (prev_bb) {
+    OP *op = BB_first_op(prev_bb);
+    while (op) {
+      Set_OP_prologue(op);
+      op = OP_next(op);
+    }
+    prev_bb = BB_prev(prev_bb);
+  }
+}
+#endif
+
 /* ====================================================================
  *   Allocate_Result_TN
  *
@@ -6028,6 +6048,7 @@ Expand_Statement (
 	for (op=OPS_first(&New_OPs); op != NULL ; op=OP_next(op)) {
 	  Set_OP_prologue(op);
 	}
+	Annotate_Previous_BB_As_Prologue();
       }
 #else
     if (WN_Pragma_Users(WN_pragma(stmt)) & PUSER_CG) {
