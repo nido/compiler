@@ -145,6 +145,7 @@ typedef struct {
   INTRINSIC intrn_to_ext;
   INTRINSIC intrn_to_c;
   INTRINSIC clr_intrn;
+  INTRINSIC from_u32_intrn; // Unsigned 32bits to ext register
 } equiv_type_t;
 static equiv_type_t equiv_type_tab[MTYPE_MAX_LIMIT+1];
 static INT equiv_type_enabled = 1;
@@ -362,6 +363,11 @@ Add_Intrinsic(const Extension_dll_t *dll_instance,
     if (is_DYN_INTRN_CLR(*btypes)) {
       TYPE_ID ext_ty =  MachineMode_To_Mtype(btypes->return_type);
       equiv_type_tab[ext_ty].clr_intrn = intrn_id;
+    }
+    
+    if (is_DYN_INTRN_CONVERT_FROM_U32(*btypes)) {
+      TYPE_ID ext_ty =  MachineMode_To_Mtype(btypes->return_type);
+      equiv_type_tab[ext_ty].from_u32_intrn = intrn_id;
     }
     
     if (is_DYN_INTRN_CONVERT_TO_CTYPE(*btypes)) {
@@ -703,10 +709,11 @@ Initialize_Extension_Loader ()
   
 
   for (i=0; i<=MTYPE_MAX_LIMIT; i++) {
-    equiv_type_tab[i].ctype        = MTYPE_UNKNOWN;
-    equiv_type_tab[i].intrn_to_c   = INTRINSIC_INVALID;
-    equiv_type_tab[i].intrn_to_ext = INTRINSIC_INVALID;
-    equiv_type_tab[i].clr_intrn    = INTRINSIC_INVALID;
+    equiv_type_tab[i].ctype          = MTYPE_UNKNOWN;
+    equiv_type_tab[i].intrn_to_c     = INTRINSIC_INVALID;
+    equiv_type_tab[i].intrn_to_ext   = INTRINSIC_INVALID;
+    equiv_type_tab[i].clr_intrn      = INTRINSIC_INVALID;
+    equiv_type_tab[i].from_u32_intrn = INTRINSIC_INVALID;
   }
 
   if (Extension_Is_Present) {
@@ -1246,13 +1253,29 @@ TYPE_ID EXTENSION_Get_Equivalent_Mtype(TYPE_ID ext_ty) {
 /** 
  * return clr intrinsic for mtype, if defined.
  * 
- * @param ty 
+ * @param ty type of the destination
  * 
  * @return 
  */
 INTRINSIC EXTENSION_Get_CLR_Intrinsic(TYPE_ID ty) {
   if (MTYPE_is_dynamic(ty)) {
     return equiv_type_tab[ty].clr_intrn;
+  }
+  return INTRINSIC_INVALID;
+}
+
+/**
+ * return intrinsic used to initialize an extension type variable
+ * with a 32bits unsigned data. return INTRINSIC_INVALID if not
+ * defined.
+ * 
+ * @param ty type of the destination
+ *
+ * @return
+ */
+INTRINSIC EXTENSION_Get_Convert_From_U32_Intrinsic(TYPE_ID ty) {
+  if (MTYPE_is_dynamic(ty)) {
+    return equiv_type_tab[ty].from_u32_intrn;
   }
   return INTRINSIC_INVALID;
 }

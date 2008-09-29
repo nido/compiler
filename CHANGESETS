@@ -1,6 +1,37 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Sep 29 09:40:18 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x-immediate
+
+Description:
+------------
+	* [trunk] Deliver tt2/dev-MP1x-immediate rev #18627 with authorization branch #51943
+		-> detects and transforms initialization of extension variables
+		   with a 64 bits immediate that fits in 32 bits range.
+		-> Enable the definition of implicit parameters for some intrinsics
+		   used in extension code generation.
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/ext_lower.cxx
+	M      osprey/common/com/intrn_info.h
+	M      osprey/common/com/dyn_dll_api.h
+	M      osprey/common/com/mtypes.cxx
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/mtypes.h
+	M      osprey/common/com/ext_info.h
+	M      osprey/common/com/extension_intrinsic.h
+	M      osprey/targinfo/stxp70/be/targ_pattern_rec.cxx
+	M      osprey/targinfo/st200/be/targ_pattern_rec.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Sep 29 09:18:45 CEST 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

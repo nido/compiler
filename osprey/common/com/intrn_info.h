@@ -242,12 +242,12 @@ inline BOOL INTRN_is_inout_param(int num, proto_intrn_info_t  *built_info){
   return (built_info->arg_inout[num] == INTRN_INOUT);
 }
 
-//Return the number of inout and out parameters
+//Return the cumulated number of inout and out parameters
 inline int INTRN_number_of_out_param(proto_intrn_info_t  *built_info){
   return (built_info->arg_out_count);
 }
 
-//Return the number of inout and out parameters
+//Return the cumulated number of inout and in parameters
 inline int INTRN_number_of_in_param(proto_intrn_info_t  *built_info){
   return (built_info->arg_in_count);
 }

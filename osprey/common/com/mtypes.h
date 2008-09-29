@@ -290,6 +290,10 @@ BE_EXPORTED extern TYPE_ID Mtype_comparison( TYPE_ID );
 BE_EXPORTED extern TYPE_ID Mtype_next_alignment( TYPE_ID ); 
 BE_EXPORTED extern TYPE_ID Mtype_prev_alignment( TYPE_ID ); 
 
+#ifdef TARG_ST
+BE_EXPORTED extern BOOL Mtype_Int_Value_In_Range( TYPE_ID, INT64 );
+#endif
+
 #ifdef __cplusplus 
 } 
 #endif 

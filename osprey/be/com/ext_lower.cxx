@@ -585,20 +585,25 @@ Create_Convert_Node(TYPE_ID dst, WN* tree)
   return tree;
 }
 
+
 /* forward declaration */
 static WN *EXT_LOWER_expr(WN *tree, WN** new_stmts, BOOL* modified);
 
 /** 
  * auxiliary function that builds an intrinsic WN.
+ * Note: this function should not be called directly,
+ *       BETARG_Create_Intrinsic_from_OP() should be called instead.
  *
- * @param res 
- * @param intrinsic 
+ * @param intrnidx
  * @param nbkids 
  * @param kids 
+ * @param dsttype 
+ * @param new_stmts 
+ * @param modified 
  * 
  * @return 
  */
-static WN*
+WN*
 Create_Intrinsic_from_OP(INTRINSIC intrnidx, int nbkids, WN *kids[],
                          TYPE_ID dsttype, WN** new_stmts, BOOL* modified)
 {
@@ -610,7 +615,7 @@ Create_Intrinsic_from_OP(INTRINSIC intrnidx, int nbkids, WN *kids[],
 
   proto_intrn_info_t * proto = INTRN_proto_info(intrnidx);
 
-  /* intrinsic is functional (we can use intrinsic_op) */
+  /* Intrinsic is functional (we can use intrinsic_op) */
   if (proto->arg_out_count==0)
     {
       *modified = true;
@@ -714,8 +719,8 @@ EXT_LOWER_expr(WN *tree, WN** new_stmts, BOOL* modified)
   if ( local_ext_gen_mask & EXTENSION_NATIVE_TARGET_CODEGEN) {
     intrnidx = targ_pattern_rec(tree, &nb_operands, kids);
     if (intrnidx != INTRINSIC_INVALID) {
-      dsttree = Create_Intrinsic_from_OP(intrnidx, nb_operands, kids,
-                                         WN_rtype(tree), new_stmts, modified);
+      dsttree = BETARG_Create_Intrinsic_from_OP(intrnidx, nb_operands, kids,
+						WN_rtype(tree), new_stmts, modified);
       if (dsttree!=NULL) {
         tree= dsttree;
       }
@@ -755,8 +760,8 @@ EXT_LOWER_expr(WN *tree, WN** new_stmts, BOOL* modified)
   *modified = TRUE;
 
   /* create intrinsic op */
-  dsttree = Create_Intrinsic_from_OP(intrnidx, nb_operands, kids, 
-                                     WN_rtype(tree), new_stmts, modified); 
+  dsttree = BETARG_Create_Intrinsic_from_OP(intrnidx, nb_operands, kids, 
+					    WN_rtype(tree), new_stmts, modified); 
   
   if (dsttree!=NULL)
     return dsttree;
@@ -772,6 +777,7 @@ EXT_LOWER_expr(WN *tree, WN** new_stmts, BOOL* modified)
  *         CVT2 is a convert between 2 core types (for instance, I4 to I8)
  * 
  * @param tree 
+ * @param new_stmts 
  * @param modified 
  * 
  * @return 
@@ -793,11 +799,47 @@ EXT_LOWER_CVT_expr(WN *tree, WN** new_stmts, BOOL *modified)
     if (WN_operator(kid0) == OPR_INTCONST) {
       /* Conversion of constant 0 to extension type mapped to CLR */
       INT64 value = WN_const_val(kid0);
-      INT clr_intrn = EXTENSION_Get_CLR_Intrinsic(WN_rtype(tree));
+      INTRINSIC clr_intrn = EXTENSION_Get_CLR_Intrinsic(WN_rtype(tree));
 
       if (value==0 && clr_intrn!=INTRINSIC_INVALID) {
-        return Create_Intrinsic_from_OP(clr_intrn, 0, NULL,
-                                        WN_rtype(tree), new_stmts, modified);
+        return BETARG_Create_Intrinsic_from_OP(clr_intrn, 0, NULL,
+					       WN_rtype(tree), new_stmts, modified);
+      }
+      else if (MTYPE_is_dynamic(WN_rtype(tree)) &&
+	       ((WN_desc(tree) == MTYPE_I8 && Mtype_Int_Value_In_Range(MTYPE_I4, value)) ||
+		(WN_desc(tree) == MTYPE_U8 && Mtype_Int_Value_In_Range(MTYPE_U4, value)))) {
+	/* Capture conversion from 32bits constants to 64bits extension types */
+	TYPE_ID dst_ty = WN_desc(tree);
+	TYPE_ID src_ty = (dst_ty == MTYPE_I8)?MTYPE_I4:MTYPE_U4;
+	OPCODE opc_cvt = OPCODE_make_op(OPR_CVT, dst_ty, src_ty);
+	INTRINSIC_Vector_t* itrn_indexes =  Get_Intrinsic_from_OPCODE(opc_cvt);
+	if (itrn_indexes != NULL) {
+	  /* Try using code generation specific information */
+	  INTRINSIC intrnidx = Find_Best_Intrinsic(itrn_indexes);
+	  if (intrnidx != INTRINSIC_INVALID) {
+	    TYPE_ID rettype = INTRN_return_type(INTRN_proto_info(intrnidx));
+	    WN *kids[1];
+	    kids[0] = WN_Intconst(src_ty, value);
+	    WN *dsttree = BETARG_Create_Intrinsic_from_OP(intrnidx, 1, kids, rettype,
+							  new_stmts, modified);
+	    if (dsttree!=NULL) {
+	      return dsttree;
+	    }
+	  }
+	}
+	if (Mtype_Int_Value_In_Range(MTYPE_U4, value)) {
+	  /* Try using default injected instructions */
+	  INTRINSIC r2x_intrn = EXTENSION_Get_Convert_From_U32_Intrinsic(WN_rtype(tree));
+	  if (r2x_intrn != INTRINSIC_INVALID) {
+	    WN *kids[1];
+	    kids[0] = WN_Intconst(src_ty, value);
+	    WN *dsttree = BETARG_Create_Intrinsic_from_OP(r2x_intrn, 1, kids, WN_rtype(tree),
+							  new_stmts, modified);
+	    if (dsttree!=NULL) {
+	      return dsttree;
+	    }
+	  }
+	}
       }
     }
     else if (WN_operator(kid0) == OPR_CVT) {
@@ -810,13 +852,13 @@ EXT_LOWER_CVT_expr(WN *tree, WN** new_stmts, BOOL *modified)
 	  if (itrnidx != INTRINSIC_INVALID) {
 	    TYPE_ID rettype = INTRN_return_type(INTRN_proto_info(itrnidx));
 	    if (rettype == WN_rtype(tree)) {
-	      /* convert kid to the proper intrinsic type */
 	      WN *kids[1];
 	      kids[0] = WN_kid0(kid0);
-	      *modified = TRUE;
-	      /* create intrinsic op */
-	      return Create_Intrinsic_from_OP(itrnidx, 1, kids,
-                                              rettype, new_stmts, modified);
+	      WN *dsttree = BETARG_Create_Intrinsic_from_OP(itrnidx, 1, kids,
+							    rettype, new_stmts, modified);
+	      if (dsttree!=NULL) {
+		return dsttree;
+	      }
 	    }
 	  }
 	}
@@ -832,10 +874,11 @@ EXT_LOWER_CVT_expr(WN *tree, WN** new_stmts, BOOL *modified)
 	    if (paramtype == WN_desc(kid0)) {
 	      WN *kids[1];
 	      kids[0] = WN_kid0(kid0);
-	      *modified = TRUE;
-	      /* create intrinsic op */
-	      return Create_Intrinsic_from_OP(itrnidx, 1, kids,
-                                              WN_rtype(tree), new_stmts, modified);
+	      WN *dsttree = BETARG_Create_Intrinsic_from_OP(itrnidx, 1, kids,
+							    WN_rtype(tree), new_stmts, modified);
+	      if (dsttree!=NULL) {
+		return dsttree;
+	      }
 	    }
 	  }
 	}

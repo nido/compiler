@@ -458,3 +458,30 @@ TYPE_ID Mtype_prev_alignment(TYPE_ID type)
 } 
 
 
+#ifdef TARG_ST
+/* ==================================================================== 
+ * 
+ * Mtype_Int_Value_In_Range() 
+ * 
+ * Return TRUE if the specified integer value fits in the value range
+ * of the specified MTYPE, return FALSE otherwise.
+ * If the mtype is not integral, FALSE is always returned.
+ * 
+ * ==================================================================== 
+ */
+BOOL Mtype_Int_Value_In_Range(TYPE_ID type, INT64 val)
+{
+  INT64 tmp;
+  if (!MTYPE_is_integral(type)) {
+    return FALSE;
+  }
+  else if (MTYPE_signed(type)) {
+    tmp = val >> (MTYPE_bit_size(type)-1);
+    return (tmp == 0LL || tmp == -1LL);
+  }
+  else {
+    tmp = val >> MTYPE_bit_size(type);
+    return (tmp == 0LL);
+  }
+}
+#endif
