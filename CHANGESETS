@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Oct  1 10:55:19 CEST 2008
+	Author:    torrett
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/torrett/dev-builtin_test_08sept
+
+Description:
+------------
+	* deliver branch at revision #18654 with authorization #52523
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/intrn/model_tests/README.txt
+	M      osprey/targinfo/stxp70/intrn/model_tests/makedir/Makefile_builtin_open64.in
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@18654 --new=https://codex.cro.st.com/svnroot/open64/branches/torrett/dev-builtin_test_08sept@18658 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@18654 https://codex.cro.st.com/svnroot/open64/branches/torrett/dev-builtin_test_08sept@18658" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/intrn/model_tests/README.txt	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/intrn/model_tests/README.txt?p2=branches/torrett/dev-builtin_test_08sept/osprey/targinfo/stxp70/intrn/model_tests/README.txt&r1=18654&r2=18658&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/intrn/model_tests/makedir/Makefile_builtin_open64.in	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/intrn/model_tests/makedir/Makefile_builtin_open64.in?p2=branches/torrett/dev-builtin_test_08sept/osprey/targinfo/stxp70/intrn/model_tests/makedir/Makefile_builtin_open64.in&r1=18654&r2=18658&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Sep 29 10:27:28 CEST 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
