@@ -273,7 +273,19 @@
  *
  *   BOOL OP_has_implicit_interactions
  *     A generic placeholder routine where all OPs with implicit interactions
- *     with other OPs in an non-obvious way are placed.
+ *     with other OPs in an non-obvious way are placed. This predicate should
+ *     be used for checking valid code motion when the dependence graph
+ *     is not available.
+ *     It returns true for any operation that:
+ *     - has register effects other than explicit register dependencies, or
+ *     - has memory read/write other than explicit memory access,
+ *     - is volatile or other kind of memory barrier,
+ *     - has any other specificity that prevent code motion.
+ *     Note: TOP_asm statements are not included in 
+ *     OP_has_implicit_interactions, and one must use the interface dedicated
+ *     to asm statements (see annotations.h) to find implicit interactions.
+ *     Note: an OP_side_effects() op is a OP_has_implicit_interactions().
+ *     OP_side_effects only tracks static side effects of the operator.
  *
  *   BOOL TN_Pair_In_OP (OP* op, TN *tn_res, TN* tn_opnd)
  *      Returns TRUE if <op> contains <tn_res> as a result
