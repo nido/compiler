@@ -4966,12 +4966,16 @@ Constant_Created:
       op->next = next;
       op->prev = prev;
       if(CGTARG_sequence_is_cheaper_than_load_imm(&tmpOps, OPS_first(&ops))) {
-          if (EBO_Trace_Execution) {
-              fprintf(TFile,"<ebo> %s: ops are more expensive -> do nothing:\n",
-                      __FUNCTION__);
-              Print_OPS_No_SrcLines(&ops);
+          INT op1_idx= OP_find_opnd_use(op,OU_opnd1);
+          EBO_TN_INFO *op_tninfo = opnd_tninfo[op1_idx];
+          if ((opnd_tn[op1_idx] && TN_is_symbol(opnd_tn[op1_idx])) || !op_tninfo || (op_tninfo && op_tninfo->reference_count>1)) {
+              if (EBO_Trace_Execution) {
+                  fprintf(TFile,"<ebo> %s: ops are more expensive -> do nothing:\n",
+                           __FUNCTION__);
+                  Print_OPS_No_SrcLines(&ops);
+              }
+              return FALSE;
           }
-          return FALSE;
       }
   }
 #endif
@@ -6404,7 +6408,11 @@ Find_BB_TNs (BB *bb)
             op_replaced = EBO_Resolve_Conditional_Branch (op, opnd_tn);
             rerun_cflow |= op_replaced;
           } else if (OP_results(op) >= 1) {
+#ifdef TARG_ST
+            op_replaced = EBO_Fold_Constant_Expression (op, opnd_tn, orig_tninfo);
+#else
             op_replaced = EBO_Fold_Constant_Expression (op, opnd_tn, opnd_tninfo);
+#endif
           }
         }
 	if (!op_replaced && OP_results(op) > 0 && num_opnds > 1) {

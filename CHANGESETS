@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Oct  2 09:29:03 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-45753
+
+Description:
+------------
+	* [trunk] Fix for bug #45753: extra code removable via peephole optimization.
+	Deliver fixes/codex-45753 rev #18692 with authorization branch #52413
+
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Oct  2 09:04:14 CEST 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
