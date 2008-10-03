@@ -7263,10 +7263,19 @@ op_is_needed:
           (tninfo->same != NULL)) {
         EBO_TN_INFO *next_tninfo = tninfo->same;
 
+#ifdef TARG_ST
+	// FdF: Track the case where there is at least one defining
+	// operation for the operand but none of them are considered
+	// used.
+	BOOL operand_is_used = FALSE;
+	BOOL operand_has_def = FALSE;
+#endif
+
         while (next_tninfo != NULL) {
           if ((next_tninfo->in_op != NULL) &&
               (next_tninfo->omega == tninfo->omega)) {
 #ifdef TARG_ST
+            operand_has_def = TRUE;
             if (EBO_predicate_dominates((next_tninfo->predicate_tninfo != NULL)?
                                         next_tninfo->predicate_tninfo->local_tn:True_TN,
                                         next_tninfo->in_op ? OP_Pred_False (next_tninfo->in_op, OP_find_opnd_use(next_tninfo->in_op, OU_predicate)) : false, 
@@ -7274,6 +7283,9 @@ op_is_needed:
                                         (tninfo->predicate_tninfo != NULL)?tninfo->predicate_tninfo->local_tn:True_TN,
                                         tninfo->in_op ? OP_Pred_False (tninfo->in_op, OP_find_opnd_use(tninfo->in_op, OU_predicate)) : false, 
                                         tninfo->predicate_tninfo)) {
+	      // FdF: Mark that one of the defining operation for this
+	      // operand is considered used.
+	      operand_is_used = TRUE;
               /* This predicate dominates the OP we need to save. It's   */
               /* use count should be sufficiant to cause it to be saved. */
               /* We can stop searching for other dominators.             */
@@ -7302,11 +7314,22 @@ op_is_needed:
 #endif
               /* These predicates are mutually exclusive.  There is no   */
               /* need to mark it as used, but se need to keep looking.   */
+#ifdef TARG_ST
+	      // FdF: Here the definition of the operand does not
+	      // provide any useful value, due to disjoint predicates.
+	      // A fake definition for this operand must be added in
+	      // case (operand_has_def && !operand_is_used).
+#endif
             } else {
              /* A store into an unresolved predicate is a potential problem. */
              /* The predicates could be completely independant.  But we      */
              /* don't know how to check for that, currently.                 */
 
+#ifdef TARG_ST
+	      // FdF: Mark that one of the defining operation for this
+	      // operand is considered used.
+	      operand_is_used = TRUE;
+#endif
              /* Stop searching and preserve the preceeding definition. */
               EBO_OP_INFO *opinfo = locate_opinfo_entry(next_tninfo);
               if (opinfo != NULL) {
@@ -7337,7 +7360,22 @@ op_is_needed:
           }
           next_tninfo = next_tninfo->same;
         }
-
+#ifdef TARG_ST
+	  // FdF 20080925: The operand is dead, i.e. not used, so
+	  // replace it by a Zero_TN or a new TN defined by a KILL
+        if (operand_has_def && !operand_is_used) {
+	  if ((Zero_TN != NULL) &&
+	      (TN_register_class(Zero_TN) == TN_register_class(OP_opnd(op, idx)))) {
+	    Set_OP_opnd(op, idx, Zero_TN);
+	  }
+	  else {
+	    TN *dup_tn = Dup_TN(OP_opnd(op, idx));
+	    Set_OP_opnd(op, idx, dup_tn);
+	    OP* kill_op = Mk_VarOP(TOP_KILL, 1, 0, &dup_tn, NULL);
+	    BB_Insert_Op_Before(bb, op, kill_op);
+	  }
+	}
+#endif
       }
     }
 
