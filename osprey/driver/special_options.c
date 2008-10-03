@@ -800,7 +800,9 @@ add_special_options (void)
 #endif
 #ifdef TARG_ST
 	/* TB: with -fprofile-arcs option, tell be where to generate .gcno files */
-	if (option_was_seen(O_fprofile_arcs) || option_was_seen(O_fprofile_arcs_cgir)) {
+	/* GS: with -ftest-coverage and -fbranch-probabilities options too */
+	if (option_was_seen(O_fprofile_arcs) || option_was_seen(O_fprofile_arcs_cgir)
+	    || option_was_seen(O_ftest_coverage) || option_was_seen(O_fbranch_probabilities)) {
 	  flag = add_new_option(concat_strings("-o,",outfile ? SYS_adirname(outfile) : SYS_getcwd()));
 	  add_phase_for_option(flag, P_be);
 	  prepend_option_seen (flag);

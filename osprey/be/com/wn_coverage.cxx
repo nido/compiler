@@ -3355,8 +3355,11 @@ wn_coverage_branch_probabilities(void)
 #endif
 #ifdef Is_True_On  
   // Check
-  for ( list_bb = Cur_Function->bb_list->next; list_bb->bb != Last_BB; 
+  for ( list_bb = Cur_Function->bb_list->next; list_bb != NULL; 
 	list_bb = list_bb->next) { 
+    if (list_bb->bb == Last_BB) {
+      break;
+    }
     FmtAssert(list_bb->bb->count_valid, ("wn_coverage_branch_probabilities: bb %d has no valid count", list_bb->bb->index));
     unsigned total = 0;
     // check that sum of pred edge == bb count
