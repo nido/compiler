@@ -7360,6 +7360,7 @@ op_is_needed:
           }
           next_tninfo = next_tninfo->same;
         }
+#if 0 // FdF 20081003: Revert fix for codex #52447 which is wrong.
 #ifdef TARG_ST
 	  // FdF 20080925: The operand is dead, i.e. not used, so
 	  // replace it by a Zero_TN or a new TN defined by a KILL
@@ -7375,6 +7376,7 @@ op_is_needed:
 	    BB_Insert_Op_Before(bb, op, kill_op);
 	  }
 	}
+#endif
 #endif
       }
     }
