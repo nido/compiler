@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Oct  7 13:09:09 CEST 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-52529
+
+Description:
+------------
+	* [trunk] Fix for bug #52529: Incorrect handling of compound literal initializer.
+	Deliver fixes/codex-52529 rev #18786 with authorization branch #52995
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/wfe_decl.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Oct  3 09:34:34 CEST 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

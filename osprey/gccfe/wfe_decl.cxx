@@ -1446,8 +1446,13 @@ Add_Initv_For_Tree (tree val, UINT size)
                               Add_Initv_For_Tree (val, TY_size(fld_ty));
                             }
                           }
+			  break;
                         }
-                        break;
+                        // FdF 20081002: codex-52529. For TY_kind(ty)
+                        // == KIND_ARRAY, just fallthru
+                        else
+                          FmtAssert(TY_kind (ty) == KIND_ARRAY,
+                                    ("Unsupported TY_kind in initializer"));
                       }
                     }
                   }
