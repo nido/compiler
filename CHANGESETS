@@ -1,6 +1,42 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Oct  8 11:14:54 CEST 2008
+	Author:    janiny
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-52407
+
+Description:
+------------
+	* [trunk] Fix for bug #52407: LNO assertion in HR-4.2 with options -O3 -ipa. Deliver fixes/codex-52407 rev #18795 with authorization branch #52407.
+
+
+Modified Files:
+---------------
+	M      osprey/be/lno/shackle.cxx
+	M      osprey/common/com/config_cache.h
+	M      osprey/common/com/config_cache.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@18788 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-52407@18795 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@18788 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-52407@18795" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/lno/shackle.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/lno/shackle.cxx?p2=branches/fixes/codex-52407/osprey/be/lno/shackle.cxx&r1=18788&r2=18795&roottype=svn&root=open64&diff_format=h
+osprey/common/com/config_cache.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config_cache.h?p2=branches/fixes/codex-52407/osprey/common/com/config_cache.h&r1=18788&r2=18795&roottype=svn&root=open64&diff_format=h
+osprey/common/com/config_cache.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config_cache.cxx?p2=branches/fixes/codex-52407/osprey/common/com/config_cache.cxx&r1=18788&r2=18795&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Oct  7 13:09:09 CEST 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

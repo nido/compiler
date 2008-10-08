@@ -301,6 +301,18 @@
 ***            these cache parameters.
 ***
 ***        void           Print(FILE*) const
+***
+
+TARG_ST specific
+***        BOOL           Has_No_Memory_Hierarchy()
+***
+***
+***            Return TRUE if memory hierarchy is not described for a given
+***            target. Useful for simple embedded targets that don't support
+***            or require caches.
+***
+END TARG_ST specific
+
 ***        MHD()
 ***        ~MHD()
 ***
@@ -413,6 +425,10 @@ typedef struct MHD {
   BE_EXPORTED void      Merge_Options(const MHD&);
   BE_EXPORTED void      Initialize();
   BE_EXPORTED void      Print(FILE*) const;
+
+#ifdef TARG_ST
+  BE_EXPORTED BOOL      Has_No_Memory_Hierarchy();
+#endif
 
   MHD() : Non_Blocking_Loads(-1),
           Loop_Overhead_Base(-1),

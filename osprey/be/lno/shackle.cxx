@@ -3006,11 +3006,22 @@ SHACKLE_Phase (WN *func_nd)
     shackle_debug_level = 1;
   else
     shackle_debug_level = 0;
-  
+
+#ifdef TARG_ST
+  // Don't activate shackle optimizations for
+  // targets that don't support caches.
+  if (Mhd.Has_No_Memory_Hierarchy())  {
+     if(shackle_debug_level > 0) {
+       fprintf(TFile, "No memory hierarchy: shackling is cancelled\n");
+     }
+     return;
+  }
+#endif
+ 
   if (shackle_debug_level > 0) {
     printf("Shackling started\n");
   }
-  
+
   MEM_POOL_Initialize (&shackle_default_pool, "shackle_default_pool", FALSE);
   MEM_POOL_Initialize (&shackle_map_pool, "shackle_map_pool", FALSE);
   MEM_POOL_Push (&shackle_default_pool);
