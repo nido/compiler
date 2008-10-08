@@ -605,12 +605,6 @@ add_special_options (void)
 	  maybe_dynamic();
 	  // [TB]: Activate deadcode even in dynamic mode
 	  deadcode = (olevel >= 2) ? TRUE : FALSE;
-#ifdef TARG_STxP70
-          if (proc == PROC_stxp70_v4) {
-  	     //[HC] For the moment deadcode doesn't exist for stxp70 v4.
-             deadcode = FALSE;
-	  }
-#endif
 	  if (deadcode == TRUE) {
             prepend_option_seen (O__deadcode);
 	  }

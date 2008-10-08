@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Oct  8 12:33:59 CEST 2008
+	Author:    bidaultt
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bidaultt/dev-BinoptV4
+
+Description:
+------------
+	*  [ Branch #49801 ] bidaultt/dev-BinoptV4 rev #17771 : activation of binopt for stxp70v4 core
+
+
+Modified Files:
+---------------
+	M      osprey/driver/special_options.c
+	M      osprey/driver/main.c
+	M      osprey/targinfo/stxp70/cg/targ_cgemit.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct  8 11:14:54 CEST 2008
 	Author:    janiny
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

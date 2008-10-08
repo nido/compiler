@@ -348,11 +348,6 @@ main (int argc, char *argv[])
    		treat_one_arg(&i,newargv);
       }
    }
-   /* On v4 architecture, refuse to activate binopt
-    */
-   if (proc == PROC_stxp70_v4) {
-      deadcode = FALSE;
-   }
    /* At this point, add -Wy,-T,<link_scripts>.reloc in case of
     * binopt activation
     */
