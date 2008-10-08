@@ -2226,6 +2226,24 @@ profitable_candidate:
   }
 }
 
+#ifdef TARG_ST
+//
+// Return true if op is a ne/eq compare with a constant
+//
+static BOOL
+OP_Is_Cmp_Eq_Ne(OP *op)
+{
+  VARIANT variant;
+  if (OP_icmp(op)) {
+    variant = OP_cmp_variant(op);
+    if (variant == V_CMP_EQ || variant == V_CMP_NE) {
+      if (TN_has_value(OP_Opnd2(op))) return TRUE;
+    }
+  }
+  return FALSE;
+}
+#endif
+
 // =======================================================================
 // Perform_Post_GCM_Steps
 // is responsible (if any) for cleanup tasks after performing
@@ -2399,7 +2417,25 @@ Perform_Post_GCM_Steps(BB *bb, BB *cand_bb, OP *cand_op, mINT32 motion_type,
 	    		Fixup_Ldst_Offset (succ_op, addiu_const, +1, HBS_FROM_GCM);
 	      }
 	    }
+	  } 
+#ifdef TARG_ST
+	  else if (OP_Is_Cmp_Eq_Ne(succ_op)) {
+           INT cmp_opnd1_idx = OP_find_opnd_use(succ_op, OU_opnd1);
+           INT cmp_opnd2_idx = OP_find_opnd_use(succ_op, OU_opnd2);
+           
+           if (TN_has_value(OP_opnd(succ_op, cmp_opnd2_idx))) {
+               if ((Ignore_TN_Dep && 
+                   (TN_register(OP_opnd(succ_op, cmp_opnd1_idx)) == 
+                    TN_register(OP_result(cand_op,0 /*???*/)))) ||
+                  
+                  (!Ignore_TN_Dep &&
+                   (TN_number(OP_opnd(succ_op, cmp_opnd1_idx)) ==
+                    TN_number(OP_result(cand_op,0 /*???*/))))){
+                        Fixup_Ldst_Offset (succ_op, addiu_const, +1, HBS_FROM_GCM);
+                  }
+           }
 	  }
+#endif
 	}
     }
     if (OP_memory(cand_op)) {

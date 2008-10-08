@@ -4587,13 +4587,26 @@ Add_Bkwd_REG_Arcs(BB *bb, TN_SET *need_anti_out_dep)
 }
 
 
-
 // Construct a TN to TN_DU mapping.
 //  - used by Build_Cyclic_Arcs
 //
 struct TN_2_DEFS_VECTOR_MAP {
   typedef std::vector<int> DEFS_VECTOR_TYPE;
+#ifdef TARG_ST
+  // TDR - Add determinist selection mode to avoid diffs when Open64 is built 
+  // in debug or Release mode
+  class Tp_Map_Cmp {
+  public:
+      bool operator()(const TN* x,const TN* y)const {
+          // Here it can only be registers
+         return (TN_number(x) < TN_number(y));         
+      }
+  };
+
+  typedef std::map<TN*, DEFS_VECTOR_TYPE, Tp_Map_Cmp> TN_2_DEFS_VECTOR_MAP_TYPE;
+#else  
   typedef std::map<TN*, DEFS_VECTOR_TYPE> TN_2_DEFS_VECTOR_MAP_TYPE;
+#endif
   typedef TN_2_DEFS_VECTOR_MAP_TYPE::iterator iterator;
 
 private:
