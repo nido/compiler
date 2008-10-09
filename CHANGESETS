@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Oct  9 10:14:22 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mad-4-2-4
+
+Description:
+------------
+	*  synchronized with mad-4-2-5
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_si.cxx
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct  8 17:39:48 CEST 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
