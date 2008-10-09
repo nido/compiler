@@ -1300,6 +1300,12 @@ st200_Predicated_Store_Op (TOP opcode)
   TOP stw = TOP_UNDEFINED;
 
   switch (opcode) {
+  case TOP_multi_stl_r_r_i:
+    stw = TOP_multi_stlc_r_b_r_i;
+    break;
+  case TOP_multi_stl_r_r_ii:
+    stw = TOP_multi_stlc_r_b_r_ii;
+    break;
   case TOP_stl_p_r_i: 
     stw = TOP_stlc_p_b_r_i;
     break;
@@ -1349,6 +1355,12 @@ st200_Predicated_Load_Op (TOP opcode)
   TOP ld = TOP_UNDEFINED;
 
   switch (opcode) {
+  case TOP_multi_ldl_r_i_r:
+    ld = TOP_multi_ldlc_r_i_b_r;
+    break;
+  case TOP_multi_ldl_r_ii_r:
+    ld = TOP_multi_ldlc_r_ii_b_r;
+    break;
   case TOP_ldl_r_i_p: 
     ld = TOP_ldlc_r_i_b_p;
     break;
