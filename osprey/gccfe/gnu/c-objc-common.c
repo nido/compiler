@@ -36,6 +36,10 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "langhooks.h"
 #include "target.h"
 
+#ifdef TARG_ST
+#include "wfe_stmt.h"
+#endif
+
 static bool c_tree_printer PARAMS ((output_buffer *, text_info *));
 static tree inline_forbidden_p PARAMS ((tree *, int *, void *));
 static void expand_deferred_fns PARAMS ((void));
@@ -248,6 +252,12 @@ c_objc_common_init (filename)
     return NULL;
 
   lang_expand_decl_stmt = c_expand_decl_stmt;
+#ifdef TARG_ST
+  lang_push_lexical_block = Push_Lexical_Block;
+  lang_pop_lexical_block = Pop_Lexical_Block;
+  lang_start_lexical_block =  Start_Lexical_Block;
+  lang_end_lexical_block = End_Lexical_Block;
+#endif
 
   /* These were not defined in the Objective-C front end, but I'm
      putting them here anyway.  The diagnostic format decoder might

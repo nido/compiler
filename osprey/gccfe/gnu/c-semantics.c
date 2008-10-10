@@ -53,6 +53,15 @@ void (*lang_expand_stmt) PARAMS ((tree));
    variables and labels do not require any RTL generation.  */
 void (*lang_expand_decl_stmt) PARAMS ((tree));
 
+#ifdef TARG_ST
+/* If non-NULL, the address of language-specific functions for
+   managing lexical_blocks. */
+struct lexical_block_info_t* (*lang_push_lexical_block)	PARAMS((void));
+struct lexical_block_info_t* (*lang_pop_lexical_block)	PARAMS((void));
+void (*lang_start_lexical_block)			PARAMS((struct lexical_block_info_t*));
+void (*lang_end_lexical_block)				PARAMS((struct lexical_block_info_t*));
+#endif
+
 /* Create an empty statement tree rooted at T.  */
 
 void
@@ -147,8 +156,8 @@ add_scope_stmt (begin_p, partial_p)
       *stack_ptr = top;
 #ifdef TARG_ST
       // [CL] support for lexical blocks
-      if (Push_Lexical_Block)
-	ss->common.scope = Push_Lexical_Block();
+      if (lang_push_lexical_block)
+	ss->common.scope = lang_push_lexical_block();
 #endif
     }
   else
@@ -157,8 +166,8 @@ add_scope_stmt (begin_p, partial_p)
       *stack_ptr = TREE_CHAIN (top);
 #ifdef TARG_ST
       // [CL] support for lexical blocks
-      if (Pop_Lexical_Block)
-      ss->common.scope = Pop_Lexical_Block();
+      if (lang_pop_lexical_block)
+        ss->common.scope = lang_pop_lexical_block();
 #endif
     }
 
@@ -892,16 +901,16 @@ expand_stmt (t)
 	    Push_Scope_Cleanup (t);
 	    // [CL] support for lexical blocks
 	    if (!SCOPE_NULLIFIED_P(t)) {
-	      if (Start_Lexical_Block)
-		Start_Lexical_Block(t->common.scope);
+	      if (lang_start_lexical_block)
+		lang_start_lexical_block(t->common.scope);
 	    }
 	  }
 	  else {
 	    Pop_Scope_And_Do_Cleanups ();
 	    // [CL] support for lexical blocks
 	    if (!SCOPE_NULLIFIED_P(t)) {
-	      if (End_Lexical_Block)
-	      End_Lexical_Block(t->common.scope);
+	      if (lang_end_lexical_block)
+	        lang_end_lexical_block(t->common.scope);
 	    }
 	  }
 #endif

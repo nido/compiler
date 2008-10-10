@@ -309,6 +309,12 @@ extern int (*lang_statement_code_p)             PARAMS ((enum tree_code));
 extern void (*lang_expand_stmt)                 PARAMS ((tree));
 extern void (*lang_expand_decl_stmt)            PARAMS ((tree));
 extern void (*lang_expand_function_end)         PARAMS ((void));
+#ifdef TARG_ST
+extern struct lexical_block_info_t* (*lang_push_lexical_block) 	PARAMS((void));
+extern struct lexical_block_info_t* (*lang_pop_lexical_block) 	PARAMS((void));
+extern void (*lang_start_lexical_block)		PARAMS((struct lexical_block_info_t*));
+extern void (*lang_end_lexical_block)		PARAMS((struct lexical_block_info_t*));
+#endif
 extern tree gettags				PARAMS ((void));
 
 /* Callback that determines if it's ok for a function to have no

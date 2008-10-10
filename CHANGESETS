@@ -1,6 +1,42 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct 10 16:45:19 CEST 2008
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-36471
+
+Description:
+------------
+	* Deliver fix for bug #36471 with authorization #51994 
+        [ bug #36471 ] C++ compiler systematically aborts under Win32
+
+Modified Files:
+---------------
+	M      osprey/gccfe/gnu/c-objc-common.c
+	M      osprey/gccfe/gnu/c-common.h
+	M      osprey/gccfe/gnu/c-semantics.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@18870 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-36471@18872 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@18870 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-36471@18872" 
+
+Diff links to modified files:
+-----------------------------
+osprey/gccfe/gnu/c-objc-common.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/c-objc-common.c?p2=branches/fixes/codex-36471/osprey/gccfe/gnu/c-objc-common.c&r1=18870&r2=18872&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/c-common.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/c-common.h?p2=branches/fixes/codex-36471/osprey/gccfe/gnu/c-common.h&r1=18870&r2=18872&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/c-semantics.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/c-semantics.c?p2=branches/fixes/codex-36471/osprey/gccfe/gnu/c-semantics.c&r1=18870&r2=18872&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Oct 10 16:02:31 CEST 2008
 	Author:    giraudoa
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
