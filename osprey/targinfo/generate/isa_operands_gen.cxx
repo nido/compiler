@@ -431,7 +431,8 @@ OPERAND_VALUE_TYPE ISA_Reg_Opnd_Type_Create (
   result->is_pcrel = false;
   result->is_fpu_int = fp_int != INVALID;
   result->index = max_valtypes++;
-
+  result->default_reloc = 0;
+  
 #ifdef DYNAMIC_CODE_GEN
   if ( (! gen_static_code) &&
        (register_class >= ISA_REGISTER_CLASS_MIN) &&
@@ -528,7 +529,8 @@ OPERAND_VALUE_TYPE ISA_Enum_Opnd_Type_Create (
   result->is_fpu_int = false;
   result->size = size;
   result->index = max_valtypes++;
-
+  result->default_reloc = 0;
+  
   return result;
 }
 

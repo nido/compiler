@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct 10 16:02:31 CEST 2008
+	Author:    giraudoa
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-52939
+
+Description:
+------------
+	* [fixes/codex-52939] [giraudoa] deliver fix for bug #52939 "### Warning: ...: Simulated op coding should be specified" from branch #54027 rev #18868
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/generate/isa_operands_gen.cxx
+	M      osprey/targinfo/generate/isa_pack_gen.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Oct  9 15:32:53 CEST 2008
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

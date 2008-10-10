@@ -897,18 +897,12 @@ void ISA_Pack_End(void)
 
   for (top = 0; top < TOP_count_limit ; ++top ) {
     op_assembly *op_pack = op_packs[top];
-    
-    if(op_pack == NULL && !TOP_is_dummy(top)) {
-      if(TOP_is_simulated(top)) {
-	fprintf(stderr,"### Warning: TOP_%s: Simulated op coding should be specified\n",
-		TOP_Name(top));
-      }
-      else {
-	fprintf(stderr,"### Warning: TOP_%s: no coding info specified\n",
-		TOP_Name(top));
-	exit(-1);
-      }
+
+    if(op_pack == NULL && !TOP_is_dummy(top) && !TOP_is_simulated(top)) {
+      fprintf(stderr,"### Warning: TOP_%s: no coding info specified\n",TOP_Name(top));
+      exit(-1);
     }
+
     //TDR: Backward compatibility related to simulated op on ST200
 #ifdef TARG_ST200
     int words = op_pack ? op_pack->desc->max_word + 1 : (TOP_is_dummy(top) ? 0 : 1);
