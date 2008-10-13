@@ -1,6 +1,31 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct 13 12:14:50 CEST 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-MP1x-flow
+
+Description:
+------------
+	* [trunk] Deliver tt2/dev-MP1x-flow rev #18894 with authorization branch #52953
+		  -> Additional extension lowering codegen pass after LNO, limited to
+		     complex instruction recognition (aka pattern recognition in EXT_lower)
+
+
+Modified Files:
+---------------
+	M      osprey/be/be/driver.cxx
+	M      osprey/be/com/wn_lower.h
+	M      osprey/be/com/ext_lower.cxx
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/config.h
+	M      osprey/targinfo/stxp70/be/targ_pattern_rec.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct 13 10:27:54 CEST 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

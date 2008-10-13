@@ -232,7 +232,7 @@ BE_EXPORTED extern void U64_lower_wn(WN *, BOOL);
  * Lower L WHIRL to handle operators not directly supported in the
  * target ISA
  */
-BE_EXPORTED extern WN *EXT_lower_wn(WN *tree);
+BE_EXPORTED extern WN *EXT_lower_wn(WN *tree, BOOL last_pass);
 BE_EXPORTED extern void RT_lower_wn(WN *tree);
 BE_EXPORTED extern void HILO_lower_wn(WN *wn, WN **lopart, WN **hipart);
 

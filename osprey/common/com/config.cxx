@@ -714,7 +714,7 @@ static OPTION_DESC Options_TENV[] = {
     0, 0, 0,    &Extension_Names, &Extension_Is_Present,
     "List of extension names to be used" },
   { OVK_INT32,   OV_INTERNAL,    FALSE, "extension_native_support", NULL,
-    EXTENSION_NATIVE_SUPPORT_DEFAULT, 0, 0xf, &Enable_Extension_Native_Support,
+    EXTENSION_NATIVE_SUPPORT_DEFAULT, 0, 0x3f, &Enable_Extension_Native_Support,
     &Enable_Extension_Native_Support_Set,
     "Enable support of automatic codegen for compatible extension" },
 

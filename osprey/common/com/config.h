@@ -1103,10 +1103,12 @@ BE_EXPORTED extern BOOL Extension_Is_Present;
 #define EXTENSION_NATIVE_CVTGEN                 0x4
 #define EXTENSION_NATIVE_TYEQUIV_UNSIGNED_ONLY  0x8
 #define EXTENSION_NATIVE_TARGET_CODEGEN         0x10
+#define EXTENSION_NATIVE_ENABLE_FIRST_PASS      0x20
 #define EXTENSION_NATIVE_SUPPORT_DEFAULT (EXTENSION_NATIVE_CODEGEN \
-					  | EXTENSION_NATIVE_REG_PLACEMENT \
-					  | EXTENSION_NATIVE_CVTGEN \
-                                          | EXTENSION_NATIVE_TARGET_CODEGEN)
+                                          | EXTENSION_NATIVE_REG_PLACEMENT \
+                                          | EXTENSION_NATIVE_CVTGEN \
+                                          | EXTENSION_NATIVE_TARGET_CODEGEN \
+                                          | EXTENSION_NATIVE_ENABLE_FIRST_PASS)
 BE_EXPORTED extern INT32 Enable_Extension_Native_Support;
 BE_EXPORTED extern BOOL Enable_Extension_Native_Support_Set;
 BE_EXPORTED extern BOOL Meta_Instruction_Threshold_Set;

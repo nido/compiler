@@ -1266,12 +1266,10 @@ Do_WOPT_and_CG_with_Regions (PU_Info *current_pu, WN *pu)
 #endif
 	rwn = WN_Lower(rwn, actions, NULL, 
 		       "Lowering in preparation to RT_Lower");
-#ifdef TARG_ST
 	/* Extension specific lowering */
 	if (Extension_Is_Present) {
-	  rwn = EXT_lower_wn(rwn);
+	  rwn = EXT_lower_wn(rwn, TRUE);
 	}
-#endif
 	RT_lower_wn(rwn);
       }
 #endif /* TARG_ST */
@@ -1582,6 +1580,13 @@ Backend_Processing (PU_Info *current_pu, WN *pu)
     if (!Run_wopt && !Run_cg) return;
 
     Verify_SYMTAB (CURRENT_SYMTAB);
+
+#ifdef TARG_ST
+    /* Extension specific lowering, mainly detection of complex instructions */
+    if (Extension_Is_Present) {
+      EXT_lower_wn(pu, FALSE);
+    }
+#endif
 
     /* If no early mp processing has been requested, then do it after running
      * lno/preopt. Do this whether or not wopt is to be run.

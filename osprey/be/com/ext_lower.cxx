@@ -55,6 +55,9 @@ Contact information:
    global option) */
 static  INT32 local_ext_gen_mask;
 
+/* Set to TRUE if the ongoing extension lowering pass is the last one */
+static  BOOL  local_last_pass;
+
 static BOOL verbose_reg_placement = false;
 #define VERBOSE_REG_PLACEMENT(...) if (verbose_reg_placement) { fprintf(TFile, __VA_ARGS__); }
 
@@ -712,10 +715,9 @@ EXT_LOWER_expr(WN *tree, WN** new_stmts, BOOL* modified)
   int i, nb_operands;
   WN* stmt;
   WN* dsttree = NULL;
-
   INT intrnidx;
-  // target specific expression lowering
 
+  /* Target specific expression lowering */
   if ( local_ext_gen_mask & EXTENSION_NATIVE_TARGET_CODEGEN) {
     intrnidx = targ_pattern_rec(tree, &nb_operands, kids);
     if (intrnidx != INTRINSIC_INVALID) {
@@ -727,24 +729,28 @@ EXT_LOWER_expr(WN *tree, WN** new_stmts, BOOL* modified)
     }
   }
   nb_operands = WN_kid_count(tree);
-  // lower kids
+  /* Lower kids */
   for (i=0; i<nb_operands; i++){
     WN_kid(tree, i) = EXT_LOWER_expr(WN_kid(tree, i), new_stmts, modified);
   }
 
-  // get intrinsic idx if any.
-  OPCODE opc = WN_opcode(tree);
-
-  INT cost = INT_MAX;
-  INTRINSIC_Vector_t* itrn_indexes =  Get_Intrinsic_from_OPCODE(opc);
+  /* Standard codegen performed only during last pass */
+  if (!local_last_pass) {
+    return tree;
+  }
 
   /* Conversion are handled later, during CVT walk */
+  OPCODE opc = WN_opcode(tree);
   if (OPCODE_operator(opc) == OPR_CVT) {
     return tree;
   }
 
-  /* No intrinsic correspond to opcode */
+  /* Get intrinsic idx if any */
+  INT cost = INT_MAX;
+  INTRINSIC_Vector_t* itrn_indexes =  Get_Intrinsic_from_OPCODE(opc);
+
   if (itrn_indexes == NULL) {
+    /* No intrinsic correspond to opcode */
     return tree;
   }
     
@@ -971,11 +977,12 @@ Is_Function_Pragma_Defined(WN *func, WN_PRAGMA_ID id) {
  * done here.
  * ==================================================================== */
 WN *
-EXT_lower_wn(WN *tree)
+EXT_lower_wn(WN *tree, BOOL last_pass)
 {
   FmtAssert((WN_operator(tree) == OPR_FUNC_ENTRY),
 	    ("Unexpected node type in EXT_lower_wn"));
 
+  local_last_pass = last_pass;
   local_ext_gen_mask = Enable_Extension_Native_Support;
 
   if (! local_ext_gen_mask) {
@@ -992,6 +999,11 @@ EXT_lower_wn(WN *tree)
     return tree;
   }
 
+  if (!last_pass && !(local_ext_gen_mask & EXTENSION_NATIVE_ENABLE_FIRST_PASS)) {
+    // first pass disabled
+    return tree;
+  }
+
   BOOL simpfold = WN_Simp_Fold_ILOAD;
   WN_Simp_Fold_ILOAD = TRUE;
 
@@ -1002,37 +1014,39 @@ EXT_lower_wn(WN *tree)
   if ( local_ext_gen_mask & EXTENSION_NATIVE_CODEGEN) {
     init_pattern_rec();
     tree = EXT_LOWER_stmt_wn_gen(tree, EXT_LOWER_expr);
+
+    WN_Lower_Checkdump("After EXT Codegen Lowering", tree, 0);
   }
 
-  WN_Lower_Checkdump("After EXT lowering", tree, 0);
+  if (last_pass) {
+    /*
+     * Register placement and conversion lowering
+     * are performed only during last lowering pass
+     */
+    if (local_ext_gen_mask & EXTENSION_NATIVE_REG_PLACEMENT) {
+      CandidateMap candidate_map;
+      Set_Error_Phase("EXT Reg Placement Lowering");
 
-  WN_verifier(tree);
+      verbose_reg_placement = Get_Trace(TP_EXTENSION, TRACE_EXTENSION_REG_PLACEMENT_MASK);
+      VERBOSE_REG_PLACEMENT("REG_PLACEMENT: Processing function ## '%s' ##\n", ST_name(WN_st_idx(tree)));
+      WN_func_body(tree) = EXT_LOWER_find_register_candidate(WN_func_body(tree), &candidate_map);
+      if (!candidate_map.empty()) {
+	VERBOSE_REG_PLACEMENT("REG_PLACEMENT: Replace candidate PREG\n");
+	WN_func_body(tree) = EXT_LOWER_convert_valid_candidate (WN_func_body(tree), &candidate_map);
+      }
 
-  Set_Error_Phase("EXT reg placement Lowering");
+      WN_Lower_Checkdump("After EXT Reg Placement Lowering", tree, 0);
+    }
+    
+    if ( local_ext_gen_mask & EXTENSION_NATIVE_CVTGEN) {
+      Set_Error_Phase("EXT CVT Lowering");
 
-  WN_Lower_Checkdump("EXT reg placement Lowering", tree, 0);
+      tree = EXT_LOWER_stmt_wn_gen(tree, EXT_LOWER_CVT_expr);
 
-  if ( local_ext_gen_mask & EXTENSION_NATIVE_REG_PLACEMENT) {
-    CandidateMap candidate_map;
-    verbose_reg_placement = Get_Trace(TP_EXTENSION, TRACE_EXTENSION_REG_PLACEMENT_MASK);
-    VERBOSE_REG_PLACEMENT("REG_PLACEMENT: Processing function ## '%s' ##\n", ST_name(WN_st_idx(tree)));
-    WN_func_body(tree) = EXT_LOWER_find_register_candidate(WN_func_body(tree), &candidate_map);
-    if (!candidate_map.empty()) {
-      VERBOSE_REG_PLACEMENT("REG_PLACEMENT: Replace candidate PREG\n");
-      WN_func_body(tree) = EXT_LOWER_convert_valid_candidate (WN_func_body(tree), &candidate_map);
+      WN_Lower_Checkdump("After EXT CVT Lowering", tree, 0);
     }
   }
 
-  WN_Lower_Checkdump("After EXT reg placement lowering", tree, 0);
-
-  Set_Error_Phase("EXT CVT Lowering");
-
-  if ( local_ext_gen_mask & EXTENSION_NATIVE_CVTGEN) {
-    tree = EXT_LOWER_stmt_wn_gen(tree, EXT_LOWER_CVT_expr);
-  }
-  
-  WN_Lower_Checkdump("After EXT CVT Lowering", tree, 0);
-  
   WN_verifier(tree);
   
   WN_Simp_Fold_ILOAD = simpfold;
