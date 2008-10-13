@@ -791,6 +791,33 @@ add_special_options (void)
             prepend_option_seen (O__relax);
 	  }
 	}
+	switch (bundlingas) {
+	  case TRUE:
+            if (proc == PROC_stxp70_v4) {
+    	      flag = add_new_option("-CG:max_issue_width=2");
+	      add_phase_for_option(flag,P_be);
+	      prepend_option_seen (flag);
+	    } else {
+ 	      warning("--bundle is not supported by STxP70 v3 architecture");
+	    }
+	    break;
+	  case FALSE:
+            if (proc == PROC_stxp70_v4) {
+    	      flag = add_new_option("-CG:max_issue_width=1");
+	      add_phase_for_option(flag,P_be);
+	      prepend_option_seen (flag);
+	    } else {
+ 	      warning("--no-bundle is not supported by STxP70 v3 architecture");
+	    }
+	    break;
+	  default:
+            if (proc == PROC_stxp70_v4) {
+    	      flag = add_new_option("-CG:max_issue_width=1");
+	      add_phase_for_option(flag,P_be);
+	      prepend_option_seen (flag);
+	    }
+	    break;
+	}
 #endif
 #ifdef TARG_ST
 	/* TB: with -fprofile-arcs option, tell be where to generate .gcno files */
@@ -1170,9 +1197,6 @@ add_special_options (void)
 	      prepend_option_seen (flag);
 	      flag = add_string_option(O_TARG_, "enable_x3=on");
 	      prepend_option_seen(flag);
-              //  [dt] Set single core by default
-              flag = add_string_option(O_CG_, "max_issue_width=1");
-              prepend_option_seen (flag);
 	    }
 	    
 	    flag = add_string_option(O_D, "__open64__");

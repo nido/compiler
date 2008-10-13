@@ -532,7 +532,7 @@ $(EXTN)_$(HOST_MANGLING)_isa_parse.$(BOBJ): 	$(EXTN)_targ_isa_parse.c
 	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
 
 $(EXTN)_targ_isa_parse.c: $(EXTN)_targ_isa_parse.pr $(BUILD_AREA)/gensyn/gensyn$(BEXE)
-	$(BUILD_AREA)/gensyn/gensyn$(BEXE) $< -t extension -ac $@
+	$(META)$(BUILD_AREA)/gensyn/gensyn$(BEXE) $< -t extension -ac $@
 
 ifneq ($(BUILD_OS),$(HOST_OS))
 $(EXTN)_$(BUILD_MANGLING)_isa_print.$(BOBJ): $(EXTN)_targ_isa_print.c $(EXTN)_targ_isa_print.h
