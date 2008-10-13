@@ -1,5 +1,19 @@
 #ifdef INTRN_EXPAND
 
+/* Check_Opd_Enum
+ *   Generates the proper enum tn.
+ */
+static inline TN*
+Check_Opd_Enum(TN *opd, INT enum_base, SRCPOS srcpos) {
+  if (TN_is_rematerializable(opd))  {
+    WN *wn = TN_remat(opd);
+    opd = Gen_Enum_TN(WN_const_val(wn)+enum_base);
+  } else {
+    opd = Gen_Enum_TN(TN_value(opd)+enum_base);
+  }
+  return opd;
+}
+
 /* Check_Opd_RClass
  *   Expand a copy if source tn is not of given register class.
  */
@@ -109,7 +123,7 @@ Check_Opd_Literal_For_Dedicated( TN *tn_opnd, INT32 reg_file_size, INT32 arg_idx
   // Check immediate value is in range
   if ( ! (0 <= TN_value(current_value) && TN_value(current_value) < reg_file_size) ) {
     sprintf(error_msg, "Immediate value '%lld' of arg %d out of bounds"
-          " for intrinsic call '%s'.",
+          " or wrong alignment for intrinsic call '%s'.",
           TN_value(current_value), arg_idx, intrn_name);
     if (SRCPOS_linenum(srcpos)>0) {
       ErrMsgLine(EC_CG_Generic_Fatal, SRCPOS_linenum(srcpos), error_msg);

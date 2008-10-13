@@ -1,6 +1,36 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct 13 10:27:54 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-xp70-intrinsics
+
+Description:
+------------
+	*   fix bug #52783 and #51152 . intrinsics implementation for xp70
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/gnu/builtin-types.def
+	M      osprey/gccfe/gnu/c-common.c
+	M      osprey/targinfo/stxp70/config/gen_intrinsics.inc
+	M      osprey/targinfo/stxp70/intrn/x3.h
+	M      osprey/targinfo/stxp70/intrn/sx.h
+	A  +   osprey/targinfo/stxp70/intrn/builtins_sx_compatibility.h
+	M      osprey/targinfo/stxp70/intrn/fpx.h
+	M      osprey/targinfo/stxp70/intrn/builtins_sx.h
+	M      osprey/targinfo/stxp70/intrn/builtins_x3.h
+	M      osprey/targinfo/stxp70/intrn/builtins_fpx.h
+	A  +   osprey/targinfo/stxp70/intrn/sx_compatibility.h
+	M      osprey/targinfo/st200/config/gen_intrinsics.inc
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct 13 09:27:58 CEST 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
