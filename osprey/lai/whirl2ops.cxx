@@ -1967,6 +1967,12 @@ Handle_LDID (
   // generate a load:
   VARIANT variant;
 
+#ifdef TARG_ST
+  /* Fix for bug #33969: make sure st is allocated to get
+   * correct alignment information from Memop_Variant() */
+  Allocate_Object (WN_st(ldid));
+#endif
+
   if (opcode == OPC_U4U8LDID) {
     opcode =	OPC_U4U4LDID;
     WN_set_opcode(ldid, opcode);
@@ -3136,6 +3142,11 @@ Handle_STID (
   }
 
   // generate a store:
+#ifdef TARG_ST
+  /* Fix for bug #33969: make sure st is allocated to get
+   * correct alignment information from Memop_Variant() */
+  Allocate_Object (WN_st(stid));
+#endif
   VARIANT variant = Memop_Variant(stid);
 
   Last_Mem_OP = OPS_last(&New_OPs);
