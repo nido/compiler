@@ -195,9 +195,29 @@ static INT cur_pc = 0; // to hold the pc- value
 static INT
 sort_by_bb_frequency (const void *bb1, const void *bb2)
 {
+#ifdef KEY
+//TDR This new revision order by decreasing order of frequency.
+  const BB* A = *(BB**)bb1;  
+  const BB* B = *(BB**)bb2;
+
+#ifdef TARG_ST
+  if(KnuthCompareGT(BB_freq(A),BB_freq(B)))    
+      return -1;
+  if(KnuthCompareLT(BB_freq(A),BB_freq(B)))     
+      return 1;
+#else
+  if( BB_freq(A) > BB_freq(B) )
+    return -1;
+  if( BB_freq(A) < BB_freq(B) )
+    return 1;
+#endif 
+  return BB_id(A) < BB_id(B) ? -1 : 1;
+
+#else
   if (BB_freq((BB *)bb1) > BB_freq((BB *)bb2)) return 1;
   else if (BB_freq((BB *)bb1) < BB_freq((BB *)bb2)) return -1;  
   else return 0;
+#endif
 }
 
 // =======================================================================

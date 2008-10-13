@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct 13 13:01:18 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-54170
+
+Description:
+------------
+	* [trunk] Fix for bug #54170: [GCM] Non-deterministic processing of BBs leading to codegen variation .
+	Deliver fixes/codex-54170 rev #18902 with authorization branch #54173
+
+
+Modified Files:
+---------------
+	M      osprey/lai/gcm.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct 13 12:14:50 CEST 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
