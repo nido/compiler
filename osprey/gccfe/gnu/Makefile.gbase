@@ -558,7 +558,7 @@ $(LIBUNWIND): $(UNWIND_OBJS)
 
 INSTALL_DIR=cmplrs
 INSTALL_PREFIX:=$(ROOT)/lib
-LDIRT += libunwind.a
+LDIRT += $(LIBUNWIND)
 
 install-libunwind:
 	@for core in $(TARGET_LIBUNWIND_CORES); do \
