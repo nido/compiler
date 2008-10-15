@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Oct 15 08:49:40 CEST 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-51134
+
+Description:
+------------
+	*  Stack alignment failure in prolog (using ABI variable LastScratch limit on extension)
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/expand/exp_extension.cxx
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct 13 13:15:46 CEST 2008
 	Author:    chauveth
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
