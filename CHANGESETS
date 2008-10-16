@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Oct 16 13:41:19 CEST 2008
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-36580
+
+Description:
+------------
+	* [trunk] Fix for bug #36580: Internal compiler error when the current path name is very long.
+	Deliver fixes/codex-36580 rev #18987 with authorization branch #54496
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/wfe_dst.cxx
+	M      osprey/g++fe/wfe_dst.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@18971 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-36580@18987 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@18971 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-36580@18987" 
+
+Diff links to modified files:
+-----------------------------
+osprey/gccfe/wfe_dst.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_dst.cxx?p2=branches/fixes/codex-36580/osprey/gccfe/wfe_dst.cxx&r1=18971&r2=18987&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_dst.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_dst.cxx?p2=branches/fixes/codex-36580/osprey/g++fe/wfe_dst.cxx&r1=18971&r2=18987&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct 15 08:49:40 CEST 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

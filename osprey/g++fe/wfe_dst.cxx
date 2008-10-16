@@ -125,8 +125,8 @@ static BOOL dst_initialized = FALSE;
 #define getdomainname(x,y) gethostname(x,y)
 #endif
 
-#define MAX_CWD_CHARS (256 - (MAXHOSTNAMELEN+1))
-static char  cwd_buffer[MAX_CWD_CHARS+MAXHOSTNAMELEN+1];
+// This buffer may contain host names but also dir names
+static char  cwd_buffer[PATH_MAX + MAXHOSTNAMELEN + 1];
 static char *current_working_dir = &cwd_buffer[0];
 static char *current_host_dir = &cwd_buffer[0];
 
@@ -2780,7 +2780,7 @@ WFE_Set_Line_And_File (UINT line, const char* f)
 	// split file into directory path and file name
 	char *dir;
 	char *file_name = drop_path(file);;
-	char buf[256];
+	char buf[PATH_MAX];
 	if (file_name == file) {
 		// no path
 		dir = current_working_dir;
