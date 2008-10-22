@@ -1651,13 +1651,16 @@ Configure_CG_Options(void)
   }
 
   // still off by default
-#ifndef NO_IFC_DEFAULT
   // [CG] turned on select
   if (!CG_enable_select_overridden) {
     CG_enable_select =  (CG_opt_level > 1) ? CGTARG_Can_Predicate() || CGTARG_Can_Select() : FALSE;
   }
-#endif
 
+#ifdef TARG_STxP70
+  if (Is_Target_stxp70_v4() && !CG_enable_select_overridden) {
+      CG_enable_select=FALSE;
+  }
+#endif  
   if (CG_enable_select && !CG_enable_ssa) {
     DevWarn("CG: Ignoring select=ON, need ssa");
     CG_enable_select = FALSE;

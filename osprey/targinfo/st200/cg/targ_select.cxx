@@ -43,6 +43,7 @@
 #include "targ_cg_private.h"
 #include "cg_ssa.h"
 #include "cg_sched_est.h"
+#include "cg_select.h"
 
 void CG_SCHED_EST_Add_Merge_Pred(CG_SCHED_EST *se) {
   se->cached_resource_cycles = 0;
@@ -366,4 +367,39 @@ Expand_Cond_Store (
 
   Expand_Store (desc, val, base, ofst, ops);
   if (is_black_hole) Set_OP_black_hole(OPS_last(ops));
+}
+
+
+float CGTARG_Compute_est_cost_before(CG_SCHED_EST *se1, CG_SCHED_EST *se2, CG_SCHED_EST *sehead, float taken_prob, float fallthr_prob, BOOL will_need_predicate_merge) {
+    int branch_penalty = CGTARG_Branch_Taken_Penalty();
+    float est_cost_before = CG_SCHED_EST_Cycles(sehead);
+    if (se1) {
+        est_cost_before = est_cost_before + ((CG_SCHED_EST_Cycles(se1) + branch_penalty) * taken_prob);
+    }
+    if (se2) {
+        est_cost_before = est_cost_before + (CG_SCHED_EST_Cycles(se2) * fallthr_prob);
+    }
+    return est_cost_before;
+
+}
+
+float CGTARG_Compute_est_cost_after(CG_SCHED_EST *se1, CG_SCHED_EST *se2, CG_SCHED_EST *sehead, float taken_prob, float fallthr_prob, BOOL will_need_predicate_merge, BB* head) {
+    float est_cost_after=0.0;
+    if (se1) {
+      CG_SCHED_EST_Append_Scheds(sehead, se1);
+      CG_SCHED_EST_Subtract_Op_Resources(sehead, OP_code(BB_branch_op(head)));
+    }
+
+    if (se2) 
+      CG_SCHED_EST_Append_Scheds(sehead, se2);
+
+    // a new instruction to merge predicate will be added.
+    if (will_need_predicate_merge) CG_SCHED_EST_Add_Merge_Pred(sehead);
+
+    est_cost_after = CG_SCHED_EST_Cycles(sehead);
+    return est_cost_after;
+}
+
+BOOL CGTARG_Check_Profitable_Select(CG_SCHED_EST *se1, CG_SCHED_EST *se2,int size_se1, int size_se2, float est_cost_before, float est_cost_after, float fallthr_prob) {
+    return KnuthCompareLE(est_cost_after, est_cost_before);
 }

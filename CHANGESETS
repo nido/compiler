@@ -1,6 +1,33 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Oct 22 10:49:42 CEST 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-ifc-default
+
+Description:
+------------
+	* [trunk] Deliver dt25/dev-ifc-default rev #19082 with authorization branch #52789
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_select.h
+	M      osprey/lai/dominate.h
+	M      osprey/lai/cg_select.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/dominate.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/Makefile.gbase
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_select.cxx
+	M      osprey/targinfo/st200/cg/targ_select.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Oct 16 13:41:19 CEST 2008
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

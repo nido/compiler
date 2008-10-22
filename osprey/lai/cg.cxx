@@ -757,11 +757,12 @@ CG_Generate_Code(
     // merge points may have been removed
     if (CG_enable_ssa && CG_enable_select && !CG_localize_tns) {
 #ifdef TARG_ST
+#ifdef TARG_STxP70
+      if(CG_ifc_space)
+#endif
       // FdF 2005/11/02: Perform cloning after if-conversion.
       CFLOW_Optimize(CFLOW_MERGE|CFLOW_CLONE,
 		     "CFLOW (after ssa)", TRUE);
-#else
-      CFLOW_Optimize(CFLOW_MERGE, "CFLOW (after ssa)");
 #endif
       if (CG_enable_peephole) {
 	Set_Error_Phase("Extended Block Optimizer (after ssa)");

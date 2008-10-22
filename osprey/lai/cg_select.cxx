@@ -907,6 +907,34 @@ Identify_Logifs_Candidates(void)
     DevAssert(bb_id >= 0 && bb_id <= PU_BB_Count, ("bad <postord_map> value"));
     // we are interested only with reachable conditional head BBs
     if (bb_id > 0 && BB_kind (bb) == BBKIND_LOGIF) { 
+#ifdef Is_True_On
+    const char *bb_name = NULL;
+    const char *pu_id_name = NULL;
+    bool skip_ifc_found = false;
+    if (getenv("IFC_SKIP_BB_PU"))    bb_name = getenv("IFC_SKIP_BB_PU");
+    if (bb_name != NULL && strcmp(ST_name(Get_Current_PU_ST()),bb_name) == 0) {
+        if (getenv("IFC_SKIP_BB_ID")) pu_id_name = getenv("IFC_SKIP_BB_ID");
+        if (pu_id_name != NULL) {
+            char *skip_name = strdup(pu_id_name);
+            skip_name = strtok(skip_name," ");
+            while (skip_name) {
+                int BB_id_skip = atoi(skip_name);
+                if(bb_id == BB_id_skip) {
+                    skip_ifc_found = true;
+                    break;
+                }
+                skip_name = strtok(NULL," ");
+            }
+        } else {
+            skip_ifc_found = true;
+        }
+    }        
+   if (skip_ifc_found)  {
+       fprintf(TFile,"Identify_Logifs_Candidates : Skip BB %d\n",bb_id);
+       cand_vec[bb_id - 1] = NULL;
+       continue;
+   }
+#endif 
       max_cand_id = MAX(bb_id, max_cand_id);
       cand_vec[bb_id - 1] = bb;
     }
@@ -1256,6 +1284,9 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   BBLIST *bb1, *bb2;
   BB *bb;
   bool will_need_predicate_merge = false;
+  int size_se1=0;
+  int size_se2=0;
+  int size_sehead=0;
 
   // Find block probs
   bb2 = BBlist_Fall_Thru_Succ(head);
@@ -1289,14 +1320,14 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   float cycles1 = 0.0;
   float cycles2 = 0.0;
 
-  INT exp_len = BB_length(head);
+  size_sehead = BB_length(head);
 
   // Compute schedule estimate of taken region
   if (! BB_SET_EmptyP(taken_reg)) {
     se1 = CG_SCHED_EST_Create_Empty(&MEM_Select_pool, SCHED_EST_FOR_IF_CONV);
 
     FOR_ALL_BB_SET_members(taken_reg, bb) {
-      exp_len += BB_length(bb);
+      size_se1 += BB_length(bb);
 
       CG_SCHED_EST* tmp_est = CG_SCHED_EST_Create(bb, &MEM_local_pool,
                                                 SCHED_EST_FOR_IF_CONV);
@@ -1320,7 +1351,7 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
     se2 = CG_SCHED_EST_Create_Empty(&MEM_Select_pool, SCHED_EST_FOR_IF_CONV);
 
     FOR_ALL_BB_SET_members(fallthru_reg, bb) {
-      exp_len += BB_length(bb);
+      size_se2 += BB_length(bb);
 
       CG_SCHED_EST* tmp_est = CG_SCHED_EST_Create(bb, &MEM_local_pool,
                                                   SCHED_EST_FOR_IF_CONV);
@@ -1338,7 +1369,9 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
 
     cycles2 = CG_SCHED_EST_Cycles(se2);
   }
-
+  
+  INT exp_len = size_sehead + size_se1 + size_se2;
+  
   if (Trace_Select_Candidates) {
     fprintf (Select_TFile, "taken (%f cycles) = \n", cycles1);
     if (se1)
@@ -1364,51 +1397,31 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   if (!CG_ifc_cycles)
     return !will_need_predicate_merge;
 
-  // ponderate cost of each region taken separatly.
-  float est_cost_before = ((cycles1 + branch_penalty) * taken_prob) + (cycles2 * fallthr_prob) + cyclesh;
+  float est_cost_before = CGTARG_Compute_est_cost_before(se1,se2,sehead,taken_prob,fallthr_prob,will_need_predicate_merge) ;
+  float ifc_regions_cycles = CGTARG_Compute_est_cost_after(se1,se2,sehead,taken_prob,fallthr_prob,will_need_predicate_merge,head) ;
+  float est_cost_after = ifc_regions_cycles / select_factor;
 
   if (Trace_Select_Candidates) {
-    fprintf (Select_TFile, "noifc region: head %f, bb1 %f, bb2 %f\n",
-             cyclesh, cycles1, cycles2);
+        fprintf (Select_TFile, "Info region :\n\t cycles1: %f, cycles2: %f, cyclesh: %f, taken_prob:%f, fallthr_prob:%f\n", cycles1,cycles2,cyclesh,taken_prob,fallthr_prob);
+        fprintf (Select_TFile, "\t size_se1: %d, size_se2: %d, size_sehead: %d\n", size_se1,size_se2,size_sehead);
+        int sehead_latency =  CG_SCHED_EST_Critical_Length(sehead) - CG_SCHED_EST_Resource_Cycles(sehead) - 1 ;
+        int se1_latency = (se1)?(CG_SCHED_EST_Critical_Length(se1) - CG_SCHED_EST_Resource_Cycles(se1) + 1):0;
+        int se2_latency = (se2)?(CG_SCHED_EST_Critical_Length(se2) - CG_SCHED_EST_Resource_Cycles(se2) + 1):0 ;
+        fprintf (Select_TFile, "\t se1_latency: %d, se2_latency: %d, sehead_latency: %d\n", se1_latency,se2_latency,sehead_latency);
+        fprintf (Select_TFile, "\t ifc region: BBs %f / %f\n", ifc_regions_cycles, select_factor);
+        fprintf (Select_TFile, "\t Comparing without ifc:%f, with ifc:%f\n", est_cost_before, est_cost_after);
   }
 
-  if (se1) {
-    CG_SCHED_EST_Append_Scheds(sehead, se1);
-    CG_SCHED_EST_Subtract_Op_Resources(sehead, OP_code(BB_branch_op(head)));
-  }
-
-  if (se2) 
-    CG_SCHED_EST_Append_Scheds(sehead, se2);
-
-  // a new instruction to merge predicate will be added.
-  if (will_need_predicate_merge) CG_SCHED_EST_Add_Merge_Pred(sehead);
-
-  cyclesh = CG_SCHED_EST_Cycles(sehead);
-
-  if (Trace_Select_Candidates) {
-    fprintf (Select_TFile, "ifconverted bb (%f cycles) = \n", cyclesh);
-    if (sehead)
-      CG_SCHED_EST_Print(Select_TFile, sehead);
-    fprintf (Select_TFile, "\n");
-  }
+  BOOL val = CGTARG_Check_Profitable_Select(se1, se2, size_se1, size_se2, est_cost_before, est_cost_after, fallthr_prob);
 
   CG_SCHED_EST_Delete(sehead);
-
-  if (se1)
-    CG_SCHED_EST_Delete(se1);
-  if (se2)
-    CG_SCHED_EST_Delete(se2);
-
-  // cost of if converted region. prob is one. 
-  float est_cost_after =  cyclesh  / select_factor;
+  if (se1)  CG_SCHED_EST_Delete(se1);
+  if (se2)  CG_SCHED_EST_Delete(se2);
 
   if (Trace_Select_Candidates) {
-    fprintf (Select_TFile, "ifc region: BBs %f / %f\n", cyclesh, select_factor);
-    fprintf (Select_TFile, "Comparing without ifc:%f, with ifc:%f\n", est_cost_before, est_cost_after);
+      fprintf (Select_TFile, "\t Will be converted ? : %s\n", val?"YES":"NO");
   }
-
-  // If estimated cost of if convertion is a win, do it.
-  return KnuthCompareLE(est_cost_after, est_cost_before);
+  return val;
 }
 
 static BOOL
@@ -2192,6 +2205,9 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
 
             // find first use of cond_tn or pred_tn
             OP* opb = TN_ssa_def (pred_tn);
+            if (!BB_Dominates(OP_bb(opb), OP_bb(TN_ssa_def (cond_tn)))) {
+                opb = TN_ssa_def(cond_tn);
+            }
             BB *bb = OP_bb (opb);
             OP *last_seen_op=NULL;
             FOR_ALL_BB_OPs_FWD(bb,opb) {
@@ -2275,6 +2291,9 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
 
             // find first use of cond_tn or pred_tn
             OP* opb = TN_ssa_def (pred_tn);
+            if (!BB_Dominates(OP_bb(opb), OP_bb (TN_ssa_def(cond_tn)))) {
+                    opb = TN_ssa_def(cond_tn);
+            }            
             BB *bb = OP_bb (opb);
             OP *last_seen_op=NULL;
             FOR_ALL_BB_OPs_FWD(bb,opb) {
@@ -3604,7 +3623,7 @@ Convert_Select(RID *rid, const BB_REGION& bb_region)
     BB *bbb;
     
     if (bb == NULL) continue;
-      
+    
     // tests for logical expression
     //TDR: Be aware that Is_Double_Logif will modify the code => normalize the branch
     if (bbb = Is_Double_Logif(bb)) {

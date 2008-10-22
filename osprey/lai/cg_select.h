@@ -119,5 +119,7 @@ extern void Expand_CondStoreOP (OP *, TN *, OPS *);
 extern TOP Get_TOP_Merge_Preds();
 extern void CG_SCHED_EST_Add_Merge_Pred(CG_SCHED_EST *se);
 
-
+extern float CGTARG_Compute_est_cost_before(CG_SCHED_EST *se1, CG_SCHED_EST *se2, CG_SCHED_EST *sehead, float taken_prob, float fallthr_prob, BOOL will_need_predicate_merge) ;
+extern float CGTARG_Compute_est_cost_after(CG_SCHED_EST *se1, CG_SCHED_EST *se2, CG_SCHED_EST *sehead, float taken_prob, float fallthr_prob, BOOL will_need_predicate_merge,BB* head) ;
+extern BOOL CGTARG_Check_Profitable_Select(CG_SCHED_EST *se1, CG_SCHED_EST *se2,int size_se1, int size_se2, float est_cost_before, float est_cost_after, float fallthr_prob);
 #endif /* SELECT_H_INCLUDED */
