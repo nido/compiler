@@ -363,6 +363,7 @@ CGTARG_Predicate_OP (
   if (OP_has_predicate(op)) {
     FmtAssert(!on_false ,("CGTARG_Predicate_OP: can't have a predicate valid if not"));
     Set_OP_opnd(op, OP_find_opnd_use(op,OU_predicate), pred_tn);
+    Set_OP_cond_def_kind(op, OP_PREDICATED_DEF);
   }
   else {
     FmtAssert(FALSE,("CGTARG_Predicate_OP: target does not support predication"));

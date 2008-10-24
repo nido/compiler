@@ -484,6 +484,8 @@ typedef int TN_effect;
 #define OP_Pred_False(o, opnd) false
 #endif /* TARG_STxP70 */
 
+#define OP_PredOnFalse(o) OP_Pred_False(o, OP_find_opnd_use(o, OU_predicate))
+
 BOOL Set_OP_opnd_Immediate_Variant(OP *op, INT idx, TN *tn);
 
 #endif /* TARG_ST */

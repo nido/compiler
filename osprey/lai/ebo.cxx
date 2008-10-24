@@ -541,8 +541,7 @@ BOOL EBO_Fix_Select_Same_Args (OP *op,
     /* We can optimize this! But return the ACTUAL operand. */
     OPS ops = OPS_EMPTY;
 #ifdef TARG_ST
-    EBO_Exp_COPY(OP_Predicate (op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                 res, OP_opnd(op, 1), &ops);
+    EBO_Exp_COPY(OP_Predicate (op), OP_PredOnFalse(op), OP_cond_def(op), res, OP_opnd(op, 1), &ops);
 #else
     Exp_COPY(res, OP_opnd(op, 1), &ops);
 #endif
@@ -576,8 +575,7 @@ BOOL EBO_Fix_Same_Res_Op (OP *op,
       TN *new_res = Dup_TN (res);
       OP *new_op = Dup_OP (op);
 #ifdef TARG_ST
-      EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                   new_res, tnl, &ops);
+      EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), new_res, tnl, &ops);
 #else
       Exp_COPY(new_res, tnl, &ops);
 #endif
@@ -585,8 +583,7 @@ BOOL EBO_Fix_Same_Res_Op (OP *op,
       Set_OP_opnd(new_op, OP_opnds(op)-1, new_res);
       OPS_Append_Op(&ops, new_op);
 #ifdef TARG_ST
-      EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                   res, new_res, &ops);
+      EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), res, new_res, &ops);
 #else
       Exp_COPY(res, new_res, &ops);
 #endif
@@ -619,8 +616,7 @@ BOOL EBO_Fix_Same_Res_Op (OP *op,
         But return the ACTUAL operand. */
       OPS ops = OPS_EMPTY;
 #ifdef TARG_ST
-      EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                   res, OP_opnd(op, 2), &ops);
+      EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), res, OP_opnd(op, 2), &ops);
 #else
       Exp_COPY(res, OP_opnd(op, 2), &ops);
 #endif
@@ -646,8 +642,7 @@ BOOL EBO_Fix_Same_Res_Op (OP *op,
         But return the ACTUAL operand. */
       OPS ops = OPS_EMPTY;
 #ifdef TARG_ST
-      EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                   res, OP_opnd(op, 1), &ops);
+      EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), res, OP_opnd(op, 1), &ops);
 #else
       Exp_COPY(res, OP_opnd(op, 1), &ops);
 #endif
@@ -679,16 +674,14 @@ BOOL EBO_Fix_Same_Res_Op (OP *op,
                   ("Condition code also used as result of select"));
         if (TN_Is_Constant(tn2)) {
 #ifdef TARG_ST
-          EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                       new_res, tn2, &ops);
+          EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), new_res, tn2, &ops);
 #else
           Exp_COPY(new_res, tn2, &ops);
 #endif
           Set_OP_opnd(new_op, 2, new_res);
         } else {
 #ifdef TARG_ST
-          EBO_Exp_COPY(OP_Predicate (op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                       new_res, tn1, &ops);
+          EBO_Exp_COPY(OP_Predicate (op), OP_PredOnFalse(op), OP_cond_def(op), new_res, tn1, &ops);
 #else
           Exp_COPY(new_res, tn1, &ops);
 #endif
@@ -699,8 +692,7 @@ BOOL EBO_Fix_Same_Res_Op (OP *op,
        /* Allocate a new TN for the result. */
         TN *new_res = Dup_TN (res);
 #ifdef TARG_ST
-        EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                     new_res, tn1, &ops);
+        EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), new_res, tn1, &ops);
 #else
         Exp_COPY(new_res, tn1, &ops);
 #endif
@@ -708,8 +700,7 @@ BOOL EBO_Fix_Same_Res_Op (OP *op,
         Set_OP_opnd(new_op, 1, new_res);
         OPS_Append_Op(&ops, new_op);
 #ifdef TARG_ST
-        EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                     res, new_res, &ops);
+        EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), res, new_res, &ops);
 #else
         Exp_COPY(res, new_res, &ops);
 #endif
@@ -1511,9 +1502,7 @@ EBO_delete_subset_mem_op(
     }
 
 #ifdef TARG_ST
-    EBO_Exp_COPY(OP_cond_def_kind(op) == OP_ALWAYS_UNC_DEF ? NULL : OP_Predicate(op),
-		 OP_Pred_False (op, OP_find_opnd_use(op, OU_predicate)),
-                 succ_result, pred_result, &ops);
+    EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), succ_result, pred_result, &ops);
 #else
     EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_PREDICATE_OPND):NULL),
                  succ_result, pred_result, &ops);
@@ -1751,7 +1740,8 @@ hoist_predicate_of_duplicate_complement (
       } else {
 
       EBO_Exp_COPY (predicate1_tn,
-                    OP_Pred_False(pred_op,OP_find_opnd_use(pred_op,OU_predicate)),
+                    OP_PredOnFalse(pred_op),
+		    OP_cond_def(pred_op), 
                     value_tn,
                     OP_opnd(pred_op, val_idx),
                     &ops1);
@@ -1770,7 +1760,8 @@ hoist_predicate_of_duplicate_complement (
       OPS_Init(&ops1);
 #ifdef TARG_ST
       EBO_Exp_COPY (predicate2_tn,
-                    OP_Pred_False(op,OP_find_opnd_use(op,OU_predicate)),
+                    OP_PredOnFalse(op),
+		    OP_cond_def(op),
                     value_tn,
                     OP_opnd(op, val_idx),
                     &ops1);
@@ -1818,7 +1809,8 @@ hoist_predicate_of_duplicate_complement (
       for (i = 0; i < OP_results(pred_op); i++) {
 #ifdef TARG_ST
         EBO_Exp_COPY (predicate1_tn,
-                      OP_Pred_False(pred_op, OP_find_opnd_use(pred_op,OU_predicate)),
+                      OP_PredOnFalse(pred_op),
+		      OP_cond_def(pred_op),
                       OP_result(pred_op, i),
                       OP_result(op, i),
                     &ops1);
@@ -1889,7 +1881,8 @@ if (EBO_Trace_Optimization) fprintf(TFile,"hoist predicate for complementary cop
       if (!TNs_Are_Equivalent(OP_result(op, i),OP_result(pred_op, i))) {
 #ifdef TARG_ST
         EBO_Exp_COPY (predicate2_tn,
-                      OP_Pred_False(op, OP_find_opnd_use(op,OU_predicate)),
+                      OP_PredOnFalse(op),
+		      OP_cond_def(op),
                       OP_result(op, i),
                       OP_result(pred_op, i),
                     &ops1);
@@ -2301,9 +2294,7 @@ delete_memory_op (
 
     for (i = 0; i < OP_results(op); i++) {
 #ifdef TARG_ST
-      EBO_Exp_COPY(OP_cond_def_kind(op) == OP_ALWAYS_UNC_DEF ? NULL : predicate_tn, 
-		   OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-		   OP_result(op, i), OP_result(opinfo->in_op, i), &ops);
+      EBO_Exp_COPY(predicate_tn, OP_PredOnFalse(op), OP_cond_def(op), OP_result(op, i), OP_result(opinfo->in_op, i), &ops);
 #else
       EBO_Exp_COPY(predicate_tn, OP_result(op, i), OP_result(opinfo->in_op, i), &ops);
 #endif
@@ -2400,9 +2391,8 @@ delete_memory_op (
 #ifdef TARG_ST
     // Handle multi ops.
     for (i = 0; i < OP_results(op); i++) {
-      EBO_Exp_COPY(OP_cond_def_kind(op) == OP_ALWAYS_UNC_DEF ? NULL : predicate_tn,
-                   OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                   OP_result(op, i), OP_opnd(opinfo->in_op, storeval_idx+i), &ops);
+      EBO_Exp_COPY(predicate_tn, OP_PredOnFalse(op), OP_cond_def(op),
+		   OP_result(op, i), OP_opnd(opinfo->in_op, storeval_idx+i), &ops);
     }
 #else
       EBO_Exp_COPY(predicate_tn, OP_result(op, 0), storeval_tn, &ops);
@@ -2777,9 +2767,9 @@ EBO_delete_duplicate_op (
       int pred_idx = OP_find_opnd_use(op, OU_predicate);
 
       if (OP_has_predicate(op) && OP_opnd(op, pred_idx) != True_TN) 
-        EBO_Exp_COPY(OP_opnd(op, pred_idx), OP_Pred_False(op, pred_idx), rslt, src1, &ops);
+        EBO_Exp_COPY(OP_opnd(op, pred_idx), OP_Pred_False(op, pred_idx), OP_cond_def(op), rslt, src1, &ops);
       else
-        EBO_Exp_COPY(NULL, false, rslt, src1, &ops);
+        EBO_Exp_COPY(NULL, false, false, rslt, src1, &ops);
 
       /* No need to replace if same op, avoids infinite loops. */
       if (OP_cond_def (op) && OP_code (op) == OP_code (OPS_first (&ops)))
@@ -3077,9 +3067,9 @@ EBO_Try_To_Simplify_Operand0 (OP *op,
       if (EBO_Trace_Optimization) 
 	fprintf(TFile,"replace fmpy of 0.0 with 0.0\n");
 
-#ifdef TARG_ST
-      EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False (op, OP_find_opnd_use(op, OU_predicate)), tnr, FZero_TN, ops);
-#else
+ #ifdef TARG_ST
+      EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), tnr, FZero_TN, ops);
+ #else
       EBO_Exp_COPY(OP_Predicate(op), tnr, FZero_TN, ops);
 #endif
       return TRUE;
@@ -3090,10 +3080,10 @@ EBO_Try_To_Simplify_Operand0 (OP *op,
 	fprintf(TFile,"replace fadd of 0.0 with tn1\n");
 
 #ifdef TARG_ST
-      EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False (op, OP_find_opnd_use(op, OU_predicate)), tnr, tn1, ops);
+      EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), tnr, tn1, ops);
 #else
       EBO_Exp_COPY(OP_Predicate(op), tnr, tn1, ops);
-#endif
+ #endif
 
       return TRUE;
     }
@@ -3106,7 +3096,7 @@ EBO_Try_To_Simplify_Operand0 (OP *op,
 	fprintf(TFile,"replace fmpy of 1.0 with tn1\n");
 
 #ifdef TARG_ST
-      EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False (op, OP_find_opnd_use(op, OU_predicate)), tnr, tn1, ops);
+      EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), tnr, tn1, ops);
 #else
       EBO_Exp_COPY(OP_Predicate(op), tnr, tn1, ops);
 #endif
@@ -3142,14 +3132,14 @@ EBO_Try_To_Simplify_Operand0 (OP *op,
       TN *tnc = Gen_Literal_TN (const_val, TN_size(tnr));
       Expand_Immediate (tnr, tnc, 0, ops);
 #ifdef TARG_ST
-      EBO_OPS_predicate (OP_Predicate (op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)), ops);
+      EBO_OPS_predicate (OP_Predicate (op), OP_PredOnFalse(op), OP_cond_def(op), ops);
 #endif
       return TRUE;
     } else if (const_val == -1 && OP_ishr(op)) {
       TN *tnc = Gen_Literal_TN (const_val, TN_size(tnr));
       Expand_Immediate (tnr, tnc, 0, ops);
 #ifdef TARG_ST
-      EBO_OPS_predicate (OP_Predicate (op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)), ops);
+      EBO_OPS_predicate (OP_Predicate (op), OP_PredOnFalse(op), OP_cond_def(op), ops);
 #endif
       return TRUE;
     }
@@ -3162,7 +3152,7 @@ EBO_Try_To_Simplify_Operand0 (OP *op,
 #ifdef TARG_ST
     if (OP_has_predicate (op)) {
       int pred_index = OP_find_opnd_use(op, OU_predicate);
-      EBO_OPS_predicate (OP_opnd (op, pred_index), OP_Pred_False(op, pred_index), ops);
+      EBO_OPS_predicate (OP_opnd (op, pred_index), OP_Pred_False(op, pred_index), OP_cond_def(op), ops);
     }
 #endif
     return TRUE;
@@ -3172,8 +3162,7 @@ EBO_Try_To_Simplify_Operand0 (OP *op,
   if ((const_val == 1) && OP_imul(op)) 
     if (TN_is_register(tn1)) {
 #ifdef TARG_ST
-      EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                   tnr, tn1, ops);
+      EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), tnr, tn1, ops);
 #else
       Exp_COPY(tnr, tn1, ops);
 #endif
@@ -3187,7 +3176,7 @@ EBO_Try_To_Simplify_Operand0 (OP *op,
 #ifdef TARG_ST
     if (OP_has_predicate (op)) {
       int pred_index = OP_find_opnd_use(op, OU_predicate);
-      EBO_OPS_predicate (OP_opnd (op, pred_index), OP_Pred_False(op, pred_index), ops);
+      EBO_OPS_predicate (OP_opnd (op, pred_index), OP_Pred_False(op, pred_index), OP_cond_def(op), ops);
     }
 #endif
     return TRUE;
@@ -3341,8 +3330,7 @@ EBO_Try_To_Simplify_Operand1 (OP *op,
     if (const_val == 0) {
       if (TN_is_register(tn0)) {
 #ifdef TARG_ST
-        EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                     tnr, tn0, ops);
+        EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), tnr, tn0, ops);
 #else
 	Exp_COPY(tnr, tn0, ops);
 #endif
@@ -3355,7 +3343,7 @@ EBO_Try_To_Simplify_Operand1 (OP *op,
 #ifdef TARG_ST
     if (OP_has_predicate (op)) {
       int pred_index = OP_find_opnd_use(op, OU_predicate);
-      EBO_OPS_predicate (OP_opnd (op, pred_index), OP_Pred_False(op, pred_index), ops);
+      EBO_OPS_predicate (OP_opnd (op, pred_index), OP_Pred_False(op, pred_index), OP_cond_def(op), ops);
     }
 #endif
       return TRUE;
@@ -3376,8 +3364,7 @@ EBO_Try_To_Simplify_Operand1 (OP *op,
        OP_ixor(op))) {
     if (TN_is_register(tn0)) {
 #ifdef TARG_ST
-      EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                   tnr, tn0, ops);
+      EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), tnr, tn0, ops);
 #else
       Exp_COPY(tnr, tn0, ops);
 #endif
@@ -3393,7 +3380,7 @@ EBO_Try_To_Simplify_Operand1 (OP *op,
 #ifdef TARG_ST
     if (OP_has_predicate (op)) {
       int pred_index = OP_find_opnd_use(op, OU_predicate);
-      EBO_OPS_predicate (OP_opnd (op, pred_index), OP_Pred_False(op, pred_index), ops);
+      EBO_OPS_predicate (OP_opnd (op, pred_index), OP_Pred_False(op, pred_index), OP_cond_def(op), ops);
     }
 #endif
     return TRUE;
@@ -3406,7 +3393,7 @@ EBO_Try_To_Simplify_Operand1 (OP *op,
 #ifdef TARG_ST
     if (OP_has_predicate (op)) {
       int pred_index = OP_find_opnd_use(op, OU_predicate);
-      EBO_OPS_predicate (OP_opnd (op, pred_index), OP_Pred_False(op, pred_index), ops);
+      EBO_OPS_predicate (OP_opnd (op, pred_index), OP_Pred_False(op, pred_index), OP_cond_def(op), ops);
     }
 #endif
       return TRUE;
@@ -3416,8 +3403,7 @@ EBO_Try_To_Simplify_Operand1 (OP *op,
   if ((const_val == 1) && OP_imul(op)) 
       if (TN_is_register(tn0)) {
 #ifdef TARG_ST
-          EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                       tnr, tn0, ops);
+	  EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), tnr, tn0, ops);
 #else
 	  Exp_COPY(tnr, tn0, ops);
 #endif
@@ -3577,7 +3563,10 @@ EBO_Constant_Operand1 (
       if (new_opcode != TOP_UNDEFINED) {
 	  if (OP_has_predicate (op)) {
 	    new_op = Mk_OP (new_opcode, tnr, OP_opnd(op, 0), ptn0, Gen_Literal_TN(new_const_val, TN_size(tnr)));
-            CGTARG_Predicate_OP (NULL, new_op, OP_Predicate (op), OP_Pred_False (op, OP_find_opnd_use (op, OU_predicate)));
+            CGTARG_Predicate_OP (NULL, new_op, OP_Predicate (op), OP_PredOnFalse(op));
+	    // FdF 20081015
+	    if (!OP_cond_def(op))
+	      Set_OP_cond_def_kind(new_op, OP_ALWAYS_UNC_DEF);
           }
 	  else 
 	    new_op = Mk_OP (new_opcode, tnr, ptn0, Gen_Literal_TN(new_const_val, TN_size(tnr)));
@@ -3604,7 +3593,10 @@ EBO_Constant_Operand1 (
 	if (new_opcode != TOP_UNDEFINED) {
           if (OP_has_predicate (op)) {
             new_op = Mk_OP (new_opcode, tnr, OP_opnd(op, 0), ptn0, Gen_Literal_TN(new_const_val, TN_size(tnr)));
-            CGTARG_Predicate_OP (NULL, new_op, OP_Predicate (op), OP_Pred_False (op, OP_find_opnd_use (op, OU_predicate)));
+            CGTARG_Predicate_OP (NULL, new_op, OP_Predicate (op), OP_PredOnFalse(op));
+	    // FdF 20081015
+	    if (!OP_cond_def(op))
+	      Set_OP_cond_def_kind(new_op, OP_ALWAYS_UNC_DEF);
           }
           else
             new_op = Mk_OP (new_opcode, tnr, ptn0, Gen_Literal_TN(new_const_val, TN_size(tnr)));
@@ -3656,8 +3648,7 @@ if (EBO_Trace_Optimization) fprintf(TFile,"combine identical shifts\n");
         OPS ops = OPS_EMPTY;
 	if (EBO_Trace_Optimization) fprintf(TFile,"replace redundant and/or\n");
 #ifdef TARG_ST
-        EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False (op, OP_find_opnd_use(op, OU_predicate)),
-                     tnr, OP_result(pred_op, 0), &ops);
+        EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), tnr, OP_result(pred_op, 0), &ops);
 #else
         EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_find_opnd_use(op, OU_predicate)):NULL),
                      tnr, OP_result(pred_op, 0), &ops);
@@ -3679,7 +3670,7 @@ if (EBO_Trace_Optimization) fprintf(TFile,"combine identical shifts\n");
         OPS ops = OPS_EMPTY;
 	if (EBO_Trace_Optimization) fprintf(TFile,"replace complementary operations\n");
 #ifdef TARG_ST
-        EBO_Exp_COPY(OP_Predicate(op), OP_find_opnd_use(op, OU_predicate), tnr, ptn0, &ops);
+        EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), tnr, ptn0, &ops);
 #else
         EBO_Exp_COPY((OP_has_predicate(op)?OP_opnd(op,OP_find_opnd_use(op, OU_predicate)):NULL),
                      tnr, ptn0, &ops);
@@ -3903,7 +3894,7 @@ Constant_Created:
   if (OP_has_predicate(op)) {
 #ifdef TARG_ST
     int pred_index = OP_find_opnd_use(op, OU_predicate);
-    EBO_OPS_predicate (OP_opnd(op, pred_index), OP_Pred_False(op, pred_index), &ops);
+    EBO_OPS_predicate (OP_opnd(op, pred_index), OP_Pred_False(op, pred_index), OP_cond_def(op), &ops);
 #else
     EBO_OPS_predicate (OP_opnd(op, OP_PREDICATE_OPND), &ops);
 #endif
@@ -3919,7 +3910,7 @@ Constant_Created:
 #ifdef TARG_ST
   if (OP_has_predicate (op)) {
     int pred_index = OP_find_opnd_use(op, OU_predicate);
-    EBO_OPS_predicate (OP_opnd (op, pred_index), OP_Pred_False(op, pred_index), &ops);
+    EBO_OPS_predicate (OP_opnd (op, pred_index), OP_Pred_False(op, pred_index), OP_cond_def(op), &ops);
   }
 #endif
 
@@ -4297,7 +4288,7 @@ EBO_Simplify_Compare_Sequence (
   if (OP_has_predicate(op)) {
 #ifdef TARG_ST
     int pred_index = OP_find_opnd_use(op, OU_predicate);
-    EBO_OPS_predicate (OP_opnd(op, pred_index), OP_Pred_False(op, pred_index), &ops);
+    EBO_OPS_predicate (OP_opnd(op, pred_index), OP_Pred_False(op, pred_index), OP_cond_def(op), &ops);
 #else
     EBO_OPS_predicate (OP_opnd(op, OP_PREDICATE_OPND), &ops);
 #endif
@@ -4580,7 +4571,7 @@ EBO_Simplify_Compare_MinMaxSequence (
   if (OP_has_predicate(op)) {
 #ifdef TARG_ST
     int pred_index = OP_find_opnd_use(op, OU_predicate);
-    EBO_OPS_predicate (OP_opnd(op, pred_index), OP_Pred_False(op, pred_index), &ops);
+    EBO_OPS_predicate (OP_opnd(op, pred_index), OP_Pred_False(op, pred_index), OP_cond_def(op), &ops);
 #else
     EBO_OPS_predicate (OP_opnd(op, OP_PREDICATE_OPND), &ops);
 #endif
@@ -4774,7 +4765,7 @@ EBO_Fold_Constant_Expression (
 
       if (OPS_length(&ops) != 0) {
 #ifdef TARG_ST
-        EBO_OPS_predicate (OP_Predicate (op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)), &ops);
+        EBO_OPS_predicate (OP_Predicate (op), OP_PredOnFalse(op), OP_cond_def(op), &ops);
 #endif
 	OP_srcpos(OPS_first(&ops)) = OP_srcpos(op);
 
@@ -4939,7 +4930,7 @@ Constant_Created:
     return FALSE;
   }
 #ifdef TARG_ST
-    EBO_OPS_predicate (OP_Predicate(op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)), &ops);
+  EBO_OPS_predicate (OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), &ops);
 #else
   if (OP_has_predicate(op)) {
     EBO_OPS_predicate (OP_Predicate(op), &ops);
@@ -5917,8 +5908,7 @@ find_previous_constant (OP *op,
           OPS ops = OPS_EMPTY;
 
 #ifdef TARG_ST
-          EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                       OP_result(op, 0), pred_tn, &ops);
+          EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), OP_result(op, 0), pred_tn, &ops);
 #else
           EBO_Exp_COPY(OP_Predicate(op),
                        OP_result(op, 0), pred_tn, &ops);
@@ -7175,18 +7165,18 @@ op_is_needed:
 #ifdef TARG_ST
               // (cbr)
               (!EBO_predicate_dominates((tninfo->predicate_tninfo != NULL)?tninfo->predicate_tninfo->local_tn:True_TN,
-                                        OP_Pred_False (tninfo->in_op, OP_find_opnd_use(tninfo->in_op, OU_predicate)), 
+                                        OP_PredOnFalse(tninfo->in_op),
                                         tninfo->predicate_tninfo,
                                         (next_tninfo->predicate_tninfo != NULL)?
                                         next_tninfo->predicate_tninfo->local_tn:True_TN,
-                                        OP_Pred_False (next_tninfo->in_op, OP_find_opnd_use(next_tninfo->in_op, OU_predicate)), 
+                                        OP_PredOnFalse(next_tninfo->in_op),
                                         next_tninfo->predicate_tninfo)) &&
               (!EBO_predicate_complements((tninfo->predicate_tninfo != NULL)?tninfo->predicate_tninfo->local_tn:True_TN,
-                                          OP_Pred_False (tninfo->in_op, OP_find_opnd_use(tninfo->in_op, OU_predicate)), 
+                                          OP_PredOnFalse(tninfo->in_op),
                                           tninfo->predicate_tninfo,
                                           (next_tninfo->predicate_tninfo != NULL)?
                                                next_tninfo->predicate_tninfo->local_tn:True_TN,
-                                          OP_Pred_False (next_tninfo->in_op, OP_find_opnd_use(next_tninfo->in_op, OU_predicate)), 
+                                          OP_PredOnFalse(next_tninfo->in_op),
                                           next_tninfo->predicate_tninfo))) {
 #else
               (!EBO_predicate_dominates((tninfo->predicate_tninfo != NULL)?tninfo->predicate_tninfo->local_tn:True_TN,
@@ -7227,18 +7217,18 @@ op_is_needed:
             }
 #ifdef TARG_ST
             if (EBO_predicate_dominates((next_tninfo->predicate_tninfo != NULL)?next_tninfo->predicate_tninfo->local_tn:True_TN,
-                                        OP_Pred_False (next_tninfo->in_op, OP_find_opnd_use(next_tninfo->in_op, OU_predicate)), 
+                                        OP_PredOnFalse(next_tninfo->in_op),
                                         next_tninfo->predicate_tninfo,
                                         (tninfo->predicate_tninfo != NULL)?tninfo->predicate_tninfo->local_tn:True_TN,
-                                        OP_Pred_False (tninfo->in_op, OP_find_opnd_use(tninfo->in_op, OU_predicate)), 
+                                        OP_PredOnFalse(tninfo->in_op),
                                         tninfo->predicate_tninfo)) {
 #else
             if (EBO_predicate_dominates((next_tninfo->predicate_tninfo != NULL)?
                                                next_tninfo->predicate_tninfo->local_tn:True_TN,
-                                        OP_Pred_False (next_tninfo->in_op, OP_find_opnd_use(next_tninfo->in_op, OU_predicate)), 
+                                        OP_PredOnFalse(next_tninfo->in_op),
                                         next_tninfo->predicate_tninfo,
                                         (tninfo->predicate_tninfo != NULL)?tninfo->predicate_tninfo->local_tn:True_TN,
-                                        OP_Pred_False (tninfo->in_op, OP_find_opnd_use(tninfo->in_op, OU_predicate)), 
+                                        OP_PredOnFalse(tninfo->in_op),
                                          tninfo->predicate_tninfo)) {
 #endif
               /* If the first store dominates the last, there can be no       */
@@ -7278,10 +7268,10 @@ op_is_needed:
             operand_has_def = TRUE;
             if (EBO_predicate_dominates((next_tninfo->predicate_tninfo != NULL)?
                                         next_tninfo->predicate_tninfo->local_tn:True_TN,
-                                        next_tninfo->in_op ? OP_Pred_False (next_tninfo->in_op, OP_find_opnd_use(next_tninfo->in_op, OU_predicate)) : false, 
+                                        next_tninfo->in_op ? OP_PredOnFalse(next_tninfo->in_op) : false, 
                                         next_tninfo->predicate_tninfo,
                                         (tninfo->predicate_tninfo != NULL)?tninfo->predicate_tninfo->local_tn:True_TN,
-                                        tninfo->in_op ? OP_Pred_False (tninfo->in_op, OP_find_opnd_use(tninfo->in_op, OU_predicate)) : false, 
+                                        tninfo->in_op ? OP_PredOnFalse(tninfo->in_op) : false, 
                                         tninfo->predicate_tninfo)) {
 	      // FdF: Mark that one of the defining operation for this
 	      // operand is considered used.
@@ -7291,10 +7281,10 @@ op_is_needed:
               /* We can stop searching for other dominators.             */
               break;
             } else if (EBO_predicate_complements((next_tninfo->predicate_tninfo != NULL)?next_tninfo->predicate_tninfo->local_tn:True_TN,
-                                                 next_tninfo->in_op ? OP_Pred_False (next_tninfo->in_op, OP_find_opnd_use(next_tninfo->in_op, OU_predicate)) : false, 
+                                                 next_tninfo->in_op ? OP_PredOnFalse(next_tninfo->in_op) : false, 
                                                  next_tninfo->predicate_tninfo,
                                                  (tninfo->predicate_tninfo != NULL)?tninfo->predicate_tninfo->local_tn:True_TN,
-                                                 tninfo->in_op ? OP_Pred_False (tninfo->in_op, OP_find_opnd_use(tninfo->in_op, OU_predicate)) : false, 
+                                                 tninfo->in_op ? OP_PredOnFalse(tninfo->in_op) : false, 
                                                  tninfo->predicate_tninfo)) {
 #else
             if (EBO_predicate_dominates((next_tninfo->predicate_tninfo != NULL)?
@@ -7474,8 +7464,7 @@ EBO_Extract_Compose_Sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     if (OP_results(def_opinfo->in_op) != OP_opnds(op)) return FALSE;
     OPS ops = OPS_EMPTY;
 #ifdef TARG_ST
-    EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                 OP_result(op, 0), tninfo->local_tn, &ops);
+    EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), OP_result(op, 0), tninfo->local_tn, &ops);
 #else
     Exp_COPY(OP_result(op, 0), tninfo->local_tn, &ops);
 #endif
@@ -7512,8 +7501,7 @@ EBO_Extract_Compose_Sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
 	}
       }
 #ifdef TARG_ST
-      EBO_Exp_COPY(OP_Predicate(op), OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)),
-                   OP_result(op, i), tninfo->local_tn, &ops);
+      EBO_Exp_COPY(OP_Predicate(op), OP_PredOnFalse(op), OP_cond_def(op), OP_result(op, i), tninfo->local_tn, &ops);
 #else
       Exp_COPY(OP_result(op, i), tninfo->local_tn, &ops);
 #endif

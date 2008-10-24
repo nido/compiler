@@ -324,12 +324,20 @@ inline
 void
 #ifdef TARG_ST
 // (cbr) handle inversed predicates
-EBO_OPS_predicate(TN *predicate_tn, bool on_false, OPS *ops)
+EBO_OPS_predicate(TN *predicate_tn, bool on_false, bool cond_def, OPS *ops)
 #else
 EBO_OPS_predicate(TN *predicate_tn, OPS *ops)
 #endif
 {
   OP *next_op = OPS_first(ops);
+
+#ifdef TARG_ST
+  // FdF 20081015: On the first OP, set the UNC_DEF property if
+  // needed.
+  if (!TN_is_true (predicate_tn) && !cond_def && next_op)
+    Set_OP_cond_def_kind (next_op, OP_ALWAYS_UNC_DEF);
+#endif
+
   while (next_op != NULL) {
     if (OP_has_predicate(next_op)) {
       Set_OP_opnd(next_op, 
@@ -344,21 +352,33 @@ EBO_OPS_predicate(TN *predicate_tn, OPS *ops)
       if (!TN_is_true (predicate_tn))
 	Set_OP_cond_def_kind (next_op, OP_PREDICATED_DEF);
 
-#endif	
+#endif
 
     }
     next_op = OP_next(next_op);
   }
 }
 
-
-
+#ifdef TARG_ST
+// FdF 20081017: Check whether a predicated copy is available or not,
+// before generating a predicated copy with an UNC_DEF property or an
+// unconditional copy.
+inline BOOL
+EBO_Has_Predicated_Copy (TN *predicate_tn, TN *tgt_tn, TN *src_tn) {
+  OPS dummy_ops = OPS_EMPTY;
+  Expand_Copy(tgt_tn, predicate_tn, src_tn, &dummy_ops);
+  return (OPS_length (&dummy_ops) == 1
+	  && OP_copy (OPS_first(&dummy_ops))
+	  && OP_is_predicated (OPS_first(&dummy_ops)));
+}
+#endif
 
 inline
 void
 #ifdef TARG_ST
 // (cbr) Support for guards on false
-EBO_Exp_COPY(TN *predicate_tn, bool on_false, TN *tgt_tn, TN *src_tn, OPS *ops)
+// FdF 20081015: Support for ALWAYS_UNC_DEF
+EBO_Exp_COPY(TN *predicate_tn, bool on_false, bool cond_def, TN *tgt_tn, TN *src_tn, OPS *ops)
 #else
 EBO_Exp_COPY(TN *predicate_tn, TN *tgt_tn, TN *src_tn, OPS *ops)
 #endif
@@ -373,22 +393,35 @@ EBO_Exp_COPY(TN *predicate_tn, TN *tgt_tn, TN *src_tn, OPS *ops)
     Build_OP(TOP_noop,ops);
     return;
   }
+  // FdF 20081017: On ST200, since there is no predicated copy, it is
+  // better to generate an unconditional move if cond_def is false.
+  if (!cond_def && (predicate_tn != NULL) &&
+      !EBO_Has_Predicated_Copy(predicate_tn, tgt_tn, src_tn)) {
+    predicate_tn = NULL;
+  }
   if (predicate_tn != NULL) {
     Expand_Copy(tgt_tn, predicate_tn, src_tn, ops);
-    if (on_false)
-      Set_OP_Pred_False(OPS_last(ops), OP_find_opnd_use(OPS_last(ops), OU_predicate)); 
+    if (on_false) {
+      OP *next_op = OPS_first(ops);
+      while (next_op != NULL) {
+	if (OP_has_predicate(next_op)) {
+	  // (cbr) Support for guards on false
+	  Set_OP_Pred_False(next_op, TOP_Find_Operand_Use(OP_code(next_op), OU_predicate));
+	}
+	next_op = OP_next(next_op);
+      }
+    }
+    if (!cond_def)
+      Set_OP_cond_def_kind(OPS_first(ops), OP_ALWAYS_UNC_DEF);
     return;
   }
 #endif
   Exp_COPY(tgt_tn, src_tn, ops);
+#ifndef TARG_ST
   if (predicate_tn != NULL) {
-#ifdef TARG_ST
-// (cbr) Support for guards on false
-    EBO_OPS_predicate (predicate_tn, on_false, ops);
-#else
     EBO_OPS_predicate (predicate_tn, ops);
-#endif
   }
+#endif
 }
 
 #ifdef TARG_ST
