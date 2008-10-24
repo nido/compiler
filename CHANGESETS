@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct 24 09:19:40 CEST 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-52979
+
+Description:
+------------
+	* [trunk] Fix for bug #52979: Compiler segfault in bitwise DCE.
+	Deliver fixes/codex-52979 rev #19092 with authorization branch #54681
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_bdce.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct 22 10:49:42 CEST 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

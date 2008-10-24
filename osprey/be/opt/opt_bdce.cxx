@@ -407,7 +407,12 @@ BITWISE_DCE::Mark_tree_bits_live(CODEREP *cr, UINT64 live_bits,
 
   case CK_VAR:
     new_livebits = live_bits & Bits_in_var(cr);
+    // FdF 20081014: Merged code from Open64-4.2
+#ifdef TARG_ST
+    if ((MTYPE_signed(cr->Dsctyp()) || MTYPE_size_min(cr->Dsctyp()) == 32) &&
+#else
     if ((MTYPE_signed(cr->Dsctyp()) || MTYPE_size_min(cr->Dsctyp() == 32)) &&
+#endif
 	(live_bits >> MTYPE_size_min(cr->Dsctyp())) != 0) {
       // make the sign bit live
       new_livebits |= (1 << (MTYPE_size_min(cr->Dsctyp()) - 1)); 
@@ -434,7 +439,12 @@ BITWISE_DCE::Mark_tree_bits_live(CODEREP *cr, UINT64 live_bits,
       }
 
       new_livebits = live_bits & Bits_in_type(cr->Dsctyp());
+      // FdF 20081014: Merged code from Open64-4.2
+#ifdef TARG_ST
+      if ((MTYPE_signed(cr->Dsctyp()) || MTYPE_size_min(cr->Dsctyp()) == 32) &&
+#else
       if ((MTYPE_signed(cr->Dsctyp()) || MTYPE_size_min(cr->Dsctyp() == 32)) &&
+#endif
           (live_bits >> MTYPE_size_min(cr->Dsctyp())) != 0) {
         // make the sign bit live
         new_livebits |= (1 << (MTYPE_size_min(cr->Dsctyp()) - 1)); 
@@ -1048,14 +1058,35 @@ BITWISE_DCE::Redundant_cvtl(BOOL sign_xtd, INT32 to_bit, INT32 from_bit,
       return FALSE;
     if (ST_class(aux->St()) == CLASS_PREG) {
       // follow use-def edge
+      // FdF 20081014: Merged code from Open64-4.2. Fixes codex #52979
+#ifdef KEY
+      Is_True(! opnd->Is_flag_set(CF_DEF_BY_CHI) ||
+              // begin - fix for OSP_209
+              opnd->Defstmt()->Opr() == OPR_OPT_CHI,
+              // end   -
+      	      ("BITWISE_DCE::Redundant_cvtl: preg cannot be defined by chi"));
+#else
       Is_True(! opnd->Is_flag_set(CF_DEF_BY_CHI),
-	      ("BITWISE_DCE::Redundant_cvtl: preg cannot be defined by chi"));
+      	      ("BITWISE_DCE::Redundant_cvtl: preg cannot be defined by chi"));
+#endif
       if (opnd->Is_flag_set(CF_DEF_BY_PHI)) {
 	// could also apply to each phi operand, but need to prevent infinite
 	// loop; not doing this for now.
 	return FALSE;
       }
-      else return Redundant_cvtl(sign_xtd, to_bit, from_bit, opnd->Defstmt()->Rhs());
+      // FdF 20081014: Merged code from Open64-4.2. Fixes codex #52979
+#ifdef KEY
+      // bug fix for OSP_140
+      else if (opnd->Defstmt() && 
+               // begin - fix for OSP_209
+	           opnd->Defstmt()->Rhs())
+	       // end   -
+        return Redundant_cvtl(sign_xtd, to_bit, from_bit, opnd->Defstmt()->Rhs());
+      else
+	return FALSE;
+#else
+      return Redundant_cvtl(sign_xtd, to_bit, from_bit, opnd->Defstmt()->Rhs());
+#endif
     }
     // load from memory
     if (Split_64_Bit_Int_Ops && (to_bit == 40 || to_bit == 64))
