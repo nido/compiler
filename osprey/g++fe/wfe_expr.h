@@ -75,6 +75,11 @@ extern void Setup_EH_Region (bool =false);
 
 #endif /* __cplusplus */
 
+#ifdef TARG_ST
+// Make standard integral ctype promotions
+extern TYPE_ID WFE_Promoted_Type(TYPE_ID mtype);
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */

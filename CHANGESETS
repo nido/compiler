@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct 27 10:30:46 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-54960
+
+Description:
+------------
+	* [trunk] Fix for bug #54960: [MP3_gcc_64bit_v2] Assertion failure raised when compiled with debug mode compiler.
+		-> Avoid generation of unsupported I1INTCONST/I2INTCONST/U1INTCONST/U2INTCONST.
+	Deliver fixes/codex-54960 rev #19149 with authorization branch #54975
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/wfe_expr.h
+	M      osprey/gccfe/wfe_decl.cxx
+	M      osprey/g++fe/wfe_expr.h
+	M      osprey/g++fe/wfe_decl.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct 27 10:10:52 CET 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

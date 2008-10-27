@@ -2088,7 +2088,7 @@ Traverse_Aggregate_Struct (
       INT bytes_out = current_offset - FLD_ofst(fld);
       if (bytes_out > 0) {
 	TY_IDX fld_ty = FLD_type(fld);
-	WN *init_wn = WN_Intconst (TY_mtype (fld_ty), 0);
+	WN *init_wn = WN_Intconst (WFE_Promoted_Type(TY_mtype (fld_ty)), 0);
 	WN *wn = WN_Stid (MTYPE_BS, ST_ofst(st) + array_elem_offset, st,
 			  ty, init_wn, field_id);
 	WFE_Stmt_Append(wn, Get_Srcpos());

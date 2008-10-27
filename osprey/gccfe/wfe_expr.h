@@ -100,6 +100,9 @@ extern void WFE_Set_ST_Addr_Saved (WN *);
 // Convert inplace target order words in 'buf' to host order. 'buf' is a two
 // word array. 
 extern void Setup_EH_Region ();
+
+// Make standard integral ctype promotions
+extern TYPE_ID WFE_Promoted_Type(TYPE_ID mtype);
 #endif
 
 #endif /* __cplusplus */
