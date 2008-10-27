@@ -338,12 +338,17 @@ check_CanRepairUse(DUD_REGION *dud, OP *defop, OP *useop, INT useidx, INT64 repa
 	
     if((offset_idx > 0) && TN_has_value(OP_opnd(useop, offset_idx))) {
       // Check immediate range & scaling factor
-      if (!Opnd_value_in_range(OP_code(useop), offset_idx, TN_value(OP_opnd(useop, offset_idx))+repair))
-	return FALSE;
-
-      if ((TN_value(OP_opnd(useop, offset_idx)) % TOP_Mem_Bytes(OP_code(useop))) != 0)
-	return FALSE;
-	}
+      if (!Opnd_value_in_range(OP_code(useop), offset_idx, TN_value(OP_opnd(useop, offset_idx))+repair)) {
+        return FALSE;
+      }
+      if ((TN_value(OP_opnd(useop, offset_idx)) % TOP_Mem_Bytes(OP_code(useop))) != 0) {
+        return FALSE;
+      }
+    }
+    else {
+      // Rn+Rp : code repair insertion not yet supported
+      return FALSE;
+    }
     // otherwise can be repaired
   }
 

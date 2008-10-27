@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct 27 10:10:52 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-55082
+
+Description:
+------------
+	* [trunk] Fix for bug #55082: [IPA][automod] assertion failure raised when compiling BDTI/lms.
+		-> blocked automod transformation when spanning over an (Rn+Rp) memory access than cannot be repaired.
+	Deliver fixes/codex-55082 rev #19145 with authorization branch #55095
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_automod.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Oct 24 15:02:56 CEST 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
