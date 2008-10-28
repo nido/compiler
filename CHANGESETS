@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Oct 28 15:09:45 CET 2008
+	Author:    knochelh
+	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
+	Branch:    http://svn.open64.codex.cro.st.com/svnroot/open64/branches/fixes/codex-54166
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-54166 rev #19167 with authorization branch #54255
+
+
+Modified Files:
+---------------
+	M      osprey/common/util/range.cxx
+	M      osprey/common/util/lrange.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct 27 11:27:59 CET 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
