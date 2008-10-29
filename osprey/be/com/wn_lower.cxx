@@ -9945,8 +9945,15 @@ copy_aggregate_loop_const(WN *block, TY_IDX srcAlign, TY_IDX dstAlign,
     WN_copy_linenum(origStore, doLoop);
 #endif
     WN_INSERT_BlockLast(block, doLoop);
-    if ( Cur_PU_Feedback && origStore)
-      Cur_PU_Feedback->FB_lower_mstore_to_loop( origStore, doLoop, nMoves );
+    if ( Cur_PU_Feedback && origStore) 
+#ifdef TARG_ST
+      //TB: fix bug #52831 Sometimes copy_aggregate_loop() is call
+      //with a PARM WN instead of a MSTORE (origStore parameter). I
+      //think this has been done to fix a bug. I can't find why. Search
+      //for TBwhy patterm to find where this is done.
+      if (WN_operator( origStore ) != OPR_PARM)
+#endif
+	Cur_PU_Feedback->FB_lower_mstore_to_loop( origStore, doLoop, nMoves );
   }
 
  /*
@@ -11229,6 +11236,7 @@ lower_mload_actual (
 			      dstPreg,
 			      mload,
 #ifdef TARG_ST
+			      // TBwhy: I don't know why passing mparm here?
 			      mparm,
 #else
 			      NULL,
@@ -11250,6 +11258,7 @@ lower_mload_actual (
 			 dstPreg,
 			 mload,
 #ifdef TARG_ST
+			 // TBwhy: I don't know why passing mparm here?
 			 mparm,
 #else
 			 NULL,

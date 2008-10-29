@@ -1529,8 +1529,12 @@ Backend_Processing (PU_Info *current_pu, WN *pu)
 
 #ifdef TARG_ST
   //TB: Add some fb checks
-      if (Cur_PU_Feedback)
+      if (Cur_PU_Feedback) {
+	//TB: fix bug #52831 the pu associated to Cur_PU_Feedback has
+	//been made obsolete by the call to WN_Lower. Resset it.
+	Cur_PU_Feedback->Reset_Root_WN(pu);
 	Cur_PU_Feedback->Verify("After RETURN_VAL & MLDID/MSTID & ENTRY_PROMOTED lowering");
+      }
 #endif
     }
 #else
@@ -2118,8 +2122,7 @@ Set_Options_For_File()
     }
 
 }//Set_Options_For_File
-//TB: This function process all OPTION_DESC from all modules and set
-//the needed value for a given optimization level
+// TB: This function set internal variable for perf optimization
 static void 
 Apply_Opt_Level(UINT32 level)
 {
@@ -2131,9 +2134,9 @@ Apply_Opt_Level(UINT32 level)
       CG_Apply_Opt_Level(level);
     }
 }//Apply_Opt_Level
-//TB: This function process all OPTION_DESC from all modules and reset
-//the default value
-// THis function muste be called after Apply_Opt_Level
+
+// This function set internal variable for size optimization
+// This function must be called after Apply_Opt_Level
 static void 
 Apply_Opt_Size(int level)
 {
@@ -2154,7 +2157,7 @@ Apply_Opt_Size(int level)
   //Apply target options
   Apply_Opt_Size_Target(level);
 
-}//Set_Options_For_File
+}//Apply_Opt_Size
 #endif //TARG_ST
 
 // Provide a place to stop after components are loaded
