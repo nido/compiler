@@ -81,6 +81,7 @@ BE_EXPORTED extern BOOL Can_Do_Fast_Remainder (TYPE_ID mtype, INT64 val);
 #ifdef TARG_ST
 /* Returns whether SELECT can be translated, otherwise if will be lowered as if/then/else. */
 BE_EXPORTED extern BOOL Can_Do_Select (TYPE_ID mtype);
+BE_EXPORTED extern BOOL Target_Inlines_Divide (TYPE_ID mtype, INT64 val);
 #endif
 
 #ifndef TARG_ST

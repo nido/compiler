@@ -326,6 +326,20 @@ static BOOL Is_Power_Of_2(INT64 val, TYPE_ID mtype)
 }
 
 /* =============================================================
+*   Target_Inlines_Divide (mtype, dividend)
+*   return whether DIV will be translated into asm sequence 
+*   Related to bug #52129
+* 
+*   No benefits on st200 so not implemented
+* =============================================================
+*/
+extern BOOL
+Target_Inlines_Divide(TYPE_ID mtype, INT64 dividend){
+  return FALSE;
+}
+
+
+/* =============================================================
  *   Can_Do_Fast_Divide (mtype, dividend)
  *
  *   return whether DIV will be translated into shifts 

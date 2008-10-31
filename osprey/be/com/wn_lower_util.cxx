@@ -391,13 +391,14 @@ static BOOL
 Should_Call_Divide (WN *tree) 
 {
   TYPE_ID rtype = WN_rtype(tree);
+  if (Is_Intconst_Val(WN_kid1(tree))) {
+    INT64 constval = Get_Intconst_Val(WN_kid1(tree));
 
-  if (WN_operator_is(WN_kid1(tree), OPR_INTCONST)) {
-    INT64 constval = WN_const_val(WN_kid1(tree));
-    
-    if (Can_Do_Fast_Divide(rtype, constval)) return FALSE;
+    if (Can_Do_Fast_Divide(rtype, constval))  return FALSE;
+    /*TDR : New optimisation for div by 3 5 6 7 9 10 11 12 13 */
+    if (Target_Inlines_Divide(rtype, constval))  return FALSE;
   }
-  
+
   /* In all other cases, we fall back to per operator check. */
   return WN_Is_Emulated_Operator(WN_operator(tree), rtype, WN_desc(tree));
 }
@@ -406,9 +407,8 @@ static BOOL
 Should_Call_Remainder (WN *tree) 
 {
   TYPE_ID rtype = WN_rtype(tree);
-
-  if (WN_operator_is(WN_kid1(tree), OPR_INTCONST)) {
-    INT64 constval = WN_const_val(WN_kid1(tree));
+  if (Is_Intconst_Val(WN_kid1(tree))) {
+    INT64 constval = Get_Intconst_Val(WN_kid1(tree));
     
     if (Can_Do_Fast_Remainder(rtype, constval)) return FALSE;
   }

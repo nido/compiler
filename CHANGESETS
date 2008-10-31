@@ -1,6 +1,30 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct 31 12:12:28 CET 2008
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-52129
+
+Description:
+------------
+	* [trunk] Fix for bug #52129: [CISCO] Control of loops with non unit step and composit exit value to be enhanced.
+	Deliver fixes/codex-52129 rev #19200 with authorization branch #55065
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/wn_lower_util.cxx
+	M      osprey/be/com/w2op.h
+	M      osprey/targinfo/stxp70/expand/exp_divrem.cxx
+	M      osprey/targinfo/stxp70/be/betarget.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/st200/be/betarget.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct 29 16:19:25 CET 2008
 	Author:    bidaultt
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
