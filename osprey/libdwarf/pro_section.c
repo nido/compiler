@@ -1541,6 +1541,12 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 		curcie->cie_aug = zP_DW_CIE_AUGMENTER_STRING_V0;
 #endif
 	        augmented_fields_length = 6;
+#ifdef TARG_ST
+		// [CL] if no LSDA, augmentation data is shorter
+	      if (!v0_lsda) 
+		augmented_fields_length = 5;
+#endif
+
 		res = _dwarf_pro_encode_leb128_nm(augmented_fields_length,
 		     				   &a_bytes, buff3,
 						   sizeof(buff3));
@@ -1560,7 +1566,12 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 #if 1
 			 sizeof(Dwarf_Ubyte) +	  /* personality format */
 			 personality_length +	/* personality routine */
+#ifdef TARG_ST
+		  // [CL] if no LSDA, no encoding
+		  (v0_lsda ? sizeof(Dwarf_Ubyte) : 0) +
+#else
 			 sizeof(Dwarf_Ubyte) +	  /* lsda encoding */
+#endif
 #endif
 			 0 + /* fde encoding */
 			 curcie->cie_inst_bytes;
@@ -1660,15 +1671,16 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 				  sizeof(p), upointer_size);
 		  data += upointer_size;
 #ifdef TARG_ST
-		  /* (cbr) DW_EH_PE_omit */
-		  if (!v0_lsda) {
-		    p = -1;
-		  }
+		  // [CL] if no LSDA, output nothing
+		  if (v0_lsda) {
 #endif
 		  // lsda encoding
 		  WRITE_UNALIGNED(dbg, (void *)data, (const void *)&p,
 				  sizeof(p), sizeof(Dwarf_Ubyte));
 		  data += sizeof(Dwarf_Ubyte);
+#ifdef TARG_ST
+		  }
+#endif
 		}
 	    }
 
