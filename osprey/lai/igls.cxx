@@ -950,6 +950,20 @@ IGLS_Schedule_Region (BOOL before_regalloc)
 
 	// TODO: try locs_type = LOCS_DEPTH_FIRST also.
 	INT32 max_sched = (resched) ?  OP_scycle(BB_last_op(bb))+1 : INT32_MAX;
+#ifdef KEY
+	// Reschedule if new OPs were added since the last time the BB was
+	// scheduled.  This includes spill OPs added by the register allocator.
+	if (max_sched < INT32_MAX) {
+	  OP *op;
+	  FOR_ALL_BB_OPs_FWD(bb, op) {
+	    if (OP_scycle(op) == 0) {
+	      max_sched = INT32_MAX;
+	      break;
+	    }
+	  }
+	}
+#endif
+
 	if (LOCS_Enable_Scheduling && LOCS_POST_Enable_Scheduling) {
 	  if (!Sched) {
 	    Sched = CXX_NEW(HB_Schedule(), &MEM_local_pool);
