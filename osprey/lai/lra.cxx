@@ -5313,6 +5313,11 @@ Analyze_Spilling_Live_Range (
       pending_store = TRUE;
       first_def = 1;
       last_def = 0;  // def is outside the bb.
+      if (last_use == 0) {
+	// [TTh] Handling of live-in GTN not redefined in BB:
+	// the last exposed use is also the last use.
+	last_use = exposed_use;
+      }
     }
     if (last_use == VECTOR_size(Insts_Vector)) { live_out = TRUE; last_use--; }
 #else
@@ -5861,6 +5866,11 @@ last_def = -1;
       pending_store = TRUE;
       last_def = 0;  // def is outside the bb.
       first_def = 1;
+      if (last_use == 0) {
+	// [TTh] Handling of live-in GTN not redefined in BB:
+	// the last exposed use is also the last use.
+	last_use = exposed_use;
+      }
     }
     if (last_use == VECTOR_size(Insts_Vector)) { live_out = TRUE; last_use--; }
 #else
@@ -6394,7 +6404,8 @@ Init_Live_LRs_Vector (
 	BOOL all_live = TRUE;
 	FOR_ALL_REGISTER_SET_members (TN_registers (tn), reg) {
 	  if (! REGISTER_SET_MemberP (rs, reg)
-	      || ded_reg_last_use(cl, reg) <= failure_point
+	      || (ded_reg_last_use(cl, reg) <= failure_point
+		  && ded_reg_exposed_use(cl, reg) <= failure_point)
 	      || (! ded_reg_exposed_use(cl, reg)
 		  && ded_reg_first_def(cl, reg) >= failure_point)
 	      || OP_Refs_Reg (failure_op, cl, reg)) {

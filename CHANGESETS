@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Nov  7 16:31:30 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-55715
+
+Description:
+------------
+	* [trunk] Fix for bug #55715: [Img] Assertion failure in LRA with FDX extension code.
+		-> LRA fix: enable spilling of non live-out GTNs that only have exposed uses in current BB.
+	Deliver fixes/codex-55715 rev #19339 with authorization branch #55743
+
+
+Modified Files:
+---------------
+	M      osprey/lai/lra.cxx
+	M      osprey/targinfo/Makefile.gbase
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Nov  7 13:35:55 CET 2008
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

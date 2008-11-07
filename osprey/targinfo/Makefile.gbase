@@ -800,7 +800,8 @@ isa_syntax_gen$(BEXE): isa_syntax_gen.o build_isa_registers.o \
 
 isa_syntax.o: isa_syntax.cxx isa_syntax_gen.h \
 	      targ_isa_registers.h topcode.h \
-	      targ_isa_subset.h
+	      targ_isa_subset.h targ_isa_lits.h \
+	      targ_isa_enums.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 isa_syntax_gen.o: isa_syntax_gen.cxx topcode.h gen_util.h \
