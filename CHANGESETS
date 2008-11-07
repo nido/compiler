@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Nov  7 16:46:40 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-56051
+
+Description:
+------------
+	* [trunk] Fix for bug #56051: [FDX] Incorrect execution of FDX application.
+		-> 2 fixes:
+		(1) changed incorrect code used to check if mpx builtins are present and
+		(2) disabled parameter switching for sub operator (no commutativity)
+	Deliver fixes/codex-56051 rev #19344 with authorization branch #56063
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/be/targ_pattern_rec.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Nov  7 16:31:30 CET 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
