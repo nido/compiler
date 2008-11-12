@@ -404,7 +404,12 @@ extern void cleanup_src_objects ( void ) {
    int status;
 
    FOREACH_SRCOBJ(pobj,(&src_obj_list)) {
+#ifdef TARG_ST
+     // [CL] keep the file if explicitly asked to do so
+      if (!SRCOBJ_KEEP(pobj)) {
+#else
       if (has_errors() || !SRCOBJ_KEEP(pobj)) {
+#endif
          status = unlink(SRCOBJ_OBJ(pobj));
          if (status != 0 && errno != ENOENT) {
             internal_error("cannot unlink temp file %s", SRCOBJ_OBJ(pobj));

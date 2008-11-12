@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Nov 12 13:28:54 CET 2008
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-56064
+
+Description:
+------------
+	*  [trunk] Fix for bug #56064: generated object file removed if link
+	fails, even with -keep.
+	Deliver fixes/codex-56064 rev #19386 with authorization branch #56066
+
+
+Modified Files:
+---------------
+	M      osprey/driver/file_names.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Nov 12 09:11:59 CET 2008
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
