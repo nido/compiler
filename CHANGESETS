@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Nov 12 16:51:02 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-55807
+
+Description:
+------------
+	* [trunk] Fix for bug #55807: [FDX] Dummy moves \"x=x\".
+	Deliver fixes/codex-55807 rev #19390 with authorization branch #55932
+
+	-> Removed scheduling pass done by tailmerge
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_tailmerge.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Nov 12 13:28:54 CET 2008
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

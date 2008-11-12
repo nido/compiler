@@ -76,11 +76,6 @@ typedef SetOfBBs::const_iterator CItSetOfBBs;
  */
 static KindOfBB g_saveOfBBKind;
 
-/**
- * Set of basic blocks to be re-scheduled after tailmerge
- */
-static SetOfBBs g_toBeSched;
-
 //------------------------------------------------------------------------------
 // Tailmerge functions to be targeted declaration
 //------------------------------------------------------------------------------
@@ -235,9 +230,6 @@ FinalizeTailmerge(PU& pu);
 static bool
 IsUnconditionalJump(OP* op);
 
-static void
-ScheduleBBs();
-
 //------------------------------------------------------------------------------
 // Functions definition
 //------------------------------------------------------------------------------
@@ -354,14 +346,13 @@ Tailmerge(INT phase)
  * @param  pu Program unit to be tailmerged
  *
  * @pre    true
- * @post   g_saveOfBBKind and g_toBeSched are properly initialized
+ * @post   g_saveOfBBKind is properly initialized
  *
  */
 static void
 InitializeTailmerge(PU& pu)
 {
     g_saveOfBBKind.clear();
-    g_toBeSched.clear();
 
     BB* bb;
     for(bb = REGION_First_BB; bb; bb = BB_next(bb))
@@ -408,34 +399,9 @@ FinalizeTailmerge(PU& pu)
                 }
         }
     GRA_LIVE_Recalc_Liveness(NULL);
-    ScheduleBBs();
     g_saveOfBBKind.clear();
-    g_toBeSched.clear();
 }
 
-/**
- * Call backward scheduler on all basic blocks contained in g_toBeSched.
- *
- * @pre    g_toBeSched->forAll(!BB_scheduled(bb))
- * @post   g_toBeSched->forAll(BB_scheduled(bb))
- */
-static void
-ScheduleBBs()
-{
-    CItSetOfBBs it;
-    HBS_TYPE hbs_type = HBS_CRITICAL_PATH;
-    if(PROC_has_bundles())
-        {
-            hbs_type |= HBS_MINIMIZE_BUNDLES;
-        }
-    for(it = g_toBeSched.begin(); it != g_toBeSched.end(); ++it)
-        {
-            HB_Schedule sched;
-            DevAssert(!BB_scheduled(*it), ("test"));
-           	sched.Init(*it, hbs_type, INT32_MAX, NULL, NULL);
-            sched.Schedule_BB(*it, NULL, FALSE);
-        }
-}
 
 /**
  * Check whether given operation is an unconditional jump or not.
@@ -677,7 +643,6 @@ AppendOp<PU, BB, OP>(PU& a_pu, BB& a_bb, OP* op)
             // Content of a_bb will change so invalidate scheduling
             Reset_BB_scheduled(&a_bb);
             Reset_BB_scheduled_hbs(&a_bb);
-            g_toBeSched.insert(&a_bb);
 
             // Set new arcs
             if(IsJump<PU, BB, OP>(op))
@@ -751,7 +716,6 @@ GenAndInsertBB<PU, BB>(PU& a_cfg, BB& a_bb, bool bBefore)
         Gen_And_Insert_BB_After(fixedBb);
     // By construction we create only goto BB.
     g_saveOfBBKind[BasicBlockId<PU, BB>(a_cfg, *result)] = BBKIND_GOTO;
-    g_toBeSched.insert(result);
     return result;
 }
 
