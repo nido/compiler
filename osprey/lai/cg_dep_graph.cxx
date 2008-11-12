@@ -2558,7 +2558,7 @@ static BOOL get_mem_dep(OP *pred_op, OP *succ_op, BOOL *definite, UINT8 *omega, 
   if (!OP_packed(pred_op) && !OP_packed(succ_op))
     return get_mem_dep_unit(pred_op, succ_op, definite, omega, lex_neg);
 
-  OP *pred_op_unit, *succ_op_unit;
+  OP *pred_op_unit = NULL , *succ_op_unit = NULL;
   int pred_offset, succ_offset;
 
   *definite = TRUE;
