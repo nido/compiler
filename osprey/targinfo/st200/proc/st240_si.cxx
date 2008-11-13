@@ -31,12 +31,12 @@
 */ 
 
 // AUTOMATICALLY GENERATED FROM MDS DATA BASE !!! 
-//  st200 processor scheduling information 
+//  st240 processor scheduling information 
 ///////////////////////////////////// 
 //   
 //  Description:  
 //  
-//  Generate a scheduling description of a st200 processor  
+//  Generate a scheduling description of a st240 processor  
 //  via the si_gen interface.  
 //  
 /////////////////////////////////////  

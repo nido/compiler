@@ -348,6 +348,7 @@ main (int argc, char *argv[])
    		treat_one_arg(&i,newargv);
       }
    }
+
    /* At this point, add -Wy,-T,<link_scripts>.reloc in case of
     * binopt activation
     */
@@ -374,7 +375,11 @@ main (int argc, char *argv[])
 	 treat_one_arg(&i,script_argv);
       }
       p = script_files->head;
-      if ((NULL != p ) && ((deadcode==TRUE) || ((olevel>=2) && (deadcode==UNDEFINED) && (proc != PROC_stxp70_v4)))) {
+      if ((NULL != p ) && 
+          ((deadcode==TRUE) || 
+           ((olevel>=2) && (deadcode==UNDEFINED))
+	  )
+	 ) {
          snprintf(relocatable_str1,1024,"%s.reloc",p->name);
 	 if (!file_exists(p->name)) {
 	    error("Link script file required: %s",p->name);

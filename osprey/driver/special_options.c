@@ -786,37 +786,13 @@ add_special_options (void)
 #ifdef TARG_STxP70
 	if (relax == UNDEFINED) {
 	  /* TB: in relocatable mode, desactivate --relax */
-	  relax = ((proc == PROC_stxp70_v4) && (olevel >= 1) && (shared != RELOCATABLE)) ? TRUE : FALSE;
+	  relax = ((proc == PROC_stxp70_v4_single ||
+                    proc == PROC_stxp70_v4_dual ||
+                    proc == PROC_stxp70_v4_dual_arith )
+                   && (olevel >= 1) && (shared != RELOCATABLE)) ? TRUE : FALSE;
 	  if (relax == TRUE) {
             prepend_option_seen (O__relax);
 	  }
-	}
-	switch (bundlingas) {
-	  case TRUE:
-            if (proc == PROC_stxp70_v4) {
-    	      flag = add_new_option("-CG:max_issue_width=2");
-	      add_phase_for_option(flag,P_be);
-	      prepend_option_seen (flag);
-	    } else {
- 	      warning("--bundle is not supported by STxP70 v3 architecture");
-	    }
-	    break;
-	  case FALSE:
-            if (proc == PROC_stxp70_v4) {
-    	      flag = add_new_option("-CG:max_issue_width=1");
-	      add_phase_for_option(flag,P_be);
-	      prepend_option_seen (flag);
-	    } else {
- 	      warning("--no-bundle is not supported by STxP70 v3 architecture");
-	    }
-	    break;
-	  default:
-            if (proc == PROC_stxp70_v4) {
-    	      flag = add_new_option("-CG:max_issue_width=1");
-	      add_phase_for_option(flag,P_be);
-	      prepend_option_seen (flag);
-	    }
-	    break;
 	}
 #endif
 #ifdef TARG_ST
@@ -1182,7 +1158,9 @@ add_special_options (void)
 
 	    }
 
-	    if (proc == PROC_stxp70_v4) {
+	    if (proc == PROC_stxp70_v4_single ||
+                proc == PROC_stxp70_v4_dual ||
+                proc == PROC_stxp70_v4_dual_arith ) {
  	      flag = add_string_option(O_D, "__STXP70__");
 	      prepend_option_seen (flag);
 	      flag = add_string_option(O_D, "__STxP70__");
@@ -1198,7 +1176,12 @@ add_special_options (void)
 	      flag = add_string_option(O_TARG_, "enable_x3=on");
 	      prepend_option_seen(flag);
 	    }
-	    
+            if (proc == PROC_stxp70_v4_single) {
+              //  [dt] Set single core by default
+              flag = add_string_option(O_CG_, "max_issue_width=1"); 
+              prepend_option_seen (flag); 
+            }
+            
 	    flag = add_string_option(O_D, "__open64__");
 	    prepend_option_seen (flag);
 

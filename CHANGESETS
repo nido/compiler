@@ -1,6 +1,68 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Nov 13 11:26:43 CET 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mad-4-2-4
+
+Description:
+------------
+	MDS upgrade:
+	+ proc_si.cxx generation for v4. We now generate three files for v4 stxp70_v4_single_si.cxx, stxp70_v4_dual_arith_si.cxx, stxp70_v4_dual_si.cxx . These 3 files specify the different bundling variants of xp70_v4.
+	+ generic Xop (extension template instructions) are no more filtered out and are thus generated in the targinfo.
+	OPEN upgrade:
+	+ driver/compiler upgrade to take into account the bundling variants. default for v4 is single issue. -Mconfig=vliw:<n> defines the dual instruction issue implementation (v4 architecture only). <n> in {no,singlecoreALU,dualcoreALU}
+
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/phases.c
+	M      osprey/driver/objects.c
+	M      osprey/driver/special_options.c
+	M      osprey/driver/config_platform.h
+	M      osprey/driver/lang_defs.c
+	M      osprey/driver/main.c
+	M      osprey/driver/stxp70_options.i
+	M      osprey/driver/table.c
+	M      osprey/libair/air/air_stxp70.c
+	M      osprey/lai/cgdriver.cxx
+	A  +   osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx
+	M      osprey/targinfo/stxp70/proc/proc_properties.cxx
+	M      osprey/targinfo/stxp70/proc/proc.cxx
+	A  +   osprey/targinfo/stxp70/proc/stxp70_v4_dual_arith_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v3_ext_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx
+	D      osprey/targinfo/stxp70/proc/stxp70_v4_si.cxx
+	A  +   osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx
+	M      osprey/targinfo/stxp70/config/config_target.h
+	M      osprey/targinfo/stxp70/config/config_cache_targ.cxx
+	M      osprey/targinfo/stxp70/config/config_elf_targ.cxx
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+	M      osprey/targinfo/stxp70/be/driver_targ.cxx
+	M      osprey/targinfo/stxp70/isa/isa_decode.cxx
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_variants.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M      osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      osprey/targinfo/stxp70/isa/isa.cxx
+	M      osprey/targinfo/st200/proc/st220_si.cxx
+	M      osprey/targinfo/st200/proc/st231_si.cxx
+	M      osprey/targinfo/st200/proc/st240_si.cxx
+	M      osprey/targinfo/st200/isa/isa_operands.cxx
+	M      osprey/targinfo/Makefile.gbase
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Nov 12 16:51:02 CET 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

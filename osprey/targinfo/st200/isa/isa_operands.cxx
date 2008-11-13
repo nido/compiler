@@ -66,13 +66,6 @@ main()
                                ISA_RELOC_R_ST200_23_PCREL,
                                ISA_RELOC_R_ST200_23_PCREL,
                                ISA_RELOC_UNDEFINED);
-  OPERAND_VALUE_TYPE Opd_imm = 
-      ISA_Lit_Opnd_Type_Create("Opd_imm", 
-                               23, 
-                               SIGNED, 
-                               LC_imm,
-                               ISA_RELOC_UNDEFINED,
-                               ISA_RELOC_UNDEFINED);
   OPERAND_VALUE_TYPE Opd_integer = 
       ISA_Reg_Opnd_Type_Create("Opd_integer", 
                                ISA_REGISTER_CLASS_integer, 

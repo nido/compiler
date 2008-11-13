@@ -152,9 +152,12 @@ static struct {
   { "st231",    PROC_ST231 },
   { "st240",    PROC_ST240 },
   { "stxp70_v3",PROC_stxp70_v3 },
-  { "stxp70_v4",PROC_stxp70_v4 },
+  { "stxp70_v4",PROC_stxp70_v4_single},
   { "stxp70v3", PROC_stxp70_v3 },
-  { "stxp70v4", PROC_stxp70_v4 },
+  { "stxp70v4", PROC_stxp70_v4_single },
+  { "stxp70v4single", PROC_stxp70_v4_single },
+  { "stxp70v4dual",PROC_stxp70_v4_dual },
+  { "stxp70v4dualarith",PROC_stxp70_v4_dual_arith},
   { NULL,	PROC_NONE }
 };
 
@@ -836,7 +839,7 @@ Check_Target ( void )
   char *proc_env_name=NULL;
   if (proc == UNDEFINED && (proc_env_name = getenv("SXARCHITECTURE")) != NULL) {
     int i;
-    if (same_string(proc_env_name,"stxp70v4")) 	toggle (&proc, PROC_stxp70_v4);
+    if (same_string(proc_env_name,"stxp70v4")) 	toggle (&proc, PROC_stxp70_v4_single);
     else if (same_string(proc_env_name,"stxp70v3")) 	toggle (&proc, PROC_stxp70_v3);
     else {
       for (i = 0; Proc_Map[i].pname != NULL; i++) {
@@ -846,8 +849,32 @@ Check_Target ( void )
       }
     }
   }
+  extern
+  unsigned int corecfg1;
+
   switch (proc) {
-    case PROC_stxp70_v4:
+    case PROC_stxp70_v4_dual_arith:
+    case PROC_stxp70_v4_single:
+    case PROC_stxp70_v4_dual:
+      switch ((corecfg1 & (3<<10))>>10) {
+	case 0x1: /* v4 dual issue, single core ALU */
+	  if (bundlingas!=FALSE) { /* in combination with --no-bundle ? */
+             toggle (&proc, PROC_stxp70_v4_dual); 
+	  } else {
+	     toggle (&proc, PROC_stxp70_v4_single);
+	  }
+          break;
+	case 0x3: /* v4 dual issue, dual core ALU */
+	  if (bundlingas!=FALSE) { /* in combination with --no-bundle ? */
+             toggle (&proc, PROC_stxp70_v4_dual_arith); 
+	  } else {
+	     toggle (&proc, PROC_stxp70_v4_single);
+          }
+	  break;
+        case 0x0: /* v4 Single issue */
+	default:
+          toggle (&proc, PROC_stxp70_v4_single); break;
+      }
       change_phase_name(P_as,"stxp70v4-as");
       change_phase_name(P_gas,"stxp70v4-as");
       change_phase_name(P_ld,"stxp70v4-ld");
@@ -857,6 +884,16 @@ Check_Target ( void )
 #endif
       break;
     case PROC_stxp70_v3:
+      if (bundlingas==FALSE) {
+        warning("--no-bundle is not supported by STxP70 v3 architecture");
+      }
+      switch ((corecfg1 & (3<<10))>>10) {
+	case 0x1: /* v4 dual issue, single core ALU */
+	case 0x3: /* v4 dual issue, dual core ALU */
+          warning("Dual issue is not supported by STxP70 v3 architecture");
+	  corecfg1 &= ~(3<<10);
+          break;
+      }
       change_phase_name(P_as,"stxp70v3-as");
       change_phase_name(P_gas,"stxp70v3-as");
       change_phase_name(P_ld,"stxp70v3-ld");
@@ -871,12 +908,10 @@ Check_Target ( void )
    * [TTh/VCdV] Force processor type in presence of user/native
    * extensions (except x3).
    */
-//  if (ExtensionSeen) {
     if (proc == UNDEFINED || proc == PROC_stxp70_v3) {
       proc = UNDEFINED; /* [HC] to prevent warning emission in toggle if proc==PROC_stxp70_v3 */
       toggle(&proc, PROC_stxp70_v3_ext);
     }
-//  }
   
     /*
    * [VB] Force no tail recursion when -pg or -finstrument-functions
@@ -896,40 +931,14 @@ Check_Target ( void )
   switch (proc) {
   case UNDEFINED:
     toggle(&proc, PROC_stxp70_v3);
-    if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4/lib"))) {
-      ptr[7] = '3';
-      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
-    } else if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4\\lib"))) {
-      ptr[7] = '3';
-      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
-    }
-    if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v4/lib"))) {
-       ptr[7] = '3';
-       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
-    } else if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v4\\lib"))) {
-       ptr[7] = '3';
-       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
-    }
     /* fallthru stxp70 default. */
   case PROC_stxp70_v3:
-    flag = add_new_option("-TARG:proc=stxp70_v3");
-    if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4/lib"))) {
-      ptr[7] = '3';
-      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
-    } else if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4\\lib"))) {
-      ptr[7] = '3';
-      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
-    }
-    if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v4/lib"))) {
-       ptr[7] = '3';
-       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
-    } else if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v4\\lib"))) {
-       ptr[7] = '3';
-       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
-    }
-    break;
   case PROC_stxp70_v3_ext:
-    flag = add_new_option("-TARG:proc=stxp70_v3_ext");
+    if (proc == PROC_stxp70_v3) {
+       flag = add_new_option("-TARG:proc=stxp70_v3");
+    } else if (proc == PROC_stxp70_v3_ext) {
+       flag = add_new_option("-TARG:proc=stxp70_v3_ext");
+    }
     if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4/lib"))) {
       ptr[7] = '3';
       set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
@@ -945,8 +954,16 @@ Check_Target ( void )
        set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
     }
     break;
-  case PROC_stxp70_v4:
-    flag = add_new_option("-TARG:proc=stxp70_v4");
+  case PROC_stxp70_v4_single:
+  case PROC_stxp70_v4_dual:
+  case PROC_stxp70_v4_dual_arith:
+    if (proc == PROC_stxp70_v4_single) {
+       flag = add_new_option("-TARG:proc=stxp70_v4_single");
+    } else if (proc == PROC_stxp70_v4_dual) {
+       flag = add_new_option("-TARG:proc=stxp70_v4_dual");
+    } else if (proc == PROC_stxp70_v4_dual_arith) {
+       flag = add_new_option("-TARG:proc=stxp70_v4_dual_arith");
+    }
     if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v3/lib"))) {
       ptr[7] = '4';
       set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
@@ -2219,7 +2236,9 @@ Process_STxP70_Targ (string option,  string targ_args )
   old_dir = get_phase_dir(P_startup);
   new_P_startup_dir = string_copy(old_dir);
   switch (proc) {
-    case PROC_stxp70_v4:
+    case PROC_stxp70_v4_dual:
+    case PROC_stxp70_v4_single:
+    case PROC_stxp70_v4_dual_arith:
       change_phase_name(P_as,"stxp70v4-as");
       change_phase_name(P_gas,"stxp70v4-as");
       change_phase_name(P_ld,"stxp70v4-ld");

@@ -108,7 +108,9 @@ typedef enum {
   PROC_ST240    = 46,
   PROC_stxp70_v3    = 47,
   PROC_stxp70_v3_ext= 48,
-  PROC_stxp70_v4    = 49,
+  PROC_stxp70_v4_single = 49,
+  PROC_stxp70_v4_dual = 50,
+  PROC_stxp70_v4_dual_arith = 51,
 } PROCESSOR;
 
 extern PLATFORM Platform;	/* Target platform */

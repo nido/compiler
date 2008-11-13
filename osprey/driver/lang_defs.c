@@ -94,6 +94,7 @@ static lang_info_t language_info[] = {
 #if defined(TARG_ST100)
 
 #define NAMEPREFIX	""
+#define BINOPTPREFIX	""
 #define BINPATH		"/bin"
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/st100/lib"
@@ -104,6 +105,7 @@ static lang_info_t language_info[] = {
 #elif defined(linux) && defined(TARG_ST200)
 
 #define NAMEPREFIX      "st200-"
+#define BINOPTPREFIX    ""
 #define BINPATH		"/bin"
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/target"
@@ -114,6 +116,7 @@ static lang_info_t language_info[] = {
 #elif defined(sun) && defined(TARG_ST200)
 
 #define NAMEPREFIX	"st200-"
+#define BINOPTPREFIX	""
 #define BINPATH		"/bin"
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/target"
@@ -124,6 +127,7 @@ static lang_info_t language_info[] = {
 #elif defined(__CYGWIN__) && defined(TARG_ST200)
 
 #define NAMEPREFIX	"st200-"
+#define BINOPTPREFIX	""
 #define BINPATH		"/bin"
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/target"
@@ -134,6 +138,7 @@ static lang_info_t language_info[] = {
 #elif defined(__MINGW32__) && defined(TARG_ST200)
 
 #define NAMEPREFIX	"st200-"
+#define BINOPTPREFIX	""
 #define BINPATH		"/bin"
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/target"
@@ -144,6 +149,7 @@ static lang_info_t language_info[] = {
 #elif defined(linux) && defined(TARG_STxP70)
 
 #define NAMEPREFIX      "stxp70v3-"
+#define BINOPTPREFIX	"stxp70v3-"
 #define BINPATH		"/bin"
 #define LIBPATH		"/stxp70v3/lib"
 #define ALTLIBPATH	"/target"
@@ -154,6 +160,7 @@ static lang_info_t language_info[] = {
 #elif defined(sun) && defined(TARG_STxP70)
 
 #define NAMEPREFIX	"stxp70v3-"
+#define BINOPTPREFIX	"stxp70v3-"
 #define BINPATH		"/bin"
 #define LIBPATH		"/stxp70v3/lib"
 #define ALTLIBPATH	"/target"
@@ -164,6 +171,7 @@ static lang_info_t language_info[] = {
 #elif defined(__CYGWIN__) && defined(TARG_STxP70)
 
 #define NAMEPREFIX	"stxp70v3-"
+#define BINOPTPREFIX	"stxp70v3-"
 #define BINPATH		"/bin"
 #define LIBPATH		"/stxp70v3/lib"
 #define ALTLIBPATH	"/target"
@@ -174,6 +182,7 @@ static lang_info_t language_info[] = {
 #elif defined(__MINGW32__) && defined(TARG_STxP70)
 
 #define NAMEPREFIX	"stxp70v3-"
+#define BINOPTPREFIX	"stxp70v3-"
 #define BINPATH		"/bin"
 #define LIBPATH		"/stxp70v3/lib"
 #define ALTLIBPATH	"/target"
@@ -184,11 +193,13 @@ static lang_info_t language_info[] = {
 #elif defined(linux) && defined(TARG_IA64)
 #if defined(HOST_IA32) && !defined(NUE)
 #define NAMEPREFIX	"ia64-sgi-linux-"
+#define BINOPTPREFIX	""
 #define BINPATH		"/usr/ia64-sgi-linux/bin"
 #define LIBPATH		"/usr/ia64-sgi-linux/lib/gcc-lib/ia64-sgi-linux/sgicc-1.0"
 #define ALTLIBPATH	"/usr/ia64-sgi-linux/ia64-sgi-linux/lib"
 #else
 #define NAMEPREFIX	""
+#define BINOPTPREFIX	""
 #define BINPATH		"/usr/bin"
 #define LIBPATH		"/usr/lib/gcc-lib/ia64-sgi-linux/sgicc-1.0"
 #define ALTLIBPATH	"/usr/lib"
@@ -198,6 +209,7 @@ static lang_info_t language_info[] = {
 
 #elif defined(linux) && defined(TARG_IA32)
 #define NAMEPREFIX	""
+#define BINOPTPREFIX	""
 #define BINPATH		"/usr/bin"
 #define LIBPATH		"/usr/lib"
 #define ALTLIBPATH	LIBPATH
@@ -205,6 +217,7 @@ static lang_info_t language_info[] = {
 #define GNUPHASEPATH	"/lib"
 #else
 #define NAMEPREFIX	""
+#define BINOPTPREFIX	""
 #define BINPATH		"/usr/bin"
 #define LIBPATH		"/usr/lib"
 #define ALTLIBPATH	LIBPATH
@@ -323,7 +336,7 @@ static phase_info_t phase_info[] = {
    {'l',  0x00000f0000000000LL,	"",	"",		TRUE},	/* any_ld */
 #else /* BCO_Enabled Thierry */
    {'l',  0x0400000000000000LL,	NAMEPREFIX "ld", BINPATH, FALSE}, /* simple ld */
-   {'o',  0x0100000000000000LL,	"binopt",   BINPATH, FALSE},	/* binopt */
+   {'o',  0x0100000000000000LL,	BINOPTPREFIX "binopt",   BINPATH, FALSE},	/* binopt */
    {'l',  0x04000f0000000000LL,	"",	"",		TRUE},	/* any_ld */
 #endif /* BCO_Enabled Thierry */
    {'c',  0x0000100000000000LL, "cord", BINPATH,	FALSE},	/* cord */

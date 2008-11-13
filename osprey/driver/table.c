@@ -68,7 +68,7 @@ typedef enum {
 
 #ifdef TARG_ST
 /* (cbr) -TENV:registers_not_allocatable=r1,r2,r3,r4... can be quite long */
-#define MAX_OPTION_LENGTH 2048
+#define MAX_OPTION_LENGTH 4096
 #else
 #define MAX_OPTION_LENGTH 40
 #endif
@@ -397,7 +397,7 @@ static int reverse_strcmp(const void* x, const void* y) {
 /* read table from stdin, without assuming options section is sorted. */
 static void read_table(void) 
 {
-	char line[2048];
+	char line[MAX_OPTION_LENGTH];
         char *option_lines[MAX_OPTIONS];
         int option_line_count = 0;
 	char *p;

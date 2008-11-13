@@ -202,7 +202,9 @@ endif # ST200
 ifeq ($(BUILD_TARGET), STxP70)
 LDIRT += stxp70_v3_si_gen$(BEXE)
 LDIRT += stxp70_v3_ext_si_gen$(BEXE)
-LDIRT += stxp70_v4_si_gen$(BEXE)
+LDIRT += stxp70_v4_single_si_gen$(BEXE)
+LDIRT += stxp70_v4_dual_si_gen$(BEXE)
+LDIRT += stxp70_v4_dual_arith_si_gen$(BEXE)
 
 # building static library
 ifeq ($(DSO_MODE),STATIC)
@@ -210,11 +212,11 @@ SO_TARGETS = libstxp70.a
 endif
 # building windows dll
 ifeq ($(DSO_MODE),DLL)
-SO_TARGETS = stxp70_v3.dll stxp70_v3_ext.dll stxp70_v4.dll libtarginfo.dll
+SO_TARGETS = stxp70_v3.dll stxp70_v3_ext.dll stxp70_v4_single.dll stxp70_v4_dual.dll stxp70_v4_dual_arith.dll libtarginfo.dll
 endif
 # building "unix" so library
 ifeq ($(DSO_MODE),SO)
-SO_TARGETS = stxp70_v3.so stxp70_v3_ext.so stxp70_v4.so
+SO_TARGETS = stxp70_v3.so stxp70_v3_ext.so stxp70_v4_single.so stxp70_v4_dual.so stxp70_v4_dual_arith.so
 endif
 
 BUILTINS_INC_TARGETS = builtins_fpx.h builtins_model_sx.h  builtins_sx.h builtins_model_common.h  builtins_model_x3.h  builtins_x3.h fpx.h x3.h sx.h sx_compatibility.h builtins_sx_compatibility.h

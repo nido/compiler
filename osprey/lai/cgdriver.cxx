@@ -1657,10 +1657,12 @@ Configure_CG_Options(void)
   }
 
 #ifdef TARG_STxP70
-  if (Is_Target_stxp70_v4() && !CG_enable_select_overridden) {
-      CG_enable_select=FALSE;
+  if ((Is_Target_stxp70_v4_single() || Is_Target_stxp70_v4_dual() ||
+       Is_Target_stxp70_v4_dual_arith()) &&!CG_enable_select_overridden) {
+    CG_enable_select=FALSE;
   }
-#endif  
+#endif
+
   if (CG_enable_select && !CG_enable_ssa) {
     DevWarn("CG: Ignoring select=ON, need ssa");
     CG_enable_select = FALSE;
@@ -2202,7 +2204,9 @@ CG_Apply_Opt_Size(UINT32 level)
     CG_simp_flow_in_tailmerge = DEFAULT_SIMP_FLOW_TAILMERGE(CG_opt_level, TRUE);
   }
   //[dt] in V4 add lra_minregs=1
-  if (Is_Target_stxp70_v4() && !LRA_minregs_overridden) {
+  if ((Is_Target_stxp70_v4_single() || Is_Target_stxp70_v4_dual() ||
+       Is_Target_stxp70_v4_dual_arith())
+      && !LRA_minregs_overridden) {
     LRA_minregs=TRUE;
   }
   // TDR: Default to Optimized_Post_Sched schedule for STxP70 in size mode.

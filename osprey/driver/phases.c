@@ -1317,11 +1317,14 @@ add_file_args (string_list_t *args, phases_t index)
 		add_string(args, input_source);
 #endif
 #ifdef TARG_STxP70
-		if (option_was_seen(O_Mconfig__) || option_was_seen(O_corecfg__)) {
+		if (option_was_seen(O_Mconfig__) || option_was_seen(O_corecfg__) || option_was_seen(O_corecfg1__)) {
 		  	char str[32];
 		  	extern unsigned int corecfg;
+		  	extern unsigned int corecfg1;
          
 			sprintf(str,"-corecfg=%#x",corecfg);
+			add_string(args,str);
+			sprintf(str,"-corecfg1=%#x",corecfg1);
 			add_string(args,str);
 		}
 		if (option_was_seen(O_fshort_double)) {
@@ -1335,21 +1338,23 @@ add_file_args (string_list_t *args, phases_t index)
 			add_string(args,"-Mextension=x3");
 		}
                 switch (proc) {
-		  	char str[1024];
-
-			case PROC_stxp70_v4:
-				add_string(args,"--defsym");
-				add_string(args,"STXP70_ARCH=4");
-				sprintf(str,"%s/__sxasv4.mac",SYS_adirname(absolute_program_name));
-				add_string(args,str);
-				if (bundlingas==TRUE) {
-  				  add_string(args,"--bundle");
-				}
-				break;
-                	case PROC_stxp70_v3:
-			default            :
-				add_string(args,"-DSTXP70_ARCH=3"); 
-				break;
+                  char str[1024];
+                  
+                case PROC_stxp70_v4_dual      :
+                case PROC_stxp70_v4_dual_arith:
+                  add_string(args,"--bundle");
+		  /* Fall through standard STxP70 v4 */
+                case PROC_stxp70_v4_single:
+                  add_string(args,"--defsym");
+                  add_string(args,"STXP70_ARCH=4");
+                  sprintf(str,"%s/__sxasv4.mac",SYS_adirname(absolute_program_name));
+                  add_string(args,str);
+                  break;
+                case PROC_stxp70_v3    :
+                case PROC_stxp70_v3_ext:
+                default                :
+                  add_string(args,"-DSTXP70_ARCH=3"); 
+                  break;
 		}
 #endif
 
@@ -2761,11 +2766,14 @@ run_ld (void)
 	}
 #endif /* BCO_Enabled Thierry */
 #ifdef TARG_STxP70
-   if (option_was_seen(O_Mconfig__) || option_was_seen(O_corecfg__)) {
+   if (option_was_seen(O_Mconfig__) || option_was_seen(O_corecfg__) || option_was_seen(O_corecfg1__) ) {
       char str[32];
       extern unsigned int corecfg;
+      extern unsigned int corecfg1;
          
       sprintf(str,"-corecfg=%#x",corecfg);
+      add_string(args,str);
+      sprintf(str,"-corecfg1=%#x",corecfg1);
       add_string(args,str);
    }
    if (option_was_seen(O_Mextension__) && strcmp(Mextension_str,"")) {
@@ -3536,9 +3544,12 @@ add_ipl_cmd_string (int iflag)
 #ifdef TARG_STxP70
       // [YJ] In any cases, we add corecfg information.
       { extern unsigned int corecfg;
+        extern unsigned int corecfg1;
         char str[32];
 
         sprintf(str,"-corecfg=%#x",corecfg);
+        add_string(ipl_cmds,str);
+        sprintf(str,"-corecfg1=%#x",corecfg1);
         add_string(ipl_cmds,str);
       }
 #endif
@@ -3608,7 +3619,7 @@ add_ipl_cmd_string (int iflag)
             name = (string) "-Mextension=x3";
     }
 
-    // We have already had -corecfg information in the *cc file. 
+    // We have already had -corecfg/-corecfg1 information in the *cc file. 
     // Thus adding -Mconfig is redundant. Skip process.
     if(strlen(name)>0 && 0==strcmp(name,"-Mconfig")) {
         return;
