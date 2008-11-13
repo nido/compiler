@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Nov 13 15:04:24 CET 2008
+	Author:    knochelh
+	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
+	Branch:    http://svn.open64.codex.cro.st.com/svnroot/open64/branches/fixes/codex-55750
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-55750 rev #19415 with authorization branch #56095
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/expand/exp_targ.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Nov 13 14:35:43 CET 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

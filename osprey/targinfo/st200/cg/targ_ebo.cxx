@@ -4974,7 +4974,11 @@ andl_orl_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     if (invert) {
       Expand_Logical_Not(OP_result(op, 0), lhs_tn, 0, &ops);
     } else {
-      Expand_Logical_Or(OP_result(op, 0), lhs_tn, Zero_TN, 0, &ops);
+      if (TN_is_constant(lhs_tn)) {
+	Expand_Immediate(OP_result(op, 0), lhs_tn, MTYPE_I4, &ops);
+      } else {
+	Exp_COPY(OP_result(op, 0), lhs_tn, &ops);
+      }
     }
     OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
     if (EBO_in_loop) EBO_OPS_omega (&ops, lhs_tn, lhs_tninfo);
@@ -5164,7 +5168,11 @@ reduce_predicate_logical_sequence (OP *op, TN **opnd_tn,
     if (negate_value) {
       Expand_Logical_Not (result, value, V_NONE, &ops);
     } else {
-      Expand_Logical_Or(OP_result(op,0), value, Zero_TN, 0, &ops);
+      if (TN_is_constant(value)) {
+	Expand_Immediate(OP_result(op, 0), value, MTYPE_I4, &ops);
+      } else {
+	Exp_COPY(OP_result(op, 0), value, &ops);
+      }
     }
     OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
     if (!EBO_Verify_Ops(&ops)) return FALSE;
@@ -5295,7 +5303,11 @@ logical_move_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     if (notl)
       Expand_Logical_Not(OP_result(op, 0), src_tn, 0, &ops);
     else
-      Expand_Logical_Or(OP_result(op,0), src_tn, Zero_TN, 0, &ops);
+      if (TN_is_constant(src_tn)) {
+	Expand_Immediate(OP_result(op, 0), src_tn, MTYPE_I4, &ops);
+      } else {
+	Exp_COPY(OP_result(op, 0), src_tn, &ops);
+      }
   } else { // b_b_b variant
     if (immediate)
       Expand_Immediate(OP_result(op,0), src_tn, 0, &ops);

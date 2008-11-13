@@ -1509,6 +1509,9 @@ Expand_Logical_And (
   FmtAssert(TN_size(dest) <= 4, ("Result TN size unexpected"));
   FmtAssert (TN_is_register(src1) || TN_is_register(src2),
 	     ("Expand_Logical_And: both operands const ?"));
+  FmtAssert ((TN_register_class (src1) != ISA_REGISTER_CLASS_branch) &&
+	     (TN_register_class (src2) != ISA_REGISTER_CLASS_branch),
+	     ("Expand_Logical_And: branch register input unsupported"));
 
   if (TN_is_constant(src1)) {
     // switch order of src so immediate is second
@@ -1555,6 +1558,9 @@ Expand_Logical_Or (
   FmtAssert(TN_size(dest) <= 4, ("Result TN size unexpected"));
   FmtAssert (TN_is_register(src1) || TN_is_register(src2),
 	     ("Expand_Logical_Or: both operands const ?"));
+  FmtAssert ((TN_register_class (src1) != ISA_REGISTER_CLASS_branch) &&
+	     (TN_register_class (src2) != ISA_REGISTER_CLASS_branch),
+	     ("Expand_Logical_And: branch register input unsupported"));
 
   if (TN_is_constant(src1)) {
     // switch order of src so immediate is second
