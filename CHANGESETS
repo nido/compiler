@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Nov 13 14:08:41 CET 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-55799
+
+Description:
+------------
+	* [trunk] Fix for bug #55799: C++ Compiler assert in plumhall_lib_c++  (New PRE: Expr save/reload phase) (st200,gnu-debug) .
+	Deliver fixes/codex-55799 rev #19405 with authorization branch #56222
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_htable.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Nov 13 11:26:43 CET 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

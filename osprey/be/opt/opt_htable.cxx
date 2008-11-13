@@ -626,6 +626,14 @@ CODEREP::Match(CODEREP* cr, INT32 mu_vsym_depth, OPT_STAB *sym)
 	      mnode->Set_aux_id(vsym->Aux_id());
 	      mnode->Set_OPND(vsym);
 	      Set_ivar_mu_node(mnode);
+#ifdef TARG_ST
+	      // FdF 20081107: We have to check this here to avoid an
+	      // assertion in opt_efinalize.cxx:117, on very rare
+	      // occasions. (Codex #55799)
+	      if (!Match_mu_and_mu(cr->Ivar_mu_node(), mu_vsym_depth, sym)) {
+		return FALSE;
+	      }
+#endif
 	    } 
 	  }
 	  if (Ivar_occ()->Lno_dep_vertex_load() == 0)
