@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Nov 13 14:35:43 CET 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-55748
+
+Description:
+------------
+	* [trunk] Fix for bug #55748: C Compiler assert in  HP_Valid (segmented_array.h : Array subscript out of bound) (st200,ipa,gnu-debug) .
+	Deliver fixes/codex-55748 rev #19409 with authorization branch #55895
+
+
+Modified Files:
+---------------
+	M      osprey/ipa/main/optimize/ipo_const.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Nov 13 14:08:41 CET 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

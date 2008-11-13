@@ -1121,6 +1121,23 @@ IPA_Propagate_Constants (IPA_NODE* n, BOOL delete_const_param)
 	    state_formal_array = (STATE_ARRAY*) sec->Get_formals();
     }
     INT k=0;
+    // FdF 20081103: Replaced fix from Open64-3.0 by fix from
+    // Open64-4.2, they do the same.
+#ifdef KEY
+    TYLIST_IDX tylist_idx;
+    TYLIST_IDX from_idx = TY_tylist(PU_prototype(Pu_Table[ST_pu(WN_st(w))]));
+    // function return type
+    Set_TYLIST_type (New_TYLIST (tylist_idx), Tylist_Table[from_idx]);
+    Set_TY_tylist (PU_prototype(Pu_Table[ST_pu(WN_st(w))]), tylist_idx);
+    ++from_idx;
+#endif
+#ifdef TARG_ST
+    // FdF 20081103: Update the function prototype only when there is
+    // one. Functions in K&R mode do not have a prototype. (codex bug
+    // #55748)
+    BOOL has_prototype = (Tylist_Table[from_idx] != 0);
+#endif
+
     for (i = 0; i < WN_num_formals(w); i++) {
 	WN* id = WN_kid(w,i);
 	if ((*cprop_annot)[i].Is_remove_param ()) {
@@ -1136,31 +1153,26 @@ IPA_Propagate_Constants (IPA_NODE* n, BOOL delete_const_param)
 	} else {
 	    WN_kid(func_node,k) = id;
 	    ++k;
+#ifdef TARG_ST
+	    // FdF 20081103: (Codex #55748)
+	    if (has_prototype)
+#endif
+#ifdef KEY
+	    Set_TYLIST_type (New_TYLIST (tylist_idx), Tylist_Table[from_idx]);
+#endif
+
 	}
-    }
+#ifdef TARG_ST
+	// FdF 20081103: (Codex #55748)
+	if (has_prototype)
+#endif
+#ifdef KEY
+	++from_idx;
+#endif
 
-#ifdef TARG_ST // [CL] from open64-3.0
-    if(k < i) {
-      // Need to Change function prototype
-      TY_IDX old_prototype = n->Get_PU().prototype;
-      TY_IDX new_prototype = Copy_TY( old_prototype );
-      TY& old_ty = Ty_Table[old_prototype];
-      TY& new_ty = Ty_Table[new_prototype];
-      TYLIST_IDX old_idx = old_ty.Tylist();
-      TYLIST_IDX new_idx;
-      New_TYLIST(new_idx) = Tylist_Table[old_idx++]; // For return type
-      new_ty.Set_tylist(new_idx);
-      for (i = 0; i < WN_num_formals(w); i++) {
-	WN* id = WN_kid(w,i);
-	if ((*cprop_annot)[i].Is_remove_param ())
-	  ++old_idx; // Skip this parameter
-        else
-	  New_TYLIST(new_idx) = Tylist_Table[old_idx++]; // For remained parameter
-      }
-      New_TYLIST(new_idx) = 0; // End of the list.
-
-      n->Get_PU().prototype = new_prototype;
     }
+#ifdef KEY
+    Set_TYLIST_type (New_TYLIST (tylist_idx), 0);
 #endif
 
     if (n->Has_Aliased_Formal ()) {
