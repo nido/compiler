@@ -736,7 +736,9 @@ Create_TY_For_Tree (tree type_tree, TY_IDX idx)
                   if (TREE_CODE(type_tree) == INTEGER_TYPE)
                     tsize = TYPE_PRECISION(type_tree) / BITSPERBYTE;
                   else
-                    tsize = Get_Integer_Value(type_size) / BITSPERBYTE;
+		    // FdF 20081105: Round the size up. Imported from
+		    // Open64-4.2. Fix for codex #55746
+                    tsize = (Get_Integer_Value(type_size) + BITSPERBYTE - 1) / BITSPERBYTE;
 #else
                 tsize = Get_Integer_Value(type_size) / BITSPERBYTE;
 #endif
@@ -1136,6 +1138,10 @@ Create_TY_For_Tree (tree type_tree, TY_IDX idx)
 			field = next_real_or_virtual_field(type_tree, field))
 #endif
 		{
+#ifdef KEY
+		        // FdF 20081105: Fix for codex #55746
+			const  int FLD_BIT_FIELD_SIZE   = 64;
+#endif
 			if (TREE_CODE(field) == TYPE_DECL)
 				continue;
 			if (TREE_CODE(field) == CONST_DECL)
@@ -1184,6 +1190,15 @@ Create_TY_For_Tree (tree type_tree, TY_IDX idx)
                               && DECL_SIZE (field)
 #endif
 				&& Get_Integer_Value(DECL_SIZE(field)) > 0
+#ifdef KEY
+			     // FdF 20081105: Fix for codex #55746
+// We don't handle bit-fields > 64 bits. For an INT field of 128 bits, we
+// make it 64 bits. But then don't set it as FLD_IS_BIT_FIELD.
+				&& Get_Integer_Value(DECL_SIZE(field)) <= 
+				   FLD_BIT_FIELD_SIZE
+				// bug 2401
+				&& TY_size(Get_TY(TREE_TYPE(field))) != 0
+#endif
 				&& Get_Integer_Value(DECL_SIZE(field))
 				  != (TY_size(Get_TY(TREE_TYPE(field))) 
 					* BITSPERBYTE) )

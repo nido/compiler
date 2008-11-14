@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Nov 14 14:31:37 CET 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-55746
+
+Description:
+------------
+	* [trunk] Fix for bug #55746: C++ Compiler assert in plumhall_cpp  (Invalid entry for FLD Field: (bsize)) (st200,gnu-debug).
+	Deliver fixes/codex-55746 rev #19437 with authorization branch #55960
+
+
+Modified Files:
+---------------
+	M      osprey/g++fe/tree_symtab.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Nov 13 15:04:24 CET 2008
 	Author:    knochelh
 	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
