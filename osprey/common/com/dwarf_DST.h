@@ -928,6 +928,7 @@ typedef struct DST_structure_type
    DST_CHILDREN child;     /* Struct members (DW_TAG_member) */
 #ifdef TARG_ST // [CL]
    DST_INFO_IDX containing_type; /* containing type */
+   int being_built; /* struct in the process of being built. Avoid recursion */
 #endif
 } DST_STRUCTURE_TYPE;
 
@@ -940,6 +941,7 @@ typedef struct DST_structure_type
 #define DST_STRUCTURE_TYPE_last_child(attr) ((attr)->child.last)
 #ifdef TARG_ST // [CL]
 #define DST_STRUCTURE_TYPE_containing_type(attr) ((attr)->containing_type)
+#define DST_STRUCTURE_TYPE_being_built(attr) ((attr)->being_built)
 #endif
 
 
@@ -958,6 +960,7 @@ typedef DST_STRUCTURE_TYPE DST_UNION_TYPE;
 #define DST_UNION_TYPE_last_child(attr) ((attr)->child.last)
 #ifdef TARG_ST // [CL]
 #define DST_UNION_TYPE_containing_type(attr) ((attr)->containing_type)
+#define DST_UNION_TYPE_being_built(attr) ((attr)->being_built)
 #endif
 
 
@@ -1206,6 +1209,13 @@ DST_preorder_visit(
    INT32        init_val, 
    INT32 (*action)(INT32, DST_DW_tag, DST_flag, DST_ATTR_IDX, DST_INFO_IDX));
 
+
+#ifdef TARG_ST
+// [CL] needed in wfe_dst.cxx, to handle forward declaration of
+// structures/unions
+BE_EXPORTED extern DST_INFO_IDX *
+DST_get_ptr_to_lastChildField(DST_INFO *parent);
+#endif
 
 #ifdef __cplusplus
 }

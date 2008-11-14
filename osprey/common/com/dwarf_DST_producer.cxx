@@ -2028,6 +2028,37 @@ void DST_add_structure_containing_type(DST_INFO_IDX struct_idx,
    attr = DST_ATTR_IDX_TO_PTR(attr_idx, DST_STRUCTURE_TYPE);
    DST_STRUCTURE_TYPE_containing_type(attr) = containing_type_idx;
 }
+
+// [CL] avoid infinite recursion in case of self referencing struct
+void DST_set_structure_being_built(DST_INFO_IDX struct_idx)
+{
+  DST_INFO *struct_ptr = DST_INFO_IDX_TO_PTR(struct_idx);
+  DST_ATTR_IDX attr_idx = DST_INFO_attributes(struct_ptr);
+  DST_STRUCTURE_TYPE *attr;
+
+  attr = DST_ATTR_IDX_TO_PTR(attr_idx, DST_STRUCTURE_TYPE);
+  DST_STRUCTURE_TYPE_being_built(attr) = 1;
+}
+
+void DST_clear_structure_being_built(DST_INFO_IDX struct_idx)
+{
+  DST_INFO *struct_ptr = DST_INFO_IDX_TO_PTR(struct_idx);
+  DST_ATTR_IDX attr_idx = DST_INFO_attributes(struct_ptr);
+  DST_STRUCTURE_TYPE *attr;
+
+  attr = DST_ATTR_IDX_TO_PTR(attr_idx, DST_STRUCTURE_TYPE);
+  DST_STRUCTURE_TYPE_being_built(attr) = 0;
+}
+
+int DST_is_structure_being_built(DST_INFO_IDX struct_idx)
+{
+  DST_INFO *struct_ptr = DST_INFO_IDX_TO_PTR(struct_idx);
+  DST_ATTR_IDX attr_idx = DST_INFO_attributes(struct_ptr);
+  DST_STRUCTURE_TYPE *attr;
+
+  attr = DST_ATTR_IDX_TO_PTR(attr_idx, DST_STRUCTURE_TYPE);
+  return DST_STRUCTURE_TYPE_being_built(attr);
+}
 #endif
 
 /* Creates a DW_TAG_union_type entry.
@@ -2075,6 +2106,37 @@ void DST_add_union_containing_type(DST_INFO_IDX union_idx,
 
    attr = DST_ATTR_IDX_TO_PTR(attr_idx, DST_UNION_TYPE);
    DST_UNION_TYPE_containing_type(attr) = containing_type_idx;
+}
+
+// [CL] avoid infinite recursion in case of self referencing union
+void DST_set_union_being_built(DST_INFO_IDX struct_idx)
+{
+  DST_INFO *struct_ptr = DST_INFO_IDX_TO_PTR(struct_idx);
+  DST_ATTR_IDX attr_idx = DST_INFO_attributes(struct_ptr);
+  DST_UNION_TYPE *attr;
+
+  attr = DST_ATTR_IDX_TO_PTR(attr_idx, DST_UNION_TYPE);
+  DST_UNION_TYPE_being_built(attr) = 1;
+}
+
+void DST_clear_union_being_built(DST_INFO_IDX struct_idx)
+{
+  DST_INFO *struct_ptr = DST_INFO_IDX_TO_PTR(struct_idx);
+  DST_ATTR_IDX attr_idx = DST_INFO_attributes(struct_ptr);
+  DST_UNION_TYPE *attr;
+
+  attr = DST_ATTR_IDX_TO_PTR(attr_idx, DST_UNION_TYPE);
+  DST_UNION_TYPE_being_built(attr) = 0;
+}
+
+int DST_is_union_being_built(DST_INFO_IDX struct_idx)
+{
+  DST_INFO *struct_ptr = DST_INFO_IDX_TO_PTR(struct_idx);
+  DST_ATTR_IDX attr_idx = DST_INFO_attributes(struct_ptr);
+  DST_UNION_TYPE *attr;
+
+  attr = DST_ATTR_IDX_TO_PTR(attr_idx, DST_UNION_TYPE);
+  return DST_UNION_TYPE_being_built(attr);
 }
 #endif
 

@@ -140,8 +140,6 @@ Get_Srcpos (void)
   SRCPOS_clear(s);
 #ifdef TARG_ST // [CL] use GCC's global vars as reference
   WFE_Set_Line_And_File (lineno, input_filename);
-#endif
-#ifdef TARG_ST
   // [CL] do not record artificial filenames (eg compiler-generated functions)
   if (input_filename && (strcmp(input_filename, "<built-in>")== 0
 			 || strcmp(input_filename, "<internal>") == 0) ) {
@@ -153,6 +151,28 @@ Get_Srcpos (void)
   SRCPOS_linenum(s) = lineno;
   return s;
 }
+
+#ifdef TARG_ST
+// [CL] get the srcpos info from the tree
+inline SRCPOS
+Get_Srcpos_From_Tree (tree node)
+{
+  SRCPOS s;
+  SRCPOS_clear(s);
+  WFE_Set_Line_And_File (DECL_SOURCE_LINE(node), DECL_SOURCE_FILE(node));
+  SRCPOS_linenum(s) = DECL_SOURCE_LINE(node);
+
+  // [CL] do not record artificial filenames (eg compiler-generated functions)
+  if (DECL_SOURCE_FILE(node)
+      && (strcmp(DECL_SOURCE_FILE(node), "<built-in>")== 0
+	  || strcmp(DECL_SOURCE_FILE(node), "<internal>") == 0) ) {
+    current_file = 0;
+    SRCPOS_linenum(s) = 0;
+  }
+  SRCPOS_filenum(s) = current_file;
+  return s;
+}
+#endif
 
 #endif
 

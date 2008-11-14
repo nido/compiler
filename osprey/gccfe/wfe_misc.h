@@ -144,6 +144,20 @@ Get_Srcpos (void)
   return s;
 }
 
+#ifdef TARG_ST
+// [CL] get the srcpos info from the tree
+inline SRCPOS
+Get_Srcpos_From_Tree (tree node)
+{
+  SRCPOS s;
+  SRCPOS_clear(s);
+  WFE_Set_Line_And_File (DECL_SOURCE_LINE(node), DECL_SOURCE_FILE(node));
+  SRCPOS_filenum(s) = current_file;
+  SRCPOS_linenum(s) = DECL_SOURCE_LINE(node);
+  return s;
+}
+#endif
+
 #endif
 
 #endif

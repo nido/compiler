@@ -177,6 +177,17 @@ cp_to_dst_from_tree(
 	dest->byte_idx = src->offset;
 }
 
+#ifdef KEY
+// Returns true if type_tree has a DECL_ORIGINAL_TYPE, which implies this
+// node is a typedef.
+static inline BOOL is_typedef (tree type_tree)
+{
+  tree tname = TYPE_NAME (type_tree);
+  return (tname && TREE_CODE (tname) == TYPE_DECL &&
+          DECL_ORIGINAL_TYPE (tname));
+}
+#endif
+
 #ifdef TARG_ST
 // [CL] support lexical blocks
 struct mongoose_gcc_DST_IDX DST_Create_Lexical_Block(LEXICAL_BLOCK_INFO* lexical_block)
@@ -308,7 +319,7 @@ Get_Dir_Dst_Info (char *name)
 	}
 	// not found, so append path to dst list
 #ifdef TARG_ST
-	//[CM] (MBTst16964, MBTst16965) Extend name livetime
+	//[CM] (MBTst16964, MBTst16965) Extend name lifetime
 	dir_dst_list.push_back (std::make_pair (xstrdup(name), ++last_dir_num));
 #else
 	dir_dst_list.push_back (std::make_pair (name, ++last_dir_num));
@@ -336,7 +347,7 @@ Get_File_Dst_Info (char *name, UINT dir)
 	}
 	// not found, so append file to dst list
 #ifdef TARG_ST
-	//[CM] (MBTst16964, MBTst16965) Extend name livetime
+	//[CM] (MBTst16964, MBTst16965) Extend name lifetime
 	file_dst_list.push_back (std::make_pair (xstrdup(name), ++last_file_num));
 #else
 	file_dst_list.push_back (std::make_pair (name, ++last_file_num));
@@ -568,11 +579,15 @@ DST_enter_struct_union_members(tree parent_tree,
         DST_INFO_IDX fidx; 
 
         USRCPOS src;
+#ifdef TARG_ST // [CL] get source location from GCC
+	USRCPOS_srcpos(src) = Get_Srcpos_From_Tree(field);
+#else
         // For now, the source location appears bogus
         // (or at least odd) for files other than the base
         // file, so lets leave it out. Temporarily.
         //USRCPOS_srcpos(src) = Get_Srcpos();
         USRCPOS_clear(src);
+#endif
 
 	cp_to_dst_from_tree(&fidx,&g_idx);
 
@@ -735,6 +750,10 @@ DST_enter_struct_union_members(tree parent_tree,
 
 // We have a struct/union. Create a DST record
 // and enter it.
+#ifdef TARG_ST
+// [CL] idx is non-zero only when there is forward declaration.
+#endif
+
 static DST_INFO_IDX
 DST_enter_struct_union(tree type_tree, TY_IDX ttidx  , TY_IDX idx, 
 		INT tsize)
@@ -747,8 +766,51 @@ DST_enter_struct_union(tree type_tree, TY_IDX ttidx  , TY_IDX idx,
     DST_INFO_IDX current_scope_idx =
          DST_get_context(TYPE_CONTEXT(type_tree));
 
-    if(DST_IS_NULL(dst_idx)) {
+#ifdef TARG_ST
+    // [CL] in case of forward declaration, we may already have built
+    // DST for the incomplete type. Check if the type definition has
+    // now been completed, and if so, complete DST too.
 
+    // In all cases, return early to avoid infinite recursion in case
+    // of self-referencing struct/union.
+
+    if (!DST_IS_NULL(dst_idx) && (idx != 0)) {
+      FLD_HANDLE elt_fld = TY_fld(idx);
+      if (elt_fld.Is_Null())  {
+	// No field.
+	return dst_idx;
+      } else {
+
+	// Look for DST info for members
+	DST_INFO *parent_info = DST_INFO_IDX_TO_PTR(dst_idx);
+	DST_INFO_IDX *last_child_field = DST_get_ptr_to_lastChildField(parent_info);
+	if (DST_IS_NULL(*last_child_field)) {
+
+	  // Now we have new fields, but no DST. Create it now.
+	  if(TREE_CODE(type_tree) == RECORD_TYPE) {
+	    if (!DST_is_structure_being_built(dst_idx)) {
+	      DST_set_structure_being_built(dst_idx);
+	      DST_enter_struct_union_members(type_tree,dst_idx);
+	      DST_clear_structure_being_built(dst_idx);
+	    }
+	  } else if (TREE_CODE(type_tree) == UNION_TYPE) {
+	    if (!DST_is_union_being_built(dst_idx)) {
+	      DST_set_union_being_built(dst_idx);
+	      DST_enter_struct_union_members(type_tree,dst_idx);
+	      DST_clear_union_being_built(dst_idx);
+	    }
+	  }
+	  return dst_idx;
+
+	} else {
+	  // Fields are already in DST.
+	  return dst_idx;
+	}
+      }
+    }
+#endif
+
+    if(DST_IS_NULL(dst_idx)) {
 	// not yet created, so create it
 
 
@@ -761,6 +823,11 @@ DST_enter_struct_union(tree type_tree, TY_IDX ttidx  , TY_IDX idx,
         // file, so lets leave it out. Temporarily.
         //USRCPOS_srcpos(src) = Get_Srcpos();
         USRCPOS_clear(src);
+#ifdef TARG_ST // [CL] get source location from GCC
+	if (TYPE_STUB_DECL(type_tree)) {
+	  USRCPOS_srcpos(src) = Get_Srcpos_From_Tree(TYPE_STUB_DECL(type_tree));
+	}
+#endif
 
 	char *name = Get_Name(type_tree);
 	
@@ -771,6 +838,9 @@ DST_enter_struct_union(tree type_tree, TY_IDX ttidx  , TY_IDX idx,
 		  DST_INVALID_IDX, // not inlined
 		   TREE_PURPOSE(type_tree)== 0   // 1 if incomplete
 		   );
+#ifdef TARG_ST
+	   DST_set_structure_being_built(dst_idx);
+#endif
 	} else if (TREE_CODE(type_tree) == UNION_TYPE) {
 	   dst_idx = DST_mk_union_type(src,
 		  name  , // union tag name
@@ -778,11 +848,34 @@ DST_enter_struct_union(tree type_tree, TY_IDX ttidx  , TY_IDX idx,
 		  DST_INVALID_IDX, // not inlined
 		   TREE_PURPOSE(type_tree)== 0   // arg 1 if incomplete
 		   );
+#ifdef TARG_ST
+	   DST_set_union_being_built(dst_idx);
+#endif
 	} else {
 	  DevWarn("DST_enter_struct_union type tree wrong code! %d",
 		(int)TREE_CODE(type_tree));
 	  return dst_idx;
 	}
+
+#ifdef TARG_ST
+	// [CL] handle const and volatile qualifiers now, so that
+	// possible self references point to the right type
+
+	// We need an intermediate variable because we can only add
+	// members to struct/union, not to const/volatile type.
+
+	DST_INFO_IDX struct_union_dst_idx = dst_idx;
+
+	if (TYPE_VOLATILE(type_tree)) {
+	  DST_append_child(current_scope_idx,dst_idx);
+	  dst_idx = DST_mk_volatile_type(dst_idx);
+	}
+	if (TYPE_READONLY(type_tree)) {
+	  DST_append_child(current_scope_idx,dst_idx);
+	  dst_idx = DST_mk_const_type(dst_idx);
+	}
+#endif
+
 	DST_append_child(current_scope_idx,dst_idx);
 
 	// set this now so we will not infinite loop
@@ -792,8 +885,17 @@ DST_enter_struct_union(tree type_tree, TY_IDX ttidx  , TY_IDX idx,
         TYPE_DST_IDX(type_tree) = mdst;
 
 	// now can do the members.
+#ifndef TARG_ST
 	DST_enter_struct_union_members(type_tree,dst_idx);
+#else
+	DST_enter_struct_union_members(type_tree,struct_union_dst_idx);
 
+	if(TREE_CODE(type_tree) == RECORD_TYPE) {
+	   DST_clear_structure_being_built(struct_union_dst_idx);
+	} else if (TREE_CODE(type_tree) == UNION_TYPE) {
+	   DST_clear_union_being_built(struct_union_dst_idx);
+	}
+#endif
     }
 
     return  dst_idx;
@@ -827,6 +929,11 @@ DST_enter_enum(tree type_tree, TY_IDX ttidx  , TY_IDX idx,
       // file, so lets leave it out. Temporarily.
       //USRCPOS_srcpos(src) = Get_Srcpos();
       USRCPOS_clear(src);
+#ifdef TARG_ST // [CL] get source location from GCC
+      if (TYPE_STUB_DECL(type_tree)) {
+	USRCPOS_srcpos(src) = Get_Srcpos_From_Tree(TYPE_STUB_DECL(type_tree));
+      }
+#endif
       char *name1 = Get_Name(type_tree);
       tree enum_entry = TYPE_VALUES(type_tree);
       DST_size_t e_tsize =  tsize;
@@ -1064,7 +1171,11 @@ DST_enter_array_type(tree type_tree, TY_IDX ttidx  , TY_IDX idx,INT tsize)
 // for type_tree
 
 extern struct mongoose_gcc_DST_IDX
+#ifdef KEY // [CL] merged from Open64 4.2
+Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx, bool ignoreconst, bool ignorevolatile)
+#else
 Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
+#endif
 {
     
     struct mongoose_gcc_DST_IDX actual_retval;
@@ -1084,56 +1195,17 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
 
     // for typedefs get the information from the base type
     if (TYPE_NAME(type_tree)) {
-#ifndef TARG_ST // [CL] do not restrain to union & struct
 	if(  idx == 0  &&
 	    (TREE_CODE(type_tree) == RECORD_TYPE ||
 	     TREE_CODE(type_tree) == UNION_TYPE) &&
 	    TREE_CODE(TYPE_NAME(type_tree)) == TYPE_DECL &&
 	    TYPE_MAIN_VARIANT(type_tree) != type_tree) {
-#else
-	  if ( idx == 0 &&
-	    TREE_CODE(TYPE_NAME(type_tree)) == TYPE_DECL &&
-	    TYPE_MAIN_VARIANT(type_tree) != type_tree) {
-
-	    struct mongoose_gcc_DST_IDX tdst
-	      = TYPE_DST_IDX(type_tree);
-	    cp_to_dst_from_tree(&dst_idx,&tdst);
-	    if (DST_IS_NULL(dst_idx)) {
-#endif
 		idx = Get_TY (TYPE_MAIN_VARIANT(type_tree));
-
-#ifdef TARG_ST // [CL] create typedef info
-		USRCPOS src;
-		// For now, the source location appears bogus
-		USRCPOS_clear(src);
-		DST_INFO_IDX type_idx;
-
-		struct mongoose_gcc_DST_IDX type_dst =
-		  TYPE_DST_IDX(TYPE_MAIN_VARIANT(type_tree));
-
-		cp_to_dst_from_tree(&type_idx, &type_dst);
-
-		if (TYPE_READONLY(type_tree)) {
-		  type_idx = DST_mk_const_type(type_idx);
-		  DST_append_child(comp_unit_idx,type_idx);
-		}
-		if (TYPE_VOLATILE(type_tree)) {
-		  type_idx = DST_mk_volatile_type(type_idx);
-		  DST_append_child(comp_unit_idx,type_idx);
-		}
-
-		if (DECL_ORIGINAL_TYPE(TYPE_NAME(type_tree))) {
-		  dst_idx = DST_mk_typedef( src,
-					    Get_Name(type_tree),
-					    type_idx,
-					    DST_INVALID_IDX);
-
-		  DST_append_child(comp_unit_idx,dst_idx);
-		} else {
-		  dst_idx = type_idx;
-		}
-	    }
-#endif
+#ifndef KEY
+		// The following code always a return an invalid DST_IDX. This 
+		// causes the back-end to skip DW_AT_type for any variable 
+		// declared to be of a user-defined type (which is a typedef 
+		// of a base type).
 
 		//if (TYPE_READONLY(type_tree))
 		//	Set_TY_is_const (idx);
@@ -1147,6 +1219,7 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
 
 		cp_to_tree_from_dst(&actual_retval,&dst_idx);
 		return actual_retval;
+#endif
        } else {
 //
        }
@@ -1183,6 +1256,72 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
 		else
 			tsize = Get_Integer_Value(type_size) / BITSPERBYTE;
    }
+
+
+#ifdef KEY // [CL] merged from Open64 4.2
+           // and fixed to cope with self referencing struct/union
+   if (!ignoreconst && TYPE_READONLY (type_tree)) {
+       struct mongoose_gcc_DST_IDX tdst = TYPE_DST_IDX(type_tree);
+       cp_to_dst_from_tree(&dst_idx,&tdst);
+       if(DST_IS_NULL(dst_idx)) {
+            TY_IDX itx = TYPE_TY_IDX(type_tree);
+            struct mongoose_gcc_DST_IDX unqualtype = Create_DST_type_For_Tree (type_tree, itx, idx, true, false) ;
+
+#ifdef TARG_ST
+	 // [CL] for struct/union, const is handled in DST_enter_struct_union()
+	 if ( (TREE_CODE(type_tree) != RECORD_TYPE)
+	      && (TREE_CODE(type_tree) != UNION_TYPE) ) {
+#endif
+            DST_INFO_IDX unqual_dst;
+
+            cp_to_dst_from_tree(&unqual_dst,&unqualtype);
+            // not created yet, so create
+            dst_idx = DST_mk_const_type (unqual_dst) ;
+
+            DST_append_child(current_scope_idx,dst_idx);
+
+            struct mongoose_gcc_DST_IDX qual_dst_idx;
+            cp_to_tree_from_dst(&qual_dst_idx,&dst_idx);
+            TYPE_DST_IDX(type_tree) = qual_dst_idx;
+#ifdef TARG_ST
+	 }
+#endif
+       }
+       cp_to_tree_from_dst(&actual_retval,&dst_idx);
+       return actual_retval;
+   }
+   if (!ignorevolatile && TYPE_VOLATILE (type_tree)) {
+       struct mongoose_gcc_DST_IDX tdst = TYPE_DST_IDX(type_tree);
+       cp_to_dst_from_tree(&dst_idx,&tdst);
+       if(DST_IS_NULL(dst_idx)) {
+            TY_IDX itx = TYPE_TY_IDX(type_tree);
+            struct mongoose_gcc_DST_IDX unqualtype = Create_DST_type_For_Tree (type_tree, itx, idx, true, true) ;
+
+#ifdef TARG_ST
+	 // [CL] for struct/union, volatile is handled in DST_enter_struct_union()
+	 if ( (TREE_CODE(type_tree) != RECORD_TYPE)
+	      && (TREE_CODE(type_tree) != UNION_TYPE) ) {
+#endif
+            DST_INFO_IDX unqual_dst;
+
+            cp_to_dst_from_tree(&unqual_dst,&unqualtype);
+            // not created yet, so create
+            dst_idx = DST_mk_volatile_type (unqual_dst) ;
+
+            DST_append_child(current_scope_idx,dst_idx);
+
+            struct mongoose_gcc_DST_IDX qual_dst_idx;
+            cp_to_tree_from_dst(&qual_dst_idx,&dst_idx);
+            TYPE_DST_IDX(type_tree) = qual_dst_idx;
+#ifdef TARG_ST
+	 }
+#endif
+       }
+       cp_to_tree_from_dst(&actual_retval,&dst_idx);
+       return actual_retval;
+   }
+#endif
+
    int encoding = 0;
    switch (TREE_CODE(type_tree)) {
    case VOID_TYPE:
@@ -1216,6 +1355,12 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
 		}
      case ENUMERAL_TYPE:
 		{
+#ifdef KEY
+                // Handle typedefs for enum
+                if (is_typedef (type_tree))
+                  dst_idx = DST_Create_type ((ST*)NULL, TYPE_NAME (type_tree));
+                else
+#endif
 		dst_idx = DST_enter_enum(type_tree,ttidx,idx,
                         tsize);
 
@@ -1244,10 +1389,27 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
 			cp_to_tree_from_dst(&actual_retval,&t);
                         return actual_retval;
                 } else {
+#ifdef KEY
+                       // Handle typedefs for common basetypes
+                       if (is_typedef (type_tree))
+                         dst_idx = DST_Create_type ((ST*)NULL,
+                                                    TYPE_NAME (type_tree));
+                       else
+#endif
+#ifdef TARG_ST
+			 // [CL] is case of typedef, dst_idx has
+			 // already been appended to comp_unit by
+			 // DST_Create_type(), don't append it again
+			 // actually a merge from Open64 4.2?
+			 {
+#endif
                        dst_idx = DST_mk_basetype(
                                 name1,encoding,tsize);
                        basetypes[names] = dst_idx;
 		       DST_append_child(comp_unit_idx,dst_idx);
+#ifdef TARG_ST
+			 }
+#endif
                 }
 
                 }
@@ -1283,6 +1445,12 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
                }
 		break;
     case POINTER_TYPE:
+#ifdef KEY
+               // Handle typedefs for pointer types
+               if (is_typedef (type_tree))
+                 dst_idx = DST_Create_type ((ST*)NULL, TYPE_NAME (type_tree));
+               else
+#endif
 	       {
                 struct mongoose_gcc_DST_IDX tdst
                   = TYPE_DST_IDX(type_tree);
@@ -1332,6 +1500,13 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
                                        ttidx,idx);
 #endif
     case ARRAY_TYPE:
+#ifdef TARG_ST
+                // [CL] Handle typedef for array
+		if (is_typedef (type_tree)) {
+                  dst_idx = DST_Create_type ((ST*)NULL, TYPE_NAME (type_tree));
+		}
+                else
+#endif
 	       {
                 dst_idx = DST_enter_array_type(type_tree, 
 			ttidx, idx, tsize);
@@ -1340,6 +1515,13 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
     case RECORD_TYPE:
     case UNION_TYPE:
 		{
+#ifdef KEY
+                // Handle typedefs for struct/union
+		if (is_typedef (type_tree)) {
+                  dst_idx = DST_Create_type ((ST*)NULL, TYPE_NAME (type_tree));
+		}
+                else
+#endif
 		dst_idx = DST_enter_struct_union(type_tree,ttidx,idx,
 			tsize);
 		}
@@ -1435,7 +1617,7 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
 		      TYPE_ARG_TYPES(type_tree)) {
 		    isprototyped = TRUE;
 		  }
-	    
+
 		  dst_idx = DST_mk_subroutine_type(src,
 						   NULL,
 						   ret_idx,
@@ -1618,6 +1800,9 @@ static DST_INFO_IDX
 DST_Create_type(ST *typ_decl, tree decl)
 {
     USRCPOS src;
+#ifdef TARG_ST // [CL] get source location from GCC
+    USRCPOS_srcpos(src) = Get_Srcpos_From_Tree(decl);
+#else
     // For now, the source location appears bogus
     // (or at least odd) for files other than the base
     // file, so lets leave it out. Temporarily.
@@ -1625,6 +1810,8 @@ DST_Create_type(ST *typ_decl, tree decl)
 
 
     USRCPOS_clear(src);
+#endif
+
     DST_INFO_IDX dst_idx;
     
 
@@ -1635,9 +1822,18 @@ DST_Create_type(ST *typ_decl, tree decl)
       name1 =  Get_Name(TREE_TYPE(decl));
     } else {
       // is a typedef type
+#ifdef KEY
+      // Yes, this is a typedef, and so get THAT typename, not the
+      // original typename
+      name1 = Get_Name(TREE_TYPE(decl));
+#else
       name1 = Get_Name(DECL_ORIGINAL_TYPE(decl));
+#endif
     }
   
+#ifndef TARG_ST // [CL] we may need to complete a forward declaration,
+                // so handle the underlying type in any case.
+
     // FIX look in various contexts to find known types ?
     // It is not true base types that are the problem, it
     // is typedefs creating 'new types'.
@@ -1650,13 +1846,19 @@ DST_Create_type(ST *typ_decl, tree decl)
         // hack so rest of gnu need know nothing of DST
         return t;
     } 
+#endif
 
     DST_INFO_IDX current_scope_idx =
          DST_get_context(DECL_CONTEXT(decl));
 
     // Nope, something new. make a typedef entry.
     // First, ensure underlying type is set up.
+#ifdef KEY
+    // Same as DECL_RESULT, but this looks to be the right macro
+    tree undt = DECL_ORIGINAL_TYPE(decl);
+#else
     tree undt = DECL_RESULT(decl);
+#endif
     struct mongoose_gcc_DST_IDX dst;
     TY_IDX base;
 
@@ -1668,6 +1870,22 @@ DST_Create_type(ST *typ_decl, tree decl)
     // ie, in typedef int a, ensure int is there.
     base = Get_TY(undt);
     dst = Create_DST_type_For_Tree(undt,base,/*s/u fwd decl TY_IDX=*/ 0);
+
+#ifdef TARG_ST // [CL] don't redefine to top-level type
+
+    // FIX look in various contexts to find known types ?
+    // It is not true base types that are the problem, it
+    // is typedefs creating 'new types'.
+    std::string names(name1);
+    DST_Type_Map::iterator p =
+                        basetypes.find(names);
+    if(p != basetypes.end()) {
+                        //Yep, already known.
+        DST_INFO_IDX t = (*p).second;
+        // hack so rest of gnu need know nothing of DST
+        return t;
+    }
+#endif
 
     DST_INFO_IDX sub_idx;
     cp_to_dst_from_tree(&sub_idx,&dst);
@@ -1681,7 +1899,10 @@ DST_Create_type(ST *typ_decl, tree decl)
     basetypes[names] = dst_idx;
     struct mongoose_gcc_DST_IDX mdst;
     cp_to_tree_from_dst(&mdst,&dst_idx);
+
+#ifndef TARG_ST // [CL] why would we set top-level DST to undt?
     TYPE_DST_IDX(undt) = mdst;
+#endif
 
     return dst_idx;
 }
@@ -1690,12 +1911,16 @@ static DST_INFO_IDX
 DST_Create_Parmvar(ST *var_st, tree param)
 {
     USRCPOS src;
+#ifdef TARG_ST // [CL] get source location from GCC
+	USRCPOS_srcpos(src) = Get_Srcpos_From_Tree(param);
+#else
     // For now, the source location appears bogus
     // (or at least odd) for files other than the base
     // file, so lets leave it out. Temporarily.
     //USRCPOS_srcpos(src) = Get_Srcpos();
 
     USRCPOS_clear(src);
+#endif
 
     DST_INFO_IDX dtype;
 
@@ -1719,10 +1944,8 @@ static DST_INFO_IDX
 DST_Create_var(ST *var_st, tree decl)
 {
     USRCPOS src;
-#ifdef TARG_ST
-    // Enable srcpos generation as part of fix for bug #48429.
-    // (see also cgdwarf.cxx)
-    USRCPOS_srcpos(src) = Get_Srcpos();
+#ifdef TARG_ST // [CL] get source location from GCC
+    USRCPOS_srcpos(src) = Get_Srcpos_From_Tree(decl);
 #else
     // For now, the source location appears bogus
     // (or at least odd) for files other than the base
@@ -1746,17 +1969,18 @@ DST_Create_var(ST *var_st, tree decl)
     cp_to_dst_from_tree(&type,&type_gcc_dst);
 
 #ifdef TARG_ST
-	// [CL] Handle const qualifier, which is attached to the
-	// decl tree, not to the type tree
-	if (TREE_READONLY(decl)) {
-	  type = DST_mk_const_type(type);
-	  DST_append_child(comp_unit_idx,type);
-	}
-	// [CL] Handle volatile qualifier
-	if (TREE_THIS_VOLATILE(decl)) {
-	  type = DST_mk_volatile_type(type);
-	  DST_append_child(comp_unit_idx,type);
-	}
+    // [CL] Handle const qualifier, which is attached to the
+    // decl tree, not to the type tree
+    // If the type is already qualified, don't re-qualify it
+    if (TREE_READONLY(decl) && (!TYPE_READONLY(TREE_TYPE(decl))) ) {
+      type = DST_mk_const_type(type);
+      DST_append_child(comp_unit_idx,type);
+    }
+    // [CL] Handle volatile qualifier
+    if (TREE_THIS_VOLATILE(decl) && (!TYPE_VOLATILE(TREE_TYPE(decl))) ) {
+      type = DST_mk_volatile_type(type);
+      DST_append_child(comp_unit_idx,type);
+    }
 #endif
 
     dst = DST_mk_variable(
@@ -1808,7 +2032,11 @@ static void
 DST_enter_param_vars(tree fndecl,tree parameter_list)
 {
     USRCPOS src;
+#ifdef TARG_ST // [CL] get source location from GCC
+    USRCPOS_srcpos(src) = Get_Srcpos_From_Tree(parameter_list);
+#else
     USRCPOS_srcpos(src) = Get_Srcpos();
+#endif
 
     struct mongoose_gcc_DST_IDX  tree_parent_idx =
                 DECL_DST_IDX(fndecl);
@@ -1846,12 +2074,13 @@ DST_enter_param_vars(tree fndecl,tree parameter_list)
 #ifdef TARG_ST
 	// [CL] Handle const qualifier, which is attached to the
 	// pdecl tree, not to the type tree
-	if (TREE_READONLY(pdecl)) {
+	// If the type is already qualified, don't re-qualify it
+	if (TREE_READONLY(pdecl) && (!TYPE_READONLY(TREE_TYPE(pdecl))) ) {
 	  type_idx = DST_mk_const_type(type_idx);
 	  DST_append_child(comp_unit_idx,type_idx);
 	}
 	// [CL] Handle volatile qualifier
-	if (TREE_THIS_VOLATILE(pdecl)) {
+	if (TREE_THIS_VOLATILE(pdecl) && (!TYPE_VOLATILE(TREE_TYPE(pdecl))) ) {
 	  type_idx = DST_mk_volatile_type(type_idx);
 	  DST_append_child(comp_unit_idx,type_idx);
 	}
@@ -1902,7 +2131,11 @@ DST_INFO_IDX
 DST_Create_Subprogram (ST *func_st,tree fndecl)
 {
     USRCPOS src;
+#ifdef TARG_ST // [CL] get source location from GCC
+    USRCPOS_srcpos(src) = Get_Srcpos_From_Tree(fndecl);
+#else
     USRCPOS_srcpos(src) = Get_Srcpos();
+#endif
     DST_INFO_IDX dst;
     DST_INFO_IDX ret_dst = DST_INVALID_IDX;
 

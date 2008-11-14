@@ -535,6 +535,12 @@ DST_mk_structure_type(USRCPOS      decl,      /* Source location */
 // structure_type
 void DST_add_structure_containing_type(DST_INFO_IDX struct_idx,
   DST_ATTR_IDX containing_type_idx);
+
+// [CL] tag to avoid infinite recursion while generating info for
+// self-referencing struct/union
+void DST_set_structure_being_built(DST_INFO_IDX struct_idx);
+void DST_clear_structure_being_built(DST_INFO_IDX struct_idx);
+int DST_is_structure_being_built(DST_INFO_IDX struct_idx);
 #endif
 
 
@@ -552,6 +558,12 @@ DST_mk_union_type(USRCPOS      decl,      /* Source location */
 // union_type
 void DST_add_union_containing_type(DST_INFO_IDX union_idx,
   DST_ATTR_IDX containing_type_idx);
+
+// [CL] tag to avoid infinite recursion while generating info for
+// self-referencing struct/union
+void DST_set_union_being_built(DST_INFO_IDX struct_idx);
+void DST_clear_union_being_built(DST_INFO_IDX struct_idx);
+int DST_is_union_being_built(DST_INFO_IDX struct_idx);
 #endif
 
 

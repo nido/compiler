@@ -475,6 +475,12 @@ put_name (DST_STR_IDX str_idx, Dwarf_P_Die die, which_pb pb_type)
 static void
 put_decl(USRCPOS decl, Dwarf_P_Die die)
 {
+#ifdef TARG_ST
+  // [CL] Ensure that corresponding source file has been added to
+  // dwarf info
+  Cg_Dwarf_Register_Source_File(decl);
+#endif
+
    if (USRCPOS_filenum(decl) != 0)
 //DevWarn("file # %d", USRCPOS_filenum(decl));
      dwarf_add_AT_unsigned_const (dw_dbg, die, DW_AT_decl_file, 
@@ -1078,11 +1084,6 @@ put_variable(DST_flag flag, DST_VARIABLE *attr, Dwarf_P_Die die)
   }
   else /* definition */ {
     which_pb pbtype;
-#ifdef TARG_ST
-    // Fix for bug #48429: Insure that corresponding source file
-    // has been added to dwarf info
-    Cg_Dwarf_Register_Source_File(DST_VARIABLE_decl_decl(attr));
-#endif
     put_decl(DST_VARIABLE_def_decl(attr), die);
     if (DST_IS_external(flag)) 
       pbtype = pb_pubname;
@@ -1941,6 +1942,11 @@ postorder_visit (DST_INFO_IDX idx)
   die = (Dwarf_P_Die) DST_INFO_dieptr (info);
 
   BOOL is_referenced = (die != NULL);
+  if (Trace_Dwarf) {
+    fprintf (TFile,"[%d,%d] is %slocally referenced (die=%p), tag:%d\n",
+	     idx.block_idx, idx.byte_idx, is_referenced ? "" : "not ",
+	     die, tag);
+  }
   for (child_idx = DST_first_child (idx);
        !DST_IS_NULL(child_idx); 
        child_idx = DST_INFO_sibling(DST_INFO_IDX_TO_PTR(child_idx)))
@@ -1951,6 +1957,13 @@ postorder_visit (DST_INFO_IDX idx)
     {
       is_referenced |= postorder_visit (child_idx);
     }
+  }
+
+  if (Trace_Dwarf) {
+    fprintf (TFile,"[%d,%d] is %sreferenced (%semission needed)\n",
+	     idx.block_idx, idx.byte_idx,
+	     is_referenced ? "" : "not ",
+	     is_referenced ? "" : "no ");
   }
   return is_referenced;
 }

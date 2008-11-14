@@ -1,6 +1,35 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Nov 14 14:57:35 CET 2008
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-54995
+
+Description:
+------------
+	* [trunk] Fix for bug #54995: Cannot obtain type information about internal OS21 data structures.
+	Deliver fixes/codex-54995 rev #19442 with authorization branch #54999
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgdwarf.cxx
+	M      osprey/gccfe/wfe_dst.h
+	M      osprey/gccfe/wfe_misc.h
+	M      osprey/gccfe/wfe_dst.cxx
+	M      osprey/g++fe/wfe_dst.h
+	M      osprey/g++fe/wfe_misc.h
+	M      osprey/g++fe/wfe_dst.cxx
+	M      osprey/common/com/dwarf_DST_producer.cxx
+	M      osprey/common/com/dwarf_DST.h
+	M      osprey/common/com/dwarf_DST_producer.h
+	M      osprey/common/com/dwarf_DST.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Nov 14 14:31:37 CET 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -108,7 +108,11 @@ extern DST_INFO_IDX DST_Create_Subprogram (ST *func_st,tree fndecl);
 
 extern DST_INFO_IDX DST_Get_Comp_Unit (void);
 extern struct mongoose_gcc_DST_IDX Create_DST_type_For_Tree(
+#ifdef TARG_ST // [CL] merged from Open64 4.2
+	tree type_tree, TY_IDX ttidx  , TY_IDX idx, bool ignoreconst = false, bool ignorevolatile = false);
+#else
 	tree type_tree, TY_IDX ttidx  , TY_IDX idx);
+#endif
 extern struct mongoose_gcc_DST_IDX Create_DST_decl_For_Tree(
 	tree decl_node, ST* var_st);
 
