@@ -269,6 +269,9 @@ typedef struct exitinfo {
   SRCPOS    srcpos;	/* source position of function exit */
 #ifdef TARG_ST
   mBOOL     is_eh_return; /* TRUE for an EH_return exit */
+//TB: True if the EXIT BB is due to a RETURN that is not a lowered
+//RETURN_VAL
+  mBOOL     is_noval_return;
 #endif
 } EXITINFO;
 
@@ -276,6 +279,9 @@ typedef struct exitinfo {
 #define EXITINFO_srcpos(x)    ((x)->srcpos)
 #ifdef TARG_ST
 #define EXITINFO_is_eh_return(x) ((x)->is_eh_return)
+//TB: True if the EXIT BB is due to a RETURN that is not a lowered
+//RETURN_VAL
+#define EXITINFO_is_noval_return(x) ((x)->is_noval_return)
 #endif
 
 typedef struct callinfo {

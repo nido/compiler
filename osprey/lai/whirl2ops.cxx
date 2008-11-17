@@ -5934,6 +5934,15 @@ Expand_Statement (
      * the exit_bb in the region.
      */
     Handle_Return ();
+#ifdef TARG_ST
+    //If the RETURN WN is not due to the lowering of a RETURN_VAL WN flag it:
+    if (!WN_is_return_val_lowered(stmt)) {
+      BB *exit_bb1 = BB_prev(Cur_BB);
+      FmtAssert( BB_exit(exit_bb1), ("BB_prev of Cur_BB is not an exit BB") );
+      EXITINFO *exit_info = ANNOT_exitinfo(ANNOT_Get(BB_annotations(exit_bb1), ANNOT_EXITINFO));
+      EXITINFO_is_noval_return(exit_info) = TRUE;
+    }
+#endif
     break;
   case OPC_LABEL:
     loop_info = WN_label_loop_info(stmt);
@@ -6656,7 +6665,30 @@ Convert_WHIRL_To_OPs (
     }
   }
 #endif
+#ifdef TARG_ST
+  //TB: bug #31540 warning: control reaches end of non-void function
+  // Start the analysis of non void function that has a path that
+  // returns void
 
+  //Run the check only on non void function
+  if ( OPT_Enable_Warn_ReturnVoid && TY_mtype(TY_ret_type(ST_pu_type(WN_st(tree)))) != MTYPE_V) {
+    // Find reachable blocks
+    BB_Mark_Unreachable_Blocks();
+    BB *bb;
+    for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
+      //Scan only exit block that are reachable
+      if (BB_exit(bb) && !BB_unreachable(bb)) {
+	ANNOTATION *ant = ANNOT_Get (BB_annotations(bb), ANNOT_EXITINFO);
+	EXITINFO *exit_info = ANNOT_exitinfo(ant);
+	if (EXITINFO_is_noval_return(exit_info)) {
+	  SRCPOS srcpos = EXITINFO_srcpos(exit_info);
+	  //We find a BB that was not originally a RETURN_VAL WN 
+	  ErrMsgSrcpos(EC_CG_Generic_Warning, srcpos, "control reaches end of non-void function");
+	}
+      }
+    }
+  }
+#endif
   switch ( WN_opcode( tree ) ) {
   case OPC_FUNC_ENTRY:
 #if defined(CGG_ENABLED) //CGG_DEV

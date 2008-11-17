@@ -2716,7 +2716,8 @@ rest_of_compilation (decl)
 	  delete_insn (insn);
     }
   close_dump_file (DFI_sibling, print_rtl, get_insns ());
-
+#ifndef TARG_ST
+//TB: bug #31540 Now done in the code generator (whirl2ops.cxx)
 #ifdef TARG_ST
   /* (cbr) expand_stmts is not done so the return values are not seen */
   if (Current_Function_Decl())
@@ -2728,7 +2729,7 @@ rest_of_compilation (decl)
      is folded into the CALL_PLACEHOLDER until after this pass, so the
      CFG is inaccurate.  */
   check_function_return_warnings ();
-
+#endif
 
   timevar_pop (TV_JUMP);
 

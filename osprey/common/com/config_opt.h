@@ -167,6 +167,8 @@ BE_EXPORTED extern BOOL OPT_Expand_Assume; /* Expand __builtin_assume ? */
 BE_EXPORTED extern BOOL OPT_Expand_Assume_Set; /* ... option seen? */
 // FdF 20080305: Emit warning on unsupported expressions in __builtin_assume
 BE_EXPORTED extern BOOL OPT_Enable_Warn_Assume;
+// TB: 20081020 Check that non void function always return a value
+BE_EXPORTED extern BOOL OPT_Enable_Warn_ReturnVoid;
 typedef enum {
   REASSOC_NONE,	/* No roundoff-inducing transformations */
   REASSOC_SIMPLE,	/* Simple roundoff transformations */

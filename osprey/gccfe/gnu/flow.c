@@ -378,9 +378,12 @@ check_function_return_warnings ()
 	  for (insn = get_insns (); insn; insn = NEXT_INSN (insn))
 	    if (insn == cfun->x_clobber_return_insn)
 	      {
+#ifndef TARG_ST
+		//TB: bug #31540 Now done in the code generator (whirl2ops.cxx)
 #ifdef TARG_ST
 		// (cbr) returns value could be hidden (whirl generated but no rtl)
 		if (WN_Returns_Void())
+#endif
 #endif
 	        warning ("control reaches end of non-void function");
 		break;

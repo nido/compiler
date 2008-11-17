@@ -45,8 +45,6 @@ extern
 "C" {
 #endif
 void WFE_Expand_Stmt (tree stmt);
-// (cbr) returns value could be hidden (whirl generated but no rtl)
-extern int WN_Returns_Void();
 
 #ifdef _NO_WEAK_SUPPORT_
 extern void WFE_Expand_Start_Case (tree selector, tree sel_type);

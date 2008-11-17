@@ -120,8 +120,6 @@ extern void Wfe_Expand_Asm_Operands (tree, tree, tree, tree,
 extern LABEL_IDX WFE_Get_LABEL (tree label, int def);
 
 #ifdef TARG_ST
-// (cbr) returns value could be hidden (whirl generated but no rtl)
-extern int WN_Returns_Void();
 
   // [CL] support lexical blocks
 #if !defined(_NO_WEAK_SUPPORT_)

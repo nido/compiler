@@ -1184,7 +1184,24 @@ ErrMsgSrcpos ( INT ecode, SRCPOS srcpos, ... )
   va_start ( vp, srcpos );
 
   IR_Srcpos_Filename(srcpos, &fname, &dname);
+#if 0 //Wait for a bug fix of dwarf bug # 55000
+#ifdef TARG_ST
+  char * buf = NULL;
+  if (dname != NULL) {
+    // TB: Output full source file name 
+    char * buf = (char *)malloc(sizeof(char) *(strlen(fname) + strlen(dname) + 2));
+    sprintf(buf,"%s/%s", dname, fname);
+    fname = buf;
+  }
+#endif
+#endif
   ErrMsg_Report ( ecode, line, fname, vp );
+#if 0 //Wait for a bug fix of dwarf bug # 55000
+#ifdef TARG_ST
+  if (buf) 
+    free (buf);
+#endif
+#endif
   va_end ( vp );
 }
 #endif

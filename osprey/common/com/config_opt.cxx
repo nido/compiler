@@ -145,6 +145,8 @@ BOOL OPT_Expand_Assume = TRUE; /* Expand __builtin_assume ? */
 BOOL OPT_Expand_Assume_Set = FALSE; /* ... option seen? */
 // FdF 20080305: Emit warning on unsupported expressions in __builtin_assume
 BOOL OPT_Enable_Warn_Assume = FALSE;
+// TB: 20081020 Check that non void function always return a value
+BOOL OPT_Enable_Warn_ReturnVoid = FALSE;
 #endif
 
 
@@ -549,7 +551,11 @@ static OPTION_DESC Options_OPT[] = {
     "Enable the expansion of __builtin_assume into an AFFIRM whirl node" },
 
   { OVK_BOOL,	OV_INTERNAL,	TRUE, "warn_assume",		"",
-    1, 0, 0,	&OPT_Enable_Warn_Assume, NULL },
+    1, 0, 0,	&OPT_Enable_Warn_Assume, NULL, "" },
+
+  { OVK_BOOL,	OV_INTERNAL,	TRUE, "warn_return_void",		"",
+    0, 0, 0,	&OPT_Enable_Warn_ReturnVoid, NULL,
+    "Enable warning control reaches end of non-void function"},
 #endif
 
   { OVK_BOOL,	OV_SHY,		TRUE, "implied_do_io_opt",	NULL,

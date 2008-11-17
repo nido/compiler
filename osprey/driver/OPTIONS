@@ -2038,7 +2038,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"issue -pedantic warnings as errors instead"
 -W	;		Cc	f,cpp	self
 	"enable extra warnings"
--Wall	Add_Wuninitialized();		Cc	cpp,f	self
+-Wall	Add_Wuninitialized();Add_Wreturn_type();		Cc	cpp,f	self
 	"enable most warning messages"
 -Waggregate-return	;		Cc	f,cpp	self
 	"warn about returning structures, unions or arrays"
@@ -2203,8 +2203,17 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"warn about multiple declarations of the same object"
 -Wno-redundant-decls	;		Cc	f,cpp	self
 	""
+#ifndef TARG_ST
+//TB: bug #31540 Now done in the code generator (whirl2ops.cxx)
 -Wreturn-type	;		Cc	f,cpp	self
 	""
+#else
+-Wreturn-type     ;               Cc      cpp,f   -OPT:warn_return_void=on
+       "warn about any return statement with no return-value in a function whose return-type is not void"
+-Wno-return-type     ;               Cc      cpp,f   -OPT:warn_return_void=off
+       "disable warning about any return statement with no return-value in a function whose return-type is not void"
+#endif
+
 -Wshadow	;		Cc	f,cpp	self
 	"warn when one local variable shadows another"
 -Wno-shadow	;		Cc	f,cpp	self

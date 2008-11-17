@@ -2042,6 +2042,14 @@ void Add_Wuninitialized() {
     prepend_option_seen (flag);
   }
 }
+/* TB: add -Wuninitialized option with -Wall */
+void Add_Wreturn_type() {
+  int flag = add_new_option("-OPT:warn_return_void") ;    
+  add_phase_for_option(flag, P_be);
+  if (!already_provided(flag)) {
+    prepend_option_seen (flag);
+  }
+}
 #endif
 
 

@@ -353,6 +353,12 @@ WFE_Generate_Thunk (tree decl)
 
     WFE_Stmt_Append (call_wn, Get_Srcpos());
     wn = WN_CreateReturn ();
+#ifdef TARG_ST
+    //TB: bug #31540 For thunk set return as a lowered return: we
+    //don't want to emit: warning that control reaches end of non-void
+    //function
+    WN_is_return_val_lowered(wn) = TRUE;
+#endif
     WFE_Stmt_Append (wn, Get_Srcpos());
   }
 

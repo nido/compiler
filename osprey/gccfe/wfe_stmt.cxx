@@ -1192,11 +1192,23 @@ WFE_Expand_Return (tree retval)
         TY_mtype (ret_ty_idx) == MTYPE_M &&
         TY_size (ret_ty_idx) == 0) {
       // function returning zero length struct
+#ifdef TARG_ST
+      //TB: Sometime rhs_wn is NULL. For instance return f() with f
+      // returning a zer0 zize struct
+      if (rhs_wn && WN_has_side_effects (rhs_wn)) {
+#else
       if (WN_has_side_effects (rhs_wn)) {
+#endif
         rhs_wn = WN_CreateEval (rhs_wn);  
         WFE_Stmt_Append(rhs_wn, Get_Srcpos());
       }
       wn = WN_CreateReturn ();
+#ifdef TARG_ST
+      //TB: Set the is_return_val_lowered flag to TRUE to specify to the code
+      //generator that this return is already lowered and to not emit a
+      //warning that control reaches end of non-void function
+      WN_is_return_val_lowered(wn) = TRUE;
+#endif
     }
     else {
       if (WN_opcode (rhs_wn) == OPC_MMLDID &&
@@ -1821,13 +1833,3 @@ WFE_Check_Undefined_Labels (void)
   undefined_labels_i = i;
 } /* WFE_Check_Undefined_Labels */
 
-#ifdef TARG_ST
-// (cbr) returns value could be hidden (whirl generated but no rtl)
-int
-WN_Returns_Void() 
-{
-  WN * wn = WN_last (WFE_Stmt_Top ());
-
-  return (wn == NULL || WN_operator (wn) != OPR_RETURN_VAL);
-}
-#endif

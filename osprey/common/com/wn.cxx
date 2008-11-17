@@ -1002,7 +1002,10 @@ WN *WN_CreateReturn(void)
   WN *wn;
 
   wn = WN_Create(OPC_RETURN,0);
-
+#ifdef TARG_ST
+  //TB: Set the is_return_val_lowered flag to FALSE by default
+  WN_is_return_val_lowered(wn) = FALSE;
+#endif
   return(wn);
 }
 

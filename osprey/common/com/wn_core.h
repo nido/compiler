@@ -175,6 +175,9 @@
 ***		For OPR_SUBPART
 ***
 ***		    INT32		    subpart_index
+***		For OPR_RETURN
+***
+***		    BOOL		    is_return_val_lowered
 ***
 ***		For OPR_LABEL, OPC_PREFETCH, OPC_PREFETCHX
 ***			OPR_INTRINSIC_CALL and OPR_INTRINSIC_OP
@@ -417,7 +420,10 @@ public:
 	    WN_OFFSET	    idname_offset;
 #ifdef TARG_ST
 	   //TB for OPR_SUBPART node
-	    WN_OFFSET	    subpart_index;
+	   WN_OFFSET	    subpart_index;
+	   //TB for OPR_RETURN node:true if the RETURN WN is created
+	   // by the lowering of a OPR_RETURN_VAL WN
+	   BOOL	    is_return_val_lowered;
 #endif
 	    INT32   	    num_entries; /* used by computed goto statements; may be used by regions */
 	    TY_IDX	    loadx_addr_ty; /* for OPR_ILOADX */
@@ -555,6 +561,8 @@ public:
 #ifdef TARG_ST
   friend inline INT32&      WN_subpart_index (WN *);
   friend inline INT32       WN_subpart_index (const WN *);
+  friend inline BOOL&      WN_is_return_val_lowered (WN *);
+  friend inline BOOL       WN_is_return_val_lowered (const WN *);
 #endif
   friend inline UINT32&     WN_call_flag (WN *);
   friend inline UINT32      WN_call_flag (const WN *);
@@ -708,6 +716,8 @@ inline INT32& WN_label_number (WN* wn) { return wn->u1u2.uu.ua.label_number; }
 #ifdef TARG_ST
 inline INT32 WN_subpart_index (const WN* wn) { return wn->u1u2.uu.ua.subpart_index; }
 inline INT32& WN_subpart_index (WN* wn) { return wn->u1u2.uu.ua.subpart_index; }
+inline BOOL WN_is_return_val_lowered (const WN* wn) { return wn->u1u2.uu.ua.is_return_val_lowered; }
+inline BOOL& WN_is_return_val_lowered (WN* wn) { return wn->u1u2.uu.ua.is_return_val_lowered; }
 #endif
 inline UINT32 WN_call_flag (const WN* wn) { return wn->u1u2.uu.ua.call_flag; }
 inline UINT32& WN_call_flag (WN* wn) { return wn->u1u2.uu.ua.call_flag; }
@@ -830,6 +840,7 @@ inline void WN_Copy_u3 (WN* dst, const WN* src) { dst->u3 = src->u3; }
 #define WN_label_number(x)      ((x)->u1u2.uu.ua.label_number)
 #ifdef TARG_ST
 #define WN_subpart_index(x)      ((x)->u1u2.uu.ua.subpart_index)
+#define WN_is_return_val_lowered(x)      ((x)->u1u2.uu.ua.is_return_val_lowered)
 #endif
 #define WN_call_flag(x)         ((x)->u1u2.uu.ua.call_flag)
 #define WN_if_flag(x)           ((x)->u1u2.uu.ua.if_flag)

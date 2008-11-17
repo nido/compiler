@@ -2474,6 +2474,7 @@ WFE_Expand_Return (tree stmt, tree retval)
   WN *wn;
 
 #ifdef TARG_ST
+  BOOL allocate_hidden_param = FALSE;
   /* (cbr) try to allocate the hidden parameter here, rather in vm_lower.cxx
      that avoid extra copies from .preg_return_val difficult to remove */
   extern ST *first_formal;
@@ -2523,6 +2524,10 @@ WFE_Expand_Return (tree stmt, tree retval)
       }
 
       retval = NULL_TREE;
+#ifdef TARG_ST
+      //TB: Keep a trace that this return is a not a return void
+      allocate_hidden_param = TRUE;
+#endif
     }
   }
 #endif
@@ -2560,6 +2565,17 @@ WFE_Expand_Return (tree stmt, tree retval)
     }
 #endif
     wn = WN_CreateReturn ();
+#ifdef TARG_ST
+    //TB: Catch cases where the named Return Value optimzation has
+    // been done by gcc. In this case specify also that the RETURN WN
+    // is like a lowered RETURN_VAL WN.
+    tree nrv = DECL_NRV (Current_Function_Decl());
+    //TB: Set the is_return_val_lowered flag to TRUE to specify to the code
+    //generator that this return is already lowered and to not emit a
+    //warning that control reaches end of non-void function
+    if (allocate_hidden_param || nrv)
+      WN_is_return_val_lowered(wn) = TRUE;
+#endif
   }
   else {
     WN *rhs_wn;
@@ -2663,6 +2679,12 @@ WFE_Expand_Return (tree stmt, tree retval)
         WFE_Stmt_Append(rhs_wn, Get_Srcpos());
       }
       wn = WN_CreateReturn ();
+#ifdef TARG_ST
+      //TB: Set the is_return_val_lowered flag to TRUE to specify to the code
+      //generator that this return is already lowered and to not emit a
+      //warning that control reaches end of non-void function
+      WN_is_return_val_lowered(wn) = TRUE;
+#endif
     }
     else {
       WFE_Set_ST_Addr_Saved (rhs_wn);
@@ -4383,13 +4405,3 @@ bool Current_Function_Has_EH_Spec()
   return !eh_spec_vector.empty();
 }
 
-#ifdef TARG_ST
-// (cbr) returns value could be hidden (whirl generated but no rtl)
-int
-WN_Returns_Void() 
-{
-  WN * wn = WN_last (WFE_Stmt_Top ());
-
-  return (wn == NULL || WN_operator (wn) != OPR_RETURN_VAL);
-}
-#endif

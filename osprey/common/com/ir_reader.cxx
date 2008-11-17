@@ -1091,6 +1091,15 @@ static void ir_put_wn(WN * wn, INT indent)
 #endif
     }
 #endif
+#ifdef TARG_ST
+    if (OPCODE_operator(opcode) == OPR_RETURN) {
+#ifdef WN_VERBOSE
+	fprintf(ir_ofile, " is_return_val_lowered:%d", WN_is_return_val_lowered(wn));
+#else
+	fprintf(ir_ofile, " %d", WN_is_return_val_lowered(wn));
+#endif
+    }
+#endif
 
     if (OPCODE_has_field_id(opcode) && WN_field_id(wn)) {
 	fprintf(ir_ofile, " <field_id:%d>", WN_field_id(wn));

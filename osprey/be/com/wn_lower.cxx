@@ -13611,8 +13611,10 @@ static WN *lower_return_val(WN *block, WN *tree, LOWER_ACTIONS actions)
   if ( Cur_PU_Feedback )
     Cur_PU_Feedback->FB_lower_return_val( tree, wn_return );
 #ifdef TARG_ST
-      // CL: keep line numbers for debug
+  // CL: keep line numbers for debug
   WN_Set_Linenum(wn_return, WN_Get_Linenum(tree));
+  //TB: Set the is_return_val_lowered flag to TRUE
+  WN_is_return_val_lowered(wn_return) = TRUE;
 #endif
   tree = wn_return;
   return tree;
