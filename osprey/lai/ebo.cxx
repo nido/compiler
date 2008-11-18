@@ -7254,18 +7254,31 @@ op_is_needed:
         EBO_TN_INFO *next_tninfo = tninfo->same;
 
 #ifdef TARG_ST
-	// FdF: Track the case where there is at least one defining
-	// operation for the operand but none of them are considered
-	// used.
-	BOOL operand_is_used = FALSE;
-	BOOL operand_has_def = FALSE;
+	// FdF 20081113, Codex 52447: There is a specific case that is
+	// not handled by this code:
+	//
+        //   P? x =  // uncond def
+	//      z = P ? x : y
+	//    Where the PQS knows that P is always FALSE
+	//
+	// The use of x refers to a DUMMY TNINFO, since there is no
+	// definition with a predicate including the predicate on the
+	// use. This TNINFO links to the TNINFO for the real
+	// definition of x. But since the predicate on the real
+	// definition (FALSE) is disjoint with the predicate on the
+	// use (TRUE), the definition for x is not marked with
+	// op_must_not_be_removed, and its reference_count is 0. The
+	// definition for x will thus be removed. To avoid a reference
+	// to an undefined variable, the use of x is replaced by a
+	// dummy variable, since there is no reaching definition here.
+
+	BOOL operand_has_real_def = (tninfo->in_op != NULL);
 #endif
 
         while (next_tninfo != NULL) {
           if ((next_tninfo->in_op != NULL) &&
               (next_tninfo->omega == tninfo->omega)) {
 #ifdef TARG_ST
-            operand_has_def = TRUE;
             if (EBO_predicate_dominates((next_tninfo->predicate_tninfo != NULL)?
                                         next_tninfo->predicate_tninfo->local_tn:True_TN,
                                         next_tninfo->in_op ? OP_PredOnFalse(next_tninfo->in_op) : false, 
@@ -7273,9 +7286,9 @@ op_is_needed:
                                         (tninfo->predicate_tninfo != NULL)?tninfo->predicate_tninfo->local_tn:True_TN,
                                         tninfo->in_op ? OP_PredOnFalse(tninfo->in_op) : false, 
                                         tninfo->predicate_tninfo)) {
-	      // FdF: Mark that one of the defining operation for this
-	      // operand is considered used.
-	      operand_is_used = TRUE;
+	      // FdF 20081113: Mark that one of the defining operation
+	      // for this operand is reaching.
+	      operand_has_real_def = TRUE;
               /* This predicate dominates the OP we need to save. It's   */
               /* use count should be sufficiant to cause it to be saved. */
               /* We can stop searching for other dominators.             */
@@ -7304,21 +7317,19 @@ op_is_needed:
 #endif
               /* These predicates are mutually exclusive.  There is no   */
               /* need to mark it as used, but se need to keep looking.   */
-#ifdef TARG_ST
-	      // FdF: Here the definition of the operand does not
-	      // provide any useful value, due to disjoint predicates.
-	      // A fake definition for this operand must be added in
-	      // case (operand_has_def && !operand_is_used).
-#endif
+
+	      // FdF 20081113: Here the definition of the operand does
+	      // not provide any useful value, due to disjoint
+	      // predicates.
             } else {
              /* A store into an unresolved predicate is a potential problem. */
              /* The predicates could be completely independant.  But we      */
              /* don't know how to check for that, currently.                 */
 
 #ifdef TARG_ST
-	      // FdF: Mark that one of the defining operation for this
-	      // operand is considered used.
-	      operand_is_used = TRUE;
+	      // FdF 20081113: Mark that one of the defining operation for this
+	      // operand is reaching.
+	      operand_has_real_def = TRUE;
 #endif
              /* Stop searching and preserve the preceeding definition. */
               EBO_OP_INFO *opinfo = locate_opinfo_entry(next_tninfo);
@@ -7350,11 +7361,11 @@ op_is_needed:
           }
           next_tninfo = next_tninfo->same;
         }
-#if 0 // FdF 20081003: Revert fix for codex #52447 which is wrong.
 #ifdef TARG_ST
-	  // FdF 20080925: The operand is dead, i.e. not used, so
-	  // replace it by a Zero_TN or a new TN defined by a KILL
-        if (operand_has_def && !operand_is_used) {
+	// FdF 20081113: If there is no reaching definition, replace
+	// the use by a dummy operand.
+	if (!operand_has_real_def &&
+	    !tn_has_live_def_into_BB(OP_opnd(op, idx), tninfo->in_bb)) {
 	  if ((Zero_TN != NULL) &&
 	      (TN_register_class(Zero_TN) == TN_register_class(OP_opnd(op, idx)))) {
 	    Set_OP_opnd(op, idx, Zero_TN);
@@ -7363,10 +7374,9 @@ op_is_needed:
 	    TN *dup_tn = Dup_TN(OP_opnd(op, idx));
 	    Set_OP_opnd(op, idx, dup_tn);
 	    OP* kill_op = Mk_VarOP(TOP_KILL, 1, 0, &dup_tn, NULL);
-	    BB_Insert_Op_Before(bb, op, kill_op);
+	    BB_Insert_Op_Before(bb, op, kill_op);	 
 	  }
 	}
-#endif
 #endif
       }
     }
