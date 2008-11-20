@@ -194,7 +194,9 @@ WFE_Assemble_Asm(const char *asm_string)
     Set_PU_Info_tree_ptr (pu_info, func_wn);
     PU_Info_maptab (pu_info) = Current_Map_Tab;
     PU_Info_proc_sym (pu_info) = ST_st_idx(asm_st);
+#ifndef TARG_ST // [CL] no need to generate DST for asm statements */
     PU_Info_pu_dst (pu_info) = DST_Create_Subprogram (asm_st,/*tree=*/0);
+#endif
     PU_Info_cu_dst (pu_info) = DST_Get_Comp_Unit ();
 
     Set_PU_Info_state(pu_info, WT_SYMTAB, Subsect_InMem);

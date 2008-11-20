@@ -2698,9 +2698,14 @@ DST_enter_param_vars(tree fndecl,
 #endif
 }
 
+#ifdef TARG_ST
+// [CL] fndecl can no longer be 0: there is no need to call
+// DST_Create_Subprogram() for asm stmt.
+#else
 //
 // fndecl can be 0 if this is an asm stmt treated as a function, 
 // rather than being a true function.
+#endif
 DST_INFO_IDX
 DST_Create_Subprogram (ST *func_st,tree fndecl)
 {
@@ -2708,6 +2713,8 @@ DST_Create_Subprogram (ST *func_st,tree fndecl)
 
 #ifdef TARG_ST
     // [CL] get source location from GCC
+    FmtAssert (fndecl != NULL, 
+	     ("DST_Create_Subprogram called with NULL fndecl"));
     USRCPOS_srcpos(src) = Get_Srcpos_From_Tree(fndecl);
     // [CL] so that Get_Srcpos returns something coherent (still used
     // in wfe_decl.cxx for instance -- that should be fixed)
@@ -2718,17 +2725,21 @@ DST_Create_Subprogram (ST *func_st,tree fndecl)
     DST_INFO_IDX dst = DST_INVALID_INIT;
     DST_INFO_IDX ret_dst = DST_INVALID_IDX;
                                      
-    DST_INFO_IDX current_scope_idx = fndecl ?
 #ifndef TARG_ST // [CL]
+    DST_INFO_IDX current_scope_idx = fndecl ?
       	(DST_get_context(TYPE_CONTEXT(fndecl))): 
-#else
-      	(DST_get_context(DECL_CONTEXT(fndecl))): 
-#endif
 	comp_unit_idx;
+#else
+      DST_INFO_IDX current_scope_idx = DST_get_context(DECL_CONTEXT(fndecl));
+#endif
 
     BOOL is_prototyped = FALSE;
 
+#ifdef TARG_ST
+    if(Debug_Level >= 2) {
+#else
     if(Debug_Level >= 2 && fndecl) {
+#endif
 
 #ifndef TARG_ST
 	tree resdecl = DECL_RESULT(fndecl);
@@ -2881,9 +2892,13 @@ DST_Create_Subprogram (ST *func_st,tree fndecl)
     }
 
 
+#ifndef TARG_ST
     if(fndecl) {
+#endif
 	DECL_DST_IDX(fndecl) =  dst;
+#ifndef TARG_ST
     }
+#endif
 
     // Now we create the argument info itself, relying
     // on the is_prototyped flag above to let us know if

@@ -1,6 +1,30 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Nov 20 17:39:18 CET 2008
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-56525
+
+Description:
+------------
+	 [trunk] Deliver fixes/codex-56525 rev #19545 with authorization branch #56617
+	 Compiler front end dumps core when building newlib crt1.o aka crt0_c.c
+	 (st200): issue with file-scope asm stmts
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/wfe_misc.h
+	M      osprey/gccfe/wfe_dst.cxx
+	M      osprey/gccfe/wfe_decl.cxx
+	M      osprey/g++fe/wfe_misc.h
+	M      osprey/g++fe/wfe_dst.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Nov 20 09:07:45 CET 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

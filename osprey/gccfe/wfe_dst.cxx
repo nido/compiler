@@ -2124,14 +2124,21 @@ DST_enter_param_vars(tree fndecl,tree parameter_list)
 #endif
 }
 
+#ifdef TARG_ST
+// [CL] fndecl can no longer be 0: there is no need to call
+// DST_Create_Subprogram() for asm stmt.
+#else
 //
 // fndecl can be 0 if this is an asm stmt treated as a function, 
 // rather than being a true function.
+#endif
 DST_INFO_IDX
 DST_Create_Subprogram (ST *func_st,tree fndecl)
 {
     USRCPOS src;
 #ifdef TARG_ST // [CL] get source location from GCC
+    FmtAssert (fndecl != NULL, 
+	     ("DST_Create_Subprogram called with NULL fndecl"));
     USRCPOS_srcpos(src) = Get_Srcpos_From_Tree(fndecl);
 #else
     USRCPOS_srcpos(src) = Get_Srcpos();
@@ -2139,9 +2146,13 @@ DST_Create_Subprogram (ST *func_st,tree fndecl)
     DST_INFO_IDX dst;
     DST_INFO_IDX ret_dst = DST_INVALID_IDX;
 
+#ifdef TARG_ST
+    DST_INFO_IDX current_scope_idx = DST_get_context(DECL_CONTEXT(fndecl)); 
+#else
     DST_INFO_IDX current_scope_idx = fndecl ? 
 	(DST_get_context(DECL_CONTEXT(fndecl))): 
 	comp_unit_idx;
+#endif
 
 
 
@@ -2149,7 +2160,11 @@ DST_Create_Subprogram (ST *func_st,tree fndecl)
     BOOL isprototyped = FALSE;
 
     
+#ifdef TARG_ST
+    if(Debug_Level >= 2) {
+#else
     if(Debug_Level >= 2 && fndecl) {
+#endif
 
 #ifndef TARG_ST
         tree resdecl = DECL_RESULT(fndecl);
@@ -2201,9 +2216,13 @@ DST_Create_Subprogram (ST *func_st,tree fndecl)
     struct mongoose_gcc_DST_IDX fn_dst_idx;
     cp_to_tree_from_dst(&fn_dst_idx,&dst);
     
+#ifndef TARG_ST
     if(fndecl) {
+#endif
 	DECL_DST_IDX(fndecl) =  fn_dst_idx;
+#ifndef TARG_ST
     }
+#endif
 
     // Now we create the argument info itself, relying
     // on the isprototyped flag above to let us know if
