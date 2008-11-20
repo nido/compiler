@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Nov 20 09:07:45 CET 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mad-4-2-6
+
+Description:
+------------
+	*  switch  desassembler output format for immediate in
+	add/sub/min/max bp instructions to decimal.
+
+
+Modified Files:
+---------------
+	M      osprey/libair/air/air_stxp70.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Nov 18 13:19:02 CET 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
