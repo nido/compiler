@@ -1234,6 +1234,10 @@ INTRINSIC EXTENSION_Get_Convert_Intrinsic(TYPE_ID src_ty, TYPE_ID tgt_ty, BOOL i
  */
 BOOL EXTENSION_Are_Equivalent_Mtype(TYPE_ID src_ty, TYPE_ID tgt_ty) {
   BOOL equiv = FALSE;
+  /* identical mtypes are equivalent */
+  if (src_ty == tgt_ty) {
+    return TRUE;
+  }
   if (equiv_type_enabled) {
     BOOL ignore_sign = ! (Enable_Extension_Native_Support & EXTENSION_NATIVE_TYEQUIV_UNSIGNED_ONLY);
     equiv = (EXTENSION_Get_Convert_Intrinsic(src_ty, tgt_ty, ignore_sign) != INTRINSIC_INVALID);

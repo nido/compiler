@@ -581,9 +581,19 @@ Create_Convert_Node(TYPE_ID dst, WN* tree)
   
   /* conversion node is necessary and thus generated */
   if (WN_rtype(tree) != dst) {
+    /* sanity check. is conversion available ? */
+    if ((MTYPE_is_dynamic(dst) ||
+         MTYPE_is_dynamic(WN_rtype(tree))) &&
+        ! EXTENSION_Are_Equivalent_Mtype(dst, WN_rtype(tree)))
+      {
+        FmtAssert((FALSE),("unsupported Conversion (rtype:%s, desc:%s)",
+                               MTYPE_name(dst), MTYPE_name(WN_rtype(tree))));
+        // conversion is not available
+        return NULL;
+      }
     return WN_Cvt(WN_rtype(tree), dst, tree);
   }
-
+  
   /* no conversion necessary */
   return tree;
 }
@@ -622,10 +632,37 @@ Create_Intrinsic_from_OP(INTRINSIC intrnidx, int nbkids, WN *kids[],
   if (proto->arg_out_count==0)
     {
       *modified = true;
+      
+      /* Sanity check. are conversions available ? */
+      TYPE_ID dst;
+      TYPE_ID src;
+      for (i=0; i<nbkids; i++)
+        {
+          dst = proto->arg_type[i];
+          src = WN_rtype(kids[i]);
+          if ((dst != src) &&
+              (MTYPE_is_dynamic(dst) ||
+               MTYPE_is_dynamic(src)) &&
+              ! EXTENSION_Are_Equivalent_Mtype(dst, src)) {
+            // cancel intrinsic op creation
+            return NULL;
+          }
+        }
+      dst = dsttype;
+      src = INTRN_return_type(proto);
+      if ((dst != src) &&
+          (MTYPE_is_dynamic(dst) ||
+           MTYPE_is_dynamic(src)) &&
+          ! EXTENSION_Are_Equivalent_Mtype(dst, src)) {
+        // cancel intrinsic op creation
+        return NULL;
+      }
+
+      /* effective creation of the intrinsic op */
       for (i=0; i<nbkids; i++)
         {
           WN* tmp = Create_Convert_Node(proto->arg_type[i], kids[i]);
-          kids[i] = WN_CreateParm (WN_rtype(tmp),
+         kids[i] = WN_CreateParm (WN_rtype(tmp),
                                    tmp,
                                    Be_Type_Tbl(WN_rtype(tmp)),
                                    WN_PARM_BY_VALUE | WN_PARM_READ_ONLY);
@@ -808,8 +845,12 @@ EXT_LOWER_CVT_expr(WN *tree, WN** new_stmts, BOOL *modified)
       INTRINSIC clr_intrn = EXTENSION_Get_CLR_Intrinsic(WN_rtype(tree));
 
       if (value==0 && clr_intrn!=INTRINSIC_INVALID) {
-        return BETARG_Create_Intrinsic_from_OP(clr_intrn, 0, NULL,
-					       WN_rtype(tree), new_stmts, modified);
+        WN* dsttree = BETARG_Create_Intrinsic_from_OP(clr_intrn, 0, NULL,
+                                                      WN_rtype(tree), new_stmts, modified);
+        if (dsttree!=NULL) {
+          return dsttree;
+        }
+          
       }
       else if (MTYPE_is_dynamic(WN_rtype(tree)) &&
 	       ((WN_desc(tree) == MTYPE_I8 && Mtype_Int_Value_In_Range(MTYPE_I4, value)) ||
