@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Nov 24 12:29:31 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-56748
+
+Description:
+------------
+	* [trunk] Fix for bug #56748: [FDX][Img] Assert REGISTER_SET_MemberP: register value out of range.
+	Deliver fixes/codex-56748 rev #19584 with authorization branch #56791
+
+	-> LRA: fix in overlap coalescing preferencing propagation: check on register validity was not
+	   totally safe and was ending on propagating a non-existent register id (255).
+
+Modified Files:
+---------------
+	M      osprey/lai/lra.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Nov 24 09:18:28 CET 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

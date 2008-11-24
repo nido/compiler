@@ -1354,16 +1354,18 @@ Propagate_Overlap_Coalescing_Preference_Leaf_To_Root(LIVE_RANGE *lr, REGISTER al
 
   cur_lr = lr;
   while ((parent_lr = LR_ovcoal_parent(cur_lr)) != NULL) {
-    alloc_reg -= LR_ovcoal_local_rank(cur_lr);
-    if (alloc_reg < REGISTER_MIN) {
-      break; // register chosen for 'lr' is not compatible with 'parent_lr'
-    }
 
     if (LR_extract_op(cur_lr)) {
-      // Check if register is compatible with parent alignment
+      // Update pref register for 'parent_lr'
+      if (((INT)alloc_reg - LR_ovcoal_local_rank(cur_lr)) < (INT)REGISTER_MIN) {
+	break; // out of range
+      }
+      alloc_reg -= LR_ovcoal_local_rank(cur_lr);
+
+      // Check if pref register is correctly aligned for 'parent_lr'
       INT rank_mask = TN_nhardregs(LR_tn(parent_lr))-1;
       if ((alloc_reg - REGISTER_MIN) & rank_mask != 0) {
-	break; // Stop propagation, has child register is not correctly aligned to be coalesced with parent
+	break; // misalignment
       }
     }
     cur_lr = parent_lr;
