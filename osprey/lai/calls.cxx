@@ -1272,8 +1272,15 @@ Generate_Exit (
 
 #ifdef TARG_ST
   // FdF 20041105: No need for an epilog in case of a "noreturn" call.
+  // [SC] When we need to unwind through a tailcall, we must ensure that
+  // the return address is valid at the time of the tailcall.
+  // If the "tailcall" BB ends in a call instruction then the call instruction
+  // sets a valid return address, but if it ends in a goto instruction, we
+  // should have an epilog.
   if (BB_call(bb) &&
-      WN_Call_Never_Return(CALLINFO_call_wn(ANNOT_callinfo(ANNOT_Get (BB_annotations(bb), ANNOT_CALLINFO)))))
+      WN_Call_Never_Return(CALLINFO_call_wn(ANNOT_callinfo(ANNOT_Get (BB_annotations(bb), ANNOT_CALLINFO))))
+      && ( OP_call(BB_last_op(bb))
+	   || (!CG_emit_asm_dwarf && !CXX_Exceptions_On)))
     return;
 #endif
 

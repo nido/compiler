@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Nov 25 12:38:06 CET 2008
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-56134
+
+Description:
+------------
+	*  Fix for bug #56134 Interaction of -fexceptions and attribute
+        noreturn
+	Delivered fixes/codex-56134 rev #19620 with authorization art #56470.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/calls.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@19599 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-56134@19620 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@19599 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-56134@19620" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/calls.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/calls.cxx?p2=branches/fixes/codex-56134/osprey/lai/calls.cxx&r1=19599&r2=19620&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Nov 24 13:39:10 CET 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
