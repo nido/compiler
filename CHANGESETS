@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Nov 25 15:55:00 CET 2008
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-57051
+
+Description:
+------------
+	* [trunk] Fix for bug #57051: [v4] Assert in dwarf info generation.
+                  Delivered fixes/codex-57051 at rev #19629 with authorization art #57063
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Nov 25 12:38:06 CET 2008
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
