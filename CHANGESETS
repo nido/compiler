@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Nov 27 18:33:53 CET 2008
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-fix-makefiles
+
+Description:
+------------
+	* [trunk] Deliver lyon/dev-fix-makefiles rev #19652 with authorization branch #56753
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/Makefile.gbase
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Nov 25 15:55:00 CET 2008
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
