@@ -2009,6 +2009,12 @@ DST_mk_structure_type(USRCPOS      decl,      /* Source location */
    DST_STRUCTURE_TYPE_abstract_origin(attr) = abstract_origin;
    DST_STRUCTURE_TYPE_first_child(attr) = DST_INVALID_IDX;
    DST_STRUCTURE_TYPE_last_child(attr) = DST_INVALID_IDX;
+
+#ifdef TARG_ST
+   // [CL] don't forget to initialize
+   DST_STRUCTURE_TYPE_containing_type(attr) = DST_INVALID_IDX;
+#endif
+
    if (is_incomplete)
       DST_SET_declaration(flag);
    return DST_init_info(info_idx, DW_TAG_structure_type, flag, attr_idx);
@@ -2059,6 +2065,14 @@ int DST_is_structure_being_built(DST_INFO_IDX struct_idx)
   attr = DST_ATTR_IDX_TO_PTR(attr_idx, DST_STRUCTURE_TYPE);
   return DST_STRUCTURE_TYPE_being_built(attr);
 }
+
+void DST_clear_structure_declaration(DST_INFO_IDX struct_idx)
+{
+  DST_INFO *info_ptr = DST_INFO_IDX_TO_PTR(struct_idx);
+  DST_flag      flag = DST_INFO_flag(info_ptr);
+  DST_RESET_declaration(flag);
+  DST_INFO_flag(info_ptr) = flag;
+}
 #endif
 
 /* Creates a DW_TAG_union_type entry.
@@ -2088,6 +2102,12 @@ DST_mk_union_type(USRCPOS      decl,      /* Source location */
    DST_UNION_TYPE_abstract_origin(attr) = abstract_origin;
    DST_UNION_TYPE_first_child(attr) = DST_INVALID_IDX;
    DST_UNION_TYPE_last_child(attr) = DST_INVALID_IDX;
+
+#ifdef TARG_ST
+   // [CL] don't forget to initialize
+   DST_UNION_TYPE_containing_type(attr) = DST_INVALID_IDX;
+#endif
+
    if (is_incomplete)
       DST_SET_declaration(flag);
    return DST_init_info(info_idx, DW_TAG_union_type, flag, attr_idx);
@@ -2109,34 +2129,42 @@ void DST_add_union_containing_type(DST_INFO_IDX union_idx,
 }
 
 // [CL] avoid infinite recursion in case of self referencing union
-void DST_set_union_being_built(DST_INFO_IDX struct_idx)
+void DST_set_union_being_built(DST_INFO_IDX union_idx)
 {
-  DST_INFO *struct_ptr = DST_INFO_IDX_TO_PTR(struct_idx);
-  DST_ATTR_IDX attr_idx = DST_INFO_attributes(struct_ptr);
+  DST_INFO *union_ptr = DST_INFO_IDX_TO_PTR(union_idx);
+  DST_ATTR_IDX attr_idx = DST_INFO_attributes(union_ptr);
   DST_UNION_TYPE *attr;
 
   attr = DST_ATTR_IDX_TO_PTR(attr_idx, DST_UNION_TYPE);
   DST_UNION_TYPE_being_built(attr) = 1;
 }
 
-void DST_clear_union_being_built(DST_INFO_IDX struct_idx)
+void DST_clear_union_being_built(DST_INFO_IDX union_idx)
 {
-  DST_INFO *struct_ptr = DST_INFO_IDX_TO_PTR(struct_idx);
-  DST_ATTR_IDX attr_idx = DST_INFO_attributes(struct_ptr);
+  DST_INFO *union_ptr = DST_INFO_IDX_TO_PTR(union_idx);
+  DST_ATTR_IDX attr_idx = DST_INFO_attributes(union_ptr);
   DST_UNION_TYPE *attr;
 
   attr = DST_ATTR_IDX_TO_PTR(attr_idx, DST_UNION_TYPE);
   DST_UNION_TYPE_being_built(attr) = 0;
 }
 
-int DST_is_union_being_built(DST_INFO_IDX struct_idx)
+int DST_is_union_being_built(DST_INFO_IDX union_idx)
 {
-  DST_INFO *struct_ptr = DST_INFO_IDX_TO_PTR(struct_idx);
-  DST_ATTR_IDX attr_idx = DST_INFO_attributes(struct_ptr);
+  DST_INFO *union_ptr = DST_INFO_IDX_TO_PTR(union_idx);
+  DST_ATTR_IDX attr_idx = DST_INFO_attributes(union_ptr);
   DST_UNION_TYPE *attr;
 
   attr = DST_ATTR_IDX_TO_PTR(attr_idx, DST_UNION_TYPE);
   return DST_UNION_TYPE_being_built(attr);
+}
+
+void DST_clear_union_declaration(DST_INFO_IDX union_idx)
+{
+  DST_INFO *info_ptr = DST_INFO_IDX_TO_PTR(union_idx);
+  DST_flag      flag = DST_INFO_flag(info_ptr);
+  DST_RESET_declaration(flag);
+  DST_INFO_flag(info_ptr) = flag;
 }
 #endif
 

@@ -1068,12 +1068,14 @@ DST_enter_struct_union(tree type_tree, TY_IDX ttidx  , TY_IDX idx,
 	      DST_set_structure_being_built(dst_idx);
 	      DST_enter_struct_union_members(type_tree,dst_idx);
 	      DST_clear_structure_being_built(dst_idx);
+	      DST_clear_structure_declaration(dst_idx);
 	    }
 	  } else if (TREE_CODE(type_tree) == UNION_TYPE) {
 	    if (!DST_is_union_being_built(dst_idx)) {
 	      DST_set_union_being_built(dst_idx);
 	      DST_enter_struct_union_members(type_tree,dst_idx);
 	      DST_clear_union_being_built(dst_idx);
+	      DST_clear_union_declaration(dst_idx);
 	    }
 	  }
 	  return dst_idx;
@@ -1271,8 +1273,16 @@ DST_enter_struct_union(tree type_tree, TY_IDX ttidx  , TY_IDX idx,
 
 	if(TREE_CODE(type_tree) == RECORD_TYPE) {
 	  DST_clear_structure_being_built(struct_union_dst_idx);
+	   // [CL] if it has fields, then it's not a declaration (at
+	   // least it seems it's what GDB expects)
+	   if (TREE_PURPOSE(type_tree)) {
+	     DST_clear_structure_declaration(struct_union_dst_idx);
+	   }
 	} else if (TREE_CODE(type_tree) == UNION_TYPE) {
 	  DST_clear_union_being_built(struct_union_dst_idx);
+	   if (TREE_PURPOSE(type_tree)) {
+	     DST_clear_union_declaration(struct_union_dst_idx);
+	   }
 	}
 #endif
     }

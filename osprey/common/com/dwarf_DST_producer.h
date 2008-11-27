@@ -541,6 +541,7 @@ void DST_add_structure_containing_type(DST_INFO_IDX struct_idx,
 void DST_set_structure_being_built(DST_INFO_IDX struct_idx);
 void DST_clear_structure_being_built(DST_INFO_IDX struct_idx);
 int DST_is_structure_being_built(DST_INFO_IDX struct_idx);
+void DST_clear_structure_declaration(DST_INFO_IDX struct_idx);
 #endif
 
 
@@ -564,6 +565,7 @@ void DST_add_union_containing_type(DST_INFO_IDX union_idx,
 void DST_set_union_being_built(DST_INFO_IDX struct_idx);
 void DST_clear_union_being_built(DST_INFO_IDX struct_idx);
 int DST_is_union_being_built(DST_INFO_IDX struct_idx);
+void DST_clear_union_declaration(DST_INFO_IDX struct_idx);
 #endif
 
 

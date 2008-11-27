@@ -1,6 +1,30 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Nov 27 18:42:36 CET 2008
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-54995
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-54995 rev #19658 with authorization branch #54999
+	Cannot obtain type information about internal OS21 data structures
+	(pb with incomplete struct/union dwarf information)
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgdwarf.cxx
+	M      osprey/gccfe/wfe_dst.cxx
+	M      osprey/g++fe/wfe_dst.cxx
+	M      osprey/common/com/dwarf_DST_producer.cxx
+	M      osprey/common/com/dwarf_DST_producer.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Nov 27 18:33:53 CET 2008
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

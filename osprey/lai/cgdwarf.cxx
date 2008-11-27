@@ -1139,7 +1139,9 @@ put_formal_parameter(DST_flag flag, DST_FORMAL_PARAMETER *attr, Dwarf_P_Die die)
    put_reference (DST_FORMAL_PARAMETER_default_val(attr),
 		  DW_AT_default_value, 
 	          die);
+#ifndef TARG_ST // [CL] no such flag for formal_parameter
    put_flag (DW_AT_declaration, die);
+#endif
   } else {
 
    put_decl(DST_FORMAL_PARAMETER_decl(attr), die);
@@ -1348,6 +1350,16 @@ put_structure_type(DST_flag flag, DST_STRUCTURE_TYPE *attr, Dwarf_P_Die die)
 {
   put_decl(DST_STRUCTURE_TYPE_decl(attr), die);
   put_name (DST_STRUCTURE_TYPE_name(attr), die, pb_typename);
+#ifdef TARG_ST
+  // [CL] according to the Dwarf standard, incomplete structure, union
+  // or class type is represented by a structure, union or class entry
+  // that does not have a byte size attribute and that has a
+  // DW_AT_declaration attribute. GDB expects this for enums too.
+
+  // We can have 0 sized structs, so check the declaration flag too
+  if ( (DST_STRUCTURE_TYPE_byte_size(attr) != 0) 
+       && (!DST_IS_declaration(flag)) )
+#endif
   dwarf_add_AT_unsigned_const (dw_dbg, die, DW_AT_byte_size,
 		  DST_STRUCTURE_TYPE_byte_size(attr), &dw_error);
   if (DST_IS_declaration(flag)) put_flag (DW_AT_declaration, die);
@@ -1368,6 +1380,16 @@ put_class_type(DST_flag flag, DST_CLASS_TYPE *attr, Dwarf_P_Die die)
   put_decl(DST_CLASS_TYPE_decl(attr), die);
   put_name (DST_CLASS_TYPE_name(attr), die, 
       DST_IS_declaration(flag) ? pb_none : pb_typename);
+#ifdef TARG_ST
+  // [CL] according to the Dwarf standard, incomplete structure, union
+  // or class type is represented by a structure, union or class entry
+  // that does not have a byte size attribute and that has a
+  // DW_AT_declaration attribute. GDB expects this for enums too.
+
+  // We can have 0 sized structs, so check the declaration flag too
+  if ( (DST_STRUCTURE_TYPE_byte_size(attr) != 0) 
+       && (!DST_IS_declaration(flag)) )
+#endif
   dwarf_add_AT_unsigned_const (dw_dbg, die, DW_AT_byte_size,
 		  DST_CLASS_TYPE_byte_size(attr), &dw_error);
   if (DST_IS_declaration(flag)) put_flag (DW_AT_declaration, die);
@@ -1383,6 +1405,16 @@ put_union_type(DST_flag flag, DST_UNION_TYPE *attr, Dwarf_P_Die die)
 {
   put_decl(DST_UNION_TYPE_decl(attr), die);
   put_name (DST_UNION_TYPE_name(attr), die, pb_typename);
+#ifdef TARG_ST
+  // [CL] according to the Dwarf standard, incomplete structure, union
+  // or class type is represented by a structure, union or class entry
+  // that does not have a byte size attribute and that has a
+  // DW_AT_declaration attribute. GDB expects this for enums too.
+
+  // We can have 0 sized structs, so check the declaration flag too
+  if ( (DST_STRUCTURE_TYPE_byte_size(attr) != 0) 
+       && (!DST_IS_declaration(flag)) )
+#endif
   dwarf_add_AT_unsigned_const (dw_dbg, die, DW_AT_byte_size,
 		  DST_UNION_TYPE_byte_size(attr), &dw_error);
   if (DST_IS_declaration(flag)) put_flag (DW_AT_declaration, die);
@@ -1554,6 +1586,16 @@ put_enumeration_type(DST_flag flag, DST_ENUMERATION_TYPE *attr, Dwarf_P_Die die)
 {
   put_decl(DST_ENUMERATION_TYPE_decl(attr), die);
   put_name (DST_ENUMERATION_TYPE_name(attr), die, pb_typename);
+#ifdef TARG_ST
+  // [CL] according to the Dwarf standard, incomplete structure, union
+  // or class type is represented by a structure, union or class entry
+  // that does not have a byte size attribute and that has a
+  // DW_AT_declaration attribute. GDB expects this for enums too.
+
+  // We can have 0 sized structs, so check the declaration flag too
+  if ( (DST_STRUCTURE_TYPE_byte_size(attr) != 0) 
+       && (!DST_IS_declaration(flag)) )
+#endif
   dwarf_add_AT_unsigned_const (dw_dbg, die, DW_AT_byte_size,
 		  DST_ENUMERATION_TYPE_byte_size(attr), &dw_error);
   if (DST_IS_declaration(flag)) put_flag (DW_AT_declaration, die);
