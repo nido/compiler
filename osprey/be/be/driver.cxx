@@ -2459,6 +2459,12 @@ main (INT argc, char **argv)
     Terminate(Had_Internal_Error() ? RC_INTERNAL_ERROR : RC_NORECOVER_USER_ERROR) ;
   }
 
+#ifdef TARG_ST
+  if (local_wcount && warnings_are_errors) {
+    Terminate(RC_USER_ERROR);
+  }
+#endif
+
   /* Close and delete files as necessary: */
   Cleanup_Files ( TRUE, FALSE );
 

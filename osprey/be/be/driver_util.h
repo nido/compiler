@@ -66,6 +66,10 @@ extern void Lowering_Initialize (void);
 
 extern void Lower_Init(void);
 
+#ifdef TARG_ST
+extern BOOL warnings_are_errors;
+#endif
+
 #ifdef __cplusplus
 }
 #endif

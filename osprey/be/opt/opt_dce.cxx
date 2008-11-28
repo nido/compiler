@@ -68,6 +68,9 @@
 #include "pf_cg.h"
 
 #include "cxx_base.h"
+#ifdef TARG_ST
+#include "erbe.h"
+#endif
 
 #include "opt_base.h"
 #include "opt_bb.h"
@@ -4903,8 +4906,12 @@ COMP_UNIT::Find_uninit_locals_for_entry(BB_NODE *bb)
     char *pu_name = cplus_demangle(Cur_PU_Name, DMGL_NO_OPTS);
     if (pu_name == NULL)
       pu_name = Cur_PU_Name;
-    fprintf(stderr, "Warning: variable %s in %s might be used uninitialized\n",
-	    sym_name, pu_name);
+
+    ErrMsg(EC_Uninitialized, sym_name, pu_name);
+    if (pu_name != NULL && pu_name != Cur_PU_Name)
+      free(pu_name);
+    if (sym_name != NULL && sym_name != &Str_Table[sym->St()->u1.name_idx])
+      free(sym_name);
   }
 }
 

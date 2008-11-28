@@ -155,7 +155,10 @@ extern "C" {
 #define EC_LAY_section_name	EC_BASE_BE+127
 
 /* Miscellaneous */
-#define EC_Skip_PU	EC_BASE_BE+130	/* str, int, str */
+#define EC_Skip_PU		EC_BASE_BE+130	/* str, int, str */
+#ifdef TARG_ST
+#define EC_Uninitialized	EC_BASE_BE+131  /* str, str */
+#endif
 
 /* DRA cloning error messages */
 #define EC_DRA_rii_file_io       EC_BASE_BE+140  /* str, err */

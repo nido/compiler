@@ -70,6 +70,10 @@
 
 #include "errno.h"
 
+#ifdef TARG_ST
+BOOL warnings_are_errors = FALSE;
+#endif
+
 /* argc and argv for phase-specific flags */
 static UINT phase_argc[PHASE_COUNT];
 static STRING *phase_argv[PHASE_COUNT];
@@ -387,7 +391,16 @@ Process_Command_Line (INT argc, char **argv)
 		    Min_Error_Severity = ES_ERROR;
 		}
 		break;
-
+#ifdef TARG_ST
+	    case 'W':		    /* Warnings are errors */
+		if (strncmp(cp, "error", 5) == 0) {
+		  warnings_are_errors = TRUE;
+		} else if (strncmp(cp, "no-error", 8) == 0) {
+		  warnings_are_errors = FALSE;
+		} else 
+		  ErrMsg (EC_Unknown_Flag, *(cp-1), argv[i]); 
+		break;
+#endif
 	    case 'p': 
 		if (strncmp(cp, "fa", 2) == 0) { 
 		  Run_autopar = TRUE; 

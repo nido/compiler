@@ -2078,10 +2078,17 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"warn about possibly confusing type conversions"
 -Wno-conversion	;		Cc	f,cpp	self
 	""
+#ifdef TARG_ST
+-Werror		;		Cc	cpp,f,be	self
+	"treat all warnings as errors"
+-Wno-error	;		Cc	cpp,f,be	self
+	"do not treat warnings as errors"
+#else
 -Werror		;		Cc	cpp,f	self
 	"treat all warnings as errors"
 -Wno-error	;		Cc	cpp,f	self
 	"do not treat warnings as errors"
+#endif
 #ifdef TARG_ST
 -Wsystem-headers	;		Cc	cpp	self
 	"do not suppress warnings from system headers"

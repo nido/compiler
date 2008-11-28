@@ -268,6 +268,12 @@ ERROR_DESC EDESC_BE[] = {
     "Skipping%s optimization for PU #%d: %s", 
     3, ET_STRING, ET_INT, ET_STRING, 0,0,0 },
 
+#ifdef TARG_ST
+  { EC_Uninitialized,	EM_User | ES_WARNING, RAG_EN_NONE,
+    "Variable %s in %s might be used uninitialized",
+    2, ET_STRING, ET_STRING, 0,0,0,0 },
+#endif
+
   /* DRA cloning errors */
   { EC_DRA_rii_file_io, EM_User | ES_ERRABORT, RAG_EN_NONE,
     "Cannot read/write prelinker file (%s): %s",
