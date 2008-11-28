@@ -464,8 +464,7 @@ AreEquivalent<OP>(OP* op1, OP* op2)
                               ("IsJump specification may be wrong"));
                     tgt1 = OP_opnd(op1, OP_find_opnd_use(op1, OU_target));
                     tgt2 = OP_opnd(op2, OP_find_opnd_use(op2, OU_target));
-                    DevAssert(TN_is_label(tgt1) &&  TN_is_label(tgt2),
-                              ("Target is not a label!"));
+                    if(!TN_is_label(tgt1) || !TN_is_label(tgt2)) return false;
                     result = Get_Label_BB(TN_label(tgt1)) == 
                         Get_Label_BB(TN_label(tgt2)) &&
                         TN_offset(tgt1) == TN_offset(tgt2);
