@@ -1591,15 +1591,18 @@ hoist_predicate_of_duplicate_complement (
 #ifdef TARG_ST
   EBO_TN_INFO *new_predicate_tninfo;
   TN *new_predicate_tn;
+  BOOL new_predicate_tn_is_false;
   if (OP_has_predicate (predicate1_info->in_op)) {
     INT idx = OP_find_opnd_use(predicate1_info->in_op, OU_predicate);
     new_predicate_tninfo = new_predicate_opinfo->actual_opnd[idx];
     new_predicate_tn = OP_opnd(predicate1_info->in_op, idx);
+    new_predicate_tn_is_false = OP_Pred_False(predicate1_info->in_op, idx);
     if (!(TN_Is_Constant(new_predicate_tn) ||
 	  EBO_tn_available (bb, new_predicate_tninfo))) return FALSE;
   } else {
     new_predicate_tn = True_TN;
     new_predicate_tninfo = NULL;
+    new_predicate_tn_is_false = FALSE;
   }
 #else
   EBO_TN_INFO *new_predicate_tninfo = new_predicate_opinfo->actual_opnd[OP_PREDICATE_OPND];
@@ -1836,6 +1839,13 @@ hoist_predicate_of_duplicate_complement (
 #ifdef TARG_ST
     INT pred_opnd_idx = OP_find_opnd_use(pred_op,OU_predicate);
     OP *new_pred_op = CGTARG_Dup_OP_Predicate (pred_op, new_predicate_tn);
+    if (OP_has_predicate (new_pred_op)) {
+      if (new_predicate_tn_is_false) {
+	Set_OP_Pred_False(new_pred_op, pred_opnd_idx);
+      } else {
+	Set_OP_Pred_True(new_pred_op, pred_opnd_idx);
+      }
+    }
     Copy_WN_For_Memory_OP (new_pred_op, pred_op);
     BB_Insert_Op_After (bb, pred_op, new_pred_op);
     BB_Remove_Op (bb, pred_op);
@@ -5949,6 +5959,29 @@ find_previous_constant (OP *op,
   return FALSE;
 }
 
+#ifdef TARG_ST
+/* [TTh]
+ * Return TRUE if <tn_replace> can be used to replace the TN  currently used
+ * by operand <opnd_i> of operation <op>. It mainly checks that the register
+ * class and subclass constraints are met.
+ * Return FALSE otherwise.
+ */
+static BOOL
+Is_Valid_Opnd_Replacement_Candidate(TN* tn_replace, OP *op, INT opnd_i)
+{
+  ISA_REGISTER_CLASS    rc = OP_opnd_reg_class(op, opnd_i);
+  ISA_REGISTER_SUBCLASS sc = OP_opnd_reg_subclass(op, opnd_i);
+
+  if (rc == TN_register_class(tn_replace) &&
+      (!has_assigned_reg(tn_replace) ||
+       (sc == ISA_REGISTER_SUBCLASS_UNDEFINED ||
+	REGISTER_SET_MemberP(REGISTER_SUBCLASS_members(sc), TN_register(tn_replace))))) {
+    return TRUE;
+  }
+  return FALSE;
+}
+#endif
+
 /* 
  * Iterate through a Basic Block and build EBO_TN_INFO entries.
  */
@@ -6146,7 +6179,12 @@ Find_BB_TNs (BB *bb)
 
       if ((tn_replace != NULL) &&
           (TN_Is_Constant(tn_replace) ||
+#ifdef TARG_ST
+           (EBO_tn_available(bb,tninfo_replace) &&
+	    Is_Valid_Opnd_Replacement_Candidate(tn_replace, op, opndnum)) ||
+#else
            EBO_tn_available(bb,tninfo_replace) ||
+#endif
            ((tn_registers_identical(actual_tn, tn_replace)) && !check_omegas)) &&
           (TN_Is_Constant(tn_replace) ||
            ((tninfo_replace != NULL) &&
@@ -7021,6 +7059,15 @@ void EBO_Remove_Unused_Ops (BB *bb, BOOL BB_completely_processed)
       Print_OP_No_SrcLine(op);
     }
 
+#ifdef TARG_ST
+    // [TTh] Remove instructions marked with !True_TN
+    if (OP_has_predicate(op)) {
+      INT idx = OP_find_opnd_use(op, OU_predicate);
+      if (OP_opnd(op, idx) == True_TN && OP_Pred_False(op, idx)) {
+	goto can_be_removed;
+      }
+    }
+#endif
 
     rslt_count = OP_results(op);
     if (rslt_count == 0) goto op_is_needed;

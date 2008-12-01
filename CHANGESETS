@@ -1,6 +1,36 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Dec  1 16:12:11 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-55693
+
+Description:
+------------
+	* [trunk] Fix for bug #55693: Functional failure of H264 and LZC testcase (initially in IPA).
+	Deliver fixes/codex-55693 rev #19689 with authorization branch #56559
+
+	This branch contains several fixes for EBO when dealing with predicated code.
+	Most problems have been raised with IPA enabled but might potentially occurs outside IPA scope.
+
+	Main changes are:
+	- Added a check in cgemit to insure that subclass constraint is respected,
+	- Fix tn replacement by blocking it when it might break register class/subclass constraints associated to operands (Find_BB_TNs()),
+	- Fix EBO_Verify_Operand() to use generic API and correctly take into account false predicate,
+	- Fix predicate generation in hoist_predicate_of_duplicate_complement() (Pred_False was not correctly set)
+	- Extended EBO_Remove_Unused_Ops() to remove instructions predicated with !True_TN (otherwise they will be generated in asm file with predicate True_TN).
+
+Modified Files:
+---------------
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Nov 28 14:39:01 CET 2008
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -4097,6 +4097,13 @@ r_assemble_opnd (
 
       ISA_REGISTER_SUBCLASS sc = OP_opnd_reg_subclass(op,i);
 
+#ifdef TARG_ST
+      // [TTh] Raise internal error if current operand received an unallowed register
+      FmtAssert((sc == ISA_REGISTER_SUBCLASS_UNDEFINED ||
+		 REGISTER_SET_MemberP(REGISTER_SUBCLASS_members(sc), reg)),
+		("r_assemble_opnd: illegal register <%s> for register subclass <%s>\n",
+		 REGISTER_name(rc, reg), REGISTER_SUBCLASS_name(sc)));
+#endif
       if (REGISTER_SET_MemberP(REGISTER_SUBCLASS_members(sc), reg)
 	      && REGISTER_SUBCLASS_reg_name(sc, reg)) {
 	rname = REGISTER_SUBCLASS_reg_name(sc, reg);
@@ -4172,6 +4179,14 @@ r_assemble_result (
 	                     ("r_assemble_list: illegal result tn"));
 
   if (reg != REGISTER_UNDEFINED) {
+
+#ifdef TARG_ST
+      // [TTh] Raise internal error if current result received an unallowed register
+      FmtAssert((sc == ISA_REGISTER_SUBCLASS_UNDEFINED ||
+		 REGISTER_SET_MemberP(REGISTER_SUBCLASS_members(sc), reg)),
+		("r_assemble_result: illegal register <%s> for register subclass <%s>\n",
+		 REGISTER_name(rc, reg), REGISTER_SUBCLASS_name(sc)));
+#endif
     if (REGISTER_SET_MemberP(REGISTER_SUBCLASS_members(sc), reg)
 	  && REGISTER_SUBCLASS_reg_name(sc, reg)) {
       rname = REGISTER_SUBCLASS_reg_name(sc, reg);
