@@ -1,11 +1,11 @@
 # Revision file that references all dependencies of the project.
 # A dependency is a 4-uplet: dependency_name,type,revision,location
-# Dependening on the dependency type, the revision and location may have
+# Depending on the dependency type, the revision and location may have
 # different form.
 # The following types are defined:
-# svn: revision is a <branch>@<rev> svn revision identifier and location 
-#      is a reference svn <url>. 
-#      The command svn co -r <rev> <url>/<branch> should be sufficient to 
+# svn: revision is a <branch>@<rev> svn revision identifier and location
+#      is a reference svn <url>.
+#      The command svn co -r <rev> <url>/<branch> should be sufficient to
 #      retrieve all sources of the dependency.
 #
 # file: revision is the <file> name without directory specification.
@@ -17,3 +17,5 @@ stxp70-binutils,svn,trunk@3546,https://codex.cro.st.com/svnroot/stxp70cc/stxp70-
 mds,svn,trunk@1352,https://codex.cro.st.com/svnroot/mds
 ecc,svn,trunk@3335,https://codex.cro.st.com/svnroot/ecc
 binopt,svn,trunk@1656,https://codex.cro.st.com/svnroot/binopt
+st200-gdb,svn,20080411_STS-GDB6.7.1@262,http://codex.cro.st.com/svnroot/st200-gdb
+st200-reftoolset,file,,/sw/st/gnu_compil/comp/st200/r6.2/linux-rh-ws-3
