@@ -215,6 +215,24 @@ tree Current_Function_Decl(void) {return curr_func_decl;}
 
 // void (*back_end_hook) (tree) = &WFE_Expand_Decl;
 
+#ifdef KEY
+
+// Any var_decls or type_decls that we want to expand last.
+std::vector<tree> emit_decls;
+// Struct fields whose type we want to set last.
+std::vector<std::pair<tree, FLD_HANDLE> > defer_fields;
+
+void
+defer_decl (tree t) {
+  emit_decls.push_back (t);
+}
+
+void
+defer_field (tree t, FLD_HANDLE fld) {
+  defer_fields.push_back (std::make_pair(t, fld));
+}
+
+#endif
 
 /*
  * WFE_Expand_Decl is called with the root of the g++ tree (always a
@@ -3933,6 +3951,56 @@ WFE_Expand_Top_Level_Decl (tree top_level_decl)
       }
     }
   }
+#ifdef KEY
+  {
+    int i;
+    // Can't use iterator to access emit_decls because Get_TY may grow
+    // emit_decls, which invalids all iterators.  Use operator[] instead.
+    for (i = 0; i < emit_decls.size(); i++) {
+      tree decl = emit_decls[i];
+      if (TREE_CODE(decl) == VAR_DECL)
+	WFE_Expand_Decl(decl);
+      else if (TREE_CODE(decl) == RECORD_TYPE ||
+	       TREE_CODE(decl) == UNION_TYPE)
+	Get_TY(decl);
+      else
+	Is_True(FALSE, ("WFE_Expand_Top_Level_Decl: unexpected tree type"));
+
+#ifdef TARG_ST
+      // [SC] Sigh.  Get_TY can cause more deferred functions ... 
+      while (deferred_function_i >= 0) {
+	decl = Pop_Deferred_Function ();
+	if (TREE_CODE(decl) == FUNCTION_DECL)
+	  if (DECL_THUNK_P(decl))
+	    WFE_Generate_Thunk(decl);
+	  else        
+	    WFE_Expand_Function_Body (decl);
+	else {
+	  ST *st = DECL_ST(decl);
+	  if (ST_sclass(st) == SCLASS_EXTERN)
+	    Set_ST_sclass (st, SCLASS_UGLOBAL);
+	  WFE_Expand_Decl (decl);
+	}
+      }
+#endif
+    }
+  }
+  {
+    // Set the type for fields whose type we want to set last.
+    std::vector<std::pair<tree, FLD_HANDLE> >::iterator it;
+    for (it = defer_fields.begin(); it != defer_fields.end(); ++it) {
+      tree field = (*it).first;
+      FLD_HANDLE fld = (*it).second;
+      Is_True(TREE_CODE(field) == FIELD_DECL,
+	      ("WFE_Expand_Top_Level_Decl: FIELD_DECL not found"));
+      // Currently we defer only pointer types.
+      Is_True(TREE_CODE(TREE_TYPE(field)) == POINTER_TYPE,
+	      ("WFE_Expand_Top_Level_Decl: POINTER_TYPE not found"));
+      TY_IDX fty_idx = Get_TY(TREE_TYPE(field));
+      Set_FLD_type(fld, fty_idx);
+    }
+  }
+#endif
 } /* WFE_Expand_Top_Level_Decl */
 
 #ifdef TARG_ST

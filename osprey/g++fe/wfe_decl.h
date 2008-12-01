@@ -34,6 +34,13 @@ extern void WFE_Initialize_Decl (tree decl);
 #ifdef KEY
 // Add a VAR_DECL typeinfo to be emitted
 extern void gxx_emits_typeinfos (tree);
+
+// Add VAR_DECLs and TYPE_DECLs that are to be expanded last.
+extern void defer_decl (tree);
+
+// Add struct fields whose type we want to expand last.
+extern void defer_field (tree, FLD_HANDLE);
+
 #endif
 
 /* called for each aggregate initialization */

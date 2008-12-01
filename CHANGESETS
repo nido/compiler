@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Dec  1 18:25:02 CET 2008
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-55527
+
+Description:
+------------
+	*  Fix for bug #55527 "Compiler segfault in C++ frontend"
+	Delivered fixes/codex-55527 rev #19705 with authorization art #56731.
+
+
+Modified Files:
+---------------
+	M      osprey/g++fe/tree_symtab.cxx
+	M      osprey/g++fe/wfe_decl.h
+	M      osprey/g++fe/wfe_decl.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@19698 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-55527@19705 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@19698 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-55527@19705" 
+
+Diff links to modified files:
+-----------------------------
+osprey/g++fe/tree_symtab.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/tree_symtab.cxx?p2=branches/fixes/codex-55527/osprey/g++fe/tree_symtab.cxx&r1=19698&r2=19705&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_decl.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_decl.h?p2=branches/fixes/codex-55527/osprey/g++fe/wfe_decl.h&r1=19698&r2=19705&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_decl.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_decl.cxx?p2=branches/fixes/codex-55527/osprey/g++fe/wfe_decl.cxx&r1=19698&r2=19705&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Dec  1 16:28:03 CET 2008
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

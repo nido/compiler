@@ -1005,32 +1005,43 @@ Create_TY_For_Tree (tree type_tree, TY_IDX idx)
                       if ((TREE_CODE(field_type) == RECORD_TYPE ||
                            TREE_CODE(field_type) == UNION_TYPE) &&
                           field_type != type_tree)
+#ifdef KEY
+			// Defer typedefs within class
+			// declarations to avoid circular
+			// declaration dependences.  See
+			// example in bug 5134.
+			if (TREE_CODE(field) == TYPE_DECL)
+			  defer_decl(field_type);
+			else
+#endif
                         Get_TY(field_type);
                     }
-                    else
-#ifdef TARG_ST
-		      {
-			// [CL] For static members, we need to
-			// generate debug info for the type of
-			// static members even though it is not
-			// complete yet. Otherwise, the static
-			// member declaration will have no type
-			// info
-			TYPE_TY_IDX(type_tree) = idx;
-			if(Debug_Level >= 2) {
-			  DST_INFO_IDX dst =
-			    Create_DST_type_For_Tree(type_tree,
-						     idx,orig_idx);
-			  TYPE_DST_IDX(type_tree) = dst;
-			}
-#endif
-                      if (TREE_CODE(field) == VAR_DECL)
+#ifdef KEY	// Defer expansion of static vars until all the fields in
+		// _every_ struct are laid out.  Consider this code (see
+		// bug 3044):
+		//  struct A
+		//    struct B *p
+		//  struct B
+		//    static struct A *q = ...	// static data member with
+		//                              // initializer
+		// We cannot expand static member vars while expanding the
+		// enclosing stuct, for the following reason:  Expansion of
+		// struct A leads to expansion of p, which leads to the
+		// expansion of struct B, which leads to the expansion of q and
+		// q's initializer.  The code that expands the initializer goes
+		// through the fields of struct A, but these fields are not yet
+		// completely defined, and this will cause kg++fe to die.
+		//
+		// The solution is the delay all static var expansions until
+		// the very end.
+			else if (TREE_CODE(field) == VAR_DECL)
+				defer_decl(field);
+#else
+                    else if (TREE_CODE(field) == VAR_DECL)
                         WFE_Expand_Decl(field);
-                      else if (TREE_CODE(field) == (enum tree_code)TEMPLATE_DECL)
-                        WFE_Expand_Decl(field);
-#ifdef TARG_ST
-		      }
 #endif
+		    else if (TREE_CODE(field) == (enum tree_code)TEMPLATE_DECL)
+		      WFE_Expand_Decl(field);
                   }
 
   		Set_TY_fld (ty, FLD_HANDLE());
@@ -1157,21 +1168,24 @@ Create_TY_For_Tree (tree type_tree, TY_IDX idx)
                           continue;
                         }
 #endif
-
-#ifdef TARG_ST
-                        /* (cbr) avoid self referencing func member pointers */
-                        TY_IDX fty_idx;
-                        if (TYPE_PTRMEMFUNC_P(type_tree)) {
-                          fty_idx = Be_Type_Tbl(Pointer_Size == 8 ? MTYPE_I8 : MTYPE_I4);
-                          Set_FLD_type(fld, fty_idx);
-                          fld = FLD_next(fld);
-                          continue;
-                        }
-                        else
-                          fty_idx = Get_TY(TREE_TYPE(field));
-#else
-			TY_IDX fty_idx = Get_TY(TREE_TYPE(field));
+#ifdef KEY
+			// Don't expand the field's type if it's a pointer
+			// type, in order to avoid circular dependences
+			// involving member object types and base types.  See
+			// example in bug 4954.  
+			if (TREE_CODE(TREE_TYPE(field)) == POINTER_TYPE) {
+				// Defer expanding the field's type.  Put in a
+				// generic pointer type for now.
+				TY_IDX p_idx =
+				  Make_Pointer_Type(MTYPE_To_TY(MTYPE_U8),
+						    FALSE);
+				Set_FLD_type(fld, p_idx);
+				defer_field(field, fld);
+				fld = FLD_next(fld);
+				continue;
+			}
 #endif
+			TY_IDX fty_idx = Get_TY(TREE_TYPE(field));
 
 #ifdef TARG_ST
 			// [CG]: For structure fields, the qualifiers are
