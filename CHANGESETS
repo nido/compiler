@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Dec  3 13:48:27 CET 2008
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-57070
+
+Description:
+------------
+	*  
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_cgemit.cxx
+	M      osprey/targinfo/st200/cg/targ_cgemit.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Dec  3 08:39:45 CET 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -435,6 +435,35 @@ CGEMIT_Qualified_Name(ST *st, vstring *buf)
     else if (*Symbol_Name_Suffix != '\0') {
       *buf = vstr_concat(*buf, Symbol_Name_Suffix);
     }
+
+    // [CL] [fix #57070] When using IPA, some static variables are
+    // renamed and promoted to global (necessary because of the very
+    // IPA nature). However, as they were originally static, that is
+    // with LOCAL binding (ELF meaning), we must ensure that their new
+    // global name is truly unique.
+    //
+    // For instance, when linking IPA-generated relocatable object
+    // files, we get conflicts if
+    // originally-static-variables-promoted-to-global-hidden are
+    // defined in two such object files.
+    //
+    // So, we append the unique suffix generated in ipa_link, but only
+    // to variables which have been renamed by IPA. This is the
+    // purpose of strstr(".."): detect which variables have been
+    // renamed by IPA. (We don't want/need to rename every variable)
+    //
+    // See:
+    // clone.cxx: promote_entry<ST>(), IPO_Copy_ST()
+    // symtab.cxx: Copy_ST_No_Base()
+    // ipo_inline.cxx: Process_ST().
+    if ( (Emit_Global_Data || Read_Global_Data)
+	 && (ST_class(st) == CLASS_VAR)
+	 && (ST_level(st) == GLOBAL_SYMTAB)
+	 && (strstr(ST_name(st), "..") != NULL) ) {
+      vstr_sprintf (buf, vstr_len(*buf), 
+		    "%s%s", ".", Ipa_Label_Suffix );
+    }
+
   } else {
     vstr_sprintf (buf, vstr_len(*buf), 
 		  "%s %+lld", ST_name(ST_base(st)), ST_ofst(st));
