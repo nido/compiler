@@ -176,8 +176,11 @@ static const char * const interface[] = {
   " *     ISA_REGISTER_CLASS rc,",
   " *     INT reg",
   " *   )",
-  " *       Return a boolean that indicates if register 'reg' in class",
-  " *       'rc' had the property 'xxx'.",
+  " *   BOOL ABI_PROPERTY_Has_xxx_Registers(",
+  " *     ISA_REGISTER_CLASS rc,",
+  " *   )",
+  " *       Return a boolean that indicates if any register in in class",
+  " *       'rc' has the property 'xxx'.",
   " *",
   " * ====================================================================",
   " *    Reconfigurability specific stuff",
@@ -942,6 +945,34 @@ void ABI_Properties_End(void)
 		       "}\n",
 		       prop->name);
       }
+      fprintf(hfile, "\nBE_EXPORTED extern BOOL ABI_PROPERTY_Has_%s_Registers("
+              "  ISA_REGISTER_CLASS rc);\n",
+              prop->name);
+      fprintf(cfile, "\nBOOL ABI_PROPERTY_Has_%s_Registers("
+              "  ISA_REGISTER_CLASS rc) {\n", prop->name);
+      fprintf(cfile, "  static BOOL initialized = FALSE;\n");
+      fprintf(cfile, "  static BOOL array[ISA_REGISTER_CLASS_MAX_LIMIT];\n");
+      fprintf(cfile, "  if (!initialized) {\n");
+      fprintf(cfile, "    initialized= TRUE;\n");
+      fprintf(cfile, "    ISA_REGISTER_CLASS cl;\n");
+      fprintf(cfile, "    FOR_ALL_ISA_REGISTER_CLASS(cl) {\n");
+      fprintf(cfile, "      const ISA_REGISTER_CLASS_INFO* info = ISA_REGISTER_CLASS_Info(cl);\n");
+      fprintf(cfile, "      int res = FALSE;\n");
+      fprintf(cfile, "      int i;\n");
+      fprintf(cfile, "      for (i=ISA_REGISTER_CLASS_INFO_First_Reg(info);\n");
+      fprintf(cfile, "           i<=ISA_REGISTER_CLASS_INFO_Last_Reg(info);\n");
+      fprintf(cfile, "           i++) {\n");
+      fprintf(cfile, "        if (ABI_PROPERTY_Is_%s(cl, i)) {\n", prop->name);
+      fprintf(cfile, "           res = TRUE;\n");
+      fprintf(cfile, "           break;\n");
+      fprintf(cfile, "        }\n");
+      fprintf(cfile, "      }\n");
+      fprintf(cfile, "      array[cl]= res;\n");
+      fprintf(cfile, "    }\n");
+      fprintf(cfile, "  }\n");
+      fprintf(cfile, "  return array[rc];\n");
+      fprintf(cfile, "}\n\n");
+
     } else {
       fprintf(hfile, "inline BOOL ABI_PROPERTY_Is_%s(void)\n"
 		     "{\n",

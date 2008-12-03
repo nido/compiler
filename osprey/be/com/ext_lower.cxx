@@ -26,6 +26,7 @@ Contact information:
 */
 
 #include <map>
+#include <stack>
 
 #include "defs.h"
 #include "errors.h"
@@ -50,15 +51,21 @@ Contact information:
 #include "extension_intrinsic.h"
 #include "register.h"
 
+#include "symtab.h"
+
 /* contains options mask that controls the different phases of
    ext_lower (by default equals Enable_Extension_Native_Support
    global option) */
 static  INT32 local_ext_gen_mask;
+INT32 ext_lower_get_local_ext_gen_mask() {
+  return local_ext_gen_mask;
+}
 
-/* Set to TRUE if the ongoing extension lowering pass is the last one */
-static  BOOL  local_last_pass;
 
-static BOOL verbose_reg_placement = false;
+/* Set to true if the ongoing extension lowering pass is the last one */
+static  bool  local_last_pass;
+
+static bool verbose_reg_placement = false;
 #define VERBOSE_REG_PLACEMENT(...) if (verbose_reg_placement) { fprintf(TFile, __VA_ARGS__); }
 
 /** 
@@ -70,7 +77,7 @@ static BOOL verbose_reg_placement = false;
  * 
  * @return 
  */
-static BOOL
+static bool
 replace_stmt(WN* BB, WN* previous_stmt, WN* new_stmt)
 {
 
@@ -123,19 +130,19 @@ create_cvt_var(PREG_NUM var, TYPE_ID ext_type)
  * to an extension type.
  */
 typedef struct {
-  BOOL     valid;            // wether or not the association is valid
+  bool     valid;            // wether or not the association is valid
   TYPE_ID  c_type;           // original type
   TYPE_ID  equiv_ext_type;   // candidate extension type
   PREG_NUM replacement_preg; // replacement PREG, with extension type
 } CandidatePreg;
 typedef std::map <PREG_NUM, CandidatePreg*> CandidateMap;
 
-// static BOOL
+// static bool
 // CandidateMap_Is_Defined_Preg (CandidateMap *cmap, PREG_NUM var) {
 //   return ((*cmap)[var] != NULL);
 // }
 
-static BOOL
+static bool
 CandidateMap_Is_Valid_Preg (CandidateMap *cmap, PREG_NUM var) {
   CandidatePreg* corresp = (*cmap)[var];
   return (corresp!=NULL && corresp->valid);
@@ -222,7 +229,7 @@ CandidateMap_Get_Associated_Extension_Preg(CandidateMap *cmap, PREG_NUM var) {
  * 
  * @return 
  */
-static BOOL
+static bool
 Is_Dedicated(PREG_NUM num) {
   return ((int)num<= Last_Dedicated_Preg_Offset);
 }
@@ -586,7 +593,7 @@ Create_Convert_Node(TYPE_ID dst, WN* tree)
          MTYPE_is_dynamic(WN_rtype(tree))) &&
         ! EXTENSION_Are_Equivalent_Mtype(dst, WN_rtype(tree)))
       {
-        FmtAssert((FALSE),("unsupported Conversion (rtype:%s, desc:%s)",
+        FmtAssert((false),("unsupported Conversion (rtype:%s, desc:%s)",
                                MTYPE_name(dst), MTYPE_name(WN_rtype(tree))));
         // conversion is not available
         return NULL;
@@ -599,8 +606,25 @@ Create_Convert_Node(TYPE_ID dst, WN* tree)
 }
 
 
+
+/** 
+ * Test whether MTYPE <t> corresponds to an extension SFR register.
+ * 
+ * @param t 
+ * 
+ * @return 
+ */
+static bool
+is_EXTENSION_SFR_mtype(TYPE_ID t) {
+
+  if (!MTYPE_is_dynamic(t))
+    return false;
+  ISA_REGISTER_CLASS cl = EXTENSION_MTYPE_to_REGISTER_CLASS(t);
+  return !ABI_PROPERTY_Has_allocatable_Registers(cl);
+}
+
 /* forward declaration */
-static WN *EXT_LOWER_expr(WN *tree, WN** new_stmts, BOOL* modified);
+static WN *EXT_LOWER_expr(WN *tree, WN** new_stmts, bool* modified);
 
 /** 
  * auxiliary function that builds an intrinsic WN.
@@ -610,6 +634,8 @@ static WN *EXT_LOWER_expr(WN *tree, WN** new_stmts, BOOL* modified);
  * @param intrnidx
  * @param nbkids 
  * @param kids 
+ * @param nboutputs
+ * @param outputs
  * @param dsttype 
  * @param new_stmts 
  * @param modified 
@@ -618,7 +644,8 @@ static WN *EXT_LOWER_expr(WN *tree, WN** new_stmts, BOOL* modified);
  */
 WN*
 Create_Intrinsic_from_OP(INTRINSIC intrnidx, int nbkids, WN *kids[],
-                         TYPE_ID dsttype, WN** new_stmts, BOOL* modified)
+                         INT nboutputs,  ST* outputs[],
+                         TYPE_ID dsttype, WN** new_stmts, bool* modified)
 {
   static int tmp_idx = 0;
   const char * tmp_var = "_tmp_multires_";
@@ -628,9 +655,15 @@ Create_Intrinsic_from_OP(INTRINSIC intrnidx, int nbkids, WN *kids[],
 
   proto_intrn_info_t * proto = INTRN_proto_info(intrnidx);
 
-  /* Intrinsic is functional (we can use intrinsic_op) */
+  /* Intrinsic is functional (we can generate an OPR_INTRINSIC_OP wn) */
   if (proto->arg_out_count==0)
     {
+      FmtAssert((nboutputs==0),
+                ("function intrinsic implies single res (%d)", nboutputs));
+      FmtAssert(( proto->argument_count == nbkids),
+                ("Incoherent intrinsic arg_count %d nbkids %d",
+                 proto->argument_count, nbkids));
+
       *modified = true;
       
       /* Sanity check. are conversions available ? */
@@ -658,28 +691,142 @@ Create_Intrinsic_from_OP(INTRINSIC intrnidx, int nbkids, WN *kids[],
         return NULL;
       }
 
-      /* effective creation of the intrinsic op */
-      for (i=0; i<nbkids; i++)
-        {
-          WN* tmp = Create_Convert_Node(proto->arg_type[i], kids[i]);
-         kids[i] = WN_CreateParm (WN_rtype(tmp),
-                                   tmp,
-                                   Be_Type_Tbl(WN_rtype(tmp)),
-                                   WN_PARM_BY_VALUE | WN_PARM_READ_ONLY);
+      WN* newkids[MAX_RECOG_OPERANDS];
+
+      INT argidx, kidsidx;
+      /* parse all parameters */
+      for (argidx=0, kidsidx=0; argidx<proto->argument_count; argidx++) {
+        TYPE_ID argtype = proto->arg_type[argidx];
+        /* entry parameter */
+        if (proto->arg_inout[argidx] == INTRN_IN ||
+            proto->arg_inout[argidx] == INTRN_INOUT) {
+          /* parameter is not an sfr */
+          if (! is_EXTENSION_SFR_mtype(argtype)) {
+            WN* tmp = Create_Convert_Node(argtype, kids[kidsidx]);
+            newkids[kidsidx] =
+              WN_CreateParm (WN_rtype(tmp), tmp, Be_Type_Tbl(WN_rtype(tmp)),
+                             WN_PARM_BY_VALUE | WN_PARM_READ_ONLY);
+          } else { /* sfr parameter */
+            newkids[kidsidx] =
+              WN_CreateParm(proto->arg_type[argidx], kids[kidsidx],
+                            MTYPE_To_TY(proto->arg_type[argidx]),
+                            WN_PARM_BY_VALUE | WN_PARM_READ_ONLY);
+          }
+          kidsidx++;
         }
+      }
       WN* introp = WN_Create_Intrinsic(OPCODE_make_op(OPR_INTRINSIC_OP,
                                                       INTRN_return_type(proto), 
                                                       MTYPE_V),
-                                       intrnidx, nbkids, kids);
+                                       intrnidx, nbkids, newkids);
       return  Create_Convert_Node(dsttype, introp);
     }
-  else  /* we have to create a specific stmt (intrinsic_call) */
+  else  /* we need to generate an OPR_INTRINSIC_CALL wn as a separate stmt */
     {
+      /* marker specifying that a modification occured */
+      *modified = true;
 
-      DevWarn("Multi-Res patterns Not Yet Implemented %d\n", intrnidx);
-      return NULL;
+      /* first create an stmt block to store new instructions (if necessary) */
+       if (*new_stmts == NULL) {
+        *new_stmts= WN_CreateBlock ();
+       }
+
+      /* create the intrinsic call and append it. */
+      WN* intrn_call_wn = WN_Create (OPR_INTRINSIC_CALL,
+                               INTRN_return_type(proto),
+                               MTYPE_V,
+                               INTRN_number_of_in_param(proto));
+      WN_intrinsic (intrn_call_wn) = intrnidx;
+
+     /* code inspired from wfeexpr:L4859*/
+      INT argidx, kidsidx;
+      for (argidx=0, kidsidx=0; argidx<proto->argument_count; argidx++) {
+        /* entry parameter */
+        if (proto->arg_inout[argidx] == INTRN_IN ||
+            proto->arg_inout[argidx] == INTRN_INOUT) {
+          
+          TYPE_ID argtype = proto->arg_type[argidx];
+          WN* arg_wn = NULL;
+
+          /* parameter is not an sfr */
+          if (! is_EXTENSION_SFR_mtype(argtype)) {
+            /* lowering of kids must be done for stmts since it will not
+               be done afterwards as for mono-res builtins */
+            kids[kidsidx] = EXT_LOWER_expr(kids[kidsidx], new_stmts, modified);
+            arg_wn= Create_Convert_Node(proto->arg_type[argidx], kids[kidsidx]);
+          } else {
+            arg_wn= kids[kidsidx];
+          }
+          /* add param to intrinsic call */
+          WN_kid (intrn_call_wn, kidsidx) =
+            WN_CreateParm(proto->arg_type[argidx],
+                          arg_wn,
+                          MTYPE_To_TY(proto->arg_type[argidx]),
+                          WN_PARM_BY_VALUE);
+          kidsidx++;
+        }
+      }
+      
+      /* insertion is done after EXT_LOWER_exp() on kid nodes to
+         ensure correct order */
+      WN_INSERT_BlockLast (*new_stmts, intrn_call_wn);
+      
+      /* Create the subpart nodes */
+      /* code inspired from wfeexpr:L4959 */
+      WN*  ret_wn = NULL;
+      int dstidx;
+      for (argidx=0, dstidx=0; argidx<proto->argument_count; argidx++) {
+        /* we only parse output nodes */
+        if (proto->arg_inout[argidx]==INTRN_INOUT ||
+            proto->arg_inout[argidx]==INTRN_OUT) {
+          /* create a tmp name for the new symbol */
+          STR_IDX stridx = Save_Stri(tmp_var, tmp_idx++);
+
+          WN* tmp_tree = NULL;
+          
+          TYPE_ID argtype = proto->arg_type[argidx];
+          ISA_REGISTER_CLASS regclass =
+            EXTENSION_MTYPE_to_REGISTER_CLASS(argtype);
+
+          /* the output of the intrinsic_call is always symbol
+             Return_Val_Preg (for multi-res intrinsic) */
+          tmp_tree = WN_Ldid (proto->return_type, -1, Return_Val_Preg,
+                         MTYPE_To_TY(proto->return_type)); 
+          tmp_tree = WN_CreateSubPart(tmp_tree, argtype,
+                                      proto->return_type, dstidx);
+          
+          /* parameter is not an sfr, it is the effective result */
+          if (! is_EXTENSION_SFR_mtype(argtype)) {
+            // build new temporary variable
+            ST * tmp_res = New_ST (CURRENT_SYMTAB);
+            ST_Init(tmp_res, stridx, CLASS_VAR, SCLASS_AUTO, EXPORT_LOCAL,
+                    MTYPE_To_TY(argtype));
+
+            /* store subpart in tmp_res variable */
+            tmp_tree = WN_Stid(argtype, 0, tmp_res, MTYPE_To_TY (argtype),
+                               tmp_tree);
+            
+          // return cvt(ldid) on new variable.
+            ret_wn = 
+              Create_Convert_Node(dsttype,
+                                  WN_Ldid (argtype, 0, tmp_res,
+                                           ST_type(tmp_res)));
+          } else { //sfr variable
+            FmtAssert((outputs!=NULL && outputs[dstidx]!=NULL),
+                      ("outputs[dstidx] == NULL !"));
+            tmp_tree = WN_Stid(argtype, 0,  outputs[dstidx],
+                               MTYPE_To_TY(argtype), tmp_tree); 
+          }
+          /* insert in new_stmts */
+          FmtAssert((tmp_tree != NULL), ("no stmt to push ?!?!"));
+
+          WN_INSERT_BlockLast(*new_stmts, tmp_tree);
+          dstidx++;
+        }
+      }
+      return ret_wn;
     }
-
+  
   return NULL;
 }
 
@@ -746,28 +893,31 @@ Find_Best_Intrinsic(INTRINSIC_Vector_t* itrn_indexes) {
  * @return lowered tree
  */
 static WN *
-EXT_LOWER_expr(WN *tree, WN** new_stmts, BOOL* modified)
+EXT_LOWER_expr(WN *tree, WN** new_stmts, bool* modified)
 {
   WN *kids[MAX_RECOG_OPERANDS];
-  int i, nb_operands;
+  int i, nb_kids, nb_outputs;
   WN* stmt;
   WN* dsttree = NULL;
+  ST* outputs[MAX_RECOG_OPERANDS];
+  int argout_idx = -1;
   INT intrnidx;
 
-  /* Target specific expression lowering */
+  // target specific expression lowering
   if ( local_ext_gen_mask & EXTENSION_NATIVE_TARGET_CODEGEN) {
-    intrnidx = targ_pattern_rec(tree, &nb_operands, kids);
+    intrnidx = targ_pattern_rec(tree, &nb_kids, kids, &nb_outputs, outputs);
     if (intrnidx != INTRINSIC_INVALID) {
-      dsttree = BETARG_Create_Intrinsic_from_OP(intrnidx, nb_operands, kids,
-						WN_rtype(tree), new_stmts, modified);
+      dsttree = Create_Intrinsic_from_OP(intrnidx, nb_kids, kids,
+                                         nb_outputs, outputs, WN_rtype(tree),
+                                         new_stmts, modified);
       if (dsttree!=NULL) {
         tree= dsttree;
       }
     }
   }
-  nb_operands = WN_kid_count(tree);
+  nb_kids = WN_kid_count(tree);
   /* Lower kids */
-  for (i=0; i<nb_operands; i++){
+  for (i=0; i<nb_kids; i++){
     WN_kid(tree, i) = EXT_LOWER_expr(WN_kid(tree, i), new_stmts, modified);
   }
 
@@ -797,15 +947,15 @@ EXT_LOWER_expr(WN *tree, WN** new_stmts, BOOL* modified)
     return tree;
   }
 
-  for (i=0; i<nb_operands; i++) {
+  for (i=0; i<nb_kids; i++) {
     kids[i] = WN_kid(tree, i);
   }
-  *modified = TRUE;
+  *modified = true;
 
   /* create intrinsic op */
-  dsttree = BETARG_Create_Intrinsic_from_OP(intrnidx, nb_operands, kids, 
-					    WN_rtype(tree), new_stmts, modified); 
-  
+  dsttree = BETARG_Create_Intrinsic_from_OP(intrnidx, nb_kids, kids,
+                                            WN_rtype(tree), new_stmts,
+                                            modified);   
   if (dsttree!=NULL)
     return dsttree;
   return tree;
@@ -826,7 +976,7 @@ EXT_LOWER_expr(WN *tree, WN** new_stmts, BOOL* modified)
  * @return 
  */
 static WN *
-EXT_LOWER_CVT_expr(WN *tree, WN** new_stmts, BOOL *modified)
+EXT_LOWER_CVT_expr(WN *tree, WN** new_stmts, bool *modified)
 {
   int i, nb_operands = WN_kid_count(tree);
 
@@ -867,8 +1017,9 @@ EXT_LOWER_CVT_expr(WN *tree, WN** new_stmts, BOOL *modified)
 	    TYPE_ID rettype = INTRN_return_type(INTRN_proto_info(intrnidx));
 	    WN *kids[1];
 	    kids[0] = WN_Intconst(src_ty, value);
-	    WN *dsttree = BETARG_Create_Intrinsic_from_OP(intrnidx, 1, kids, rettype,
-							  new_stmts, modified);
+	    WN *dsttree = BETARG_Create_Intrinsic_from_OP(intrnidx, 1, kids,
+                                                          rettype, new_stmts,
+                                                          modified);
 	    if (dsttree!=NULL) {
 	      return dsttree;
 	    }
@@ -901,8 +1052,9 @@ EXT_LOWER_CVT_expr(WN *tree, WN** new_stmts, BOOL *modified)
 	    if (rettype == WN_rtype(tree)) {
 	      WN *kids[1];
 	      kids[0] = WN_kid0(kid0);
-	      WN *dsttree = BETARG_Create_Intrinsic_from_OP(itrnidx, 1, kids,
-							    rettype, new_stmts, modified);
+              WN *dsttree = BETARG_Create_Intrinsic_from_OP(itrnidx, 1, kids,
+                                                            rettype, new_stmts,
+                                                            modified);
 	      if (dsttree!=NULL) {
 		return dsttree;
 	      }
@@ -921,7 +1073,7 @@ EXT_LOWER_CVT_expr(WN *tree, WN** new_stmts, BOOL *modified)
 	    if (paramtype == WN_desc(kid0)) {
 	      WN *kids[1];
 	      kids[0] = WN_kid0(kid0);
-	      WN *dsttree = BETARG_Create_Intrinsic_from_OP(itrnidx, 1, kids,
+              WN *dsttree = BETARG_Create_Intrinsic_from_OP(itrnidx, 1, kids,
 							    WN_rtype(tree), new_stmts, modified);
 	      if (dsttree!=NULL) {
 		return dsttree;
@@ -935,6 +1087,7 @@ EXT_LOWER_CVT_expr(WN *tree, WN** new_stmts, BOOL *modified)
 
   return tree;
 }
+
 
 /** 
  * generic WN tree parsing code. It parses all expr in the parameter
@@ -951,63 +1104,84 @@ EXT_LOWER_CVT_expr(WN *tree, WN** new_stmts, BOOL *modified)
  * 
  * @return 
  */
+
 static WN *
 EXT_LOWER_stmt_wn_gen(WN *tree, WN* (*expr_fct)(WN *tree, WN** new_stmts,
-                                                BOOL* modified))
+                                                bool* modified))
 {
   INT i;
-  BOOL modified = FALSE;
-  WN* curblock;
+  bool modified = false;
+  WN* wn;
+  std::stack<WN*> nodes;
+  nodes.push(tree);
+  std::stack<WN*> curblock;
 
-  WN_ITER* itr = WN_WALK_StmtIter(tree);
-  for ( ; itr; itr = WN_WALK_StmtNext(itr)) {
-    WN* wn = itr->wn;
-    if (WN_opcode(wn) == OPC_BLOCK) {
-      curblock = wn;
-    }
+  /* the parsing of all stmt in the tree is done manually (without the
+  use of a generic iterator (WN_WALK_StmtIter) because we need to
+  know at any time the current block to be able to add stmts to it */
 
-    DevAssert((wn!=NULL), ("Unexpected NULL stmt"));
-    if (wn!=NULL) {
+  while( ! nodes.empty() ) {
+    wn = nodes.top();
+    nodes.pop();
+    OPCODE opc = WN_opcode(wn);
+    
+    if (opc == OPC_BLOCK) {
+      if (! curblock.empty() &&  curblock.top() == wn) {
+        curblock.pop(); // marker found, pop curblock.
+      } else {
+        curblock.push(wn);
+        nodes.push(wn);
+        // we repush the curblock as a marker  to know when to exit
+        // the block than the push all block "kids" to the nodes stack.
+        WN* last = WN_last(wn);
+        while (last) {
+          nodes.push(last);
+          last = WN_prev(last);
+        }
+      }
+    } else {
+      /* parse all kids of current node */
       for (i = 0; i < WN_kid_count(wn); i++) {
-        if (WN_kid(wn,i)!=NULL &&
-            OPCODE_is_expression(WN_opcode(WN_kid(wn,i)))) {
-          BOOL kidmod = FALSE;
-          WN* new_stmts = NULL;
-          WN_kid(wn,i) = (*expr_fct)(WN_kid(wn,i), &new_stmts, &kidmod);
-          modified|= kidmod;
-          if (kidmod && new_stmts != NULL) {
-            // check if any stmt needs to be inserted 
-            // handling of curblock to be checked !!!
-//             fprintf(stderr, "Insert newly created stmts\n");
-//             extern void dump_tree(WN *wn);
-//             dump_tree(new_stmts);
-            WN_INSERT_BlockBefore(curblock, wn, new_stmts);
+        if (WN_kid(wn,i)!=NULL) {
+          if (OPCODE_is_expression(WN_opcode(WN_kid(wn,i)))) {
+            bool kidmod = false;
+            WN* new_stmts = NULL;
+            WN_kid(wn,i) = (*expr_fct)(WN_kid(wn,i), &new_stmts, &kidmod);
+            modified|= kidmod;
+            if (kidmod && new_stmts != NULL) {
+              FmtAssert((!curblock.empty()), ("no curblock :-("));
+              WN_INSERT_BlockBefore(curblock.top(), wn, new_stmts);
+            }
+          } else { /* not an expression */
+            nodes.push(WN_kid(wn,i));
           }
         }
       }
     }
   }
-  if (modified)
+  
+  if (modified) {
     return  WN_Simplify_Tree(tree);
+  }
   return tree;
 }
 
 /**
- * Return True if a pragma with the specified id is attached to 
- * to the function WN. Return False otherwise.
+ * Return true if a pragma with the specified id is attached to 
+ * to the function WN. Return false otherwise.
  */
-static BOOL
+static bool
 Is_Function_Pragma_Defined(WN *func, WN_PRAGMA_ID id) {
   if (WN_func_pragmas(func)) {
     WN *wn;
     for (wn = WN_first(WN_func_pragmas(func)); wn; wn = WN_next(wn)) {
       if (((WN_opcode(wn) == OPC_PRAGMA) || (WN_opcode(wn) == OPC_XPRAGMA))
 	  && ((WN_PRAGMA_ID)WN_pragma(wn) == id)) {
-	return TRUE;
+	return true;
       }
     }
   }
-  return FALSE;
+  return false;
 }
 
 /* ====================================================================
@@ -1025,6 +1199,13 @@ EXT_lower_wn(WN *tree, BOOL last_pass)
 
   local_last_pass = last_pass;
   local_ext_gen_mask = Enable_Extension_Native_Support;
+  if (Activate_Extension_Native_Support_Bits_Set) {
+    local_ext_gen_mask |= Activate_Extension_Native_Support_Bits;
+  }
+  if (Block_Extension_Native_Support_Bits_Set) {
+    local_ext_gen_mask &= ~Block_Extension_Native_Support_Bits;
+  }
+  
 
   if (! local_ext_gen_mask) {
     if (Is_Function_Pragma_Defined(tree, WN_PRAGMA_FORCE_EXTGEN)) {
@@ -1045,8 +1226,8 @@ EXT_lower_wn(WN *tree, BOOL last_pass)
     return tree;
   }
 
-  BOOL simpfold = WN_Simp_Fold_ILOAD;
-  WN_Simp_Fold_ILOAD = TRUE;
+  bool simpfold = WN_Simp_Fold_ILOAD;
+  WN_Simp_Fold_ILOAD = true;
 
   Set_Error_Phase("EXT Lowering");
 

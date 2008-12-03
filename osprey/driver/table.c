@@ -101,7 +101,7 @@ typedef struct opt_info_rec {
 	char action[MAX_ACTION_LENGTH];
 	string help;
 } option_info_t;
-#define MAX_OPTIONS 1000
+#define MAX_OPTIONS 2000
 static option_info_t options[MAX_OPTIONS];
 static int num_options = 0;
 

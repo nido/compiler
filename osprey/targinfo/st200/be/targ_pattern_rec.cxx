@@ -19,17 +19,24 @@ init_pattern_rec(void) {
 
 
 /** 
- * main function of pattern_rec. Check the et of patterns in the tree.
+ * main function of pattern_rec. Check the set of target specific
+ * patterns in the WN tree. 
  * 
  * 
  * @param tree 
  * @param nboperands (result: size of kids array)
- * @param kids (result: contents affected in function)
+ * @param kids (result: operand nodes to be used in intrinsic op/call)
+ * @param nbres  (result: size of outputs  array)
+ * @param outputs ( result: result ST to be used in intrinsic call)
+ *
+ * main ST output of intrinsic is NULL in outputs array (built later).
+ *
  * 
- * @return idx
+ * @return idx (intrinsic ID or INTRINSIC_INVALID)
  */
 INTRINSIC
-targ_pattern_rec(WN *tree, INT *nboperands,  WN *kids[])
+targ_pattern_rec(WN *tree, INT *nboperands,  WN *kids[],
+                 INT *nbres,  ST* outputs[])
 {
   return INTRINSIC_INVALID;
 }
@@ -48,7 +55,7 @@ targ_pattern_rec(WN *tree, INT *nboperands,  WN *kids[])
  */
 WN *
 BETARG_Create_Intrinsic_from_OP(INTRINSIC intrnidx, int nbkids, WN *kids[],
-				TYPE_ID dsttype, WN** new_stmts, BOOL* modified)
+				TYPE_ID dsttype, WN** new_stmts, bool* modified)
 {
-  return Create_Intrinsic_from_OP(intrnidx, nbkids, kids, dsttype, new_stmts, modified);
+  return Create_Intrinsic_from_OP(intrnidx, nbkids, kids, 0, NULL, dsttype, new_stmts, modified);
 }

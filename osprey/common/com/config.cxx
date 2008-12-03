@@ -460,6 +460,14 @@ char *Extension_Names = NULL;
 BOOL Extension_Is_Present = FALSE;
 INT32 Enable_Extension_Native_Support = EXTENSION_NATIVE_SUPPORT_DEFAULT;
 BOOL Enable_Extension_Native_Support_Set = FALSE;
+
+// extra options enabling to activate/block the
+// Enable_Extension_Native_Support mask bit per bit.
+INT32 Activate_Extension_Native_Support_Bits = 0;
+BOOL Activate_Extension_Native_Support_Bits_Set = FALSE;
+INT32 Block_Extension_Native_Support_Bits = 0;
+BOOL Block_Extension_Native_Support_Bits_Set = FALSE;
+
 BOOL Meta_Instruction_Threshold_Set = FALSE;
 INT32 Meta_Instruction_Threshold = INT_MAX;
 BOOL Meta_Instruction_By_Size_Set = FALSE;
@@ -717,6 +725,15 @@ static OPTION_DESC Options_TENV[] = {
     EXTENSION_NATIVE_SUPPORT_DEFAULT, 0, 0x3f, &Enable_Extension_Native_Support,
     &Enable_Extension_Native_Support_Set,
     "Enable support of automatic codegen for compatible extension" },
+
+  { OVK_INT32,   OV_INTERNAL,    FALSE, "activate_extension_native_support_bits",
+    NULL, 0, 0, 0xff, &Activate_Extension_Native_Support_Bits,
+    &Activate_Extension_Native_Support_Bits_Set,
+    "Activate support of automatic codegen for compatible extension (per bits)" },
+  { OVK_INT32,   OV_INTERNAL,    FALSE, "block_extension_native_support_bits",
+    NULL, 0, 0, 0xff, &Block_Extension_Native_Support_Bits,
+    &Block_Extension_Native_Support_Bits_Set,
+    "Block support of automatic codegen for compatible extension (per bits)" },
 
   { OVK_INT32,   OV_INTERNAL,    FALSE, "meta_instruction_threshold", NULL,
     INT_MAX, 0, INT_MAX,    &Meta_Instruction_Threshold,

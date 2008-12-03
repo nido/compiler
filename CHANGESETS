@@ -1,6 +1,33 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Dec  3 08:39:45 CET 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mpx-mac-support-multires
+
+Description:
+------------
+	*  Pattern recognition of multi-res mpx instructions like
+	fractional macs
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/ext_lower.cxx
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/table.c
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/config.h
+	M      osprey/common/com/extension_intrinsic.h
+	M      osprey/targinfo/stxp70/be/targ_pattern_rec.cxx
+	M      osprey/targinfo/st200/be/targ_pattern_rec.cxx
+	M      osprey/targinfo/generate/abi_properties_gen.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Dec  1 18:25:02 CET 2008
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
