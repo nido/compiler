@@ -1,6 +1,23 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Dec  3 14:38:45 CET 2008
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-57070
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-57070 rev #19741 with authorization branch #57073
+
+
+Modified Files:
+---------------
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Dec  3 13:48:27 CET 2008
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
