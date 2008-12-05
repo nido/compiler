@@ -1,6 +1,31 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Dec  5 12:49:57 CET 2008
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-gdb
+
+Description:
+------------
+	* [trunk] Deliver lyon/dev-gdb rev #19766.
+	No authorization :-)
+	It's an update of the DEPENDENCIES file to point to the current GDB release for ST200. It also adds
+	SHTDI dependency.
+	Cruise Control project is expected to fail because of GDB: new tests have been added in this release,
+	some which fails. As there are new fails, Cruise Control assumes this is a regression.
+	
+	Corresponding bug reports will written separately.
+
+
+Modified Files:
+---------------
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Dec  3 14:38:45 CET 2008
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
