@@ -1367,7 +1367,7 @@ Expand_Normalize_Logical (
   return;
 }
 
-static void
+void
 Expand_Logical_Move (
   TN *dest,
   TN *src,
@@ -1392,12 +1392,36 @@ Expand_Logical_Move (
     src = Expand_Or_Inline_Immediate(src, MTYPE_I4, ops);
   }
 
-  opcode = TOP_result_register_variant(TOP_cmpne_r_r_r, 0, TN_register_class(dest));
-  
-  FmtAssert(opcode != TOP_UNDEFINED, ("Expand_Logical_Move"));
-  
-  Build_OP (opcode, dest, Zero_TN, src, ops);
-
+  switch (TN_register_class (src)) {
+  case ISA_REGISTER_CLASS_branch:
+    if (TN_register_class (dest) == ISA_REGISTER_CLASS_branch) {
+      if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_orl_b_b_b)) {
+	Build_OP(TOP_orl_b_b_b, dest, src, src, ops);	
+      }
+      else {
+	TN *tmp;
+	tmp = Expand_Immediate_Into_Register(MTYPE_I4, Gen_Literal_TN(-1,4), ops);
+	Build_OP(TOP_targ_addcg_b_r_r_b_r, Zero_TN, dest, Zero_TN, tmp, src, ops);
+      } 
+    }
+    else {
+      Build_OP(TOP_slctf_r_r_b_r, dest, src, Zero_TN, Gen_Literal_TN(1,4), ops);
+    }
+    break;
+  case ISA_REGISTER_CLASS_integer:
+    opcode = TOP_result_register_variant(TOP_cmpne_r_r_r, 0, TN_register_class(dest));
+    
+    FmtAssert(opcode != TOP_UNDEFINED, ("Expand_Logical_Move"));
+    
+    Build_OP (opcode, dest, Zero_TN, src, ops);
+    break;
+  default:
+    FmtAssert (FALSE,
+	       ("Expand_Logical_Move: unsupported register class %s",
+		ISA_REGISTER_CLASS_INFO_Name(ISA_REGISTER_CLASS_Info(TN_register_class (src)))));
+    break;
+  }
+ 
   return;
 }
 
@@ -1560,7 +1584,7 @@ Expand_Logical_Or (
 	     ("Expand_Logical_Or: both operands const ?"));
   FmtAssert ((TN_register_class (src1) != ISA_REGISTER_CLASS_branch) &&
 	     (TN_register_class (src2) != ISA_REGISTER_CLASS_branch),
-	     ("Expand_Logical_And: branch register input unsupported"));
+	     ("Expand_Logical_Or: branch register input unsupported"));
 
   if (TN_is_constant(src1)) {
     // switch order of src so immediate is second

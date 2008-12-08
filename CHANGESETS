@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Dec  8 14:32:36 CET 2008
+	Author:    knochelh
+	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
+	Branch:    http://svn.open64.codex.cro.st.com/svnroot/open64/branches/fixes/codex-57058
+
+Description:
+------------
+	* [trunk] 
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/expand/exp_targ.h
+	M      osprey/targinfo/st200/expand/exp_targ.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Dec  5 12:49:57 CET 2008
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
