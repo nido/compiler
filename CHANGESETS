@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Dec  8 17:13:55 CET 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-fix-v4-builtins
+
+Description:
+------------
+	*  fix stxp70-v4 builtins
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/gnu/builtins.def
+	M      osprey/targinfo/stxp70/proc/stxp70_v3_ext_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx
+	M      osprey/targinfo/stxp70/config/gen_intrinsics.inc
+	M      osprey/targinfo/stxp70/intrn/sx.h
+	M      osprey/targinfo/stxp70/intrn/x3.h
+	M      osprey/targinfo/stxp70/intrn/fpx.h
+	M      osprey/targinfo/stxp70/intrn/builtins_x3.h
+	M      osprey/targinfo/stxp70/intrn/builtins_sx.h
+	M      osprey/targinfo/stxp70/intrn/builtins_fpx.h
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_relocs.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Dec  8 14:32:36 CET 2008
 	Author:    knochelh
 	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
