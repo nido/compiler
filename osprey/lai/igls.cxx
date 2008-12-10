@@ -184,6 +184,7 @@ Schedule_Prefetch_Prepass () {
     int nb_prefetch = 0;
     int nb_cycles = CGTARG_Branch_Taken_Penalty(); // Count for the loop back-edge
     BOOL is_inner_loop = TRUE;
+    BOOL loop_is_scheduled = TRUE;
     float head_freq = BB_freq(LOOP_DESCR_loophead(cloop));
 
     /* FdF: Compute the number of prefetchs in the loop, initialize a
@@ -196,6 +197,15 @@ Schedule_Prefetch_Prepass () {
       if (BB_loop_head_bb(bb) != LOOP_DESCR_loophead(cloop)) {
 	is_inner_loop = FALSE;
 	continue;
+      }
+
+      // Cannot perform prefetch scheduling if some block is not
+      // scheduled. This is the case when a BB contains save/restore
+      // callee save copy instructions since the prepass scheduler do
+      // not schedule them.
+      if (!BB_scheduled(bb)) {
+	loop_is_scheduled = FALSE;
+	break;
       }
 
 #define FLOAT_INT_MUL(f,i) ((INT)(f * (float)i + (float)0.5))
@@ -222,6 +232,11 @@ Schedule_Prefetch_Prepass () {
 	  }
 	}
       }
+    }
+
+    if (!loop_is_scheduled) {
+      WN_MAP_Delete(WN_to_OP_map);
+      continue;
     }
 
     if (is_inner_loop && nb_prefetch) {
@@ -362,6 +377,7 @@ Schedule_Prefetch_Postpass () {
     // Compute the number of prefetchs in the loop.
     int nb_cycles = CGTARG_Branch_Taken_Penalty(); // Count for the loop back-edge
     BOOL is_inner_loop = TRUE;
+    BOOL loop_is_scheduled = TRUE;
     float head_freq = BB_freq(LOOP_DESCR_loophead(cloop));
     int auto_prefetch = 0;
     int user_prefetch = 0;
@@ -376,6 +392,11 @@ Schedule_Prefetch_Postpass () {
       if (BB_loop_head_bb(bb) != LOOP_DESCR_loophead(cloop)) {
 	is_inner_loop = FALSE;
 	continue;
+      }
+
+      if (!BB_scheduled(bb)) {
+	loop_is_scheduled = FALSE;
+	break;
       }
 
 #define FLOAT_INT_MUL(f,i) ((INT)(f * (float)i + (float)0.5))
@@ -403,6 +424,11 @@ Schedule_Prefetch_Postpass () {
 	  }
 	}
       }
+    }
+
+    if (!loop_is_scheduled) {
+      WN_MAP_Delete(WN_to_OP_map);
+      continue;
     }
 
     int nb_prefetch = user_prefetch + auto_prefetch;

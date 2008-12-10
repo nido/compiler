@@ -1476,7 +1476,6 @@ Make_Bundles (
       Clock = pending_latency;
     }
   }
-  Is_True (pending_latency < Clock + 4, ("BB: %d, incorrect pending_latency %d at clock %d, top %s\n", BB_id(bb), pending_latency, Clock, TOP_Name(OP_code(op))));
 #else
   // This helps handling latencies that may still be pending 
   // when all OPs are processed

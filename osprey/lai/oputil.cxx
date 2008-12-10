@@ -163,6 +163,7 @@ New_OP ( INT results, INT opnds )
 
 #ifdef TARG_ST
   op->g_map_idx=PU_OP_Cnt;
+  op->scycle = -1;
 #endif
 
   return op;
