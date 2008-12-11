@@ -2609,6 +2609,12 @@ HB_Schedule::Schedule_BB (BB *bb, BBSCH *bbsch, bool is_fwd)
 
       CG_DEP_Delete_Graph (bb);
     }
+#ifdef TARG_ST
+    // FdF 20081209: For BBs with one operation, must set a valid
+    // scheduling date
+    else
+      OP_scycle(BB_last_op(bb)) = 0;
+#endif
     Set_BB_scheduled (bb);
     Set_BB_scheduled_hbs (bb);  // scheduled from hbs
     if (Assembly) Add_Scheduling_Note (bb, (void*) bbsch);
