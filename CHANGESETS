@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Dec 11 15:10:01 CET 2008
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-hotfix-x3-builtins
+
+Description:
+------------
+	*   fix mover2e , setic, mover2ic builtins
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/config/gen_intrinsics.inc
+	M      osprey/targinfo/stxp70/intrn/x3.h
+	M      osprey/targinfo/stxp70/intrn/builtins_x3.h
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Dec 11 14:54:55 CET 2008
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
