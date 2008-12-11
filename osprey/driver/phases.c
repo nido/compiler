@@ -1354,6 +1354,7 @@ add_file_args (string_list_t *args, phases_t index)
                 case PROC_stxp70_v3_ext:
                 default                :
                   add_string(args,"-DSTXP70_ARCH=3"); 
+                  add_string(args,"-DSTXP70_GAS=0"); 
                   break;
 		}
 #endif
