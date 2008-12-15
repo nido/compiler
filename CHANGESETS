@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Dec 15 17:10:19 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-57845
+
+Description:
+------------
+	* [trunk] Fix for bug #57845: [EBO] Trap misaligned raised in Dhrystone (-OsDA IPA).
+	Deliver fixes/codex-57845 rev #19882 with authorization branch #57884
+
+	-> Fix incorrect transformation in AutoMod_CheckCombine(), related to
+	   the unconditional execution of addressing mode inc/dec (whatever
+	   the guard value is).
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Dec 15 14:53:33 CET 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
