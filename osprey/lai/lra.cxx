@@ -4019,9 +4019,11 @@ Assign_Registers_For_OP (OP *op, INT opnum, TN **spill_tn, BB *bb)
        * They can't be freed now because they may accidently be
        * reassigned for use as another result in the same OP.
        * (This can happen if one of the results is not used.)
+       * [TTh] results of cond_def operations must not be freed
        */
       if (ok_to_free_result
 	  && opnum == LR_first_def(clr)
+	  && !OP_cond_def(op)
 	  && (result_reg > REGISTER_MAX
               || REGISTER_allocatable (result_cl, result_reg))) {
 	REGISTER r;

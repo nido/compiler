@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Dec 15 14:53:33 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-57745
+
+Description:
+------------
+	* [trunk] Fix for bug #57745: [LRA] Incorrect execution on EFR code exposed by IPA.
+	Deliver fixes/codex-57745 rev #19870 with authorization branch #57817
+
+	-> During allocation, do not free registers allocated to results of cond_def operations, as they might have been defined earlier
+
+Modified Files:
+---------------
+	M      osprey/lai/lra.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Dec 15 14:41:25 CET 2008
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
