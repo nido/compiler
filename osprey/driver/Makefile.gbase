@@ -38,6 +38,8 @@
 
 include	$(COMMONDEFS)
 
+GNU_COMMON_DIR          = $(BUILD_TOT)/gnu_common
+
 ifeq ($(HOST_OS),MINGW)
 # For GetProcessMemoryInfo function
 LLDLIBS += -lpsapi
@@ -115,7 +117,7 @@ LDLIBS += -llmsgi
 endif
 
 # don't want to use common/com/defs.h
-LCINCS	= -I. -I$(BUILD_BASE) -I$(BUILD_TOT)/common/rcparser -I$(BUILD_TOT)/common/rtkutils
+LCINCS	= -I. -I$(BUILD_BASE) -I$(BUILD_TOT)/common/rcparser -I$(BUILD_TOT)/common/rtkutils -I$(GNU_COMMON_DIR)/include
 
 TARGETS	= driver$(HEXE)
 

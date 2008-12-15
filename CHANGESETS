@@ -1,6 +1,30 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Dec 15 10:55:00 CET 2008
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-56226
+
+Description:
+------------
+	* [trunk] Fix for bug #56226: Implement \'OS21 trace support\' in the st200 compiler driver.
+	Deliver fixes/codex-56226 rev #19855 with authorization branch #56228
+
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/phases.c
+	M      osprey/driver/opt_actions.h
+	M      osprey/driver/special_options.c
+	M      osprey/driver/Makefile.gbase
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Dec 11 15:10:01 CET 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -783,6 +783,75 @@ add_special_options (void)
 	  }
 	}
 #endif
+
+#ifdef TARG_ST200
+	/* This is the management of linker option that must be
+	 * emitted when using OS21 trace options We have kept them
+	 * separate (eg options that imply --undefined and that imply
+	 * --wrap) In case treatment should be significantly
+	 * different. To be factorized later if this is not the case.
+	 */
+	if (os21_trace_options_set() &&
+	    (st200_runtime == RUNTIME_OS21 || st200_runtime == RUNTIME_OS21_DEBUG))
+	{
+	  /* We must emit --undefined options to the linker command line but take care of the right link phase */
+	  int nundefs = get_os21_trace_options_nelements(OS21_TRACE_UNDEFINED) ;
+	  if (nundefs) {
+	    char *elts[nundefs] ;
+	    int nelts = get_os21_trace_options_elements(OS21_TRACE_UNDEFINED, elts, nundefs) ;
+	    int i ; 
+	    for(i=0; i<nelts; i++) {
+	      const char *formatstring= "--undefined=%s" ;
+	      int rbuflength = snprintf(NULL, 0, formatstring , elts[i]); 
+	      if (rbuflength>0) {
+		char buf[rbuflength+1] ;
+		int abuflength = snprintf(buf, rbuflength+1, formatstring, elts[i]) ;
+		if (abuflength<=rbuflength && abuflength>=0) {
+		  flag = add_new_option(buf) ;
+		  add_phase_for_option(flag, P_any_ld) ;
+		  prepend_option_seen(flag) ;
+		  remove_phase_for_option(flag, P_ldsimple);
+		} else {
+		  warning("Cannot format OS21 trace option : --undefined=%s\n", elts[i]);
+		}
+	      } else {
+		  warning("Cannot create OS21 trace option : --undefined=%s\n", elts[i]);
+	      }
+	    }
+	  }
+	}
+
+	if (os21_trace_options_set() &&
+	    (st200_runtime == RUNTIME_OS21 || st200_runtime == RUNTIME_OS21_DEBUG))
+	{
+	  /* We must emit --wrap options to the linker command line but take care of the right link phase */
+	  int nwraps = get_os21_trace_options_nelements(OS21_TRACE_WRAP) ;
+	  if (nwraps) {
+	    char *elts[nwraps] ;
+	    int nelts = get_os21_trace_options_elements(OS21_TRACE_WRAP, elts, nwraps) ;
+	    int i ; 
+	    for(i=0; i<nelts; i++) {	
+	      const char *formatstring= "--wrap %s" ;
+	      int rbuflength = snprintf(NULL, 0, formatstring, elts[i]); 
+	      if (rbuflength>0) {
+		char buf[rbuflength+1] ;
+		int abuflength = snprintf(buf, rbuflength+1, formatstring, elts[i]) ;
+		if (abuflength<=rbuflength && abuflength>=0) {
+		  flag = add_new_option(buf) ;
+		  add_phase_for_option(flag, P_any_ld) ;
+		  prepend_option_seen(flag) ;
+		  remove_phase_for_option(flag, P_ldsimple);
+		} else {
+		  warning("Cannot create OS21 trace option : --wrap %s\n", elts[i]);
+		}
+	      } else {
+	        warning("Cannot create OS21 trace option : --wrap %s\n", elts[i]);
+	      }
+	    }
+	  }
+	}
+#endif
+
 #ifdef TARG_STxP70
 	if (relax == UNDEFINED) {
 	  /* TB: in relocatable mode, desactivate --relax */

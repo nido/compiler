@@ -35,6 +35,8 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <libiberty.h>
+#include <hashtab.h>
 #include "SYS.h"
 #include "opt_actions.h"
 #include "options.h"
@@ -2173,6 +2175,325 @@ Process_ST200_Targ (string option,  string targ_args )
     }
   }
 
+#endif
+}
+
+/* ====================================================================
+ *
+ * Process_ST200_OS21_Trace and helpers
+ *
+ * Tables of options to later on to linker are maintained
+ * These tables are updated from options and then parsing the files that they imply
+ *
+ * ====================================================================
+ */
+
+/* The following functions deal with the management of the tables that
+record linker options derived from the pseudo linker script parsing */
+enum { HTAB_DEFAULT_SIZE = 256 /* We get ~160 on our .ld examples */} ;
+static htab_t htab_undefined_names;
+static htab_t htab_wrap_names;
+
+static hashval_t
+pseudo_ld_names_hash (const void *p) {
+  return htab_hash_string ((const char *)p);
+}
+
+static int
+pseudo_ld_names_eq (const void *p1, const void *p2) {
+  return strcmp ((const char *)p1, (const char *)p2) == 0;
+}
+
+/* Strings are duplicated by xstrdup, so they can be freed upon deletion */
+static void 
+pseudo_ld_names_elm_del (void *p) {
+  free(p); 
+}
+
+/* Internal helper to add a symbol in a table */
+static void
+add_specific_symbol (htab_t htab, const char *name) {
+  void **slot ;
+  slot = htab_find_slot (htab, name, INSERT) ;
+  if (slot) *slot = xstrdup(name) ;
+}
+
+/* Internal helper to remove a symbol in a table*/
+static void
+del_specific_symbol (htab_t htab, const char *name) {
+  void **slot ;
+  slot = htab_find_slot (htab, name, NO_INSERT) ;
+  if (slot && *slot)
+    htab_clear_slot (htab, slot);
+}
+
+/* The following functions deal with the pseudo linker script
+   parsing */
+
+typedef void (*on_pseudo_ld_file_record_t)(const char *key, const char *val, int cbdata) ;
+
+/* Called upon sucessfull line entry parsing, records in 'undefined' table */
+static void 
+on_pseudo_ld_file_record_undefined_name(const char *key, const char *val, int cbdata)
+{
+    if (!htab_undefined_names) 
+	 htab_undefined_names = htab_create(HTAB_DEFAULT_SIZE, pseudo_ld_names_hash,
+			       pseudo_ld_names_eq, pseudo_ld_names_elm_del ) ;
+
+    if (htab_undefined_names) {
+	if (cbdata) add_specific_symbol(htab_undefined_names, val) ; 
+	else del_specific_symbol(htab_undefined_names, val) ;			
+    } else {
+	internal_error("Unable to create hash table on_pseudo_ld_file_record_undefined_name");
+    }
+}
+
+/* Called upon sucessfull line entry parsing, records in 'wrap' table */
+static void 
+on_pseudo_ld_file_record_wrap_name(const char *key, const char *val, int cbdata)
+{
+    if (!htab_wrap_names) 
+	 htab_wrap_names = htab_create(HTAB_DEFAULT_SIZE, pseudo_ld_names_hash,
+			       pseudo_ld_names_eq, pseudo_ld_names_elm_del ) ;
+
+    if (htab_wrap_names) {
+	if (cbdata) add_specific_symbol(htab_wrap_names, val) ; 
+	else del_specific_symbol(htab_wrap_names, val) ;			
+    } else {
+	internal_error("Unable to create hash table on_pseudo_ld_file_record_wrap_name");
+    }
+}
+
+/* Hash tables can only be traversed, the following helps recording what we encounter */
+typedef struct {
+    int index ; 
+    int maxindex ;
+    char *strings[0] ;
+} traverse_function_records_t ; 
+
+static int
+htab_traverse_function (void **slot, void *data)
+{
+  const char *slot_name = *slot;
+  traverse_function_records_t *function_record = (traverse_function_records_t *)data ;
+
+  /* Traversal stops when all the elements have been gathered */
+  if (function_record->index < function_record->maxindex ) {
+      function_record->strings[function_record->index] = *slot;
+      function_record->index++ ;
+      return 1 ;
+  } else {
+      /* Stop traversal */
+      return 0 ;
+  }
+}
+
+/* Parse a line, scans it for key value pair, calls callback for record */
+static void 
+read_pseudo_ld_file_record(const char *line, on_pseudo_ld_file_record_t cback, int cbackdata)
+{
+  char *eol = strrchr(line,'\n');
+  if(eol) *eol = 0;
+  eol = strrchr(line,'\r');
+  if(eol) *eol = 0;
+  char *sep = strchr(line, ' ') ;
+  if(sep) {
+    const char *key = line ; 
+    const char *value = sep + 1 ;
+    *sep = 0 ;
+    if (cback) 
+	(*cback)(key, value, cbackdata) ;
+  }
+}
+
+/* Reads pseudo ld file line-by-line, sends to parsing */
+static void 
+read_pseudo_ld_file(const char *filename, on_pseudo_ld_file_record_t cback, int cbackdata)
+{
+  FILE *file = fopen(filename,"r") ;
+  if(file) {
+    buffer_t line ;
+    while(fgets(line,sizeof(line),file)!=0)
+	read_pseudo_ld_file_record(line, cback, cbackdata) ;
+    fclose(file) ;
+  } else {
+    warning("Cannot open OS21 trace description in %s", filename);
+  }
+}
+
+/* Helper function to sort option names */
+static int 
+sort_names_function(const void *arg1, const void *arg2)
+{
+    return strcmp(*(const char **)arg1, *(const char **)arg2);
+}
+
+/* 
+   The following functions expose the gathered options to the driver
+   *
+   * os21_trace_options_set determines if trace options must be emitted
+   *
+   * get_os21_trace_options_nelements gets the number of trace strings
+   * for a given kind
+   *
+   * get_os21_trace_options_elements returns a filled array of
+   * pointers to strings for a given kind, limited to max, with actual
+   * return
+*/
+int os21_trace_options_set() {
+    return (get_os21_trace_options_nelements(OS21_TRACE_WRAP) !=0) ||
+	(get_os21_trace_options_nelements(OS21_TRACE_UNDEFINED) !=0) ;
+}
+
+int 
+get_os21_trace_options_nelements(OS21_TRACE kind)
+{
+    if (kind == OS21_TRACE_WRAP && htab_wrap_names) 
+	return htab_elements(htab_wrap_names) ;
+    else if (kind == OS21_TRACE_UNDEFINED && htab_undefined_names) 
+	return htab_elements(htab_undefined_names) ;
+    else return 0 ;
+}
+
+int 
+get_os21_trace_options_elements(OS21_TRACE kind, char *elts[], size_t maxnelts)
+{
+    traverse_function_records_t *traverse_records_names ;
+    int options_nelements = 0 ;
+    htab_t htab = NULL ;
+
+    /* Select the proper table */
+    if (kind == OS21_TRACE_WRAP) htab = htab_wrap_names ;
+    else if (kind == OS21_TRACE_UNDEFINED) htab = htab_undefined_names ;
+    
+    /* If there is any record of tracing options, traverse and gather the table info */
+    if (htab) {
+	size_t actualelts = maxnelts < htab_elements(htab) ? maxnelts : htab_elements(htab) ; 
+	/* There is a dragon here : oversize by one element 
+	   Otherwise the allocation is missing a slot and this is seen by valgrind
+	   Otherwise this dumps core very later on
+	 */
+	traverse_records_names = xmalloc(sizeof(traverse_records_names) + (actualelts + 1) * sizeof(char*));
+	traverse_records_names->index=0 ;
+	traverse_records_names->maxindex= actualelts ;
+
+	htab_traverse (htab, htab_traverse_function, traverse_records_names);
+
+	/* The actual copied number is kept by index */
+	options_nelements = traverse_records_names->index  ; 
+
+	/* Add some platform determinism here by sorting the gathered names */
+	qsort(traverse_records_names->strings, 
+	      options_nelements , sizeof(char *),
+	      sort_names_function);
+
+	memcpy(elts, traverse_records_names->strings, options_nelements * sizeof(char *)) ; 
+
+	free(traverse_records_names) ;
+    }
+
+    return options_nelements ;
+}
+
+/* This is the central function for the OS21 trace support 
+   Analyze the options and parameters, calls for action and record...
+*/
+void
+Process_ST200_OS21_Trace (string option,  string targ_args )
+{
+  static const char *prefix = "os21" ;
+  char *subdir = "os21" ;
+  string os21traceoptdir ;
+
+  if (debug)
+    fprintf ( stderr, "Process_ST200_OS21_Trace option=[%s] args=?[%s]\n", option,targ_args);
+
+  /* The pseudo .ld decription files are indeed independant from the
+     target They are placed in a subdirectoy of the target tree. */
+  os21traceoptdir = concat_path(st200_targetdir ? st200_targetdir : get_phase_dir(P_alt_library), subdir);
+
+  if (debug)
+    fprintf ( stderr, "Process_ST200_OS21_Trace Looking in %s \n", os21traceoptdir);
+
+#ifdef MUMBLE_ST200_BSP
+  if (strncasecmp (option, "-trace-no-constructor", 21) == 0) {
+    /* Parses the contents of $(path)/$(prefix)trace.ld and
+       for each line found removes the line as possible a linker
+       option, if present */
+      buffer_t os21traceoptfilename  ;
+      string os21traceoptfile ;
+      sprintf(os21traceoptfilename, "%strace.ld", prefix) ;
+      os21traceoptfile = concat_path(os21traceoptdir, os21traceoptfilename) ;
+      if (file_exists(os21traceoptfile)) {
+	  read_pseudo_ld_file(os21traceoptfile, on_pseudo_ld_file_record_undefined_name, 0) ;
+      } else {
+	  warning("-trace-no-constructor used but cannot find description in %s", os21traceoptfile);
+      }
+  } else if (strncasecmp (option, "-trace-api-no-", 14) == 0) {
+    /* Parses the contents of $(path)/$(prefix)wrap-$(api).ld and
+       for each line found removes the line as a possible linker
+       option, if present */
+      buffer_t os21traceoptfilename  ;
+      string os21traceoptfile ;
+      sprintf(os21traceoptfilename, "%swrap-%s.ld", prefix, targ_args) ;
+      os21traceoptfile = concat_path(os21traceoptdir, os21traceoptfilename) ;
+
+      if (file_exists(os21traceoptfile)) {
+	  read_pseudo_ld_file(os21traceoptfile, on_pseudo_ld_file_record_wrap_name, 0) ;
+      } else {
+	  warning("-trace-api-no-%s used but cannot find description in %s", targ_args, os21traceoptfile);
+      }
+  } else if (strncasecmp (option, "-trace-api-", 11) == 0) {
+    /* Parses the contents of $(path)/$(prefix)wrap-$(api).ld and
+       for each line found adds the line as a linker option (these
+       entrie can be removed by other means (see
+       -trace-api-no-$(class)) */
+      buffer_t os21traceoptfilename  ;
+      string os21traceoptfile ;
+      sprintf(os21traceoptfilename, "%swrap-%s.ld", prefix, targ_args) ;
+      os21traceoptfile = concat_path(os21traceoptdir, os21traceoptfilename) ;
+
+      if (file_exists(os21traceoptfile)) {
+	  read_pseudo_ld_file(os21traceoptfile, on_pseudo_ld_file_record_wrap_name, 1) ;
+      } else {
+	  warning("-trace-api-%s used but cannot find description in %s", targ_args, os21traceoptfile);
+      }
+  } else if (strncasecmp (option, "-trace-api", 10) == 0) {
+      /* Parses the contents of $(path)/$(prefix)wrap.ld and
+	 or each line found adds the line as a possible linker option
+	 these entries can be removed by other means see
+	 -trace-api-no-$(class))
+     */
+      buffer_t os21traceoptfilename  ;
+      string os21traceoptfile ;
+      sprintf(os21traceoptfilename, "%swrap.ld", prefix) ;
+      os21traceoptfile = concat_path(os21traceoptdir, os21traceoptfilename) ;
+      if (file_exists(os21traceoptfile)) {
+	  read_pseudo_ld_file(os21traceoptfile, on_pseudo_ld_file_record_wrap_name, 1) ;
+      } else {
+	  warning("-trace-api used but cannot find description in %s", os21traceoptfile);
+      }
+  } else if (strncasecmp (option, "-trace-script-prefix", 20) == 0) {
+      /* Creating a leak here. Note that prefixes are accounted for only after the option is set*/
+      prefix = string_copy(targ_args) ;
+  } else if (strncasecmp (option, "-trace", 6) == 0) {
+    /* Parses the contents of $(path)/$(prefix)trace.ld and
+       or each line found adds the line as a possible linker option
+       these entries can be removed by other means see
+       -trace-api-no-constructor)
+     */
+      buffer_t os21traceoptfilename  ;
+      string os21traceoptfile ;
+      sprintf(os21traceoptfilename, "%strace.ld", prefix) ;
+      os21traceoptfile = concat_path(os21traceoptdir, os21traceoptfilename) ;
+      if (file_exists(os21traceoptfile)) {
+	  read_pseudo_ld_file(os21traceoptfile, on_pseudo_ld_file_record_undefined_name, 1) ;
+      } else {
+	  warning("-trace used but cannot find description in %s", os21traceoptfile);
+      }
+  } else {
+      warning("OS21TRACE : Unexpected argument [%s] passed to option [%s].", targ_args, option);
+  }
 #endif
 }
 #endif /* TARG_ST200 */

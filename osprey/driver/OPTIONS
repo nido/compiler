@@ -2766,6 +2766,18 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"Specifies alternate target directory"
 -mtargetname=%s	Process_ST200_Targ(option_name,optargs);		ALL	NONE	-mtargetname=%s
 	"Specifies alternate target directory name"
+-trace-api	    	Process_ST200_OS21_Trace(option_name,optargs);	  ALL	NONE	-trace-api
+	"In conjunction with -trace, *include* OS21 API tracing for *all* functions in the OS21 API."
+-trace-api-%s	    	Process_ST200_OS21_Trace(option_name,optargs);	  ALL	NONE	-trace-api-%s
+	"In conjunction with -trace, *include* OS21 API tracing for 'arg' functions in the OS21 API."
+-trace-api-no-%s    	Process_ST200_OS21_Trace(option_name,optargs);	  ALL	NONE	-trace-api-no-%s 
+	"In conjunction with -trace, *exclude* OS21 API tracing for 'arg' functions in the OS21 API."
+-trace-script-prefix=%s	Process_ST200_OS21_Trace(option_name,optargs);	  ALL	NONE	-trace-script-prefix=%s
+	"Specifies the prefix of OS21 trace specification files, defaults to os21."
+-trace-no-constructor	Process_ST200_OS21_Trace(option_name,optargs);	  ALL	NONE	-trace-no-constructor
+	"Disable automatic initialization of OS21 trace support buffers."		   
+-trace		        Process_ST200_OS21_Trace(option_name,optargs);  ALL	NONE	-trace
+	"Initialize OS21 trace support"	
 #endif
 -mlibdir=%s	Process_ST200_Targ(option_name,optargs);		ALL	NONE	-mlibdir=%s
 	"Specifies alternate library directory"
