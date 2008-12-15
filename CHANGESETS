@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Dec 15 14:41:25 CET 2008
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-57147
+
+Description:
+------------
+	* [trunk] Fix for bug #57147: [EBO] Incorrect transformation in IPA mode.
+	Deliver fixes/codex-57147 rev #19865 with authorization branch #57523
+
+	-> Fix in EBO related to predicated code: consider Pred_False in tn_info_use() to avoid incorrect transformation
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo_info.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Dec 15 10:55:00 CET 2008
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

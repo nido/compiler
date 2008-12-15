@@ -595,6 +595,7 @@ tn_info_use (BB *current_bb, OP *current_op, TN *local_tn,
   EBO_TN_INFO *tninfo;
   EBO_TN_INFO *tninfo_prev;
   EBO_TN_INFO *tninfo_best_so_far;
+  BOOL false_predicate_tn;
 
   tninfo = get_tn_info (local_tn);
   tninfo_prev = tninfo;
@@ -602,7 +603,13 @@ tn_info_use (BB *current_bb, OP *current_op, TN *local_tn,
 
   // [SC] To simplify the following code, treat an unpredicated op
   // as predicated by 1.
-  if (! predicate_tn) predicate_tn = True_TN;
+  if (! predicate_tn) {
+    predicate_tn = True_TN;
+    false_predicate_tn = false;
+  }
+  else {
+    false_predicate_tn = OP_Pred_False(current_op, OP_find_opnd_use(current_op, OU_predicate));
+  }
 
   // [SC] Scan backwards through the TNINFO entries created for this TN, finding
   // one that is valid whenever predicate_tn is true.
@@ -651,25 +658,30 @@ tn_info_use (BB *current_bb, OP *current_op, TN *local_tn,
 				 ? tninfo->predicate_tninfo->local_tn
 				 : True_TN);
 
+      /* [TTh] Retrieve Pred_False value */
+      BOOL false_tninfo_predicate_tn = (tninfo->predicate_tninfo != NULL && tninfo->in_op)?
+	OP_Pred_False(tninfo->in_op,
+ 		      OP_find_opnd_use(tninfo->in_op, OU_predicate)) : false;
+
       if (EBO_predicate_complements(tninfo_predicate_tn,
-				    false,
+				    false_tninfo_predicate_tn,
 				    tninfo->predicate_tninfo,
 				    predicate_tn,
-				    false,
+				    false_predicate_tn,
 				    predicate_info)) {
 	/* The predicates are completely independent. Keep looking for a definition. */
       } else {
 	BOOL tninfo_dom_current = EBO_predicate_dominates(tninfo_predicate_tn,
-							  false,
+							  false_tninfo_predicate_tn,
 							  tninfo->predicate_tninfo,
 							  predicate_tn,
-							  false,
+							  false_predicate_tn,
 							  predicate_info);
 	BOOL current_dom_tninfo = EBO_predicate_dominates(predicate_tn,
-							  false,
+							  false_predicate_tn,
 							  predicate_info,
 							  tninfo_predicate_tn,
-							  false,
+							  false_tninfo_predicate_tn,
 							  tninfo->predicate_tninfo);
 	if (tninfo_dom_current && current_dom_tninfo) {
 	  // Predicates are equivalent, so use this tninfo.
