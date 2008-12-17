@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Dec 17 14:50:55 CET 2008
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-58077
+
+Description:
+------------
+	 * [trunk] Deliver fixes/codex-58077 rev #19927 with authorization branch #58145
+	 Annoying DevWarn : unwind info may be incorrect because PU has asm (st200, debug)
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgdwarf_debug_frame.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed Dec 17 14:38:51 CET 2008
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-58077
+
+Description:
+------------
+	*  
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgdwarf_debug_frame.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Dec 16 14:49:29 CET 2008
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

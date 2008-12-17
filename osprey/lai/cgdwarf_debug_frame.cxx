@@ -2223,8 +2223,5 @@ Build_Fde_For_Proc (Dwarf_P_Debug dw_dbg, BB *firstbb,
   // process info we've collected and create the unwind descriptors
   Create_Unwind_Descriptors(fde, scn_index, begin_label, emit_restores);
 
-  if (has_asm)
-	DevWarn("unwind info may be incorrect because PU has asm");
-
   return fde;
 }
