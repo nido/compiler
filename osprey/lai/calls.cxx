@@ -454,7 +454,12 @@ Generate_Entry (BB *bb, BOOL gra_run)
      */
 
     Exp_Spadjust (SP_TN, Neg_Frame_Len_TN, V_NONE, &ops);
-
+#ifdef TARG_ST
+    // FdF 20081211: To be consistent with what is restored in
+    // Generate_Exits, this code must not be dependent on
+    // BB_handler(bb)
+  }
+#endif
     /* Initialize the frame pointer if required: */
     if (Gen_Frame_Pointer && !PUSH_FRAME_POINTER_ON_STACK) {
       // check if fp is callee reg
@@ -478,7 +483,12 @@ Generate_Entry (BB *bb, BOOL gra_run)
 	/* Save the caller's FP in a temporary: */
 	Exp_COPY (Caller_FP_TN, FP_TN, &ops);
        }
-  
+#ifdef TARG_ST
+    }
+  if (!BB_handler(bb)) {
+    if (Gen_Frame_Pointer && !PUSH_FRAME_POINTER_ON_STACK) {
+#endif
+
       /* Now recover the new FP from the new SP: */
       Exp_Spadjust (FP_TN, Frame_Len_TN, V_NONE, &ops);
     }

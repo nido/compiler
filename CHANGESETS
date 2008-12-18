@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Dec 18 14:31:44 CET 2008
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-58270
+
+Description:
+------------
+	* [trunk] Fix for bug #58270: Used before def on a restore of $r7 at the end of an exception handler.
+	Deliver fixes/codex-58270 rev #19961 with authorization branch #58271
+
+
+Modified Files:
+---------------
+	M      osprey/lai/calls.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Dec 18 13:20:13 CET 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
