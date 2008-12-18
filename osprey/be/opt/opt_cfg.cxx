@@ -2407,6 +2407,7 @@ CFG::Add_one_stmt( WN *wn, END_BLOCK *ends_bb )
     Add_one_compgoto_stmt( wn, ends_bb );
     break;
 
+#ifndef TARG_ST
   case OPR_CALL:
   case OPR_ICALL:
   case OPR_PICCALL:
@@ -2417,7 +2418,26 @@ CFG::Add_one_stmt( WN *wn, END_BLOCK *ends_bb )
     if ( ends_bb )
       *ends_bb = Calls_break() ? END_FALLTHRU : END_NOT;
     break;
-
+  case OPR_INTRINSIC_CALL:
+    _current_bb->Set_hascall();
+    Append_wn_in(_current_bb, wn);
+    if (WN_Call_Never_Return(wn)) {
+      _current_bb->Set_kind( BB_EXIT );
+      _current_bb->Set_hasujp();
+      if ( ends_bb )
+	*ends_bb = END_BREAK;
+    } else {
+      if ( ends_bb )
+	*ends_bb = Calls_break() ? END_FALLTHRU : END_NOT;
+    }
+    break;
+#else
+  case OPR_CALL:
+  case OPR_ICALL:
+  case OPR_PICCALL:
+    if (_exc) // register each call with the exception region
+      _exc->Link_top_es(wn);
+    //fall thru
   case OPR_INTRINSIC_CALL:
     _current_bb->Set_hascall();
     Append_wn_in(_current_bb, wn);
@@ -2432,6 +2452,7 @@ CFG::Add_one_stmt( WN *wn, END_BLOCK *ends_bb )
     }
     break;
 
+#endif
   case OPR_IO:
     // input/output statements are odd things involving calls
     // and calls may break the block.  Also useful because there can
