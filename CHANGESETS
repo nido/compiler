@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jan  8 10:32:22 CET 2009
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-58127
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-58127 rev #20020 with authorization branch #58129
+	[c++/dwarf] incorrect debug_line info for _GLOBAL__[DI]_
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgemit.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Dec 19 12:29:22 CET 2008
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

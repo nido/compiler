@@ -7172,13 +7172,17 @@ EMT_Emit_PU (
   // compiler-generated PUs, we have no line information, so we may
   // have no debug_line label generated which confuses
   // Cg_Dwarf_Process_PU below
+
+  // [CL] #58127
+  // But be careful not to enter it in the Dwarf symtab: we should not
+  // generate any line info for such PUs.
   if (CG_emit_asm_dwarf) {
     bool No_Label = FALSE;
     if (Last_Label == LABEL_IDX_ZERO) {
       No_Label = TRUE;
     }
     if (No_Label || Dwarf_Require_Symbolic_Offsets()) {
-      New_Debug_Line_Set_Label(PC2Addr(PC), No_Label == FALSE);
+      New_Debug_Line_Set_Label(PC2Addr(PC), TRUE);
     }
     if (!Dwarf_Require_Symbolic_Offsets() && (No_Label == FALSE)) {
       cache_last_label_info (Last_Label,
