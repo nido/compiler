@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jan  9 08:27:59 CET 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59087
+
+Description:
+------------
+	* [trunk] Fix for bug #59087: [MP1x] Incorrect code generation for ANDCD instruction (native codegen).
+	Deliver fixes/codex-59087 rev #20048 with authorization branch #59094
+
+	--> Fixed whirl tree model associated to ANDCD instructions
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/be/targ_pattern_rec.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jan  8 10:32:22 CET 2009
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
