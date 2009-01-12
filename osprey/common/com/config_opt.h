@@ -142,9 +142,8 @@ BE_EXPORTED extern BOOL Enable_Rotate_overriden;     /* ... option seen? */
 #endif
 
 #ifdef TARG_ST
-BE_EXPORTED extern BOOL Enable_simplify_comparisons_per_minmax;
   /* Enable optimisation of comparisons using minmax */
-
+BE_EXPORTED extern BOOL Enable_simplify_comparisons_per_minmax;
 
 /***** Floating point optimizations options *****/
 BE_EXPORTED extern BOOL No_Math_Errno;  /* Do not set ERRNO ? */

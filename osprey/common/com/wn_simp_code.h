@@ -6316,29 +6316,15 @@ SIMPNODE_SimplifyComparisons(OPCODE opc, simpnode k0, simpnode k1)
     BOOL k0_0_plusone = FALSE; 
     BOOL k1_0_plusone = FALSE; 
     OPCODE opcplusone = OPCODE_UNKNOWN;
-    if (MTYPE_is_integral(item_type) && opc0!=opc1) {
-      // we only need to deal with cases where
-      // comparisons are different.
-      // on integer types only (not valid for floats!)
-      OPERATOR opr0 = OPCODE_operator(opc0);
-      OPERATOR opr1 = OPCODE_operator(opc1);
-      simpnode k = SIMPNODE_kid0(k0);
-      if (opr0==OPR_LT) {
-        k0_0_plusone = TRUE;
-        opc0 = OPCODE_make_op(OPR_LE, OPCODE_rtype(opc0), OPCODE_desc(opc0));
-      } else if (opr1==OPR_LT) {
-        k1_0_plusone = TRUE;
-        opc1 = OPCODE_make_op(OPR_LE, OPCODE_rtype(opc1), OPCODE_desc(opc1));
-      }
-      if (opr0==OPR_GE) {
-        k0_0_plusone = TRUE;
-        opc0 = OPCODE_make_op(OPR_GT, OPCODE_rtype(opc0), OPCODE_desc(opc0));
-      } else if (opr1==OPR_GE) {
-        k1_0_plusone = TRUE;
-        opc1 = OPCODE_make_op(OPR_GT, OPCODE_rtype(opc1), OPCODE_desc(opc1));
-      }
-      opcplusone = OPCODE_make_op(OPR_ADD, item_type, MTYPE_V);
-    }
+
+
+    /* unsafe optimisation (bug #58079) removed on 05/01/2009 
+       Former code is available at revision 19987 on trunk and
+       branches/fixes/codex-58079.
+       Range analysis would allow re-enabling this optimisation as we
+       could guarantee that integer values do not reach INT_MAX and
+       thus adding 1 would not risk an overflow.
+    */
 
     /* if resulting relations opc0 and opc1 are equal, the
      * optimisation is possible.
