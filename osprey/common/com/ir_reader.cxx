@@ -495,6 +495,14 @@ static void ir_print_filename(BOOL dump_filenames)
       file_table[count].fileptr = NULL;
       file_table[count].max_line_printed = 0;
       if (dump_filenames)
+#ifdef TARG_ST // [CL] fix bug #55000: we use incl_table's 0th entry
+	       // for current working dir.
+	if (DST_FILE_NAME_dir(file) == 0) {
+        fprintf (ir_ofile, " LOC 0 0 source files:\t%d\t\"%s\"\n",
+                 count,
+                 name);
+	} else
+#endif
         fprintf (ir_ofile, " LOC 0 0 source files:\t%d\t\"%s/%s\"\n",
                  count,
                  incl_table[DST_FILE_NAME_dir(file)],
@@ -601,6 +609,12 @@ extern void IR_Srcpos_Filename(SRCPOS srcpos,        /* in */
 
       cur_file = &file_table[USRCPOS_filenum(usrcpos)];
       *fname = cur_file->filename;
+#ifdef TARG_ST // [CL] fix bug #55000: we use incl_table's 0th entry
+	       // for current working dir.
+      if (cur_file->incl_index == 0) {
+	*dirname = NULL;
+      } else
+#endif
       *dirname = incl_table[cur_file->incl_index];
    }
 } /* IR_Srcpos_Filename */

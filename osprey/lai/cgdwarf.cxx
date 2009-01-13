@@ -2650,7 +2650,12 @@ Cg_Dwarf_Register_Source_File(USRCPOS usrcpos) {
   if ( ! file_table[file_idx].already_processed) {
     // new file
     include_idx = file_table[file_idx].incl_index;
-    if ( ! incl_table[include_idx].already_processed) {
+// [CL] merged and fixed from Open64-4.2.1, for bug #55000: we use
+// incl_table's 0th entry for current working dir.
+#ifdef TARG_ST
+    if (include_idx != 0)
+#endif
+    if (! incl_table[include_idx].already_processed) {
       // new include
       if (CG_emit_asm_dwarf) {
         Em_Dwarf_Add_Include (include_idx, 
@@ -2707,6 +2712,13 @@ print_source (SRCPOS srcpos)
     cur_file_index = USRCPOS_filenum(usrcpos);
     cur_file = &file_table[cur_file_index];
     /* open the new file. */
+// [CL] merged from Open64-4.2.1, for bug #55000: we use incl_table's
+// 0th entry for current working dir.
+#ifdef TARG_SL
+    if (cur_file->incl_index == 0)
+      sprintf (srcfile, "%s",cur_file->filename);
+    else
+#endif
     sprintf (srcfile, "%s/%s", incl_table[cur_file->incl_index].path_name,
 				cur_file->filename);
     cur_file->fileptr = fopen (srcfile, "r");
@@ -2833,7 +2845,15 @@ Cg_Dwarf_Add_Line_Entry (
     if (Assembly) {
       INT file_idx = USRCPOS_filenum(usrcpos);
       INT include_idx = file_table[file_idx].incl_index;
-      include_idx = file_table[file_idx].incl_index;
+// [CL] merged from Open64-4.2.1, for bug #55000: we use incl_table's
+// 0th entry for current working dir.
+#ifdef TARG_SL
+      if (include_idx == 0)
+	CGEMIT_Prn_File_Dir_In_Asm(usrcpos,
+				   NULL,
+				   file_table[file_idx].filename);
+      else
+#endif
       CGEMIT_Prn_File_Dir_In_Asm(usrcpos,
                                  incl_table[include_idx].path_name,
                                  file_table[file_idx].filename);

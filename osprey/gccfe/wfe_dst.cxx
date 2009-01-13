@@ -307,6 +307,10 @@ DST_get_context(tree intree)
 static UINT
 Get_Dir_Dst_Info (char *name)
 {
+// [CL] merged from Open64-4.2.1, for bug #55000
+#ifdef TARG_SL
+	if (name == NULL) return 0;
+#endif
         std::vector< std::pair < char*, UINT > >::iterator found;
 	// assume linear search is okay cause list will be small?
         for (found = dir_dst_list.begin(); 
@@ -2351,12 +2355,22 @@ WFE_Set_Line_And_File (UINT line, const char *f)
 	char buf[PATH_MAX];
 	if (file_name == file) {
 		// no path
+// [CL] merged from Open64-4.2.1, for bug #55000
+#ifdef TARG_SL
+		/* NOTE! Wenbo/2007-04-26: We do not want a explicit current
+		   working dir if no path specified and using default(compile
+		   unit's) current working dir can save some space. GAS and GDB
+		   expect that too. */
+		dir = NULL;
+	}
+#else
 		dir = current_working_dir;
 	}
 	else if (strncmp(file, "./", 2) == 0) {
 		// current dir
 		dir = current_working_dir;
 	}
+#endif
 	else {
 		// copy specified path
 		strcpy (buf, file);
