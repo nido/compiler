@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jan 14 14:58:33 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-58215
+
+Description:
+------------
+	* [trunk] Fix for bug #58215: Memory overrun in common/util/errors.cxx (Set_Error_Source) when pathnames are very long.
+	Deliver fixes/codex-58215 rev #20112 with authorization branch #58226
+
+
+Modified Files:
+---------------
+	M      osprey/common/util/errors.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jan 14 09:10:28 CET 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

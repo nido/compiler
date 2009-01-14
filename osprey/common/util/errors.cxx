@@ -97,6 +97,8 @@ extern "C" {
 #include "errdesc.h"
 #include "vstring.h"
 
+#include "libiberty/libiberty.h"	// for xstrdup()
+
 #if defined(TARG_ST) && defined(STACK_TRACE) && defined(BACK_END)
 // [CG]: Enabled only in back end as libiberty conflicts with the front-end libiberty
 #include "stacktrace.h"
@@ -131,8 +133,12 @@ static const char *Error_File_Name = NULL;	/* Error file name */
 static FILE *Trace_File = NULL;		/* File descriptor */
 
 /* Source file location: */
+#ifdef TARG_ST
+static char *Source_File_Name = NULL;
+#else
 static char  source_file_name[256];
 static char *Source_File_Name = &source_file_name[0];
+#endif
 static INT   Source_Line = ERROR_LINE_UNKNOWN;	/* Line number */
 
 /* Current compiler/tool phase: */
@@ -479,11 +485,18 @@ Set_Error_Trace ( FILE *stream )
 void
 Set_Error_Source ( const char *filename )
 {
+#ifdef TARG_ST
+  free(Source_File_Name);
+#endif
   if ( filename == NULL ) {
     Source_File_Name = NULL;
   } else {
+#ifdef TARG_ST
+    Source_File_Name = xstrdup(filename);
+#else
     Source_File_Name = &source_file_name[0];
     strcpy ( Source_File_Name, filename );
+#endif
   }
 }
 
