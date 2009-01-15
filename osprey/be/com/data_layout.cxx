@@ -1129,6 +1129,31 @@ Get_Section_ST_With_Given_Name (SECTION_IDX sec, ST_SCLASS sclass, STR_IDX name)
     }
   }
   if (newblk == NULL) {
+    // [CM] Taken from open64-4.2-0 to fix Codex bug #56764
+    // [YJ] Call to routine Section_Is_Special_Bss_Like_Section
+    //      has been added to deal with target specific cases.
+#ifdef TARG_ST
+    // bug fix for OSP_129
+    // bug fix for OSP_254
+    // The gnu4 FE will put static variables in STL into .gnu.linkonce.d. or .gnu.linkonce.b. or .bss.
+    // If the section name doesn't start with 
+    //     .gnu.linkonce.b. -or-
+    //     .bss.     
+    //    It's a user-defineded section, we 
+    //       Create Data section for user-defineded section
+    // The goal of these code is to be compatible with GCC
+    if ( strncmp(Index_To_Str(name), ".gnu.linkonce.b.", 16) == 0 || 
+	      strncmp(Index_To_Str(name), ".bss.", 5) == 0        ||
+	      Section_Is_Special_Bss_Like_Section(name)) {
+      // For .gnu.linkonce.b., .bss., force to _SEC_BSS
+      sec = _SEC_BSS;
+    }
+    else if ( sec == _SEC_BSS ) {
+      // Otherwise, user defined section, force to _SEC_DATA
+      sec = _SEC_DATA;
+    }
+#endif
+
 #ifdef TARG_ST
     // (cbr) data section to be created with default alignment.
     ST *blk = Get_Section_ST(sec, SEC_entsize(sec), sclass);
@@ -1136,8 +1161,20 @@ Get_Section_ST_With_Given_Name (SECTION_IDX sec, ST_SCLASS sclass, STR_IDX name)
     ST *blk = Get_Section_ST(sec, 0, sclass);
 #endif
 
+#ifdef TARG_ST
+    // [CM] Taken from open64-4.2-0 at same time as fix Codex bug #56764
+    if (strcmp(SEC_name(sec), Index_To_Str(name)) == 0) {
+      // seen this before, no need to create a new blk
+      newblk = blk;
+    }
+    else {
+      newblk = Copy_ST_Block(blk);
+      Set_ST_name_idx(newblk, name);
+    }
+#else
     newblk = Copy_ST_Block(blk);
     Set_ST_name_idx(newblk, name);
+#endif
 
 #ifdef TARG_ST
     // (cbr) reset default alignment.

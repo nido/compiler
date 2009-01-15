@@ -162,6 +162,10 @@ extern SECTION_IDX Assign_Static_Variable (ST *st);
 extern SECTION_IDX Assign_Global_Variable (ST *st, ST *base_st);
 #endif
 
+#ifdef TARG_ST
+BE_EXPORTED extern BOOL Section_Is_Special_Bss_Like_Section(STR_IDX sec_name);
+#endif
+
 extern BOOL Is_String_Literal (ST *st);
 
 #endif /* sections_INCLUDED */

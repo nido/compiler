@@ -1737,6 +1737,12 @@ Create_ST_For_Tree (tree decl_node)
             TYPE_READONLY(decl_node))
           Set_ST_is_const_var (st);
 
+	/* [CM] also mark readonly linkonce const (fix bug #28227) */
+	if (sclass == SCLASS_DGLOBAL && 
+	    DECL_ONE_ONLY (decl_node) && 
+	    TYPE_READONLY(decl_node))
+	  Set_ST_is_const_var (st);
+
 	// [CL] handle used attribute
 	if (sclass != SCLASS_AUTO && 
             TREE_CODE(decl_node) == VAR_DECL &&

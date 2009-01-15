@@ -257,3 +257,16 @@ Assign_Global_Variable (
 
   return sec;
 }
+
+/* ====================================================================
+ * Returns TRUE if a section is a bss like section according to target
+ * ABI or conventional usage.
+ *
+ * Always return FALSE for ST200.
+ * ====================================================================
+ */
+BOOL
+Section_Is_Special_Bss_Like_Section(STR_IDX sec_name)
+{
+   return FALSE;
+}
