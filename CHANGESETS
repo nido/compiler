@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jan 15 10:10:28 CET 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-57805
+
+Description:
+------------
+	* [trunk] Fix for bug #57805: Assertion failure in code expansion phase on fabs FPx enabled.
+	Deliver fixes/codex-57805 rev #20127 with authorization branch #59056
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jan 14 14:58:33 CET 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
