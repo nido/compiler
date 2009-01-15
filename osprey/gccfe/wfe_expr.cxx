@@ -5571,8 +5571,17 @@ WFE_Expand_Expr (tree exp,
 
       case GOTO_STMT:
         {
+#ifdef TARG_ST
+	  // [SC] Import fix from open64-4.2-0
+	  tree destination = TREE_OPERAND (exp, 0);
+	  if (TREE_CODE (destination) == LABEL_DECL)
+	    WFE_Expand_Goto (destination);
+	  else
+	    WFE_Expand_Computed_Goto (destination);
+#else
           tree dest = GOTO_DESTINATION (exp);
           WFE_Expand_Goto (dest);
+#endif
           break;
         }
 
