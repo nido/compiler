@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jan 16 10:55:33 CET 2009
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-43552
+
+Description:
+------------
+	* [trunk] Fix for bug #43552: [MPx] code does not compile in -O3 but works fine with -O2.
+	Deliver fixes/codex-43552 rev #20170 with authorization branch #44661
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_tailmerge.cxx
+	M      osprey/lai/Makefile.gbase
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jan 16 09:44:35 CET 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

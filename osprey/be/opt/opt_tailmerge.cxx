@@ -1029,6 +1029,32 @@ AreEquivalent<WN>(WN* wn1, WN* wn2)
                     result = false;
                 }
         }
+
+    // VL, 2008/05/28, Fix for #43552
+    // In some cases (initially exposed on xP70 extension code), LNO renaming 
+    // has wrong behavior and only renames some instances of a variable, letting 
+    // the other ones unchanged. As a consequence, the different whirl trees which 
+    // relate to multi-res intrinsic calls may be moved separately. For instance, 
+    // the INTRINSIC_CALL is tail-merged whereas the STID is let at its initial 
+    // location. As a consequence, this exposes a SFR which cannot be allocated 
+    // explicitly, leading to assertion in code expansion phase.
+    // This conservative hot fix prevents such patterns to be tailmerged.
+
+    if (result && wn1 && wn2 && WN_Equiv(wn1, wn2) )
+        {
+        if( WN_operator(wn1)==OPR_LDID && WN_operator(wn2)==OPR_LDID &&
+            MTYPE_is_composed(WN_rtype(wn1)) && MTYPE_is_composed(WN_rtype(wn2)))
+                {
+                    result=false;
+                }
+                                                                                                                      
+        if( WN_operator(wn1)==OPR_STID && WN_operator(wn2)==OPR_STID &&
+            MTYPE_is_composed(WN_desc(wn1)) && MTYPE_is_composed(WN_desc(wn2)))
+                {
+                    result=false;
+                }
+        }
+
     return result;
 }
 
