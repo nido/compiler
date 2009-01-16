@@ -97,6 +97,11 @@ extern BOOL Targ_Lower_Unsigned_To_Float;
  * True if target can, false if should use target-independent logic.
  */
 BE_EXPORTED extern BOOL Target_Has_Immediate_Operand (WN *parent, WN *expr);
+
+/* FdF 20081126: Check if a temporary register can be created to hold
+   a value of type mtype.
+ */
+BE_EXPORTED extern BOOL CGTARG_Can_Allocate_Reg_For_Mtype(TYPE_ID mtype);
 #endif
 
 #ifdef __cplusplus

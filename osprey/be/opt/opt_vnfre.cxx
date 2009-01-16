@@ -99,6 +99,9 @@
 #include "opt_lftr2.h"  // Should we ever create any of these?
 #include "opt_vn.h"
 #include "opt_vn_ivc.h" // Induction variable classification for coalescing
+#ifdef TARG_ST
+#include "betarget.h"
+#endif
 
 // #define DO_VNFRE_TRACE 1
 
@@ -2107,6 +2110,15 @@ VALNUM_FRE::_append_real_occurrence(CODEREP *cr,
    //
    // Note that we do not maintain EXP_WORKLST::Is_sign_ext() here.
    //
+#ifdef TARG_ST
+  // FdF 20081126: Do not create an occurence if a temporary cannot be
+  // allocated
+  if (!CGTARG_Can_Allocate_Reg_For_Mtype(cr->Dtyp())) {
+    // printf("Cannot perform VNFRE on dtyp %d\n", cr->Dtyp());
+    return;
+  }
+#endif
+
    VN_VALNUM valnum = get_valnum(cr->Coderep_id());
 
    if (_do_vnfre(valnum) && !_subsumable_by_branch(valnum, stmt, cr))

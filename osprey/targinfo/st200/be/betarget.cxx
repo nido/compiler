@@ -1298,3 +1298,11 @@ Pass_Low_First (TYPE_ID type)
   */
   return TRUE;
 }
+
+/* FdF 20081126: Check if an MTYPE is allocatable, i.e a temporary
+   register can be allocated to hold a value of type t. */
+BOOL
+CGTARG_Can_Allocate_Reg_For_Mtype(TYPE_ID t) {
+  // On ST200, all MTYPEs are allocatables.
+  return TRUE;
+}

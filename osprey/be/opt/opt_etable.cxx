@@ -71,6 +71,7 @@
 #include "opt_lftr2.h"
 #ifdef TARG_ST 
 #include "config_target.h"
+#include "betarget.h"
 #else
 #include "config_targ.h"	// needed for Pointer_type
 #endif
@@ -3971,6 +3972,15 @@ void
 ETABLE::Append_real_occurrence(CODEREP *cr, STMTREP *stmt, INT stmt_kid_num,
                                UINT depth, BOOL is_istore)
 {
+#ifdef TARG_ST
+  // FdF 20081126: Do not create an occurence if a temporary cannot be
+  // allocated
+  if (!CGTARG_Can_Allocate_Reg_For_Mtype(cr->Dtyp())) {
+    // printf("Cannot perform PRE on dtyp %d(Append)\n", cr->Dtyp());
+    return;
+  }
+#endif
+
   // Use the hash function to find the WORKLST
   EXP_WORKLST *worklist = Get_worklst(cr);
 
@@ -4020,6 +4030,15 @@ void
 ETABLE::Insert_real_occurrence(CODEREP *cr, STMTREP *stmt, INT stmt_kid_num,
 			       UINT depth, BOOL is_istore, BOOL urgent)
 {
+#ifdef TARG_ST
+  // FdF 20081126: Do not create an occurence if a temporary cannot be
+  // allocated
+  if (!CGTARG_Can_Allocate_Reg_For_Mtype(cr->Dtyp())) {
+    // printf("Cannot perform PRE on dtyp %d(Insert)\n", cr->Dtyp());
+    return;
+  }
+#endif
+
   // Use the hash function to find the WORKLST
   EXP_WORKLST *worklist = Get_worklst(cr, urgent);
 
