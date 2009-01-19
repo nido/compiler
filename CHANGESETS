@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jan 19 12:45:31 CET 2009
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-prologue-epilogue
+
+Description:
+------------
+	* [trunk] Deliver lyon/dev-prologue-epilogue rev #20186 with authorization branch #49079
+	Fixes on prologue/epilogue properties, eg st200-gdb bug #57999 "gdb.cp/ovldbreak.exp KFAIL on ST240"
+
+
+Modified Files:
+---------------
+	M      osprey/lai/mexpand.cxx
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+	M      osprey/targinfo/st200/cg/targ_entry_exit.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jan 16 10:55:33 CET 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

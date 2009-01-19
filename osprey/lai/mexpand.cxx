@@ -351,6 +351,12 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
       }
       replace = TRUE;
       Reset_BB_scheduled (bb);
+
+      OP *new_op;
+      FOR_ALL_OPS_OPs (&new_ops, new_op) {
+	// Propagate properties from original op to new op.
+	OP_Copy_Properties (new_op, op);
+      }
     } else {
       
       TOP multi_opr = CGTARG_TOP_To_Multi (opr);
@@ -410,7 +416,7 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
 	OP *new_op = Mk_VarOP (multi_opr, new_resnum, new_opndnum,
 			       new_results, new_opnds);
 	// Propagate properties from original op to new op.
-	OP_Copy_Properties(new_op, op);
+	OP_Copy_Properties (new_op, op);
 	// Also copy WN for alias info.
 	Copy_WN_For_Memory_OP (new_op, op);
 	if (multi_opr == TOP_asm) {
@@ -422,11 +428,6 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
       }
     }
     if (replace) {
-      OP *new_op;
-      FOR_ALL_OPS_OPs (&new_ops, new_op) {
-	OP_scycle (new_op) = OP_scycle (op);
-	OP_srcpos (new_op) = OP_srcpos (op);
-      }
 #ifdef TARG_ST
       // (cbr) Support for guards on false
       OPS_Copy_Predicate (&new_ops, op);

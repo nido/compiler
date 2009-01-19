@@ -270,6 +270,14 @@ EETARG_Fixup_Entry_Code (
     TN_MAP_Delete(callee_to_caller_map);
   }
 
+#ifdef TARG_ST
+  OP *op;
+  /* [CL] set the prologue flag for all the entry OPs */
+  FOR_ALL_OPS_OPs_FWD(&ops, op) {
+    Set_OP_prologue(op);
+  }
+#endif
+
   if (Get_Trace (TP_CGEXP, 64)) {
     #pragma mips_frequency_hint NEVER
     OP *op;
@@ -384,7 +392,14 @@ EETARG_Fixup_Exit_Code (
       }
     }
   }
-  
+
+#ifdef TARG_ST
+  /* [CL] set the epilogue flag for all the exit OPs */
+  FOR_ALL_OPS_OPs_FWD(&ops, op) {
+    Set_OP_epilogue(op);
+  }
+#endif
+
   if (Get_Trace (TP_CGEXP, 64)) {
     #pragma mips_frequency_hint NEVER
     fprintf(TFile, "\nTarget fixed up exit code:\n");
