@@ -1,6 +1,54 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jan 19 15:40:31 CET 2009
+	Author:    bd3
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bd3/dev-lao
+
+Description:
+------------
+	*  LAO integration with GLPK as default integer programming solver.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/lao/lao_interface.h
+	M      osprey/lai/lao/st200/lao_target.h
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/lao/lao_stub.h
+	M      osprey/lai/register.cxx
+	M      osprey/lai/cg_flags.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cg_flags.h
+	M      DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@20190 --new=https://codex.cro.st.com/svnroot/open64/branches/bd3/dev-lao@20198 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@20190 https://codex.cro.st.com/svnroot/open64/branches/bd3/dev-lao@20198" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/lao/lao_interface.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lao/lao_interface.h?p2=branches/bd3/dev-lao/osprey/lai/lao/lao_interface.h&r1=20190&r2=20198&roottype=svn&root=open64&diff_format=h
+osprey/lai/lao/st200/lao_target.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lao/st200/lao_target.h?p2=branches/bd3/dev-lao/osprey/lai/lao/st200/lao_target.h&r1=20190&r2=20198&roottype=svn&root=open64&diff_format=h
+osprey/lai/lao/lao_stub.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lao/lao_stub.cxx?p2=branches/bd3/dev-lao/osprey/lai/lao/lao_stub.cxx&r1=20190&r2=20198&roottype=svn&root=open64&diff_format=h
+osprey/lai/lao/lao_stub.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lao/lao_stub.h?p2=branches/bd3/dev-lao/osprey/lai/lao/lao_stub.h&r1=20190&r2=20198&roottype=svn&root=open64&diff_format=h
+osprey/lai/register.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/register.cxx?p2=branches/bd3/dev-lao/osprey/lai/register.cxx&r1=20190&r2=20198&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_flags.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_flags.cxx?p2=branches/bd3/dev-lao/osprey/lai/cg_flags.cxx&r1=20190&r2=20198&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgdriver.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgdriver.cxx?p2=branches/bd3/dev-lao/osprey/lai/cgdriver.cxx&r1=20190&r2=20198&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_flags.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_flags.h?p2=branches/bd3/dev-lao/osprey/lai/cg_flags.h&r1=20190&r2=20198&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/bd3/dev-lao/DEPENDENCIES&r1=20190&r2=20198&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jan 19 12:45:31 CET 2009
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

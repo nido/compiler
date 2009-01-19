@@ -16,7 +16,7 @@ typedef enum {
   OptimizeActivation_PrePass = 0x8, // Pre-pass optimizations.
 } OptimizeActivation;
 typedef uint16_t short_OptimizeActivation;
-#define OptimizeActivation_default 0
+#define OptimizeActivation_default ( 0 )
 
 
 /*
@@ -29,7 +29,8 @@ typedef enum {
   OptimizeRegionType_InnerLoop = 0x8, // Inner loop region.
 } OptimizeRegionType;
 typedef uint8_t short_OptimizeRegionType;
-#define OptimizeRegionType_default OptimizeRegionType_SuperBlock
+#define OptimizeRegionType_default ( OptimizeRegionType_SuperBlock | 0 )
+
 
 
 /*
@@ -41,7 +42,7 @@ typedef enum {
   OptimizeProfiling_Path = 0x4, // Dynamic path profiling.
 } OptimizeProfiling;
 typedef uint8_t short_OptimizeProfiling;
-#define OptimizeProfiling_default 0
+#define OptimizeProfiling_default ( 0 )
 
 
 /*
@@ -52,24 +53,22 @@ typedef enum {
   OptimizeScheduling_Unwinding, // Unwinding modulo scheduling.
   OptimizeScheduling_Insertion, // Insertion modulo scheduling.
   OptimizeScheduling_Iterative, // Iterative modulo scheduling.
-  OptimizeScheduling_Formulation, // RCMSP Formulation scheduling.
   OptimizeScheduling__
 } OptimizeScheduling;
 typedef uint8_t short_OptimizeScheduling;
-#define OptimizeScheduling_default OptimizeScheduling_Insertion
+#define OptimizeScheduling_default ( OptimizeScheduling_Insertion | 0 )
 
-extern const char *
-OptimizeScheduling_(OptimizeScheduling THIS);
+
 
 /*
  * OptimizeAllocation --	Enumeration of the register allocation types.
  */
 typedef enum {
-  OptimizeAllocation_LinearScanning = 0x1, // Linear Scan of Sarkar & Barik.
-  OptimizeAllocation_TreeScanning = 0x2, // Tree Scan of Rastello et al.
+  OptimizeAllocation_ELinearScan = 0x1, // Linear Scan of Sarkar & Barik.
+  OptimizeAllocation_DomTreeScan = 0x2, // Tree Scan of Rastello et al.
   OptimizeAllocation_GraphColoring = 0x4, // Some Graph Coloring allocator.
 } OptimizeAllocation;
-#define OptimizeAllocation_default 0
+#define OptimizeAllocation_default ( 0 )
 
 
 /*
@@ -80,8 +79,11 @@ typedef enum {
   OptimizeConversion_Cleaning = 0x2, // Code Cleaning during SSA construction.
   OptimizeConversion_SemiPruned = 0x4, // Semi-pruned improved SSA construction.
   OptimizeConversion_SigmaGoTo = 0x8, // Sigma operations for the GoTo conditions.
+  OptimizeConversion_Dedicated = 0x10, // Associate Variable(s) to Dedicated.
 } OptimizeConversion;
-#define OptimizeConversion_default OptimizeConversion_Folding | OptimizeConversion_Cleaning
+#define OptimizeConversion_default ( OptimizeConversion_Folding | OptimizeConversion_Cleaning | OptimizeConversion_SemiPruned | 0 )
+
+
 
 
 
@@ -96,7 +98,8 @@ typedef enum {
   OptimizeCoalescing_Congruence = 0x10, // Congruence-based coalescing.
   OptimizeCoalescing_SeqCopies = 0x20, // Use sequential copies (parallel by default).
 } OptimizeCoalescing;
-#define OptimizeCoalescing_default OptimizeCoalescing_Sreedhar | OptimizeCoalescing_Virtualize | OptimizeCoalescing_SeqCopies
+#define OptimizeCoalescing_default ( OptimizeCoalescing_Sreedhar | OptimizeCoalescing_Virtualize | OptimizeCoalescing_Congruence | 0 )
+
 
 
 
@@ -130,39 +133,20 @@ extern const char *
 OptimizePredication_(OptimizePredication THIS);
 
 /*
- * OptimizeFormulation --	Enumerate the Formulation flags.
+ * OptimizeRCMSSolving --	Enumerate the RCMSSolving flags.
  */
 typedef enum {
-  OptimizeFormulation_Integral = 0x1, // Require integral solutions.
-  OptimizeFormulation_EicDavAb = 0x2, // Formulation of Eichenberger et al.
-  OptimizeFormulation_AggrDeps = 0x4, // Use aggregated dependences.
-  OptimizeFormulation_Makespan = 0x10, // Minimize the makespan.
-  OptimizeFormulation_Lifetime = 0x20, // Minimize the register lifetimes.
-  OptimizeFormulation_Scanning = 0x40, // Use the scanning heuristic.
-  OptimizeFormulation_PostPass = 0x80, // Apply to postpass problems.
-  OptimizeFormulation_Acyclic = 0x100, // Apply to acyclic problems.
-} OptimizeFormulation;
-typedef uint16_t short_OptimizeFormulation;
-#define OptimizeFormulation_default OptimizeFormulation_Integral | OptimizeFormulation_Makespan | OptimizeFormulation_Scanning
-
-
-
-#define OptimizeFormulations_isOptimize(flags) ( flags & ( OptimizeFormulation_Makespan | OptimizeFormulation_Lifetime ) )
-
-
-
-
-
-
-/*
- * OptimizeScoreboarding --	Scoreboarder scheduling levels.
- */
-typedef enum {
-  OptimizeScoreboarding_Fixup = 0x1, // Fixup pass over the BasicBlock(s).
-  OptimizeScoreboarding_Iterate = 0x2, // Iterate forward data-flow problem.
-  OptimizeScoreboarding_Priority = 0x4, // Pre-order Operation(s) by priority.
-} OptimizeScoreboarding;
-#define OptimizeScoreboarding_default OptimizeScoreboarding_Iterate
+  OptimizeRCMSSolving_Dinechin = 0x1, // Formulation of Dinechin.
+  OptimizeRCMSSolving_LNSScan1 = 0x2, // LSB of LNS scanning value.
+  OptimizeRCMSSolving_LNSScan2 = 0x4, // MSB of LNS scanning value.
+  OptimizeRCMSSolving_EicDavAb = 0x8, // Formulation of Eichenberger et al.
+  OptimizeRCMSSolving_AggrDeps = 0x10, // Use aggregated dependences.
+  OptimizeRCMSSolving_Rational = 0x20, // Allow rational solution.
+  OptimizeRCMSSolving_PostPass = 0x40, // Apply to postpass problems.
+  OptimizeRCMSSolving_Acyclic = 0x80, // Apply to acyclic problems.
+} OptimizeRCMSSolving;
+typedef uint16_t short_OptimizeRCMSSolving;
+#define OptimizeRCMSSolving_default ( 0 )
 
 
 /*
@@ -175,6 +159,33 @@ typedef enum {
   OptimizeRCMSProblem_Renaming = 0x8, // Pass modulo renaming-limiting arcs.
   OptimizeRCMSProblem_Margins = 0x10, // Pass margin-enforcing arcs.
 } OptimizeRCMSProblem;
+#define OptimizeRCMSProblem_default ( 0 )
+
+
+/*
+ * OptimizeLogTimeOut --	Enumerate the LogTimeOut flags.
+ */
+typedef enum {
+  OptimizeLogTimeOut_Times2 = 0x1, // TimeOut *= 2.
+  OptimizeLogTimeOut_Times4 = 0x2, // TimeOut *= 4.
+  OptimizeLogTimeOut_Times16 = 0x4, // TimeOut *= 16.
+  OptimizeLogTimeOut_Times256 = 0x8, // TimeOut *= 256.
+} OptimizeLogTimeOut;
+typedef uint16_t short_OptimizeLogTimeOut;
+#define OptimizeLogTimeOut_default ( 0 )
+
+
+/*
+ * OptimizeScoreboarding --	Scoreboarder scheduling levels.
+ */
+typedef enum {
+  OptimizeScoreboarding_Fixup = 0x1, // Fixup pass over the BasicBlock(s).
+  OptimizeScoreboarding_Iterate = 0x2, // Iterate forward data-flow problem.
+  OptimizeScoreboarding_Priority = 0x4, // Pre-order Operation(s) by priority.
+} OptimizeScoreboarding;
+#define OptimizeScoreboarding_default ( OptimizeScoreboarding_Iterate | 0 )
+
+
 
 /*
  * OptimizeItem --	Enumerate the Optimize items.
@@ -194,12 +205,13 @@ typedef enum {
   OptimizeItem_Predication, // See OptimizePredication.
   OptimizeItem_Scheduling, // See OptimizeScheduling.
   OptimizeItem_Allocation, // See OptimizeAllocation.
-  OptimizeItem_Formulation, // See OptimizeFormulation.
+  OptimizeItem_RCMSSolving, // See OptimizeRCMSSolving.
+  OptimizeItem_RCMSProblem, // See OptimizeRCMSProblem.
+  OptimizeItem_LogTimeOut, // See OptimizeLogTimeOut.
   OptimizeItem_Scoreboarding, // See OptimizeScoreboarding.
   OptimizeItem_WindowSize, // Scoreboard window size
   OptimizeItem_PrePadding, // See OptimizePrePadding.
   OptimizeItem_PostPadding, // See OptimizePostPadding.
-  OptimizeItem_RCMSProblem, // See OptimizeRCMSProblem.
   OptimizeItem__
 } OptimizeItem;
 typedef uint8_t short_OptimizeItem;

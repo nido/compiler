@@ -146,8 +146,7 @@ static mUINT8 reg_alloc_status[ISA_REGISTER_CLASS_MAX + 1][REGISTER_MAX + 1];
 #endif
 
 // list of registers that should not be allocated, both globally and locally.
-static std::vector< std::pair< ISA_REGISTER_CLASS, REGISTER> > dont_allocate_these_registers;
-static std::vector< std::pair< ISA_REGISTER_CLASS, REGISTER> > dont_allocate_these_registers_in_pu;
+std::vector< std::pair< ISA_REGISTER_CLASS, REGISTER> > dont_allocate_these_registers;
 
 
 /* ====================================================================

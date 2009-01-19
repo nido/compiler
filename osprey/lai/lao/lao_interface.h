@@ -211,7 +211,7 @@ CGIR_OP_make(CGIR_OP cgir_op, O64_Operator lai_operator, CGIR_TN arguments[], CG
 
 //
 static void
-CGIR_OP_more(CGIR_OP cgir_op, int iteration, int issueDate, unsigned flags);
+CGIR_OP_more(CGIR_OP cgir_op, int iteration, int startDate, unsigned flags);
 
 /*
  * void CGIR_BB_make --	Update a CGIR_BB.
@@ -269,7 +269,7 @@ struct CGIR_CallBack_ {
   CGIR_SYM (*SYM_make)(CGIR_SYM cgir_sym, const char *name, bool isSpill, O64_NativeType lai_nativeType);
   CGIR_TN (*TN_make)(CGIR_TN cgir_tn, CGIR_Type cgir_type, ...);
   CGIR_OP (*OP_make)(CGIR_OP cgir_op, O64_Operator lai_operator, CGIR_TN arguments[], CGIR_TN results[], CGIR_OP orig_op);
-  void (*OP_more)(CGIR_OP cgir_op, int iteration, int issueDate, unsigned flags);
+  void (*OP_more)(CGIR_OP cgir_op, int iteration, int startDate, unsigned flags);
   CGIR_BB (*BB_make)(CGIR_BB cgir_bb, CGIR_LAB labels[], CGIR_OP operations[], CGIR_RID cgir_rid, float frequency);
   void (*BB_more)(CGIR_BB cgir_bb, CGIR_BB loop_bb, intptr_t traceId, int unrolled, unsigned flags);
   CGIR_LD (*LD_make)(CGIR_LD cgir_ld, CGIR_BB head_bb, CGIR_TN trip_count_tn, int unrolled);
@@ -392,7 +392,7 @@ struct O64_Interface_ {
   uint32_t (*Interface_Operation_identity)(Operation operation);
   O64_Operator (*Interface_Operation_operator)(Operation operation);
   int (*Interface_Operation_iteration)(Operation operation);
-  int (*Interface_Operation_issueDate)(Operation operation);
+  int (*Interface_Operation_startDate)(Operation operation);
   int (*Interface_Operation_isSpillCode)(Operation operation);
   int (*Interface_Operation_isVolatile)(Operation operation);
   int (*Interface_Operation_isHoisted)(Operation operation);
@@ -536,8 +536,8 @@ typedef struct O64_Interface_ * restrict_O64_Interface;
 #define O64_Interface__Interface_Operation_operator(THIS) (&(THIS)->Interface_Operation_operator)
 #define O64_Interface_Interface_Operation_iteration(THIS) ((THIS)->Interface_Operation_iteration)
 #define O64_Interface__Interface_Operation_iteration(THIS) (&(THIS)->Interface_Operation_iteration)
-#define O64_Interface_Interface_Operation_issueDate(THIS) ((THIS)->Interface_Operation_issueDate)
-#define O64_Interface__Interface_Operation_issueDate(THIS) (&(THIS)->Interface_Operation_issueDate)
+#define O64_Interface_Interface_Operation_startDate(THIS) ((THIS)->Interface_Operation_startDate)
+#define O64_Interface__Interface_Operation_startDate(THIS) (&(THIS)->Interface_Operation_startDate)
 #define O64_Interface_Interface_Operation_isSpillCode(THIS) ((THIS)->Interface_Operation_isSpillCode)
 #define O64_Interface__Interface_Operation_isSpillCode(THIS) (&(THIS)->Interface_Operation_isSpillCode)
 #define O64_Interface_Interface_Operation_isVolatile(THIS) ((THIS)->Interface_Operation_isVolatile)
@@ -663,7 +663,7 @@ O64_getInstance(void);
 #define O64_Interface_Operation_identity (*O64_instance->Interface_Operation_identity)
 #define O64_Interface_Operation_operator (*O64_instance->Interface_Operation_operator)
 #define O64_Interface_Operation_iteration (*O64_instance->Interface_Operation_iteration)
-#define O64_Interface_Operation_issueDate (*O64_instance->Interface_Operation_issueDate)
+#define O64_Interface_Operation_startDate (*O64_instance->Interface_Operation_startDate)
 #define O64_Interface_Operation_isSpillCode (*O64_instance->Interface_Operation_isSpillCode)
 #define O64_Interface_Operation_isVolatile (*O64_instance->Interface_Operation_isVolatile)
 #define O64_Interface_Operation_isHoisted (*O64_instance->Interface_Operation_isHoisted)
@@ -1001,7 +1001,7 @@ Interface_Operation_operator(Operation operation);
 int
 Interface_Operation_iteration(Operation operation);
 int
-Interface_Operation_issueDate(Operation operation);
+Interface_Operation_startDate(Operation operation);
 int
 Interface_Operation_isSpillCode(Operation operation);
 int

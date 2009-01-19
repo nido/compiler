@@ -207,13 +207,14 @@ static BOOL CG_LAO_coalescing_overridden = FALSE;
 static BOOL CG_LAO_predication_overridden = FALSE;
 static BOOL CG_LAO_scheduling_overridden = FALSE;
 static BOOL CG_LAO_allocation_overridden = FALSE;
-static BOOL CG_LAO_formulation_overridden = FALSE;
+static BOOL CG_LAO_rcmssolving_overridden = FALSE;
 static BOOL CG_LAO_preloading_overridden = FALSE;
 static BOOL CG_LAO_l1missextra_overridden = FALSE;
 static BOOL CG_LAO_compensation_overridden = FALSE;
 static BOOL CG_LAO_speculation_overridden = FALSE;
 static BOOL CG_LAO_relaxation_overridden = FALSE;
 static BOOL CG_LAO_pipelining_overridden = FALSE;
+static BOOL CG_LAO_logtimeout_overridden = FALSE;
 static BOOL CG_LAO_renaming_overridden = FALSE;
 static BOOL CG_LAO_boosting_overridden = FALSE;
 static BOOL CG_LAO_aliasing_overridden = FALSE;
@@ -1152,11 +1153,11 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_predication", "",
     0, 0, 127,	&CG_LAO_predication, &CG_LAO_predication_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_scheduling", "",
-    2, 0, 4,	&CG_LAO_scheduling, &CG_LAO_scheduling_overridden },
+    2, 0, 3,	&CG_LAO_scheduling, &CG_LAO_scheduling_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_allocation", "",
     2, 0, 3,	&CG_LAO_allocation, &CG_LAO_allocation_overridden },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_formulation", "",
-    0, 0, 65536,	&CG_LAO_formulation, &CG_LAO_formulation_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_rcmssolving", "",
+    0, 0, 255,	&CG_LAO_rcmssolving, &CG_LAO_rcmssolving_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_preloading", "",
     0, 0, 4,	&CG_LAO_preloading, &CG_LAO_preloading_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_l1missextra", "",
@@ -1168,7 +1169,9 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_relaxation", "",
     2, 0, 3,	&CG_LAO_relaxation, &CG_LAO_relaxation_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_pipelining", "",
-    2, 0, 4,	&CG_LAO_pipelining, &CG_LAO_pipelining_overridden },
+    2, 0, 7,	&CG_LAO_pipelining, &CG_LAO_pipelining_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_logtimeout", "",
+    0, 0, 15,	&CG_LAO_logtimeout, &CG_LAO_logtimeout_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_renaming", "",
     2, 0, 3,	&CG_LAO_renaming, &CG_LAO_renaming_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_boosting", "",
@@ -2305,7 +2308,7 @@ CG_Init (void)
     if (!CG_LAO_predication_overridden) CG_LAO_predication = 0;
     if (!CG_LAO_scheduling_overridden) CG_LAO_scheduling = 2;
     if (!CG_LAO_allocation_overridden) CG_LAO_allocation = 2;
-    if (!CG_LAO_formulation_overridden) CG_LAO_formulation = 0;
+    if (!CG_LAO_rcmssolving_overridden) CG_LAO_rcmssolving = 0;
     if (!CG_LAO_preloading_overridden) CG_LAO_preloading = 0;
     if (!CG_LAO_l1missextra_overridden) CG_LAO_l1missextra = 0;
     if (!CG_LAO_compensation_overridden) CG_LAO_compensation = 0;
@@ -2316,6 +2319,7 @@ CG_Init (void)
     }
     if (!CG_LAO_relaxation_overridden) CG_LAO_relaxation = 2;
     if (!CG_LAO_pipelining_overridden) CG_LAO_pipelining = 2;
+    if (!CG_LAO_logtimeout_overridden) CG_LAO_logtimeout = 0;
     if (!CG_LAO_renaming_overridden) {
 	if (CG_LOOP_unroll_times_max <= 1) CG_LAO_renaming = 1;
 	else CG_LAO_renaming = 2;

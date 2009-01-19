@@ -59,6 +59,10 @@ extern "C"
 #undef operator
 #undef this
 }
+
+/* Where the results of option -ffixed-reg are stored. */
+extern std::vector< std::pair< ISA_REGISTER_CLASS, REGISTER> > dont_allocate_these_registers;
+
 /*-------------------------- LAI Interface instance -------*/
 static O64_Interface O64_instance;
 static Interface interface;
@@ -113,7 +117,7 @@ lao_init(void)
     O64_getInstance_p = (O64_Interface (*)(void))dlsym(lao_handler, "O64_getInstance");
     O64_instance = (*O64_getInstance_p)();
     FmtAssert(O64_Interface_size(O64_instance) == sizeof(O64_Interface_),
-            ("Open64 and LAO interfaces are not compatible. The two components are not synchronized."));
+             ("Open64 and LAO interfaces are not synchronized."));
     // Initialize LAI Interface
     O64_Interface_Initialize();
     interface = O64_Interface_getInstance();
@@ -128,10 +132,33 @@ lao_init(void)
     int minTaken = CGTARG_Branch_Taken_Penalty();
     O64_Interface_setMaxIssue(interface, processor, maxIssue);
     O64_Interface_setMinTaken(interface, processor, minTaken);
+    // Fixup in case of GP-based addressing.
     if (Gen_GP_Relative) {
-      O64_Register registre = CGIR_CRP_to_Register(TN_class_reg(GP_TN));
-      O64_Interface_setReserved(interface, (Target_ABI)/*FIXME!*/, registre);
+      O64_Register gp_register = CGIR_CRP_to_Register(TN_class_reg(GP_TN));
+      O64_Interface_setReserved(interface, (Target_ABI)/*FIXME!*/, gp_register);
     }
+    // Reserve fixed (non-allocatable) registers given in command-line using -ffixed-reg.
+    std::vector< std::pair< ISA_REGISTER_CLASS, REGISTER > >::iterator iter;
+    for (iter = dont_allocate_these_registers.begin(); 
+         iter != dont_allocate_these_registers.end(); 
+         ++iter) {
+      CLASS_REG_PAIR fixed_crp;
+      Set_CLASS_REG_PAIR(fixed_crp, iter->first, iter->second);
+      O64_Register fixed_register = CGIR_CRP_to_Register(fixed_crp);
+      O64_Interface_setReserved(interface, (Target_ABI)/*FIXME!*/, fixed_register);
+      //fprintf(stderr, "*** reserved: %s\n", REGISTER_name(iter->first, iter->second));
+      DevWarn("force non-allocatable register %s", REGISTER_name(iter->first, iter->second));
+    }
+#if 0
+    // Enumerate the allocatable registers.
+    ISA_REGISTER_CLASS regclass;
+    FOR_ALL_ISA_REGISTER_CLASS(regclass) {
+      REGISTER registre;
+      REGISTER_SET allocatable = REGISTER_CLASS_allocatable(regclass);
+      FOR_ALL_REGISTER_SET_members(allocatable, registre)
+      fprintf(stderr, "*** allocatable: %s\n", REGISTER_name(regclass, registre));
+    }
+#endif
     // Initialize the LAO register latencies with Open64 values.
     for (int op = 0; op < TOP_UNDEFINED; op++) {
       TOP top = (TOP)op;
@@ -285,7 +312,7 @@ CGIR_ST_SCLASS_to_SStore(ST_SCLASS sstore)
     O64_SymbolStore_UNDEF,		// SCLASS_UNKNOWN
     O64_SymbolStore_AUTO,		// SCLASS_AUTO
     O64_SymbolStore_FORMAL,		// SCLASS_FORMAL
-    O64_SymbolStore_FORMAL_REF,	// SCLASS_FORMAL_REF
+    O64_SymbolStore_FORMAL_REF,		// SCLASS_FORMAL_REF
     O64_SymbolStore_PSTATIC,		// SCLASS_PSTATIC
     O64_SymbolStore_FSTATIC,		// SCLASS_FSTATIC
     O64_SymbolStore_COMMON,		// SCLASS_COMMON
@@ -1245,7 +1272,7 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, unsigned act
     Current_PU_Stack_Model == SMODEL_SMALL?   0: 
     Current_PU_Stack_Model == SMODEL_LARGE?   1:
     Current_PU_Stack_Model == SMODEL_DYNAMIC? 2:
-                                              -1;
+                                             -1;
   //
   // Open interface.
   const char *name = ST_name(Get_Current_PU_ST());
@@ -1321,23 +1348,19 @@ lao_optimize(BB_List &bodyBBs, BB_List &entryBBs, BB_List &exitBBs, unsigned act
   if (activation & OptimizeActivation_PrePass) Start_Timer( T_LAO_PRE_CU );
   if (activation & OptimizeActivation_RegAlloc) Start_Timer( T_LAO_REG_CU );
   if (activation & OptimizeActivation_PostPass) Start_Timer( T_LAO_POST_CU );
-  if (CG_LAO_scheduling > 2 && CG_LAO_formulation == 0) {
-    CG_LAO_formulation = OptimizeFormulation_Integral
-                       | OptimizeFormulation_Makespan
-                       | OptimizeFormulation_Scanning;
-  }
   //
   unsigned optimizations =
       O64_Interface_optimize(interface,
                              OptimizeItem_Activation, activation,
-                             OptimizeItem_Convention, (Target_ABI),	/*FIXME!*/
+                             OptimizeItem_Convention, (Target_ABI),	/*FIXME! Use mapping. */
                              //OptimizeItem_StackModel, stackModel,
                              OptimizeItem_RegionType, CG_LAO_regiontype,
                              OptimizeItem_Conversion, CG_LAO_conversion,
                              OptimizeItem_Coalescing, CG_LAO_coalescing,
                              OptimizeItem_Scheduling, CG_LAO_scheduling,
                              OptimizeItem_Allocation, CG_LAO_allocation,
-                             OptimizeItem_Formulation, CG_LAO_formulation,
+                             OptimizeItem_RCMSSolving, CG_LAO_rcmssolving,
+                             OptimizeItem_LogTimeOut, CG_LAO_logtimeout,
                              OptimizeItem_PrePadding, CG_LAO_prepadding,
                              OptimizeItem_PostPadding, CG_LAO_postpadding,
                              OptimizeItem__);

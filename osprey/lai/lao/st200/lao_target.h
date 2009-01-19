@@ -789,12 +789,7 @@ typedef uint8_t short_RegMask;
  * Modifier --	Enumeration.
  */
 typedef enum Modifier {
-#define ALIAS(alias,name) Modifier_ ##alias = Modifier_ ##name,
-#define ALIASES(count,items) items
-#define MEMBER(name,ENCODED,NAMES,ALIASES) Modifier_ ##name, ALIASES
-
-#define MEMBERS(count,items) items
-#define Modifier(NAME,MEMBERS,ENCODE,DECODE) MEMBERS
+#define Modifier(NAME,MEMBERS,ENCODE,DECODE) Modifier_ ##NAME,
 
   Modifier__UNDEF,
 
@@ -814,13 +809,45 @@ typedef enum Modifier {
 
   Modifier__
 #undef Modifier
+} Modifier;
+typedef uint8_t short_Modifier;
+
+/*
+ * ModifierMember --	Enumeration.
+ */
+typedef enum ModifierMember {
+#define ALIAS(alias,name) ModifierMember_ ##alias = ModifierMember_ ##name,
+#define ALIASES(count,items) items
+#define MEMBER(name,ENCODED,NAMES,ALIASES) ModifierMember_ ##name, ALIASES
+
+#define MEMBERS(count,items) items
+#define Modifier(NAME,MEMBERS,ENCODE,DECODE) MEMBERS
+
+  ModifierMember__UNDEF,
+
+/*
+  st200/Modifier.enum --
+  Automatically generated from the Machine Description System (MDS).
+*/
+
+
+
+
+#undef Modifier
+
+
+
+
+
+  ModifierMember__
+#undef Modifier
 #undef MEMBERS
 #undef MEMBER
 #undef ALIASES
 #undef ALIAS
 #undef ENCODED
-} Modifier;
-typedef uint8_t short_Modifier;
+} ModifierMember;
+typedef uint8_t short_ModifierMember;
 
 /*
  * Relocation --	Enumeration.
@@ -6826,7 +6853,7 @@ ResourceVector_accumulate(ResourceVector THIS, const_ResourceVector that)
 
 
 /*
- * ResourceVector_mayIncrease --	True if =THIS= + =increase= <= =limit=.
+ * ResourceVector_accept --	True if =THIS= + =increase= <= =limit=.
  */
 
 
@@ -6835,9 +6862,9 @@ ResourceVector_accumulate(ResourceVector THIS, const_ResourceVector that)
 
 
 static inline bool
-ResourceVector_mayIncrease(const_ResourceVector THIS,
-                           const_ResourceVector increase,
-                           const_ResourceVector limit)
+ResourceVector_accept(const_ResourceVector THIS,
+                      const_ResourceVector increase,
+                      const_ResourceVector limit)
 {
   uint64_t mask = 0x8080808080808080ULL;
   uint64_t x = ((limit)->PACKED);
@@ -6845,7 +6872,7 @@ ResourceVector_mayIncrease(const_ResourceVector THIS,
   x |= mask; // Set high bit of each unit.
   x -= y; // Carry does not propagate across units.
   x &= mask; // Grab high bits after substract.
-  return x != mask; // High bit change means THIS + increase > limit.
+  return x == mask; // High bit change means THIS + increase > limit.
 }
 
 
@@ -6924,15 +6951,19 @@ ResourceTable_reset(ResourceTable THIS, int windowStart);
 
 //
 bool
-ResourceTable_fitReservation(ResourceTable THIS, enum Reservation reservation);
+ResourceTable_fitReservation(ResourceTable THIS, enum Reservation reservation, int startDate);
+
+//
+bool
+ResourceTable_isFull(const_ResourceTable THIS, const_ResourceVector column, int startDate);
 
 //
 int
-ResourceTable_tryReservation(ResourceTable THIS, enum Reservation reservation, int issueDate);
+ResourceTable_tryReservation(ResourceTable THIS, enum Reservation reservation, int startDate);
 
 //
 void
-ResourceTable_addReservation(ResourceTable THIS, enum Reservation reservation, int issueDate);
+ResourceTable_addReservation(ResourceTable THIS, enum Reservation reservation, int startDate);
 
 //
 void
@@ -7454,17 +7485,23 @@ RegisterSet_empty(RegisterSet THIS);
 /*
  * RegisterSet_choose --	Choose and remove a member of the RegisterSet.
  *
- * Return:	Valid Register or Register__ if THIS RegisterSet is empty.
+ * Return:	Valid Register or Register__UNDEF if THIS RegisterSet is empty.
  */
 Register
 RegisterSet_choose(RegisterSet THIS);
+
+/*
+ * RegisterSet_nextMember --	Get the next Register of the RegisterSet.
+ */
+Register
+RegisterSet_nextMember(const_RegisterSet THIS, Register member);
 
 /*
  * RegisterSet_chooseFromLast --	Choose and remove a member of the RegisterSet
  *                               starting from the last_reg, e.g., if rn was
  *                               last used, rn+1 will be return if it is avaiable.
  *
- * Return:	Valid Register or Register__ if THIS RegisterSet is empty.
+ * Return:	Valid Register or Register__UNDEF if THIS RegisterSet is empty.
  */
 Register
 RegisterSet_chooseFromLast(RegisterSet set, Register last_reg);
@@ -7966,22 +8003,27 @@ extern const char *
 Modifier_(Modifier THIS);
 
 /*
- * Modifier_names --	The names of THIS Modifier.
+ * Modifier_memberNames --	The member names of THIS Modifier.
  */
 const char **
-Modifier_names(Modifier THIS);
+Modifier_memberNames(Modifier THIS);
 
 /*
- * Modifier_complement --	Complement the condition of THIS Modifier.
+ * ModifierMember_ --	Names for the ModifierMember enumeration.
  */
-Modifier
-Modifier_complement(Operator THIS);
+extern const char *
+ModifierMember_(ModifierMember THIS);
 
 /*
- * !!!!	Modifier.xcc
+ * ModifierMember_complement --	Complement the condition of THIS ModifierMember.
+ */
+ModifierMember
+ModifierMember_complement(ModifierMember THIS);
+
+/*
+ * !!!!	st200-Modifier.xcc
  *
  * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
- * Stefan Freudenberger (Stefan.Freudenberger@st.com).
  *
  * Copyright 2002 - 2007 STMicroelectronics.
  * Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
@@ -9168,6 +9210,21 @@ Instance_fixupRAW(Instance THIS, Instance that);
 int
 Instance_latencyRAW(Instance THIS, Instance that, StorageCell cell);
 
+/*
+ * !!!!	st200-Instance.xcc
+ *
+ * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+ *
+ * Copyright 2002 - 2007 STMicroelectronics.
+ * Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of either (at your option): the GNU
+ * General Public License (GPL) version 2; the GNU Lesser General
+ * Public License (LGPL) version 2.1; any later version of these
+ * licences as published by the Free Software Foundation.
+ */
+
 
 
 
@@ -9556,6 +9613,8 @@ Operator_memoryAccessSize(Operator THIS);
 #define Operator_isSigma(THIS) ((THIS) == Operator_SIGMA)
 #define Operator_isSsa(THIS) ((THIS) >= Operator_PHI && (THIS) <= Operator_SIGMA)
 #define Operator_isKill(THIS) ((THIS) == Operator_KILL)
+#define Operator_isECopy(THIS) ((THIS) == Operator_ECOPY)
+#define Operator_isLCopy(THIS) ((THIS) == Operator_LCOPY)
 #define Operator_isPCopy(THIS) ((THIS) == Operator_PCOPY)
 #define Operator_isPseudo(THIS) (Operator_attributes(THIS)>>OperatorAttribute_Pseudo & 1)
 
@@ -9584,14 +9643,16 @@ Operator_memoryAccessSize(Operator THIS);
 
 #define Operator_isConditional(THIS) (Operator_attributes(THIS)>>OperatorAttribute_Conditional & 1)
 
+#define Operator_isParCopy(THIS) ((unsigned)((THIS) - Operator_PCOPY) <= (unsigned)(Operator_LCOPY - Operator_PCOPY))
+
 
 /*
- * Operator_isCopy --	Test if THIS Operator is a COPY.
+ * Operator_isSeqCopy --	Test if THIS Operator is a COPY.
  *
  * In THIS case result 0 is the destination and argument 0 is the source.
  */
 bool
-Operator_isCopy(Operator THIS);
+Operator_isSeqCopy(Operator THIS);
 
 /*
  * Operator_isAdd --	Test if THIS Operator is an ADD.
@@ -10147,6 +10208,12 @@ Reservation_requirements(Reservation THIS)
 }
 
 /*
+ * Reservation_criticality
+ */
+unsigned
+Reservation_criticality(Reservation THIS);
+
+/*
  * Reservation_odot --	The minimum number of cycles between two Reservation classes.
  */
 int
@@ -10159,6 +10226,21 @@ Reservation_DTD(FILE *file);
 //
 bool
 Reservation_XML(FILE *file);
+
+/*
+ * !!!!	st200-Reservation.xcc
+ *
+ * Benoit Dupont de Dinechin (Benoit.Dupont-de-Dinechin@st.com).
+ *
+ * Copyright 2002 - 2007 STMicroelectronics.
+ * Copyright 1995 - 1998 Commissariat a l'Energie Atomique.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of either (at your option): the GNU
+ * General Public License (GPL) version 2; the GNU Lesser General
+ * Public License (LGPL) version 2.1; any later version of these
+ * licences as published by the Free Software Foundation.
+ */
 
 
 

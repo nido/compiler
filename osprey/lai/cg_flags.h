@@ -232,13 +232,14 @@ CG_EXPORTED extern INT32 CG_LAO_coalescing;	/* LAO SSA coalescing flags */
 CG_EXPORTED extern INT32 CG_LAO_predication;	/* LAO predication algorithm */
 CG_EXPORTED extern INT32 CG_LAO_scheduling;	/* LAO scheduling algorithm */
 CG_EXPORTED extern INT32 CG_LAO_allocation;	/* LAO allocation algorithm */
-CG_EXPORTED extern INT32 CG_LAO_formulation;	/* LAO integer formulation flags */
+CG_EXPORTED extern INT32 CG_LAO_rcmssolving;	/* LAO RCMS solving flags */
 CG_EXPORTED extern INT32 CG_LAO_preloading;	/* LAO memory preloading level */
 CG_EXPORTED extern INT32 CG_LAO_l1missextra;	/* LAO extra latency for preloading */
 CG_EXPORTED extern INT32 CG_LAO_compensation;	/* LAO compensation level */
 CG_EXPORTED extern INT32 CG_LAO_speculation;	/* LAO speculation level */
 CG_EXPORTED extern INT32 CG_LAO_relaxation;	/* LAO relaxation level */
 CG_EXPORTED extern INT32 CG_LAO_pipelining;	/* LAO software pipelining level */
+CG_EXPORTED extern INT32 CG_LAO_logtimeout;	/* LAO integer linear programming timeout */
 CG_EXPORTED extern INT32 CG_LAO_renaming;	/* LAO register renaming level */
 CG_EXPORTED extern INT32 CG_LAO_boosting;	/* LAO operation boosting level */
 CG_EXPORTED extern INT32 CG_LAO_aliasing;	/* LAO memory aliasing level */
