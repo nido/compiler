@@ -150,6 +150,8 @@ COMMON_TARG_INFO_ISA_DIR= $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/isa
 COMMON_COM_TARG_DIR 	= $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
 COMMON_UTIL_TARG_DIR 	= $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
 endif
+TARGINFO_PARSER_INC_DIR	= $(BUILD_TOT)/targinfo/parser/inc
+LIBAIR_DIR           	= $(BUILD_TOT)/libair/air
 
 # These are the directories in which to look for source files.
 
@@ -190,7 +192,9 @@ HEADER_DIRS = \
   $(IPL_DIR)	 	\
   $(IPA_DIR)		\
   $(IPC_DIR)		\
-  $(COMMON_INSTR_DIR)
+  $(COMMON_INSTR_DIR)   \
+  $(TARGINFO_PARSER_INC_DIR) \
+  $(LIBAIR_DIR)
 
 HEADER_DIRS += $(TARGDIR)/include/libelf
 
@@ -263,7 +267,9 @@ COMMON_COM_CXX_SRCS = \
   opcode_core.cxx	\
   wutil.cxx		\
   DaVinci.cxx           \
-  loader.cxx      \
+  dll_loader.cxx      \
+  loader.cxx          \
+  isa_loader.cxx      \
   lai_loader.cxx      \
   dyn_dll_api_access.cxx	\
   dyn_isa_api_access.cxx	\

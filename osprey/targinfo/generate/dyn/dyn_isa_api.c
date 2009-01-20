@@ -54,6 +54,10 @@
 #include "dyn_isa_bundle.h"
 #include "dyn_isa_variants.h"
 #include "dyn_isa_hazards.h"
+#include "dyn_isa_parse.h"
+#include "dyn_isa_pack.h"
+#include "dyn_isa_decode.h"
+#include "dyn_isa_binutils.h"
 
 #ifndef DLL_EXPORTED
 #define DLL_EXPORTED 
@@ -171,6 +175,33 @@ static ISA_EXT_Interface_t static_interface = {
    /* Put it for backward compatibility issue. */
    dyn_get_ISA_EXEC_unit_slots_tab,          /* xxx_targ_isa_bundle.c     */
    dyn_get_ISA_BUNDLE_slot_count_tab,        /* xxx_targ_isa_bundle.c     */
+
+   /* Used by GNU binutils */
+   dyn_get_ISA_PARSE_tab,                    /* xxx_targ_isa_parse.c      */ 
+   dyn_get_ISA_PARSE_tab_sz,                 /* xxx_targ_isa_parse.c      */
+
+   dyn_get_ISA_PACK_OPND_info_tab,           /* xxx_targ_isa_parse.c      */
+   dyn_get_ISA_PACK_OPND_info_tab_sz,        /* xxx_targ_isa_parse.c      */
+   dyn_get_ISA_PACK_OPND_info_index_tab,     /* xxx_targ_isa_parse.c      */
+   dyn_get_ISA_PACK_info_tab,                /* xxx_targ_isa_parse.c      */
+   dyn_get_ISA_PACK_inst_words_tab,          /* xxx_targ_isa_pack.c       */ 
+   dyn_get_ISA_PACK_adj_info_tab,            /* xxx_targ_isa_parse.c      */
+   dyn_get_ISA_PACK_adj_info_tab_sz,         /* xxx_targ_isa_parse.c      */
+   dyn_get_ISA_PACK_adj_info_index_tab,      /* xxx_targ_isa_parse.c      */
+
+   dyn_get_ISA_DECODE_decoding_tab,          /* xxx_targ_isa_decode.c     */
+   dyn_get_ISA_DECODE_decoding_tab_sz,       /* xxx_targ_isa_decode.c     */
+
+   dyn_get_ISA_RELOC_info_tab,               /* xxx_targ_isa_relocs.c     */
+   dyn_get_ISA_RELOC_info_tab_sz,            /* xxx_targ_isa_relocs.c     */
+   dyn_get_ISA_RELOC_SUBSET_info_tab,        /* xxx_targ_isa_relocs.c     */
+   dyn_get_ISA_RELOC_SUBSET_info_tab_sz,     /* xxx_targ_isa_relocs.c     */
+   dyn_get_ISA_RELOC_max_static_virtual_id_core_subset,/* xxx_targ_isa_relocs.c */
+   dyn_set_ISA_RELOC_dynamic_reloc_offset,   /* xxx_targ_isa_relocs.c     */
+
+   dyn_get_ISA_BINUTILS_info_tab,            /* xxx_targ_isa_binutils.c   */
+   dyn_get_ISA_BINUTILS_info_tab_sz,         /* xxx_targ_isa_binutils.c   */
+
 };
 
 /* Exporting global pointer on static internal structure.             */

@@ -179,6 +179,7 @@ gen_util_file_type_last = gen_util_file_type_dyn_hfile,
 #define FNAME_ISA_DECODE            FNAME_ISA "decode"
 #define FNAME_ISA_PARSE             FNAME_ISA "parse"
 #define FNAME_ISA_RELOCS            FNAME_ISA "relocs"
+#define FNAME_ISA_BINUTILS          FNAME_ISA "binutils"
 #define FNAME_ABI_PROPERTIES        FNAME_ABI "properties"
 #define FNAME_CG_TOP_MULTI          FNAME_CG  "top_multi"
 
@@ -215,6 +216,8 @@ gen_util_file_type_last = gen_util_file_type_dyn_hfile,
 #define FNAME_STUB_ISA_PARSE        FNAME_STUB  FNAME_ISA_PARSE
 #define FNAME_TARG_ISA_RELOCS       FNAME_TARG  FNAME_ISA_RELOCS
 #define FNAME_STUB_ISA_RELOCS       FNAME_STUB  FNAME_ISA_RELOCS
+#define FNAME_TARG_ISA_BINUTILS     FNAME_TARG  FNAME_ISA_BINUTILS
+#define FNAME_STUB_ISA_BINUTILS     FNAME_STUB  FNAME_ISA_BINUTILS
 #define FNAME_TARG_ABI_PROPERTIES   FNAME_TARG  FNAME_ABI_PROPERTIES
 #define FNAME_STUB_ABI_PROPERTIES   FNAME_STUB  FNAME_ABI_PROPERTIES
 #define FNAME_TARG_CG_TOP_MULTI     FNAME_TARG  FNAME_CG_TOP_MULTI

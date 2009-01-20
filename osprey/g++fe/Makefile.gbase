@@ -196,6 +196,9 @@ TARG_LIBIBERTY_DIR      = $(TARGDIR)/libiberty
 TARG_GNU_DIR		= $(TARGDIR)/gccfe/gnu
 TARG_GCCFE_DIR          = $(TARGDIR)/gccfe
 
+TARGINFO_PARSER_INC_DIR	  = $(BUILD_TOT)/targinfo/parser/inc
+LIBAIR_DIR                = $(BUILD_TOT)/libair/air
+
 # These are the directories in which to look for source files.
 
 SRC_DIRS =		\
@@ -232,6 +235,8 @@ INC_DIRS =		\
   $(TARG_TARG_INFO_DIR) \
   $(GNU_COMMON_DIR)/include \
   $(TARG_GCCFE_DIR)	\
+  $(TARGINFO_PARSER_INC_DIR) \
+  $(LIBAIR_DIR)         \
   .
 
 #----------------------------------------------------------------------
@@ -291,7 +296,10 @@ COMMON_COM_CXX_SRCS =	\
   wn_util.cxx		\
   wutil.cxx		\
   xstats.cxx            \
-  loader.cxx		\
+  dll_loader.cxx        \
+  loader.cxx            \
+  isa_loader.cxx        \
+  lai_loader.cxx        \
   extension_intrinsic.cxx \
   dyn_dll_api_access.cxx \
   dyn_isa_api_access.cxx \

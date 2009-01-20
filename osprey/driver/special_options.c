@@ -1206,7 +1206,7 @@ add_special_options (void)
 	  }
 
 	  if (!is_toggled(cppundef)) {
-	    if (proc == PROC_stxp70_v3 || proc == PROC_stxp70_v3_ext) {
+	    if (proc == PROC_stxp70_v3) {
               flag = add_string_option(O_D, "__stxp70__");
 	      prepend_option_seen (flag);
  	      flag = add_string_option(O_D, "__STXP70__");

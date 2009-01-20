@@ -858,6 +858,7 @@ Check_Target ( void )
     case PROC_stxp70_v4_dual_arith:
     case PROC_stxp70_v4_single:
     case PROC_stxp70_v4_dual:
+      proc = UNDEFINED; /* [HC] to prevent warning emission in toggle if proc==PROC_stxp70_v3 */
       switch ((corecfg1 & (3<<10))>>10) {
 	case 0x1: /* v4 dual issue, single core ALU */
 	  if (bundlingas!=FALSE) { /* in combination with --no-bundle ? */
@@ -912,7 +913,7 @@ Check_Target ( void )
    */
     if (proc == UNDEFINED || proc == PROC_stxp70_v3) {
       proc = UNDEFINED; /* [HC] to prevent warning emission in toggle if proc==PROC_stxp70_v3 */
-      toggle(&proc, PROC_stxp70_v3_ext);
+      toggle(&proc, PROC_stxp70_v3);
     }
   
     /*
@@ -935,12 +936,7 @@ Check_Target ( void )
     toggle(&proc, PROC_stxp70_v3);
     /* fallthru stxp70 default. */
   case PROC_stxp70_v3:
-  case PROC_stxp70_v3_ext:
-    if (proc == PROC_stxp70_v3) {
-       flag = add_new_option("-TARG:proc=stxp70_v3");
-    } else if (proc == PROC_stxp70_v3_ext) {
-       flag = add_new_option("-TARG:proc=stxp70_v3_ext");
-    }
+    flag = add_new_option("-TARG:proc=stxp70_v3");
     if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4/lib"))) {
       ptr[7] = '3';
       set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
@@ -1200,7 +1196,7 @@ Check_Target ( void )
 	toggle ( &isa, opt_val );
 	break;
       case ABI_STxP70_fpx:
-	opt_val = ISA_stxp70_v3_ext;
+	opt_val = ISA_stxp70_v3;
 	toggle ( &isa, opt_val );
 	break;
       case ABI_IA32:

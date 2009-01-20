@@ -2222,6 +2222,8 @@ main (INT argc, char **argv)
 
   Init_Operator_To_Opcode_Table();
 
+  be_debug();
+
 #ifdef TARG_ST
   //TB: initialized mtypes and builtins for extensions 
   Initialize_Extension_Loader ();
@@ -2244,8 +2246,6 @@ main (INT argc, char **argv)
 //     exit(0);
   }
 #endif
-  be_debug();
-
 
   MEM_POOL_Push (&MEM_src_pool);
   MEM_POOL_Push (&MEM_src_nz_pool);

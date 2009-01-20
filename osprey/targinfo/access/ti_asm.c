@@ -543,6 +543,7 @@ UINT64 TI_ASM_Get_Bundle_Reloc_Value(
 TOP TI_ASM_Unpack_Inst(
   const ISA_PACK_INST *pinst,
   ISA_EXEC_UNIT ex_unit, 
+  ISA_DECODE_INST decodeinst,
   INT64 *result, 
   INT64 *opnd,
   BOOL xlate_pseudo)
@@ -558,7 +559,7 @@ TOP TI_ASM_Unpack_Inst(
 
   /* Decode the instruction opcode.
    */
-  topcode = ISA_Decode_Inst(pinst, ex_unit);
+  topcode = decodeinst(pinst, ex_unit);
   if (topcode == TOP_UNDEFINED) return topcode;
 
   /* Unpack the raw operands and results.

@@ -41,7 +41,10 @@ extern "C" {
 #include "tree.h"
 }
 #include "dyn_dll_api_access.h"
+#include "dll_loader.h"
 #include "loader.h"
+#include "isa_loader_api.h"
+#include "lai_loader_api.h"
 #include "wfe_loader.h"
 #include "tracing.h"
 #include "errors.h"
@@ -67,7 +70,6 @@ extern "C" {
 #include "register_preg.h"
 #endif
 //TB: put internal data type def in common with the lai loader
-#include "loader_internal.h"
 #ifdef TARGET_DUMP_INFO
 static FILE *dumpinfofile;
 #endif
@@ -188,7 +190,7 @@ void WFE_Add_Builtins(void) {
   if (!Extension_Is_Present) {
     return;
   }
-  Extension_dll_t *extension_tab = (Extension_dll_t *)wfe_ext_info_table->dll_tab;
+  Extension_dll_t *extension_tab = Get_Extension_dll_tab( );
 
   FmtAssert (extension_tab != NULL,
 	     ("Extension instance not found"));
@@ -196,7 +198,7 @@ void WFE_Add_Builtins(void) {
   for (i=0; i<wfe_ext_info_table->nb_ext; i++) {
     if (wfe_ext_info_table->trace_on) {
       fprintf(TFile, "Extension '%s': Adding gcc builtins\n",
-	      extension_tab[i].dllname);
+	      extension_tab[i].handler->dllname);
     }
     WFE_Add_Builtins_dll(&extension_tab[i]);
   }
@@ -286,7 +288,7 @@ void WFE_Init_Loader(void)
 
   if (Extension_Is_Present) {
     BOOL verbose = wfe_ext_info_table->trace_on;
-    Extension_dll_t *extension_tab = (Extension_dll_t *)wfe_ext_info_table->dll_tab;
+    Extension_dll_t *extension_tab = Get_Extension_dll_tab( );
     FmtAssert (extension_tab != NULL,
 	       ("Extension instance not found"));
     nb_ext_mtypes     = 0;
@@ -524,7 +526,9 @@ static void Gccfe_Initialize_Extension_Loader () {
  // Allocate and initialize wfe specific extension table
   wfe_ext_info_table = TYPE_MEM_POOL_ALLOC_N(Lai_Loader_Info_t, Malloc_Mem_Pool, 1);
   // Load extension dlls and count extension specific mtypes and intrinsics
-  Load_Extension_dlls(&extension_tab, &(wfe_ext_info_table->nb_ext), verbose);
+  Load_Extension_dlls(verbose);
+  extension_tab = Get_Extension_dll_tab( );
+  wfe_ext_info_table->nb_ext = Get_Extension_dll_count( );
   wfe_ext_info_table->trace_on  = verbose;
   int extension_count = wfe_ext_info_table->nb_ext;
   const EXTENSION_HighLevel_Info **ext_tab;
@@ -532,8 +536,6 @@ static void Gccfe_Initialize_Extension_Loader () {
   for (i=0; i<extension_count; i++) {
     ext_tab[i] = extension_tab[i].hooks;
   }
-
-  wfe_ext_info_table->dll_tab   = extension_tab;
 
   if (wfe_ext_info_table->trace_on) {
     fprintf(TFile,"%s Running Targinfo Extension Loader\n%s", DBar, DBar);
@@ -552,7 +554,7 @@ static void Gccfe_Initialize_Extension_Loader () {
   for (i=0; i < extension_count; i++) {
 
     // Get ISA Extension description accessor
-    wfe_ext_info_table->ISA_tab[i] = Generate_EXTENSION_ISA_Info(&extension_tab[i], wfe_ext_info_table->trace_on);
+    wfe_ext_info_table->ISA_tab[i] = Generate_EXTENSION_ISA_Info(extension_tab[i].handler, wfe_ext_info_table->trace_on);
 
     wfe_ext_info_table->base_REGISTER_CLASS[i] = rc_max+1;
     int rc_in_ext    = wfe_ext_info_table->ISA_tab[i]->get_ISA_REGISTER_CLASS_tab_sz();

@@ -1,7 +1,7 @@
 
 /* 
 
-  Copyright (C) 2006 ST Microelectronics, Inc.  All Rights Reserved. 
+  Copyright (C) 2008 ST Microelectronics, Inc.  All Rights Reserved. 
 
   This program is free software; you can redistribute it and/or modify it 
   under the terms of version 2 of the GNU General Public License as 
@@ -37,8 +37,8 @@
  *
  */
 
-#ifndef _DYN_TARG_ISA_PACK_H_
-#define _DYN_TARG_ISA_PACK_H_
+#ifndef _DYN_TARG_ISA_BINUTILS_H_
+#define _DYN_TARG_ISA_BINUTILS_H_
 
 #ifndef DYNAMIC_CODE_GEN
 #error "### DYNAMIC_CODE_GEN not defined\n"
@@ -53,7 +53,7 @@
  * Playing with C/C++ proprecessor. Eventually
  * we've got the following command line:
  *
- * #include "xxx_targ_isa_pack.h"
+ * #include "xxx_targ_isa_binutils.h"
  *
  * where xxx stands for the actual extension name.
  *
@@ -62,16 +62,16 @@
 #define  cvt_to_string(a)                       #a
 #define  str_concat(a,b)                        cvt_to_string(a##b)
 
-#define  file_dyn_targ_isa_pack(extname)        str_concat(extname,_targ_isa_pack.h)
-#define  file_name_dyn_op                       file_dyn_targ_isa_pack(EXTN)
+#define  file_dyn_targ_isa_binutils(extname)    str_concat(extname,_targ_isa_binutils.h)
+#define  file_name_dyn_reg                      file_dyn_targ_isa_binutils(EXTN)
 
-#include "targ_isa_pack.h"
-#include file_name_dyn_op                       /* Here is it! */
+#include "targ_isa_binutils.h"
+#include file_name_dyn_reg                      /* Here is it! */
 
-#undef   file_name_dyn_op                       /* Safer!      */
-#undef   file_dyn_targ_isa_pack                 /* Safer!      */
+#undef   file_name_dyn_reg                      /* Safer!      */
+#undef   file_dyn_targ_isa_binutils             /* Safer!      */
 #undef   cvt_to_string                          /* Safer!      */
 #undef   str_concat                             /* Safer!      */
 
-#endif /* _DYN_TARG_ISA_PACK_H_ */
+#endif /* _DYN_TARG_ISA_BINUTILS_H_ */
 

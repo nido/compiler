@@ -100,7 +100,6 @@ static TOP TOP_count_limit = TOP_static_count;
 static TOP TOP_count_limit = TOP_dyn_count;
 #endif
 
-
 /* ====================================================================
  *
  * This section handles bundle packing data types
@@ -440,6 +439,23 @@ void Instruction_Exec_Unit_Group(ISA_EXEC_UNIT_TYPE unit_type, ... )
       unit_type->members[(int)opcode] = true;
   }
   va_end(ap);  
+}
+
+/////////////////////////////////////
+void ISA_BUNDLE_Dyn_Set_Slot_Count ( int slot_count ) 
+/////////////////////////////////////
+//  See interface description.
+/////////////////////////////////////
+{
+  int isa_subset;
+  
+  if (Is_Static_Code()) {
+    fprintf(stderr, "### Error: ISA_BUNDLE_Dyn_Set_Slot_Count reserved for dynamic reconfigurability\n");
+    exit(EXIT_FAILURE);
+  }
+  for(isa_subset = ISA_SUBSET_MIN; isa_subset <= ISA_SUBSET_MAX; isa_subset++) {
+    isa_subset_slots[isa_subset] = slot_count;
+  }
 }
 
 /////////////////////////////////////

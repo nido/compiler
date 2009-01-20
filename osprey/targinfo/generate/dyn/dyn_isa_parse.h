@@ -37,8 +37,8 @@
  *
  */
 
-#ifndef _DYN_TARG_ISA_PACK_H_
-#define _DYN_TARG_ISA_PACK_H_
+#ifndef _DYN_TARG_ISA_PARSE_H_
+#define _DYN_TARG_ISA_PARSE_H_
 
 #ifndef DYNAMIC_CODE_GEN
 #error "### DYNAMIC_CODE_GEN not defined\n"
@@ -53,7 +53,7 @@
  * Playing with C/C++ proprecessor. Eventually
  * we've got the following command line:
  *
- * #include "xxx_targ_isa_pack.h"
+ * #include "xxx_targ_isa_parse.h"
  *
  * where xxx stands for the actual extension name.
  *
@@ -62,16 +62,16 @@
 #define  cvt_to_string(a)                       #a
 #define  str_concat(a,b)                        cvt_to_string(a##b)
 
-#define  file_dyn_targ_isa_pack(extname)        str_concat(extname,_targ_isa_pack.h)
-#define  file_name_dyn_op                       file_dyn_targ_isa_pack(EXTN)
+#define  file_dyn_targ_isa_parse(extname)       str_concat(extname,_targ_isa_parse.h)
+#define  file_name_dyn_parse                    file_dyn_targ_isa_parse(EXTN)
 
-#include "targ_isa_pack.h"
-#include file_name_dyn_op                       /* Here is it! */
+#include "targ_isa_parse.h"
+#include file_name_dyn_parse                    /* Here is it! */
 
-#undef   file_name_dyn_op                       /* Safer!      */
-#undef   file_dyn_targ_isa_pack                 /* Safer!      */
+#undef   file_name_dyn_parse                    /* Safer!      */
+#undef   file_dyn_targ_isa_parse                /* Safer!      */
 #undef   cvt_to_string                          /* Safer!      */
 #undef   str_concat                             /* Safer!      */
 
-#endif /* _DYN_TARG_ISA_PACK_H_ */
+#endif /* _DYN_TARG_ISA_PARSE_H_ */
 

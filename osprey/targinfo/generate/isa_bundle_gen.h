@@ -85,6 +85,10 @@
 //  void Stop (int slot_index)
 //      The <slot_index> of the current bundling type is a stop bit.
 //
+//  void ISA_BUNDLE_Dyn_Set_Slot_Count ( int slot_count ) 
+//      When Dynamic reconfiguration is activated, allows to set all dynamic
+//      subsets the <slot_count>.
+//
 /////////////////////////////////////
 //
 //  TYPE ISA_BUNDLE_PACK_INFO
@@ -147,6 +151,8 @@ extern void ISA_Bundle_Type_Create ( const char* name,
                                      unsigned long long pattern);
 extern void Slot (int slot_index, ISA_EXEC_UNIT_TYPE type);
 extern void Stop (int slot_index);
+
+extern void ISA_BUNDLE_Dyn_Set_Slot_Count (int slot_count);
 
 extern void ISA_Bundle_End(void);
 

@@ -74,9 +74,6 @@ using std::vector;
 #include "targ_isa_operands.h"
 #endif                  
 
-// TODO: adapt for dynamic case.
-// We have just modified TOP_count into TOP_count_limit
-
 // In following loops, we iterate on the number of
 // TOP. This number differs following we generate
 // static or dynamic TOP.
@@ -577,14 +574,19 @@ void ISA_Pack_End(void)
   const char *tabname;
 
   for (err = false, top = 0; top < TOP_count_limit; ++top) {
+    bool is_multi = TOP_is_multi((TOP)top);
     bool is_dummy = TOP_is_dummy((TOP)top);
     bool is_simulated = TOP_is_simulated((TOP)top);
     if (!top_specified[top]) {
-      if (!is_simulated && !is_dummy) {
+      if (!is_multi && !is_simulated && !is_dummy) {
 	fprintf(stderr, "### Error: no pack specification for %s\n",
 		        TOP_Name((TOP)top));
 	err = true;
       }
+    } else if (!gen_static_code && is_multi) {
+      fprintf(stderr, "### Error: pack specification for multi op %s\n",
+		      TOP_Name((TOP)top));
+      err = true;
     } else if (is_dummy) {
       fprintf(stderr, "### Error: pack specification for dummy op %s\n",
 		      TOP_Name((TOP)top));
@@ -790,19 +792,42 @@ void ISA_Pack_End(void)
   if(gen_static_code) {
     fprintf(cfile, "\nBE_EXPORTED const ISA_PACK_OPND_INFO * ISA_PACK_OPND_info = %s;\n\n",tabname);
     fprintf(hfile, "\nBE_EXPORTED extern const ISA_PACK_OPND_INFO * ISA_PACK_OPND_info;\n");
+    fprintf(hfile, "\n#define ISA_PACK_OPND_INFO_STATIC_MAX (%d)\n", index);
     fprintf(efile, "ISA_PACK_OPND_info\n");
   } else {
-  // TODO: dynamic case
+    fprintf(sfile, "\nBE_EXPORTED const ISA_PACK_OPND_INFO * ISA_PACK_OPND_info = 0;\n\n");
+    fprintf(cfile,
+	    "\n"
+	    "const ISA_PACK_OPND_INFO *dyn_get_ISA_PACK_OPND_info_tab ( void )\n"
+	    "{  return %s;\n"
+	    "}\n"
+	    "\n",
+	    tabname);
+
+    fprintf(cfile,
+	    "\n"
+	    "const mUINT32 dyn_get_ISA_PACK_OPND_info_tab_sz ( void )\n"
+	    "{  return %d;\n"
+	    "}\n"
+	    "\n",
+	    index);
+
+    fprintf(hfile,"\nextern const ISA_PACK_OPND_INFO *dyn_get_ISA_PACK_OPND_info_tab ( void );\n");
+
+    fprintf(hfile,"\nextern const mUINT32 dyn_get_ISA_PACK_OPND_info_tab_sz ( void );\n");
   }
-  
 
   // select the ISA_PACK_OPND_info_index based on the number of packing types.
+#if 1 /* Dealing with extension dynamic loading, mUNIT16 is always necessary */
+  info_index_type = "mUINT16";
+#else  
   if (index < 1<<8) {
     info_index_type = "mUINT8";
   } else {
     assert (index < 1<<16);
     info_index_type = "mUINT16";
   }
+#endif
 
   /*
    * Building ISA_PACK_index_static and 
@@ -835,12 +860,22 @@ void ISA_Pack_End(void)
 
   if(gen_static_code) {
     fprintf(efile, "ISA_PACK_OPND_info_index\n");
-    fprintf(cfile,"BE_EXPORTED %s * ISA_PACK_OPND_info_index = (%s*) %s;\n\n",info_index_type,info_index_type,tabname);
-    fprintf(hfile,"BE_EXPORTED extern %s * ISA_PACK_OPND_info_index;\n\n",info_index_type);
+    fprintf(cfile, "BE_EXPORTED const %s * ISA_PACK_OPND_info_index = (%s*) %s;\n\n",info_index_type,info_index_type,tabname);
+    fprintf(hfile, "BE_EXPORTED extern const %s * ISA_PACK_OPND_info_index;\n\n",info_index_type);
+    fprintf(hfile, "#define ISA_PACK_OPND_INFO_INDEX_STATIC_MAX (%d)\n\n", TOP_count_limit);
    } else {
-     // TODO for the dynamic case.
-   }
+    fprintf(sfile, "\nBE_EXPORTED const %s * ISA_PACK_OPND_info_index = 0;\n\n",info_index_type);
+    fprintf(cfile,
+	    "\n"
+	    "const %s *dyn_get_ISA_PACK_OPND_info_index_tab ( void )\n"
+	    "{  return %s;\n"
+	    "}\n"
+	    "\n",
+	    info_index_type,
+	    tabname);
 
+    fprintf(hfile,"\nextern const %s *dyn_get_ISA_PACK_OPND_info_index_tab ( void );\n",info_index_type);
+   }
 
   /*
    * Building ISA_PACK_info_static and 
@@ -884,9 +919,19 @@ void ISA_Pack_End(void)
   if(gen_static_code) {
     fprintf(cfile, "\nBE_EXPORTED const ISA_PACK_INFO * ISA_PACK_info = %s;\n\n",tabname);
     fprintf(hfile, "\nBE_EXPORTED extern const ISA_PACK_INFO * ISA_PACK_info;\n");
+    fprintf(hfile, "\n#define ISA_PACK_INFO_STATIC_MAX (%d)\n", TOP_count_limit);
     fprintf(efile, "ISA_PACK_info\n");
   } else {
-  // TODO: dynamic case
+    fprintf(sfile, "\nBE_EXPORTED const ISA_PACK_INFO * ISA_PACK_info = 0;\n\n");
+    fprintf(cfile,
+	    "\n"
+	    "const ISA_PACK_INFO *dyn_get_ISA_PACK_info_tab ( void )\n"
+	    "{  return %s;\n"
+	    "}\n"
+	    "\n",
+	    tabname);
+
+    fprintf(hfile,"\nextern const ISA_PACK_INFO *dyn_get_ISA_PACK_info_tab ( void );\n");
   }
 
   tabname = gen_static_code? "ISA_PACK_inst_words_static" :
@@ -898,8 +943,8 @@ void ISA_Pack_End(void)
   for (top = 0; top < TOP_count_limit ; ++top ) {
     op_assembly *op_pack = op_packs[top];
 
-    if(op_pack == NULL && !TOP_is_dummy(top) && !TOP_is_simulated(top)) {
-      fprintf(stderr,"### Warning: TOP_%s: no coding info specified\n",TOP_Name(top));
+    if(op_pack == NULL && !TOP_is_dummy(top) && !TOP_is_simulated(top) && !TOP_is_multi(top)) {
+      fprintf(stderr,"### Error: TOP_%s: no coding info specified\n",TOP_Name(top));
       exit(-1);
     }
 
@@ -918,6 +963,7 @@ void ISA_Pack_End(void)
   if(gen_static_code) {
     fprintf(efile, "ISA_PACK_inst_words\n");
     fprintf(hfile, "\nBE_EXPORTED extern const mUINT8 *ISA_PACK_inst_words;\n");
+    fprintf(hfile, "\n#define ISA_PACK_INST_WORDS_MAX (%d)\n", index);
     fprintf(cfile, "\nconst mUINT8 *ISA_PACK_inst_words = %s;\n\n",tabname);
   }
   else {
@@ -932,14 +978,6 @@ void ISA_Pack_End(void)
 
     fprintf(hfile,"\nextern const mUINT8 *dyn_get_ISA_PACK_inst_words_tab ( void );\n");
 
-    fprintf(sfile, 
-	    "/*\n"
-	    " * Exported routine\n"
-	    " */\n"
-	    "\nvoid\nISA_PACK_Initialize_Stub( void )\n{\n"
-	    "  ISA_PACK_inst_words = dyn_get_ISA_PACK_inst_words_tab();\n"
-	    "  return;\n"
-	    "}\n");
   }
 
   fprintf(hfile,
@@ -1015,12 +1053,12 @@ void ISA_Pack_End(void)
 	    isa_pack_adj_end);
   }   // if(gen_static_code)
 
-  if(gen_static_code)
-    fprintf(efile, "ISA_PACK_adj_info\n");
+  tabname = gen_static_code? "ISA_PACK_adj_info_static" :
+                             "ISA_PACK_adj_info_dynamic";
 
-  fprintf(cfile, "\nconst ISA_PACK_ADJ_INFO ISA_PACK_adj_info[] = {\n"
+  fprintf(cfile, "\nconst ISA_PACK_ADJ_INFO %s[] = {\n"
 		 "  { { %2d, %2d }, -1 },  /* [ 0]: ISA_PACK_ADJ_END */\n",
-		 isa_pack_adj_end, isa_pack_adj_end);
+		 tabname, isa_pack_adj_end, isa_pack_adj_end);
   index = 1;
   for ( isi = all_packs.begin(); isi != all_packs.end(); ++isi ) {
     ISA_PACK_TYPE curr_ptype = *isi;
@@ -1051,6 +1089,35 @@ void ISA_Pack_End(void)
   fprintf(cfile, "};\n");
 
   if(gen_static_code) {
+    fprintf(efile, "ISA_PACK_adj_info\n");
+    fprintf(hfile, "\nBE_EXPORTED extern const ISA_PACK_ADJ_INFO * ISA_PACK_adj_info;\n");
+    fprintf(hfile, "\n#define ISA_PACK_ADJ_INFO_STATIC_MAX (%d)\n", index);
+    fprintf(cfile, "\nconst ISA_PACK_ADJ_INFO * ISA_PACK_adj_info = %s;\n\n",tabname);
+  } else {
+    fprintf(sfile, "\nBE_EXPORTED const ISA_PACK_ADJ_INFO *ISA_PACK_adj_info = 0;\n\n");
+
+    fprintf(cfile,
+	    "\n"
+	    "const ISA_PACK_ADJ_INFO *dyn_get_ISA_PACK_adj_info_tab ( void )\n"
+	    "{  return %s;\n"
+	    "}\n"
+	    "\n",
+	    tabname);
+
+    fprintf(cfile,
+	    "\n"
+	    "const mUINT32 dyn_get_ISA_PACK_adj_info_tab_sz ( void )\n"
+	    "{  return %d;\n"
+	    "}\n"
+	    "\n",
+	    index);
+
+    fprintf(hfile,"\nextern const ISA_PACK_ADJ_INFO *dyn_get_ISA_PACK_adj_info_tab ( void );\n");
+
+    fprintf(hfile,"\nextern const mUINT32 dyn_get_ISA_PACK_adj_info_tab_sz ( void );\n");
+  }
+
+  if(gen_static_code) {
     fprintf(hfile, 
      "\ninline INT ISA_PACK_ADJ_INFO_Code(const ISA_PACK_ADJ_INFO *info, BOOL invert)\n"
      "{\n"
@@ -1063,10 +1130,13 @@ void ISA_Pack_End(void)
      "  return info->opndidx;\n"
      "}\n");
 
-    fprintf(efile, "ISA_PACK_adj_info_index\n");
   }
 
-  fprintf(cfile, "\nconst mUINT8 ISA_PACK_adj_info_index[] = {\n");
+  tabname = gen_static_code? "ISA_PACK_adj_info_index_static" :
+                             "ISA_PACK_adj_info_index_dynamic";
+
+  fprintf(cfile, "\nconst mUINT8 %s[] = {\n",tabname);
+
   for (top = 0; top < TOP_count_limit; ++top ) {
     op_assembly *op_pack = op_packs[top];
     fprintf(cfile, "  %2d,  /* %s */\n",
@@ -1076,11 +1146,30 @@ void ISA_Pack_End(void)
   fprintf(cfile, "};\n");
 
   if(gen_static_code) {
+    fprintf(efile, "ISA_PACK_adj_info_index\n");
+    fprintf(hfile, "\nBE_EXPORTED extern const mUINT8 * ISA_PACK_adj_info_index;\n");
+    fprintf(hfile, "\n#define ISA_PACK_ADJ_INFO_INDEX_STATIC_MAX (%d)\n", TOP_count_limit);
+    fprintf(cfile, "\nconst mUINT8 * ISA_PACK_adj_info_index = %s;\n\n",tabname);
+  } else {
+    fprintf(sfile, "\nBE_EXPORTED const mUINT8 *ISA_PACK_adj_info_index = 0;\n\n");
+    fprintf(cfile,
+	    "\n"
+	    "const mUINT8 *dyn_get_ISA_PACK_adj_info_index_tab ( void )\n"
+	    "{  return %s;\n"
+	    "}\n"
+	    "\n",
+	    tabname);
+
+    fprintf(hfile,"\nextern const mUINT8 *dyn_get_ISA_PACK_adj_info_index_tab ( void );\n");
+
+  }
+  
+  if(gen_static_code) {
     fprintf(hfile, 
       "\ninline const ISA_PACK_ADJ_INFO *ISA_PACK_Adj_Info(TOP topcode)\n"
       "{\n"
-      "  TARGINFO_EXPORTED extern const ISA_PACK_ADJ_INFO ISA_PACK_adj_info[];\n"
-      "  TARGINFO_EXPORTED extern const mUINT8 ISA_PACK_adj_info_index[];\n"
+      "  TARGINFO_EXPORTED extern const ISA_PACK_ADJ_INFO * ISA_PACK_adj_info;\n"
+      "  TARGINFO_EXPORTED extern const mUINT8 * ISA_PACK_adj_info_index;\n"
       "  INT index = ISA_PACK_adj_info_index[(INT)topcode];\n"
       "  return index == 0 ? (ISA_PACK_ADJ_INFO*)0 : &ISA_PACK_adj_info[index];\n"
       "}\n");
@@ -1152,6 +1241,20 @@ void ISA_Pack_End(void)
        "}\n"
        "\n"
        );
+  } else {
+    fprintf(sfile, 
+	    "/*\n"
+	    " * Exported routine\n"
+	    " */\n"
+	    "\nvoid\nISA_PACK_Initialize_Stub( void )\n{\n"
+            "  ISA_PACK_OPND_info = dyn_get_ISA_PACK_OPND_info_tab();\n"
+            "  ISA_PACK_OPND_info_index = dyn_get_ISA_PACK_OPND_info_index_tab();\n"
+            "  ISA_PACK_info = dyn_get_ISA_PACK_info_tab();\n"
+	    "  ISA_PACK_inst_words = dyn_get_ISA_PACK_inst_words_tab();\n"
+	    "  ISA_PACK_adj_info = dyn_get_ISA_PACK_adj_info_tab();\n"
+	    "  ISA_PACK_adj_info_index = dyn_get_ISA_PACK_adj_info_index_tab();\n"
+	    "  return;\n"
+	    "}\n");
   }
 
   Emit_Footer (hfile);

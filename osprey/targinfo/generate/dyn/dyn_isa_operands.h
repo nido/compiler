@@ -69,7 +69,7 @@
 #include file_name_dyn_op                       /* Here is it! */
 
 #undef   file_name_dyn_op                       /* Safer!      */
-#undef   file_dyn_targ_isa_lits                 /* Safer!      */
+#undef   file_dyn_targ_isa_operands             /* Safer!      */
 #undef   cvt_to_string                          /* Safer!      */
 #undef   str_concat                             /* Safer!      */
 

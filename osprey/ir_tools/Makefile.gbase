@@ -147,6 +147,9 @@ COMMON_COM_DIR= $(BUILD_TOT)/common/com
 
 COMMON_UTIL_DIR= $(BUILD_TOT)/common/util
 
+COMMON_TARGINFO_PARSER_INC_DIR= $(BUILD_TOT)/targinfo/parser/inc
+LIBAIR_DIR = $(BUILD_TOT)/libair/air
+
 LIBINSTRC_DIR=$(BUILD_TOT)/instrumentation/libinstrC
 
 SRC_DIRS =              \
@@ -171,7 +174,9 @@ INC_DIRS =		\
 	$(COMMON_TARGINFO_ISA_DIR) \
 	$(TARG_TARG_INFO_DIR) \
 	$(COMMON_TARG_INFO_ACCESS_DIR) \
-	$(TARG_GCCFE_DIR)
+	$(TARG_GCCFE_DIR) \
+	$(COMMON_TARGINFO_PARSER_INC_DIR) \
+	$(LIBAIR_DIR)
 
 LDIRT = ir_a2b ir_sel
 
@@ -230,6 +235,8 @@ COMMON_COM_CXX_SRC =	\
 	wutil.cxx	\
 	xstats.cxx	\
 	extension_intrinsic.cxx \
+	dll_loader.cxx  \
+	isa_loader.cxx  \
 	loader.cxx      \
 	dyn_dll_api_access.cxx \
 	dyn_isa_api_access.cxx \

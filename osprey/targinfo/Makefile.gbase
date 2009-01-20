@@ -167,8 +167,9 @@ LDIRT += *.[ch] *.Exported isa_gen$(BEXE) isa_subset_gen$(BEXE)		\
 	isa_registers_gen$(BEXE) isa_enums_gen$(BEXE)			\
 	isa_lits_gen$(BEXE) abi_properties_gen$(BEXE) proc_gen$(BEXE)	\
 	proc_properties_gen$(BEXE) isa_bundle_gen$(BEXE)		\
-	isa_syntax_gen$(BEXE) isa_relocs_gen$(BEXE) si_gen.so ii_files	\
-	so_locations si_gen.a *.o
+	isa_syntax_gen$(BEXE) isa_relocs_gen$(BEXE)                     \
+	isa_binutils_gen$(BEXE) si_gen.so ii_files so_locations         \
+	si_gen.a *.o
 
 
 #----------------------------------------------------------------------
@@ -203,7 +204,7 @@ endif # ST200
 
 ifeq ($(BUILD_TARGET), STxP70)
 LDIRT += stxp70_v3_si_gen$(BEXE)
-LDIRT += stxp70_v3_ext_si_gen$(BEXE)
+#LDIRT += stxp70_v3_ext_si_gen$(BEXE)
 LDIRT += stxp70_v4_single_si_gen$(BEXE)
 LDIRT += stxp70_v4_dual_si_gen$(BEXE)
 LDIRT += stxp70_v4_dual_arith_si_gen$(BEXE)
@@ -215,16 +216,16 @@ SO_TARGETS = libstxp70.a
 endif
 # building windows dll
 ifeq ($(DSO_MODE),DLL)
-SO_TARGETS = stxp70_v3.dll stxp70_v3_ext.dll stxp70_v4_single.dll stxp70_v4_dual.dll stxp70_v4_dual_arith.dll libtarginfo.dll
+SO_TARGETS = stxp70_v3.dll  stxp70_v4_single.dll stxp70_v4_dual.dll stxp70_v4_dual_arith.dll libtarginfo.dll
 endif
 # building "unix" so library
 ifeq ($(DSO_MODE),SO)
-SO_TARGETS = stxp70_v3.so stxp70_v3_ext.so stxp70_v4_single.so stxp70_v4_dual.so stxp70_v4_dual_arith.so
+SO_TARGETS = stxp70_v3.so  stxp70_v4_single.so stxp70_v4_dual.so stxp70_v4_dual_arith.so
 endif
 
 LDIRT += $(SO_TARGETS)
 
-BUILTINS_INC_TARGETS = builtins_fpx.h builtins_model_sx.h  builtins_sx.h builtins_model_common.h  builtins_model_x3.h  builtins_x3.h fpx.h x3.h sx.h sx_compatibility.h builtins_sx_compatibility.h
+BUILTINS_INC_TARGETS = builtins_fpx.h builtins_model_sx.h  builtins_sx.h builtins_model_common.h  builtins_model_x3.h  builtins_x3.h fpx.h x3.h sx.h sx_compatibility.h builtins_sx_compatibility.h builtins_x3_compatibility.h x3_compatibility.h
 BUILTINS_SRC_TARGETS = builtins_model_x3.c builtins_model_sx.c
 INTRN = ../../targinfo/stxp70/intrn
 
@@ -292,6 +293,14 @@ TARG_INFO_SRCS = \
 	targ_abi_properties.c	\
 	targ_isa_bundle.c	\
 	targ_proc_properties.c
+
+ifeq ($(BUILD_TARGET), STxP70)
+TARG_INFO_SRCS += targ_isa_binutils.c
+endif
+
+ifeq ($(BUILD_TARGET), ST200)
+TARG_INFO_SRCS += targ_isa_binutils.c
+endif
 
 TARG_INFO_HDRS = $(TARG_INFO_SRCS:.c=.h)
 TARG_INFO_HOST_OBJS = $(TARG_INFO_SRCS:.c=.o)
@@ -497,6 +506,7 @@ targ_isa_bundle.Exported: targ_isa_bundle.h
 targ_abi_properties.Exported: targ_abi_properties.h
 targ_proc.Exported: targ_proc.h
 targ_proc_properties.Exported: targ_proc_properties.h
+targ_isa_binutils.Exported: targ_isa_binutils.h
 endif
 
 ## topcode.[ch] ##
@@ -746,10 +756,10 @@ isa_decode_gen$(BEXE): gen_util.o isa_decode_gen.o gen_util.o \
 			build_isa_bundle.o 
 	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
 
-isa_decode_gen.o: isa_decode_gen.cxx isa_decode_gen.h topcode.h gen_util.h
+isa_decode_gen.o: isa_decode_gen.cxx isa_decode_gen.h topcode.h targ_isa_subset.h gen_util.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
-isa_decode.o: isa_decode.cxx isa_decode_gen.h topcode.h targ_isa_bundle.h
+isa_decode.o: isa_decode.cxx isa_decode_gen.h topcode.h targ_isa_bundle.h targ_isa_subset.h
 	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 ## targ_isa_pseudo.[ch] ##
@@ -792,12 +802,12 @@ abi_properties.o: abi_properties.cxx abi_properties_gen.h isa_ext_limits.h
 
 abi_properties_gen.h: targ_isa_registers.h
 
-## targ_isa_print.[ch] && %_targ_isa_parse.pr ##
+## targ_isa_print.[ch] && %_subset_targ_isa_parse.pr ##
 
 targ_isa_parse.o: targ_isa_parse.c air.h parser.h
 targ_isa_parse.c: targ_isa_parse.h
 	@echo # $@: force dependency
-%_targ_isa_parse.pr: targ_isa_print.h
+%_subset_targ_isa_parse.pr: targ_isa_print.h
 	@echo # $@: force dependency
 targ_isa_parse.h: targ_isa_print.h
 	@echo # $@: force dependency
@@ -851,6 +861,34 @@ build_isa_relocs.o: targ_isa_relocs.c
 	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
 
 isa_relocs_gen.h: targ_isa_lits.h targ_isa_subset.h
+
+## targ_isa_binutils.[ch] ##
+
+targ_isa_binutils.o: targ_isa_binutils.c
+targ_isa_binutils.c: targ_isa_binutils.h
+targ_isa_binutils.h: isa_binutils_gen$(BEXE) targ_isa_subset.h
+	$(RUN) ./isa_binutils_gen$(BEXE)
+
+isa_binutils_gen$(BEXE): isa_binutils_gen.o gen_util.o          \
+                         isa_binutils.o build_isa_subset.o      \
+			 build_isa_relocs.o build_isa_pack.o    \
+			 build_isa_operands.o build_topcode.o   \
+			 build_isa_lits.o build_isa_registers.o
+	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
+
+isa_binutils.o: isa_binutils.cxx isa_binutils_gen.h \
+	        targ_isa_subset.h topcode.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+isa_binutils_gen.o: isa_binutils_gen.cxx isa_binutils_gen.h \
+	            targ_isa_subset.h targ_isa_relocs.h \
+		    targ_isa_pack.h targ_isa_operands.h \
+		    targ_isa_lits.h targ_isa_registers.h \
+		    gen_util.h topcode.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+build_isa_binutils.o: targ_isa_binutils.c
+	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
 
 ## targ_isa_bundle.[ch] ##
 
@@ -1170,19 +1208,19 @@ libst220.a : st220.o
 	$(AR) rc $@ $<
 
 PARSER_INPUT_CFILES = \
-	st220_targ_isa_parse.c \
-	st231_targ_isa_parse.c	\
-	st240_targ_isa_parse.c
+	st220_subset_targ_isa_parse.c \
+	st231_subset_targ_isa_parse.c	\
+	st240_subset_targ_isa_parse.c
 endif # ST200
 
 #----------------------------------------------------------------------
 # STxP70
 #----------------------------------------------------------------------
 
-%_targ_isa_parse.c: %_targ_isa_parse.pr $(BUILD_AREA)/gensyn/gensynLINUX$(BEXE)
+%_subset_targ_isa_parse.c: %_subset_targ_isa_parse.pr $(BUILD_AREA)/gensyn/gensynLINUX$(BEXE)
 	$(BUILD_AREA)/gensyn/gensynLINUX$(BEXE) $< -t extension -ac $@
 
-%_targ_isa_parse.o: %_targ_isa_parse.c parser.h type_defs.h defs_exported.h astype.h analyzer.h
+%_subset_targ_isa_parse.o: %_subset_targ_isa_parse.c parser.h type_defs.h defs_exported.h astype.h analyzer.h
 	$(CC) $(CFLAGS) $(TARG_ISA_PARSE_OPTS) -c $< -o $@
 
 ifeq ($(BUILD_TARGET), STxP70)
@@ -1225,12 +1263,11 @@ lib_stxp70_v3.a : stxp70_v3.o
 # Assembly parser files
 #
 PARSER_INPUT_CFILES = \
-	stxp70_v3_ext_fpx_targ_isa_parse.c \
-	stxp70_v3_ext_x3_targ_isa_parse.c  \
-	stxp70_v3_ext_targ_isa_parse.c	\
-	stxp70_v3_targ_isa_parse.c	\
-	stxp70_v4_targ_isa_parse.c	\
-	stxp70_v4_ext_x3_targ_isa_parse.c
+	stxp70_v3_ext_fpx_subset_targ_isa_parse.c \
+	stxp70_v3_ext_x3_subset_targ_isa_parse.c  \
+	stxp70_v3_subset_targ_isa_parse.c	  \
+	stxp70_v4_subset_targ_isa_parse.c	  \
+	stxp70_v4_ext_x3_subset_targ_isa_parse.c
 
 endif # STxP70
 

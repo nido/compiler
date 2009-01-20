@@ -37,8 +37,9 @@
 ///////////////////////////////////// 
 
 #include "topcode.h" 
-#include "isa_decode_gen.h" 
 #include "targ_isa_bundle.h" 
+#include "targ_isa_subset.h"
+#include "isa_decode_gen.h" 
 
 main() 
 { 
@@ -2561,6 +2562,15 @@ main()
 
   Initial_State(ex_unit);
 
+  DecodeEntry(
+    ISA_SUBSET_st220, 32, st220_32_unit, END_ENTRIES
+ );
+  DecodeEntry(
+    ISA_SUBSET_st231, 32, st231_32_unit, END_ENTRIES
+ );
+  DecodeEntry(
+    ISA_SUBSET_st240, 32, st240_32_unit, END_ENTRIES
+ );
   ISA_Decode_End(); 
   return 0; 
 } 

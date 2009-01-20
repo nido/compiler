@@ -89,6 +89,18 @@
 //  void Initial_State(STATE state)
 //	This sets the initial state for the instruction decoder.
 //
+//  const int END_ENTRIES
+//	Marks the end of a decode entry list. See the description for
+//	DecodeEntry() for details.
+//
+//  void DecodeEntry(ISA_SUBSET subset, ...)
+//	Specifies the decode entries for <subset>. Each decode entry is
+//	specified by the pair: int codingwidth, STATE initstate. 
+//      <codingwidth> specifies the encoding width to be decoded. 
+//      <initstate> is the state to start with in the decoding tree.
+//	The list of decoding entries is terminated by passing the 
+//      constant END_ENTRIES for <codingwidth>.
+//
 /////////////////////////////////////
 
 
@@ -106,12 +118,13 @@ extern void ISA_Decode_Begin(const char* archname);
 extern void ISA_Decode_End(void);
 
 typedef struct state *STATE;
-enum { END_TRANSITIONS = -1 };
+enum { END_TRANSITIONS = -1, END_ENTRIES = -1 };
 extern STATE Create_Unit_State(const char *tag, int pos, int width);
 extern STATE Create_Inst_State(const char *tag, int idx, int pos, int width);
 extern void Transitions(STATE state, ...);
 extern void Initial_State(STATE state);
 extern STATE Final(TOP topcode);
+extern void DecodeEntry(ISA_SUBSET subset, ...);
 
 #ifdef __cplusplus
 }

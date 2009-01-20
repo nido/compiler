@@ -203,6 +203,7 @@ extern "C" {
 
 #include "targ_isa_pack.h"
 #include "targ_isa_bundle.h"
+#include "targ_isa_decode.h"
 
 #define TI_ASM_DISASM_ABI_REGS	(0x01)
 #define TI_ASM_DISASM_TRUE_PRED	(0x02)
@@ -261,6 +262,7 @@ extern UINT64 TI_ASM_Get_Bundle_Reloc_Value(
 extern TOP TI_ASM_Unpack_Inst(
   const ISA_PACK_INST *inst,
   ISA_EXEC_UNIT        ex_unit,
+  ISA_DECODE_INST      decodeinst,
   INT64               *result, 
   INT64               *opnd,
   BOOL                 xlate_pseudo

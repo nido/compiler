@@ -1,6 +1,123 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jan 20 10:13:20 CET 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/chauveth/dev-loader-targinfo-gbu
+
+Description:
+------------
+	*  Developments for targinfo loader dedicated to GBU
+
+
+Modified Files:
+---------------
+	M      osprey/be/be/driver.cxx
+	M      osprey/be/be/Makefile.gbase
+	M      osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_registers.cxx
+	M      osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_pack.cxx
+	A  +   osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_decode.cxx
+	A  +   osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_binutils.cxx
+	M      osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_properties.cxx
+	M      osprey/targinfo_ext/template/Makefile.gbase.ext
+	M      osprey/ir_tools/Makefile.gbase
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/phases.c
+	M      osprey/driver/objects.c
+	M      osprey/driver/special_options.c
+	M      osprey/driver/stxp70_options.i
+	A  +   osprey/libair/air/air_loader.h
+	M      osprey/libair/air/air_disasm.c
+	M      osprey/libair/air/Makefile.gbase
+	M      osprey/libair/air/air_services.c
+	M      osprey/libair/air/air_disasm.h
+	A  +   osprey/libair/air/air_loader.cxx
+	M      osprey/libair/air/air_services.h
+	M      osprey/lai/Makefile.gbase
+	M      osprey/gccfe/Makefile.gbase
+	M      osprey/gccfe/wfe_loader.cxx
+	M      osprey/g++fe/Makefile.gbase
+	M      osprey/common/com/dyn_isa_api.h
+	A  +   osprey/common/com/dll_loader.h
+	M      osprey/common/com/lai_loader.cxx
+	M      osprey/common/com/dyn_isa_api_access.h
+	A  +   osprey/common/com/isa_loader.cxx
+	A  +   osprey/common/com/isa_loader.h
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/loader.h
+	A  +   osprey/common/com/isa_loader_api.h
+	M      osprey/common/com/dyn_isa_api_access.cxx
+	M      osprey/common/com/lai_loader_api.h
+	A  +   osprey/common/com/dll_loader.cxx
+	D      osprey/common/com/loader_internal.h
+	M      osprey/targinfo/access/ti_asm.c
+	M      osprey/targinfo/access/ti_asm.h
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.h
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx
+	M      osprey/targinfo/stxp70/proc/proc_properties.cxx
+	M      osprey/targinfo/stxp70/proc/proc.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_dual_arith_si.cxx
+	D      osprey/targinfo/stxp70/proc/stxp70_v3_ext_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx
+	M      osprey/targinfo/stxp70/config/gen_intrinsics.inc
+	M      osprey/targinfo/stxp70/config/config_target.h
+	M      osprey/targinfo/stxp70/config/config_cache_targ.cxx
+	M      osprey/targinfo/stxp70/config/config_elf_targ.cxx
+	M      osprey/targinfo/stxp70/config/targ_elf.h
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+	M      osprey/targinfo/stxp70/be/driver_targ.cxx
+	M      osprey/targinfo/stxp70/intrn/x3.h
+	M      osprey/targinfo/stxp70/intrn/sx.h
+	A  +   osprey/targinfo/stxp70/intrn/builtins_x3_compatibility.h
+	M      osprey/targinfo/stxp70/intrn/fpx.h
+	M      osprey/targinfo/stxp70/intrn/builtins_sx.h
+	M      osprey/targinfo/stxp70/intrn/builtins_x3.h
+	M      osprey/targinfo/stxp70/intrn/builtins_fpx.h
+	A  +   osprey/targinfo/stxp70/intrn/x3_compatibility.h
+	M      osprey/targinfo/stxp70/isa/isa_decode.cxx
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_variants.cxx
+	M      osprey/targinfo/stxp70/isa/isa_relocs.cxx
+	A  +   osprey/targinfo/stxp70/isa/isa_binutils.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M      osprey/targinfo/stxp70/isa/isa_registers.cxx
+	M      osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      osprey/targinfo/stxp70/isa/isa.cxx
+	M      osprey/targinfo/st200/isa/isa_decode.cxx
+	A  +   osprey/targinfo/st200/isa/isa_binutils.cxx
+	M      osprey/targinfo/generate/isa_bundle_gen.h
+	M      osprey/targinfo/generate/gen_util.h
+	M      osprey/targinfo/generate/isa_decode_gen.h
+	M      osprey/targinfo/generate/isa_syntax_gen.cxx
+	M      osprey/targinfo/generate/isa_relocs_gen.cxx
+	A  +   osprey/targinfo/generate/isa_binutils_gen.cxx
+	A  +   osprey/targinfo/generate/dyn/dyn_isa_decode.h
+	A  +   osprey/targinfo/generate/dyn/dyn_isa_binutils.h
+	M      osprey/targinfo/generate/dyn/dyn_isa_api.c
+	A  +   osprey/targinfo/generate/dyn/dyn_isa_parse.h
+	M      osprey/targinfo/generate/dyn/dyn_isa_operands.h
+	M      osprey/targinfo/generate/dyn/dyn_isa_pack.h
+	M      osprey/targinfo/generate/isa_bundle_gen.cxx
+	M      osprey/targinfo/generate/isa_pack_gen.cxx
+	A  +   osprey/targinfo/generate/isa_binutils_gen.h
+	M      osprey/targinfo/generate/isa_decode_gen.cxx
+	M      osprey/targinfo/parser/src/ext_dll.c
+	M      osprey/targinfo/parser/src/parser.c
+	M      osprey/targinfo/parser/inc/parser.h
+	M      osprey/targinfo/Makefile.gbase
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jan 20 09:16:32 CET 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
