@@ -13,7 +13,7 @@
 #       The path <directory>/<file> should be sufficient to identify the
 #       dependency source uniquely.
 #
-stxp70-binutils,svn,trunk@3692,https://codex.cro.st.com/svnroot/stxp70cc/stxp70-binutils
+stxp70-binutils,svn,trunk@3693,https://codex.cro.st.com/svnroot/stxp70cc/stxp70-binutils
 mds,svn,trunk@1445,https://codex.cro.st.com/svnroot/mds
 ecc,svn,trunk@3655,https://codex.cro.st.com/svnroot/ecc
 binopt,svn,trunk@1656,https://codex.cro.st.com/svnroot/binopt
