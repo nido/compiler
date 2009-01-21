@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jan 21 10:36:02 CET 2009
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-gdb
+
+Description:
+------------
+	* [trunk] Deliver lyon/dev-gdb rev #20233 with no authorization  :-) 
+	Update gdb-6.8 dependency to rev #314
+
+
+Modified Files:
+---------------
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jan 21 09:03:43 CET 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
