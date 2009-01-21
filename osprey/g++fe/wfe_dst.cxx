@@ -1954,10 +1954,16 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
 		}
 		break;
     case METHOD_TYPE:
+#ifndef TARG_ST
+		// [CL] fallthrough: behave like GCC, where
+		// METHOD_TYPE and FUNCTION_TYPE are handled by the
+		// same code (duplicated). See gen_type_die() in
+		// dwarf2out.c
 		{
 		//DevWarn ("Encountered METHOD_TYPE at line %d", lineno);
 		}
 		break;
+#endif
 
     case FUNCTION_TYPE:
 		{	// new scope for local vars

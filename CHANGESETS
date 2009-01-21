@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jan 21 17:53:22 CET 2009
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-54709
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-54709 rev #20252 with authorization branch #59320
+	Missing dwarf information for Pointer on Member Function
+
+
+Modified Files:
+---------------
+	M      osprey/g++fe/wfe_dst.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jan 21 10:36:02 CET 2009
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
