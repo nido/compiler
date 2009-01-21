@@ -60,6 +60,10 @@ extern int use_gnu_debug_info_extensions;
 
 extern int optimize;
 
+#ifdef TARG_ST
+extern int original_optimize;
+#endif
+
 /* Nonzero means optimize for size.  -Os.  */
 
 extern int optimize_size;

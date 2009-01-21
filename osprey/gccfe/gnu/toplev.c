@@ -348,6 +348,9 @@ int use_gnu_debug_info_extensions = 0;
    based on this variable.  */
 
 int optimize = 0;
+#ifdef TARG_ST
+int original_optimize = 0;
+#endif
 
 #ifdef TARG_ST
 int do_nrv;

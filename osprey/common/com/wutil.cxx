@@ -744,6 +744,7 @@ static const struct {
   INTRN_BUILTIN_UNWIND_INIT,    "UNWIND_INIT",
   INTRN_BUILTIN_DWARF_CFA,      "DWARF_CFA",
   INTRN_BUILTIN_FRAME_ADDRESS,  "FRAME_ADDRESS",
+  INTRN_BUILTIN_CONSTANT_P,     "CONSTANT_P",
 
 #include "targ_wutil.def"
 #endif

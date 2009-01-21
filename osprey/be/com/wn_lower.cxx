@@ -6802,6 +6802,33 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
     if (INTRN_is_nary(WN_intrinsic(tree)))
       break;
 
+#ifdef KEY
+    if ( (INTRINSIC) WN_intrinsic (tree) == INTRN_BUILTIN_CONSTANT_P
+         /* && Action (LOWER_TO_CG) */ ) {
+      WN * old = tree;
+      WN * parm = WN_kid0 (WN_kid0 (old)); // child of OPR_PARM
+      // Check if the argument is a compile-time constant, replace the
+      // intrn op by true/false
+      if (WN_operator (parm) == OPR_INTCONST ||
+          (OPCODE_has_sym (WN_opcode (parm)) &&
+           ST_class (WN_st (parm)) == CLASS_CONST)) {
+        tree = WN_Intconst (MTYPE_I4, 1);
+        WN_copy_linenum (old, tree);
+        WN_Delete (old);
+        kids_lowered = TRUE;
+        break;
+      }
+      else if ( Action (LOWER_TO_CG) ) {
+	// Still not constant, replace it by false
+	tree = WN_Intconst (MTYPE_I4, 0);
+        WN_copy_linenum (old, tree);
+	WN_Delete (old);
+	kids_lowered = TRUE;
+        break;
+      }
+    }
+#endif
+
 #ifdef TARG_ST
     //
     // Arthur: if we're not inlining intrinsics, do nothing - it will

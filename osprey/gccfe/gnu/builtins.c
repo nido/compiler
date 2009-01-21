@@ -4232,7 +4232,11 @@ fold_builtin_constant_p (arglist)
      And finally, if we are compiling an initializer, not code, we
      need to return a definite result now; there's not going to be any
      more optimization done.  */
+#ifdef TARG_ST
+  if (TREE_SIDE_EFFECTS (arglist) || !original_optimize
+#else
   if (TREE_SIDE_EFFECTS (arglist) || cse_not_expected
+#endif
       || AGGREGATE_TYPE_P (TREE_TYPE (arglist))
       || POINTER_TYPE_P (TREE_TYPE (arglist))
       || cfun == 0)

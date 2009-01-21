@@ -4550,21 +4550,31 @@ WFE_Expand_Expr (tree exp,
 
               case BUILT_IN_CONSTANT_P:
               {
-#ifndef TARG_ST
-		DevWarn ("Encountered BUILT_IN_CONSTANT_P: at line %d\n",
-                         lineno);
-#endif
                 tree arg = TREE_VALUE (TREE_OPERAND (exp, 1));
                 STRIP_NOPS (arg);
                 if (really_constant_p (arg)
                     || (TREE_CODE (arg) == ADDR_EXPR
                         && TREE_CODE (TREE_OPERAND (arg, 0)) == STRING_CST))
+		{
                   wn = WN_Intconst (MTYPE_I4, 1);
+		  whirl_generated = TRUE; // KEY
+		}
+#ifdef KEY
+// If not yet compile-time constant, let the backend decide if it is 
+// a constant
+		else
+		{
+		  iopc = INTRN_BUILTIN_CONSTANT_P;
+                  if (ret_mtype == MTYPE_V) ret_mtype = MTYPE_I4;
+		  intrinsic_op = TRUE;
+		}
+#else
 
                 else
                   wn = WN_Intconst (MTYPE_I4, 0);
 //                wn = WFE_Expand_Expr (TREE_VALUE (TREE_OPERAND (exp, 1)));
                 whirl_generated = TRUE;
+#endif // KEY
                 break;
               }
 #if 0

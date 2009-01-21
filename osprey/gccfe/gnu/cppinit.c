@@ -1097,7 +1097,9 @@ cpp_finish_options (pfile)
   /* (cbr) keep optimizations in backend */
   /* must wait here to disable now that warnings and preprocessor has seen it */
   extern int optimize;
+  extern int original_optimize;
   extern int flag_no_inline;
+  original_optimize = optimize ;
   optimize = 0;
   flag_no_inline = 0;
   /* [CL] */

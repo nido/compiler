@@ -2366,6 +2366,9 @@ const intrn_info_t intrn_info[INTRINSIC_LAST+1] = {
   { /* BUILTIN_FRAME_ADDRESS */
 	BYVAL, PURE,  NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
 	IRETURN_U4, "__builtin_frame_address", NULL, "__builtin_frame_address"},
+  { /* BUILTIN_CONSTANT_P */
+	BYVAL, PURE,  NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
+	IRETURN_I4, "__builtin_constant_p", NULL, "__builtin_constant_p"},
 
 #include "targ_intrn_info.def"
 #endif

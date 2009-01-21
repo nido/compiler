@@ -1,6 +1,34 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jan 21 09:03:43 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-18096
+
+Description:
+------------
+	* [trunk] Fix for bug #18096: __builtin_constant_p evaluates to 0 when 1 required.
+	Deliver fixes/codex-18096 rev #20229 with authorization branch #58742
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/wn_lower.cxx
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/gccfe/gnu/flags.h
+	M      osprey/gccfe/gnu/builtins.c
+	M      osprey/gccfe/gnu/toplev.c
+	M      osprey/gccfe/gnu/cppinit.c
+	M      osprey/g++fe/wfe_expr.cxx
+	M      osprey/common/com/wintrinsic.h
+	M      osprey/common/com/wutil.cxx
+	M      osprey/common/com/intrn_info.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jan 20 10:13:20 CET 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
