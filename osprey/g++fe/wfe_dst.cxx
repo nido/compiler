@@ -2606,7 +2606,11 @@ DST_enter_param_vars(tree fndecl,
         BOOL is_artificial = DECL_ARTIFICIAL(pdecl);
 	int decl_to_be_restored = 0;
 	int type_to_be_restored = 0;
+#ifdef TARG_ST // [CL] fix bug #54665
+	tree type = TREE_VALUE(ptype);
+#else
 	tree type = TREE_TYPE(pdecl);
+#endif
 
 	
 	DST_INFO_IDX save_type_idx = TYPE_DST_IDX(type);
@@ -2629,18 +2633,14 @@ DST_enter_param_vars(tree fndecl,
 	type_idx = TYPE_DST_IDX(type);
 
 #ifdef TARG_ST
-	// [CL] Handle const qualifier, which is attached to the
-	// pdecl tree, not to the type tree
+	// [CL] the param type from the TYPE_ARG_TYPES list may differ
+	// from the pdecl type, and may not have been emitted yet. In
+	// this case, do it now.
+	if (DST_IS_NULL(type_idx)) {
+	  TY_IDX orig_idx = 0;
 
-	// If the type is already qualified, don't re-qualify it
-	if (TREE_READONLY(pdecl) && ! TYPE_READONLY(type)) {
-	  type_idx = DST_mk_const_type(type_idx);
-	  DST_append_child(comp_unit_idx,type_idx);
-	}
-	// [CL] Handle volatile qualifier
-	if (TREE_THIS_VOLATILE(pdecl) && !TYPE_VOLATILE(type)) {
-	  type_idx = DST_mk_volatile_type(type_idx);
-	  DST_append_child(comp_unit_idx,type_idx);
+	  type_idx = Create_DST_type_For_Tree(type, ty_idx, orig_idx);
+	  TYPE_DST_IDX(type) = type_idx;
 	}
 #endif
 
