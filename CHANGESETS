@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jan 23 14:58:29 CET 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60012
+
+Description:
+------------
+	* [trunk] Fix for bug #60012: OP_Pred_False wrongled not always handled in targ_ebo.cxx.
+	Deliver fixes/codex-60012 rev #20309 with authorization branch #60016
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jan 23 14:45:19 CET 2009
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
