@@ -654,6 +654,13 @@ print_source (SRCPOS srcpos)
     cur_file_index = USRCPOS_filenum(usrcpos);
     cur_file = &file_table[cur_file_index];
     /* open the new file. */
+#ifdef TARG_ST
+    // [CL] bug #59576: incl_table may not be allocated if no file was
+    // included
+    if (cur_file->incl_index == 0)
+      sprintf (srcfile, "%s",cur_file->filename);
+    else
+#endif
     sprintf (srcfile, "%s/%s", incl_table[cur_file->incl_index], 
 				cur_file->filename);
     cur_file->fileptr = fopen (srcfile, "r");

@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jan 23 15:20:12 CET 2009
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59576
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-59576 rev #20314 with authorization branch #59577
+	bug #59576 Tracing with -Wb,-trEXP causes a seg-fault in Code_Expansion phase.
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/printsrc.cxx
+	M      osprey/be/com/wn_coverage.cxx
+	M      osprey/common/com/ir_reader.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jan 23 14:58:29 CET 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

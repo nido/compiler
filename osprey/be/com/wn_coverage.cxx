@@ -2076,6 +2076,13 @@ coverage_begin_output (WN *wn)
       USRCPOS_srcpos(usrcpos) = WN_Get_Linenum(wn);
 
       cur_file = &file_table[USRCPOS_filenum(usrcpos)];
+#ifdef TARG_ST
+    // [CL] bug #59576: incl_table may not be allocated if no file was
+    // included
+    if (cur_file->incl_index == 0)
+      path = ".";
+    else
+#endif
       path = incl_table[cur_file->incl_index];
       file = cur_file->filename;
       line = USRCPOS_linenum(usrcpos);
@@ -2100,6 +2107,13 @@ coverage_begin_output (WN *wn)
 		//we found at least one correct line info
 		// Keep this one for file and path
 		cur_file = &file_table[USRCPOS_filenum(usrcpos)];
+#ifdef TARG_ST
+		// [CL] bug #59576: incl_table may not be allocated if
+		// no file was included
+		if (cur_file->incl_index == 0)
+		  path = ".";
+		else
+#endif
 		path = incl_table[cur_file->incl_index];
 		file = cur_file->filename;
 		goto end_check_line_info;
@@ -2347,6 +2361,13 @@ coverage_lines (basic_block_t *bb) {
 	char *complete_name;
 	file_info *cur_file;
 	cur_file = &file_table[USRCPOS_filenum(usrcpos)];
+#ifdef TARG_ST
+	// [CL] bug #59576: incl_table may not be allocated if no file was
+	// included
+	if (cur_file->incl_index == 0)
+	  path = ".";
+	else
+#endif
 	path = incl_table[cur_file->incl_index];
 	file_name = cur_file->filename;
 	complete_name = (char *)alloca(strlen (path) + strlen (file_name) + 2);
