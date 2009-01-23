@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jan 23 15:54:37 CET 2009
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-55405
+
+Description:
+------------
+	* [trunk] Fix for bug #55405: [IPA] Assertion failure in PRE.
+	Deliver fixes/codex-55405 rev #20318 with authorization branch #59677
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_etable.cxx
+	M      osprey/be/opt/opt_etable.h
+	M      osprey/be/opt/opt_spre_finalize.cxx
+	M      osprey/be/opt/opt_ivr.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jan 23 15:20:12 CET 2009
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

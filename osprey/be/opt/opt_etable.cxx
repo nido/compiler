@@ -2022,7 +2022,23 @@ ETABLE::Remove_real_occurrence(CODEREP *old_cr, STMTREP *stmt)
   Is_True(FALSE, ("ETABLE::Remove_real_occurrences, logic error"));
 }
 
+// FdF 20090116: Imported fix from open64-4.2.1
+#ifdef KEY
+void
+ETABLE::Mark_phi_live(PHI_NODE *phi) const
+{  
+  if ( phi->Live() )
+    return;
 
+  phi->Set_live();
+  for ( INT pkid = 0; pkid < phi->Size(); pkid++ ) {
+    CODEREP *cr;
+    cr = phi->OPND(pkid);
+    if (cr->Is_flag_set(CF_DEF_BY_PHI))
+      Mark_phi_live(cr->Defphi());
+  }
+}
+#endif
 //  Generate an expr with current versions for the opnd_num-th operand
 //  of the phi_occur node.  Real_occ is the expr with current versions
 //  at the phi result.
@@ -2099,6 +2115,11 @@ ETABLE::Generate_cur_expr(const BB_NODE *bb, INT opnd_num, CODEREP *newcr, BOOL 
     if (newcr->Ivar_mu_node() != NULL) {
       PHI_NODE *var_phi = Lookup_var_phi(bb, newcr->Ivar_occ()->Aux_id());
       if (var_phi != NULL) {
+	// FdF 20090116: Imported fix from open64-4.2.1
+#ifdef KEY
+        if (!var_phi->Live())
+          Mark_phi_live(var_phi);
+#endif
 	Is_True(var_phi->Live(),
 		("ETABLE::Generate_cur_expr: encounter dead phi node."));
 	Is_True(var_phi->OPND(opnd_num) != NULL,

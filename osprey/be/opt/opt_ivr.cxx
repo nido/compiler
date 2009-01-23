@@ -954,7 +954,12 @@ CODEMAP::Convert_to_loop_invar(CODEREP *cr, BB_LOOP *loop)
 
   } else {
     STMTREP *stmt = cr->Create_cpstmt(new_cr, Mem_pool());
+#ifdef TARG_ST
+    // FdF 20090115
+    loop->Preheader()->Append_stmt_before_branch(stmt);
+#else
     loop->Preheader()->Append_stmtrep(stmt);
+#endif
   }
 
   return new_cr;

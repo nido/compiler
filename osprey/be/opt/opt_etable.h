@@ -1973,6 +1973,10 @@ private:
   STMTREP        *Entry_chi(void) const    { return _entry_chi; }
   void            Set_entry_chi(STMTREP *entry_chi) { _entry_chi = entry_chi; }
 
+  // FdF 20090116: Imported fix from open64-4.2.1
+#ifdef KEY
+  void            Mark_phi_live(PHI_NODE *phi) const;
+#endif
   void		  Count_lex_ident_exprs(INT32); // for statistics only
 
 public:
