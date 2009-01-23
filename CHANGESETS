@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jan 23 14:45:19 CET 2009
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59585
+
+Description:
+------------
+	*  Fix for bug #59585 (Gcc garbage collector has lost its roots)
+	Delivered fixes/codex-59585 rev #20304 with authorization art #59725.
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/gnu/st200/gtype-desc.c
+	M      osprey/gccfe/gnu/stxp70/gtype-desc.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@20302 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59585@20304 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@20302 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59585@20304" 
+
+Diff links to modified files:
+-----------------------------
+osprey/gccfe/gnu/st200/gtype-desc.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/st200/gtype-desc.c?p2=branches/fixes/codex-59585/osprey/gccfe/gnu/st200/gtype-desc.c&r1=20302&r2=20304&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/stxp70/gtype-desc.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/stxp70/gtype-desc.c?p2=branches/fixes/codex-59585/osprey/gccfe/gnu/stxp70/gtype-desc.c&r1=20302&r2=20304&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jan 23 14:32:15 CET 2009
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
