@@ -257,6 +257,11 @@ OP_cmp_variant(const OP* op)
           case TOP_##top##_r_r_b: case TOP_##top##_i_r_b: case TOP_##top##_ii_r_b: \
           case TOP_##top##_r_r_r: case TOP_##top##_i_r_r: case TOP_##top##_ii_r_r
 
+#define CASE_TOPBB(top) \
+          case TOP_##top##_r_r_b: case TOP_##top##_i_r_b: case TOP_##top##_ii_r_b: \
+          case TOP_##top##_r_r_r: case TOP_##top##_i_r_r: case TOP_##top##_ii_r_r: \
+	  case TOP_##top##_b_b_b
+
   switch (top) {
   CASE_TOPB(cmpeq):
     return V_CMP_EQ;
@@ -288,22 +293,23 @@ OP_cmp_variant(const OP* op)
   CASE_TOPB(cmpltu):
     return V_CMP_LTU;
 
-  CASE_TOPB(andl):
+  CASE_TOPBB(andl):
     return V_CMP_ANDL;
 
-  CASE_TOPB(nandl):
+  CASE_TOPBB(nandl):
     return V_CMP_NANDL;
 
-  CASE_TOPB(orl):
+  CASE_TOPBB(orl):
     return V_CMP_ORL;
 
-  CASE_TOPB(norl):
+  CASE_TOPBB(norl):
     return V_CMP_NORL;
   }
 
   FmtAssert(0, ("OP_cmp_variant undefined for TOP %s", TOP_Name(top)));
   return V_CMP_NONE;
 #undef CASE_TOPB
+#undef CASE_TOPBB
 }
 
 /* ====================================================================

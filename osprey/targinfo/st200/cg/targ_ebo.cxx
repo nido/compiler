@@ -4976,6 +4976,8 @@ andl_orl_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
     } else {
       Expand_Logical_Move(OP_result(op, 0), lhs_tn, 0, &ops);
     }
+    if (OPs_Are_Equivalent(op, OPS_first(&ops)))
+      return FALSE;
     OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
     if (EBO_in_loop) EBO_OPS_omega (&ops, lhs_tn, lhs_tninfo);
     if (!EBO_Verify_Ops(&ops)) return FALSE;
@@ -5166,6 +5168,8 @@ reduce_predicate_logical_sequence (OP *op, TN **opnd_tn,
     } else {
       Expand_Logical_Move(OP_result(op, 0), value, 0, &ops);
     }
+    if (OPs_Are_Equivalent(op, OPS_first(&ops)))
+      return FALSE;
     OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
     if (!EBO_Verify_Ops(&ops)) return FALSE;
     BB_Insert_Ops_After(OP_bb(op), op, &ops);

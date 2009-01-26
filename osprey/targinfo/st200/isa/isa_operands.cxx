@@ -447,6 +447,14 @@ main()
 
   /* ====================================== */ 
   Instruction_Group("O_23", 
+		 TOP_mov_b_b,
+		 TOP_UNDEFINED);
+
+  Result (0, Opd_branch);
+  Operand (0, Opd_branch, opnd1);
+
+  /* ====================================== */ 
+  Instruction_Group("O_24", 
 		 TOP_andl_b_b_b,
 		 TOP_nandl_b_b_b,
 		 TOP_norl_b_b_b,
@@ -454,16 +462,8 @@ main()
 		 TOP_UNDEFINED);
 
   Result (0, Opd_branch);
-  Operand (0, Opd_branch);
-  Operand (1, Opd_branch);
-
-  /* ====================================== */ 
-  Instruction_Group("O_24", 
-		 TOP_mov_b_b,
-		 TOP_UNDEFINED);
-
-  Result (0, Opd_branch);
   Operand (0, Opd_branch, opnd1);
+  Operand (1, Opd_branch, opnd2);
 
   /* ====================================== */ 
   Instruction_Group("O_25", 

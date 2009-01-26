@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jan 26 10:44:49 CET 2009
+	Author:    knochelh
+	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
+	Branch:    http://svn.open64.codex.cro.st.com/svnroot/open64/branches/fixes/codex-52480
+
+Description:
+------------
+	* [trunk] Fix for bug #52480: EBO constant propagation on booleans does not use the PQS.
+	Deliver fixes/codex-52480 rev #20336 with authorization branch #54379
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/isa/isa_properties.cxx
+	M      osprey/targinfo/st200/isa/isa_operands.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jan 23 15:54:37 CET 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
