@@ -1836,8 +1836,16 @@ List_Based_Fwd::Is_OP_Better (OP *cur_op, OP *best_op)
       // [TDR] - Fix for bug #49718 : The micro-arch limitation
       // only apply on core load/store. Also, fpx instruction
       // induce long latency so should be treated in the standard flow  
-      if (!OP_is_ext_op(best_op) && OP_load(best_op)) return FALSE;
-      if (!OP_is_ext_op(cur_op)  && OP_load(cur_op)) return TRUE;
+      if ((!OP_is_ext_op(cur_op) && OP_load(cur_op)) || (!OP_is_ext_op(best_op) && OP_load(best_op))) {
+          // Both are loads without freedom 
+          if (OP_load(cur_op) && OP_load(best_op)) {
+            if (OPSCH_estart(cur_opsch) > OPSCH_estart(best_opsch)) return FALSE;
+            if (OPSCH_estart(cur_opsch) < OPSCH_estart(best_opsch)) return TRUE;
+          }
+          //Only one instruction is a load
+          if (OP_load(best_op) && !OP_load(cur_op)) return FALSE;
+          if (OP_load(cur_op) && !OP_load(best_op)) return TRUE;
+      }
   }
 #endif
   
@@ -1916,8 +1924,10 @@ List_Based_Fwd::Is_OP_Better (OP *cur_op, OP *best_op)
         if (CGTARG_Max_OP_Latency(cur_op) < CGTARG_Max_OP_Latency(best_op))  best_val ++;
         if (CGTARG_Max_OP_Latency(cur_op) > CGTARG_Max_OP_Latency(best_op))  cur_val ++;
        
-  	  	if (cur_val > best_val)  return TRUE;
+ 	  	if (cur_val > best_val) return TRUE;
         else if (cur_val < best_val)  return FALSE;
+        else if (CGTARG_Max_OP_Latency(cur_op) > CGTARG_Max_OP_Latency(best_op)) return TRUE;
+        else if (CGTARG_Max_OP_Latency(cur_op) < CGTARG_Max_OP_Latency(best_op)) return FALSE;
       }
     }
 

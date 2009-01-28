@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jan 28 14:52:31 CET 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-sched
+
+Description:
+------------
+	* [trunk] Deliver dt25/dev-sched rev #20382 with authorization branch #57061
+
+
+Modified Files:
+---------------
+	M      osprey/lai/hb_sched.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jan 26 10:44:49 CET 2009
 	Author:    knochelh
 	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
