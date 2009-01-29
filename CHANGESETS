@@ -1,6 +1,29 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jan 29 14:30:01 CET 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60021
+
+Description:
+------------
+	* [trunk] Fix for bug #60021: [IPA][GCM] Less efficient GCM on BDTI/FFT99 when enabling IPA.
+	Deliver fixes/codex-60021 rev #20426 with authorization branch #60022
+
+	-> Fix some usage of ABI_PROPERTY_...() functions
+
+
+Modified Files:
+---------------
+	M      osprey/lai/loop_invar_hoist.cxx
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jan 29 13:26:19 CET 2009
 	Author:    chauveth
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -1368,12 +1368,6 @@ LOOP_INVAR_CODE_MOTION :: Alias_With_Call (OP* op, OP* call) {
         if (reg == REGISTER_UNDEFINED) continue;
         ISA_REGISTER_CLASS rclass = TN_register_class (result);
 
-#ifdef TARG_ST
-        const ISA_REGISTER_CLASS_INFO *rcinfo = ISA_REGISTER_CLASS_Info(rclass);
-        INT first_isa_reg = ISA_REGISTER_CLASS_INFO_First_Reg(rcinfo);
-        INT isa_reg = reg+first_isa_reg-REGISTER_MIN;
-#endif
-
             /* prune out regs which have implicit meaning.
              */
         if(REGISTER_SET_MemberP(REGISTER_CLASS_function_value(rclass), reg) ||
@@ -1383,7 +1377,7 @@ LOOP_INVAR_CODE_MOTION :: Alias_With_Call (OP* op, OP* call) {
 #ifdef TARG_ST
            // [vcdv] hw loop are non allocatable and thus do not
            // appear in the REGISTER_SET REGISTER_CLASS_caller_saves
-           || ABI_PROPERTY_Is_caller(rclass, isa_reg)
+           || ABI_PROPERTY_Is_caller(rclass, REGISTER_machine_id(rclass, reg))
 #endif
            ) {
           return TRUE;
