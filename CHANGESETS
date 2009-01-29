@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jan 29 13:26:19 CET 2009
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59480
+
+Description:
+------------
+	* [trunk] Fix for bug #59480: relocatable option error: -r search xxx.reloc.reloc. Deliver fixes/codex-59480 rev #20417 with authorization branch #59590
+
+
+Modified Files:
+---------------
+	M      osprey/driver/main.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jan 28 14:52:31 CET 2009
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

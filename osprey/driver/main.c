@@ -380,14 +380,22 @@ main (int argc, char *argv[])
            ((olevel>=2) && (deadcode==UNDEFINED))
 	  )
 	 ) {
-         snprintf(relocatable_str1,1024,"%s.reloc",p->name);
+	 if (shared == RELOCATABLE) {
+            snprintf(relocatable_str1,1024,"%s",p->name);
+	 } else {
+            snprintf(relocatable_str1,1024,"%s.reloc",p->name);
+	 }
 	 if (!file_exists(p->name)) {
 	    error("Link script file required: %s",p->name);
 	 }
          if (!file_exists(relocatable_str1)) {
             warning("Relocatable link script file required: %s\nPlease read \"HowTo write associated relocatable link script for BinOpt\"",relocatable_str1);
 	 } else {
-            snprintf(relocatable_str1,1024,"-Wy,-T,%s.reloc",p->name);
+  	    if (shared == RELOCATABLE) {
+               snprintf(relocatable_str1,1024,"-Wy,-T,%s",p->name);
+	    } else {
+               snprintf(relocatable_str1,1024,"-Wy,-T,%s.reloc",p->name);
+	    }
             i = 0;
             treat_one_arg(&i,script_argv);
             treat_one_arg(&i,script_argv); // Required two times!
