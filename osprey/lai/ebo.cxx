@@ -6351,6 +6351,28 @@ Find_BB_TNs (BB *bb)
 	  * can be updated. 
 	  */
 	  op_replaced = EBO_Fold_Constant_Expression (op, opnd_tn, opnd_tninfo);
+#ifdef TARG_ST
+	  // FdF 20090126: This operation is not executed because
+	  // predicate is always FALSE. The definitions are replaced
+	  // by a KILL if there is no reaching definition.
+	  if (op_replaced) {
+	    for (int res_idx = 0; res_idx < OP_results(op); res_idx++) {
+	      if (!TN_is_constant(OP_result(op,res_idx)) &&
+		  !EBO_tn_available(bb, get_tn_info(OP_result(op, res_idx))) &&
+		  !tn_has_live_def_into_BB(OP_result(op, res_idx), bb)) {
+		TN *kill_tn = OP_result(op, res_idx);
+		OP* kill_op = Mk_VarOP(TOP_KILL, 1, 0, &kill_tn, NULL);
+		BB_Insert_Op_After(bb, op, kill_op);	 
+	      }
+	    }
+	  }
+
+	  // Do not set num_opnds to the last processed operand,
+	  // since there is code that goes through the opnd_tn array
+	  // using the OP_opnds(op) value, for example
+	  // EBO_Constant_Offset_Propagate.
+	  if (op_replaced)
+#endif
           num_opnds = opndnum + 1;
 
           if (EBO_Trace_Optimization) {

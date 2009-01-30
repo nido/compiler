@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jan 30 15:05:20 CET 2009
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60079
+
+Description:
+------------
+	* [trunk] Fix for bug #60079: [BE] Compiler dumps core in EBO on HP_Benchsuite (st240, -O3 -fpic -CG:LAO_opt=0).
+	Deliver fixes/codex-60079 rev #20446 with authorization branch #60181
+
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jan 29 14:30:01 CET 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
