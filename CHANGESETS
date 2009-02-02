@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Feb  2 09:21:10 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59831
+
+Description:
+------------
+	* [trunk] Fix for bug #59831: [GFECC] Webkit wants -Wformat-security -Wno-format-y2k -Wmissing-format-attribute.
+	Deliver fixes/codex-59831 rev #20467 with authorization branch #59942
+
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@20466 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59831@20467 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@20466 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59831@20467" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/OPTIONS	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/OPTIONS?p2=branches/fixes/codex-59831/osprey/driver/OPTIONS&r1=20466&r2=20467&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jan 30 15:05:20 CET 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

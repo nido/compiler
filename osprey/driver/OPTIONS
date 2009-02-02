@@ -2099,6 +2099,66 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"warn about printf format anomalies"
 -Wno-format	;		Cc	f,cpp	self
 	""
+#ifdef TARG_ST
+-Wdeprecated-declarations	;		Cc	f,cpp	self
+	"Warn about deprecated code"
+-Wno-deprecated-declarations	;		Cc	f,cpp	self
+	"Do not warn about deprecated code"
+-Wdisabled-optimization	warn_ignored(option_name);		Cc	NONE	""
+	"Warn if a requested optimization pass is disabled"
+-Wno-disabled-optimization	;		Cc	f,cpp	self
+	"Do not warn if a requested optimization pass is disabled"
+-Wdiv-by-zero	;		Cc	f,cpp	self
+	"Warn about compile-time integer division by zero"
+-Wno-div-by-zero	;		Cc	f,cpp	self
+	"Suppress warnings about compile-time integer division by zero"
+-Wfloat-equal	;		Cc	f,cpp	self
+	"Warn if floating point values are compared for equality"
+-Wno-float-equal	;		Cc	f,cpp	self
+	"Do not warn if floating point values are compared for equality"
+-Wformat=2	;		Cc	f,cpp	"-Wformat -Wformat-nonliteral -Wformat-security"
+	"Enable -Wformat plus format checks not included in -Wformat"
+-Wformat-nonliteral	;		Cc	f,cpp	self
+	"If -Wformat, warn if format string is not a string literal"
+-Wno-format-nonliteral	;		Cc	f,cpp	self
+	"Do not warn if format string is not a string literal"
+-Wformat-zero-length ;               cc      f,cpp       self
+        "Warn about zero-length format string"
+-Wno-format-zero-length ;               cc      f,cpp       self
+        "Do not warn about zero-length format string"
+-Wformat-security	;		Cc	f,cpp	self
+	"If -Wformat, warn on potentially insecure format functions"
+-Wno-format-security	;		Cc	f,cpp	self
+	"Do not warn on potentially insecure format functions"
+-Wmissing-format-attribute	;		Cc	f,cpp	self
+	"If -Wformat, warn on candidates for 'format' attributes"
+-Wno-missing-format-attribute	;		Cc	f,cpp	self
+	"Do not warn on candidates for 'format' attributes"
+-Wformat-extra-args	;		Cc	f,cpp	self
+	"Warn about extra arguments to printf-like functions"
+-Wno-format-extra-args	;		Cc	f,cpp	self
+	"Do not warn about extra arguments to printf-like functions"
+-Wformat-y2k	;		Cc	f,cpp	self
+	"Warn about 'strftime' formats that yield two-digit years"
+-Wno-format-y2k	;		Cc	f,cpp	self
+	"Do not warn about 'strftime' formats that yield two-digit years"
+-Wnonnull	;		cc	f,cpp	self
+	"Warn when passing null to functions requiring non-null pointers"
+-Wno-nonnull	;		cc	f,cpp	self
+	"Do not warn when passing null to functions requiring non-null pointers"
+-Wsequence-point	;		Cc	f,cpp	self
+	"Warn about code violating sequence point rules"
+-Wno-sequence-point	;		Cc	f,cpp	self
+	"Do not warn about code violating sequence point rules"
+-Wtraditional-conversion	;		cc	f,cpp	self
+	"Warn if a prototype causes a type conversion different from what would happen in the absence of a prototype"
+-Wno-traditional-conversion	;		cc	f,cpp	self
+	"Do not warn if a prototype causes a type conversion different from what would happen in the absence of a prototype"
+-Wunreachable-code	warn_ignored(option_name);		Cc	f,cpp	self
+	"Warn about code that will never be executed"
+-Wno-unreachable-code	warn_ignored(option_name);		Cc	f,cpp	self
+	"Do not warn about code that will never be executed"
+#endif
 -Wid-clash%d	;		Cc	f,cpp	self
 	"warn if 2 identifiers have the same first <num> chars"
 -Wimplicit	;		Cc	f,cpp	self
@@ -2125,16 +2185,23 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	""
 -Wno-inline	;		Cc	f,cpp	self
 	""
+#ifdef TARG_ST
+-Wlarger-than-%d	;		Cc	f,cpp	"-Wlarger-than-%d"
+	"Warn if an object is larger than <number> bytes"
+-Wno-larger-than-%d	;		Cc	f,cpp	"-Wno-larger-than-%d"
+	"Do not warn if an object is larger than <number> bytes"
+#else
 -Wlarger-than%d	;		Cc	f,cpp	self
 	"warn if an object is larger than <number> bytes"
+#endif
 -Wlong-long	;		Cc	f,cpp	self
-	""
+	"Warn if the long long type is used"
 -Wno-long-long	;		Cc	f,cpp	self
-	""
+	"Do not warn if the long long type is used"
 -Wmain	;		Cc	f,cpp	self
-	"warn about suspicious declarations of main"
+	"Warn about suspicious declarations of main"
 -Wno-main	;		Cc	f,cpp	self
-	""
+	"Do not warn about suspicious declarations of main"
 -Wmissing-braces	;	Cc	f,cpp	self
 	"warn about possibly missing braces around initialisers"
 -Wno-missing-braces	;	Cc	f,cpp	self
@@ -2234,9 +2301,19 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -Wno-strict-prototypes	;		Cc	f,cpp	self
 	""
 -Wswitch	;		Cc	f,cpp	self
-	""
+	"Warn when a switch statement is incorrectly indexed with an enum"
 -Wno-switch	;		Cc	f,cpp	self
-	""
+	""Do not warn when a switch statement is incorrectly indexed with an enum
+#ifdef TARG_ST
+-Wswitch-default	;	Cc	f,cpp	self
+	"Warn when a switch statement has no default"
+-Wno-switch-default	;	Cc	f,cpp	self
+	"Do not warn when a switch statement has no default"
+-Wswitch-enum	;		Cc	f,cpp	self
+	"Warn when a switch statement is missing a case for an enum member"
+-Wno-switch-enum	;	Cc	f,cpp	self
+	"Do not warn when a switch statement is missing a case for an enum member"
+#endif
 -Wtraditional	;		Cc	cpp,f	self
 	"warn about features not present in traditional C"
 -Wno-traditional	;		Cc	cpp,f	self
@@ -2411,7 +2488,12 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"Conform to ANSI C aliasing rules"
 -fno-strict-aliasing	toggle(&aliasing,NOSTRICT_ALIAS);		Cc	cpp,f	self "-OPT:alias=no_typed"
 	"Ignore ANSI C aliasing rules"
-
+#ifdef TARG_ST
+-Wstrict-aliasing	;		Cc	f,cpp	self
+	"Warn about code that breaks strict aliasing rules"
+-Wno-strict-aliasing	;		Cc	f,cpp	self
+	"Do not warn about code that breaks strict aliasing rules"
+#endif
 #ifdef TARG_ST
 % gcc-3.3
 -fzero-initialized-in-bss	;		Cc	cpp,cfe	"-TENV:zeroinit_in_bss=on"
