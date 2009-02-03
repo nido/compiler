@@ -960,6 +960,8 @@ $(EXTN)_targ_isa_decode.h: $(EXTN)_isa_decode_gen$(BEXE)
 	@echo "  -Building $@"
 	$(META)$(RUN) ./$<
 
+DEPS_dyn_isa_bundle.h = dyn_isa_bundle.h $(EXTN)_targ_isa_bundle.h
+
 $(EXTN)_$(HOST_MANGLING)_isa_decode.$(BOBJ): $(EXTN)_targ_isa_decode.c \
                                              $(EXTN)_targ_isa_decode.h \
 					     $(DEPS_dyn_isa_bundle.h)
@@ -976,7 +978,7 @@ DEPS_dyn_isa_decode.h = dyn_isa_decode.h targ_isa_decode.h $(EXTN)_targ_isa_deco
 $(EXTN)_stub_isa_decode.c : $(EXTN)_targ_isa_decode.h
 	@$(REM_WIN32)# $@: force dependency
 $(EXTN)_stub_isa_decode.$(BOBJ) : $(EXTN)_stub_isa_decode.c \
-                      	 	  dyn_isa_decode.h
+				  dyn_isa_decode.h
 	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
 
 ################################
@@ -1016,7 +1018,6 @@ $(EXTN)_$(HOST_MANGLING)_isa_bundle.$(BOBJ): $(EXTN)_targ_isa_bundle.c  \
                             $(EXTN)_targ_isa_bundle.h
 	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
 
-DEPS_dyn_isa_bundle.h = dyn_isa_bundle.h $(EXTN)_targ_isa_bundle.h
 
 ################################
 ### xxx_targ_isa_hazards.[ch]###

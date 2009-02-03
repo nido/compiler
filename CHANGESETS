@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Feb  3 08:57:59 CET 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60579
+
+Description:
+------------
+	* [trunk] Fix for bug #60579: Compilation of compiler often fails in parallel mode (lsf_make).
+	Deliver fixes/codex-60579 rev #20490 with authorization branch #60582
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo_ext/template/Makefile.gbase.ext
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Feb  2 09:21:10 CET 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
