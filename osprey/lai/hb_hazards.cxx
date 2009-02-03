@@ -1875,6 +1875,9 @@ Handle_All_Hazards (BB *bb)
   // Arthur: need to do sort of scheduling but without reordering
   //         instructions.
   //
+  FmtAssert (TI_BUNDLE_slot_count(bundle)>0, 
+	     ("Invalid bundle containing %d slots(s) in Handle_All_Hazards",TI_BUNDLE_slot_count(bundle)));
+
   Make_Bundles(bb, bundle, &bundle_vector);
 
 #ifdef TARG_ST

@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Feb  3 18:16:18 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60235
+
+Description:
+------------
+	* [trunk] Fix for bug #60235: [LAO] - Infinite loop on Windows for any program.
+	Deliver fixes/codex-60235 rev #20502 with authorization branch #60239
+
+
+Modified Files:
+---------------
+	M      osprey/lai/igls.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/hb_hazards.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@20496 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60235@20502 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@20496 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60235@20502" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/igls.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/igls.cxx?p2=branches/fixes/codex-60235/osprey/lai/igls.cxx&r1=20496&r2=20502&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgdriver.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgdriver.cxx?p2=branches/fixes/codex-60235/osprey/lai/cgdriver.cxx&r1=20496&r2=20502&roottype=svn&root=open64&diff_format=h
+osprey/lai/hb_hazards.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/hb_hazards.cxx?p2=branches/fixes/codex-60235/osprey/lai/hb_hazards.cxx&r1=20496&r2=20502&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Feb  3 12:32:54 CET 2009
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

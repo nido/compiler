@@ -1819,6 +1819,10 @@ Configure_CG_Options(void)
     FmtAssert(0, ("CG: Max issue width %d invalid, must be >= %d", 
 		  CGTARG_max_issue_width, 1));
   }
+  //TDR - Fix related to windows issue when using ISA_MAX_SLOTS. bug #48051
+  // ti_bundle.c is from targinfo, loaded in be and loaded in CG => issue in definitions
+  //CM - ISA_MAX_SLOTS can be overriden, thus use CGTARG_max_issue_width
+  TI_BUNDLE_initialize(CGTARG_max_issue_width);
 #endif
 
 #ifndef TARG_STxP70
