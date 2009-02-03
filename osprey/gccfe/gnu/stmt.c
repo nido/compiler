@@ -293,6 +293,77 @@ struct nesting GTY(())
     } GTY ((desc ("%1.desc"))) data;
 };
 
+#ifdef KEY
+// The following functions need to be defined here since the definition of
+// struct nesting is not visible outside this file.
+//
+// Allocate and return a new `struct nesting'. 
+struct nesting * alloc_nesting(void)
+{
+#ifdef TARG_ST
+  return (struct nesting *) xmalloc (sizeof (struct nesting));
+#else
+  return (struct nesting *) malloc (sizeof (struct nesting));
+#endif
+}
+
+// Only set the fields we need
+void construct_nesting ( struct nesting * this_nest,
+                         struct nesting * next,
+                         struct nesting * all,
+			 LABEL_IDX exit_label_idx)
+{
+  this_nest->next = next;
+  this_nest->all = all;
+  this_nest->exit_label_idx = exit_label_idx;
+}
+
+LABEL_IDX get_nesting_label (struct nesting * this_nest)
+{
+  return this_nest->exit_label_idx;
+}
+
+extern struct nesting * wfe_nesting_stack, * wfe_cond_stack, * wfe_loop_stack, *wfe_case_stack;
+
+void popstack (struct nesting * target)
+{
+  struct nesting * current;
+                                                                                
+  do
+  {
+    current = wfe_nesting_stack;
+    if (wfe_cond_stack == current)
+      wfe_cond_stack = wfe_cond_stack->next;
+                                                                                
+    if (wfe_loop_stack == current)
+      wfe_loop_stack = wfe_loop_stack->next;
+                                                                                
+    if (wfe_case_stack == current)
+      wfe_case_stack = wfe_case_stack->next;
+                                                                                
+    wfe_nesting_stack = current->all;
+                                                                                
+    free (current);
+  } while (current != target);
+}
+
+/* Bug 11701: Returns the nesting level that has an exit label. See
+   expand_exit_something(), exit_label_idx used similarly to exit_label. */
+struct nesting *
+wfe_get_matching_scope (struct nesting * n)
+{
+  for (; n; n = n->all)
+    if (n->exit_label_idx != 0)
+      {
+        return n;
+      }
+
+  /* Should not reach here */
+  return NULL;
+}
+
+#endif // KEY
+
 /* Allocate and return a new `struct nesting'.  */
 
 #define ALLOC_NESTING() \
@@ -4526,7 +4597,7 @@ expand_anon_union_decl (decl, cleanup, decl_elts)
 #ifdef TARG_ST
       // (cbr) support for anonymous union. ST * indexed from tree decl
       // don't use rtx. (plumhall_cpp t07a, t09c)
-      char *name = XSTR (XEXP (x, 0), 0);
+      const char *name = XSTR (XEXP (x, 0), 0);
       if (name)
 	SET_DECL_ASSEMBLER_NAME (decl_elt, get_identifier(name));
 #endif

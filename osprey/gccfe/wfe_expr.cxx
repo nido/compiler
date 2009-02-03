@@ -2245,6 +2245,53 @@ get_string_pointer (WN *wn)
   return ptr;
 } /* get_string_pointer */
 
+#ifdef KEY
+// bug 2813
+// If we are expanding a stmt and we reach here through the expansion of
+// STMT_EXPR, the stmt may have a tree-chain even if it is not a COMPOUND_STMT.
+// Tree-chain for a COMPOUND_STMT is already handled. So handle it for the 
+// other stmts (mimick expand_stmt (c-semantics.c))
+// e.g.if GNU inlines a function containing "if (1) return 1;",
+// The then-clause will have 2 stmts, one is a store
+// of 1 into a temporary variable, the 2nd is a jmp. We will miss the jmp
+// if we don't traverse the TREE_CHAIN.
+static inline void
+traverse_tree_chain (tree op1)
+{
+  if (TREE_CODE (op1) != COMPOUND_STMT && TREE_CHAIN (op1))
+  {
+    tree last = TREE_CHAIN (op1);
+    while (last)
+    {
+      WFE_Expand_Expr (last, FALSE);
+      last = TREE_CHAIN (last);
+    }
+  }
+}
+
+// bug 3180: Use a stack of struct nesting to handle nested 
+// loops/switch/case in a STMT_EXPR
+struct nesting * wfe_nesting_stack;
+struct nesting * wfe_cond_stack;
+struct nesting * wfe_loop_stack;
+struct nesting * wfe_case_stack;
+extern "C"
+{
+// malloc a structure
+extern struct nesting * alloc_nesting (void);
+// initialize fields in struct (1st parameter)
+extern void construct_nesting ( struct nesting *,
+				struct nesting *,
+				struct nesting *,
+				LABEL_IDX);
+// mimic POPSTACK in gnu/stmt.c
+extern void popstack (struct nesting *);
+extern LABEL_IDX get_nesting_label (struct nesting *);
+extern struct nesting * wfe_get_matching_scope (struct nesting *);
+
+}
+#endif // KEY
+
 /* The rbuf parameter represents a double using 2 32-bits integers. We
    swap the two words when required to accomodate with different
    Host/Target endianess */
@@ -5495,24 +5542,47 @@ WFE_Expand_Expr (tree exp,
        break;
       }
 
-      case SWITCH_STMT: {
-        tree cond = SWITCH_COND(exp);
-        tree body = SWITCH_BODY(exp);
-        tree type = SWITCH_TYPE(exp);
-
-        expand_start_case (1, cond, TREE_TYPE (cond), "switch statement");
-
-        if (body) 
-          WFE_Expand_Expr (body, FALSE);
-
-        WFE_Expand_End_Case ();
-
-        break;
-      }
-
+      case SWITCH_STMT:
+	{
+	  // If the control flows here, it can only be introduced here
+	  // by expansion of STMT_EXPR. Otherwise, it would have been 
+	  // handled in gnu/ files.
+	  LABEL_IDX switch_exit_label_idx;
+	  
+	  New_LABEL (CURRENT_SYMTAB, switch_exit_label_idx);
+	  struct nesting * case_nest = alloc_nesting();
+	  construct_nesting (case_nest, wfe_case_stack, wfe_nesting_stack, 
+			     switch_exit_label_idx);
+	  
+	  wfe_nesting_stack = wfe_case_stack = case_nest;
+	  
+	  // The condition is in SWITCH_COND (exp)
+	  tree cond = TREE_OPERAND (exp, 0);
+	  FmtAssert (TREE_CODE (cond) != TREE_LIST, 
+		     ("Handle this case"));
+	  const char *print_name = "switch statement";
+	  // 1. Start case
+	  WFE_Expand_Start_Case (1, cond, TREE_TYPE(cond), (char *)print_name);	         // 2. Expand the body
+	  //    WFE_Expand_Expr (SWITCH_BODY (exp));
+	  if (TREE_OPERAND (exp, 1))
+	    {
+	      WFE_Expand_Expr (TREE_OPERAND (exp, 1), FALSE);
+	      traverse_tree_chain (TREE_OPERAND (exp, 1));
+	    }
+	  // 3. End case
+	  wn = WN_CreateLabel ((ST_IDX) 0,
+			       switch_exit_label_idx,
+			       0, NULL);
+	  WFE_Stmt_Append (wn, Get_Srcpos ());
+	  wn = NULL;
+	  WFE_Expand_End_Case ();       
+	  popstack (case_nest);
+	  break;
+	}
+	
       case STMT_EXPR: {
-        tree stmt = STMT_EXPR_STMT (exp);
-        wn = WFE_Expand_Expr(stmt, need_result,
+	tree stmt = STMT_EXPR_STMT (exp);
+	wn = WFE_Expand_Expr(stmt, need_result,
 			     nop_ty_idx, component_ty_idx,
 			     component_offset, field_id, is_bit_field);
         break;
@@ -5612,90 +5682,209 @@ WFE_Expand_Expr (tree exp,
           WFE_Expand_Label (exp);
           break;
         }
-        
+
       case IF_STMT:
-        {
-          tree cond = IF_COND (exp);
-          tree thene = THEN_CLAUSE (exp);
-          tree elsee = ELSE_CLAUSE (exp);
-          WFE_Expand_Start_Cond (cond, 0);
-          if (thene)
-            WFE_Expand_Expr (thene, FALSE); 
-          if (elsee) {
-            WFE_Expand_Start_Else ();
-            WFE_Expand_Expr (elsee, FALSE); 
-          }
-          WFE_Expand_End_Cond (); 
-          break;
-        }
+	{
+	  // If the control flows here, it can only be introduced here
+	  // by expansion of STMT_EXPR. Otherwise, it would have been 
+	  // handled in gnu/ files.
+	  
+	  struct nesting * cond_nest = alloc_nesting();
+	  construct_nesting (cond_nest, wfe_cond_stack, wfe_nesting_stack, 0);
+	  
+	  wfe_nesting_stack = wfe_cond_stack = cond_nest;
+	  
+	  tree cond = TREE_OPERAND (exp, 0); // IF_COND
+	  if (cond && TREE_CODE (cond) == TREE_LIST)
+	    {
+	      WFE_Expand_Expr (TREE_PURPOSE (cond), FALSE);
+	      cond = TREE_VALUE (cond);
+	    }
+	  WFE_Expand_Start_Cond (cond, 0);
+	  if (TREE_OPERAND (exp, 1)) // THEN_CLAUSE
+	    {
+	      WFE_Expand_Expr (TREE_OPERAND (exp, 1), FALSE); 
+	      traverse_tree_chain (TREE_OPERAND (exp,1));
+	    }
+	  if (TREE_OPERAND (exp, 2)) { // ELSE_CLAUSE
+	    WFE_Expand_Start_Else ();
+	    WFE_Expand_Expr (TREE_OPERAND (exp, 2), FALSE); 
+	    traverse_tree_chain (TREE_OPERAND (exp,2));
+	  }
+	  WFE_Expand_End_Cond ();       
+	  popstack (cond_nest);
+	}
+	break;
 
       case FOR_STMT:
-        {
-          tree linit = FOR_INIT_STMT (exp);
-          tree lcond = FOR_COND (exp);
-          tree lbody = FOR_BODY (exp);
-          tree liter = FOR_EXPR (exp);
-          WFE_Expand_Expr (linit, FALSE);
-          struct nesting *thisloop = expand_start_loop(1);
-          
-          WFE_Expand_Start_Loop_Continue_Elsewhere (1, thisloop);
-          WFE_Expand_Exit_Loop_If_False (thisloop, lcond);
-          if (lbody)
-            WFE_Expand_Expr (lbody, FALSE);
-
-          WFE_Expand_Loop_Continue_Here ();
-          
-          if (liter)
-            WFE_Expand_Expr (liter);
-
-          expand_end_loop();
-          break;
-        }
+	{
+	  // If the control flows here, it can only be introduced here
+	  // by expansion of STMT_EXPR. Otherwise, it would have been 
+	  // handled in gnu/ files.
+	  //
+	  // 1. Expand the initialization
+	  //    WFE_Expand_Expr (EXPR_STMT_EXPR (FOR_INIT_STMT (exp)));
+	  //
+	  // Initialize if there is an initializer (bug 6098)
+	  tree init = TREE_OPERAND (TREE_OPERAND (exp, 0), 0);
+	  if (init)
+	    WFE_Expand_Expr (init, FALSE);
+	  
+	  struct nesting *loop_nest= alloc_nesting();
+	  LABEL_IDX for_exit_label_idx;
+	  
+	  New_LABEL (CURRENT_SYMTAB, for_exit_label_idx);
+	  construct_nesting (loop_nest, wfe_loop_stack, wfe_nesting_stack,
+			     for_exit_label_idx);
+	  
+	  wfe_nesting_stack = wfe_loop_stack = loop_nest;
+	  
+	  WFE_Expand_Start_Loop (1, loop_nest);
+	  WFE_Expand_Start_Loop_Continue_Elsewhere (1, loop_nest);
+	  // 2. Expand the condition
+	  tree cond = TREE_OPERAND (exp, 1);
+	  FmtAssert (!cond || TREE_CODE (cond) != TREE_LIST, 
+		     ("Handle this case"));
+	  WFE_Expand_Exit_Loop_If_False (loop_nest, cond);
+	  // 3. Expand the body
+	  //    WFE_Expand_Expr (FOR_BODY (exp));
+	  if (TREE_OPERAND (exp, 3))
+	    {
+	      WFE_Expand_Expr (TREE_OPERAND (exp, 3), FALSE);
+	      traverse_tree_chain (TREE_OPERAND (exp, 3));
+	    }
+	  WFE_Expand_Loop_Continue_Here ();
+	  // 4. Expand the post-iteration expression
+	  //    WFE_One_Stmt (FOR_EXPR (exp));
+	  if (TREE_OPERAND (exp, 2))
+	    WFE_One_Stmt (TREE_OPERAND (exp, 2));
+	  // 5. End the loop
+	  WFE_Expand_End_Loop ();       
+	  popstack (loop_nest);
+	  wn = WN_CreateLabel ((ST_IDX) 0,
+			       for_exit_label_idx,
+			       0, NULL);
+	  WFE_Stmt_Append (wn, Get_Srcpos ());
+	  wn = NULL;
+	  break;
+	}
 
       case WHILE_STMT:
-        {
-          tree wcond = WHILE_COND (exp);
-          tree wbody = WHILE_BODY (exp);
-          struct nesting *thisloop = expand_start_loop(1);
+	{
+	  // If the control flows here, it can only be introduced here
+	  // by expansion of STMT_EXPR. Otherwise, it would have been 
+	  // handled in gnu/ files.
+	  struct nesting *loop_nest = alloc_nesting();
+	  LABEL_IDX while_exit_label_idx;
+	  
+	  New_LABEL (CURRENT_SYMTAB, while_exit_label_idx);
+	  construct_nesting (loop_nest, wfe_loop_stack, wfe_nesting_stack,
+			     while_exit_label_idx);
+	  
+	  wfe_nesting_stack = wfe_loop_stack = loop_nest;
+	  
+	  WFE_Expand_Start_Loop (1, loop_nest);
+	  // 1. Expand the condition
+	  //   WHILE_COND (exp)
+	  tree cond = TREE_OPERAND (exp, 0);
+	  FmtAssert (TREE_CODE (cond) != TREE_LIST, 
+		     ("Handle this case"));
+	  WFE_Expand_Exit_Loop_If_False (loop_nest, cond);
+	  // 2. Expand the body
+	  //    WFE_Expand_Expr (WHILE_BODY (exp));
+	  if (TREE_OPERAND (exp, 1))
+	    {
+	      WFE_Expand_Expr (TREE_OPERAND (exp, 1), FALSE);
+	      traverse_tree_chain (TREE_OPERAND (exp, 1));
+	    }
+	  // 3. End the loop
+	  WFE_Expand_End_Loop ();       
+	  popstack (loop_nest);
+	  wn = WN_CreateLabel ((ST_IDX) 0,
+			       while_exit_label_idx,
+			       0, NULL);
+	  WFE_Stmt_Append (wn, Get_Srcpos ());
+	  wn = NULL;
+	  break;
+	}
 
-          WFE_Expand_Start_Loop_Continue_Elsewhere (1, thisloop);
-          WFE_Expand_Exit_Loop_If_False (thisloop, wcond);
-          WFE_Expand_Expr (wbody, FALSE);
-          WFE_Expand_Loop_Continue_Here ();
-
-          expand_end_loop();
-
-          break;
-        }
-     
+	// Fix bug 618 
       case DO_STMT:
-        {
-          tree dcond = DO_COND (exp);
-          tree dbody = DO_BODY (exp);
-          struct nesting *thisloop = expand_start_loop(1);
-          
-          WFE_Expand_Start_Loop_Continue_Elsewhere (1, thisloop);
-          WFE_Expand_Expr (dbody, FALSE);
-          WFE_Expand_Loop_Continue_Here();
-          WFE_Expand_Exit_Loop_If_False (thisloop, dcond);
-
-          expand_end_loop();
-
-          break;
-        }
+	{
+	  // If the control flows here, it can only be introduced here
+	  // by expansion of STMT_EXPR. Otherwise, it would have been 
+	  // handled in gnu/ files.
+	  struct nesting *loop_nest = alloc_nesting();
+	  LABEL_IDX dostmt_exit_label_idx;
+	  
+	  New_LABEL (CURRENT_SYMTAB, dostmt_exit_label_idx);
+	  construct_nesting (loop_nest, wfe_loop_stack, wfe_nesting_stack, dostmt_exit_label_idx);
+	  
+	  wfe_nesting_stack = wfe_loop_stack = loop_nest;
+	  
+	  WFE_Expand_Start_Loop (1, loop_nest);
+	  WFE_Expand_Start_Loop_Continue_Elsewhere (1, loop_nest);
+	  // 1. Expand the body
+	  //    WFE_Expand_Expr (DO_BODY (exp));
+	  if (TREE_OPERAND (exp, 1))
+	    {
+	      WFE_Expand_Expr (TREE_OPERAND (exp, 1), FALSE);
+	      traverse_tree_chain (TREE_OPERAND (exp, 1));
+	    }
+	  // Bug 2126
+	  WFE_Expand_Loop_Continue_Here();
+	  // 2. Expand the condition
+	  //   WHILE_COND (exp)
+	  tree cond = TREE_OPERAND (exp, 0);
+	  FmtAssert (TREE_CODE (cond) != TREE_LIST, 
+		     ("Handle this case"));
+	  WFE_Expand_Exit_Loop_If_False (loop_nest, cond);
+	  // 3. End the loop
+	  WFE_Expand_End_Loop ();       
+	  popstack (loop_nest);
+	  wn = WN_CreateLabel ((ST_IDX) 0,
+			       dostmt_exit_label_idx,
+			       0, NULL);
+	  WFE_Stmt_Append (wn, Get_Srcpos ());
+	  wn = NULL;
+	  break;
+	}
 
       case BREAK_STMT:
-        {
-          expand_exit_something ();
-          break;
-        }
+	{
+	  // If the control flows here, it can only be introduced here
+	  // by expansion of STMT_EXPR. Otherwise, it would have been 
+	  // handled in gnu/ files.
+#ifdef TARG_ST
+	  LABEL_IDX *label_idx = (LABEL_IDX *)xmalloc(sizeof(LABEL_IDX));
+#else
+	  LABEL_IDX *label_idx = (LABEL_IDX *)malloc(sizeof(LABEL_IDX));
+#endif
+	  *label_idx = 0;
+	  
+	  // bug 11701
+	  struct nesting * n = wfe_get_matching_scope (wfe_nesting_stack);
+	  Is_True (n, ("WFE_Expand_Expr: break stmt without enclosing scope"));
+	  *label_idx = get_nesting_label (n);
+	  
+	  WFE_Expand_Exit_Something (n, wfe_cond_stack,
+				     wfe_loop_stack, wfe_case_stack, label_idx);
+	  free (label_idx);
+	  
+	  break;
+	}
 
       case RETURN_STMT:
-        {
-          if (RETURN_STMT_EXPR (exp))
-            WFE_Expand_Return (RETURN_STMT_EXPR (exp));
-          break;
-        }
+	{
+	  // If the control flows here, it can only be introduced here
+	  // by expansion of STMT_EXPR. Otherwise, it would have been 
+	  // handled in gnu/ files.
+	  if ( TREE_OPERAND (exp, 0))
+	    WFE_Expand_Return (TREE_OPERAND (exp, 0));
+	  else
+	    WFE_Null_Return ();
+	  break;
+	}
 
       case ASM_STMT:
         {
@@ -5708,11 +5897,11 @@ WFE_Expand_Expr (tree exp,
           break;
         }
 
-   case CONTINUE_STMT:
-     {
-       WFE_Expand_Continue_Loop (NULL);
-       break;
-     }
+      case CONTINUE_STMT:
+	{
+	  WFE_Expand_Continue_Loop (NULL);
+	  break;
+	}
 #endif
 
     default:

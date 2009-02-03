@@ -1,6 +1,44 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Feb  3 12:32:54 CET 2009
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60011
+
+Description:
+------------
+	*  Fix for bug #60011([GFEC] Miscompilation of switch inside
+	statement expression)
+	Delivered fixes/codex-60011 rev #20492 with authorization art #60133.
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/gccfe/gnu/stmt.c
+	M      osprey/g++fe/wfe_expr.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@20492 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60011@20494 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@20492 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60011@20494" 
+
+Diff links to modified files:
+-----------------------------
+osprey/gccfe/wfe_expr.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_expr.cxx?p2=branches/fixes/codex-60011/osprey/gccfe/wfe_expr.cxx&r1=20492&r2=20494&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/stmt.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/stmt.c?p2=branches/fixes/codex-60011/osprey/gccfe/gnu/stmt.c&r1=20492&r2=20494&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_expr.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_expr.cxx?p2=branches/fixes/codex-60011/osprey/g++fe/wfe_expr.cxx&r1=20492&r2=20494&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Feb  3 08:57:59 CET 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

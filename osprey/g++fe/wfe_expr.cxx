@@ -2340,6 +2340,14 @@ get_string_pointer (WN *wn)
   return ptr;
 } /* get_string_pointer */
 
+#ifdef TARG_ST
+/* Dummy definitions of vars required for C translator, but not C++. */
+struct nesting * wfe_nesting_stack;
+struct nesting * wfe_cond_stack;
+struct nesting * wfe_loop_stack;
+struct nesting * wfe_case_stack;
+#endif
+
 // Auxiliary function for WFE_Expand_Expr, return the address of
 // a tree operand.  (Used for ADDR_EXPR.)
 WN*
