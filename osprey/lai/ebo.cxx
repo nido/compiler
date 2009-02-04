@@ -719,7 +719,7 @@ BOOL EBO_Fix_Same_Res_Op (OP *op,
 
 }
 
-inline BOOL TN_live_out_of(TN *tn, BB *bb)
+BOOL TN_live_out_of(TN *tn, BB *bb)
 /* -----------------------------------------------------------------------
  * Requires: global liveness info up-to-date
  * Return TRUE iff <tn> is live out of <bb>.

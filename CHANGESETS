@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Feb  4 13:40:10 CET 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59524
+
+Description:
+------------
+	* [trunk] Fix for bug #59524: Optimize cmp relop choice to favor gp16 instructions.
+	Deliver fixes/codex-59524 rev #20514 with authorization branch #59525
+
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo_util.h
+	M      osprey/lai/ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Feb  3 18:16:18 CET 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
