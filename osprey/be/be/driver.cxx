@@ -2171,6 +2171,18 @@ extern "C" {
     }
 #endif
   }
+#ifdef TARG_ST
+// [TTh] Provide a place to stop before components are loaded
+// (Useful for debugging extension loader)
+  void be_lib_debug(void) {
+#ifdef Is_True_On
+    if (getenv("BELIBPID")) {
+      fprintf(stderr, "BELIBPID=%d\n", getpid());
+      scanf("\n");
+    }
+#endif
+  }
+#endif
 }
 
 // a place holder with a debugging purpose under gdb (call a function
@@ -2222,9 +2234,9 @@ main (INT argc, char **argv)
 
   Init_Operator_To_Opcode_Table();
 
-  be_debug();
-
 #ifdef TARG_ST
+  be_lib_debug();
+
   //TB: initialized mtypes and builtins for extensions 
   Initialize_Extension_Loader ();
   if(Run_ipl)
@@ -2243,9 +2255,9 @@ main (INT argc, char **argv)
       fflush ( stderr );
     }
     goto extension_check_cleanup;
-//     exit(0);
   }
 #endif
+  be_debug();
 
   MEM_POOL_Push (&MEM_src_pool);
   MEM_POOL_Push (&MEM_src_nz_pool);
