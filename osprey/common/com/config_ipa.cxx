@@ -232,10 +232,15 @@ BOOL IPA_Enable_GP_Partition = FALSE;	/* Enable IPA to partition its
 					 */
 BOOL IPA_Space_Access_Mode = DEFAULT_ACCESS_MODE;
 
+#ifdef TARG_STxP70
+BOOL IPA_Enable_Keeplight = FALSE;  /* allow the user to keep all intermediate
+                      * files in .ipakeep directory
+                      */
+#else
 BOOL IPA_Enable_Keeplight = TRUE;  /* allow the user to ONLY keep the .I
 				     * and .o in the .ipakeep directory
 				     */
-
+#endif
 
 #ifdef KEY
 BOOL IPA_Enable_Icall_Opt = TRUE;   /* allow ipa change icall to call */

@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Feb 17 16:46:10 CET 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-44769
+
+Description:
+------------
+	* [trunk] Fix for bug #44769: [IPA-xP70] -Mkeepasm and -keep options don\'t work when IPA is activated..
+	Deliver fixes/codex-44769 rev #20588 with authorization branch #60364
+
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+	M      osprey/common/com/config_ipa.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Feb  6 14:38:17 CET 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
