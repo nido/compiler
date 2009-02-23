@@ -776,6 +776,12 @@ Eager_Ptr_Deref_Spec(OP *deref_op, BB *dest_bb, BOOL forw)
       TN *cur_result_tn = OP_load(cur_op) ? OP_result(cur_op, 0) : NULL;
 
       if (!Similar_Ptr_Addrs_Match(cur_op, deref_op)) {
+
+#ifdef TARG_ST
+	// FdF 20090205: A dismissible load is not guaranteed to access
+	// a valid address, so it must be ignored.
+	if (!OP_dismissible(cur_op))
+#endif
 	if (Similar_Ptr_Offset_ok(cur_op, deref_op)) {
 	  
 	  if (coffset_num < 0 && doffset_num < 0) {
