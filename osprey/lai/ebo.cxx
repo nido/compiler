@@ -7737,19 +7737,6 @@ EBO_Process ( BB *first_bb )
     if (BB_rotating_kernel(bb)) Set_BB_visited(bb);
   }
 
-#ifdef TARG_ST
-  // Arthur: this may be a unnecessary check, but ...
-  //         EBO shouldn't need to do anything for BBs that are
-  //         scheduled or SWP'd and there was no spill. The SWP'd
-  //         loops on IA-64 are protected because of the check
-  //         above. Scheduled one's are not ?
-  //         So, protect them here, in the worst case we win some
-  //         compile time.
-  for (bb = first_bb; bb != NULL; bb = BB_next(bb)) {
-    if (BB_scheduled(bb)) Set_BB_visited(bb);
-  }
-#endif
-
   for (bb = first_bb; bb != NULL; bb = BB_next(bb)) {
     RID *bbrid;
     if (( bbrid = BB_rid( bb )) &&
