@@ -1166,6 +1166,10 @@ WFE_Start_Function (tree fndecl)
       TY_Init (ty, 0, KIND_FUNCTION, MTYPE_UNKNOWN, STR_IDX_ZERO);
       Set_TY_align (ty_idx, 1);
       TYLIST tylist_idx;
+#ifdef TARG_ST
+      if (xtra_parm)
+	Set_TY_return_to_param(ty_idx);
+#endif
       Set_TYLIST_type (New_TYLIST (tylist_idx),
                        Get_TY(TREE_TYPE(TREE_TYPE(fndecl))));
       Set_TY_tylist (ty, tylist_idx);

@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Feb 25 11:37:16 CET 2009
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-61196
+
+Description:
+------------
+	*  Fix for bug #61196 ([GFECC] Incorrect handling of variadic function
+        returning through result ptr)
+	Delivered fixes/codex-61196 rev #20707 with authorization art #61228.
+
+
+Modified Files:
+---------------
+	M      osprey/g++fe/wfe_decl.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@20699 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-61196@20707 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@20699 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-61196@20707" 
+
+Diff links to modified files:
+-----------------------------
+osprey/g++fe/wfe_decl.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_decl.cxx?p2=branches/fixes/codex-61196/osprey/g++fe/wfe_decl.cxx&r1=20699&r2=20707&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Feb 24 15:36:53 CET 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
