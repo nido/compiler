@@ -252,7 +252,13 @@ BE_EXPORTED extern char *Sharps;	/* Sharps w/NL, full page width */
 #define TP_COUNT	TP_LAST+1 /* Number of valid phase numbers */
 
 
-
+#ifdef BINUTILS
+// Trace are not available when compiling xp70/binutils
+// but following functions must be defined
+static BOOL Get_Trace ( INT func, INT arg ) { return FALSE; }
+static FILE *Get_Trace_File ( void ) { return NULL; }
+#define TFile Get_Trace_File()
+#else
 
 /* Extract the phase number from a trace option: */
 BE_EXPORTED extern INT32 Get_Trace_Phase_Number ( char **cp, char *arg );
@@ -353,6 +359,8 @@ BE_EXPORTED extern void Nest_Indent ( FILE *file );
 
 BE_EXPORTED extern INT Get_Current_Phase_Number( void );
 BE_EXPORTED extern void Set_Current_Phase_Number(INT);
+
+#endif /* BINUTILS */
 
 #ifdef __cplusplus
 }

@@ -328,13 +328,6 @@ main (int argc, char *argv[])
 
 #if defined( TARG_STxP70 )
 
-   /* Temporary: deactivate IPA for STxP70.
-    */
-    if(TRUE==ipa) {
-       error("ipa is not supported yet for the STxP70 target");
-       exit(RC_USER_ERROR);
-    }
-
    /* At this point, add TENV for extension if it exists as if it was
     * on standard command line...
     */

@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Feb 27 10:03:27 CET 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-IPA
+
+Description:
+------------
+	* [trunk] Deliver tt2/dev-IPA rev #20749 with authorization branch #54670
+
+	-> Enabling of IPA on xp70.
+	Main changes done on this branch are:
+	- Enabling of -ipa option for xp70-v3 [osprey/driver/main.c]
+	- Enabling of IPA option verbose for xp70 [osprey/driver/OPTIONS]
+	- Disabling of -ipa for xp70-v4 + cleanup [osprey/driver/opt_actions.c]
+	- Disabling of tailmerge in IPL phase [osprey/be/opt/opt_main.cxx]
+	- Added missing IR dump after LICM [osprey/lai/cg.cxx]
+	- Fix for bug #60433: [IPA] Trace option "-Wb,-tf<funcname>" not working for static functions
+	- Fix for bug #60366: [IPA] trace options ignored by ipa_link
+	  [tracing.h, tracing.c, air_loader.cxx]
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_main.cxx
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/main.c
+	M      osprey/libair/air/Makefile.gbase
+	M      osprey/libair/air/air_loader.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/common/util/tracing.c
+	M      osprey/common/util/tracing.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Feb 25 11:37:16 CET 2009
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -112,6 +112,13 @@ static char *Current_PU_Name = NULL;
 static INT Current_PU_Number = 0;
 static INT Current_Region_Number = 0;  /* for debugging regions */
 
+#ifdef TARG_ST
+/* [TTh] Current_PU_Name might have been mangled for IPA :
+ * The following var stores the len of the Current_PU_Name
+ * without the IPA suffix, starting by '.' */
+static INT Current_PU_Name_real_len = 0;
+#endif
+
 
 /* ====================================================================
  *
@@ -407,6 +414,21 @@ Set_Current_PU_For_Trace ( char *name, INT number )
   Current_PU_Name = name;
   Current_PU_Number = number;
 
+#ifdef TARG_ST
+  /* [TTh] Compute length of Current_PU_Name without IPA suffix */
+  if (Current_PU_Name) {
+    int i;
+    char *p = name;
+    for (i=0; (*p != 0) && (*p != '.'); i++) {
+      p++;
+    }
+    Current_PU_Name_real_len = i;
+  }
+  else {
+    Current_PU_Name_real_len = 0;
+  }
+#endif
+
   Set_Current_Region_For_Trace(RID_CREATE_NEW_ID/* invalid region id */);
 }
 /* Set current REGION for region tracing */
@@ -487,7 +509,12 @@ Get_BB_Trace ( INT32 bb_id )
 
   if ( PU_Cnt > 0 ) {
     for ( i = 1; i <= PU_Cnt; i++ ) {
+#ifdef TARG_ST
+      if ( strncmp(PU_Enable[i], Current_PU_Name, Current_PU_Name_real_len) == 0 &&
+           strlen(PU_Enable[i]) == Current_PU_Name_real_len ) return TRUE;
+#else
       if ( strcmp(PU_Enable[i],Current_PU_Name) == 0 ) return TRUE;
+#endif
     }
     enabled = FALSE;
   }
@@ -563,10 +590,19 @@ Get_Trace ( INT func, INT arg )
       break;
   }
 
-  if ( result && Current_PU_Name != NULL && PU_Cnt > 0 ) { /* trace for certain PUs, by name */
+  if ( result && PU_Cnt > 0 ) { /* trace for certain PUs, by name */
+#ifdef KEY
+    if( Current_PU_Name == NULL ){
+      result = FALSE;
+    } else
+#endif
     for ( i = 1; i <= PU_Cnt; i++ ) {
-      if ( Current_PU_Name != NULL && 
-	   strcmp(PU_Enable[i], Current_PU_Name) == 0 )
+#ifdef TARG_ST
+      if ( strncmp(PU_Enable[i], Current_PU_Name, Current_PU_Name_real_len) == 0 &&
+	   strlen(PU_Enable[i]) == Current_PU_Name_real_len )
+#else
+      if ( strcmp(PU_Enable[i], Current_PU_Name) == 0 )
+#endif
 	break;
     }
     if (i > PU_Cnt)

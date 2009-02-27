@@ -835,6 +835,7 @@ CG_Generate_Code(
           CG_opt_level > 1 && !CG_localize_tns) {
       Set_Error_Phase("Perform_Loop_Invariant_Code_Motion");
       Perform_Loop_Invariant_Code_Motion ();
+      Check_for_Dump ( TP_LICM, NULL );
     }
 #endif
 

@@ -520,7 +520,7 @@ I-cpp_pic	;		ALL	NONE	"-D_PIC -D__DSO__"
 	NA__"option group to generate ProMP analysis file"
 
 -IPA:%s	toggle(&ipa,TRUE);		ALL	ipl,ipap	"-IPA:%s"
-	NA__STxP70__"option group to control interprocedural optimizations"
+	"option group to control interprocedural optimizations"
 -LANG:std toggle(&standard_cplusplus,TRUE);  CC    GRP  "-LANG:std"
         NA__"Use ISO/ANSI standard-conforming C++ language and library"
 -LANG:%s	;		LINK	GRP	"-LANG:%s"
@@ -1688,10 +1688,10 @@ I-template_used		;		CC	cfe	self
 
 % IPA-related options:
 -ipa	toggle(&ipa,TRUE);		ALL	ipap	self
-	NA__STxP70__"Perform interprocedural analysis and optimization"
+	"Perform interprocedural analysis and optimization"
 
 -IPA	toggle(&ipa,TRUE);		ALL	NONE	"-ipa"
-	NA__STxP70__"Perform interprocedural analysis and optimization"
+	"Perform interprocedural analysis and optimization"
 
 #ifdef TARG_ST
 -ipalibs	toggle(&ipalibs,TRUE);toggle(&ipa,TRUE);		ALL	ipap	self

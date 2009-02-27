@@ -885,6 +885,9 @@ Check_Target ( void )
       change_phase_name(P_ldsimple,"stxp70v4-ld");
       change_phase_name(P_binopt,"stxp70v4-binopt");
 #endif
+      if (ipa == TRUE) {
+	error("IPA is not supported on STxP70 v4 architecture");
+      }
       break;
     case PROC_stxp70_v3:
       if (bundlingas==FALSE) {
@@ -906,17 +909,8 @@ Check_Target ( void )
 #endif
       break;
   }
-
-  /*
-   * [TTh/VCdV] Force processor type in presence of user/native
-   * extensions (except x3).
-   */
-    if (proc == UNDEFINED || proc == PROC_stxp70_v3) {
-      proc = UNDEFINED; /* [HC] to prevent warning emission in toggle if proc==PROC_stxp70_v3 */
-      toggle(&proc, PROC_stxp70_v3);
-    }
   
-    /*
+  /*
    * [VB] Force no tail recursion when -pg or -finstrument-functions
    */
   if (option_was_seen(O_pg) || option_was_seen(O_finstrument_functions)) {

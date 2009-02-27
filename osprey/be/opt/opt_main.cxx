@@ -492,6 +492,9 @@ private:
   BOOL  _store_pre;
   BOOL  _ssa_pre;
   BOOL  _tail_recur;
+#ifdef TARG_ST
+  BOOL  _tailmerge;
+#endif
   INT32 _trip;
   BOOL  _update_vsym;
   INT32 _value_numbering;  /* 0==off, 1==single-pass, 2==iterative */
@@ -552,6 +555,9 @@ private:
       Enable_WN_Simp =			// disable WHIRL simplifier
       // WOPT_Enable_Zero_Version =
       WOPT_Enable_Tail_Recur =
+#ifdef TARG_ST
+      WOPT_Enable_Tailmerge =
+#endif
 	FALSE;
 
       WOPT_Enable_Copy_Propagate = TRUE;
@@ -564,6 +570,9 @@ private:
       WOPT_Enable_Combine_Operations = FALSE;
       WOPT_Enable_Goto = FALSE;
       WOPT_Enable_Tail_Recur = FALSE;
+#ifdef TARG_ST
+      WOPT_Enable_Tailmerge = FALSE;
+#endif
       break;
 
     case MAINOPT_PHASE:
@@ -753,6 +762,9 @@ private:
     WOPT_Enable_Goto = _goto;
     WOPT_Enable_Combine_Operations = _combine_operations;
     WOPT_Enable_Tail_Recur = _tail_recur;
+#ifdef TARG_ST
+    WOPT_Enable_Tailmerge = _tailmerge;
+#endif
     WOPT_Enable_Replace_Second_IV = _replace_second_iv;
     WOPT_Enable_Restricted_Map = _restricted_map;
     WOPT_Enable_Value_Numbering = _value_numbering;
@@ -833,6 +845,9 @@ public:
     _vn_full = WOPT_Enable_VN_Full;
     _simp_iload = WOPT_Enable_Simp_Iload;
     _tail_recur = WOPT_Enable_Tail_Recur;
+#ifdef TARG_ST
+    _tailmerge = WOPT_Enable_Tailmerge;
+#endif
     _replace_second_iv = WOPT_Enable_Replace_Second_IV;
     _restricted_map = WOPT_Enable_Restricted_Map;
     _epre_before_ivr = WOPT_Enable_Epre_Before_Ivr; // For running epre early
