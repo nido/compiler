@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Mar  3 13:48:23 CET 2009
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60719
+
+Description:
+------------
+	* [trunk] Fix for bug #60719: [SSA] CGIR / Out-of-SSA incorrectly promote local TN to Global TN.
+	Deliver fixes/codex-60719 rev #20796 with authorization branch #61038
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_ssa.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Feb 27 10:03:27 CET 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

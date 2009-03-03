@@ -3673,7 +3673,7 @@ map_phi_resources_to_new_names()
 
 	  if (TN_is_ssa_reg(tn) && (phiCongruenceClass(tn) != NULL)) {
 	    if (TN_new_name(tn) == NULL) {
-          new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
+	      new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
 	      Set_TN_new_name(tn, new_tn);
 
 	      if (Trace_SSA_Out) {
@@ -3689,7 +3689,7 @@ map_phi_resources_to_new_names()
 	    // FdF 20070515: Also, set the property OP_ALWAYS_UNC_DEF
 	    // on predicated definitions not dominated by other
 	    // definitions in the same congruence class.
-	    if (OP_cond_def(op) && (OP_results(op) == 1)) {
+	    if (OP_cond_def(op)) {
 	      BOOL dominated = FALSE;
 	      TN_LIST *p;
 	      for (p = PHI_CONGRUENCE_CLASS_gtns(phiCongruenceClass(tn));
@@ -3701,8 +3701,29 @@ map_phi_resources_to_new_names()
 		  break;
 		}
 	      }
+	      // FdF 20090206: For an OP with multiple results the
+	      // UNC_DEF property could be set only if all definitions
+	      // have the property !dominated. This is not checked,
+	      // and KILL definitions are just added for individual
+	      // definitions when required.
 	      if (!dominated) {
-		Set_OP_cond_def_kind(op, OP_ALWAYS_UNC_DEF);
+		if (OP_results(op) == 1)
+		  Set_OP_cond_def_kind(op, OP_ALWAYS_UNC_DEF);
+		else {
+		  TN *kill_tn = Copy_TN(tn);
+		  OP* kill_op = Mk_VarOP(TOP_KILL, 1, 0, &kill_tn, NULL);
+		  BB_Insert_Op_Before(OP_bb(op), op, kill_op);
+		  // FdF 20090206: The renaming is updated, although
+		  // no operation is added to reflect this. If
+		  // SSA_Make_Conventional is called again on this
+		  // code before the out-of-SSA phase, this will
+		  // simply result in the insertion of another KILL
+		  // op, and the first KILL will become dead.  The
+		  // congruence class is NOT updated, because it could
+		  // change the name of the representant for the
+		  // congruence class.
+		  Set_TN_new_name(kill_tn, new_tn);
+		}
 	      }
 	    }
 	    
@@ -4468,10 +4489,16 @@ SSA_Remove_Pseudo_OPs (
 	  }
 	}
 
+	// FdF 20090206: For an op with the cond_def property, check
+	// if all TN start a new live-range.
+	BOOL set_UNC_DEF = TRUE;
 	for (i = 0; i < OP_results(op); i++) {
 	  tn = OP_result(op,i);
 
-	  if (!TN_is_register(tn)) continue;
+	  if (!TN_can_be_renamed(tn)) {
+	    set_UNC_DEF = FALSE;
+	    continue;
+	  }
 
 	  new_tn = TN_new_name(tn);
 	  if (new_tn != NULL) {
@@ -4479,19 +4506,34 @@ SSA_Remove_Pseudo_OPs (
 	    //  new_tn = PHI_CONGRUENCE_CLASS_TN(phiCongruenceClass(tn));
 
 	    Set_OP_result(op, i, new_tn);
+	    // FdF 20090206: This definition is not unique in its
+	    // live-range, so it may be dominated by another
+	    // definition
+	    set_UNC_DEF = FALSE;
 #if 0
 	    // Add new_tn to live_out of this BB
 	    GRA_LIVE_Add_Live_Out_GTN(bb, new_tn);
 #endif
 
 	  }
-	  else if (OP_cond_def(op) && (OP_results(op) == 1)) {
-	    // FdF 20070514: This TN is not involved in any PSI or PHI
-	    // operations, so it will be defined only once outside of
-	    // SSA. It is safe to mark this definition UNC_DEF because
-	    // it cannot be permuted with another definition of this
-	    // TN.
+	}
+	if (OP_cond_def(op) && (OP_results(op) > 0)) {
+	  // FdF 20090206: This is a conditional definition, and all
+	  // definitions define a live-range with no other definition.
+	  if (set_UNC_DEF)
 	    Set_OP_cond_def_kind(op, OP_ALWAYS_UNC_DEF);
+	  else  {
+	    // FdF 20090206: Otherwise, insert a KILL for those TN
+	    // that are the unique definition in their live-range
+	    for (i = 0; i < OP_results(op); i++) {
+	      tn = OP_result(op,i);
+	      if (!TN_can_be_renamed(tn)) continue;
+	      new_tn = TN_new_name(tn);
+	      if (new_tn == NULL) {
+		OP* kill_op = Mk_VarOP(TOP_KILL, 1, 0, &tn, NULL);
+		BB_Insert_Op_Before(OP_bb(op), op, kill_op);
+	      }
+	    }
 	  }
 	}
       } /* else not a TOP_phi */
