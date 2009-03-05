@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Mar  5 16:24:29 CET 2009
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-61546
+
+Description:
+------------
+	*  Fix for bug #61546 (Visibility attribute lost for weak function
+	definition)
+	Delivered fixes/codex-61546 rev#20833 with authorization art #61755.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgemit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@20798 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-61546@20833 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@20798 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-61546@20833" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgemit.cxx?p2=branches/fixes/codex-61546/osprey/lai/cgemit.cxx&r1=20798&r2=20833&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Mar  3 13:48:23 CET 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -920,6 +920,7 @@ Print_Label (
     fprintf (pfile, "\t%s\t", AS_WEAK);
     EMT_Write_Qualified_Name(pfile, st);
     fprintf(pfile, "\n");
+    EMT_Visibility (pfile, ST_export(st), st);
   }
   else if (!ST_is_export_local(st)) {
     fprintf (pfile, "\t%s\t", AS_GLOBAL);
@@ -1060,9 +1061,8 @@ Print_Common (
       fprintf ( pfile, "\n");
     }
 #ifdef TARG_ST
-    else
-      // clarkes 090307
-      EMT_Visibility (pfile, ST_export(st), st);
+    // clarkes 090307
+    EMT_Visibility (pfile, ST_export(st), st);
 #endif
     fprintf ( pfile, "\t%s\t", AS_COM);
     EMT_Write_Qualified_Name(pfile, st);
@@ -1140,14 +1140,14 @@ EMT_Put_Elf_Symbol (
 		  EMT_Write_Qualified_Name(Asm_File, sym);
 		  fprintf ( Asm_File, "\n");
 	      }
-		  // clarkes 090307
 	      else 
 	      {
 		  fprintf(Asm_File, "\t%s\t", AS_GLOBAL);
 		  EMT_Write_Qualified_Name(Asm_File, sym);
 		  fprintf ( Asm_File, "\n");
-		  EMT_Visibility (Asm_File, ST_export(sym), sym);
 	      }
+	      // clarkes 090307
+	      EMT_Visibility (Asm_File, ST_export(sym), sym);
 	  }
 #endif
 	fprintf (Asm_File, "\t%s\t", AS_TYPE);
@@ -1171,13 +1171,13 @@ EMT_Put_Elf_Symbol (
           EMT_Write_Qualified_Name(Asm_File, sym);
           fprintf ( Asm_File, "\n");
         }
-	// clarkes 090307
 	else {
 	  fprintf(Asm_File, "\t%s\t", AS_GLOBAL);
 	  EMT_Write_Qualified_Name(Asm_File, sym);
 	  fprintf ( Asm_File, "\n");
-	  EMT_Visibility ( Asm_File, ST_export(sym), sym);
 	}
+	// clarkes 090307
+	EMT_Visibility ( Asm_File, ST_export(sym), sym);
       }
     }
 #endif
@@ -1283,10 +1283,10 @@ EMT_Put_Elf_Symbol (
 	      fprintf(Asm_File, "\t%s\t", AS_GLOBAL);
 	      EMT_Write_Qualified_Name(Asm_File, sym);
 	      fprintf ( Asm_File, "\n");
-#ifdef TARG_ST
-	      EMT_Visibility ( Asm_File, ST_export(sym), sym);
-#endif
 	    }
+#ifdef TARG_ST
+	    EMT_Visibility ( Asm_File, ST_export(sym), sym);
+#endif
 	  }
 	  break;
 	case SCLASS_COMMON:
@@ -1347,10 +1347,10 @@ EMT_Put_Elf_Symbol (
 	    fprintf(Asm_File, "\t%s\t", AS_GLOBAL);
 	    EMT_Write_Qualified_Name(Asm_File, sym);
 	    fprintf ( Asm_File, "\n");
-#ifdef TARG_ST
-	    EMT_Visibility (Asm_File, ST_export(sym), sym);
-#endif
 	  }
+#ifdef TARG_ST
+	  EMT_Visibility (Asm_File, ST_export(sym), sym);
+#endif
 	}
       }
       else 
