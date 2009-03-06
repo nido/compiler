@@ -169,6 +169,13 @@ extern "C" {
 #define EC_DRA_clone_altentry    EC_BASE_BE+145  /* */
 #define EC_DRA_bad_clone_request EC_BASE_BE+146  /* str, str */
 
+#ifdef TARG_ST
+/* Additional Data layout error messages */
+#define EC_LAY_Warn_Stack_Align    EC_BASE_BE+150 /* str, int, int */
+#define EC_LAY_Warn_Stack_Modif    EC_BASE_BE+151 /* str, int, int */
+#define EC_LAY_Warn_Stack_Exceeded EC_BASE_BE+152 /* str, int, int */
+#endif
+
 #ifdef __cplusplus
 }
 #endif

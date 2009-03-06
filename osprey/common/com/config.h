@@ -588,9 +588,6 @@ BE_EXPORTED extern BOOL  CG_memcpy_cannot_overlap;
 BE_EXPORTED extern BOOL  CG_memmove_cannot_overlap;
 BE_EXPORTED extern BOOL  CG_memmove_nonconst;
 BE_EXPORTED extern BOOL  CG_floating_const_in_memory;
-#ifdef TARG_ST
-BE_EXPORTED extern BOOL  CG_auto_align_stack;
-#endif
 BE_EXPORTED extern BOOL  Allow_wrap_around_opt;
 #define DEF_FOLD_ARITH_MAX_INS_CNT 1000
 BE_EXPORTED extern INT32 Fold_Arith_Max_INS_CNT;
@@ -750,6 +747,10 @@ BE_EXPORTED extern char * Schedlist_Option;
 BE_EXPORTED extern BOOL  Force_Long_EH_Range_Offsets;
 /* Force stack frame to use large model */
 BE_EXPORTED extern BOOL  Force_Large_Stack_Model;
+#ifdef TARG_ST
+/* Enable automatic alignment of stack based on stack data alignments */
+BE_EXPORTED extern BOOL  Auto_align_stack;
+#endif
 /* put each function in its own text section */
 BE_EXPORTED extern BOOL  Section_For_Each_Function;
 

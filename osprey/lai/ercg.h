@@ -79,10 +79,6 @@
 /* Scheduling Prefetch warning */
 #define EC_Warn_Prefetch EC_BASE_CG+7 /* string, string, string, int */
 
-#define EC_Warn_Stack_Align EC_BASE_CG+8 /* string, int, int */
-#define EC_Warn_Stack_Modif EC_BASE_CG+9 /* string, int, int */
-#define EC_Warn_Stack_Exceeded EC_BASE_CG+10 /* string, int, int */
-
 /* Start all target-specific codes here: */
 #define EC_TARGET	EC_BASE_CG+200
 

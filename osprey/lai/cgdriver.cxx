@@ -594,8 +594,6 @@ static OPTION_DESC Options_CG[] = {
 #ifdef TARG_ST
   { OVK_BOOL,	OV_INTERNAL, TRUE, "warn_prefetch_padding", "",
     1, 0, 0, &CG_warn_prefetch_padding, NULL },
-  { OVK_BOOL,	OV_INTERNAL, TRUE, "auto_align_stack", "",
-    TRUE, 0, 0, &CG_auto_align_stack, NULL },
 #endif
 
   // CGLOOP options.

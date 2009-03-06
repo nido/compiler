@@ -393,6 +393,9 @@ BOOL Force_Long_EH_Range_Offsets = FALSE;
 /* Force stack frame to use large model */
 BOOL Force_Large_Stack_Model = FALSE;
 BOOL Force_GP_Prolog;	/* force usage of gp prolog */
+#ifdef TARG_ST
+BOOL Auto_align_stack = FALSE;        /* Auto align stack */
+#endif
 
 OPTION_LIST *Registers_Not_Allocatable = NULL;
 #ifdef TARG_ST
@@ -535,6 +538,10 @@ static OPTION_DESC Options_TENV[] = {
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "large_stack",		NULL,
     0, 0, 0,	&Force_Large_Stack_Model, NULL,
     "Generate code assuming >32KB stack frame" },
+#ifdef TARG_ST
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "auto_align_stack", "",
+    TRUE, 0, 0, &Auto_align_stack, NULL },
+#endif
   { OVK_BOOL,	OV_VISIBLE,	FALSE, "local_names",		"",
     0, 0, 0,	&PIC_Local_Names, NULL },
   { OVK_BOOL,	OV_SHY,		FALSE, "long_eh_offsets",	"long_eh", 
@@ -1014,9 +1021,6 @@ BOOL CG_memcpy_cannot_overlap = FALSE;	/* for intrinsic expansion of memcpy */
 BOOL CG_memmove_cannot_overlap = FALSE;	/* for intrinsic expansion of memmove */
 BOOL CG_memmove_nonconst = FALSE;	/* expand mem intrinsics unknown size */
 BOOL CG_floating_const_in_memory = TRUE; /* keep fp constants in memory */
-#ifdef TARG_ST
-BOOL CG_auto_align_stack = FALSE;        /* Auto align stack */
-#endif
 
 /***** Miscellaneous GOPT options *****/
 INT32 Opt_Level = DEF_OPT_LEVEL;

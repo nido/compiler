@@ -2522,6 +2522,58 @@ Allocate_Local_Spill_Sym (void)
   }
 }
 
+#ifdef TARG_ST
+/* ====================================================================
+ *    Stack_Align_Check()
+ *
+ *   This function checks that the alignment constraint related
+ *   to local symbols is compatible with the stack alignment.
+ *
+ *   Basically there are two phases: 
+ *   1. determine the required alignment (accounts for function level
+ *	alignment attribute and alignment of automatics);
+ *   2. if Auto_align_stack is true, set the required alignment, 
+ *	otherwise, emit a warning if it exceeds the natural stack alignment.
+ *
+ *   FdF 20080212: Note that this function cannot get alignment
+ *   constraints from varargs parameters
+ * ====================================================================
+ */
+static void Stack_Align_Check() {
+  // [dt25] if symbol is a local defined as having an alignment 
+  // constraint > PU_aligned_stack(Get_Current_PU()) then we should force the stack allignment
+
+  INT i,Max_Stack_Align = PU_aligned_stack(Get_Current_PU());
+  bool user_stack_align = false;
+  bool Update = false;
+  ST *sym;
+
+  // We detect if the stack alignment has been set by the user
+  if (Max_Stack_Align != Target_Stack_Alignment) user_stack_align = true;
+  FOREACH_SYMBOL(CURRENT_SYMTAB,sym,i) {
+    if (ST_class(sym) == CLASS_VAR && ST_sclass(sym) == SCLASS_AUTO && TY_align(ST_type(sym))>Max_Stack_Align) {
+      Update = true;
+      Max_Stack_Align = TY_align(ST_type(sym));
+    }
+  }
+  
+  if (Update && !Auto_align_stack ) {
+    // Warn for undefined behavior
+    ErrMsg(EC_LAY_Warn_Stack_Exceeded,ST_name(Get_Current_PU_ST()),(int)PU_aligned_stack(Get_Current_PU()),Max_Stack_Align);
+  }
+
+  if (Update && Auto_align_stack) {
+    if (user_stack_align) {
+      ErrMsg(EC_LAY_Warn_Stack_Align,ST_name(Get_Current_PU_ST()),(int)PU_aligned_stack(Get_Current_PU()),Max_Stack_Align);
+      ErrMsg (EC_LAY_Warn_Stack_Modif,ST_name(Get_Current_PU_ST()),(int)PU_aligned_stack(Get_Current_PU()),Max_Stack_Align);
+    }
+    //ErrMsg (EC_Warn_Stack_Modif,ST_name(Get_Current_PU_ST()),(int)PU_aligned_stack(Get_Current_PU()),Max_Stack_Align);
+    Set_PU_aligned_stack(Get_Current_PU(),Max_Stack_Align);
+  }
+
+}
+#endif
+
 /* ====================================================================
  *   Initialize_Stack_Frame
  * ====================================================================
@@ -2644,6 +2696,11 @@ Initialize_Stack_Frame (WN *PU_tree)
   /* add upformal_size in case upformal is so large it needs
    * to be accessed via $fp. */
   frame_size += upformal_size;
+
+#ifdef TARG_ST
+  /* Automatic stack alignment */
+  Stack_Align_Check();
+#endif
 
   Current_PU_Stack_Model = Choose_Stack_Model(frame_size);
   if (Trace_Frame) {
