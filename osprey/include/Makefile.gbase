@@ -556,6 +556,10 @@ ifeq ($(BUILD_TARGET), STxP70)
 SYS_DIRS += stxp70
 endif
 
+ifeq ($(BUILD_TARGET), ARM)
+SYS_DIRS += arm
+endif
+
 ifneq ($(BUILD_OS),MINGW)
 #use symlink
 TEST_ARG=-h

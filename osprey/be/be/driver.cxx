@@ -1264,6 +1264,11 @@ Do_WOPT_and_CG_with_Regions (PU_Info *current_pu, WN *pu)
 	actions |= LOWER_FAST_MUL;
 	actions |= LOWER_CNST_MUL;
 #endif
+#ifdef TARG_ARM
+	actions |= LOWER_FAST_MUL;
+	actions |= LOWER_CNST_MUL;
+#endif
+
 	rwn = WN_Lower(rwn, actions, NULL, 
 		       "Lowering in preparation to RT_Lower");
 	/* Extension specific lowering */

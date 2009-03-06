@@ -64,7 +64,8 @@ extern void Expand_Sub (TN *result, TN *src1, TN *src2, TYPE_ID mtype, OPS *ops)
 extern void Expand_Neg (TN *result, TN *src, TYPE_ID mtype, OPS *ops);
 extern void Expand_Abs (TN *result, TN *x, TYPE_ID mtype, OPS *ops);
 extern void Expand_Multiply (TN *result, TYPE_ID rmtype, TN *x, TYPE_ID xmtype, TN *y, TYPE_ID ymtype, OPS *ops);
-extern void Expand_Madd (TN *result, TYPE_ID rmtype, TN *x, TYPE_ID xmtype, TN *y, TYPE_ID ymtype, TN *z, TYPE_ID zmtype, OPS *ops);
+extern void Expand_Madd (TN *result, TYPE_ID rmtype, TN *x, TYPE_ID xmtype, TN *y, TYPE_ID ymtype, TN *z, TYPE_ID zmtype, BOOL is_neg, OPS *ops);
+extern void Expand_Msub (TN *result, TYPE_ID rmtype, TN *x, TYPE_ID xmtype, TN *y, TYPE_ID ymtype, TN *z, TYPE_ID zmtype, BOOL is_neg, OPS *ops);
 extern void Expand_High_Multiply (TN *result, TN *x, TN *y, TYPE_ID mtype, OPS *ops);
 extern void Expand_Sqrt (TN *result, TN *x, TYPE_ID mtype, OPS *ops);
 extern void Expand_Binary_Complement (TN *dest, TN *src, TYPE_ID mtype, OPS *ops);

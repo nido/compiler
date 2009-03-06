@@ -1018,6 +1018,12 @@ I-cpp_nonansi_f77	;		f77	cpp	KRDEFS NONANSI_svr4
 -EL	toggle(&endian,ENDIAN_LITTLE);	ALL	NONE  "-TENV:little_endian"
 	NA__STxP70__"generate code for little endian target"
 #endif
+#ifdef TARG_ARM
+-EB	toggle(&endian,ENDIAN_BIG);	ALL	as,ld  self  "-TENV:big_endian"
+	"generate code for big endian target"
+-EL	toggle(&endian,ENDIAN_LITTLE);	ALL	as,ld  self "-TENV:little_endian"
+	"generate code for little endian target"
+#endif
 
 #ifdef TARG_STxP70
 -fp_ace toggle(&fp_lib,LIB_FP_ACE);         ALL     ld     ""
@@ -2862,6 +2868,24 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"Initialize OS21 trace support"	
 #endif
 -mlibdir=%s	Process_ST200_Targ(option_name,optargs);		ALL	NONE	-mlibdir=%s
+	"Specifies alternate library directory"
+#endif
+
+%%% arm specific options
+#ifdef TARG_ARM
+-mcore=%s	Process_ARM_Targ(option_name,optargs);		ALL	as	-mcore=%s
+	"Specifies core specific file paths [arm9,arm11]"
+#ifdef MUMBLE_ARM_BSP
+-mboard=%s	Process_ARM_Targ(option_name,optargs);		ALL	NONE	-mboard=%s
+	"Specifies core specific file paths"
+-msoc=%s	Process_ARM_Targ(option_name,optargs);		ALL	NONE	-msoc=%s
+	"Specifies chip specific file paths"
+-mruntime=%s	Process_ARM_Targ(option_name,optargs);		ALL	NONE	-mruntime=%s
+	"Specifies runtime execution"
+-mtargetdir=%s	Process_ARM_Targ(option_name,optargs);		ALL	NONE	-mtargetdir=%s
+	"Specifies alternate target directory"
+#endif
+-mlibdir=%s	Process_ARM_Targ(option_name,optargs);		ALL	NONE	-mlibdir=%s
 	"Specifies alternate library directory"
 #endif
 

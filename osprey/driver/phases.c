@@ -344,6 +344,53 @@ static char* get_libc_option(char* libbasename)
 
 #endif /* TARG_STxP70 */
 
+#ifdef TARG_ARM
+/* (cbr) crt_mode we are using */
+enum {nocrt, crt0, crt1} crt_mode;
+
+static const char * get_boot_fname ( void ) {
+  string boot_path;
+  extern int STxP70mult;
+  
+#if 0
+  if (lib_short_double == TRUE) {
+    boot_path = string_copy("spieee754/");
+  } else {
+    boot_path = string_copy("");
+  }
+  
+  if (fpx == TRUE) {
+    boot_path = concat_strings(boot_path,"fpx");
+  } else if (STxP70mult == TRUE) {
+    boot_path = concat_strings(boot_path,"mult");
+  } else {
+    boot_path = concat_strings(boot_path,"nomult");
+  }
+  if (lib_kind == LIB_STXP70_16) {
+    boot_path = concat_strings(boot_path,"/reg16");
+  } else {
+    boot_path = concat_strings(boot_path,"/reg32");
+  }
+#endif
+
+  return concat_strings(boot_path,"/arm32");
+  /* cannot be reached */
+}
+static int find_crt_mode(void)
+{
+  /* (cbr) check crtmode, in this order */
+  extern string arm_libdir;		    
+
+  if (arm_libdir && file_exists (concat_strings(arm_libdir, concat_strings("/", (char *)get_boot_fname())))) 
+    return crt1;
+  else if (file_exists (concat_strings(get_phase_dir(P_library), concat_strings("/", (char *)get_boot_fname())))) 
+    return crt1;
+
+  /* default */
+  return crt1;
+}
+#endif /* TARG_ARM */
+
 static string_list_t *ipl_cmds = 0; /* record the user options that needed
 				       to be passed to ipl */
 extern string_list_t *feedback_files;
@@ -1437,7 +1484,9 @@ add_file_args (string_list_t *args, phases_t index)
 		    /* (cbr) if crt1 exists use the _init elf mechanism */
 		    /* [CG] if shared mode remove crt1/crt0, keep crti related files. */
 		    if(crt_mode == crt1) {
+#ifndef TARG_ARM
 		      if (shared != DSO_SHARED) add_string(args, find_crt_path("crt1.o"));
+#endif
 		      add_string(args, find_crt_path("crti.o"));
 		      add_string(args, find_crt_path("crtbegin.o"));
 		    }
@@ -1472,6 +1521,16 @@ add_file_args (string_list_t *args, phases_t index)
 #endif
 #endif
 
+#ifdef TARG_ARM
+#ifdef MUMBLE_ARM_BSP
+		if (!option_was_seen(O_nostartfiles) &&
+		    shared != DSO_SHARED) {
+		  extern void  set_arm_bsp (string_list_t *);
+		  set_arm_bsp (args);
+		}
+#endif
+#endif
+
 		if (ftz_crt) {
 			add_string(args, find_crt_path("ftz.o"));
 		}
@@ -1497,7 +1556,9 @@ add_file_args (string_list_t *args, phases_t index)
 		    /* [CG] if shared mode remove crt1/crt0, keep crti related files. */
 		  if (crt_mode == crt1) {
 #endif
+#ifndef TARG_ARM
 			if (shared != DSO_SHARED) add_string(args, find_crt_path("crt1.o"));
+#endif
 			add_string(args, find_crt_path("crti.o"));
 			add_string(args, find_crt_path("crtbegin.o"));
 #ifdef TARG_ST
@@ -1557,6 +1618,16 @@ add_file_args (string_list_t *args, phases_t index)
 		    shared != DSO_SHARED) {
 		  extern void  set_stxp70_bsp (string_list_t *);
 		  set_stxp70_bsp (args);
+		}
+#endif
+#endif
+
+#ifdef TARG_ARM
+#ifdef MUMBLE_ARM_BSP
+		if (!option_was_seen(O_nostartfiles) &&
+		    shared != DSO_SHARED) {
+		  extern void  set_arm_bsp (string_list_t *);
+		  set_arm_bsp (args);
 		}
 #endif
 #endif
@@ -1779,6 +1850,37 @@ add_script_files_args (string_list_t *args)
     }
 #endif
 #endif /* TARG_ST200 */
+
+#ifdef TARG_ARM
+#ifdef MUMBLE_ARM_BSP
+    if (shared != DSO_SHARED &&
+	!option_was_seen (O_T) &&
+	!option_was_seen (O_nostdlib)) {
+      extern string arm_targetdir ;
+      string spath;
+      string ofile;
+      /* (cbr) DDTS MBTst17263 */
+      if (arm_targetdir) 
+	spath = arm_targetdir;
+      else
+	spath = get_phase_dir(P_alt_library);
+      
+      /* TB: platform_r.ld: no more need */
+      if (!at_least_one_icache_optim || next_ld_for_icache_is_simple != FALSE)
+	if (shared != RELOCATABLE && shared != DSO_SHARED) {
+	  ofile = concat_path (spath, "rdimon-ram.ld");
+	  if (!file_exists (ofile)) {
+	    spath = get_phase_dir(P_alt_library);
+	    ofile = concat_path (spath, "rdimon-ram.ld");   
+	  }
+	  if (file_exists (ofile)) {
+	    add_string(args, "-T");
+	    add_string(args, ofile);
+	  }
+	}
+    }
+#endif
+#endif /* TARG_ARM */
     
 #ifdef TARG_STxP70
 #ifdef MUMBLE_STxP70_BSP
@@ -2011,6 +2113,74 @@ add_final_ld_args (string_list_t *args)
 
 #endif /* TARG_ST200 */
       
+
+#ifdef TARG_ARM
+      // [CG] Whole section conditionalized on target as libraries support
+      // vary greatly.
+      
+      /* (cbr) libc++ comes before libc */
+      if (invoked_lang == L_CC) {
+	add_string(args, "-lstdc++");
+	/* (cbr) for C++ exceptions unwinding */
+	add_string(args, "-lgcc_eh");
+	add_string(args, "-lm");
+      }
+
+      /* add the libc.a,so */
+      if (ipalibs == TRUE) add_string(args, "-lc-ipa");
+      
+      add_string(args, "-lc");
+      
+#ifdef MUMBLE_ARM_BSP
+      if(file_exists (concat_path(get_phase_dir(P_library), "libgloss.a"))) {
+	add_string(args, "-lgloss");
+      }
+      
+      {
+	extern string arm_core, arm_soc, arm_board;
+	string ofile;
+	
+	// Need to make this conditional because -mcore is also
+	// used for compiler's code generation.
+	ofile = concat_path (arm_board, "libboard.a");
+	if (file_exists (ofile)) {
+	  add_string (args, "-lboard");
+	}
+	
+	ofile = concat_path (arm_soc, "libsoc.a");
+	if (file_exists (ofile)) {
+	  add_string (args, "-lsoc");
+	}
+	
+	ofile = concat_path (arm_core, "libcore.a");
+	if (file_exists (ofile)) {
+	  add_string (args, "-lcore");
+	}
+      }
+#endif /* MUMBLE_ARM_BSP */
+      
+      /* libgcc selection. */
+      if (ipalibs == TRUE) add_string(args, "-lgcc-ipa");
+      add_string(args, "-lgcc") ;
+
+      if (ipa == TRUE) {
+#ifndef TARG_ST // [CL]
+	if (invoked_lang == L_CC) {
+	  add_string(args, "-lstdc++");
+	/* (cbr) for C++ exceptions unwinding */
+	  add_string(args, "-lgcc_eh");
+	  add_string(args, "-lm");
+	}
+	add_string(args, "-lgcc");
+	add_string(args, "-lc");
+	add_string(args, "-lgcc");
+#endif
+      }
+
+#endif /* TARG_ARM */
+      
+
+
 #ifdef TARG_STxP70
 
 #ifndef COSY_LIB /* [HC] dealing with newlib. Keep former code for CoSy compat. */

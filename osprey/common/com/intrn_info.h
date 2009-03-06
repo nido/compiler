@@ -90,6 +90,9 @@ typedef enum INTRN_RETKIND {
 #define CGINTRINSIC	TRUE
 #define NOT_CGINTRINSIC	FALSE
 
+#ifdef TARG_ST
+#include "config_intrinsic.h"
+#endif
 
 #ifdef TARG_ST
 typedef enum {
@@ -180,6 +183,10 @@ inline BOOL INTRN_is_actual (const INTRINSIC i)
 
 inline BOOL INTRN_cg_intrinsic (const INTRINSIC i)
 {
+  BOOL cg_intrinsic;
+  if(TARG_Intrinsic_CG_Intrinsic(i,&cg_intrinsic)) {
+    return cg_intrinsic;
+  }
   return intrn_info[i].is_cg_intrinsic;
 }
 
@@ -200,6 +207,10 @@ inline char * INTRN_specific_name (const INTRINSIC i)
 
 inline char * INTRN_rt_name (const INTRINSIC i)
 {
+  char *runtime_name;
+  if((runtime_name = TARG_Intrinsic_Runtime_Name(i)) != NULL) {
+    return runtime_name;
+  }
   return intrn_info[i].runtime_name;
 }
 

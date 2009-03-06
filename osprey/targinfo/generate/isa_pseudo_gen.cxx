@@ -456,7 +456,7 @@ void ISA_Pseudo_End(void)
 		 TOP_UNDEFINED);
   fprintf(cfile, "};\n");
 
-  fprintf(cfile, "\nstatic const mUINT8 pseudo_index[%d][2] = {\n", TOP_count);
+  fprintf(cfile, "\nstatic const INT pseudo_index[%d][2] = {\n", TOP_count);
   for (i = 0; i < TOP_count; ++i) {
     fprintf(cfile, "  { %2d, %2d }, /* %-9s */\n", 
 		   machine_to_pseudo_index[i], 

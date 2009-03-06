@@ -174,8 +174,6 @@ main()
   OPERAND_USE_TYPE postincr = Create_Operand_Use("postincr"); 
   OPERAND_USE_TYPE predicate = Create_Operand_Use("predicate"); 
   OPERAND_USE_TYPE preincr = Create_Operand_Use("preincr"); 
-  OPERAND_USE_TYPE scale_1 = Create_Operand_Use("scale_1"); 
-  OPERAND_USE_TYPE scale_2 = Create_Operand_Use("scale_2"); 
   OPERAND_USE_TYPE storeval = Create_Operand_Use("storeval"); 
   OPERAND_USE_TYPE target = Create_Operand_Use("target"); 
   OPERAND_USE_TYPE uniq_res = Create_Operand_Use("uniq_res"); 

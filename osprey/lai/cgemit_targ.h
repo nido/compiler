@@ -100,6 +100,10 @@ extern void CGEMIT_Alias (ST *sym, ST *strongsym);
 extern void CGEMIT_Special_Register_Function_Fixup( OP *op );
 #endif
 
+#ifdef TARG_ARM
+// Emit register list from constant value.
+extern BOOL CGEMIT_Register_List(OP *op, INT opnd_idx, vstring *buf);
+#endif
 
 // generate procedure end directive
 extern void CGEMIT_Exit_In_Asm (ST *pu);

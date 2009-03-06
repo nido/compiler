@@ -126,7 +126,7 @@ lao_init(void)
     // Initialize the target dependent LIR<->CGIR interface
     CGIR_LAO_Init();
     // We take the first subset of the subset list which must be the base ISA subset.
-    O64_Processor processor = CGIR_IS_to_Processor(*ISA_SUBSET_LIST_Begin(ISA_SUBSET_List));
+    Processor processor = CGIR_IS_to_Processor(*ISA_SUBSET_LIST_Begin(ISA_SUBSET_List));
     // Patch the MaxIssue and MinTaken values.
     int maxIssue = CGTARG_Max_Issue_Width();
     int minTaken = CGTARG_Branch_Taken_Penalty();
@@ -134,7 +134,7 @@ lao_init(void)
     O64_Interface_setMinTaken(interface, processor, minTaken);
     // Fixup in case of GP-based addressing.
     if (Gen_GP_Relative) {
-      O64_Register gp_register = CGIR_CRP_to_Register(TN_class_reg(GP_TN));
+      Register gp_register = CGIR_CRP_to_Register(TN_class_reg(GP_TN));
       O64_Interface_setReserved(interface, (Target_ABI)/*FIXME!*/, gp_register);
     }
     // Reserve fixed (non-allocatable) registers given in command-line using -ffixed-reg.
@@ -144,7 +144,7 @@ lao_init(void)
          ++iter) {
       CLASS_REG_PAIR fixed_crp;
       Set_CLASS_REG_PAIR(fixed_crp, iter->first, iter->second);
-      O64_Register fixed_register = CGIR_CRP_to_Register(fixed_crp);
+      Register fixed_register = CGIR_CRP_to_Register(fixed_crp);
       O64_Interface_setReserved(interface, (Target_ABI)/*FIXME!*/, fixed_register);
       //fprintf(stderr, "*** reserved: %s\n", REGISTER_name(iter->first, iter->second));
       DevWarn("force non-allocatable register %s", REGISTER_name(iter->first, iter->second));
@@ -164,7 +164,7 @@ lao_init(void)
       TOP top = (TOP)op;
       if (TOP_is_dummy(top) || TOP_is_var_opnds(top)) continue;
       if (!ISA_SUBSET_LIST_Member(ISA_SUBSET_List, top)) continue;
-      O64_Operator o64operator = CGIR_TOP_to_Operator(top);
+      Operator o64operator = CGIR_TOP_to_Operator(top);
       if (TSI_Operand_Access_Times_Overridden (top)) {
 	int opnds = TOP_fixed_opnds(top);
 	for (int opnd = 0; opnd < opnds; opnd++) {
@@ -289,60 +289,60 @@ CGIR_LAB_to_Label(CGIR_LAB cgir_lab)
 }
 
 // Convert CGIR_ST_CLASS to LIR SClass
-static inline O64_SymbolClass
+static inline SymbolClass
 CGIR_ST_CLASS_to_SClass(ST_CLASS sclass)
 {
-  static O64_SymbolClass sclasses[CLASS_COUNT] = {
-    O64_SymbolClass_UNDEF,	// CLASS_UNK
-    O64_SymbolClass_VAR,	// CLASS_VAR
-    O64_SymbolClass_FUNC,	// CLASS_FUNC
-    O64_SymbolClass_CONST,	// CLASS_CONST
-    O64_SymbolClass_PREG,	// CLASS_PREG
-    O64_SymbolClass_BLOCK,	// CLASS_BLOCK
-    O64_SymbolClass_UNDEF	// CLASS_NAME has no LAI mapping
+  static SymbolClass sclasses[CLASS_COUNT] = {
+    SymbolClass__UNDEF,	// CLASS_UNK
+    SymbolClass_VAR,	// CLASS_VAR
+    SymbolClass_FUNC,	// CLASS_FUNC
+    SymbolClass_CONST,	// CLASS_CONST
+    SymbolClass_PREG,	// CLASS_PREG
+    SymbolClass_BLOCK,	// CLASS_BLOCK
+    SymbolClass__UNDEF	// CLASS_NAME has no LAI mapping
   };
   return sclasses[sclass];
 }
 
 // Convert CGIR_ST_SCLASS to LIR SStore
-static inline O64_SymbolStore
+static inline SymbolStore
 CGIR_ST_SCLASS_to_SStore(ST_SCLASS sstore)
 {
-  static O64_SymbolStore sstores[SCLASS_COUNT] = {
-    O64_SymbolStore_UNDEF,		// SCLASS_UNKNOWN
-    O64_SymbolStore_AUTO,		// SCLASS_AUTO
-    O64_SymbolStore_FORMAL,		// SCLASS_FORMAL
-    O64_SymbolStore_FORMAL_REF,		// SCLASS_FORMAL_REF
-    O64_SymbolStore_PSTATIC,		// SCLASS_PSTATIC
-    O64_SymbolStore_FSTATIC,		// SCLASS_FSTATIC
-    O64_SymbolStore_COMMON,		// SCLASS_COMMON
-    O64_SymbolStore_EXTERN,		// SCLASS_EXTERN
-    O64_SymbolStore_UGLOBAL,		// SCLASS_UGLOBAL
-    O64_SymbolStore_DGLOBAL,		// SCLASS_DGLOBAL
-    O64_SymbolStore_TEXT,		// SCLASS_TEXT
-    O64_SymbolStore_REG,		// SCLASS_REG
-    O64_SymbolStore_UNDEF,		// SCLASS_CPLINIT not mapped
-    O64_SymbolStore_UNDEF,		// SCLASS_EH_REGION not mapped
-    O64_SymbolStore_UNDEF,		// SCLASS_EH_REGION_SUPP not mapped
-    O64_SymbolStore_UNDEF,		// SCLASS_DISTR_ARRAY not mapped
-    O64_SymbolStore_UNDEF,		// SCLASS_COMMENT not mapped 
-    O64_SymbolStore_UNDEF		// SCLASS_THREAD_PRIVATE_FUNCS not mapped
+  static SymbolStore sstores[SCLASS_COUNT] = {
+    SymbolStore__UNDEF,		// SCLASS_UNKNOWN
+    SymbolStore_AUTO,		// SCLASS_AUTO
+    SymbolStore_FORMAL,		// SCLASS_FORMAL
+    SymbolStore_FORMAL_REF,		// SCLASS_FORMAL_REF
+    SymbolStore_PSTATIC,		// SCLASS_PSTATIC
+    SymbolStore_FSTATIC,		// SCLASS_FSTATIC
+    SymbolStore_COMMON,		// SCLASS_COMMON
+    SymbolStore_EXTERN,		// SCLASS_EXTERN
+    SymbolStore_UGLOBAL,		// SCLASS_UGLOBAL
+    SymbolStore_DGLOBAL,		// SCLASS_DGLOBAL
+    SymbolStore_TEXT,		// SCLASS_TEXT
+    SymbolStore_REG,		// SCLASS_REG
+    SymbolStore__UNDEF,		// SCLASS_CPLINIT not mapped
+    SymbolStore__UNDEF,		// SCLASS_EH_REGION not mapped
+    SymbolStore__UNDEF,		// SCLASS_EH_REGION_SUPP not mapped
+    SymbolStore__UNDEF,		// SCLASS_DISTR_ARRAY not mapped
+    SymbolStore__UNDEF,		// SCLASS_COMMENT not mapped 
+    SymbolStore__UNDEF		// SCLASS_THREAD_PRIVATE_FUNCS not mapped
   };
   return sstores[sstore];
 }
 
 // Convert CGIR_ST_EXPORT to LIR SExport
-static inline O64_SymbolExport
+static inline SymbolExport
 CGIR_ST_EXPORT_to_SExport(ST_EXPORT sexport)
 {
-  static O64_SymbolExport sexports[EXPORT_COUNT] = {
-    O64_SymbolExport_LOCAL,		// EXPORT_LOCAL
-    O64_SymbolExport_LOCAL_INTERNAL,	// EXPORT_LOCAL_INTERNAL
-    O64_SymbolExport_GLOBAL_INTERNAL,	// EXPORT_INTERNAL
-    O64_SymbolExport_GLOBAL_HIDDEN,	// EXPORT_HIDDEN
-    O64_SymbolExport_GLOBAL_PROTECTED,	// EXPORT_PROTECTED
-    O64_SymbolExport_GLOBAL_PREEMPTIBLE,// EXPORT_PREEMPTIBLE
-    O64_SymbolExport_UNDEF		// EXPORT_OPTIONAL not mapped
+  static SymbolExport sexports[EXPORT_COUNT] = {
+    SymbolExport_LOCAL,		// EXPORT_LOCAL
+    SymbolExport_LOCAL_INTERNAL,	// EXPORT_LOCAL_INTERNAL
+    SymbolExport_GLOBAL_INTERNAL,	// EXPORT_INTERNAL
+    SymbolExport_GLOBAL_HIDDEN,	// EXPORT_HIDDEN
+    SymbolExport_GLOBAL_PROTECTED,	// EXPORT_PROTECTED
+    SymbolExport_GLOBAL_PREEMPTIBLE,// EXPORT_PREEMPTIBLE
+    SymbolExport__UNDEF		// EXPORT_OPTIONAL not mapped
   };
   return sexports[sexport];
 }
@@ -379,9 +379,11 @@ CGIR_TN_REMAT_to_Temporary(CGIR_TN cgir_tn)
   switch (WN_operator(remat)) {
   case OPR_LDA: {
 #ifdef TARG_ST200
-    O64_Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
+    Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
 #elif defined(TARG_STxP70)
-    O64_Immediate immediate = CGIR_LC_to_Immediate(LC_imm_22);      // HACK ALERT
+    Immediate immediate = CGIR_LC_to_Immediate(LC_imm_22);      // HACK ALERT
+#elif defined(TARG_ARM)
+    Immediate immediate = CGIR_LC_to_Immediate(LC_immed8);      // HACK ALERT
 #else
 #error TARGET
 #endif
@@ -464,9 +466,11 @@ CGIR_TN_to_Temporary(CGIR_TN cgir_tn)
       if (TN_has_value(cgir_tn)) {
 	int64_t value = TN_value(cgir_tn);
 #ifdef TARG_ST200
-	O64_Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
+	Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
 #elif defined(TARG_STxP70)
-	O64_Immediate immediate = CGIR_LC_to_Immediate(LC_imm_22);      // HACK ALERT
+	Immediate immediate = CGIR_LC_to_Immediate(LC_imm_22);      // HACK ALERT
+#elif defined(TARG_ARM)
+    Immediate immediate = CGIR_LC_to_Immediate(LC_immed8);      // HACK ALERT
 #else
 #error TARGET
 #endif
@@ -478,9 +482,11 @@ CGIR_TN_to_Temporary(CGIR_TN cgir_tn)
 	ST_IDX st_idx = ST_st_idx(*var_st);
 	int64_t offset = TN_offset(cgir_tn);
 #ifdef TARG_ST200
-	O64_Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
+	Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
 #elif defined(TARG_STxP70)
-	O64_Immediate immediate = CGIR_LC_to_Immediate(LC_imm_22);      // HACK ALERT
+	Immediate immediate = CGIR_LC_to_Immediate(LC_imm_22);      // HACK ALERT
+#elif defined(TARG_ARM)
+        Immediate immediate = CGIR_LC_to_Immediate(LC_immed8);      // HACK ALERT
 #else
 #error TARGET
 #endif
@@ -490,9 +496,11 @@ CGIR_TN_to_Temporary(CGIR_TN cgir_tn)
       } else if (TN_is_label(cgir_tn)) {
 	CGIR_LAB cgir_lab = TN_label(cgir_tn);
 #ifdef TARG_ST200
-	O64_Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
+	Immediate immediate = CGIR_LC_to_Immediate(LC_xsrc2);	// HACK ALERT
 #elif defined(TARG_STxP70)
-	O64_Immediate immediate = CGIR_LC_to_Immediate(LC_imm_22);      // HACK ALERT
+	Immediate immediate = CGIR_LC_to_Immediate(LC_imm_22);      // HACK ALERT
+#elif defined(TARG_ARM)
+        Immediate immediate = CGIR_LC_to_Immediate(LC_immed8);      // HACK ALERT
 #else
 #error TARGET
 #endif
@@ -501,8 +509,10 @@ CGIR_TN_to_Temporary(CGIR_TN cgir_tn)
 	temporary = O64_Interface_makeLabelTemporary(interface, cgir_tn, immediate, label);
 	Is_True(TN_offset(cgir_tn) == 0, ("LAO requires zero offset from label."));
       } else if (TN_is_enum(cgir_tn)) {
-	ISA_ENUM_CLASS_VALUE value = TN_enum(cgir_tn);
+        ISA_ENUM_CLASS_VALUE ecv = TN_enum(cgir_tn);
         FmtAssert(0, ("CGIR_TN_to_Temporary: enum tn not implemented"));
+        //O64_ModifierMember = CGIR_ECV_to_ModifierMember(ecv);
+        //temporary = O64_Interface_makeModifierTemporary(interface, cgir_tn, FIXME);
       } else {
 	Is_True(FALSE, ("Unknown constant TN type."));
       }
@@ -574,7 +584,7 @@ CGIR_OP_to_Operation(CGIR_OP cgir_op)
       }//FOR_ALL_ISA_REGISTER_CLASS
     }
     // make the Operation
-    O64_Operator OPERATOR = CGIR_TOP_to_Operator(OP_code(cgir_op));
+    Operator OPERATOR = CGIR_TOP_to_Operator(OP_code(cgir_op));
     int iteration = OP_unrolling(cgir_op);
     operation = O64_Interface_makeOperation(interface, cgir_op, OPERATOR, iteration,
 	argCount, arguments, resCount, results, clobberCount, clobbers);
@@ -626,7 +636,7 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb)
               ("BB has more than MAX_OPERATION_COUNT operations"));
       operations[operationCount++] = CGIR_OP_to_Operation(cgir_op);
     }
-    O64_Processor processor = CGIR_IS_to_Processor(*ISA_SUBSET_LIST_Begin(ISA_SUBSET_List));
+    Processor processor = CGIR_IS_to_Processor(*ISA_SUBSET_LIST_Begin(ISA_SUBSET_List));
     int unrolled = BB_unrollings(cgir_bb);
     intptr_t regionId = (intptr_t)BB_rid(cgir_bb);
     float frequency = BB_freq(cgir_bb);
@@ -803,7 +813,7 @@ CGIR_LD_to_LoopScope(CGIR_LD cgir_ld)
 		O64_Interface_LoopScope_setDependenceArc(interface, loopScope,
 		                                         orig_operation, dest_operation,
                                                          latency, omega,
-                                                         (O64_DependenceKind)type);
+                                                         (DependenceKind)type);
 		//CG_DEP_Trace_Arc(arc, TRUE, FALSE);
 	      }
 	    }
@@ -840,7 +850,7 @@ CGIR_LAB_make(CGIR_LAB cgir_lab, const char *name)
 
 // Make a CGIR_SYM.
 static CGIR_SYM
-CGIR_SYM_make(CGIR_SYM cgir_sym, const char *name, bool isSpill, O64_NativeType o64nativeType)
+CGIR_SYM_make(CGIR_SYM cgir_sym, const char *name, bool isSpill, NativeType o64nativeType)
 {
   if (cgir_sym == 0) {
     // Create cgir_sym.
@@ -869,52 +879,52 @@ CGIR_SYM_make(CGIR_SYM cgir_sym, const char *name, bool isSpill, O64_NativeType 
 
 // Make a CGIR_TN.
 static CGIR_TN
-CGIR_TN_make(CGIR_TN cgir_tn, CGIR_Type cgir_type, ...)
+CGIR_TN_make(CGIR_TN cgir_tn, CGIRType cgir_type, ...)
 {
   va_list va;
   va_start(va, cgir_type);
   if (cgir_tn == 0) {
     // Create cgir_tn.
-    if (cgir_type == CGIR_Type_Virtual) {
+    if (cgir_type == CGIRType_Virtual) {
       // Create Virtual cgir_tn.
-      O64_RegFile o64refFile = (O64_RegFile)va_arg(va, O64_RegFile);
-      O64_Register o64register = (O64_Register)va_arg(va, O64_Register);
+      RegFile o64refFile = (RegFile)va_arg(va, int/*RegFile*/);
+      Register o64register = (Register)va_arg(va, int/*Register*/);
       unsigned width = (unsigned)va_arg(va, unsigned);
       ISA_REGISTER_CLASS irc = RegFile_to_CGIR_IRC(o64refFile);
       if (!width) width = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(irc));
       cgir_tn = Gen_Register_TN(irc, (width + 7)/8);
-    } else if (cgir_type == CGIR_Type_Assigned) {
+    } else if (cgir_type == CGIRType_Assigned) {
       // Create Assigned cgir_tn.
-      O64_RegFile o64refFile = (O64_RegFile)va_arg(va, O64_RegFile);
-      O64_Register o64register = (O64_Register)va_arg(va, O64_Register);
+      RegFile o64refFile = (RegFile)va_arg(va, int/*RegFile*/);
+      Register o64register = (Register)va_arg(va, int/*Register*/);
       unsigned width = (unsigned)va_arg(va, unsigned);
       ISA_REGISTER_CLASS irc = RegFile_to_CGIR_IRC(o64refFile);
       CLASS_REG_PAIR crp = Register_to_CGIR_CRP(o64register);
       if (!width) width = ISA_REGISTER_CLASS_INFO_Bit_Size(ISA_REGISTER_CLASS_Info(irc));
       cgir_tn = Gen_Register_TN(irc, (width + 7)/8);
       Set_TN_register(cgir_tn, CLASS_REG_PAIR_reg(crp));
-    } else if (cgir_type == CGIR_Type_Dedicated) {
+    } else if (cgir_type == CGIRType_Dedicated) {
       // Create Dedicated cgir_tn.
-      O64_RegFile o64refFile = (O64_RegFile)va_arg(va, O64_RegFile);
-      O64_Register o64register = (O64_Register)va_arg(va, O64_Register);
+      RegFile o64refFile = (RegFile)va_arg(va, int/*RegFile*/);
+      Register o64register = (Register)va_arg(va, int/*Register*/);
       CLASS_REG_PAIR crp = Register_to_CGIR_CRP(o64register);
       cgir_tn = Build_Dedicated_TN(CLASS_REG_PAIR_rclass(crp), CLASS_REG_PAIR_reg(crp), 0);
-    } else if (cgir_type == CGIR_Type_Absolute) {
+    } else if (cgir_type == CGIRType_Absolute) {
       // Create Absolute cgir_tn.
       int64_t value = (int64_t)va_arg(va, int64_t);
       int size = (value >= (int64_t)0x80000000 && value <= (int64_t)0x7FFFFFFF)? 4: 8;
       cgir_tn = Gen_Literal_TN(value, size);
-    } else if (cgir_type == CGIR_Type_Symbol) {
+    } else if (cgir_type == CGIRType_Symbol) {
       // Create Symbol cgir_tn.
       CGIR_SYM cgir_sym = (CGIR_SYM)va_arg(va, CGIR_SYM);
       int64_t offset = (int64_t)va_arg(va, int64_t);
       cgir_tn = Gen_Symbol_TN (&St_Table[cgir_sym], offset, 0);
-    } else if (cgir_type == CGIR_Type_Label) {
+    } else if (cgir_type == CGIRType_Label) {
       // Create Label cgir_tn.
       CGIR_LAB cgir_lab = (CGIR_LAB)va_arg(va, CGIR_LAB);
       cgir_tn = Gen_Label_TN(cgir_lab, 0);
     } else {
-      Is_True (0, ("Unexpected CGIR_Type %d in CGIR_TN_make", cgir_type));
+      Is_True (0, ("Unexpected CGIRType %d in CGIR_TN_make", cgir_type));
     }
   } else {
     // Update cgir_tn.
@@ -922,21 +932,21 @@ CGIR_TN_make(CGIR_TN cgir_tn, CGIR_Type cgir_type, ...)
     // - pseudo temporaries into assigned temporary
     // - value of absolute temporary
     // - label of label temporary
-    if (cgir_type == CGIR_Type_Assigned) {
+    if (cgir_type == CGIRType_Assigned) {
       // Update Assigned cgir_tn.
-      O64_RegFile o64refFile = (O64_RegFile)va_arg(va, O64_RegFile);
-      O64_Register o64register = (O64_Register)va_arg(va, O64_Register);
+      RegFile o64refFile = (RegFile)va_arg(va, int/*RegFile*/);
+      Register o64register = (Register)va_arg(va, int/*Register*/);
       Is_True (TN_Is_Allocatable(cgir_tn), ("Invalid TN for register allocation"));
       CLASS_REG_PAIR cgir_crp = Register_to_CGIR_CRP(o64register);
       Set_TN_register(cgir_tn, CLASS_REG_PAIR_reg(cgir_crp));
-    } else if (cgir_type == CGIR_Type_Absolute) {
+    } else if (cgir_type == CGIRType_Absolute) {
       int64_t value = (int64_t)va_arg(va, int64_t);
       if (value != TN_value(cgir_tn)) {
 	// Create new Literal cgir_tn because value has changed.
 	int size = (value >= (int64_t)0x80000000 && value <= (int64_t)0x7FFFFFFF)? 4: 8;
 	cgir_tn = Gen_Literal_TN(value, size);
       }
-    } else if (cgir_type == CGIR_Type_Label) {
+    } else if (cgir_type == CGIRType_Label) {
       CGIR_LAB cgir_lab = (CGIR_LAB)va_arg(va, CGIR_LAB);
       if (cgir_lab != TN_label(cgir_tn)) {
 	// Create new Label cgir_tn because cgir_lab has changed.
@@ -950,7 +960,7 @@ CGIR_TN_make(CGIR_TN cgir_tn, CGIR_Type cgir_type, ...)
 
 // Make a CGIR_OP.
 static CGIR_OP
-CGIR_OP_make(CGIR_OP cgir_op, O64_Operator o64operator, CGIR_TN arguments[],
+CGIR_OP_make(CGIR_OP cgir_op, Operator o64operator, CGIR_TN arguments[],
              CGIR_TN results[], CGIR_OP orig_op)
 {
   TOP top = Operator_to_CGIR_TOP(o64operator);
@@ -1020,13 +1030,13 @@ CGIR_OP_more(CGIR_OP cgir_op, int iteration, int issueDate, unsigned flags)
   // Set scycle.
   OP_scycle(cgir_op) = issueDate;
   // Set spill information.
-  if (flags & O64_OperationCGIR_SafeAccess);	//TODO!
-  if (flags & O64_OperationCGIR_Hoisted) Set_OP_hoisted(cgir_op);
-  if (flags & O64_OperationCGIR_Volatile) Set_OP_volatile(cgir_op);
-  if (flags & O64_OperationCGIR_Prefetch);	//TODO!
-  if (flags & O64_OperationCGIR_Preload) Set_OP_preload(cgir_op);
-  if (flags & O64_OperationCGIR_Barrier);	//TODO!
-  if (flags & O64_OperationCGIR_SpillCode) {
+  if (flags & CGIROperationFlags_SafeAccess);	//TODO!
+  if (flags & CGIROperationFlags_Hoisted) Set_OP_hoisted(cgir_op);
+  if (flags & CGIROperationFlags_Volatile) Set_OP_volatile(cgir_op);
+  if (flags & CGIROperationFlags_Prefetch);	//TODO!
+  if (flags & CGIROperationFlags_Preload) Set_OP_preload(cgir_op);
+  if (flags & CGIROperationFlags_Barrier);	//TODO!
+  if (flags & CGIROperationFlags_SpillCode) {
     TN *spilled_tn;
     TN *offset_tn;
     TN *base_tn;
@@ -1122,8 +1132,8 @@ CGIR_BB_more(CGIR_BB cgir_bb, CGIR_BB loop_bb, intptr_t traceId, int unrolled, u
   // Set BB unrollings.
   Set_BB_unrollings(cgir_bb, unrolled);
   // Set other flags.
-  if (flags & O64_BasicBlockCGIR_Allocated) Set_BB_reg_alloc(cgir_bb);
-  if (flags & O64_BasicBlockCGIR_Scheduled) Set_BB_scheduled(cgir_bb);
+  if (flags & CGIRBasicBlockFlags_Allocated) Set_BB_reg_alloc(cgir_bb);
+  if (flags & CGIRBasicBlockFlags_Scheduled) Set_BB_scheduled(cgir_bb);
 }
 
 // Make a CGIR_LD.

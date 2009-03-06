@@ -1113,7 +1113,7 @@ Branch_Taken_Latency (
 
 #ifdef SUPERBLOCK_ENABLED
   // Scheduled by LAO in superblock mode.
-  if ((OP_scycle(op_branch) != -1) && 
+  if ((OP_scycle(op_branch) != -1) &&
       BB_scheduled(bb) &&
       CG_LAO_Region_Map && (BB_MAP32_Get(CG_LAO_Region_Map, bb) != 0)) {
     branch_latency = estart;

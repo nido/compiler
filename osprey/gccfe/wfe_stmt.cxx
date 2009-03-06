@@ -44,6 +44,7 @@ extern "C" {
 #include "gnu/cp/cp-tree.h"
 #include "gnu/real.h"
 #include "gnu/errors.h"		// To access warning() and error()
+#include "tm_p.h"
 #endif
 
 #include "insn-config.h"	// MAX_RECOG_OPERANDS

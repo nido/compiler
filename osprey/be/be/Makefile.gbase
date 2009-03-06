@@ -307,10 +307,10 @@ COMMON_COM_TARG_SRCS =	\
 # there is no way to distinguish between config_targ.cxx and
 # config_TARG.cxx on windows platforms... we must use a different name
 # for ST targets...
-ifeq (,$(findstring ST,$(BUILD_TARGET)))
-CONFIG_TARGET_NAME=config_targ
-else
+ifneq ($(TARGET_FROM_ST),)
 CONFIG_TARGET_NAME=config_target
+else
+CONFIG_TARGET_NAME=config_targ
 endif
 
 COMMON_COM_TARG_CXX_SRCS =	\
@@ -415,7 +415,7 @@ GENERATED_FILES = \
   gcov-iov.h
 
 # Add specific ST files
-ifeq (ST,$(findstring ST,$(BUILD_TARGET)))
+ifneq ($(TARGET_FROM_ST),)
 BE_COM_PCH_CXX_SRCS += rt_lower_wn.cxx \
 		       wn_lower_mul.cxx \
 		       wn_lower_util.cxx \
@@ -429,14 +429,14 @@ BE_COM_TARG_CXX_SRCS = \
   betarget.cxx
 
 # For ST targets renamed sections.cxx into targ_sections.cxx
-ifeq (ST,$(findstring ST,$(BUILD_TARGET)))
+ifneq ($(TARGET_FROM_ST),)
   BE_COM_TARG_CXX_SRCS += targ_sections.cxx
 else
   BE_COM_TARG_CXX_SRCS += sections.cxx
 endif
 
 # Add specific ST files
-ifeq (ST,$(findstring ST,$(BUILD_TARGET)))
+ifneq ($(TARGET_FROM_ST),)
 BE_COM_TARG_CXX_SRCS += targ_emulate.cxx
 endif
 
@@ -598,15 +598,7 @@ ifeq ($(BUILD_TARGET), IA32)
 TARGET_SO = pentium.so
 endif
 
-ifeq ($(BUILD_TARGET), ST100)
-TARGET_SO = st120.so
-endif
-
-ifeq ($(BUILD_TARGET), ST200)
-TARGET_SO =
-endif
-
-ifeq ($(BUILD_TARGET), STxP70)
+ifneq ($(TARGET_FROM_ST),)
 TARGET_SO =
 endif
 

@@ -7,6 +7,68 @@
 
 
 /*
+ * SymbolClass --	Enumerates the Symbol Classes.
+ */
+typedef enum {
+  SymbolClass__UNDEF, // Symbol class is undefined.
+  SymbolClass_VAR, // Symbol is a data variable.
+  SymbolClass_FUNC, // Symbol is a function address.
+  SymbolClass_CONST, // Symbol is a constant value.
+  SymbolClass_PREG, // Symbol is a pseudo register.
+  SymbolClass_BLOCK, // Symbol is a base symbol for a block.
+  SymbolClass__COUNT
+} enum_SymbolClass;
+typedef uint8_t SymbolClass;
+
+/*
+ * SymbolStore --	Enumerates the Symbol Store Classes.
+ */
+typedef enum {
+  SymbolStore__UNDEF, // Symbol sclass is undefined.
+  SymbolStore_AUTO, // Symbol is automatic.
+  SymbolStore_FORMAL, // Symbol is a formal parameter.
+  SymbolStore_FORMAL_REF, // Symbol is a formal ref parameter.
+  SymbolStore_PSTATIC, // Symbol is PU static.
+  SymbolStore_FSTATIC, // Symbol is file static.
+  SymbolStore_COMMON, // Symbol is common.
+  SymbolStore_EXTERN, // Symbol is unallocated data or text.
+  SymbolStore_UGLOBAL, // Symbol is uninitialized global data.
+  SymbolStore_DGLOBAL, // Symbol is defined global data.
+  SymbolStore_TEXT, // Symbol is an executable code.
+  SymbolStore_REG, // Symbol is a register variable.
+  SymbolStore__COUNT
+} enum_SymbolStore;
+typedef uint8_t SymbolStore;
+
+/*
+ * SymbolExport --	Enumerates the Symbol Export Classes.
+ */
+typedef enum {
+  SymbolExport__UNDEF, // Symbol export is undefined.
+  SymbolExport_LOCAL, // Default for static (not exported)
+                                        // may have address taken.
+  SymbolExport_LOCAL_INTERNAL, // Static that do not have address
+                                        // passed out of .out/.so.
+  SymbolExport_GLOBAL_INTERNAL, // Exported, but only visible and used
+                                        // within .out/.so.
+  SymbolExport_GLOBAL_HIDDEN, // Exported, but only visible
+                                        // within .out/.so, however may be
+                                        // used outside by address taken.
+  SymbolExport_GLOBAL_PROTECTED, // Exported, not preemptible.
+  SymbolExport_GLOBAL_PREEMPTIBLE, // Exported and preemptible.
+  SymbolExport__COUNT
+} enum_SymbolExport;
+typedef uint8_t SymbolExport;
+
+/*
+ * SymbolFlag --	Enumerates the Symbol flags.
+ */
+typedef enum {
+  SymbolFlag_Resolved = 0x01, // Symbol is resolved
+} enum_SymbolFlag;
+typedef uint8_t SymbolFlags;
+
+/*
  * OptimizeActivation --	Activation of LAO phases.
  */
 typedef enum {
@@ -14,8 +76,8 @@ typedef enum {
   OptimizeActivation_PostPass = 0x2, // Post-pass optimizations.
   OptimizeActivation_RegAlloc = 0x4, // Register allocation
   OptimizeActivation_PrePass = 0x8, // Pre-pass optimizations.
-} OptimizeActivation;
-typedef uint16_t short_OptimizeActivation;
+} enum_OptimizeActivation;
+typedef uint8_t OptimizeActivation;
 #define OptimizeActivation_default ( 0 )
 
 
@@ -27,8 +89,8 @@ typedef enum {
   OptimizeRegionType_TraceBlock = 0x2, // TraceBlock region.
   OptimizeRegionType_HyperBlock = 0x4, // Hyperblock region.
   OptimizeRegionType_InnerLoop = 0x8, // Inner loop region.
-} OptimizeRegionType;
-typedef uint8_t short_OptimizeRegionType;
+} enum_OptimizeRegionType;
+typedef uint8_t OptimizeRegionType;
 #define OptimizeRegionType_default ( OptimizeRegionType_SuperBlock | 0 )
 
 
@@ -40,8 +102,8 @@ typedef enum {
   OptimizeProfiling_Static = 0x1, // Static profiling
   OptimizeProfiling_Edge = 0x2, // Dynamic edge profiling.
   OptimizeProfiling_Path = 0x4, // Dynamic path profiling.
-} OptimizeProfiling;
-typedef uint8_t short_OptimizeProfiling;
+} enum_OptimizeProfiling;
+typedef uint8_t OptimizeProfiling;
 #define OptimizeProfiling_default ( 0 )
 
 
@@ -54,8 +116,8 @@ typedef enum {
   OptimizeScheduling_Insertion, // Insertion modulo scheduling.
   OptimizeScheduling_Iterative, // Iterative modulo scheduling.
   OptimizeScheduling__
-} OptimizeScheduling;
-typedef uint8_t short_OptimizeScheduling;
+} enum_OptimizeScheduling;
+typedef uint8_t OptimizeScheduling;
 #define OptimizeScheduling_default ( OptimizeScheduling_Insertion | 0 )
 
 
@@ -67,7 +129,8 @@ typedef enum {
   OptimizeAllocation_ELinearScan = 0x1, // Linear Scan of Sarkar & Barik.
   OptimizeAllocation_DomTreeScan = 0x2, // Tree Scan of Rastello et al.
   OptimizeAllocation_GraphColoring = 0x4, // Some Graph Coloring allocator.
-} OptimizeAllocation;
+} enum_OptimizeAllocation;
+typedef uint8_t OptimizeAllocation;
 #define OptimizeAllocation_default ( 0 )
 
 
@@ -80,7 +143,8 @@ typedef enum {
   OptimizeConversion_SemiPruned = 0x4, // Semi-pruned improved SSA construction.
   OptimizeConversion_SigmaGoTo = 0x8, // Sigma operations for the GoTo conditions.
   OptimizeConversion_Dedicated = 0x10, // Associate Variable(s) to Dedicated.
-} OptimizeConversion;
+} enum_OptimizeConversion;
+typedef uint8_t OptimizeConversion;
 #define OptimizeConversion_default ( OptimizeConversion_Folding | OptimizeConversion_Cleaning | OptimizeConversion_SemiPruned | 0 )
 
 
@@ -97,7 +161,8 @@ typedef enum {
   OptimizeCoalescing_Virtualize = 0x8, // Virtualize COPY insertion (Method III).
   OptimizeCoalescing_Congruence = 0x10, // Congruence-based coalescing.
   OptimizeCoalescing_SeqCopies = 0x20, // Use sequential copies (parallel by default).
-} OptimizeCoalescing;
+} enum_OptimizeCoalescing;
+typedef uint8_t OptimizeCoalescing;
 #define OptimizeCoalescing_default ( OptimizeCoalescing_Sreedhar | OptimizeCoalescing_Virtualize | OptimizeCoalescing_Congruence | 0 )
 
 
@@ -111,14 +176,16 @@ typedef enum {
   OptimizeNumbering_Basic = 0x1, // Basic value numbering.
   OptimizeNumbering_SCCVN = 0x2, // Simpson's SCCVN improved by Cooper.
   OptimizeNumbering_Avail = 0x4, // AVAIL-based removal (else use Dominance).
-} OptimizeNumbering;
+} enum_OptimizeNumbering;
+typedef uint8_t OptimizeNumbering;
 
 /*
  * OptimizePropagation --	Data-flow facts Propagation flags.
  */
 typedef enum {
   OptimizePropagation_Constant = 0x1, // Sparse conditional constant propagation.
-} OptimizePropagation;
+} enum_OptimizePropagation;
+typedef uint8_t OptimizePropagation;
 
 /*
  * OptimizePredication --	Code Predication level.
@@ -127,10 +194,8 @@ typedef enum {
   OptimizePredication_None, // Disable code predication.
   OptimizePredication_Select, // Select-only code predication.
   OptimizePredication__
-} OptimizePredication;
-typedef uint8_t short_OptimizePredication;
-extern const char *
-OptimizePredication_(OptimizePredication THIS);
+} enum_OptimizePredication;
+typedef uint8_t OptimizePredication;
 
 /*
  * OptimizeRCMSSolving --	Enumerate the RCMSSolving flags.
@@ -144,8 +209,8 @@ typedef enum {
   OptimizeRCMSSolving_Rational = 0x20, // Allow rational solution.
   OptimizeRCMSSolving_PostPass = 0x40, // Apply to postpass problems.
   OptimizeRCMSSolving_Acyclic = 0x80, // Apply to acyclic problems.
-} OptimizeRCMSSolving;
-typedef uint16_t short_OptimizeRCMSSolving;
+} enum_OptimizeRCMSSolving;
+typedef uint8_t OptimizeRCMSSolving;
 #define OptimizeRCMSSolving_default ( 0 )
 
 
@@ -158,7 +223,8 @@ typedef enum {
   OptimizeRCMSProblem_Lifetime = 0x4, // Pass lifetine nodes and arcs.
   OptimizeRCMSProblem_Renaming = 0x8, // Pass modulo renaming-limiting arcs.
   OptimizeRCMSProblem_Margins = 0x10, // Pass margin-enforcing arcs.
-} OptimizeRCMSProblem;
+} enum_OptimizeRCMSProblem;
+typedef uint8_t OptimizeRCMSProblem;
 #define OptimizeRCMSProblem_default ( 0 )
 
 
@@ -170,8 +236,8 @@ typedef enum {
   OptimizeLogTimeOut_Times4 = 0x2, // TimeOut *= 4.
   OptimizeLogTimeOut_Times16 = 0x4, // TimeOut *= 16.
   OptimizeLogTimeOut_Times256 = 0x8, // TimeOut *= 256.
-} OptimizeLogTimeOut;
-typedef uint16_t short_OptimizeLogTimeOut;
+} enum_OptimizeLogTimeOut;
+typedef uint8_t OptimizeLogTimeOut;
 #define OptimizeLogTimeOut_default ( 0 )
 
 
@@ -182,7 +248,8 @@ typedef enum {
   OptimizeScoreboarding_Fixup = 0x1, // Fixup pass over the BasicBlock(s).
   OptimizeScoreboarding_Iterate = 0x2, // Iterate forward data-flow problem.
   OptimizeScoreboarding_Priority = 0x4, // Pre-order Operation(s) by priority.
-} OptimizeScoreboarding;
+} enum_OptimizeScoreboarding;
+typedef uint8_t OptimizeScoreboarding;
 #define OptimizeScoreboarding_default ( OptimizeScoreboarding_Iterate | 0 )
 
 
@@ -213,10 +280,10 @@ typedef enum {
   OptimizeItem_PrePadding, // See OptimizePrePadding.
   OptimizeItem_PostPadding, // See OptimizePostPadding.
   OptimizeItem__
-} OptimizeItem;
-typedef uint8_t short_OptimizeItem;
+} enum_OptimizeItem;
+typedef uint8_t OptimizeItem;
 extern const char *
-OptimizeItem_(OptimizeItem THIS);
+OptimizeItem_name_(OptimizeItem THIS);
 
 /*
  * ConfigureCompensation --	Enumeration of the code compensation levels.
@@ -228,10 +295,10 @@ typedef enum {
   ConfigureCompensation_Local, // Local code compensation.
   ConfigureCompensation_Global, // Global code compensation.
   ConfigureCompensation__
-} ConfigureCompensation;
-typedef uint8_t short_ConfigureCompensation;
+} enum_ConfigureCompensation;
+typedef uint8_t ConfigureCompensation;
 extern const char *
-ConfigureCompensation_(ConfigureCompensation THIS);
+ConfigureCompensation_name_(ConfigureCompensation THIS);
 
 /*
  * ConfigureSpeculation --	Enumeration of the control speculation levels.
@@ -245,10 +312,10 @@ typedef enum {
   ConfigureSpeculation_SafeVariant, // Speculation of operations with safe variant.
   ConfigureSpeculation_MayExcept, // Speculation of may be excepting operations.
   ConfigureSpeculation__
-} ConfigureSpeculation;
-typedef uint8_t short_ConfigureSpeculation;
+} enum_ConfigureSpeculation;
+typedef uint8_t ConfigureSpeculation;
 extern const char *
-ConfigureSpeculation_(ConfigureSpeculation THIS);
+ConfigureSpeculation_name_(ConfigureSpeculation THIS);
 
 /*
  * ConfigureRelaxation --	Enumeration of the inductive relaxation levels.
@@ -260,10 +327,10 @@ typedef enum {
   ConfigureRelaxation_Local, // Local inductive relaxation.
   ConfigureRelaxation_Global, // Global inductive relaxation.
   ConfigureRelaxation__
-} ConfigureRelaxation;
-typedef uint8_t short_ConfigureRelaxation;
+} enum_ConfigureRelaxation;
+typedef uint8_t ConfigureRelaxation;
 extern const char *
-ConfigureRelaxation_(ConfigureRelaxation THIS);
+ConfigureRelaxation_name_(ConfigureRelaxation THIS);
 
 /*
  * ConfigureRenaming --	Enumeration of the register renaming levels.
@@ -275,10 +342,10 @@ typedef enum {
   ConfigureRenaming_Global, // Global register modulo renaming.
   ConfigureRenaming_Shuffle, // Suffle global registers.
   ConfigureRenaming__
-} ConfigureRenaming;
-typedef uint8_t short_ConfigureRenaming;
+} enum_ConfigureRenaming;
+typedef uint8_t ConfigureRenaming;
 extern const char *
-ConfigureRenaming_(ConfigureRenaming THIS);
+ConfigureRenaming_name_(ConfigureRenaming THIS);
 
 /*
  * ConfigureBoosting --	Enumeration of the operation boosting levels.
@@ -290,10 +357,10 @@ typedef enum {
   ConfigureBoosting_Reuse, // Reuse branch predicates.
   ConfigureBoosting_Combine, // Combine branch predicates.
   ConfigureBoosting__
-} ConfigureBoosting;
-typedef uint8_t short_ConfigureBoosting;
+} enum_ConfigureBoosting;
+typedef uint8_t ConfigureBoosting;
 extern const char *
-ConfigureBoosting_(ConfigureBoosting THIS);
+ConfigureBoosting_name_(ConfigureBoosting THIS);
 
 /*
  * ConfigureAliasing --	Memory aliasing level.
@@ -307,10 +374,10 @@ typedef enum {
   ConfigureAliasing_Parallel, // Assume parallel loop memory aliasing.
   ConfigureAliasing_Liberal, // Assume no alias of variant memory accesses.
   ConfigureAliasing__
-} ConfigureAliasing;
-typedef uint8_t short_ConfigureAliasing;
+} enum_ConfigureAliasing;
+typedef uint8_t ConfigureAliasing;
 extern const char *
-ConfigureAliasing_(ConfigureAliasing THIS);
+ConfigureAliasing_name_(ConfigureAliasing THIS);
 
 /*
  * ConfigurePreLoading --	Memory pre-loading level.
@@ -322,10 +389,10 @@ typedef enum {
   ConfigurePreLoading_Indirect, // Pre-loading of indirect LOADs.
   ConfigurePreLoading_NonSpill, // Pre-loading of non-spill LOADs.
   ConfigurePreLoading__
-} ConfigurePreLoading;
-typedef uint8_t short_ConfigurePreLoading;
+} enum_ConfigurePreLoading;
+typedef uint8_t ConfigurePreLoading;
 extern const char *
-ConfigurePreLoading_(ConfigurePreLoading THIS);
+ConfigurePreLoading_name_(ConfigurePreLoading THIS);
 
 /*
  * ConfigureItem --	Enumerate the Configure items.
@@ -349,10 +416,10 @@ typedef enum {
   ConfigureItem_PreLoading, // See ConfigurePreLoading.
   ConfigureItem_L1MissExtra, // Extra latency of L1 miss.
   ConfigureItem__
-} ConfigureItem;
-typedef uint8_t short_ConfigureItem;
+} enum_ConfigureItem;
+typedef uint8_t ConfigureItem;
 extern const char *
-ConfigureItem_(ConfigureItem THIS);
+ConfigureItem_name_(ConfigureItem THIS);
 
 /*
  * DependenceKind --	Enumerates the Dependence kinds.
@@ -375,14 +442,15 @@ typedef enum {
   DependenceKind_Margin, // Inserted by DepGraph_complete.
   DependenceKind__,
   DependenceKind_Definite = 16,
-} DependenceKind;
-typedef uint8_t short_DependenceKind;
+} enum_DependenceKind;
+typedef uint8_t DependenceKind;
 extern const char *
-DependenceKind_(DependenceKind THIS);
+DependenceKind_name_(DependenceKind THIS);
 #define DependenceKind(kind) ((kind) & (DependenceKind_Definite - 1))
 #define DependenceKind_mayAdjust(kind) ((kind) <= DependenceKind_WAW)
 #define DependenceKind_mayRefine(kind) ((kind) <= DependenceKind_Spill)
 
+typedef void *DependenceNode;
 extern void lao_init(void);
 extern void lao_fini(void);
 extern void lao_init_pu(void);

@@ -72,15 +72,7 @@ LCXXOPTS = $(STD_COMPILE_OPTS)
 LCXXDEFS += $(HOSTDEFS) $(TARGDEFS)
 
 # ST compilers have different directory structure.
-ifeq ($(BUILD_TARGET), ST100)
-LCINCS = -I$(BUILD_BASE) -I$(BUILD_TOT)/common/com -I$(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
-LCXXINCS = -I$(BUILD_BASE) -I$(BUILD_TOT)/common/com -I$(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
-endif
-ifeq ($(BUILD_TARGET), ST200)
-LCINCS = -I$(BUILD_BASE) -I$(BUILD_TOT)/common/com -I$(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
-LCXXINCS = -I$(BUILD_BASE) -I$(BUILD_TOT)/common/com -I$(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
-endif
-ifeq ($(BUILD_TARGET), STxP70)
+ifneq ($(TARGET_FROM_ST),)
 LCINCS = -I$(BUILD_BASE) -I$(BUILD_TOT)/common/com -I$(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
 LCXXINCS = -I$(BUILD_BASE) -I$(BUILD_TOT)/common/com -I$(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
 endif
@@ -199,15 +191,7 @@ ifeq ($(BUILD_TARGET), IA64)
 c_qwmultu.o: $(BUILD_TOT)/common/util/ia32/IA32_host/c_qwmultu.c
 	$(CC) -c $(CFLAGS) $(BUILD_TOT)/common/util/ia32/IA32_host/c_qwmultu.c
 endif
-ifeq ($(BUILD_TARGET), ST100)
-c_qwmultu.o: $(BUILD_TOT)/common/util/ia32/IA32_host/c_qwmultu.c
-	$(CC) -c $(CFLAGS) $(BUILD_TOT)/common/util/ia32/IA32_host/c_qwmultu.c
-endif
-ifeq ($(BUILD_TARGET), ST200)
-c_qwmultu.o: $(BUILD_TOT)/common/util/ia32/IA32_host/c_qwmultu.c
-	$(CC) -c $(CFLAGS) $(BUILD_TOT)/common/util/ia32/IA32_host/c_qwmultu.c
-endif
-ifeq ($(BUILD_TARGET), STxP70)
+ifneq ($(TARGET_FROM_ST),)
 c_qwmultu.o: $(BUILD_TOT)/common/util/ia32/IA32_host/c_qwmultu.c
 	$(CC) -c $(CFLAGS) $(BUILD_TOT)/common/util/ia32/IA32_host/c_qwmultu.c
 endif

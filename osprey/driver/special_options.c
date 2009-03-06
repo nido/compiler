@@ -155,6 +155,15 @@ set_defaults (void)
 #endif
 #endif /* TARG_ST200 */
 
+#ifdef TARG_ARM
+	if (endian == UNDEFINED) 
+	  toggle(&endian, ENDIAN_LITTLE);
+#ifdef MUMBLE_ARM_BSP
+	if (arm_runtime == UNDEFINED) 
+	  toggle(&arm_runtime, RUNTIME_BARE);
+#endif
+#endif /* TARG_ARM */
+
 #ifdef TARG_STxP70
 	if (endian == UNDEFINED) 
 	  toggle(&endian, ENDIAN_LITTLE);
@@ -263,7 +272,8 @@ set_defaults (void)
 	    prepend_option_seen(O_non_shared);
 	  }
 	  else if (abi != ABI_ST100 && abi != ABI_ST200_embedded && 
-		   abi != ABI_STxP70_embedded && abi != ABI_STxP70_fpx) {
+		   abi != ABI_STxP70_embedded && abi != ABI_STxP70_fpx &&
+		   abi != ABI_ARM_ver1 && abi != ABI_ARM_ver2) {
 	    if (gprel == UNDEFINED) {
 	      toggle(&shared,CALL_SHARED);
 	      prepend_option_seen(O_call_shared);
@@ -295,6 +305,9 @@ set_defaults (void)
 	    }
 	  }
 	  else if (abi == ABI_STxP70_embedded || abi == ABI_STxP70_fpx) {
+	    toggle(&gprel,FALSE);
+	  }
+	  else if (abi == ABI_ARM_ver1 || abi == ABI_ARM_ver2) {
 	    toggle(&gprel,FALSE);
 	  }
 	  else {
@@ -1283,6 +1296,35 @@ add_special_options (void)
 	  } /* !is_toggled(cppundef) */
 	  break;
 
+	case ABI_ARM_ver1:
+	case ABI_ARM_ver2:
+	  /*
+	   * ARM specific flags: 
+	   */
+	  if(endian == ENDIAN_BIG) {
+	    error("BIG endian mode is not supported on STxP70 platforms");
+	  }
+
+	  if (!option_was_seen(O_EL)) {
+	    prepend_option_seen(O_EL);
+	  }
+
+	  if (!is_toggled(cppundef)) {
+	    if (proc == PROC_armv5 || proc == PROC_armv6) {
+              flag = add_string_option(O_D, "__arm__");
+	      prepend_option_seen (flag);
+ 	      flag = add_string_option(O_D, "__ARM__");
+	      prepend_option_seen (flag);
+	    }
+	    
+	    flag = add_string_option(O_D, "__open64__");
+	    prepend_option_seen (flag);
+
+	    flag = add_string_option(O_D, "__LITTLE_ENDIAN__");
+	    prepend_option_seen (flag);
+	  } /* !is_toggled(cppundef) */
+	  break;
+
 	default:
 	  error ( "invalid ABI: %d", abi );
 	  break;
@@ -1431,6 +1473,15 @@ extern void
 set_stxp70_bsp (string_list_t *args)
 {
   // No BSP specific .o files for STxP70.
+}
+#endif
+
+
+#ifdef MUMBLE_ARM_BSP
+extern void
+set_arm_bsp (string_list_t *args)
+{
+  // No BSP specific .o files for ARM.
 }
 #endif
 

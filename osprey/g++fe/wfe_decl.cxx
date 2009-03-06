@@ -54,6 +54,7 @@ extern "C" {
   /* (cbr) fix includes */
 #include "gnu/cp/cp-tree.h"
 #include "gnu/real.h"
+#include "tm_p.h"
 #else
 #include "cp-tree.h"
 #endif

@@ -5502,18 +5502,24 @@ static void Unroll_Do_Loop_guard(LOOP_DESCR *loop,
 
   // FdF: Put the computation of the remainder loop trip count out of
   // the critical path
-  OP *xfer_op = OPS_last(&ops);
-  Is_True(OP_xfer(xfer_op), ("CG_LOOP: Expected a branch operation"));
-  OPS_Remove_Op(&ops, xfer_op);
 
-  OP *point = BB_last_op(old_prolog);
-  BOOL before = TRUE;
-  if (point != NULL && !OP_xfer(point))
-    before = FALSE;
-  BB_Insert_Ops(old_prolog, point, &ops, before);
-  /* Must do this here because old_prolog and CG_LOOP_prolog may be
-     the same. */
-  BB_Append_Op(CG_LOOP_prolog, xfer_op);
+  if( ! Compare_Branch_Seq_Is_Atomic) {
+    OP *xfer_op = OPS_last(&ops);
+    Is_True(OP_xfer(xfer_op), ("CG_LOOP: Expected a branch operation"));
+    OPS_Remove_Op(&ops, xfer_op);
+
+    OP *point = BB_last_op(old_prolog);
+    BOOL before = TRUE;
+    if (point != NULL && !OP_xfer(point))
+      before = FALSE;
+    BB_Insert_Ops(old_prolog, point, &ops, before);
+    /* Must do this here because old_prolog and CG_LOOP_prolog may be
+       the same. */
+    BB_Append_Op(CG_LOOP_prolog, xfer_op);
+  }
+  else {
+    BB_Append_Ops(CG_LOOP_prolog, &ops);
+  }
 #else
   Exp_OP3v(OPC_FALSEBR,
 	   NULL,
@@ -7572,7 +7578,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       //      cg_loop.Recompute_Liveness();
 
 #ifdef TARG_ST
-#ifndef TARG_STxP70
+#if !defined(TARG_STxP70) && !defined(TARG_ARM)
       BOOL can_be_packed = FALSE;
       Loop_packing_flags = Loop_Packing_Options(cg_loop);
       if ((Loop_packing_flags & (PACKING_LOAD|PACKING_STORE)) != 0)
@@ -7602,7 +7608,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
 #endif
 
 #ifdef TARG_ST
-#ifndef TARG_STxP70  // [CG] To be tuned
+#if !defined(TARG_STxP70) && !defined(TARG_ARM)  // [CG] To be tuned
       // FdF 20060207: Use scheduling estimate to adjust the unrolling
       // factor
       // FdF 20070607: Already done just after packing analysis
@@ -7651,7 +7657,7 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       cg_loop.EBO_After_Unrolling();
 
 #ifdef TARG_ST
-#ifndef TARG_STxP70   // [CG] To be tuned
+#if !defined(TARG_STxP70) && !defined(TARG_ARM)   // [CG] To be tuned
       if (trace_optimize_verbose && can_be_packed && cg_loop.Unroll_fully())
 	fprintf(stdout, "  <packing> Cancelled, loop fully unrolled.\n");
       if (can_be_packed && !cg_loop.Unroll_fully()) { 

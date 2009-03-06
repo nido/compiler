@@ -2809,6 +2809,9 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_MINPART:
       case OPR_MAXPART:
       case OPR_MADD:
+      case OPR_MSUB:
+      case OPR_NMSUB:
+      case OPR_NMADD:
         // (RTYPE): f,i (DESC): V 
         valid = Is_MTYPE_f_i(rtype) && Is_MTYPE_V(desc);
         break;
@@ -3209,9 +3212,6 @@ Is_Valid_Opcode_Parts (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
         break;
 
       case OPR_FIRSTPART:
-      case OPR_NMSUB:
-      case OPR_NMADD:
-      case OPR_MSUB:
       case OPR_SECONDPART:
       case OPR_ILOADX:
         // (RTYPE): f (DESC): V 
@@ -3355,6 +3355,9 @@ OPCODE_name (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
       case OPR_MINPART:
       case OPR_MAXPART:
       case OPR_MADD:
+      case OPR_MSUB:
+      case OPR_NMSUB:
+      case OPR_NMADD:
         // (RTYPE): f,i (DESC): V 
         sprintf (buffer, "OPC_%s%s", MTYPE_name(rtype), &OPERATOR_info [opr]._name [4]);
         break;
@@ -3555,9 +3558,6 @@ OPCODE_name (OPERATOR opr, TYPE_ID rtype, TYPE_ID desc)
         break;
 
       case OPR_FIRSTPART:
-      case OPR_NMSUB:
-      case OPR_NMADD:
-      case OPR_MSUB:
       case OPR_SECONDPART:
       case OPR_ILOADX:
         // (RTYPE): f (DESC): V 

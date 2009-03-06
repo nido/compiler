@@ -82,22 +82,16 @@ HOSTDEFS += -DAUTOMATIC_TEMPLATE_INSTANTIATION=0
 HOSTDEFS += -DINSTANTIATION_BY_IMPLICIT_INCLUSION=0
 HOSTDEFS += -DBACK_END_IS_C_GEN_BE=0
 
-ifneq  ($(BUILD_TARGET), ST200)
-ifneq  ($(BUILD_TARGET), STxP70)
+ifneq ($(TARGET_FROM_ST),)
+ # ST target
+HOSTDEFS += -DHANDLE_WFE_PRAGMAS
+else
+ # not a ST target
 HOSTDEFS += -DMONGOOSE_CIF
 HOSTDEFS += -DSGI_RAG_BACKEND
-ifneq ($(BUILD_COMPILER), SGI)
+ ifneq ($(BUILD_COMPILER), SGI)
 HOSTDEFS += -DMIPSEL
-endif
-endif
-endif
-
-ifeq  ($(BUILD_TARGET), ST200)
-HOSTDEFS += -DHANDLE_WFE_PRAGMAS
-endif
-
-ifeq  ($(BUILD_TARGET), STxP70)
-HOSTDEFS += -DHANDLE_WFE_PRAGMAS
+ endif
 endif
 
 HOSTDEFS += -DSGI_MONGOOSE
@@ -136,21 +130,7 @@ COMMON_COM_DIR 		= $(BUILD_TOT)/common/com
 COMMON_UTIL_DIR		= $(BUILD_TOT)/common/util
 
 # ST compilers have a different target info directory structure:
-ifeq ($(BUILD_TARGET), ST100)
-COMMON_COM_TARG_DIR	    = 
-COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/access
-COMMON_TARGINFO_CONFIG_DIR  = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
-COMMON_TARGINFO_ISA_DIR     = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/isa
-COMMON_UTIL_TARG_DIR	    = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
-endif
-ifeq ($(BUILD_TARGET), ST200)
-COMMON_COM_TARG_DIR	    = 
-COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/access
-COMMON_TARGINFO_CONFIG_DIR  = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
-COMMON_TARGINFO_ISA_DIR     = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/isa
-COMMON_UTIL_TARG_DIR	    = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
-endif
-ifeq ($(BUILD_TARGET), STxP70)
+ifneq ($(TARGET_FROM_ST),)
 COMMON_COM_TARG_DIR	    = 
 COMMON_TARG_INFO_ACCESS_DIR = $(BUILD_TOT)/targinfo/access
 COMMON_TARGINFO_CONFIG_DIR  = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
@@ -292,10 +272,10 @@ COMMON_COM_TARG_SRCS =	\
 # there is no way to distinguish between config_targ.cxx and
 # config_TARG.cxx on windows platforms... we use a different name for
 # ST targets...
-ifeq (,$(findstring ST,$(BUILD_TARGET)))
-CONFIG_TARGET_NAME=config_targ
-else
+ifneq ($(TARGET_FROM_ST),)
 CONFIG_TARGET_NAME=config_target
+else
+CONFIG_TARGET_NAME=config_targ
 endif
 
 COMMON_COM_TARG_CXX_SRCS = \

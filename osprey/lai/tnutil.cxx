@@ -794,6 +794,16 @@ Init_Dedicated_TNs (void)
   }
 #endif
 
+#ifdef TARG_ARM
+  if (!True_TN) {
+    // (jv) we need a true_tn for predicated instructions that are sunk
+    // into a psi instruction.
+    ++tnum; 
+    True_TN = Create_Dedicated_TN (ISA_REGISTER_CLASS_cpsr, 0); 
+    Set_TN_register_and_class(True_TN, CLASS_AND_REG_true);
+  }
+#endif
+
 #else
   /* Initialize the dedicated integer register TNs: */
   Zero_TN = ded_tns[REGISTER_CLASS_zero][REGISTER_zero];

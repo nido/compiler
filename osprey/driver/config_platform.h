@@ -111,6 +111,8 @@ typedef enum {
   PROC_stxp70_v4_single = 49,
   PROC_stxp70_v4_dual = 50,
   PROC_stxp70_v4_dual_arith = 51,
+  PROC_armv5     = 52,
+  PROC_armv6     = 53,
 } PROCESSOR;
 
 extern PLATFORM Platform;	/* Target platform */
@@ -148,6 +150,8 @@ typedef enum {
   ABI_ST200_PIC,
   ABI_STxP70_embedded,
   ABI_STxP70_fpx,
+  ABI_ARM_ver1,
+  ABI_ARM_ver2,
 } ABI;
 
 typedef enum {
@@ -167,6 +171,8 @@ typedef enum {
   ISA_stxp70_v3 = 17,
   ISA_stxp70_v3_ext = 18,
   ISA_stxp70_v4 = 19,
+  ISA_armv5     = 20,
+  ISA_armv6     = 21,
 } ISA;
 
 #ifdef MUMBLE_ST200_BSP
@@ -191,6 +197,14 @@ typedef enum {
   RUNTIME_BARE = 1
 } RUNTIME;
 extern RUNTIME stxp70_runtime;
+#endif
+
+#ifdef MUMBLE_ARM_BSP
+typedef enum {
+  RUNTIME_NONE = 0,
+  RUNTIME_BARE = 1
+} RUNTIME;
+extern RUNTIME arm_runtime;
 #endif
 
 

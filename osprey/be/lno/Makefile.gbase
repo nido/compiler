@@ -364,7 +364,7 @@ IPL_DSO=ipl_dll.a
 endif
 
 
-ifeq ($(BUILD_TARGET), ST200)
+ifneq ($(TARGET_FROM_ST),)
  ifeq ($(DSO_MODE), SO)
   TARGET_DSO =
  endif
@@ -372,19 +372,15 @@ ifeq ($(BUILD_TARGET), ST200)
   TARGET_DSO =
  endif
  ifeq ($(DSO_MODE), STATIC)
-  TARGET_DSO = libst220.a
- endif
-endif
-
-ifeq ($(BUILD_TARGET), STxP70)
- ifeq ($(DSO_MODE), SO)
-  TARGET_DSO =
- endif
- ifeq ($(DSO_MODE), DLL)
-  TARGET_DSO =
- endif
- ifeq ($(DSO_MODE), STATIC)
-  TARGET_DSO = libstxp70.a
+  ifeq ($(BUILD_TARGET), ST200)
+   TARGET_DSO = libst220.a
+  endif
+  ifeq ($(BUILD_TARGET), STxP70)
+   TARGET_DSO = libstxp70.a
+  endif
+  ifeq ($(BUILD_TARGET), ARM)
+   TARGET_DSO = libarmv5e.a
+  endif
  endif
 endif
 

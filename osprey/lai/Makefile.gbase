@@ -86,16 +86,16 @@ endif
 # The following is only for em_dwarf.o and targ_em_dwarf.o
 HOSTDEFS += -LANG:packed=on
 
-ifeq ($(BUILD_TARGET), ST100)
-TARGDEFS += -DTARG_ST100 -DSUPPORTS_PREDICATION
-endif
-
 ifeq ($(BUILD_TARGET), ST200)
 TARGDEFS += -DTARG_ST200 -DSUPPORTS_SELECT -DSUPPORTS_PREDICATION
 endif
 
 ifeq ($(BUILD_TARGET), STxP70)
 TARGDEFS += -DTARG_STxP70 -DSUPPORTS_SELECT
+endif
+
+ifeq ($(BUILD_TARGET), ARM)
+TARGDEFS += -DTARG_ARM -DSUPPORTS_SELECT -DNO_IFC_DEFAULT
 endif
 
 ifeq ($(BUILD_OPTIMIZE), DEBUG)
@@ -118,19 +118,6 @@ HOSTDEFS += -DOPT_EXPORTED=$(DLLIMPORT)
 # export
 HOSTDEFS += -DCG_EXPORTED=$(DLLEXPORT)
 endif
-
-#CGG_DEV{
-ifeq ($(BUILD_TARGET),ST200)
-ifeq ($(BUILD_VARIANT), CGG_BUILD)
-  HOSTDEFS += -DCGG_ENABLED -DHAS_INTTYPES_H
-endif
-endif
-ifeq ($(BUILD_TARGET),STxP70)
-ifeq ($(BUILD_VARIANT), CGG_BUILD)
-  HOSTDEFS += -DCGG_ENABLED -DHAS_INTTYPES_H
-endif
-endif
-#}CGG_DEV
 
 ## Should go away after elf.h cleanup !
 TARGDEFS += -D__MIPS_AND_IA64_ELF_H
@@ -199,18 +186,6 @@ SRC_DIRS = 			\
   $(COMMON_TARG_EXP_DIR)	\
   $(COMMON_TARG_ACCESS_DIR)
 
-#CGG_DEV{
-ifeq ($(BUILD_TARGET),ST200)
-ifeq ($(BUILD_VARIANT), CGG_BUILD)
-  SRC_DIRS += $(COMMON_TARG_CGG_DIR)
-endif
-endif
-ifeq ($(BUILD_TARGET),STxP70)
-ifeq ($(BUILD_VARIANT), CGG_BUILD)
-  SRC_DIRS += $(COMMON_TARG_CGG_DIR)
-endif
-endif
-#}CGG_DEV
 
 ifdef LAO_ENABLED
 SRC_DIRS +=	\
@@ -242,18 +217,6 @@ HEADER_DIRS += $(TARGDIR)/include/libelf
 # between header files with same name.
 HEADER_DIRS += $(GCCFE_GNU_TARG_DIR)
 
-#CGG_DEV{
-ifeq ($(BUILD_TARGET),ST200)
-ifeq ($(BUILD_VARIANT), CGG_BUILD)
-  HEADER_DIRS += $(COMMON_TARG_CGG_DIR)
-endif
-endif
-ifeq ($(BUILD_TARGET),STxP70)
-ifeq ($(BUILD_VARIANT), CGG_BUILD)
-  HEADER_DIRS += $(COMMON_TARG_CGG_DIR)
-endif
-endif
-#}CGG_DEV
 
 ifdef LAO_ENABLED
 HEADER_DIRS +=	\
@@ -476,14 +439,7 @@ ifeq ($(BUILD_TARGET),IA64)
   CG_CXX_SRCS +=  pqs_cg.cxx
 endif
 
-ifeq ($(BUILD_TARGET),ST100)
-  CG_CXX_SRCS +=  pqs.cxx
-  CG_CXX_SRCS +=  pqs_cg.cxx
-  CG_CXX_SRCS +=  targ_pqs.cxx
-  CG_CXX_SRCS +=  targ_hb.cxx
-endif
-
-ifeq ($(BUILD_TARGET),ST200)
+ifneq ($(TARGET_FROM_ST),)
   CG_CXX_SRCS += cg_select.cxx
   CG_CXX_SRCS += targ_select.cxx
   CG_CXX_SRCS += targ_hb.cxx
@@ -494,41 +450,9 @@ ifeq ($(BUILD_TARGET),ST200)
   CG_CXX_SRCS += range_prop.cxx
   CG_CXX_SRCS += cg_tailmerge.cxx
   CG_CXX_SRCS += cg_color.cxx
-
- CG_CXX_SRCS +=  pqs.cxx
- CG_CXX_SRCS +=  pqs_cg.cxx
- CG_CXX_SRCS +=  targ_pqs.cxx
-
-#CGG_DEV{
-  ifeq ($(BUILD_VARIANT), CGG_BUILD)
-   CG_CXX_SRCS += targ_cgg_exp.cxx targ_emit.gen.cxx
-   CG_C_SRCS += NBG_State.c NBG_Link.c
-  endif
-#}CGG_DEV
-endif
-
-ifeq ($(BUILD_TARGET),STxP70)
-  CG_CXX_SRCS += cg_select.cxx
-  CG_CXX_SRCS += targ_select.cxx
-  CG_CXX_SRCS += targ_hb.cxx
-  CG_CXX_SRCS += top_properties.cxx
-  CG_CXX_SRCS += mexpand.cxx
-  CG_CXX_SRCS += ipra.cxx
-  CG_CXX_SRCS += range_analysis.cxx
-  CG_CXX_SRCS += range_prop.cxx
-  CG_CXX_SRCS += cg_tailmerge.cxx
-  CG_CXX_SRCS += cg_color.cxx
-
- CG_CXX_SRCS +=  pqs.cxx
- CG_CXX_SRCS +=  pqs_cg.cxx
- CG_CXX_SRCS +=  targ_pqs.cxx
-
-#CGG_DEV{
-  ifeq ($(BUILD_VARIANT), CGG_BUILD)
-   CG_CXX_SRCS += targ_cgg_exp.cxx targ_emit.gen.cxx
-   CG_C_SRCS += NBG_State.c NBG_Link.c
-  endif
-#}CGG_DEV
+  CG_CXX_SRCS += pqs.cxx
+  CG_CXX_SRCS += pqs_cg.cxx
+  CG_CXX_SRCS += targ_pqs.cxx
 endif
 
 ifdef LAO_ENABLED
@@ -628,45 +552,28 @@ ifeq ($(BUILD_TARGET), IA32)
 TARGET_SO = pentium.so
 endif
 
-ifeq ($(BUILD_TARGET), ST100)
-TARGET_SO = st120.so
-endif
-
-ifeq ($(BUILD_TARGET), ST200)
-
-# shared library
-ifeq ($(DSO_MODE),SO)
-TARGET_SO = 
-endif
-# windows dll import library
-ifeq ($(DSO_MODE),DLL)
-TARGET_SO =
-endif
-# static library
-ifeq ($(DSO_MODE),STATIC)
-TARGET_SO = libst220.a
-endif
-
-endif #ST200
-
-
-ifeq ($(BUILD_TARGET), STxP70)
-
-# shared library
-ifeq ($(DSO_MODE),SO)
-TARGET_SO = 
-endif
-# windows dll import library
-ifeq ($(DSO_MODE),DLL)
-TARGET_SO =
-endif
-# static library
-ifeq ($(DSO_MODE),STATIC)
-TARGET_SO = libstxp70.a
-endif
-
-endif #STxP70
-
+ifneq ($(TARGET_FROM_ST),)
+ # shared library
+ ifeq ($(DSO_MODE),SO)
+  TARGET_SO = 
+ endif
+ # windows dll import library
+ ifeq ($(DSO_MODE),DLL)
+  TARGET_SO =
+ endif
+ # static library
+ ifeq ($(DSO_MODE),STATIC)
+  ifeq ($(BUILD_TARGET), ST200)
+   TARGET_SO = libst220.a
+  endif
+  ifeq ($(BUILD_TARGET), STxP70)
+   TARGET_SO = libstxp70.a
+  endif
+  ifeq ($(BUILD_TARGET), ARM)
+   TARGET_SO = libarm.a
+  endif
+ endif
+endif # TARGET_FROM_ST
 
 ##
 ## Defining the wopt library

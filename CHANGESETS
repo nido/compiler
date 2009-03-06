@@ -1,6 +1,473 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Mar  6 11:11:38 CET 2009
+	Author:    guillon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/arm/main
+
+Description:
+------------
+	* Deliver arm-main branch: armv5e and armv6 prototype compiler and architecture description. Ref to branch tracker art #60096.
+
+
+Modified Files:
+---------------
+	M      osprey/Makefile.gsetup
+	M      osprey/be/opt/Makefile.gbase
+	M      osprey/be/be/driver.cxx
+	M      osprey/be/be/Makefile.gbase
+	M      osprey/be/lno/Makefile.gbase
+	M      osprey/be/whirl2c/Makefile.gbase
+	M      osprey/be/com/rt_lower_wn.cxx
+	M      osprey/ir_tools/Makefile.gbase
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/phases.c
+	M      osprey/driver/objects.c
+	M      osprey/driver/get_options.c
+	M      osprey/driver/special_options.c
+	M      osprey/driver/config_platform.c
+	M      osprey/driver/Makefile.gbase
+	M      osprey/driver/config_platform.h
+	M      osprey/driver/lang_defs.c
+	M      osprey/driver/main.c
+	M      osprey/libair/air/air_disasm.c
+	M      osprey/libair/air/Makefile.gbase
+	A  +   osprey/targia32_Mingwin_arm
+	A  +   osprey/targia32_Mingwin_arm/configure
+	M      osprey/instrumentation/libinstrC/Makefile.gbase
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/cgemit_targ.h
+	M      osprey/lai/cg_loop.cxx
+	M      osprey/lai/ebo_util.h
+	M      osprey/lai/tn.h
+	A  +   osprey/lai/lao/arm
+	A  +   osprey/lai/lao/arm/lao_cgir.cxx
+	A  +   osprey/lai/lao/arm/lao_target.h
+	M      osprey/lai/lao/lao_interface.h
+	M      osprey/lai/lao/lao_cgir.h
+	M      osprey/lai/lao/st200/lao_cgir.cxx
+	M      osprey/lai/lao/st200/lao_target.h
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/lao/Makefile.gbase
+	M      osprey/lai/lao/lao_stub.h
+	M      osprey/lai/calls.cxx
+	M      osprey/lai/cg_ivs.cxx
+	M      osprey/lai/tnutil.cxx
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/lai/hb_hazards.cxx
+	M      osprey/lai/op.h
+	M      osprey/lai/variants.h
+	M      osprey/lai/Makefile.gbase
+	M      osprey/gccfe/gnu/Makefile.gbase
+	A  +   osprey/gccfe/gnu/config/arm
+	A  +   osprey/gccfe/gnu/config/arm/uclinux-elf.h
+	A  +   osprey/gccfe/gnu/config/arm/vxarm.h
+	A  +   osprey/gccfe/gnu/config/arm/semi.h
+	A  +   osprey/gccfe/gnu/config/arm/ecos-elf.h
+	A  +   osprey/gccfe/gnu/config/arm/unknown-elf.h
+	A  +   osprey/gccfe/gnu/config/arm/linux-elf.h
+	A  +   osprey/gccfe/gnu/config/arm/elf.h
+	A  +   osprey/gccfe/gnu/config/arm/aout.h
+	A  +   osprey/gccfe/gnu/config/arm/arm.c
+	A  +   osprey/gccfe/gnu/config/arm/coff.h
+	A  +   osprey/gccfe/gnu/config/arm/strongarm-pe.h
+	A  +   osprey/gccfe/gnu/config/arm/arm.h
+	A  +   osprey/gccfe/gnu/config/arm/lib1funcs.asm
+	A  +   osprey/gccfe/gnu/config/arm/semiaof.h
+	A  +   osprey/gccfe/gnu/config/arm/README-interworking
+	A  +   osprey/gccfe/gnu/config/arm/arm.md
+	A  +   osprey/gccfe/gnu/config/arm/crti.asm
+	A  +   osprey/gccfe/gnu/config/arm/xscale-coff.h
+	A  +   osprey/gccfe/gnu/config/arm/arm-modes.def
+	A  +   osprey/gccfe/gnu/config/arm/rtems-elf.h
+	A  +   osprey/gccfe/gnu/config/arm/pe.c
+	A  +   osprey/gccfe/gnu/config/arm/crtn.asm
+	A  +   osprey/gccfe/gnu/config/arm/arm-protos.h
+	A  +   osprey/gccfe/gnu/config/arm/pe.h
+	A  +   osprey/gccfe/gnu/config/arm/aof.h
+	A  +   osprey/gccfe/gnu/config/arm/linux-gas.h
+	A  +   osprey/gccfe/gnu/config/arm/freebsd.h
+	A  +   osprey/gccfe/gnu/config/arm/unknown-elf-oabi.h
+	A  +   osprey/gccfe/gnu/config/arm/netbsd.h
+	A  +   osprey/gccfe/gnu/config/arm/strongarm-elf.h
+	A  +   osprey/gccfe/gnu/config/arm/netbsd-elf.h
+	A  +   osprey/gccfe/gnu/config/arm/xscale-elf.h
+	A  +   osprey/gccfe/gnu/config/arm/conix-elf.h
+	A  +   osprey/gccfe/gnu/config/arm/strongarm-coff.h
+	A  +   osprey/gccfe/gnu/arm
+	A  +   osprey/gccfe/gnu/arm/gt-gcse.h
+	A  +   osprey/gccfe/gnu/arm/auto-host_mingw32.h
+	A  +   osprey/gccfe/gnu/arm/gt-java-mangle.h
+	A  +   osprey/gccfe/gnu/arm/gt-integrate.h
+	A  +   osprey/gccfe/gnu/arm/genrtl.h
+	A  +   osprey/gccfe/gnu/arm/options.h
+	A  +   osprey/gccfe/gnu/arm/gtype-desc.c
+	A  +   osprey/gccfe/gnu/arm/gt-alias.h
+	A  +   osprey/gccfe/gnu/arm/cs-tm_p.h
+	A  +   osprey/gccfe/gnu/arm/auto-host_linux.h
+	A  +   osprey/gccfe/gnu/arm/gt-java-constants.h
+	A  +   osprey/gccfe/gnu/arm/gtype-objc.h
+	A  +   osprey/gccfe/gnu/arm/gtype-desc.h
+	A  +   osprey/gccfe/gnu/arm/gt-java-expr.h
+	A  +   osprey/gccfe/gnu/arm/config.h
+	A  +   osprey/gccfe/gnu/arm/print-rtl1.c
+	A  +   osprey/gccfe/gnu/arm/gt-profile.h
+	A  +   osprey/gccfe/gnu/arm/gt-cp-repo.h
+	A  +   osprey/gccfe/gnu/arm/specs.h
+	A  +   osprey/gccfe/gnu/arm/gt-cp-decl.h
+	A  +   osprey/gccfe/gnu/arm/insn-attr.h
+	A  +   osprey/gccfe/gnu/arm/gt-java-jcf-write.h
+	A  +   osprey/gccfe/gnu/arm/gt-cp-spew.h
+	A  +   osprey/gccfe/gnu/arm/gt-c-objc-common.h
+	A  +   osprey/gccfe/gnu/arm/gt-stmt.h
+	A  +   osprey/gccfe/gnu/arm/tm_p.h
+	A  +   osprey/gccfe/gnu/arm/gt-java-parse.h
+	A  +   osprey/gccfe/gnu/arm/insn-attrtab.c
+	A  +   osprey/gccfe/gnu/arm/gt-c-parse.h
+	A  +   osprey/gccfe/gnu/arm/insn-codes.h
+	A  +   osprey/gccfe/gnu/arm/insn-opinit.c
+	A  +   osprey/gccfe/gnu/arm/gt-lists.h
+	A  +   osprey/gccfe/gnu/arm/stdbool.h
+	A  +   osprey/gccfe/gnu/arm/gt-cp-tree.h
+	A  +   osprey/gccfe/gnu/arm/cs-config.h
+	A  +   osprey/gccfe/gnu/arm/insn-config.h
+	A  +   osprey/gccfe/gnu/arm/gtype-ada.h
+	A  +   osprey/gccfe/gnu/arm/gtype-f.h
+	A  +   osprey/gccfe/gnu/arm/gt-java-builtins.h
+	A  +   osprey/gccfe/gnu/arm/gt-fold-const.h
+	A  +   osprey/gccfe/gnu/arm/gt-c-common.h
+	A  +   osprey/gccfe/gnu/arm/configargs.h
+	A  +   osprey/gccfe/gnu/arm/gt-reg-stack.h
+	A  +   osprey/gccfe/gnu/arm/insn-peep.c
+	A  +   osprey/gccfe/gnu/arm/gtyp-gen.h
+	A  +   osprey/gccfe/gnu/arm/gt-ada-utils.h
+	A  +   osprey/gccfe/gnu/arm/gt-cp-pt.h
+	A  +   osprey/gccfe/gnu/arm/gt-java-class.h
+	A  +   osprey/gccfe/gnu/arm/gt-c-decl.h
+	A  +   osprey/gccfe/gnu/arm/gt-c-pragma.h
+	A  +   osprey/gccfe/gnu/arm/gt-optabs.h
+	A  +   osprey/gccfe/gnu/arm/gt-java-jcf-parse.h
+	A  +   osprey/gccfe/gnu/arm/gt-cp-decl2.h
+	A  +   osprey/gccfe/gnu/arm/gt-varasm.h
+	A  +   osprey/gccfe/gnu/arm/insn-flags.h
+	A  +   osprey/gccfe/gnu/arm/gencheck.h
+	A  +   osprey/gccfe/gnu/arm/gt-java-lang.h
+	A  +   osprey/gccfe/gnu/arm/auto-host_sun.h
+	A  +   osprey/gccfe/gnu/arm/insn-conditions.c
+	A  +   osprey/gccfe/gnu/arm/tree-check.h
+	A  +   osprey/gccfe/gnu/arm/insn-constants.h
+	A  +   osprey/gccfe/gnu/arm/multilib.h
+	A  +   osprey/gccfe/gnu/arm/auto-host.h
+	A  +   osprey/gccfe/gnu/arm/gt-cp-call.h
+	A  +   osprey/gccfe/gnu/arm/gt-f-ste.h
+	A  +   osprey/gccfe/gnu/arm/tm-preds.h
+	A  +   osprey/gccfe/gnu/arm/gt-function.h
+	A  +   osprey/gccfe/gnu/arm/gt-java-decl.h
+	A  +   osprey/gccfe/gnu/arm/insn-emit.c
+	A  +   osprey/gccfe/gnu/arm/insn-recog.c
+	A  +   osprey/gccfe/gnu/arm/gt-except.h
+	A  +   osprey/gccfe/gnu/arm/insn-output.c
+	A  +   osprey/gccfe/gnu/arm/gt-ada-decl.h
+	A  +   osprey/gccfe/gnu/arm/auto-host_cygwin.h
+	A  +   osprey/gccfe/gnu/arm/gt-f-where.h
+	A  +   osprey/gccfe/gnu/arm/gt-emit-rtl.h
+	A  +   osprey/gccfe/gnu/arm/gt-ra-build.h
+	A  +   osprey/gccfe/gnu/arm/gt-tree.h
+	A  +   osprey/gccfe/gnu/arm/gtype-java.h
+	A  +   osprey/gccfe/gnu/arm/gt-sdbout.h
+	A  +   osprey/gccfe/gnu/arm/gtype-c.h
+	A  +   osprey/gccfe/gnu/arm/gt-f-com.h
+	A  +   osprey/gccfe/gnu/arm/gt-cselib.h
+	A  +   osprey/gccfe/gnu/arm/gt-stor-layout.h
+	A  +   osprey/gccfe/gnu/arm/insn-extract.c
+	A  +   osprey/gccfe/gnu/arm/gt-regclass.h
+	A  +   osprey/gccfe/gnu/arm/gt-cp-mangle.h
+	A  +   osprey/gccfe/gnu/arm/hconfig.h
+	A  +   osprey/gccfe/gnu/arm/cs-hconfig.h
+	A  +   osprey/gccfe/gnu/arm/gt-ada-trans.h
+	A  +   osprey/gccfe/gnu/arm/gt-cp-parse.h
+	A  +   osprey/gccfe/gnu/arm/gt-f-lex.h
+	A  +   osprey/gccfe/gnu/arm/gt-bitmap.h
+	A  +   osprey/gccfe/gnu/arm/gt-dwarf2out.h
+	A  +   osprey/gccfe/gnu/arm/gt-expr.h
+	A  +   osprey/gccfe/gnu/arm/gt-explow.h
+	A  +   osprey/gccfe/gnu/arm/genrtl.c
+	A  +   osprey/gccfe/gnu/arm/gtype-cp.h
+	M      osprey/gccfe/wfe_stmt.cxx
+	M      osprey/gccfe/Makefile.gbase
+	M      osprey/gccfe/gnu_config.h
+	M      osprey/gccfe/wfe_decl.cxx
+	A  +   osprey/targia32_arm
+	A  +   osprey/targia32_arm/configure
+	M      osprey/make/platforms/linux-mingw-stxp70/Makefile.platforms
+	M      osprey/make/platforms/sunos-st200-st200/Makefile.platforms
+	M      osprey/make/platforms/linux-mingw-st200/Makefile.platforms
+	A  +   osprey/make/platforms/linux-mingw-arm
+	A  +   osprey/make/platforms/linux-mingw-arm/Makefile.platforms
+	M      osprey/make/platforms/linux-cygwin-stxp70/Makefile.platforms
+	M      osprey/make/platforms/linux-st200-linux/Makefile.platforms
+	M      osprey/make/platforms/linux-stxp70/Makefile.platforms
+	M      osprey/make/platforms/cygwin-stxp70/Makefile.platforms
+	M      osprey/make/platforms/linux-cygwin-st200/Makefile.platforms
+	M      osprey/make/platforms/linux-st200/Makefile.platforms
+	M      osprey/make/platforms/linux-stxp70-stxp70/Makefile.platforms
+	M      osprey/make/platforms/cygwin-st200/Makefile.platforms
+	M      osprey/make/platforms/linux-st200-st200/Makefile.platforms
+	M      osprey/make/platforms/sunos-cygwin-st200/Makefile.platforms
+	A  +   osprey/make/platforms/linux-arm
+	A  +   osprey/make/platforms/linux-arm/Makefile.platforms
+	M      osprey/make/platforms/sunos-st200/Makefile.platforms
+	M      osprey/include/Makefile.gbase
+	M      osprey/g++fe/tree_symtab.cxx
+	M      osprey/g++fe/wfe_expr.cxx
+	M      osprey/g++fe/wfe_stmt.cxx
+	M      osprey/g++fe/Makefile.gbase
+	M      osprey/g++fe/gnu_config.h
+	M      osprey/g++fe/wfe_decl.cxx
+	M      osprey/common/targ_info/Makefile.gbase
+	M      osprey/common/util/Makefile.gbase
+	M      osprey/common/com/intrn_info.h
+	M      osprey/common/com/dyn_isa_api.h
+	M      osprey/common/com/dyn_isa_api_access.h
+	M      osprey/common/com/isa_loader.cxx
+	M      osprey/common/com/opcode_gen_core.cxx
+	M      osprey/common/com/opcode_gen_core.h
+	M      osprey/common/com/dyn_isa_api_access.cxx
+	M      osprey/common/com/intrn_info.cxx
+	M      osprey/ipa/main/Makefile.gbase
+	M      osprey/ipa/local/Makefile.gbase
+	A  +   osprey/targinfo/arm
+	A  +   osprey/targinfo/arm/expand
+	A  +   osprey/targinfo/arm/expand/exp_intrinsic.cxx
+	A  +   osprey/targinfo/arm/expand/exp_targ.h
+	A  +   osprey/targinfo/arm/expand/exp_divrem.cxx
+	A  +   osprey/targinfo/arm/expand/exp_memrf.cxx
+	A  +   osprey/targinfo/arm/expand/exp_pred.cxx
+	A  +   osprey/targinfo/arm/expand/exp_extension.cxx
+	A  +   osprey/targinfo/arm/expand/exp_branch.cxx
+	A  +   osprey/targinfo/arm/expand/exp_targ.cxx
+	A  +   osprey/targinfo/arm/expand/exp_extension.h
+	A  +   osprey/targinfo/arm/proc
+	A  +   osprey/targinfo/arm/proc/proc_properties.cxx
+	A  +   osprey/targinfo/arm/proc/proc.cxx
+	A  +   osprey/targinfo/arm/proc/armv6_si.cxx
+	A  +   osprey/targinfo/arm/proc/armv5e_si.cxx
+	A  +   osprey/targinfo/arm/config
+	A  +   osprey/targinfo/arm/config/targ_intrn_info.def
+	A  +   osprey/targinfo/arm/config/gfec_c_decl.h
+	A  +   osprey/targinfo/arm/config/config_host.c
+	A  +   osprey/targinfo/arm/config/config_TARG.cxx
+	A  +   osprey/targinfo/arm/config/targ_const_private.h
+	A  +   osprey/targinfo/arm/config/gen_intrinsics.inc
+	A  +   osprey/targinfo/arm/config/register_preg.h
+	A  +   osprey/targinfo/arm/config/gfec_wfe_expr.h
+	A  +   osprey/targinfo/arm/config/config_platform.c
+	A  +   osprey/targinfo/arm/config/config_asm.h
+	A  +   osprey/targinfo/arm/config/targ_sim.h
+	A  +   osprey/targinfo/arm/config/targ_wintrinsic.h
+	A  +   osprey/targinfo/arm/config/config_platform.h
+	A  +   osprey/targinfo/arm/config/config_target.h
+	A  +   osprey/targinfo/arm/config/gfec_builtins.h
+	A  +   osprey/targinfo/arm/config/cg_flags_arch.cxx
+	A  +   osprey/targinfo/arm/config/targ_const.cxx
+	A  +   osprey/targinfo/arm/config/config_cache_targ.cxx
+	A  +   osprey/targinfo/arm/config/targ_sim.cxx
+	A  +   osprey/targinfo/arm/config/targ_ctrl.h
+	A  +   osprey/targinfo/arm/config/config_TARG.h
+	A  +   osprey/targinfo/arm/config/config_elf_targ.cxx
+	A  +   osprey/targinfo/arm/config/targ_elf.h
+	A  +   osprey/targinfo/arm/config/targ_trap.h
+	A  +   osprey/targinfo/arm/config/gfec_builtins.def
+	A  +   osprey/targinfo/arm/config/targ_register_common.cxx
+	A  +   osprey/targinfo/arm/config/config_target.cxx
+	A  +   osprey/targinfo/arm/config/config_intrinsic.h
+	A  +   osprey/targinfo/arm/config/gfecc_builtins.def
+	A  +   osprey/targinfo/arm/config/targ_wutil.def
+	A  +   osprey/targinfo/arm/be
+	A  +   osprey/targinfo/arm/be/targ_emulate.h
+	A  +   osprey/targinfo/arm/be/targ_pattern_rec.cxx
+	A  +   osprey/targinfo/arm/be/targ_sections.cxx
+	A  +   osprey/targinfo/arm/be/mul_cost_model.cxx
+	A  +   osprey/targinfo/arm/be/driver_targ.cxx
+	A  +   osprey/targinfo/arm/be/targ_emulate.cxx
+	A  +   osprey/targinfo/arm/be/targ_sections.h
+	A  +   osprey/targinfo/arm/be/mul_cost_model.h
+	A  +   osprey/targinfo/arm/be/betarget.cxx
+	A  +   osprey/targinfo/arm/be/fill_align_targ.cxx
+	A  +   osprey/targinfo/arm/lno
+	A  +   osprey/targinfo/arm/lno/lnotarget.cxx
+	A  +   osprey/targinfo/arm/lno/targ_model.h
+	A  +   osprey/targinfo/arm/lno/targ_prefetch.h
+	A  +   osprey/targinfo/arm/cg
+	A  +   osprey/targinfo/arm/cg/cgdwarf_targ.h
+	A  +   osprey/targinfo/arm/cg/targ_swp_bundle.cxx
+	A  +   osprey/targinfo/arm/cg/targ_pqs.cxx
+	A  +   osprey/targinfo/arm/cg/targ_ebo.cxx
+	A  +   osprey/targinfo/arm/cg/targ_cg_sup.h
+	A  +   osprey/targinfo/arm/cg/targ_tn.h
+	A  +   osprey/targinfo/arm/cg/targ_cgemit.cxx
+	A  +   osprey/targinfo/arm/cg/targ_cg_private.h
+	A  +   osprey/targinfo/arm/cg/targ_loop_recur.cxx
+	A  +   osprey/targinfo/arm/cg/targ_register.h
+	A  +   osprey/targinfo/arm/cg/targ_swp.cxx
+	A  +   osprey/targinfo/arm/cg/targ_cgdwarf.cxx
+	A  +   osprey/targinfo/arm/cg/targ_cg.h
+	A  +   osprey/targinfo/arm/cg/targ_op.cxx
+	A  +   osprey/targinfo/arm/cg/targ_grouping.h
+	A  +   osprey/targinfo/arm/cg/targ_select.cxx
+	A  +   osprey/targinfo/arm/cg/targ_tn.cxx
+	A  +   osprey/targinfo/arm/cg/targ_cgdwarf_utils.h
+	A  +   osprey/targinfo/arm/cg/targ_calls.h
+	A  +   osprey/targinfo/arm/cg/targ_register.cxx
+	A  +   osprey/targinfo/arm/cg/targ_hb.cxx
+	A  +   osprey/targinfo/arm/cg/targ_cg.cxx
+	A  +   osprey/targinfo/arm/cg/targ_entry_exit.cxx
+	A  +   osprey/targinfo/arm/cg/targ_range_prop.cxx
+	A  +   osprey/targinfo/arm/cg/targ_cgdwarf_utils.cxx
+	A  +   osprey/targinfo/arm/cg/targ_calls.cxx
+	A  +   osprey/targinfo/arm/cg/targ_range_analysis.cxx
+	A  +   osprey/targinfo/arm/intrn
+	A  +   osprey/targinfo/arm/intrn/sx.h
+	A  +   osprey/targinfo/arm/intrn/x3.h
+	A  +   osprey/targinfo/arm/intrn/model_tests
+	A  +   osprey/targinfo/arm/intrn/model_tests/src
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/sx.h
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/x3.h
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/builtins_model_ax.c
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/fpx.h
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/get_SR.s
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/builtins_model_ax.h
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/builtins_fpx.h
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/builtins_model_fpx_temp.c
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/templates
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/templates/builtin_test_main_template.c
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/templates/builtin.lst
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/templates/basic_builtin.c
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/builtins_model_fpx_temp.h
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/builtins_model_sx.c
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/builtins_model_x3.c
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/builtins_model_common.h
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/builtins_model_sx.h
+	A  +   osprey/targinfo/arm/intrn/model_tests/src/builtins_model_x3.h
+	A  +   osprey/targinfo/arm/intrn/model_tests/README.txt
+	A  +   osprey/targinfo/arm/intrn/model_tests/makedir
+	A  +   osprey/targinfo/arm/intrn/model_tests/makedir/verify_builtin_list.pl
+	A  +   osprey/targinfo/arm/intrn/model_tests/makedir/DateUs.pm
+	A  +   osprey/targinfo/arm/intrn/model_tests/makedir/generate_builtin_src_test.pl
+	A  +   osprey/targinfo/arm/intrn/model_tests/makedir/Makefile_builtin_open64.in
+	A  +   osprey/targinfo/arm/intrn/model_tests/makedir/generate_builtin_datavector.pl
+	A  +   osprey/targinfo/arm/intrn/model_tests/makedir/perl_add_on
+	A  +   osprey/targinfo/arm/intrn/model_tests/makedir/perl_add_on/Text
+	A  +   osprey/targinfo/arm/intrn/model_tests/makedir/perl_add_on/Text/Diff.pm
+	A  +   osprey/targinfo/arm/intrn/model_tests/makedir/perl_add_on/Text/Diff
+	A  +   osprey/targinfo/arm/intrn/model_tests/makedir/perl_add_on/Text/Diff/Table.pm
+	A  +   osprey/targinfo/arm/intrn/model_tests/makedir/perl_add_on/Algorithm
+	A  +   osprey/targinfo/arm/intrn/model_tests/makedir/perl_add_on/Algorithm/Diff.pm
+	A  +   osprey/targinfo/arm/intrn/model_tests/makedir/Date.pm
+	A  +   osprey/targinfo/arm/intrn/model_tests/makedir/check_builtin.pl
+	A  +   osprey/targinfo/arm/intrn/model_tests/testing
+	A  +   osprey/targinfo/arm/intrn/model_tests/testing/Makefile
+	A  +   osprey/targinfo/arm/intrn/fpx.h
+	A  +   osprey/targinfo/arm/intrn/vx.h
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/src
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_MD_TI_ins.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_move.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_fgt_ins.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_Fader_ins.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_mv_format.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_pixel_ordering.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_DD_SI_ins.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_func.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_sa_ins.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_tnr_ins1.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_tnr_ins2.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_tnr_ins3.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/src/model_vx.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_SAD_ins.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/inc
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/inc/Datatype.h
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/inc/Macros_new.h
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/inc/vx.h
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/inc/type_vx.h
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/inc/proto_vx.h
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/inc/Datatype_new.h
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/inc/Macros.h
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/inc/XDLI_Types.h
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx/inc/OS_Types.h
+	A  +   osprey/targinfo/arm/intrn/builtins_header.h
+	A  +   osprey/targinfo/arm/intrn/builtins_x3.h
+	A  +   osprey/targinfo/arm/intrn/builtins_sx.h
+	A  +   osprey/targinfo/arm/intrn/intrn_test.cxx
+	A  +   osprey/targinfo/arm/intrn/builtins_vx.h
+	A  +   osprey/targinfo/arm/intrn/builtins_fpx.h
+	A  +   osprey/targinfo/arm/intrn/builtins_model_x3.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_sx.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_common.h
+	A  +   osprey/targinfo/arm/intrn/builtins_model_x3.h
+	A  +   osprey/targinfo/arm/intrn/builtins_model_sx.h
+	A  +   osprey/targinfo/arm/intrn/intrn_test.c
+	A  +   osprey/targinfo/arm/intrn/builtins_model_vx.h
+	A  +   osprey/targinfo/arm/abi
+	A  +   osprey/targinfo/arm/abi/abi_properties.cxx
+	A  +   osprey/targinfo/arm/isa
+	A  +   osprey/targinfo/arm/isa/isa_decode.cxx
+	A  +   osprey/targinfo/arm/isa/isa_syntax.cxx
+	A  +   osprey/targinfo/arm/isa/isa_relocs.cxx
+	A  +   osprey/targinfo/arm/isa/isa_enums.cxx
+	A  +   osprey/targinfo/arm/isa/isa_variants.cxx
+	A  +   osprey/targinfo/arm/isa/isa_binutils.cxx
+	A  +   osprey/targinfo/arm/isa/isa_properties.cxx
+	A  +   osprey/targinfo/arm/isa/isa_print.cxx
+	A  +   osprey/targinfo/arm/isa/isa_hazards.cxx
+	A  +   osprey/targinfo/arm/isa/isa_pseudo.cxx
+	A  +   osprey/targinfo/arm/isa/isa_subset.cxx
+	A  +   osprey/targinfo/arm/isa/isa_ext_limits.h
+	A  +   osprey/targinfo/arm/isa/isa_registers.cxx
+	A  +   osprey/targinfo/arm/isa/isa_bundle.cxx
+	A  +   osprey/targinfo/arm/isa/isa_operands.cxx
+	A  +   osprey/targinfo/arm/isa/isa_lits.cxx
+	A  +   osprey/targinfo/arm/isa/isa_pack.cxx
+	A  +   osprey/targinfo/arm/isa/isa_selector.cxx
+	A  +   osprey/targinfo/arm/isa/isa.cxx
+	A  +   osprey/targinfo/arm/emit
+	A  +   osprey/targinfo/arm/emit/targ_em_dwarf.cxx
+	A  +   osprey/targinfo/arm/emit/targ_em_const.cxx
+	A  +   osprey/targinfo/arm/emit/targ_em_elf.cxx
+	A  +   osprey/targinfo/arm/emit/targ_em_dwarf.h
+	A  +   osprey/targinfo/arm/emit/targ_em_elf.h
+	M      osprey/targinfo/stxp70/expand/exp_targ.h
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+	M      osprey/targinfo/stxp70/config/config_TARG.cxx
+	M      osprey/targinfo/stxp70/config/config_TARG.h
+	A  +   osprey/targinfo/stxp70/config/config_intrinsic.h
+	M      osprey/targinfo/stxp70/cg/targ_cgemit.cxx
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/stxp70/cg/targ_tn.cxx
+	M      osprey/targinfo/st200/expand/exp_targ.h
+	M      osprey/targinfo/st200/expand/exp_targ.cxx
+	M      osprey/targinfo/st200/config/config_TARG.cxx
+	M      osprey/targinfo/st200/config/config_TARG.h
+	A  +   osprey/targinfo/st200/config/config_intrinsic.h
+	M      osprey/targinfo/st200/cg/targ_op.cxx
+	M      osprey/targinfo/st200/cg/targ_tn.cxx
+	M      osprey/targinfo/st200/isa/isa_operands.cxx
+	M      osprey/targinfo/generate/isa_operands_gen.h
+	M      osprey/targinfo/generate/isa_lits_gen.h
+	M      osprey/targinfo/generate/isa_pseudo_gen.cxx
+	M      osprey/targinfo/generate/isa_operands_gen.cxx
+	M      osprey/targinfo/generate/isa_lits_gen.cxx
+	M      osprey/targinfo/generate/isa_pack_gen.cxx
+	M      osprey/targinfo/Makefile.gbase
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Mar  5 16:24:29 CET 2009
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

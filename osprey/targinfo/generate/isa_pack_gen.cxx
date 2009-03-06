@@ -67,6 +67,7 @@ using std::vector;
 #include "topcode.h"
 #endif
 
+#include "targ_isa_operands.h"
 #include "gen_util.h"
 #include "isa_pack_gen.h"
 
@@ -87,8 +88,12 @@ static const TOP TOP_count_limit = TOP_dyn_count;
 #endif
 
 
-#define MAX_OPNDS     ISA_OPERAND_max_operands 
-#define MAX_RESULTS   ISA_OPERAND_max_results
+/* The maximum number of operands and results used by ANY target.
+ * (It would be better to get the max operands and results from the
+ * generated targ_isa_operands.h file -- Ken)
+ */
+#define MAX_OPNDS   ISA_OPERAND_max_operands
+#define MAX_RESULTS ISA_OPERAND_max_results
 
 typedef enum {
 	END	= 0,			// end of list marker

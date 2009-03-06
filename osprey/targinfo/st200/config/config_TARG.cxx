@@ -143,6 +143,9 @@ INT32 Enable_Misaligned_Load, Enable_Misaligned_Store;
 // 2: error
 INT32 Warn_Misaligned_Access = 0;
 
+// [JV]: See config_TARG.h
+BOOL Compare_Branch_Seq_Is_Atomic = FALSE;
+
 //[VCdV]
 INT32 Activate_Hwloop;
 

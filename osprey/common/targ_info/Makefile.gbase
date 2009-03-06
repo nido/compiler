@@ -114,6 +114,15 @@ TARGINFO_ABI_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/abi
 TARGINFO_PROC_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/proc
 endif
 
+ifeq ($(BUILD_TARGET), ARM)
+TARGINFO_DIR		= $(BUILD_TOT)/targinfo
+TARGINFO_ACCESS_DIR	= $(TARGINFO_DIR)/access
+TARGINFO_GENERATE_DIR 	= $(TARGINFO_DIR)/generate
+TARGINFO_ISA_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/isa
+TARGINFO_ABI_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/abi
+TARGINFO_PROC_DIR 	= $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/proc
+endif
+
 ifeq ($(BUILD_TARGET), IA64)
 TARGINFO_DIR		= $(BUILD_BASE)
 TARGINFO_ACCESS_DIR	= $(TARGINFO_DIR)/access
@@ -197,11 +206,6 @@ SO_TARGETS = \
 	pentium.so
 endif
 
-ifeq ($(BUILD_TARGET), ST100)
-LDIRT += st120_si_gen
-SO_TARGETS = st120.so
-endif
-
 ifeq ($(BUILD_TARGET), ST200)
 LDIRT += st200_si_gen
 SO_TARGETS = st220.so
@@ -210,6 +214,11 @@ endif
 ifeq ($(BUILD_TARGET), STxP70)
 LDIRT += stxp70_si_gen
 SO_TARGETS = stxp70.so
+endif
+
+ifeq ($(BUILD_TARGET), ARM)
+LDIRT += arm_si_gen
+SO_TARGETS = arm.so
 endif
 
 HDRS_LOC = /usr/include/cmplrs/$(BUILD_TARGET_DIR)
@@ -811,30 +820,6 @@ pentium_si.o: pentium_si.cxx targ_isa_subset.h topcode.h si_gen.h
 	$(CXX) $(CXXFLAGS) -c $(TARGINFO_PROC_DIR)/pentium_si.cxx
 endif
 
-ifeq ($(BUILD_TARGET), ST100)
-
- ifeq ($(BUILD_COMPILER), EDG)
-st120.so: st120.o $(SI_EXPORT_LIST)
-	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) -exports_file $(SI_EXPORT_LIST) \
-               st120.o -o st120.so
- else
-st120.so: st120.o
-	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) st120.o -o st120.so
- endif
-
-st120.o: st120.c ti_si.h
-	$(CC) $(CFLAGS) -c st120.c
-
-st120.c: st120_si_gen
-	$(SETPATH) $(RUN) ./st120_si_gen
-
-st120_si_gen: si_gen.a st120_si.o topcode.o
-	$(CXX) $(CXXLDFLAGS) st120_si.o topcode.o si_gen.a -o st120_si_gen
-
-st120_si.o: st120_si.cxx targ_isa_subset.h topcode.h si_gen.h
-	$(CXX) $(CXXFLAGS) -c $(TARGINFO_PROC_DIR)/st120_si.cxx
-endif
-
 ifeq ($(BUILD_TARGET), ST200)
 
 ## st200 #####
@@ -891,6 +876,36 @@ stxp70_si_gen: si_gen.a stxp70_si.o topcode.o
 
 stxp70_si.o: stxp70_si.cxx targ_isa_subset.h topcode.h si_gen.h
 	$(CXX) $(CXXFLAGS) -c $(TARGINFO_PROC_DIR)/stxp70_si.cxx
+endif
+
+
+ifeq ($(BUILD_TARGET), ARM)
+
+## arm #####
+
+ ifeq ($(BUILD_COMPILER), EDG)
+arm.so: arm.o $(SI_EXPORT_LIST)
+	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) -exports_file $(SI_EXPORT_LIST) \
+               arm.o -o arm.so
+ else
+arm.so: arm.o ti_si.o
+	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) arm.o ti_si.o -o arm.so
+ endif
+
+ti_si.o: ti_si.c ti_si.h
+	$(CC) $(CFLAGS) -c ti_si.c
+
+arm.o: arm.c ti_si.h
+	$(CC) $(CFLAGS) -c arm.c
+
+arm.c: arm_si_gen
+	$(SETPATH) $(RUN) ./arm_si_gen
+
+arm_si_gen: si_gen.a arm_si.o topcode.o
+	$(CXX) $(CXXLDFLAGS) arm_si.o topcode.o si_gen.a -o arm_si_gen
+
+arm_si.o: arm_si.cxx targ_isa_subset.h topcode.h si_gen.h
+	$(CXX) $(CXXFLAGS) -c $(TARGINFO_PROC_DIR)/arm_si.cxx
 endif
 
 libtarginfo.a: $(LIBTARGINFO_OBJS)

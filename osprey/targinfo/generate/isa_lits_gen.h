@@ -111,7 +111,8 @@ extern void ISA_Lits_Begin (void);
 extern LIT_RANGE ISA_Create_Lit_Range(const char *name, 
 				      long long min, 
 				      long long max,
-				      long scaling = 0);
+				      long scaling = 0,
+				      long rotate_right = 0);
 
 extern LIT_RANGE SignedBitRange(unsigned int bit_size);
 extern LIT_RANGE UnsignedBitRange(unsigned int bit_size);

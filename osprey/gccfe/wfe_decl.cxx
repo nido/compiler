@@ -52,6 +52,7 @@ extern "C" {
 #endif
 #include "function.h"
 #include "c-pragma.h"
+#include "tm_p.h"
 }
 #ifdef TARG_IA32
 // the definition in gnu/config/i386/i386.h causes problem

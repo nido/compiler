@@ -1000,7 +1000,7 @@ Optimize_Tail_Calls (
     if (call_bb = Can_Be_Tail_Call(pu, exit_bb)) {
       OP *jmp_op;
       OP *call_op = BB_last_op(call_bb);
-      Is_True(OP_call(call_op), ("call block didn't end in a call inst"));
+      Is_True(OP_call(call_op), ("call block didn't end in a call inst (%s)",TOP_Name(OP_code(call_op))));
 
       if (Trace_EE) {
 	#pragma mips_frequency_hint NEVER

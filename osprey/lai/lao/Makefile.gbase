@@ -198,6 +198,10 @@ ifeq ($(BUILD_TARGET), STxP70)
 HEADER_DIRS += $(LAO_PREFIX)/include/CSD/stxp70
 endif
 
+ifeq ($(BUILD_TARGET), ARM)
+HEADER_DIRS += $(LAO_PREFIX)/include/CSD/arm
+endif
+
 #----------------------------------------------------------------------
 #  List of source files.  Please keep them in alphabetical order.
 #----------------------------------------------------------------------

@@ -62,6 +62,7 @@ extern "C" {
 #include "gnu/real.h"
   /* (cbr) linkonce support */
 #include "gnu/output.h"
+#include "tm_p.h"
 #else
 #include "cp-tree.h"
 #endif

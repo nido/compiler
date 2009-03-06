@@ -463,6 +463,46 @@ add_library_options (void)
 	  internal_error("no runtime set? (%d)", stxp70_runtime);
 	}
 #endif
+
+#elif defined( TARG_ARM )
+#ifdef MUMBLE_ARM_BSP
+	extern string arm_core, arm_soc, arm_board;
+	extern string arm_core_name, arm_soc_name, arm_board_name ;
+	extern string arm_targetdir ;
+	string ofile;
+#endif
+	extern string arm_libdir;
+
+	switch (proc) {
+	case PROC_armv5:
+	  append_phase_dir(P_library, "/armv5");
+	  append_phase_dir(P_startup, "/armv5");
+	  break;
+	case PROC_armv6:
+	  append_phase_dir(P_library, "/armv6");
+	  append_phase_dir(P_startup, "/armv6");
+	  break;
+	}
+
+	if (endian == ENDIAN_LITTLE) {
+	  append_phase_dir(P_library, "/le");
+	  append_phase_dir(P_startup, "/le");
+	}
+	else {
+	  append_phase_dir(P_library, "/be");
+	  append_phase_dir(P_startup, "/be");
+	}
+
+	switch (arm_runtime) {
+	case RUNTIME_NONE:
+	  break;
+	case RUNTIME_BARE:
+	  append_phase_dir(P_library, "/bare");
+	  append_phase_dir(P_startup, "/bare");
+	  break;	  
+	default:
+	  internal_error("no runtime set? (%d)", arm_runtime);
+	}
 #endif
 
 	switch (abi) {
@@ -486,6 +526,8 @@ add_library_options (void)
 	case ABI_ST200_PIC:
 	case ABI_STxP70_embedded:
 	case ABI_STxP70_fpx:
+	case ABI_ARM_ver1:
+	case ABI_ARM_ver2:
 	  break;
 	default:
 		internal_error("no abi set? (%d)", abi);
@@ -717,6 +759,106 @@ add_library_options (void)
 	  add_library_dir (stxp70_libdir);
 	}
 #endif /* TARG_STxP70 */
+
+
+#ifdef TARG_ARM
+#ifdef MUMBLE_ARM_BSP
+#define DEF_CORE_NAME "armv5"
+#define DEF_BOARD_NAME "default"
+#define DEF_SOC_NAME "default"
+	/* set core path */
+	if (!arm_core) {
+	  arm_core = concat_path(get_phase_dir(P_alt_library), concat_path("core", DEF_CORE_NAME));
+	  arm_core_name = string_copy (DEF_CORE_NAME);
+	}
+	if (arm_targetdir) {
+	  arm_core = concat_path(arm_targetdir, concat_path("core", arm_core_name));
+	  if (!is_directory (arm_core))
+	    arm_core = concat_path(get_phase_dir(P_alt_library), concat_path("core", arm_core_name));
+	}
+
+	/* set soc path */
+	if (!arm_soc) {
+	  arm_soc = concat_path(get_phase_dir(P_alt_library), concat_path("soc", DEF_SOC_NAME));
+	  arm_soc_name = string_copy (DEF_SOC_NAME);
+	}
+	if (arm_targetdir) {
+	  arm_soc = concat_path(arm_targetdir, concat_path("soc", arm_soc_name));
+	  if (!is_directory (arm_soc))
+	    arm_soc = concat_path(get_phase_dir(P_alt_library), concat_path("soc", arm_soc_name));
+	}
+
+	/* set board path */
+	if (!arm_board) {
+	  arm_board = concat_path(get_phase_dir(P_alt_library), concat_path("board", DEF_BOARD_NAME));
+	  arm_board_name = string_copy (DEF_BOARD_NAME);
+	}
+	if (arm_targetdir) {
+	  arm_board = concat_path(arm_targetdir, concat_path("board", arm_board_name));
+	  if (!is_directory (arm_board))
+	    arm_board = concat_path(get_phase_dir(P_alt_library), concat_path("board", arm_board_name));
+	}
+
+	if (!nostdinc) {
+	  /* set core include path */
+	  if (arm_core && is_directory (arm_core)) {
+	    flag = add_string_option(O_isystem__, arm_core);
+	    add_option_seen (flag);
+	  }
+
+	  /* set soc include path */
+	  if (arm_soc && is_directory (arm_soc)) {
+	    flag = add_string_option(O_isystem__, arm_soc);
+	    add_option_seen (flag);
+	  }
+
+	  /* set board include path */
+	  if (arm_board && is_directory (arm_board)) {
+	    flag = add_string_option(O_isystem__, arm_board);
+	    add_option_seen (flag);
+	  }
+	}
+
+	if (!option_was_seen(O_nostdlib)) {
+	  if (arm_core && is_directory (arm_core)) {
+	    arm_core = concat_path (arm_core, 
+				      concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
+						  arm_runtime == RUNTIME_NONE ? "none" : "unknown"));
+	    flag = add_string_option(O_L__, arm_core);
+	    add_option_seen (flag);
+	  }
+
+	  if (arm_soc && is_directory (arm_soc)) {
+	    arm_soc = concat_path (arm_soc, 
+				   concat_path(proc == PROC_armv5 ? "armv5" : 
+					       proc == PROC_armv6 ? "armv6" :  "unknown",
+					       concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
+							   arm_runtime == RUNTIME_NONE ? "none" : "unknown")));
+	    flag = add_string_option(O_L__, arm_soc);
+	    add_option_seen (flag);
+	  }
+
+	  if (arm_board && is_directory (arm_board)) {
+	    arm_board = concat_path (arm_board, 
+				   concat_path(proc == PROC_armv5 ? "armv5" : 
+					       proc == PROC_armv6 ? "armv6" :  "unknown",
+					       concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
+							   arm_runtime == RUNTIME_NONE ? "none" : "unknown")));
+	    flag = add_string_option(O_L__, arm_board);
+	    add_option_seen (flag);
+	  }
+	}
+#endif /* MUMBLE_ARM_BSP */
+	
+	if (arm_libdir) {
+	  arm_libdir = concat_path (arm_libdir, 
+				   concat_path(proc == PROC_armv5 ? "armv5" : 
+					       proc == PROC_armv6 ? "armv6" :  "unknown",
+					       concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
+							   arm_runtime == RUNTIME_NONE ? "none" : "unknown")));
+	  add_library_dir (arm_libdir);
+ 	}
+#endif /* TARG_ARM */
 }
 
 /* search library_dirs for the crt file */

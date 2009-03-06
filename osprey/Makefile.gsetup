@@ -62,8 +62,11 @@
 #			[defaults to $(BUILD_OS)].
 #     HOST_ARCH      = specifies the host machine architecture (IA32)
 #			[defaults to $(BUILD_ARCH)].
-#     TARGET         = specifies target architecture (ST100/ST200/STxP70)
+#     TARGET         = specifies target architecture (ST100/ST200/STxP70/ARM)
 #
+#     TARGET_FROM_ST = specifies ST specific target name (for instance ST_ARM)
+#                      if not empty, can be used to identify a ST target build
+#		       defined in make/platforms/*/Makefile.platforms
 #
 #  The STD_* variables which are computed are:
 #     STD_COMPILE_OPTS = a set of compile options which reflect BUILD_ABI,
@@ -253,7 +256,9 @@ ifdef BUILD_TARGET
  ifneq ($(BUILD_TARGET), ST100)
  ifneq ($(BUILD_TARGET), ST200)
  ifneq ($(BUILD_TARGET), STxP70)
+ ifneq ($(BUILD_TARGET), ARM)
    ABORT_BUILD = BUILD_TARGET has bad value - $(BUILD_TARGET)!
+ endif
  endif
  endif
  endif
@@ -281,6 +286,9 @@ BUILD_TARGET_DIR = st200
 endif
 ifeq ($(BUILD_TARGET), STxP70)
 BUILD_TARGET_DIR = stxp70
+endif
+ifeq ($(BUILD_TARGET), ARM)
+BUILD_TARGET_DIR = arm
 endif
 
 
@@ -631,6 +639,13 @@ BCO_ENABLED=1
 STD_COMPILE_OPTS += -DBCO_ENABLED 
 endif
 
+ifeq ($(BUILD_TARGET), ARM)
+STD_COMPILE_OPTS += -DTARG_ST -DKEY
+# JV: add LAO optimizer
+LAO_ENABLED=1
+STD_COMPILE_OPTS += -DLAO_ENABLED 
+endif
+
 ifeq ($(BUILD_OPTIMIZE), DEBUG)
 STD_COMPILE_OPTS += -DIs_True_On
 endif
@@ -870,7 +885,8 @@ endif
 # ST Target release  
 # ( STAMP is made of "RELEASE_ID RELEASE_DATE RELEASE_PLATFORM")
 #
-ifneq (,$(findstring ST,$(BUILD_TARGET)))
+
+ifneq ($(TARGET_FROM_ST),)
 
 ifeq ($(BUILD_VARIANT), RELEASE)
  STD_COMPILE_OPTS += -DRELEASE

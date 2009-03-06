@@ -61,6 +61,7 @@ extern "C" {
 #include "gnu/tree.h"
 #include "gnu/real.h"
 #include "gnu/c-common.h"
+#include "tm_p.h"
 #ifdef GPLUSPLUS_FE
 #include "gnu/cp/cp-tree.h"
 #endif /* GPLUSPLUS_FE */

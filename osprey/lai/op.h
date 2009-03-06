@@ -969,12 +969,18 @@ inline TN *OP_base_update_tn(OP *op)
 
 extern TOP TOP_opnd_register_variant(TOP top, int opnd, ISA_REGISTER_CLASS regclass);
 extern TOP TOP_opnd_immediate_variant(TOP top, int opnd, INT64 imm);
+extern TOP TOP_Combine_Opcodes( TOP opcode1, TOP opcode2, INT opnd_idx, BOOL *opnd_swapped );
 extern TOP TOP_result_register_variant(TOP top, int rslt, ISA_REGISTER_CLASS regclass);
 extern INT TOP_opnd_use_bits(TOP top, int opnd);
 extern BOOL TOP_opnd_use_signed(TOP top, int opnd);
 
 extern BOOL TOP_opnd_value_in_range (TOP top, int opnd, INT64 imm);
 extern TOP TOP_AM_automod_variant(TOP top, BOOL post_mod, BOOL inc_mod, ISA_REGISTER_CLASS regclass);
+extern BOOL TOP_evaluate_top( OP *op, INT64 *opnd_values, INT64 *result_val, int result_idx );
+
+extern OP *OP_get_unconditional_variant( OP *op );
+extern BOOL OP_condition_is_true( OP *op, INT64 pred_val );
+
 extern VARIANT TOP_cond_variant(TOP top);
 #ifdef TARG_ST
 extern VARIANT OP_cmp_variant(const OP* op);
@@ -995,6 +1001,12 @@ inline BOOL OP_uniq_res(OP *op, INT i) {
   if (this_def & OU_uniq_res)  
     return TRUE; 
  
+#ifdef TARG_ST
+  if(ISA_OPERAND_INFO_Conflicts(oinfo, i)) {
+    return TRUE;
+  }
+#endif
+
   return FALSE; 
 } 
 

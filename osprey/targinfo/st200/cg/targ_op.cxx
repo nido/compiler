@@ -1288,6 +1288,39 @@ TOP_AM_automod_variant(TOP top, BOOL post_mod, BOOL inc_mod, ISA_REGISTER_CLASS 
   return TOP_UNDEFINED;
 }
 
+/*
+ * TOP_evaluate_op
+ * Return the evaluated expression corresponding to given TOP and
+ * the given result number.
+ * Return FALSE if not able to evaluate.
+ */
+BOOL
+TOP_evaluate_top( OP *op, INT64 *opnd_values, INT64 *result_val, int result_idx ) {
+  return FALSE;
+}
+
+/*
+ * OP_get_unconditional_variant
+ * Return the unpredicated variant if given op.
+ * TODO: Make the opposite form to get a predicated variant (if-conversion).
+ */
+OP *
+OP_get_unconditional_variant( OP *op ) {
+  return NULL;
+}
+
+/*
+ * OP_condition_is_true
+ * In case of true/false predication model,
+ * returns TRUE if predicate not equal to zero, else returns FALSE.
+ * On ARM, we have to get the condvariant on the predicate to evaluate
+ * if the condition.
+ */
+BOOL
+OP_condition_is_true( OP *op, INT64 pred_val ) {
+  return pred_val != 0;
+}
+
 INT
 targ_cg_TOP_shadd_amount(TOP opcode) {
   switch(opcode) {

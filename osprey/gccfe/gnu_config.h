@@ -50,5 +50,8 @@
 #endif /* TARG_ST200 */
 #ifdef TARG_STxP70
 #include "gnu/stxp70/config.h"
-#endif /* TARG_ST200 */
+#endif /* TARG_STxP70 */
+#ifdef TARG_ARM
+#include "gnu/arm/config.h"
+#endif /* TARG_ARM */
 

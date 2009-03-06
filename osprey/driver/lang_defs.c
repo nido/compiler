@@ -80,6 +80,13 @@ static lang_info_t language_info[] = {
 	{'F',	0x00000010,	{}},	/* f90 */
 	{'a',	0x00000020,	{"as","sxas"}},	/* as */
 	{'l',	0x00000040,	{"ld","sxld"}},		/* ld */
+#elif defined( TARG_ARM )
+	{'c',	0x00000002,	{"cc","armcc"}},	/* cc */
+	{'C',	0x00000004,	{"CC","armc++"}},	/* c++ */
+	{'f',	0x00000008,	{}},                    /* f77 */
+	{'F',	0x00000010,	{}},	                /* f90 */
+	{'a',	0x00000020,	{"as","arm-as"}},	/* as */
+	{'l',	0x00000040,	{"ld","arm-ld"}},	/* ld */
 #else /* !TARG_ST200 */
 	{'c',	0x00000002,	{"cc","sgicc","ia64-sgi-linux-sgicc","gcc","c89"}},	/* cc */
 	{'C',	0x00000004,	{"CC","sgiCC","sgi++","g++"}},	/* c++ */
@@ -139,6 +146,46 @@ static lang_info_t language_info[] = {
 
 #define NAMEPREFIX	"st200-"
 #define BINOPTPREFIX	""
+#define BINPATH		"/bin"
+#define LIBPATH		"/lib"
+#define ALTLIBPATH	"/target"
+#define INCPATH         "/include"
+#define PHASEPATH	LIBPATH"/cmplrs"
+#define GNUPHASEPATH	LIBPATH
+
+#elif defined(linux) && defined(TARG_ARM)
+
+#define NAMEPREFIX      "arm-"
+#define BINPATH		"/bin"
+#define LIBPATH		"/lib"
+#define ALTLIBPATH	"/target"
+#define INCPATH         "/include"
+#define PHASEPATH	LIBPATH"/cmplrs"
+#define GNUPHASEPATH	LIBPATH
+
+#elif defined(sun) && defined(TARG_ARM)
+
+#define NAMEPREFIX	"arm-"
+#define BINPATH		"/bin"
+#define LIBPATH		"/lib"
+#define ALTLIBPATH	"/target"
+#define INCPATH         "/include"
+#define PHASEPATH	LIBPATH"/cmplrs"
+#define GNUPHASEPATH	LIBPATH
+
+#elif defined(__CYGWIN__) && defined(TARG_ARM)
+
+#define NAMEPREFIX	"st200-"
+#define BINPATH		"/bin"
+#define LIBPATH		"/lib"
+#define ALTLIBPATH	"/target"
+#define INCPATH         "/include"
+#define PHASEPATH	LIBPATH"/cmplrs"
+#define GNUPHASEPATH	LIBPATH
+
+#elif defined(__MINGW32__) && defined(TARG_ARM)
+
+#define NAMEPREFIX	"arm-"
 #define BINPATH		"/bin"
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/target"

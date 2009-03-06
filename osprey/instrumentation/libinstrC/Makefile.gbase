@@ -148,6 +148,10 @@ ifeq ($(HOST_ARCH), STxP70)
 LDIRT += libinstrC.a libstxp70-instrC.a libinstrC.so libstxp70-instrC.so array $(INSTR_READER) stxp70-instr_reader .first
 endif
 
+ifeq ($(HOST_ARCH), ARM)
+LDIRT += libinstrC.a libarm-instrC.a libinstrC.so libarm-instrC.so array $(INSTR_READER) arm-instr_reader .first
+endif
+
 LDIRT += ii_files *.pch so_locations $(LIBINSTR_TEST_C_TEST) $(LIBINSTR_TEST_C_INSTR0) *.c_*
 
 
@@ -244,6 +248,13 @@ target_install_st200_core_endian_libraries_:
 install_all_stxp70: 
 	$(MAKE) HOSTDEFS='$(HOSTDEFS) -EL -mcore=arch_1_3_1' INSTALL_DIR=arch_1_3_1/le/bare clean _install
 
+install_all_arm:
+	@for core in $(TARGET_LIBINSTR_CORES); do \
+	  for endian in $(TARGET_LIBINSTR_ENDIANESS); do \
+		$(MAKE) TARGET_CORE=$$core TARGET_ENDIANESS=$$endian target_install_arm_core_endian_libraries_; \
+	  done; \
+	done
+
 ifeq ($(BUILD_COMPILER), OPEN64)
 
 STANDALONELIB=1
@@ -257,6 +268,17 @@ $(error no endianess is defined. choose anong le/be for TARGET_LIBINSTR_ENDIANES
 endif
 install: last
 	$(MAKE) install_all_st200
+endif
+
+ifeq ($(HOST_ARCH), ARM)
+ifeq (x$(TARGET_LIBINSTR_CORES)x,xx)
+$(error no target is defined. choose a subset of armv5e/armv6 for TARGET_LIBINSTR_CORES)
+endif
+ifeq (x$(TARGET_LIBINSTR_ENDIANESS)x,xx)
+$(error no endianess is defined. choose anong le/be for TARGET_LIBINSTR_ENDIANESS)
+endif
+install: last
+	$(MAKE) install_all_arm
 endif
 
 ifeq ($(HOST_ARCH), STxP70)

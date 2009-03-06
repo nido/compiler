@@ -51,17 +51,7 @@ ifeq ($(BUILD_TARGET), IA64)
 LCDEFS += -D__MIPS_AND_IA64_ELF_H -DTARG_IA64
 LC++DEFS +=  $(LCDEFS)
 endif
-ifeq ($(BUILD_TARGET), ST100)
-# need _ version of targ_ia64
-LCDEFS += -D__MIPS_AND_IA64_ELF_H
-LC++DEFS +=  $(LCDEFS)
-endif
-ifeq ($(BUILD_TARGET), ST200)
-# need _ version of targ_ia64
-LCDEFS += -D__MIPS_AND_IA64_ELF_H
-LC++DEFS +=  $(LCDEFS)
-endif
-ifeq ($(BUILD_TARGET), STxP70)
+ifneq ($(TARGET_FROM_ST),)
 # need _ version of targ_ia64
 LCDEFS += -D__MIPS_AND_IA64_ELF_H
 LC++DEFS +=  $(LCDEFS)

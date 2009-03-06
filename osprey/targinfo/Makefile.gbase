@@ -176,11 +176,6 @@ LDIRT += *.[ch] *.Exported isa_gen$(BEXE) isa_subset_gen$(BEXE)		\
 #  Defining the targets 
 #----------------------------------------------------------------------
 
-ifeq ($(BUILD_TARGET), ST100)
-LDIRT += st120_si_gen$(BEXE)
-SO_TARGETS = st120.so
-endif
-
 ifeq ($(BUILD_TARGET), ST200)
 
 LDIRT += st220_si_gen$(BEXE) st231_si_gen$(BEXE) \
@@ -235,6 +230,29 @@ BUILTINS_SRC_TARGETS =
 INTRN = 
 
 endif # STxP70
+
+ifeq ($(BUILD_TARGET), ARM)
+LDIRT += armv5e_si_gen$(BEXE)
+LDIRT += armv6_si_gen$(BEXE)
+
+# building static library
+ifeq ($(DSO_MODE),STATIC)
+SO_TARGETS = libarm.a
+endif
+# building windows dll
+ifeq ($(DSO_MODE),DLL)
+SO_TARGETS = armv5e.dll armv6.dll libtarginfo.dll
+endif
+# building "unix" so library
+ifeq ($(DSO_MODE),SO)
+SO_TARGETS = armv5e.so armv6.so
+endif
+
+BUILTINS_INC_TARGETS = 
+BUILTINS_SRC_TARGETS = 
+INTRN = ../../targinfo/arm/intrn/
+
+endif # ARM
 
 ifeq ($(BUILD_TARGET), MIPS)
 LDIRT += r10000_si_gen r8000_si_gen r5000_si_gen r4000_si_gen 
@@ -294,11 +312,7 @@ TARG_INFO_SRCS = \
 	targ_isa_bundle.c	\
 	targ_proc_properties.c
 
-ifeq ($(BUILD_TARGET), STxP70)
-TARG_INFO_SRCS += targ_isa_binutils.c
-endif
-
-ifeq ($(BUILD_TARGET), ST200)
+ifneq ($(TARGET_FROM_ST),)
 TARG_INFO_SRCS += targ_isa_binutils.c
 endif
 
@@ -1126,48 +1140,6 @@ pentium_si.o: pentium_si.cxx targ_isa_subset.h topcode.h si_gen.h
 endif
 
 #----------------------------------------------------------------------
-# st120 
-#----------------------------------------------------------------------
-
-ifeq ($(BUILD_TARGET), ST100)
-
-#st120.so: st120.o
-#	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) $< -o $@
-
-st120.o: st120.c ti_si.h
-	$(CC) $(CFLAGS) -c $< -o $@
-
-st120.c: st120_si_gen$(BEXE)
-	$(SETPATH) $(RUN) ./st120_si_gen$(BEXE)
-
-st120_si_gen$(BEXE): st120_si.o si_gen.a gen_util.o build_topcode.o
-	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
-
-st120_si.o: st120_si.cxx targ_isa_subset.h topcode.h si_gen.h
-	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
-
-#
-# shared library
-#
-st120.so: st120.o
-	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) $< -o $@
-
-#
-# windows dll (+ import library)
-#
-st120.dll st120_dll.a : st120.o st100_DllMain.o $(LIBTARGINFO_OBJS)
-	$(CC) --shared -o st120.dll -Wl,--out-implib,st120_dll.a \
-	$^ $(LDDSOOPTS) -Wl,--image-base=0x12000000
-
-#
-# static library
-#
-libst120.a : st120.o
-	$(AR) rc $@ $<
-
-endif # ST100
-
-#----------------------------------------------------------------------
 # st200
 #----------------------------------------------------------------------
 
@@ -1276,6 +1248,59 @@ endif # STxP70
 LIBTARGINFO_OBJS += $(PARSER_INPUT_CFILES:.c=.o)
 TARGETS          += $(PARSER_INPUT_CFILES)
 TARGETS          += $(PARSER_INPUT_CFILES:.c=.pr)
+
+#----------------------------------------------------------------------
+# ARM
+#----------------------------------------------------------------------
+
+ifeq ($(BUILD_TARGET), ARM)
+
+ti_si.o: ti_si.c ti_si.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+arm%.o: arm%.c ti_si.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+arm%.c: arm%_si_gen$(BEXE)
+	$(SETPATH) $(RUN) ./$<
+
+arm%_si_gen$(BEXE): arm%_si.o si_gen.a gen_util.o build_topcode.o
+	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
+
+arm%_si.o: arm%_si.cxx targ_isa_subset.h topcode.h si_gen.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+#
+# shared library
+#
+arm%.so: arm%.o ti_si.o
+	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) $< ti_si.o -o $@
+
+#
+# windows dll (+ import library)
+#
+arm%.dll arm%_dll.a : arm%.o  ti_si.o arm%_DllMain.o 
+	$(CC) --shared -o arm$*.dll -Wl,--out-implib,arm$*_dll.a \
+	$^ $(LDDSOOPTS) -Wl,--image-base=0x12000000
+
+#
+# static library
+#
+lib_armv5e.a : armv5e.o
+	$(AR) rc $@ $<
+
+lib_armv6.a : armv6.o
+	$(AR) rc $@ $<
+
+#
+# Assembly parser files
+#
+PARSER_INPUT_CFILES = \
+	armv5e_subset_targ_isa_parse.c \
+	armv6_subset_targ_isa_parse.c
+
+endif # ARM
+
 
 #----------------------------------------------------------------------
 #  libtarginfo.a library

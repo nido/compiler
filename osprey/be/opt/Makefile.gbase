@@ -100,6 +100,10 @@ ifeq ($(BUILD_TARGET), STxP70)
 HOSTDEFS += -DTARG_STxP70
 endif
 
+ifeq ($(BUILD_TARGET), ARM)
+HOSTDEFS += -DTARG_ARM
+endif
+
 ifeq ($(BUILD_OPTIMIZE), DEBUG)
 HOSTDEFS += -DIs_True_On
 HOSTDEFS += -DInsist_On 
@@ -142,23 +146,7 @@ INCLUDE_DIR 		= $(ROOT)/usr/include
 LIBCOMUTIL_DIR 		= $(BUILD_TOT)/libcomutil
 LIBINSTR_DIR		= $(BUILD_TOT)/instrumentation/libinstrC
 
-ifeq ($(BUILD_TARGET), ST100)
-COMMON_COM_TARG_DIR 	= $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
-COMMON_TARG_INFO_ACCESS = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/access
-COMMON_UTIL_TARG_DIR 	= $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
-# This is necessary because I introduced the target dependent part for the
-# data_layout:
-COMMON_BE_TARG_DIR 	= $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/be
-endif
-ifeq ($(BUILD_TARGET), ST200)
-COMMON_COM_TARG_DIR     = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
-COMMON_TARG_INFO_ACCESS = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/access
-COMMON_UTIL_TARG_DIR    = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
-# This is necessary because I introduced the target dependent part for the
-# data_layout:
-COMMON_BE_TARG_DIR      = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/be
-endif
-ifeq ($(BUILD_TARGET), STxP70)
+ifneq ($(TARGET_FROM_ST),)
 COMMON_COM_TARG_DIR     = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
 COMMON_TARG_INFO_ACCESS = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/access
 COMMON_UTIL_TARG_DIR    = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/util
@@ -172,6 +160,7 @@ COMMON_TARG_INFO_ACCESS = $(COMMON_DIR)/targ_info/access
 COMMON_UTIL_TARG_DIR    = $(COMMON_UTIL_DIR)/$(BUILD_TARGET_DIR)
 COMMON_BE_TARG_DIR      =
 endif
+
 
 # These are the directories in which to look for source files.
 

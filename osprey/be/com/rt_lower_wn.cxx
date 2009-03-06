@@ -654,7 +654,16 @@ RT_LOWER_expr (
 	} 
 #endif
 
+#ifdef TARG_ARM
+      if((MTYPE_is_double(desc) || desc == MTYPE_F4) && opr == OPR_NE) {
+	intrinsic = OPCODE_To_INTRINSIC (OPCODE_make_op(OPR_EQ,res,desc));
+      }
+      else {
+	intrinsic = OPCODE_To_INTRINSIC (RT_LOWER_opcode(tree));
+      }
+#else
       intrinsic = OPCODE_To_INTRINSIC (RT_LOWER_opcode(tree));
+#endif
 
       kids[0] = WN_CreateParm (desc,
 			       RT_LOWER_expr(WN_kid0(tree)),
@@ -684,7 +693,16 @@ RT_LOWER_expr (
       }
 
       WN_Delete(tree);
+#ifdef TARG_ARM
+	if((MTYPE_is_double(desc) || desc == MTYPE_F4) && opr == OPR_NE) {
+	  return WN_LNOT(nd);
+	}
+	else {
+	  return nd;
+	}
+#else
       return nd;
+#endif
     }
 
     WN_kid0(new_nd) = RT_LOWER_expr(WN_kid0(tree));

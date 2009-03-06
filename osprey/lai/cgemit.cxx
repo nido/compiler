@@ -1014,12 +1014,12 @@ Print_Label (
   EMT_Write_Qualified_Name (pfile, st);
 #ifdef TARG_ST
   if (List_Notes) {
-    fprintf (pfile, ":\t%s 0x%llx\n", ASM_CMNT, base_ofst);
+    fprintf (pfile, ":\t%s 0x%llx\n", ASM_CMNT_LINE, base_ofst);
   } else {
     fprintf (pfile, ":\n");
   }
 #else
-  fprintf (pfile, ":\t%s 0x%llx\n", ASM_CMNT, base_ofst);
+  fprintf (pfile, ":\t%s 0x%llx\n", ASM_CMNT_LINE, base_ofst);
 #endif
   Print_Dynsym (pfile, st);
 }
@@ -3812,6 +3812,14 @@ r_apply_l_const (
   ST *st;
   INT64 val;
 
+#ifdef TARG_ARM
+  /* Special case of register list. This should become generic 
+     when register will be supported by targinfo and TNs */
+  if(CGEMIT_Register_List(op,opidx,buf)) {
+    return TRUE;
+  }
+#endif
+
   /* special case for stack symbols */
   if (TN_is_symbol(t)) {
     ST *base_st;
@@ -3895,7 +3903,9 @@ r_apply_l_const (
 	  // add name to comments in case was confused by gp_disp.
 	  add_name = TRUE;
 	  paren = TN_Relocs_In_Asm (t, st, buf, &val);
-	  *buf = vstr_concat (*buf, "(" );
+	  if(TN_Reloc_has_parenthesis(TN_relocs(t))) {
+	    *buf = vstr_concat (*buf, "(" );
+	  }
 	}
 #ifndef TARG_ST
 	vstr_sprintf (buf, vstr_len(*buf), "%s_UNNAMED_CONST_%d", Local_Label_Prefix, ST_tcon(st));
@@ -3938,7 +3948,9 @@ r_apply_l_const (
 	// add name to comments in case was confused by gp_disp.
 	add_name = TRUE;
 	paren = TN_Relocs_In_Asm (t, st, buf, &val);
-	*buf = vstr_concat (*buf, "(" );
+	if(TN_Reloc_has_parenthesis(TN_relocs(t))) {
+	  *buf = vstr_concat (*buf, "(" );
+	}
 	r_qualified_name (st, buf);
       } 
       else {
@@ -5830,7 +5842,7 @@ EMT_ProfileInfo_BB (
   FILE *file = Asm_File;
   char buf[4];
   float f;
-  const char *prefix = file == Asm_File ? ASM_CMNT_LINE : "";
+  const char *prefix = file == Asm_File ? ASM_CMNT : "";
 
   if (!FREQ_Frequencies_Computed() && !CG_PU_Has_Feedback) return;
   FmtAssert(Assembly && CG_emit_bb_freqs, ("EMT_ProfileInfo_BB calls only with -CG:emit-bb-freqs"));
@@ -6150,12 +6162,12 @@ EMT_Assemble_BB (
 #ifdef TARG_ST
       if (List_Notes)
 	fprintf (Output_File, "%s:\t%s 0x%llx\n", 
-		 LABEL_name(lab), ASM_CMNT, Get_Label_Offset(lab) );
+		 LABEL_name(lab), ASM_CMNT_LINE, Get_Label_Offset(lab) );
       else
 	fprintf (Output_File, "%s:\n", LABEL_name(lab));
 #else
       fprintf (Output_File, "%s:\t%s 0x%llx\n", 
-		   LABEL_name(lab), ASM_CMNT, Get_Label_Offset(lab) );
+		   LABEL_name(lab), ASM_CMNT_LINE, Get_Label_Offset(lab) );
 #endif
 #ifdef TARG_ST
       // [CL]
@@ -6194,12 +6206,12 @@ EMT_Assemble_BB (
     if (Assembly || Lai_Code) {
 #ifdef TARG_ST
       if (List_Notes) {
-	fprintf (Output_File, "%s:\t%s 0x%llx\n", ST_name(st), ASM_CMNT, ST_ofst(st));
+	fprintf (Output_File, "%s:\t%s 0x%llx\n", ST_name(st), ASM_CMNT_LINE, ST_ofst(st));
       } else {
 	fprintf (Output_File, "%s:\n", ST_name(st));
       }
 #else
-      fprintf (Output_File, "%s:\t%s 0x%llx\n", ST_name(st), ASM_CMNT, ST_ofst(st));
+      fprintf (Output_File, "%s:\t%s 0x%llx\n", ST_name(st), ASM_CMNT_LINE, ST_ofst(st));
 #endif
     }
 
@@ -6629,7 +6641,7 @@ emit_input_directives ()
       */
 
       fprintf (Lai_File, "\t%s\t.input %s at %s, %lld\n", 
-                   ASM_CMNT, ST_name(sym), ST_name(base), ofst);
+                   ASM_CMNT_LINE, ST_name(sym), ST_name(base), ofst);
     }
   }
 
@@ -6836,11 +6848,11 @@ EMT_Begin_File (
   if (Assembly) {
     ASM_DIR_NOREORDER();
     ASM_DIR_NOAT();
-    fprintf ( Asm_File, "\t%s  %s::%s\n", ASM_CMNT, process_name, 
+    fprintf ( Asm_File, "\t%s  %s::%s\n", ASM_CMNT_LINE, process_name, 
 			    INCLUDE_STAMP );
     if (*ism_name != '\0')
-    	fprintf ( Asm_File, "\t%s%s\t%s\n", ASM_CMNT, "ism", ism_name);
-    List_Compile_Options ( Asm_File, "\t"ASM_CMNT, FALSE, TRUE, TRUE );
+    	fprintf ( Asm_File, "\t%s%s\t%s\n", ASM_CMNT_LINE, "ism", ism_name);
+    List_Compile_Options ( Asm_File, "\t"ASM_CMNT_LINE, FALSE, TRUE, TRUE );
     /* TODO: do we need to do .interface stuff for asm files? */
   }
 
@@ -6849,12 +6861,12 @@ EMT_Begin_File (
     //    LAI_Begin_File (process_name, options);
 
 
-    fprintf (Lai_File, "\t%s  %s::%s\n", ASM_CMNT, process_name, 
+    fprintf (Lai_File, "\t%s  %s::%s\n", ASM_CMNT_LINE, process_name, 
 			    INCLUDE_STAMP);
     if (*ism_name != '\0')
-      fprintf (Lai_File, "\t%s%s\t%s\n", ASM_CMNT, "ism", ism_name);
+      fprintf (Lai_File, "\t%s%s\t%s\n", ASM_CMNT_LINE, "ism", ism_name);
 
-    List_Compile_Options (Lai_File, "\t"ASM_CMNT, FALSE, TRUE, TRUE);
+    List_Compile_Options (Lai_File, "\t"ASM_CMNT_LINE, FALSE, TRUE, TRUE);
   }
 
   //  Init_Tcon_Info ();
@@ -7036,10 +7048,10 @@ EMT_Emit_PU (
       /* (cbr) demangle name */
       char *cp_name = cplus_demangle(ST_name(pu), DMGL_NO_OPTS);
       if (cp_name)
-        fprintf ( Asm_File, "\n\t%s Program Unit: %s\n", ASM_CMNT, cp_name );
+        fprintf ( Asm_File, "\n\t%s Program Unit: %s\n", ASM_CMNT_LINE, cp_name );
       else
 #endif
-        fprintf ( Asm_File, "\n\t%s Program Unit: %s\n", ASM_CMNT, ST_name(pu) );
+        fprintf ( Asm_File, "\n\t%s Program Unit: %s\n", ASM_CMNT_LINE, ST_name(pu) );
     }
 #ifdef TARG_ST
     //[TB] Add optimization level info
@@ -7074,7 +7086,7 @@ EMT_Emit_PU (
   }
 
   if (Lai_Code) {
-    fprintf (Lai_File, "\n\t%s Program Unit: %s\n", ASM_CMNT, ST_name(pu) );
+    fprintf (Lai_File, "\n\t%s Program Unit: %s\n", ASM_CMNT_LINE, ST_name(pu) );
     if (AS_ENT) CGEMIT_Prn_Ent_In_Asm (pu);
 
     Print_Label (Lai_File, pu, 0);
@@ -7136,7 +7148,7 @@ EMT_Emit_PU (
 	  Base_Symbol_And_Offset(sym, &base, &ofst);
 	  if (List_Notes) {
 	    fprintf ( Asm_File, "\t%s %s = %lld\n",
-		      ASM_CMNT, ST_name(sym), ofst);
+		      ASM_CMNT_LINE, ST_name(sym), ofst);
 	  }
 	}
       }
@@ -7146,7 +7158,7 @@ EMT_Emit_PU (
 	if (Has_Base_Block(sym)) {
 	  Base_Symbol_And_Offset(sym, &base, &ofst);
 	  fprintf (Lai_File, "\t%s\t.auto %s at %s, %lld\n", 
-                        ASM_CMNT, ST_name(sym), ST_name(base), ofst);
+                        ASM_CMNT_LINE, ST_name(sym), ST_name(base), ofst);
 	}
       }
     }
@@ -7584,7 +7596,7 @@ EMT_End_File( void )
 #ifdef TARG_ST
     if (List_Notes)
 #endif
-      fprintf(Asm_File, "\t%s %s %d\n", ASM_CMNT, AS_GPVALUE, GP_DISP);
+      fprintf(Asm_File, "\t%s %s %d\n", ASM_CMNT_LINE, AS_GPVALUE, GP_DISP);
     //    ASM_DIR_GPVALUE();
 #ifdef TARG_ST
   // (cbr) we enter here either for debug dwarf emission or exceptions frame dwarf unwinding 

@@ -9,6 +9,7 @@ extern "C" {
 #define this THIS
 #define operator OPERATOR
 #define restrict
+#include "lao_stub.h"
 #include "lao_interface.h"
 #include "lao_target.h"
 #undef operator
@@ -20,20 +21,20 @@ extern "C" {
 /*-------------------- Maps for CGIR <-> LIR Conversions ------------------*/
 
 // Map CGIR ISA_SUBSET to LIR Processor.
-static O64_Processor IS__Processor[ISA_SUBSET_COUNT_MAX];
+static Processor IS__Processor[ISA_SUBSET_COUNT_MAX];
 
 // Map CGIR TOP to LIR Operator.
-static O64_Operator *TOP__Operator;
+static Operator *TOP__Operator;
 
 // Map LIR Operator to CGIR TOP.
 static TOP *Operator__TOP;
 
 // Map CGIR Literal to LIR Immediate.
-static O64_Immediate *LC__Immediate;
+static Immediate *LC__Immediate;
 
 // Map CGIR ISA_REGISTER_CLASS to LIR RegFile.
 // WARNING! ISA_REGISTER_CLASS reaches ISA_REGISTER_CLASS_MAX
-static O64_RegFile IRC__RegFile[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+static RegFile IRC__RegFile[ISA_REGISTER_CLASS_MAX_LIMIT+1];
 
 // Map LIR RegFile to CGIR ISA_REGISTER_CLASS.
 static ISA_REGISTER_CLASS RegFile__IRC[RegFile__];
@@ -45,9 +46,9 @@ static TYPE_ID NativeType__TYPE_ID[NativeType__];
 /*-------------------- CGIR -> LIR Conversion Fonctions ------------------*/
 
 // Convert ISA_SUBSET to LIR Processor.
-O64_Processor
+Processor
 CGIR_IS_to_Processor(ISA_SUBSET is) {
-  O64_Processor lao_processor;
+  Processor lao_processor;
   lao_processor = IS__Processor[is];
   Is_True(is >= ISA_SUBSET_MIN && is <= ISA_SUBSET_MAX, ("ISA_SUBSET out of range"));
   Is_True(lao_processor != Processor__UNDEF, ("Cannot map ISA_SUBSET to Processor"));
@@ -55,41 +56,41 @@ CGIR_IS_to_Processor(ISA_SUBSET is) {
 }
 
 // Convert CGIR ISA_LIT_CLASS to LIR Immediate.
-O64_Immediate
+Immediate
 CGIR_LC_to_Immediate(ISA_LIT_CLASS ilc) {
-  O64_Immediate lao_immediate = LC__Immediate[ilc];
+  Immediate lao_immediate = LC__Immediate[ilc];
   Is_True(ilc >= 0 && ilc <= ISA_LC_MAX, ("ISA_LIT_CLASS out of range"));
   Is_True(lao_immediate != Immediate__UNDEF, ("Cannot map ISA_LIT_CLASS to Immediate"));
   return lao_immediate;
 }
 
 // Convert CGIR ISA_REGISTER_CLASS to LIR RegFile.
-O64_RegFile
+RegFile
 CGIR_IRC_to_RegFile(ISA_REGISTER_CLASS irc) {
-  O64_RegFile lao_regFile = IRC__RegFile[irc];
+  RegFile lao_regFile = IRC__RegFile[irc];
   Is_True(irc >= ISA_REGISTER_CLASS_MIN && irc <= ISA_REGISTER_CLASS_MAX, ("ISA_REGISTER_CLASS out of range"));
   Is_True(lao_regFile != RegFile__UNDEF, ("Cannot map ISA_REGISTER_CLASS to RegFile"));
   return lao_regFile;
 }
 
 // Convert CGIR CLASS_REG_PAIR to LIR Register.
-O64_Register
+Register
 CGIR_CRP_to_Register(CLASS_REG_PAIR crp) {
   mREGISTER reg = CLASS_REG_PAIR_reg(crp);
   ISA_REGISTER_CLASS irc = CLASS_REG_PAIR_rclass(crp);
-  O64_RegFile regFile = CGIR_IRC_to_RegFile(irc);
-  O64_Register lowReg;
+  RegFile regFile = CGIR_IRC_to_RegFile(irc);
+  Register lowReg;
   if (irc == ISA_REGISTER_CLASS_branch) 
     lowReg = Register_st200_BR0;
   else 
     lowReg = Register_st200_GR0;
-  return (O64_Register)(lowReg + (reg - 1));
+  return (Register)(lowReg + (reg - 1));
 }
 
 // Convert CGIR TOP to LIR Operator.
-O64_Operator
+Operator
 CGIR_TOP_to_Operator(TOP top) {
-  O64_Operator lao_operator = TOP__Operator[top];
+  Operator lao_operator = TOP__Operator[top];
   Is_True(top >= 0 && top < TOP_count, ("TOPcode out of range"));
   Is_True(lao_operator != Operator__UNDEF, ("Cannot map TOPcode to Operator"));
   return lao_operator;
@@ -99,7 +100,7 @@ CGIR_TOP_to_Operator(TOP top) {
 
 // Convert LIR RegFile to CGIR ISA_REGISTER_CLASS.
 ISA_REGISTER_CLASS
-RegFile_to_CGIR_IRC(O64_RegFile regFile) {
+RegFile_to_CGIR_IRC(RegFile regFile) {
   Is_True(regFile < RegFile__, ("RegFile out of range"));
   ISA_REGISTER_CLASS irc = RegFile__IRC[regFile];
   Is_True(irc != ISA_REGISTER_CLASS_UNDEFINED,
@@ -109,9 +110,9 @@ RegFile_to_CGIR_IRC(O64_RegFile regFile) {
 
 // Convert LIR Register to CGIR CLASS_REG_PAIR.
 CLASS_REG_PAIR
-Register_to_CGIR_CRP(O64_Register registre) {
+Register_to_CGIR_CRP(Register registre) {
   CLASS_REG_PAIR crp;
-  O64_Register lowReg;
+  Register lowReg;
   ISA_REGISTER_CLASS irc;
   if (registre >= Register_st200_BR0 && registre <= Register_st200_BR7) {
     irc = ISA_REGISTER_CLASS_branch;
@@ -126,7 +127,7 @@ Register_to_CGIR_CRP(O64_Register registre) {
 
 // Convert LIR Operator to TOP.
 TOP
-Operator_to_CGIR_TOP(O64_Operator lir_operator) {
+Operator_to_CGIR_TOP(Operator lir_operator) {
   Is_True(lir_operator < Operator__, ("Operator out of range"));
   TOP top = Operator__TOP[lir_operator];
   Is_True(top != TOP_UNDEFINED,
@@ -136,7 +137,7 @@ Operator_to_CGIR_TOP(O64_Operator lir_operator) {
 
 // Convert LIR NativeType to CGIR TYPE_ID
 TYPE_ID
-NativeType_to_CGIR_TYPE_ID(O64_NativeType lir_nativeType) {
+NativeType_to_CGIR_TYPE_ID(NativeType lir_nativeType) {
   Is_True(lir_nativeType < NativeType__, ("NativeType out of range"));
   TYPE_ID type_id = NativeType__TYPE_ID[lir_nativeType];
   Is_True(type_id != MTYPE_UNKNOWN,
@@ -154,7 +155,7 @@ CGIR_LAO_Init(void) {
     IS__Processor[ISA_SUBSET_st231] = Processor_st231_cpu;
     IS__Processor[ISA_SUBSET_st240] = Processor_st240_cpu;
     // initialize the TOP__Operator array
-    TOP__Operator = TYPE_MEM_POOL_ALLOC_N(O64_Operator, Malloc_Mem_Pool, (TOP_count + 1));
+    TOP__Operator = TYPE_MEM_POOL_ALLOC_N(Operator, Malloc_Mem_Pool, (TOP_count + 1));
     for (int i = 0; i < TOP_count; i++) TOP__Operator[i] = Operator__UNDEF;
     Is_True(TOP_UNDEFINED >= 0 && TOP_UNDEFINED <= TOP_count, ("TOP_UNDEFINED out of bounds"));
     TOP__Operator[TOP_UNDEFINED] = Operator__UNDEF;
@@ -185,7 +186,7 @@ CGIR_LAO_Init(void) {
     TOP__Operator[TOP_and_r_r_r] = Operator_st200_and_1general_2general_3general;
     TOP__Operator[TOP_and_i_r_r] = Operator_st200_and_1general_2general_3isrc2;
     TOP__Operator[TOP_and_ii_r_r] = Operator_st200_and_1general_2general_3xsrc2;
-    TOP__Operator[TOP_intrncall] = Operator_APPLY;
+    TOP__Operator[TOP_intrncall] = Operator__APPLY;
     TOP__Operator[TOP_asm_0_r_r_r] = Operator_st200_asm_0_1general_2general_3general;
     TOP__Operator[TOP_asm_10_r_r_r] = Operator_st200_asm_10_1general_2general_3general;
     TOP__Operator[TOP_asm_11_r_r_r] = Operator_st200_asm_11_1general_2general_3general;
@@ -236,12 +237,12 @@ CGIR_LAO_Init(void) {
     TOP__Operator[TOP_asm_9_r_r_r] = Operator_st200_asm_9_1general_2general_3general;
     TOP__Operator[TOP_avg4u_pb_r_r_b_r] = Operator_st200_avg4u_pb_1nolink_2branch_3general_4general;
     TOP__Operator[TOP_avgu_pb_r_r_b_r] = Operator_st200_avgu_pb_1general_2branch_3general_4general;
-    TOP__Operator[TOP_begin_pregtn] = Operator_BEGIN_PREGTN;
+    TOP__Operator[TOP_begin_pregtn] = Operator__BEGIN_PREGTN;
     TOP__Operator[TOP_break] = Operator_st200_break;
     TOP__Operator[TOP_brf_i_b] = Operator_st200_brf_1branch_2btarg;
     TOP__Operator[TOP_br_i_b] = Operator_st200_br_1branch_2btarg;
     TOP__Operator[TOP_bswap_r_r] = Operator_st200_bswap_1general_2general;
-    TOP__Operator[TOP_bwd_bar] = Operator_BWDBAR;
+    TOP__Operator[TOP_bwd_bar] = Operator__BWDBAR;
     TOP__Operator[TOP_call_i] = Operator_st200_call_1btarg;
     TOP__Operator[TOP_clz_r_r] = Operator_st200_clz_1general_2general;
     TOP__Operator[TOP_cmpeqf_n_r_r_b] = Operator_st200_cmpeqf_n_1branch_2general_3general;
@@ -327,13 +328,13 @@ CGIR_LAO_Init(void) {
     TOP__Operator[TOP_convfi_n_r_r] = Operator_st200_convfi_n_1nolink_2general;
     TOP__Operator[TOP_convib_r_b] = Operator_st200_convib_1branch_2general;
     TOP__Operator[TOP_convif_n_r_r] = Operator_st200_convif_n_1nolink_2general;
-    TOP__Operator[TOP_COPY] = Operator_COPY;
+    TOP__Operator[TOP_COPY] = Operator__COPY;
     TOP__Operator[TOP_dbgsbrk] = Operator_st200_dbgsbrk;
     TOP__Operator[TOP_dib] = Operator_st200_dib;
     TOP__Operator[TOP_divs_b_r_r_b_r] = Operator_st200_divs_1general_2branch_3general_4general_5branch;
     TOP__Operator[TOP_divu_r_r_r] = Operator_st200_divu_1nolink_2general_3general;
     TOP__Operator[TOP_div_r_r_r] = Operator_st200_div_1nolink_2general_3general;
-    TOP__Operator[TOP_end_pregtn] = Operator_END_PREGTN;
+    TOP__Operator[TOP_end_pregtn] = Operator__END_PREGTN;
     TOP__Operator[TOP_ext1_pb_r_r_r] = Operator_st200_ext1_pb_1general_2general_3general;
     TOP__Operator[TOP_ext2_pb_r_r_r] = Operator_st200_ext2_pb_1general_2general_3general;
     TOP__Operator[TOP_ext3_pb_r_r_r] = Operator_st200_ext3_pb_1general_2general_3general;
@@ -352,20 +353,20 @@ CGIR_LAO_Init(void) {
     TOP__Operator[TOP_flushadd_r_ii] = Operator_st200_flushadd_1xsrc2_2general;
     TOP__Operator[TOP_flushadd_l1_r_i] = Operator_st200_flushadd_l1_1isrc2_2general;
     TOP__Operator[TOP_flushadd_l1_r_ii] = Operator_st200_flushadd_l1_1xsrc2_2general;
-    TOP__Operator[TOP_fwd_bar] = Operator_FWDBAR;
+    TOP__Operator[TOP_fwd_bar] = Operator__FWDBAR;
     TOP__Operator[TOP_getpc] = Operator_st200_GETPC;
     TOP__Operator[TOP_asm] = Operator_st200_GNUASM;
     TOP__Operator[TOP_goto_i] = Operator_st200_goto_1btarg;
     TOP__Operator[TOP_icall] = Operator_st200_icall;
     TOP__Operator[TOP_idle] = Operator_st200_idle;
-    TOP__Operator[TOP_ifixup] = Operator_IFIXUP;
+    TOP__Operator[TOP_ifixup] = Operator__IFIXUP;
     TOP__Operator[TOP_igoto] = Operator_st200_igoto;
     TOP__Operator[TOP_invadd_r_i] = Operator_st200_invadd_1isrc2_2general;
     TOP__Operator[TOP_invadd_r_ii] = Operator_st200_invadd_1xsrc2_2general;
     TOP__Operator[TOP_invadd_l1_r_i] = Operator_st200_invadd_l1_1isrc2_2general;
     TOP__Operator[TOP_invadd_l1_r_ii] = Operator_st200_invadd_l1_1xsrc2_2general;
-    TOP__Operator[TOP_KILL] = Operator_KILL;
-    TOP__Operator[TOP_label] = Operator_LABEL;
+    TOP__Operator[TOP_KILL] = Operator__KILL;
+    TOP__Operator[TOP_label] = Operator__LABEL;
     TOP__Operator[TOP_ldbc_r_i_b_r] = Operator_st200_ldbc_1nolink_2predicate_3isrc2_4general;
     TOP__Operator[TOP_ldbc_r_ii_b_r] = Operator_st200_ldbc_1nolink_2predicate_3xsrc2_4general;
     TOP__Operator[TOP_ldbuc_r_i_b_r] = Operator_st200_ldbuc_1nolink_2predicate_3isrc2_4general;
@@ -535,7 +536,7 @@ CGIR_LAO_Init(void) {
     TOP__Operator[TOP_pftc_r_ii_b] = Operator_st200_pftc_1predicate_2xsrc2_3general;
     TOP__Operator[TOP_pft_r_i] = Operator_st200_pft_1isrc2_2general;
     TOP__Operator[TOP_pft_r_ii] = Operator_st200_pft_1xsrc2_2general;
-    TOP__Operator[TOP_phi] = Operator_PHI;
+    TOP__Operator[TOP_phi] = Operator__PHI;
     TOP__Operator[TOP_prgadd_r_i] = Operator_st200_prgadd_1isrc2_2general;
     TOP__Operator[TOP_prgadd_r_ii] = Operator_st200_prgadd_1xsrc2_2general;
     TOP__Operator[TOP_prgadd_l1_r_i] = Operator_st200_prgadd_l1_1isrc2_2general;
@@ -555,7 +556,7 @@ CGIR_LAO_Init(void) {
     TOP__Operator[TOP_prgset_r_ii] = Operator_st200_prgset_1xsrc2_2general;
     TOP__Operator[TOP_prgset_l1_r_i] = Operator_st200_prgset_l1_1isrc2_2general;
     TOP__Operator[TOP_prgset_l1_r_ii] = Operator_st200_prgset_l1_1xsrc2_2general;
-    TOP__Operator[TOP_psi] = Operator_PSI;
+    TOP__Operator[TOP_psi] = Operator__PSI;
     TOP__Operator[TOP_pswclr_r] = Operator_st200_pswclr_1general;
     TOP__Operator[TOP_pswmask_i_r_r] = Operator_st200_pswmask_1nolink_2general_3isrc2;
     TOP__Operator[TOP_pswmask_ii_r_r] = Operator_st200_pswmask_1nolink_2general_3xsrc2;
@@ -628,8 +629,8 @@ CGIR_LAO_Init(void) {
     TOP__Operator[TOP_shuff_pbl_r_r_r] = Operator_st200_shuff_pbl_1general_2general_3general;
     TOP__Operator[TOP_shuff_phh_r_r_r] = Operator_st200_shuff_phh_1general_2general_3general;
     TOP__Operator[TOP_shuff_phl_r_r_r] = Operator_st200_shuff_phl_1general_2general_3general;
-    TOP__Operator[TOP_SIGMA] = Operator_SIGMA;
-    TOP__Operator[TOP_noop] = Operator_SKIP;
+    TOP__Operator[TOP_SIGMA] = Operator__SIGMA;
+    TOP__Operator[TOP_noop] = Operator__SKIP;
     TOP__Operator[TOP_slctf_r_r_b_r] = Operator_st200_slctf_1general_2branch_3general_4general;
     TOP__Operator[TOP_slctf_i_r_b_r] = Operator_st200_slctf_1general_2branch_3general_4isrc2;
     TOP__Operator[TOP_slctf_ii_r_b_r] = Operator_st200_slctf_1general_2branch_3general_4xsrc2;
@@ -699,7 +700,7 @@ CGIR_LAO_Init(void) {
       else Operator__TOP[TOP__Operator[i]] = (TOP)i;
     }
     // initialize LC__Immediate
-    LC__Immediate =  TYPE_MEM_POOL_ALLOC_N(O64_Immediate, Malloc_Mem_Pool, ISA_LC_MAX+1);
+    LC__Immediate =  TYPE_MEM_POOL_ALLOC_N(Immediate, Malloc_Mem_Pool, ISA_LC_MAX+1);
     for (int i = 0; i <= ISA_LC_MAX; i++) LC__Immediate[i] = Immediate__UNDEF;
     Is_True(ISA_LC_UNDEFINED == 0, ("ISA_LC_UNDEFINED != 0. Unedxpected."));
     LC__Immediate[ISA_LC_UNDEFINED] = Immediate__UNDEF;

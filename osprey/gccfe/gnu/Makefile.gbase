@@ -101,6 +101,14 @@ HOSTDEFS += -DTARGET_NAME=\"stxp70\"
 endif
 endif
 
+ifeq ($(BUILD_TARGET), ARM)
+ifeq ($(BUILD_OS),LINUX)
+HOSTDEFS += -DTARGET_NAME=\"arm-linux\"
+else
+HOSTDEFS += -DTARGET_NAME=\"arm\"
+endif
+endif
+
 # (cbr) define gnu version
 HOSTDEFS += -DGNU_FRONT_END=33
 
@@ -144,7 +152,9 @@ endif
 # (cbr) cleanup
 ifneq ($(BUILD_TARGET), ST200)
 ifneq ($(BUILD_TARGET), STxP70)
+ifneq ($(BUILD_TARGET), ARM)
 TARGDEFS = -D__MIPS_AND_IA64_ELF_H
+endif
 endif
 endif
 # ifeq ($(BUILD_COMPILER), GNU)
@@ -190,6 +200,9 @@ ifeq ($(BUILD_TARGET), ST200)
 COMMON_TARGINFO_CONFIG_DIR  = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
 endif
 ifeq ($(BUILD_TARGET), STxP70)
+COMMON_TARGINFO_CONFIG_DIR  = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
+endif
+ifeq ($(BUILD_TARGET), ARM)
 COMMON_TARGINFO_CONFIG_DIR  = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
 endif
 ifeq ($(BUILD_TARGET), IA64)
@@ -356,6 +369,9 @@ ifeq ($(BUILD_TARGET), ST200)
 endif
 ifeq ($(BUILD_TARGET), STxP70)
   GNU_SRCS += stxp70.c
+endif
+ifeq ($(BUILD_TARGET), ARM)
+  GNU_SRCS += arm.c
 endif
 
 # There is no st100.c description for gcc, use the dummy one.

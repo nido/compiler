@@ -699,6 +699,10 @@ inline const char * TN_RELOCS_Name (mUINT8 rc)
 extern TN* Gen_Predicate_TN(void);
 extern BOOL TN_Use_Base_ST_For_Reloc (INT reloc, ST *st);
 extern INT  TN_Relocs_In_Asm (TN *t, ST *st, vstring *buf, INT64 *val);
+#ifdef TARG_ST
+extern BOOL TN_Reloc_has_parenthesis( INT32 reloc );
+#endif
+
 
 #ifdef TARG_ST
 //TB: Return the name of a register, given a tn and a subclass Useful

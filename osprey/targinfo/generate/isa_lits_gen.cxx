@@ -61,7 +61,9 @@ struct lit_range {
   long long max;
   // [JV] Add scaling info via bits mask on lowest bits
   long scaling_value;
-  long scaling_mask;
+  long long scaling_mask;
+  long max_right_rotate;
+  long long right_rotate_mask;
 };
 
 static const char * const interface[] = {
@@ -256,31 +258,35 @@ void ISA_Lits_Begin (void)
    }
 
   // UNDEFINED entry is reserved to static table
-  if(gen_static_code)
-    { fprintf(cfile, "  { { { 0x0000000000000000ULL, 0x0000000000000000ULL, 0, 0 } }, 0, 0, 0, \"ISA_LC_UNDEFINED\" },\n");
-      fprintf(cincfile,"  { { { 0x0000000000000000ULL, 0x0000000000000000ULL, 0, 0 } }, 0, 0, 0, \"ISA_LC_UNDEFINED\" },\n");
-    }
+  if(gen_static_code) {
+    fprintf(cfile, "  { { { 0x0000000000000000LL, 0x0000000000000000LL, 0, 0, 0 } }, 0, 0, 0, \"ISA_LC_UNDEFINED\" },\n");
+    fprintf(cincfile,"  { { { 0x0000000000000000LL, 0x0000000000000000LL, 0, 0, 0 } }, 0, 0, 0, \"ISA_LC_UNDEFINED\" },\n");
+  }
 
   // For dynamic code generation, we include in the
   // table the static part of the table.
-  if(!gen_static_code)
-   { fprintf(cfile,
-             "\n"
-             "#include \"%s\"\n\n",
-             cincfilename
+  if(!gen_static_code) {
+    fprintf(cfile,
+	    "\n"
+	    "#include \"%s\"\n\n",
+	    cincfilename
             );
-   }
+  }
 
   for (int i = 1; i <= 64; ++i) {
     unsigned_range[i].min = 0;
     unsigned_range[i].max = (i == 64) ? -1ULL : (1ULL << i) - 1;
     unsigned_range[i].scaling_value = 0; // [JV] default 
     unsigned_range[i].scaling_mask = 0; // [JV] default 
+    unsigned_range[i].max_right_rotate = 0; // [JV] default 
+    unsigned_range[i].right_rotate_mask = 0; // [JV] default 
 
     signed_range[i].min = -1LL << (i - 1);
     signed_range[i].max = (1LL << (i - 1)) - 1;
     signed_range[i].scaling_value = 0; // [JV] default 
     signed_range[i].scaling_mask = 0; // [JV] default 
+    signed_range[i].max_right_rotate = 0; // [JV] default 
+    signed_range[i].right_rotate_mask = 0; // [JV] default 
   }
 }
 
@@ -314,7 +320,7 @@ LIT_RANGE UnsignedBitRange(unsigned int bit_size)
 
 
 /////////////////////////////////////
-LIT_RANGE ISA_Create_Lit_Range(const char *name, long long min, long long max, long scaling)
+LIT_RANGE ISA_Create_Lit_Range(const char *name, long long min, long long max, long scaling, long right_rotate_width)
 /////////////////////////////////////
 //  See interface description.
 /////////////////////////////////////
@@ -324,7 +330,37 @@ LIT_RANGE ISA_Create_Lit_Range(const char *name, long long min, long long max, l
   range->min = min;
   range->max = max;
   range->scaling_value = scaling;
-  range->scaling_mask = (1<<scaling)-1;
+  if(scaling > 64) {
+    fprintf(stderr, "### Error: invalid scaling %d (greater than 64)\n", scaling);
+    exit(EXIT_FAILURE);
+  }
+  if(scaling == 64) {
+    range->scaling_mask = 0xffffffffffffffffLL;
+  }
+  else {
+    range->scaling_mask = (1<<scaling)-1;
+  }
+  if((right_rotate_width + scaling) > 6) {
+    fprintf(stderr, "### Error: invalid right rotate width %d (greater than 6 bits)\n", right_rotate_width);
+    exit(EXIT_FAILURE);
+  }
+  /* Maximum number of rotation used to test given immediate value */
+  range->max_right_rotate = (1 <<right_rotate_width)-1;
+  /* Width on which the rotation can be applied
+   * Example: if scaling is 1, and rotate value width is 4, the rotate width
+   * or bit field on which rotation can be applied is 1 << 4 << 1 = 32 bits.
+   * So the rotate mask is 0xffffffff.
+   */
+  if((right_rotate_width + scaling) == 6) {
+    range->right_rotate_mask = 0xffffffffffffffffLL;
+  }
+  else if((right_rotate_width + scaling) == 5) {
+    /* Fix gcc bug when shifting left by 32 */
+    range->right_rotate_mask = 0xffffffff;
+  }
+  else {
+    range->right_rotate_mask = (1 << ((1 << right_rotate_width) << scaling)) - 1;
+  }
   return range;
 }
 
@@ -420,12 +456,14 @@ void ISA_Create_Lit_Class(const char* name, LIT_CLASS_TYPE type, ...)
 
   va_start(ap,type);
   while ((range = va_arg(ap,LIT_RANGE)) != LIT_RANGE_END) {
-    fprintf(cfile, ",\n      { " PRINTF_LONGLONG_HEXA ", " PRINTF_LONGLONG_HEXA ", %ld, %#lx }", 
-		   range->min, range->max, range->scaling_value, range->scaling_mask);
-
+    fprintf(cfile, ",\n      { " PRINTF_LONGLONG_HEXA ", " PRINTF_LONGLONG_HEXA ", %ld, " PRINTF_LONGLONG_HEXA ", %d, " PRINTF_LONGLONG_HEXA " }", 
+	    range->min, range->max, range->scaling_value, range->scaling_mask,
+	    range->max_right_rotate, range->right_rotate_mask);
+    
     if(gen_static_code)
-    { fprintf(cincfile, ",\n      { " PRINTF_LONGLONG_HEXA ", " PRINTF_LONGLONG_HEXA ", %ld, %#lx }", 
-	      range->min, range->max, range->scaling_value, range->scaling_mask);
+    { fprintf(cincfile, ",\n      { " PRINTF_LONGLONG_HEXA ", " PRINTF_LONGLONG_HEXA ", %ld, " PRINTF_LONGLONG_HEXA ", %d, " PRINTF_LONGLONG_HEXA " }", 
+	      range->min, range->max, range->scaling_value, range->scaling_mask,
+	      range->max_right_rotate, range->right_rotate_mask);
     }
   }
   va_end(ap);
@@ -516,7 +554,14 @@ void ISA_Lits_End(void)
                    max_ranges + 1);
      fprintf(hfile, 
              "\ntypedef struct {\n"
-             "struct { INT64 min; INT64 max; INT32 scaling_value; INT32 scaling_mask; } range[MAX_RANGE_STATIC];\n"
+             "  struct {\n"
+	     "    INT64 min;\n"
+	     "    INT64 max;\n"
+	     "    INT32 scaling_value;\n"
+	     "    INT64 scaling_mask;\n"
+	     "    INT32 max_right_rotate;\n"
+	     "    INT64 right_rotate_mask;\n"
+	     "  } range[MAX_RANGE_STATIC];\n"
              "  mUINT8 num_ranges;\n"
              "  mBOOL is_signed;\n"
              "  mBOOL is_negative;\n"
@@ -577,13 +622,30 @@ void ISA_Lits_End(void)
 		 "  for (i = 1; i <= plc->num_ranges; ++i) {\n"
 		 "    INT64 min = plc->range[i].min;\n"
 		 "    INT64 max = plc->range[i].max;\n"
-	         "    if ( (val & plc->range[i].scaling_mask) != 0 ) { return FALSE; }\n"
+	         "    if(plc->range[i].max_right_rotate) {\n"
+	         "      INT64 rotate_mask = (1 << (1 << plc->range[i].scaling_value))-1;\n"
+                 "      INT64 rotate_amount = 1 << plc->range[i].scaling_value;\n"
+	         "      INT32 rotate_nb = 0;\n"
+	         "      val &= plc->range[i].right_rotate_mask;\n"
+	         "      /* Remove trailing zeros as possible */\n"
+	         "      while(rotate_nb <= plc->range[i].max_right_rotate && (val & rotate_mask) == 0) {\n"
+                 "        val >>= rotate_amount;\n"
+                 "        rotate_nb++;\n"
+                 "      }\n"
+                 "    }\n"
+	         "    else {\n"
+	         "      if ( (val & plc->range[i].scaling_mask) != 0 ) { return FALSE; }\n"
+                 "    }\n"
 		 "    if ( plc->is_signed ) {\n"
-	         "      val = val >> plc->range[i].scaling_value;\n"
+	         "      if(!plc->range[i].max_right_rotate) {\n"
+	         "        val = val >> plc->range[i].scaling_value;\n"
+                 "      }\n"
 		 "      if (val >= min && val <= max) return TRUE;\n"
 		 "    } else {\n"
                  "      UINT64 valu = (UINT64)val;\n"
-                 "      valu >>= ((UINT64)(plc->range[i].scaling_value));\n"
+	         "      if(!plc->range[i].max_right_rotate) {\n"
+                 "        valu >>= ((UINT64)(plc->range[i].scaling_value));\n"
+                 "      }\n"
 		 "      if (valu >= (UINT64)min && valu <= (UINT64)max) return TRUE;\n"
 		 "    }\n"
 		 "  }\n"

@@ -113,6 +113,7 @@ typedef struct operands_group {
   vector <OPERANDS_GROUP_OPERAND_USES> opnd_use;
   vector <OPERANDS_GROUP_OPERAND_USES> res_use;
   vector <mUINT8> same_res;
+  vector <mUINT32> conflicts;
   bool is_load;
   bool is_store;
   bool base;
@@ -582,6 +583,7 @@ void Instruction_Group( const char *name, ... )
   oper_group->opnd_use = vector<OPERANDS_GROUP_OPERAND_USES>();
   oper_group->res_use = vector<OPERANDS_GROUP_OPERAND_USES>();
   oper_group->same_res = vector<mUINT8>();
+  oper_group->conflicts = vector<mUINT32>();
   oper_group->is_load = false;
   oper_group->is_store = false;
   oper_group->base = false;
@@ -781,6 +783,9 @@ void Result (
     cur_oper_group->same_res.insert(cur_oper_group->same_res.end(),
 				    incr,
 				    (mUINT8)NULL);
+    cur_oper_group->conflicts.insert(cur_oper_group->conflicts.end(),
+				    incr,
+				    (mUINT32)NULL);
   }
 
   // check if this is not the first call to this routine that this
@@ -873,6 +878,34 @@ void Same_Res (int operand_index)
     exit(EXIT_FAILURE);
   }
   cur_oper_group->same_res[cur_res_index] = operand_index+1;
+}
+
+
+/* ====================================================================
+ *   Conflict
+ *   Specify a register allocation conflict between result and operand.
+ * ====================================================================
+ */
+void Conflict (int operand_index)
+{
+  if (cur_res_index < 0) {
+    fprintf(stderr, "### Error: Conflict() called before Result() for %s\n",
+		                     cur_oper_group->name);
+    exit(EXIT_FAILURE);
+  }
+
+  if ((cur_oper_group->conflicts[cur_res_index] & (1<<operand_index)) != 0) {
+    fprintf(stderr, "### Error: there is already a conflict on result %d / operand %d of %s (%#x)\n",
+	    cur_res_index, operand_index, cur_oper_group->name,cur_oper_group->conflicts[cur_res_index]);
+    exit(EXIT_FAILURE);
+  }
+
+  if (operand_index > 31) {
+    fprintf(stderr, "### Error: more than 32 operands. Must use 64 bits type for 'conflicts' array.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  cur_oper_group->conflicts[cur_res_index] |= 1<<operand_index;
 }
 
 /////////////////////////////////////
@@ -1041,7 +1074,7 @@ void ISA_Operands_End(void)
      // modifying the size of the table ISA_OPERAND_INFO->ouse is a
      // very bad idea for extension compatibility maintenance...
      if (maxenum>=16) {
-       fprintf(stderr, "### Error: struct ISA_OPERAND_INFO limits number of operands use to mUINT16 values\n");
+       fprintf(stderr, "### Error: struct ISA_OPERAND_INFO limits number of operands use (%d) to mUINT16 values\n", maxenum);
        exit(EXIT_FAILURE);
      }
    }
@@ -1217,16 +1250,18 @@ void ISA_Operands_End(void)
                    max_results_name, max_results);
 
    fprintf (hfile, "\ntypedef struct {\n"
-                   "  mUINT8 opnds;\n"
-                   "  mUINT8 opnd[%s];\n"
-                   "  mUINT16 ouse[%s];\n"
-                   "  mUINT8 results;\n"
-                   "  mUINT8 result[%s];\n"
-                   "  mUINT16 ruse[%s];\n"
-                   "  mINT8 same_res[%s];\n"
-                   "} ISA_OPERAND_INFO;\n",
-                   max_operands_name, max_operands_name, 
-                   max_results_name, max_results_name, max_results_name);
+	    "  mUINT8  opnds;\n"
+	    "  mUINT8  opnd[%s];\n"
+	    "  mUINT16 ouse[%s];\n"
+	    "  mUINT8  results;\n"
+	    "  mUINT8  result[%s];\n"
+	    "  mUINT16 ruse[%s];\n"
+	    "  mINT8   same_res[%s];\n"
+	    "  mINT32  conflicts[%s];\n"
+	    "} ISA_OPERAND_INFO;\n",
+	    max_operands_name, max_operands_name, 
+	    max_results_name, max_results_name, max_results_name,
+	    max_results_name);
     fprintf(efile, "ISA_OPERAND_info\n");
 
     fprintf(hfile, 
@@ -1251,6 +1286,7 @@ void ISA_Operands_End(void)
     //    vector<OPERAND_USE_TYPE>::iterator use_iter;
     vector<OPERANDS_GROUP_OPERAND_USES>::iterator use_iter;
     vector<mUINT8>::iterator idx_iter;
+    vector<mUINT32>::iterator idx2_iter;
 
     OPERANDS_GROUP oper_group = *ogi;
 
@@ -1412,6 +1448,24 @@ void ISA_Operands_End(void)
 	++idx_iter;
       }
       pos += fprintf(cfile, "%s%3d", i == 0 ? " " : ", ", same_res_index);
+    }
+    pos = fprintf(cfile, " },\n");
+    //
+    // Julien: print out the conflict table
+    //
+    pos = fprintf(cfile, "       {");
+    for (i = 0, idx2_iter = oper_group->conflicts.begin(); 
+	 i < max_results;
+	 ++i
+    ) {
+      int conflict_value = 0;
+      if (idx2_iter != oper_group->conflicts.end()) {
+	if (*idx2_iter != 0) {
+	  conflict_value = *idx2_iter;
+	}
+	++idx2_iter;
+      }
+      pos += fprintf(cfile, "%s%#x", i == 0 ? " " : ", ", conflict_value);
     }
     fprintf(cfile, " } },%*s/* %s */\n", 50 - (pos + 5), "", oper_group->name);
   }
@@ -1676,6 +1730,21 @@ void ISA_Operands_End(void)
 		 "  return (ISA_OPERAND_USE)oinfo->same_res[res];\n"
 		 "}\n");
 
+  fprintf(hfile, "\ninline mINT32 ISA_OPERAND_INFO_Conflicts(\n"
+		 "  const ISA_OPERAND_INFO *oinfo,\n"
+		 "  INT res)\n"
+		 "{\n"
+		 "  return (ISA_OPERAND_USE)oinfo->conflicts[res];\n"
+		 "}\n");
+
+  fprintf(hfile, "\ninline mINT32 ISA_OPERAND_INFO_Has_Conflict(\n"
+		 "  const ISA_OPERAND_INFO *oinfo,\n"
+		 "  INT res, INT opnd)\n"
+		 "{\n"
+	         "  INT mask = 1 << opnd;\n"
+		 "  return ((ISA_OPERAND_USE)oinfo->conflicts[res]) & mask;\n"
+		 "}\n");
+
   fprintf(hfile, "\ninline BOOL ISA_OPERAND_Any_Use(ISA_OPERAND_USE ouse)\n"
 		 "{\n"
 		 "  return (" PRINTF_LONGLONG_HEXA " & ouse) != 0;\n"
@@ -1840,6 +1909,14 @@ void ISA_Operands_End(void)
 		 "{\n"
 		 "  const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(topcode);\n"
 		 "  return ISA_OPERAND_INFO_Same_Res(oinfo, residx);\n"
+		 "}\n");
+
+  fprintf(hfile, "\nTARGINFO_EXPORTED extern mINT32 TOP_Conflict_Operands(TOP topcode, mUINT8 residx);\n");
+  fprintf(efile, "TOP_Conflict_Operands\n");
+  fprintf(cfile, "\nmINT32 TOP_Conflict_Operands(TOP topcode, mUINT8 residx)\n"
+		 "{\n"
+		 "  const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(topcode);\n"
+		 "  return ISA_OPERAND_INFO_Conflicts(oinfo, residx);\n"
 		 "}\n");
 
   fprintf(hfile, "\nTARGINFO_EXPORTED extern BOOL TOP_Result_Is_Uniq_Res(TOP topcode, mUINT8 residx);\n");

@@ -2387,9 +2387,10 @@ BOOL is_intrinsic_rt_name(const char *name)
     iname_to_name_map = CXX_NEW(INTRINSIC_NAME_TO_NAME_MAP(INTRINSIC_LAST-INTRINSIC_FIRST+1, Malloc_Mem_Pool),
 				Malloc_Mem_Pool);
     for (INT opc = INTRINSIC_FIRST; opc <= INTRINSIC_LAST; opc++ ) {
+        char *runtime_name;
 	// Care when the entries are NULL
-	if (intrn_info[opc].runtime_name) {
-	    iname_to_name_map->Enter (intrn_info[opc].runtime_name, intrn_info[opc].runtime_name) ;
+	if (runtime_name = INTRN_rt_name (opc)) {
+	    iname_to_name_map->Enter (runtime_name, runtime_name) ;
 	}
     }
   }

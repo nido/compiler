@@ -146,6 +146,11 @@ BE_EXPORTED extern BOOL Enable_Misaligned_Load, Enable_Misaligned_Store;
 BE_EXPORTED extern INT32 Warn_Misaligned_Access;
 BE_EXPORTED extern INT32 Warn_Misaligned_Load, Warn_Misaligned_Store;
 
+// [JV] On ARM, every comparison write the same flag register.
+// So it is not possible to insert additional comparisons between
+// a couple of compare/branch (branch interpret the flag register).
+BE_EXPORTED extern BOOL Compare_Branch_Seq_Is_Atomic;
+
 //[VCdV]
 BE_EXPORTED extern int Activate_Hwloop;
 #define ACTIVATE_HWLOOP_GENERATION   0x1

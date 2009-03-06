@@ -187,6 +187,7 @@ extern void Result (int result_index,
 		    OPERAND_VALUE_TYPE result_type,
 		    OPERAND_USE_TYPE result_use = 0);
 extern void Same_Res (int operand_index);
+extern void Conflict (int operand_index);
 extern void ISA_Operands_End(void);
 
 #ifdef __cplusplus

@@ -403,6 +403,8 @@ main (int argc, char *argv[])
 	    fprintf(stdout, "st200\n") ;
 #elif defined( TARG_STxP70 )
 	    fprintf(stdout, "stxp70\n") ;
+#elif defined( TARG_ARM )
+	    fprintf(stdout, "arm\n") ;
 #else
 	    fprint(stdout, "unknown\n") ;
 #endif

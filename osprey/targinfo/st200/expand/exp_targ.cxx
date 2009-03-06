@@ -1321,10 +1321,33 @@ Expand_Madd (
   TYPE_ID s1mtype,
   TN *src2,
   TYPE_ID s2mtype,
+  BOOL is_neg,
   OPS *ops
 )
 {
   FmtAssert (FALSE,("Expand_Madd: unsupported"));
+  return;
+}
+
+/* ====================================================================
+ *   Expand_Msub
+ * ====================================================================
+ */
+void
+Expand_Msub (
+  TN *result,
+  TYPE_ID rmtype,
+  TN *src0,
+  TYPE_ID s0mtype,
+  TN *src1,
+  TYPE_ID s1mtype,
+  TN *src2,
+  TYPE_ID s2mtype,
+  BOOL is_neg,
+  OPS *ops
+)
+{
+  FmtAssert (FALSE,("Expand_Msub: unsupported"));
   return;
 }
 

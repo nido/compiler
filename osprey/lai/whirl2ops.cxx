@@ -2676,6 +2676,71 @@ Handle_MADD (
 	       kid0_tn, WN_rtype(WN_kid0(expr)), 
 	       kid1_tn, Get_mtype_for_mult(WN_kid1(expr), expr),
 	       kid2_tn, Get_mtype_for_mult(WN_kid2(expr), expr),
+	       opcode == OPR_NMADD,
+	       &New_OPs);
+
+  if (Trace_Exp) {
+    OP *op = OP_next(Last_OP);
+    while (op != NULL) {
+      fprintf(TFile, " into "); Print_OP (op);
+      op = OP_next(op);
+    }
+  }
+
+  return result;
+}
+
+/* ====================================================================
+ *   Handle_MSUB
+ * ====================================================================
+ */
+static TN *
+Handle_MSUB (
+  WN *expr, 
+  TN *result,
+  OPCODE opcode
+)
+{
+  OP *Last_OP;
+  TN *kid0_tn, *kid1_tn, *kid2_tn;
+
+  if (result == NULL) {
+    result = Allocate_Result_TN (expr, NULL);
+  }
+
+  if (MTYPE_is_float(OPCODE_rtype(opcode))) {
+    kid0_tn = Expand_Expr (WN_kid0(expr), expr, NULL);
+    kid1_tn = Expand_Expr (WN_kid1(expr), expr, NULL);
+    kid2_tn = Expand_Expr (WN_kid2(expr), expr, NULL);
+    Exp_OP3 (opcode, result, kid0_tn, kid1_tn, kid2_tn, &New_OPs);
+    return result;
+  }
+
+  /* call make MADD with mtypes of arguments: */
+  kid0_tn = Expand_Expr (WN_kid0(expr), expr, NULL);
+  kid1_tn = Expand_Expr (WN_kid1(expr), expr, NULL);
+  kid2_tn = Expand_Expr (WN_kid2(expr), expr, NULL);
+
+  if (Trace_Exp) {
+    #pragma mips_frequency_hint NEVER
+    fprintf(TFile, "exp_msub %s: ", OPCODE_name(opcode));
+    Print_TN(result, FALSE);
+    fprintf(TFile, " :- ");
+    Print_TN(kid0_tn, FALSE);
+    fprintf(TFile, " ");
+    Print_TN(kid1_tn, FALSE);
+    fprintf(TFile, " ");
+    Print_TN(kid2_tn, FALSE);
+    fprintf(TFile, " \n");
+  }
+
+  /* for debuggging */
+  Last_OP = OPS_last(&New_OPs);
+  Expand_Msub (result, WN_rtype(expr), 
+	       kid0_tn, WN_rtype(WN_kid0(expr)), 
+	       kid1_tn, Get_mtype_for_mult(WN_kid1(expr), expr),
+	       kid2_tn, Get_mtype_for_mult(WN_kid2(expr), expr),
+	       opcode == OPR_NMSUB,
 	       &New_OPs);
 
   if (Trace_Exp) {
@@ -4584,7 +4649,11 @@ Expand_Expr (
   case OPR_MPY:
     return Handle_MPY (expr, result, opcode);
   case OPR_MADD:
+  case OPR_NMADD:
     return Handle_MADD (expr, result, opcode);
+  case OPR_MSUB:
+  case OPR_NMSUB:
+    return Handle_MSUB (expr, result, opcode);
 #endif
 
   case OPR_DIVREM:

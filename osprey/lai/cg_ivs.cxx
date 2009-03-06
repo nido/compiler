@@ -485,7 +485,7 @@ void Perform_Induction_Variables_Optimizations() {
   Free_Dominators_Memory ();
 }
 
-#ifndef TARG_STxP70
+#if !defined(TARG_STxP70) && !defined(TARG_ARM)
 // ======================================================================
 //
 //  An implementation of load-store packing based on the loop
