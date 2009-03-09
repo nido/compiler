@@ -1,6 +1,32 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar  9 10:42:57 CET 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-50881
+
+Description:
+------------
+	* [trunk] Fix for bug #50881: Sub-optimal if conversion.
+	Deliver fixes/codex-50881 rev #20882 with authorization branch #61522
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_flags.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/cg_flags.h
+	M      osprey/targinfo/stxp70/proc/proc_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Mar  6 13:33:42 CET 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -209,6 +209,7 @@ BOOL CFLOW_Enable_Favor_Branches_Condition = FALSE;
 BOOL CFLOW_Space = FALSE;
 BOOL CFLOW_depgraph_use = TRUE;
 BOOL CFLOW_enable_last_pass = FALSE;
+BOOL CFLOW_Enable_Hoist_rts = TRUE;
 #endif
 
 // ====================================================================

@@ -3100,6 +3100,38 @@ Optimize_Branches(void)
 	    Cflow_Change_Succ(bp, 1, old_tgt, new_tgt);
 	  }
 	}
+#ifdef TARG_ST
+    if (CFLOW_Enable_Hoist_rts) {
+    	// [TDR] Do not perform optimization if retrun instruction cannot be predicated
+		if (!CGTARG_Can_Predicate_Returns()) break;
+		BB* targ_0= BBINFO_succ_bb(bp,0);
+		BB* targ_1= BBINFO_succ_bb(bp,1);
+		if (BB_length(targ_0) == 1 && BBINFO_nsuccs(targ_0) == 0 && BBINFO_kind(targ_0) == BBKIND_RETURN) {
+			if (CFLOW_Trace_Branch) {
+				#pragma mips_frequency_hint NEVER
+				fprintf(TFile, "Only one inst and Tail Block\n");
+				Print_OP_No_SrcLine(BB_branch_op(bp));
+				fprintf(TFile, "Successors are : BB(%d), BB(%d)\n",	BB_id(targ_0), BB_id(targ_1));
+				fprintf(TFile, "Block Before\n");
+				Print_BB(bp);
+			}
+			OP *br_op=BB_branch_op(bp);
+			OP *rts_op=Dup_OP(BB_first_op(targ_0));
+			CGTARG_Predicate_OP(NULL, rts_op, OP_Condition (br_op), OP_Pred_False(br_op, OP_find_opnd_use(br_op, OU_condition)));
+			BB_Insert_Op_Before(bp, br_op, rts_op);
+			BB_Remove_Op(bp, br_op);
+			Unlink_Pred_Succ(bp, targ_0);
+			Set_BBINFO_nsuccs(bp, 1);
+			Set_BBINFO_succ_bb(bp,0,targ_1);
+			Set_BBINFO_kind(bp, BBKIND_REGION_EXIT);
+			if (CFLOW_Trace_Branch) {
+				#pragma mips_frequency_hint NEVER
+				fprintf(TFile, "Block After\n");
+				Print_BB(bp);
+			}
+		}
+	}
+#endif
 	break;
       case BBKIND_GOTO:
 	if (BBINFO_nsuccs(bp) == 0) break;

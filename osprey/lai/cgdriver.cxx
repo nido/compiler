@@ -781,6 +781,8 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0, &CFLOW_depgraph_use, &CFLOW_depgraph_use_overridden },
   { OVK_BOOL,	OV_INTERNAL, FALSE,"cflow_enable_last_pass", "",
     0, 0, 0, &CFLOW_enable_last_pass, &CFLOW_enable_last_pass_overridden },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"cflow_hoist_rts", "",
+    0, 0, 0, &CFLOW_Enable_Hoist_rts, NULL },
 #endif
 
   // Frequency heuristic/feedback options.

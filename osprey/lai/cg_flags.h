@@ -289,6 +289,7 @@ extern BOOL CFLOW_Enable_Favor_Branches_Condition;
 extern BOOL CFLOW_Space;
 extern BOOL CFLOW_depgraph_use;
 extern BOOL CFLOW_enable_last_pass;
+extern BOOL CFLOW_Enable_Hoist_rts;
 #endif
 
 /* FREQ: */
