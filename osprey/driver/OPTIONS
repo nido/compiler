@@ -518,8 +518,11 @@ I-cpp_pic	;		ALL	NONE	"-D_PIC -D__DSO__"
 	NA__"specify the loop id used by ProMP annotation"
 -PROMP:%s	;		FTN,Cc	be	"-PHASE:prompf -PROMP:%s"
 	NA__"option group to generate ProMP analysis file"
-
+#ifdef TARG_STxP70
+-IPA:%s	;		ALL	ipl,ipap	"-IPA:%s"
+#else
 -IPA:%s	toggle(&ipa,TRUE);		ALL	ipl,ipap	"-IPA:%s"
+#endif
 	"option group to control interprocedural optimizations"
 -LANG:std toggle(&standard_cplusplus,TRUE);  CC    GRP  "-LANG:std"
         NA__"Use ISO/ANSI standard-conforming C++ language and library"
