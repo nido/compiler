@@ -7647,6 +7647,16 @@ EMT_End_File( void )
       else if (ST_class(sym) == CLASS_VAR ||
 	       ST_class(sym) == CLASS_CONST ||
 	       ST_class(sym) == CLASS_FUNC) {
+#ifdef TARG_ST
+	if (ST_is_weak_symbol(sym)
+	    && (ST_sclass(sym) == SCLASS_DGLOBAL
+		|| ST_sclass(sym) == SCLASS_UGLOBAL)) {
+          /* Weak definition becomes weak reference in the .G file */
+	  Set_ST_sclass(sym, SCLASS_EXTERN);
+	  Set_ST_base(sym, sym);
+	  Set_ST_ofst(sym, 0);
+	}
+#endif
 	if (ST_sclass (sym) != SCLASS_COMMON && !ST_is_weak_symbol(sym) ) {
 	  Set_ST_sclass(sym, SCLASS_EXTERN);
 	}

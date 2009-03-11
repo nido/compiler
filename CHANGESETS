@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Mar 11 19:40:47 CET 2009
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-62642
+
+Description:
+------------
+	*  Fix for bug #62642 (ICE handling weak symbol in named section
+	with ipa) 
+	Delivered fixes/codex-62642 rev #20941 with authorization art #62961.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgemit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@20909 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-62642@20941 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@20909 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-62642@20941" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgemit.cxx?p2=branches/fixes/codex-62642/osprey/lai/cgemit.cxx&r1=20909&r2=20941&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Mar 10 10:57:22 CET 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
