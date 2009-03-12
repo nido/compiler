@@ -131,6 +131,15 @@ static BB *deleted_bbs;
  */
 static BOOL eh_label_removed;
 
+#ifdef TARG_ST
+static MEM_POOL cflow_pool;
+/* Flag indicating if the cflow pass is called
+   before or after register allocation
+*/
+static BOOL before_regalloc;
+#endif
+
+
 /* Tracing:
  */
 #define TRACE_CFLOW	0x0001
@@ -931,6 +940,10 @@ Negate_Branch(OP *br)
 {
   TOP top = OP_code(br);
   TOP new_top = CGTARG_Invert(top);
+
+  if (!before_regalloc && !CGTARG_Can_Negate_Branch(br)) {
+    return FALSE;
+  }
 
   if (new_top != TOP_UNDEFINED) {
     OP_Change_Opcode(br, new_top);
@@ -3025,11 +3038,7 @@ Convert_Goto_To_Return ( BB *bp )
  * ====================================================================
  */
 static BOOL
-#ifdef TARG_STxP70
-Optimize_Branches(BOOL before_regalloc)
-#else
 Optimize_Branches(void)
-#endif
   
 {
   INT pass;
@@ -3065,21 +3074,6 @@ Optimize_Branches(void)
 	  }
 	  changed = TRUE;
         } else {
-#ifdef TARG_STxP70
-	  /* bv11 */
-	  if (!before_regalloc) {
-	    OP *br_op = BB_branch_op(bp);
-	    TN *br_cond = OP_opnd(br_op, OP_find_opnd_use(br_op, OU_condition));
-	    FmtAssert(TN_register_class(br_cond) == ISA_REGISTER_CLASS_gr ||
-		      OP_Is_Counted_Loop(br_op),
-		      ("Optimize_branches: cond of wrong class"));
-	    if ((TN_register_class(br_cond) == ISA_REGISTER_CLASS_gr) &&
-		(strcmp(REGISTER_name(TN_register_class(br_cond),
-				      TN_register(br_cond)), "G3") == 0)) {
-	      break;
-	    }
-	  }
-#endif
 	  if (freqs_computed) {
 	    edge_freq = BBINFO_succ_prob(bp, 0) * BB_freq(bp);
 	  }
@@ -4430,6 +4424,21 @@ TN_equiv(TN *tn1, TN *tn2) {
   return FALSE;
 }
 
+#define TN_is_local_reg(r)   (!(TN_is_dedicated(r) | TN_is_global_reg(r)))
+
+static BOOL
+TN_equiv_for_unification(TN *tn1, TN *tn2) {
+
+  /* bv11 - more opportunities */
+  if (before_regalloc &&
+      TN_is_register(tn1) && TN_is_local_reg(tn1) &&
+      TN_is_register(tn2) && TN_is_local_reg(tn2)) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
 static BOOL
 OP_equiv(OP *op1, OP *op2) {
 
@@ -4467,6 +4476,120 @@ OP_equiv(OP *op1, OP *op2) {
 }
 
 static BOOL
+OP_equiv_for_merging(OP *op1, OP *op2, BS *TNs_to_be_unified) {
+
+  INT i;
+  BS *TNs_to_be_unified_tmp = BS_Create_Empty(OP_opnds(op1), &cflow_pool);
+
+  if (!op1 || !op2)
+    return FALSE;
+
+  if (OP_xfer(op1) || OP_xfer(op2) ||
+      OP_code(op1) == TOP_asm || OP_code(op2) == TOP_asm ||
+      OP_volatile(op1) || OP_volatile(op2))
+    return FALSE;
+  
+  if ((OP_code(op1) != OP_code(op2)) ||
+      (OP_opnds(op1) != OP_opnds(op2)) ||
+      (OP_results(op1) != OP_results(op2)))
+    return FALSE;
+
+  for (i = 0; i < OP_opnds(op1); i ++) {
+    if ((!TN_equiv(OP_opnd(op1, i), OP_opnd(op2, i)) &&
+	 !TN_equiv_for_unification(OP_opnd(op1, i), OP_opnd(op2, i))) ||
+        (OP_Pred_False(op1, i) != OP_Pred_False(op2, i)) ||
+	(TN_equiv_for_unification(OP_opnd(op1, i), OP_opnd(op2, i)) &&
+	 (BBINFO_kind(BBLIST_item(BB_succs(OP_bb(op1)))) == BBKIND_RETURN) &&
+	 !CFLOW_Space))
+      return FALSE;
+    else {
+      if (TN_equiv_for_unification(OP_opnd(op1, i), OP_opnd(op2, i))) {
+	TNs_to_be_unified_tmp = BS_Union1D(TNs_to_be_unified_tmp, i,
+					   &cflow_pool);
+      }
+    }
+  }
+  for (i = 0; i < OP_results(op1); i ++) {
+    if (!TN_equiv(OP_result(op1, i), OP_result(op2, i)))
+      return FALSE;
+  }
+  if (!BS_EmptyP(TNs_to_be_unified) || !BS_EmptyP(TNs_to_be_unified_tmp)) {
+    if (!BS_EmptyP(TNs_to_be_unified)) {
+      if (!BS_EqualP(TNs_to_be_unified, TNs_to_be_unified_tmp))
+	return FALSE;
+    }
+    else {
+      TNs_to_be_unified = BS_CopyD(TNs_to_be_unified, TNs_to_be_unified_tmp,
+				   &cflow_pool);
+    }
+  }
+
+  return TRUE;
+}
+
+
+static void
+Unify_TNs_for_Merging(OP *cur_op[], INT op_nb, BS *TNs_to_be_unified) {
+
+  INT i, j, k;
+  TN *tn, *gtn;
+  OP *op;
+  WN *wn;
+  
+  for (j = 0; j < OP_opnds(cur_op[0]); j ++) {
+    if (BS_MemberP (TNs_to_be_unified, j)) {
+      for (i = 0; i < op_nb; i++) {
+	tn = OP_opnd(cur_op[i], j);
+	Is_True(TN_is_register(tn) && TN_is_local_reg(tn),
+		("Try to unify TNs that can not be unified: TN%d",
+		 TN_number(tn)));
+      }
+    }
+  }
+  
+  for (j = 0; j < OP_opnds(cur_op[0]); j ++) {
+    if (BS_MemberP (TNs_to_be_unified, j)) {
+      gtn = OP_opnd(cur_op[0], j);
+      /* Transform local register tn into global register */
+      Set_TN_is_global_reg(gtn);
+      Reset_TN_is_rematerializable(gtn);
+      
+      /* Transform equivalent tns in other equivalent operations into tn */
+      for (i = 0; i < op_nb; i++) {
+	tn = OP_opnd(cur_op[i], j);
+	Set_OP_opnd(cur_op[i], j, gtn);
+	op = BB_last_op(OP_bb(cur_op[i]));
+	while (op) {
+	  BOOL TN_modified = FALSE;
+	  for (k = 0; k < OP_results(op); k ++) {
+	    if (OP_result(op, k) == tn) {
+	      Set_OP_result(op, k, gtn);
+	      TN_modified = TRUE;
+	    }
+	  }
+	  for (k = 0; k < OP_opnds(op); k ++) {
+	    if (OP_opnd(op, k) == tn) {
+	      Set_OP_opnd(op, k, gtn);
+	      TN_modified = TRUE;
+	    }
+	  }
+	  if (TN_modified) {
+	    if (wn = Get_WN_From_Memory_OP(op)) {
+	      OP_MAP_Set(OP_to_WN_map, op, NULL);
+	    }
+	  }
+	  op = OP_prev(op);
+	}
+      }
+    }
+  }
+
+  if (wn = Get_WN_From_Memory_OP(cur_op[0])) {
+    OP_MAP_Set(OP_to_WN_map, cur_op[0], NULL);
+  }
+}
+
+static BOOL
 Merge_Ops_in_Preds(BB *b) {
 #define MAX_PRED_BBS 10
   OP *cur_op[MAX_PRED_BBS], *cur_op_tmp;
@@ -4497,6 +4620,8 @@ Merge_Ops_in_Preds(BB *b) {
   while (cur_op[0]) {
     int i = 0;
     common_op = cur_op[0];
+    BS *TNs_to_be_unified = BS_Create_Empty(OP_opnds(cur_op[0]),
+					    &cflow_pool);
 
     FOR_ALL_BB_PREDS (b, bblst) {
       BB *pbb = BBLIST_item(bblst);
@@ -4521,7 +4646,7 @@ Merge_Ops_in_Preds(BB *b) {
 	if (CFLOW_Trace_Merge_Ops) CG_DEP_Trace_Graph (pbb);
 	
 	while (cur_op[i]) {
-	  if (OP_equiv(cur_op[0], cur_op[i])) {
+	  if (OP_equiv_for_merging(cur_op[0], cur_op[i], TNs_to_be_unified)) {
 	    find = TRUE;
 	    break;
 	  }
@@ -4559,6 +4684,9 @@ Merge_Ops_in_Preds(BB *b) {
       if (CFLOW_Trace_Merge_Ops) {
 	#pragma mips_frequency_hint NEVER
 	fprintf(TFile, "Operation %s removed from BBs", TOP_Name(OP_code(common_op)));
+      }
+      if (!BS_EmptyP(TNs_to_be_unified)) {
+	Unify_TNs_for_Merging(cur_op, pred_count, TNs_to_be_unified);
       }
       OP *new_common = Dup_OP(common_op);
       if (OP_memory(common_op)) Copy_WN_For_Memory_OP(new_common, common_op);
@@ -4679,6 +4807,109 @@ Merge_Common_Ops ()
 /* bv11 */
 
 static BOOL
+OP_equiv_for_hoisting(OP *op1, OP *op2, BS *TNs_to_be_unified) {
+
+  INT i;
+  BS *TNs_to_be_unified_tmp = BS_Create_Empty(OP_results(op1), &cflow_pool);
+
+  if (!op1 || !op2)
+    return FALSE;
+
+  if (OP_xfer(op1) || OP_xfer(op2) ||
+      OP_code(op1) == TOP_asm || OP_code(op2) == TOP_asm ||
+      OP_volatile(op1) || OP_volatile(op2))
+    return FALSE;
+  
+  if ((OP_code(op1) != OP_code(op2)) ||
+      (OP_opnds(op1) != OP_opnds(op2)) ||
+      (OP_results(op1) != OP_results(op2)))
+    return FALSE;
+
+  for (i = 0; i < OP_opnds(op1); i ++) {
+    if (!TN_equiv(OP_opnd(op1, i), OP_opnd(op2, i)) || 
+        (OP_Pred_False(op1, i) != OP_Pred_False(op2, i)))
+      return FALSE;
+  }
+  for (i = 0; i < OP_results(op1); i ++) {
+    if ((!TN_equiv(OP_result(op1, i), OP_result(op2, i)) &&
+	 !TN_equiv_for_unification(OP_result(op1, i), OP_result(op2, i)))
+	|| (TN_equiv_for_unification(OP_result(op1, i), OP_result(op2, i)) &&
+	    OP_Is_Copy_Immediate_Into_Register(op1) &&
+	    (BBINFO_kind(OP_bb(op1)) == BBKIND_RETURN ||
+	    BBINFO_kind(OP_bb(op2)) == BBKIND_RETURN))
+	)
+      return FALSE;
+    else {
+      if (TN_equiv_for_unification(OP_result(op1, i), OP_result(op2, i))) {
+	TNs_to_be_unified_tmp = BS_Union1D(TNs_to_be_unified_tmp, i,
+					   &cflow_pool);
+      }
+    }
+  }
+  if (!BS_EmptyP(TNs_to_be_unified) || !BS_EmptyP(TNs_to_be_unified_tmp)) {
+    if (!BS_EmptyP(TNs_to_be_unified)) {
+      if (!BS_EqualP(TNs_to_be_unified, TNs_to_be_unified_tmp))
+	return FALSE;
+    }
+    else {
+      TNs_to_be_unified = BS_CopyD(TNs_to_be_unified, TNs_to_be_unified_tmp,
+				   &cflow_pool);
+    }
+  }
+  
+  return TRUE;
+}
+
+
+static void
+Unify_TNs_for_Hoisting(OP *cur_op[], INT op_nb, BS *TNs_to_be_unified) {
+
+  INT i, j, k;
+  TN *tn, *gtn;
+  OP *op;
+  
+  for (j = 0; j < OP_results(cur_op[0]); j ++) {
+    if (BS_MemberP(TNs_to_be_unified,j)) {
+      for (i = 0; i < op_nb; i++) {
+	tn = OP_result(cur_op[i], j);
+	Is_True(TN_is_register(tn) && TN_is_local_reg(tn),
+		("Try to unify TNs that can not be unified: TN%d",
+		 TN_number(tn)));
+      }
+    }
+  }
+  
+  for (j = 0; j < OP_results(cur_op[0]); j ++) {
+    if (BS_MemberP(TNs_to_be_unified,j)) {
+      gtn = OP_result(cur_op[0], j);
+      /* Transform local register tn into global register */
+      Set_TN_is_global_reg(gtn);
+
+      /* Transform equivalent tns in other equivalent operations into tn */
+      for (i = 1; i < op_nb; i++) {
+	tn = OP_result(cur_op[i], j);
+	Set_OP_result(cur_op[i], j, gtn);
+	op = OP_next(cur_op[i]);
+	while (op) {
+	  for (k = 0; k < OP_opnds(op); k ++) {
+	    if (OP_opnd(op, k) == tn) {
+	      Set_OP_opnd(op, k, gtn);
+	    }
+	  }
+	  for (k = 0; k < OP_results(op); k ++) {
+	    if (OP_result(op, k) == tn) {
+	      Set_OP_result(op, k, gtn);
+	    }
+	  }
+	  op = OP_next(op);
+	}
+      }
+    }
+  }
+
+}
+
+static BOOL
 OP_no_move_before_regalloc(OP *op, BB *b) {
 
   int i;
@@ -4728,7 +4959,7 @@ OP_no_move_after_regalloc(OP *op, BB *pb, BB *lb) {
 
 
 static BOOL
-Hoist_Ops_in_Succs(BB *b, BOOL before_regalloc) {
+Hoist_Ops_in_Succs(BB *b) {
 
 #define MAX_SUCC_BBS 10
 
@@ -4781,6 +5012,8 @@ Hoist_Ops_in_Succs(BB *b, BOOL before_regalloc) {
   while (cur_op[0]) {
     int i = 0;
     common_op = cur_op[0];
+    BS *TNs_to_be_unified = BS_Create_Empty(OP_results(cur_op[0]),
+					    &cflow_pool);
 
     FOR_ALL_BB_SUCCS (b, bblst) {
       BB *pbb = BBLIST_item(bblst);
@@ -4802,7 +5035,8 @@ Hoist_Ops_in_Succs(BB *b, BOOL before_regalloc) {
 	if (CFLOW_Trace_Hoist_Ops) CG_DEP_Trace_Graph (pbb);
 	
 	while (cur_op[i]) {
-	  if (OP_equiv(cur_op[0], cur_op[i])) {
+	  if (OP_equiv_for_hoisting(cur_op[0], cur_op[i],
+				    TNs_to_be_unified)) {
 	    find = TRUE;
 	    break;
 	  }
@@ -4840,6 +5074,9 @@ Hoist_Ops_in_Succs(BB *b, BOOL before_regalloc) {
       if (CFLOW_Trace_Hoist_Ops) {
 	#pragma mips_frequency_hint NEVER
 	fprintf(TFile, "Operation %s removed from BBs", TOP_Name(OP_code(common_op)));
+      }
+      if (!BS_EmptyP(TNs_to_be_unified)) {
+	Unify_TNs_for_Hoisting(cur_op, succ_count, TNs_to_be_unified);
       }
       OP *new_common = Dup_OP(common_op);
       if (OP_memory(common_op)) Copy_WN_For_Memory_OP(new_common, common_op);
@@ -4922,7 +5159,7 @@ Hoist_Ops_in_Succs(BB *b, BOOL before_regalloc) {
  * ====================================================================
  */
 static BOOL
-Hoist_Common_Ops (BOOL before_regalloc)
+Hoist_Common_Ops (void)
 {
   BB *b;
   BB *lastbb;
@@ -4949,13 +5186,36 @@ Hoist_Common_Ops (BOOL before_regalloc)
 	}
       }
       if (stop == FALSE) {
-	if (Hoist_Ops_in_Succs(b, before_regalloc))
+	if (Hoist_Ops_in_Succs(b))
 	  hoisted = TRUE;
       }
     }
   }
 
   return hoisted;
+}
+
+
+/* ====================================================================
+ *
+ * Memory initialization
+ *
+ * ====================================================================
+ */
+static void CFLOW_Init_Memory(void)
+{
+  MEM_POOL_Initialize(&cflow_pool,"cflow_mem_pool",FALSE);
+}
+
+/* ====================================================================
+ *
+ * Memory clean-up
+ *
+ * ====================================================================
+ */
+static void CFLOW_Free_Memory(void)
+{
+  MEM_POOL_Delete(&cflow_pool);
 }
 
 
@@ -7731,7 +7991,7 @@ Clone_Blocks ( BOOL in_cgprep )
  */
 void
 #ifdef TARG_ST
-CFLOW_Optimize(INT32 flags, const char *phase_name, BOOL before_regalloc)
+CFLOW_Optimize(INT32 flags, const char *phase_name, BOOL before_regalloc_param)
 #else
 CFLOW_Optimize(INT32 flags, const char *phase_name)
 #endif
@@ -7745,6 +8005,7 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
   BOOL flow_change = FALSE;
 
   if (!CFLOW_Enable) return;
+  before_regalloc = before_regalloc_param;
 
   /* Setup error phase.
    */
@@ -7837,11 +8098,7 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
       fprintf(TFile, "\n%s CFLOW_Optimize: optimizing branches\n%s",
 		     DBar, DBar);
     }
-#ifdef TARG_STxP70
-    change = Optimize_Branches(before_regalloc);
-#else
     change = Optimize_Branches();
-#endif
     if (CFLOW_Trace_Branch) {
       #pragma mips_frequency_hint NEVER
       if (change) {
@@ -7961,6 +8218,7 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
   }
 
 #ifdef TARG_ST
+  CFLOW_Init_Memory();
   if (current_flags & CFLOW_MERGE_OPS) {
     if (CFLOW_Trace_Merge_Ops) {
       #pragma mips_frequency_hint NEVER
@@ -7968,6 +8226,9 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
 		     DBar, DBar);
     }
     change = Merge_Common_Ops();
+    if (change) {
+      GRA_LIVE_Recalc_Liveness(NULL);
+    }
     if (CFLOW_Trace_Merge_Ops) {
       #pragma mips_frequency_hint NEVER
       if (change) {
@@ -7986,7 +8247,7 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
       fprintf(TFile, "\n%s CFLOW_Optimize: hoist common operations\n%s",
 		     DBar, DBar);
     }
-    change = Hoist_Common_Ops(before_regalloc);
+    change = Hoist_Common_Ops();
     if (change) {
       GRA_LIVE_Recalc_Liveness(NULL);
     }
@@ -8000,7 +8261,8 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
     }
     flow_change |= change;
   }
-
+  CFLOW_Free_Memory();
+  
   if (current_flags & CFLOW_MERGE_EMPTY) {
     if (CFLOW_Trace_Merge) {
       #pragma mips_frequency_hint NEVER

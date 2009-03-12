@@ -3436,7 +3436,26 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
   // now associate with each BB the predicate tn
   Associate_Mem_Predicates(cond_tn, false_br, t_set, ft_set, &ops);
   // add computation of !test
-  BB_Insert_Ops_Before(head, br_op, &ops);
+  OP *opb = br_op;
+  if (OPS_length(&ops)>0) {
+    BOOL stop = FALSE;
+    OP *tmp_op;
+    FOR_ALL_BB_OPs(head,tmp_op) {
+      for (int i = 0; i < OP_opnds(tmp_op); i++) {
+	if (TN_is_register(OP_opnd(tmp_op, i)) &&
+	    TN_is_register(OP_result(OPS_last(&ops),0)) &&
+	    TNs_Are_Equivalent (OP_opnd(tmp_op, i), 
+				OP_result(OPS_last(&ops),0))) {
+	  opb =tmp_op;
+	  stop = TRUE;
+	  break;
+	}
+      }
+      if (stop)
+	break;
+    }
+  }
+  BB_Insert_Ops_Before(head, opb, &ops);
 
   // can remove the branch op
   BB_Remove_Op(head, br_op);

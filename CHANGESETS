@@ -1,6 +1,33 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Mar 12 15:31:51 CET 2009
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/bv11/dev-cflow-TNunification-new
+
+Description:
+------------
+	* Branch unifying TNs, for more opportunities to hoist / merge instructions.  
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_select.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/op.h
+	M      osprey/lai/cgtarget.h
+	M      osprey/targinfo/arm/cg/targ_op.cxx
+	M      osprey/targinfo/arm/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_op.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Mar 12 08:49:14 CET 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

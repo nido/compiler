@@ -648,6 +648,10 @@ extern void CGTARG_Generate_Branch_Cloop(OP *op, TN *unrolled_trip_count,
                                          OPS *prolog_ops, OPS *body_ops);
 #endif
 
+#ifdef TARG_ST
+extern BOOL CGTARG_Can_Negate_Branch(OP *br);
+#endif
+
 /* ====================================================================
  *    Properties:
  * ====================================================================

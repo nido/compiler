@@ -1331,6 +1331,7 @@ extern BOOL CGTARG_Is_Long_Latency (TOP *opcode);
 extern BOOL OP_is_ext_op(OP *op);
 extern BOOL OP_Is_Barrier(OP *op);
 extern BOOL OP_Is_Counted_Loop(OP* op);
+extern BOOL OP_Is_Copy_Immediate_Into_Register(OP *op);
 extern BOOL OP_Has_Latency(OP *op);
 extern BOOL OP_Is_Speculative_Load(OP* memop);
 extern BOOL OP_Is_Advanced_Load(OP* memop);
