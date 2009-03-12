@@ -5267,9 +5267,12 @@ Analyze_Spilling_Live_Range (
   // [SC] Do not consider spilling a live range referenced in a
   // singleton subclass operand.  This is because we assert (in cgemit.cxx,
   // Verify_Operand()), that all such operands use dedicated TNs.
-  if (LR_singleton_ref(spill_lr)) {
-    return;
-  }
+  // [TTh] Conservatively extended the check to aliases
+  FOR_LR_AND_ALL_ALIASES(spill_lr, alias_lr) {
+    if (LR_singleton_ref(alias_lr)) {
+      return;
+    }
+  } FOR_LR_AND_ALL_ALIASES_END(spill_lr, alias_lr);
 #endif
 
   //

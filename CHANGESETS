@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Mar 12 08:49:14 CET 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-61558
+
+Description:
+------------
+	* [trunk] Fix for bug #61558: [LRA][IPA] Assertion failure in servo2 in O3FpxMode16IPA.
+	Deliver fixes/codex-61558 rev #20945 with authorization branch #61626
+
+	-> LRA: Disallow spilling of GTN live-ranges aliased with dedicated registers
+
+
+Modified Files:
+---------------
+	M      osprey/lai/lra.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Mar 11 19:40:47 CET 2009
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
