@@ -1609,6 +1609,13 @@ Can_OP_Move(OP *cur_op, BB *src_bb, BB *tgt_bb, BB_SET **pred_bbs,
 	 TN *result = OP_result(cur_op,i);
 	 if (CG_Skip_GCM && TN_number(result) == GCM_Result_TN)
 	   return FALSE;
+
+#ifdef TARG_ST
+	 // TDR: If we have an exit block, we must consider parameters
+	 if (BB_exit(cur_bb) && TN_is_dedicated(result)) 
+     	 return FALSE; 
+#endif 
+	 
 	 FOR_ALL_BB_SUCCS(cur_bb, succ_list) {
 	   BB *succ_bb = BBLIST_item(succ_list);
 	   if (!BB_SET_MemberP(*pred_bbs, succ_bb)) {

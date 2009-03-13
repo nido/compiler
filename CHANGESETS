@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Mar 13 09:06:19 CET 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-fix-for-50881
+
+Description:
+------------
+	* [trunk] Deliver dt25/dev-fix-for-50881 rev #20963 with authorization branch #63217
+
+
+Modified Files:
+---------------
+	M      osprey/lai/gcm.cxx
+	M      osprey/lai/cflow.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Mar 12 15:31:51 CET 2009
 	Author:    bv11
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
