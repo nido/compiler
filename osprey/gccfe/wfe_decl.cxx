@@ -80,6 +80,7 @@ extern "C" {
 #include "wfe_pragmas.h"
 #include "wfe_loader.h" //[TB] For Map_Reg_To_Preg
 #include "ext_info.h"
+#include "loader.h"
 #endif
 // #define WFE_DEBUG
 
@@ -114,10 +115,6 @@ static int __dtors = 0;
 // function for use by code common to gccfe and g++fe
 // (in particular, the builtins expansion).
 tree Current_Function_Decl(void) {return current_function_decl;}
-
-// [TTh] Remember the default type equivalence status that might
-// be temporarily overridden through pragma on a function scope
-static int default_type_equiv_status;
 #endif
 
 extern "C" tree lookup_name (tree);
@@ -573,19 +570,6 @@ WFE_Start_Function (tree fndecl)
     {
       const char *fname;
       fname = (DECL_NAME (fndecl)) ? IDENTIFIER_POINTER (DECL_NAME (fndecl)) : NULL;
-      default_type_equiv_status = EXTENSION_Get_Equivalent_Mtype_Status();
-      if (fname) {
-	if (default_type_equiv_status &&
-	    Has_Function_Pragma(fname, WN_PRAGMA_DISABLE_EXTGEN)) {
-	  // Disable equivalent type for current function
-	  EXTENSION_Set_Equivalent_Mtype_Status(0);
-	}
-	else if (!default_type_equiv_status &&
-		 Has_Function_Pragma(fname, WN_PRAGMA_FORCE_EXTGEN)) {
-	  // Enable equivalent type for current function
-	  EXTENSION_Set_Equivalent_Mtype_Status(1);
-	}
-      }
       pragma_blk = Get_Function_Pragma_Block(fname);
     }
 #endif
@@ -594,6 +578,9 @@ WFE_Start_Function (tree fndecl)
     body = WN_CreateBlock ( );
 #ifdef TARG_ST
     wn = WN_CreateEntry ( num_args, func_st, body, pragma_blk, NULL );
+
+    // PU specific intialization (native codegen support, ...)
+    Initialize_Extension_Loader_PU(wn);
 #else
     wn = WN_CreateEntry ( num_args, func_st, body, NULL, NULL );
 #endif
@@ -811,9 +798,6 @@ WFE_Finish_Function (void)
     // [CL] clean function scope inline pragmas
     Clear_Callsite_Pragma_List(DISCARD);
     Clear_Function_Pragma_List(WARN);
-
-    // [TTh] Enable equivalent type for next function
-    EXTENSION_Set_Equivalent_Mtype_Status(default_type_equiv_status);
 #endif
 }
 

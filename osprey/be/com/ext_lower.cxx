@@ -841,21 +841,26 @@ Create_Intrinsic_from_OP(INTRINSIC intrnidx, int nbkids, WN *kids[],
 static INTRINSIC
 Find_Best_Intrinsic(INTRINSIC_Vector_t* itrn_indexes) {
   int i;
-  INTRINSIC itrnidx;
+  INTRINSIC itrnidx = INTRINSIC_INVALID;
   INT cost = INT_MAX;
   
   /* select the best mapping for opcode */
   for (i=0; i<itrn_indexes->size(); i++) {
     INT new_cost;
     INTRINSIC new_itrnidx = (*itrn_indexes)[i];
-    /* operator mapped on core */
-    if ( new_itrnidx == OPCODE_MAPPED_ON_CORE) {
+    if (new_itrnidx == OPCODE_MAPPED_ON_CORE) {
+      /* operator mapped on core */
       return INTRINSIC_INVALID;
     }
-    if (! EXTENSION_Is_Meta_INTRINSIC(new_itrnidx)) {
+    else if (! EXTENSION_Is_ExtGen_Enabled_For_Intrinsic(new_itrnidx)) {
+      continue;
+    }
+    else if (! EXTENSION_Is_Meta_INTRINSIC(new_itrnidx)) {
       /* for non meta intrinsic, cost is set to 0 */
-      itrnidx = new_itrnidx;
-      cost = 0;
+      if (cost > 0) {
+	itrnidx = new_itrnidx;
+	cost = 0;
+      }
     } else {
       /* select better meta instruction according to size or cycles
          criterium */
@@ -871,8 +876,9 @@ Find_Best_Intrinsic(INTRINSIC_Vector_t* itrn_indexes) {
       }
     }
   }
-  
-  if (cost > Meta_Instruction_Threshold) {
+
+  if ((itrnidx == INTRINSIC_INVALID) ||
+      (cost > Meta_Instruction_Threshold)) {
     return INTRINSIC_INVALID;
   }
   
@@ -1166,24 +1172,6 @@ EXT_LOWER_stmt_wn_gen(WN *tree, WN* (*expr_fct)(WN *tree, WN** new_stmts,
   return tree;
 }
 
-/**
- * Return true if a pragma with the specified id is attached to 
- * to the function WN. Return false otherwise.
- */
-static bool
-Is_Function_Pragma_Defined(WN *func, WN_PRAGMA_ID id) {
-  if (WN_func_pragmas(func)) {
-    WN *wn;
-    for (wn = WN_first(WN_func_pragmas(func)); wn; wn = WN_next(wn)) {
-      if (((WN_opcode(wn) == OPC_PRAGMA) || (WN_opcode(wn) == OPC_XPRAGMA))
-	  && ((WN_PRAGMA_ID)WN_pragma(wn) == id)) {
-	return true;
-      }
-    }
-  }
-  return false;
-}
-
 /* ====================================================================
  * Top level routine for lowering OPERATORs not supported in the target
  * ISA to INTRINSIC_OPs corresponding to target's runtime support.
@@ -1205,19 +1193,14 @@ EXT_lower_wn(WN *tree, BOOL last_pass)
   if (Block_Extension_Native_Support_Bits_Set) {
     local_ext_gen_mask &= ~Block_Extension_Native_Support_Bits;
   }
-  
-
-  if (! local_ext_gen_mask) {
-    if (Is_Function_Pragma_Defined(tree, WN_PRAGMA_FORCE_EXTGEN)) {
-      local_ext_gen_mask = EXTENSION_NATIVE_SUPPORT_DEFAULT;
-    }
-  }
-  else if (Is_Function_Pragma_Defined(tree, WN_PRAGMA_DISABLE_EXTGEN)) {
-    local_ext_gen_mask = 0;
-  }
 
   if (! local_ext_gen_mask) {
     // native support deactivated.
+    return tree;
+  }
+
+  if (!EXTENSION_Has_ExtGen_Enabled()) {
+    // native support disabled for all extensions
     return tree;
   }
 

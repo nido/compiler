@@ -341,6 +341,55 @@ main (int argc, char *argv[])
    		treat_one_arg(&i,newargv);
       }
    }
+   
+   /*
+    * Final handling of -Mnoextgen option: check that specified extensions (if any)
+    * are known and pass the internal option to the command line
+    */
+   {
+       const char option_basename[] = "-TENV:disabled_native_extensions=";
+       char newoption[1024] = "";
+       extern int MnoextgenSeen;
+       extern string MnoextgenTab[];
+       extern int MnoextgenTabSize;
+       extern string ExtensionNameTab[];
+       extern int ExtensionNameTabSize;
+       int i, j;
+
+       if (MnoextgenSeen) {
+	   if (MnoextgenTabSize==0) {
+	       // No extension name was provided to -Mnoextgen, meaning that
+	       // native codegen support must be fully disabled
+	       strcpy(newoption, option_basename);
+	   }
+	   else {
+	       // For each extension name specified to -Mnoextgen, check if it
+	       // was also specified to -Mextension and if so, add it to 
+	       // internal compiler option
+	       for (i=0; i<MnoextgenTabSize; i++) {
+		   for (j=0; j<ExtensionNameTabSize; j++) {
+		       if (strcmp(MnoextgenTab[i], ExtensionNameTab[j])==0) {
+			   if (newoption[0] == 0) {
+			       strcpy(newoption, option_basename);
+			   } else {
+			       strcat(newoption, ",");
+			   }
+			   strcat(newoption, MnoextgenTab[i]);
+			   break;
+		       }
+		   }
+		   if (j==ExtensionNameTabSize) {
+		       warning("Unknown extension '%s' specified to option -Mnoextgen. Ignored.", MnoextgenTab[i]);
+		   }
+	       }
+	   }
+	   if (newoption[0] != 0) {
+	       char *newargv[] = { newoption };
+	       i = 0;
+	       treat_one_arg(&i, newargv);
+	   }
+       }
+   }
 
    /* At this point, add -Wy,-T,<link_scripts>.reloc in case of
     * binopt activation

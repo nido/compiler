@@ -1117,6 +1117,8 @@ BE_EXPORTED extern INT32 Activate_Extension_Native_Support_Bits;
 BE_EXPORTED extern BOOL Activate_Extension_Native_Support_Bits_Set;
 BE_EXPORTED extern INT32 Block_Extension_Native_Support_Bits;
 BE_EXPORTED extern BOOL Block_Extension_Native_Support_Bits_Set;
+BE_EXPORTED extern char *Disabled_Native_Extensions;
+BE_EXPORTED extern BOOL Disabled_Native_Extensions_Set;
 
 
 BE_EXPORTED extern BOOL Meta_Instruction_Threshold_Set;

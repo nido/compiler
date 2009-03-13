@@ -63,6 +63,10 @@ extern "C" {
 
 #include "wn_pragmas.h"
 
+#ifdef TARG_ST
+#include "ext_info.h"
+#endif
+
 // #define WFE_DEBUG
 
 //
@@ -637,6 +641,20 @@ void WFE_Expand_Pragma(tree stmt)
       WFE_Pragma_Error(wfe_pragma);
     break;
 
+  case WFE_PRAGMA_FORCE_SPECIFIC_EXTGEN:
+  case WFE_PRAGMA_DISABLE_SPECIFIC_EXTGEN:
+    // Those pragmas are similar to following ones, except that they take
+    // an extension name as first argument
+    {
+      const char *extname = IDENTIFIER_POINTER(TREE_VALUE(pragma_args));
+      if (!EXTENSION_Is_Defined(extname)) {
+	warning ("#pragma %s specifies an undefined extension %s. Ignore it.", pragma_name, extname);
+	return;
+      }
+      args[0] = EXTENSION_Get_ExtensionId_From_ExtensionName(extname);
+      pragma_args = TREE_CHAIN(pragma_args);
+    }
+    // Fall-through
   case WFE_PRAGMA_FORCE_EXTGEN:
   case WFE_PRAGMA_DISABLE_EXTGEN:
     // Those pragmas take a list of function identifiers
@@ -646,7 +664,7 @@ void WFE_Expand_Pragma(tree stmt)
       const char *name = IDENTIFIER_POINTER(TREE_VALUE(arg));
       pwn = WN_CreatePragma(wfe_pragma_wn_id(wfe_pragma),
 			    arg_st != NULL ? ST_st_idx(arg_st): (ST_IDX) NULL,
-			    NULL, NULL);
+			    args[0], args[1]);
       Associate_Pragma_To_Function_Name(pwn, xstrdup(name));
     }
     return;

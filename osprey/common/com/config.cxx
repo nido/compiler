@@ -463,6 +463,8 @@ char *Extension_Names = NULL;
 BOOL Extension_Is_Present = FALSE;
 INT32 Enable_Extension_Native_Support = EXTENSION_NATIVE_SUPPORT_DEFAULT;
 BOOL Enable_Extension_Native_Support_Set = FALSE;
+char *Disabled_Native_Extensions = NULL;
+BOOL Disabled_Native_Extensions_Set = FALSE;
 
 // extra options enabling to activate/block the
 // Enable_Extension_Native_Support mask bit per bit.
@@ -750,6 +752,9 @@ static OPTION_DESC Options_TENV[] = {
     0, 0, 0,    &Meta_Instruction_By_Size,
     &Meta_Instruction_By_Size_Set,
     "Selects meta instruction by size" },
+  { OVK_NAME,   OV_INTERNAL,    FALSE, "disabled_native_extensions", NULL,
+    0, 0, 0,    &Disabled_Native_Extensions, &Disabled_Native_Extensions_Set,
+    "List of extension names with disabled native support" },
 #endif
 
   { OVK_COUNT }		/* List terminator -- must be last */

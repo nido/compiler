@@ -90,6 +90,7 @@ extern "C" {
 //TB : for WFE_Loader_Initialize_Register
 #include "wfe_loader.h"
 #include "ext_info.h"
+#include "loader.h"
 #endif
 int WFE_Keep_Zero_Length_Structs = FALSE;
 
@@ -581,13 +582,10 @@ WFE_File_Init (INT argc, char **argv)
    */
   GCCTARG_Mark_Disabled_Gcc_Reg();
 
-  /* [TTh] In FE, we need to disable equivalent types here because 
-   * their initializations have been done prior to the setting of
-   * Enable_Extension_Native_Support flag (Prepare_Source()
-   */
-  if (!Enable_Extension_Native_Support) {
-    EXTENSION_Set_Equivalent_Mtype_Status(0);
-  }
+  /* [TTh] Some extension specific initialization, like the disabling
+   * of equivalent types, need to be done after Prepare_Source(), that
+   * will parse the TENV options */
+  Initialize_Extension_Support();
 #endif
 
   Restore_Cmd_Line_Ctrls();

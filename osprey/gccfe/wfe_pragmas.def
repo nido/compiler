@@ -118,3 +118,7 @@ DECL_WFE_PRAGMA(WFE_PRAGMA_LOOPPACK, "looppack", 1, WN_PRAGMA_LOOPPACK, 1, "(I)"
 DECL_WFE_PRAGMA(WFE_PRAGMA_FORCE_EXTGEN, "force_extgen", 0, WN_PRAGMA_FORCE_EXTGEN, 1, "(A*)", "pragma force_extgen (ident,...)")
 
 DECL_WFE_PRAGMA(WFE_PRAGMA_DISABLE_EXTGEN, "disable_extgen", 0, WN_PRAGMA_DISABLE_EXTGEN, 1, "(A*)", "pragma disable_extgen (ident,...)")
+
+DECL_WFE_PRAGMA(WFE_PRAGMA_FORCE_SPECIFIC_EXTGEN, "force_specific_extgen", 0, WN_PRAGMA_FORCE_EXTGEN, 2, "(A*)", "pragma force_specific_extgen (extname,ident,...)")
+
+DECL_WFE_PRAGMA(WFE_PRAGMA_DISABLE_SPECIFIC_EXTGEN, "disable_specific_extgen", 0, WN_PRAGMA_DISABLE_EXTGEN, 2, "(A*)", "pragma disable_specific_extgen (extname,ident,...)")

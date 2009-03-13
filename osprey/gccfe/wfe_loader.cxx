@@ -69,7 +69,6 @@ extern "C" {
 #include "targ_isa_registers.h"
 #include "register_preg.h"
 #endif
-//TB: put internal data type def in common with the lai loader
 #ifdef TARGET_DUMP_INFO
 static FILE *dumpinfofile;
 #endif
@@ -79,7 +78,7 @@ int *Map_Reg_To_Preg;
 int Map_Reg_To_Preg_Size;
 
 #define GCCFE_EXPORTED
-// While the loader has not beem initialized, set the counter to the
+// While the loader has not been initialized, set the counter to the
 // max value.  This for the GCC initializaton of opttab_table, which
 // occurs before the loader initialization.
 machine_mode_t COUNT_MACHINE_MODE = MAX_LIMIT_MACHINE_MODE;

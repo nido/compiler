@@ -69,22 +69,20 @@ extern "C" { extern const ISA_EXT_Interface_t* get_ISA_extension_instance();};
 #include "ext_info.h"
 #include "config_TARG.h"
 
-/* Include local helpers. */
-#include "attribute_map_template.cxx"
-
 #if defined(__MINGW32__) || defined(__CYGWIN__)
 #define SO_EXT ".dll"
 #else
 #define SO_EXT ".so"
 #endif
 
-extern "C" {
-#include "W_dlfcn.h"		    /* for sgidladd(), dlerror() */
-};
 #if defined(BACK_END) 
 #include "targ_isa_registers.h"
 #include "targ_isa_subset.h"
 #endif
+
+// Extension rank is used to access a given extension in internal 
+// array such as extension_tab and extension_extra_info_tab.
+#define INVALID_EXTENSION_RANK (-1)
 
 // Variables common to gcc and lai loader
 // --------------------------------------
@@ -145,7 +143,59 @@ typedef struct {
   INTRINSIC from_u32_intrn; // Unsigned 32bits to ext register
 } equiv_type_t;
 static equiv_type_t equiv_type_tab[MTYPE_MAX_LIMIT+1];
-static INT equiv_type_enabled = 1;
+
+// Information about native codegen per extension
+typedef struct {
+  BOOL default_extgen_enabled;  // default status
+  BOOL extgen_enabled;          // status for current PU
+  BOOL equiv_type_enabled;      // status for current PU
+} Extension_Extra_Info_t;
+static Extension_Extra_Info_t *extension_extra_info_tab = NULL;
+
+
+/*
+ * Return TRUE if extension with name <extname> is known by the compiler.
+ */
+BOOL EXTENSION_Is_Defined(const char *extname) {
+  int ext;
+  for (ext=0; ext<extension_count; ext++) {
+    if (strcmp(extension_tab[ext].handler->extname, extname)==0) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/*
+ * Return a unique id based on extension name
+ */
+INT32 EXTENSION_Get_ExtensionId_From_ExtensionName(const char *extname) {
+  INT32 id = 0;
+  const char *p = extname;
+  int count = 0;
+  while (*p != 0) {
+    id = (id << 8) + *p;
+    p++; count++;
+  }
+  if (count < 1 || count > 4) {
+    DevWarn("Extension name must contain between 1 and 4 characters");
+    id = INVALID_EXTENSION_ID;
+  }
+  return id;
+}
+
+/*
+ * Return the rank used by extension with id <extid> in internal tables
+ */
+static int EXTENSION_Get_ExtensionRank_From_ExtensionId(INT32 extid) {
+  int i;
+  for (i=0; i<extension_count; i++) {
+    if (extension_tab[i].extension_id == extid) {
+      return i;
+    }
+  }
+  return INVALID_EXTENSION_RANK;
+}
 
 static void Add_Mtype(machine_mode_t mmode, const char *name, 
 		      enum mode_class mclass, unsigned short mbitsize, 
@@ -509,7 +559,7 @@ void Init_Intrinsics(int nb_builtins_to_add)
  * Load extension dlls and return a pointer to the extension table
  * and the count of loaded extensions
  */
-bool Load_Extension_dlls( BOOL verbose ) {
+bool Load_Extension_dlls( bool verbose ) {
 
   int i;
   int nb_ext_mtypes;
@@ -521,13 +571,15 @@ bool Load_Extension_dlls( BOOL verbose ) {
   char *ext_fullpath_ptr;
   char *next_ext_fullpath_ptr;
 
-  if (!Load_Extension_dll_handlers(verbose)) { return FALSE; }
+  if (!Load_Extension_dll_handlers(verbose)) { return false; }
 
   // make table of Extension_dll_t
   extension_count = Get_Extension_dll_handler_count( );
-  if (extension_count==0) { return TRUE; }
+  if (extension_count==0) { return true; }
   extension_tab = (Extension_dll_t*)calloc(sizeof(Extension_dll_t),extension_count);
   FmtAssert((extension_tab!=NULL), ("Unable to allocate memory\n"));
+
+  extension_extra_info_tab = new Extension_Extra_Info_t[extension_count];
 
   // Load extension dlls, compute base offsets for each element
   // (machine modes, mtypes, intrinsics and builtins)  of  each
@@ -560,6 +612,12 @@ bool Load_Extension_dlls( BOOL verbose ) {
       sprintf(err_msg, "Incompatible HL API revision: lib=%d, compiler=%d.\n", magic, MAGIC_NUMBER_EXT_API);
       RaiseErrorIncompatibleLibrary(extension_tab[i].handler->dllname, err_msg);
     }
+
+    extension_tab[i].extension_id = EXTENSION_Get_ExtensionId_From_ExtensionName(extension_tab[i].handler->extname);
+    if (verbose) {
+      fprintf(TFile, "Generated identifier from name '%s' -> %d\n",
+	      extension_tab[i].handler->dllname, extension_tab[i].extension_id);
+    }
   
     extension_tab[i].base_mtypes     = base_mtypes;
     extension_tab[i].base_mmodes     = base_mmodes;
@@ -571,10 +629,96 @@ bool Load_Extension_dlls( BOOL verbose ) {
     base_mmodes     += nb_ext_mtypes;
     base_builtins   += nb_ext_intrinsics;
     base_intrinsics += nb_ext_intrinsics;
-  }
 
+    extension_extra_info_tab[i].default_extgen_enabled = TRUE;
+    extension_extra_info_tab[i].extgen_enabled         = TRUE;
+    extension_extra_info_tab[i].equiv_type_enabled     = TRUE;
+  }
+  return true;
 }
 
+/*
+ * Initialize PU specific options
+ */
+void Initialize_Extension_Loader_PU(WN *pu) {
+  int ext;
+
+  /*
+   * Enable/disable extension type equivalence and native codegen support on a function basis,
+   * based on both Enable_Extension_Native_Support value and pragma value
+   * Note: currently type equivalence and native support are set accordingly but
+   *       this might evolve in future development.
+   */
+  for (ext=0; ext < extension_count; ext++) {
+    extension_extra_info_tab[ext].extgen_enabled = extension_extra_info_tab[ext].default_extgen_enabled;
+    extension_extra_info_tab[ext].equiv_type_enabled = extension_extra_info_tab[ext].default_extgen_enabled;
+  }
+  if (WN_operator(pu) == OPR_FUNC_ENTRY && WN_func_pragmas(pu)) {
+    WN *wn;
+    for (wn = WN_first(WN_func_pragmas(pu)); wn; wn = WN_next(wn)) {
+      if ((WN_opcode(wn) == OPC_PRAGMA) || (WN_opcode(wn) == OPC_XPRAGMA)) {
+
+	WN_PRAGMA_ID pid = (WN_PRAGMA_ID)WN_pragma(wn);
+	if (pid == WN_PRAGMA_DISABLE_EXTGEN || pid == WN_PRAGMA_FORCE_EXTGEN) {
+	  BOOL enable = (pid == WN_PRAGMA_FORCE_EXTGEN)?TRUE:FALSE;
+
+	  if (WN_pragma_arg1(wn) != 0) {
+	    // Extension codegen disabled for a single extension
+	    INT32 extid = WN_pragma_arg1(wn);
+	    int extrank = EXTENSION_Get_ExtensionRank_From_ExtensionId(extid);
+	    if (extrank == INVALID_EXTENSION_RANK) {
+	      DevWarn("WARNING: unknown extension id '%d' specified in pragma", extid);
+	    }
+	    else {
+	      extension_extra_info_tab[extrank].extgen_enabled = enable;
+	      extension_extra_info_tab[extrank].equiv_type_enabled = enable;
+	    }
+	  }
+	  else {
+	    for (ext=0; ext<extension_count; ext++) {
+	      extension_extra_info_tab[ext].extgen_enabled = enable;
+	      extension_extra_info_tab[ext].equiv_type_enabled = enable;
+	    }
+	  }
+	}
+      }
+    }
+  }
+}
+
+/*
+ * Extension specific Initialization
+ */
+void Initialize_Extension_Support() {
+  // Determine list of extensions with disabled native support.
+  // The list is retrieved from command line option.
+  if (Disabled_Native_Extensions_Set) {
+    if (Disabled_Native_Extensions && Disabled_Native_Extensions[0] != 0) {
+      char *extname_list = TYPE_MEM_POOL_ALLOC_N(char, Malloc_Mem_Pool, strlen(Disabled_Native_Extensions)+1);
+      strcpy(extname_list, Disabled_Native_Extensions);
+      char *extname = strtok(extname_list, ",");
+      do {
+	INT32 extid = EXTENSION_Get_ExtensionId_From_ExtensionName(extname);
+	FmtAssert((extid!=INVALID_EXTENSION_ID), ("Cannot compute extension id from extension name '%s'", extname));
+	int rank = EXTENSION_Get_ExtensionRank_From_ExtensionId(extid);
+	if (rank == INVALID_EXTENSION_RANK) {
+	  DevWarn("WARNING: unknown extension '%s' specified in pragma", extname);
+	}
+	else {
+	  extension_extra_info_tab[rank].default_extgen_enabled = FALSE;
+	}
+	extname = strtok(NULL, ",");
+      } while (extname);
+    }
+    else {
+      // Option present but empty list of extension:
+      // So by default, disable extgen for all extensions
+      for (int i=0; i<extension_count; i++) {
+	  extension_extra_info_tab[i].default_extgen_enabled = FALSE;
+      }
+    }
+  }
+}
 
 #if defined(BACK_END) || defined(IR_TOOLS)
 /*
@@ -634,6 +778,8 @@ Initialize_Extension_Loader ()
     else if (Intrinsic_from_OPCODE.empty()) {
       Enable_Extension_Native_Support&= ~EXTENSION_NATIVE_CODEGEN;
     }
+
+    Initialize_Extension_Support();
   }
   else {  // !Extension_Is_Present
     Init_Mtypes(0);
@@ -670,35 +816,6 @@ Initialize_Extension_Loader_Register () {
       delete isa_ext_access;
     }
   }
-}
-
-/*
- * Initialize PU specific options
- */
-void Initialize_Extension_Loader_PU(WN *pu) {
-  /*
-   * Enable/disable extension type equivalences on a function basis,
-   * based on both Enable_Extension_Native_Support value and pragma
-   * value
-   */
-  INT type_equiv_enabled = (Enable_Extension_Native_Support != 0);
-  if (WN_operator(pu) == OPR_FUNC_ENTRY && WN_func_pragmas(pu)) {
-    WN_PRAGMA_ID invert_id;
-    if (type_equiv_enabled) {
-      invert_id = WN_PRAGMA_DISABLE_EXTGEN;
-    } else {
-      invert_id = WN_PRAGMA_FORCE_EXTGEN;
-    }
-    WN *wn;
-    for (wn = WN_first(WN_func_pragmas(pu)); wn; wn = WN_next(wn)) {
-      if (((WN_opcode(wn) == OPC_PRAGMA) || (WN_opcode(wn) == OPC_XPRAGMA))
-	  && ((WN_PRAGMA_ID)WN_pragma(wn) == invert_id)) {
-	type_equiv_enabled = !type_equiv_enabled;
-	break;
-      }
-    }
-  }
-  EXTENSION_Set_Equivalent_Mtype_Status(type_equiv_enabled);
 }
 #endif
 #ifdef BACK_END
@@ -784,27 +901,89 @@ machine_mode_t Mtype_To_MachineMode(TYPE_ID mtype) {
   FmtAssert(0, ("Mtype_To_MachineMode() does not support standard mtype yet"));
   return 0;
 }
-				     
+
+/*
+ * Return the rank of the extension that contains mtype <ty>.
+ * Return INVALID_EXTENSION_RANK if not found.
+ */
+static int EXTENSION_Get_ExtensionRank_From_Mtype(TYPE_ID ty) {
+  if (MTYPE_is_dynamic(ty)) {
+    int ext=0;
+    while (ext < extension_count-1 && ty >= extension_tab[ext+1].base_mtypes) {
+      ext++;
+    }
+    return (ext);
+  }
+  return (INVALID_EXTENSION_RANK);
+}
+
+/*
+ * Return the rank of the extension that contains intrinsic <intrn>.
+ * Return INVALID_EXTENSION_RANK if not found.
+ */
+static int EXTENSION_Get_ExtensionRank_From_Intrinsic(INTRINSIC intrn) {
+  int ext=0;
+  if (EXTENSION_Is_Extension_INTRINSIC(intrn)) {
+    while (ext < extension_count-1 && intrn >= extension_tab[ext+1].base_intrinsics) {
+      ext++;
+    }
+    return (ext);
+  }
+  return (INVALID_EXTENSION_RANK);
+}
+
+/*
+ * Return TRUE if native codegen is enabled for at least one extension
+ */
+BOOL EXTENSION_Has_ExtGen_Enabled() {
+  int ext;
+  for (ext=0; ext<extension_count; ext++) {
+    if (extension_extra_info_tab[ext].extgen_enabled) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/*
+ * Return TRUE if native codegen is enabled for the extension identified by <extid>
+ */
+BOOL EXTENSION_Is_ExtGen_Enabled(INT32 extid) {
+  return (extension_extra_info_tab[EXTENSION_Get_ExtensionRank_From_ExtensionId(extid)].extgen_enabled);
+}
+
+/*
+ * Return TRUE if native codegen is enabled for the extension that defines intrinsic <intrn>
+ */
+BOOL EXTENSION_Is_ExtGen_Enabled_For_Intrinsic(INTRINSIC intrn) {
+  return (extension_extra_info_tab[EXTENSION_Get_ExtensionRank_From_Intrinsic(intrn)].extgen_enabled);
+}
+
+/*
+ * Return TRUE if type equivalence is enabled for the extension that defines mtype <ty>
+ */
+static BOOL EXTENSION_Is_TypeEquiv_Enabled_For_Mtype(TYPE_ID ty) {
+  return (extension_extra_info_tab[EXTENSION_Get_ExtensionRank_From_Mtype(ty)].equiv_type_enabled);
+}
+
 /*
  * Return the INTRINSIC that map a conversion from <src_ty> to <tgt_ty>.
  * At least one of the type is expected to be an extension one.
  */
 INTRINSIC EXTENSION_Get_Convert_Intrinsic(TYPE_ID src_ty, TYPE_ID tgt_ty, BOOL ignore_sign) {
   INTRINSIC id = INTRINSIC_INVALID;
-  if (equiv_type_enabled) {
-    if (MTYPE_is_dynamic(src_ty)) {
-      if (equiv_type_tab[src_ty].ctype == tgt_ty
-	  || (ignore_sign
-	      && MTYPE_complement(equiv_type_tab[src_ty].ctype) == tgt_ty)) {
-	id = equiv_type_tab[src_ty].intrn_to_c;
-      }
+  if (MTYPE_is_dynamic(src_ty) && EXTENSION_Is_TypeEquiv_Enabled_For_Mtype(src_ty)) {
+    if (equiv_type_tab[src_ty].ctype == tgt_ty
+	|| (ignore_sign
+	    && MTYPE_complement(equiv_type_tab[src_ty].ctype) == tgt_ty)) {
+      id = equiv_type_tab[src_ty].intrn_to_c;
     }
-    else if (MTYPE_is_dynamic(tgt_ty)) {
-      if (equiv_type_tab[tgt_ty].ctype == src_ty
-	  || (ignore_sign
-	      && MTYPE_complement(equiv_type_tab[tgt_ty].ctype) == src_ty)) {
-	id = equiv_type_tab[tgt_ty].intrn_to_ext;
-      }
+  }
+  else if (MTYPE_is_dynamic(tgt_ty) && EXTENSION_Is_TypeEquiv_Enabled_For_Mtype(tgt_ty)) {
+    if (equiv_type_tab[tgt_ty].ctype == src_ty
+	|| (ignore_sign
+	    && MTYPE_complement(equiv_type_tab[tgt_ty].ctype) == src_ty)) {
+      id = equiv_type_tab[tgt_ty].intrn_to_ext;
     }
   }
   return id;
@@ -820,16 +999,18 @@ BOOL EXTENSION_Are_Equivalent_Mtype(TYPE_ID src_ty, TYPE_ID tgt_ty) {
   if (src_ty == tgt_ty) {
     return TRUE;
   }
-  if (equiv_type_enabled) {
-    BOOL ignore_sign = ! (Enable_Extension_Native_Support & EXTENSION_NATIVE_TYEQUIV_UNSIGNED_ONLY);
-    equiv = (EXTENSION_Get_Convert_Intrinsic(src_ty, tgt_ty, ignore_sign) != INTRINSIC_INVALID);
-  }
+  BOOL ignore_sign = ! (Enable_Extension_Native_Support & EXTENSION_NATIVE_TYEQUIV_UNSIGNED_ONLY);
+  equiv = (EXTENSION_Get_Convert_Intrinsic(src_ty, tgt_ty, ignore_sign) != INTRINSIC_INVALID);
   return equiv;
 }
 
+/*
+ * Return the standard mtype associated to extension type <ext_ty>, if any.
+ * Return MTYPE_UNKNOWN otherwise.
+ */
 TYPE_ID EXTENSION_Get_Equivalent_Mtype(TYPE_ID ext_ty) {
   TYPE_ID ty = MTYPE_UNKNOWN;
-  if (equiv_type_enabled && MTYPE_is_dynamic(ext_ty)) {
+  if (MTYPE_is_dynamic(ext_ty) && EXTENSION_Is_TypeEquiv_Enabled_For_Mtype(ext_ty)) {
     ty = equiv_type_tab[ext_ty].ctype;
   }
   return ty;
@@ -844,7 +1025,7 @@ TYPE_ID EXTENSION_Get_Equivalent_Mtype(TYPE_ID ext_ty) {
  * @return 
  */
 INTRINSIC EXTENSION_Get_CLR_Intrinsic(TYPE_ID ty) {
-  if (MTYPE_is_dynamic(ty)) {
+  if (MTYPE_is_dynamic(ty) && EXTENSION_Is_TypeEquiv_Enabled_For_Mtype(ty)) {
     return equiv_type_tab[ty].clr_intrn;
   }
   return INTRINSIC_INVALID;
@@ -860,20 +1041,11 @@ INTRINSIC EXTENSION_Get_CLR_Intrinsic(TYPE_ID ty) {
  * @return
  */
 INTRINSIC EXTENSION_Get_Convert_From_U32_Intrinsic(TYPE_ID ty) {
-  if (MTYPE_is_dynamic(ty)) {
+  if (MTYPE_is_dynamic(ty) && EXTENSION_Is_TypeEquiv_Enabled_For_Mtype(ty)) {
     return equiv_type_tab[ty].from_u32_intrn;
   }
   return INTRINSIC_INVALID;
 }
 
-
-INT EXTENSION_Get_Equivalent_Mtype_Status() {
-  return equiv_type_enabled;
-}
-
-
-void EXTENSION_Set_Equivalent_Mtype_Status(INT val) {
-  equiv_type_enabled = val;
-}
 
 
