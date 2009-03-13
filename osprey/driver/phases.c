@@ -352,27 +352,6 @@ static const char * get_boot_fname ( void ) {
   string boot_path;
   extern int STxP70mult;
   
-#if 0
-  if (lib_short_double == TRUE) {
-    boot_path = string_copy("spieee754/");
-  } else {
-    boot_path = string_copy("");
-  }
-  
-  if (fpx == TRUE) {
-    boot_path = concat_strings(boot_path,"fpx");
-  } else if (STxP70mult == TRUE) {
-    boot_path = concat_strings(boot_path,"mult");
-  } else {
-    boot_path = concat_strings(boot_path,"nomult");
-  }
-  if (lib_kind == LIB_STXP70_16) {
-    boot_path = concat_strings(boot_path,"/reg16");
-  } else {
-    boot_path = concat_strings(boot_path,"/reg32");
-  }
-#endif
-
   return concat_strings(boot_path,"/arm32");
   /* cannot be reached */
 }

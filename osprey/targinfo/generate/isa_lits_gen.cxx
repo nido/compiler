@@ -330,37 +330,33 @@ LIT_RANGE ISA_Create_Lit_Range(const char *name, long long min, long long max, l
   range->min = min;
   range->max = max;
   range->scaling_value = scaling;
-  if(scaling > 64) {
-    fprintf(stderr, "### Error: invalid scaling %d (greater than 64)\n", scaling);
+  if(scaling > 31) {
+    fprintf(stderr, "### Error: invalid scaling %d (greater than 31)\n", scaling);
     exit(EXIT_FAILURE);
   }
-  if(scaling == 64) {
-    range->scaling_mask = 0xffffffffffffffffLL;
-  }
-  else {
-    range->scaling_mask = (1<<scaling)-1;
-  }
-  if((right_rotate_width + scaling) > 6) {
+  range->scaling_mask = (1<<scaling)-1;
+
+  if(right_rotate_width==0) { // no rotate
+    range->max_right_rotate = 0;
+    range->right_rotate_mask = 0;
+  } 
+  else if((right_rotate_width + scaling) > 6) {
     fprintf(stderr, "### Error: invalid right rotate width %d (greater than 6 bits)\n", right_rotate_width);
     exit(EXIT_FAILURE);
   }
-  /* Maximum number of rotation used to test given immediate value */
-  range->max_right_rotate = (1 <<right_rotate_width)-1;
   /* Width on which the rotation can be applied
    * Example: if scaling is 1, and rotate value width is 4, the rotate width
    * or bit field on which rotation can be applied is 1 << 4 << 1 = 32 bits.
    * So the rotate mask is 0xffffffff.
    */
-  if((right_rotate_width + scaling) == 6) {
+  else if((right_rotate_width + scaling) == 6) {
     range->right_rotate_mask = 0xffffffffffffffffLL;
   }
-  else if((right_rotate_width + scaling) == 5) {
-    /* Fix gcc bug when shifting left by 32 */
-    range->right_rotate_mask = 0xffffffff;
-  }
   else {
-    range->right_rotate_mask = (1 << ((1 << right_rotate_width) << scaling)) - 1;
+    range->right_rotate_mask = (1LL << ((1 << right_rotate_width) << scaling)) - 1;
   }
+  /* Maximum number of rotation used to test given immediate value */
+  range->max_right_rotate = (1 << right_rotate_width)-1;
   return range;
 }
 
@@ -623,7 +619,7 @@ void ISA_Lits_End(void)
 		 "    INT64 min = plc->range[i].min;\n"
 		 "    INT64 max = plc->range[i].max;\n"
 	         "    if(plc->range[i].max_right_rotate) {\n"
-	         "      INT64 rotate_mask = (1 << (1 << plc->range[i].scaling_value))-1;\n"
+	         "      INT64 rotate_mask = (1LL << (1 << plc->range[i].scaling_value))-1;\n"
                  "      INT64 rotate_amount = 1 << plc->range[i].scaling_value;\n"
 	         "      INT32 rotate_nb = 0;\n"
 	         "      val &= plc->range[i].right_rotate_mask;\n"

@@ -156,7 +156,7 @@ static struct {
   { "st231",    PROC_ST231 },
   { "st240",    PROC_ST240 },
   { "arm9",     PROC_armv5 },
-  { "arm11",    PROC_armv5 },
+  { "arm11",    PROC_armv6 },
   { "stxp70_v3",PROC_stxp70_v3 },
   { "stxp70_v4",PROC_stxp70_v4_single},
   { "stxp70v3", PROC_stxp70_v3 },
@@ -1152,7 +1152,7 @@ Check_Target ( void )
   switch (proc) {
   case UNDEFINED:
     toggle(&proc, PROC_armv5);
-    /* fallthru stxp70 default. */
+    /* fallthru arm default (armv5). */
   case PROC_armv5:
     flag = add_new_option("-TARG:proc=armv5");
     break;

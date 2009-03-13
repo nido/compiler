@@ -1302,7 +1302,7 @@ add_special_options (void)
 	   * ARM specific flags: 
 	   */
 	  if(endian == ENDIAN_BIG) {
-	    error("BIG endian mode is not supported on STxP70 platforms");
+	    error("BIG endian mode is not supported on ARM platforms");
 	  }
 
 	  if (!option_was_seen(O_EL)) {

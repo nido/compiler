@@ -1,6 +1,119 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Mar 13 11:18:01 CET 2009
+	Author:    guillon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/arm/main
+
+Description:
+------------
+	* Deliver arm-main branch addition fixes. Ref to branch art #60096.
+
+
+Modified Files:
+---------------
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/phases.c
+	M      osprey/driver/special_options.c
+	M      osprey/driver/lang_defs.c
+	M      osprey/lai/lao/arm/lao_cgir.cxx
+	M      osprey/lai/lao/lao_cgir.h
+	M      osprey/lai/lao/st200/lao_cgir.cxx
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/targinfo/arm/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/arm/expand/exp_extension.h
+	M      osprey/targinfo/arm/config/targ_elf.h
+	D      osprey/targinfo/arm/intrn/x3.h
+	D      osprey/targinfo/arm/intrn/sx.h
+	D      osprey/targinfo/arm/intrn/model_tests
+	D      osprey/targinfo/arm/intrn/model_tests/src
+	D      osprey/targinfo/arm/intrn/model_tests/src/x3.h
+	D      osprey/targinfo/arm/intrn/model_tests/src/sx.h
+	D      osprey/targinfo/arm/intrn/model_tests/src/builtins_model_ax.c
+	D      osprey/targinfo/arm/intrn/model_tests/src/fpx.h
+	D      osprey/targinfo/arm/intrn/model_tests/src/get_SR.s
+	D      osprey/targinfo/arm/intrn/model_tests/src/builtins_model_ax.h
+	D      osprey/targinfo/arm/intrn/model_tests/src/builtins_model_fpx_temp.c
+	D      osprey/targinfo/arm/intrn/model_tests/src/builtins_fpx.h
+	D      osprey/targinfo/arm/intrn/model_tests/src/templates
+	D      osprey/targinfo/arm/intrn/model_tests/src/templates/builtin_test_main_template.c
+	D      osprey/targinfo/arm/intrn/model_tests/src/templates/builtin.lst
+	D      osprey/targinfo/arm/intrn/model_tests/src/templates/basic_builtin.c
+	D      osprey/targinfo/arm/intrn/model_tests/src/builtins_model_fpx_temp.h
+	D      osprey/targinfo/arm/intrn/model_tests/src/builtins_model_x3.c
+	D      osprey/targinfo/arm/intrn/model_tests/src/builtins_model_sx.c
+	D      osprey/targinfo/arm/intrn/model_tests/src/builtins_model_common.h
+	D      osprey/targinfo/arm/intrn/model_tests/src/builtins_model_x3.h
+	D      osprey/targinfo/arm/intrn/model_tests/src/builtins_model_sx.h
+	D      osprey/targinfo/arm/intrn/model_tests/README.txt
+	D      osprey/targinfo/arm/intrn/model_tests/makedir
+	D      osprey/targinfo/arm/intrn/model_tests/makedir/verify_builtin_list.pl
+	D      osprey/targinfo/arm/intrn/model_tests/makedir/DateUs.pm
+	D      osprey/targinfo/arm/intrn/model_tests/makedir/generate_builtin_src_test.pl
+	D      osprey/targinfo/arm/intrn/model_tests/makedir/Makefile_builtin_open64.in
+	D      osprey/targinfo/arm/intrn/model_tests/makedir/perl_add_on
+	D      osprey/targinfo/arm/intrn/model_tests/makedir/perl_add_on/Text
+	D      osprey/targinfo/arm/intrn/model_tests/makedir/perl_add_on/Text/Diff.pm
+	D      osprey/targinfo/arm/intrn/model_tests/makedir/perl_add_on/Text/Diff
+	D      osprey/targinfo/arm/intrn/model_tests/makedir/perl_add_on/Text/Diff/Table.pm
+	D      osprey/targinfo/arm/intrn/model_tests/makedir/perl_add_on/Algorithm
+	D      osprey/targinfo/arm/intrn/model_tests/makedir/perl_add_on/Algorithm/Diff.pm
+	D      osprey/targinfo/arm/intrn/model_tests/makedir/generate_builtin_datavector.pl
+	D      osprey/targinfo/arm/intrn/model_tests/makedir/Date.pm
+	D      osprey/targinfo/arm/intrn/model_tests/makedir/check_builtin.pl
+	D      osprey/targinfo/arm/intrn/model_tests/testing
+	D      osprey/targinfo/arm/intrn/model_tests/testing/Makefile
+	D      osprey/targinfo/arm/intrn/vx.h
+	D      osprey/targinfo/arm/intrn/fpx.h
+	D      osprey/targinfo/arm/intrn/builtins_model_vx
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/src
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_MD_TI_ins.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_move.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_fgt_ins.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_Fader_ins.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_mv_format.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_pixel_ordering.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_DD_SI_ins.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_func.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_sa_ins.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_tnr_ins1.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_tnr_ins2.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_tnr_ins3.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/src/model_vx.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/src/vx_SAD_ins.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/inc
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/inc/Datatype.h
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/inc/Macros_new.h
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/inc/vx.h
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/inc/type_vx.h
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/inc/proto_vx.h
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/inc/Datatype_new.h
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/inc/Macros.h
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/inc/XDLI_Types.h
+	D      osprey/targinfo/arm/intrn/builtins_model_vx/inc/OS_Types.h
+	D      osprey/targinfo/arm/intrn/builtins_sx.h
+	D      osprey/targinfo/arm/intrn/builtins_x3.h
+	D      osprey/targinfo/arm/intrn/builtins_fpx.h
+	D      osprey/targinfo/arm/intrn/builtins_vx.h
+	D      osprey/targinfo/arm/intrn/builtins_model_sx.c
+	D      osprey/targinfo/arm/intrn/builtins_model_x3.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx.c
+	D      osprey/targinfo/arm/intrn/builtins_model_common.h
+	D      osprey/targinfo/arm/intrn/builtins_model_x3.h
+	D      osprey/targinfo/arm/intrn/builtins_model_sx.h
+	D      osprey/targinfo/arm/intrn/intrn_test.c
+	D      osprey/targinfo/arm/intrn/builtins_model_vx.h
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/st200/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/st200/config/targ_elf.h
+	M      osprey/targinfo/generate/isa_lits_gen.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Mar 13 09:06:19 CET 2009
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

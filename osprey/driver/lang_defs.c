@@ -175,7 +175,7 @@ static lang_info_t language_info[] = {
 
 #elif defined(__CYGWIN__) && defined(TARG_ARM)
 
-#define NAMEPREFIX	"st200-"
+#define NAMEPREFIX	"arm-"
 #define BINPATH		"/bin"
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/target"
