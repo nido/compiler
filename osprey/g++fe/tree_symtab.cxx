@@ -62,6 +62,7 @@ extern "C" {
 #include "gnu/real.h"
   /* (cbr) linkonce support */
 #include "gnu/output.h"
+#include "gnu/langhooks.h"
 #include "tm_p.h"
 #else
 #include "cp-tree.h"
@@ -95,6 +96,8 @@ static void fixup_volatility(TY_IDX &ty_idx);
 #ifdef WFE_DEBUG
 static void print_volatility(TY_IDX &ty_idx);
 #endif
+// [CM] : Helper functions for `reloc' computation
+static int categorize_addressed_constants (tree);
 #endif
 
 #ifdef TARG_ST
@@ -1738,10 +1741,14 @@ Create_ST_For_Tree (tree decl_node)
             TYPE_READONLY(decl_node))
           Set_ST_is_const_var (st);
 
-	/* [CM] also mark readonly linkonce const (fix bug #28227) */
+	/* [CM] also mark readonly linkonce const (fix bug #28227) 
+	   See also osprey/gccfe/gnu/varasm.c/categorize_decl_for_section()
+	 */
 	if (sclass == SCLASS_DGLOBAL && 
 	    DECL_ONE_ONLY (decl_node) && 
-	    TYPE_READONLY(decl_node))
+	    TYPE_READONLY(decl_node) &&
+	    !TREE_SIDE_EFFECTS (decl_node) &&
+	    TREE_CONSTANT (DECL_INITIAL (decl_node)))
 	  Set_ST_is_const_var (st);
 
 	// [CL] handle used attribute
@@ -1919,7 +1926,11 @@ Create_ST_For_Tree (tree decl_node)
 
     /* (cbr) merge into linkonce */
     if (DECL_ONE_ONLY (decl_node)) {
-        default_unique_section (decl_node, 0);
+      /* [CM] The `reloc' computation from gccfe/gnu/varasm.c::assemble_variable */
+      int reloc = 0 ;
+      if (DECL_INITIAL (decl_node))
+	reloc = categorize_addressed_constants (DECL_INITIAL (decl_node));
+      default_unique_section (decl_node, reloc);
       if (sclass == SCLASS_COMMON)
         Set_ST_sclass (st, SCLASS_UGLOBAL);
     }
@@ -2095,6 +2106,71 @@ print_volatility(TY_IDX &ty_idx)
   }
 }
 #endif
+#endif
+
+#ifdef TARG_ST
+// From gccfe/gny/varasm.c, inspired by output_addressed_constants
+// simplified to compute only `reloc'
+static int
+categorize_addressed_constants(tree exp)
+{
+  int reloc = 0, reloc2;
+  tree tem;
+
+  /* Give the front-end a chance to convert VALUE to something that
+     looks more like a constant to the back-end.  */
+  exp = (*lang_hooks.expand_constant) (exp);
+
+  switch (TREE_CODE (exp))
+    {
+    case ADDR_EXPR:
+    case FDESC_EXPR:
+      /* Go inside any operations that get_inner_reference can handle and see
+	 if what's inside is a constant: no need to do anything here for
+	 addresses of variables or functions.  */
+      for (tem = TREE_OPERAND (exp, 0); handled_component_p (tem);
+	   tem = TREE_OPERAND (tem, 0))
+	;
+
+      if (TREE_PUBLIC (tem))
+	reloc |= 2;
+      else
+	reloc |= 1;
+      break;
+
+    case PLUS_EXPR:
+      reloc = categorize_addressed_constants (TREE_OPERAND (exp, 0));
+      reloc |= categorize_addressed_constants (TREE_OPERAND (exp, 1));
+      break;
+
+    case MINUS_EXPR:
+      reloc = categorize_addressed_constants (TREE_OPERAND (exp, 0));
+      reloc2 = categorize_addressed_constants (TREE_OPERAND (exp, 1));
+      /* The difference of two local labels is computable at link time.  */
+      if (reloc == 1 && reloc2 == 1)
+	reloc = 0;
+      else
+	reloc |= reloc2;
+      break;
+
+    case NOP_EXPR:
+    case CONVERT_EXPR:
+    case NON_LVALUE_EXPR:
+      reloc = categorize_addressed_constants (TREE_OPERAND (exp, 0));
+      break;
+
+    case CONSTRUCTOR:
+      for (tem = CONSTRUCTOR_ELTS (exp); tem; tem = TREE_CHAIN (tem))
+	if (TREE_VALUE (tem) != 0)
+	  reloc |= categorize_addressed_constants (TREE_VALUE (tem));
+
+      break;
+
+    default:
+      break;
+    }
+  return reloc;
+}
 #endif
 
 #ifdef TARG_ST

@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar 16 08:51:29 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-28227
+
+Description:
+------------
+	* [trunk] Fix for bug #28227: The C++ library contains read/write symbols in the normally read-only .rodata section..
+	Deliver fixes/codex-28227 rev #20991 with authorization branch #61519
+
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+	M      osprey/g++fe/tree_symtab.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Mar 13 14:31:00 CET 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
