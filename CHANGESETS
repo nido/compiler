@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Mar 17 13:54:35 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-61650
+
+Description:
+------------
+	* [trunk] Fix for bug #61650: Segfault handling long long arithmetic.
+	Deliver fixes/codex-61650 rev #21031 with authorization branch #62425
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/gnu/fold-const.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Mar 16 14:21:23 CET 2009
 	Author:    bv11
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

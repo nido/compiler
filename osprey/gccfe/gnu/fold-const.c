@@ -5274,8 +5274,15 @@ fold (expr)
 
 		  if (exact_log2 (int11) > 0 && int01 % int11 == 0)
 		    {
+#ifdef TARG_ST
+		      /* (cbr) #61650: must inherit original operand's type.  */
+		      tree fint = build_int_2 (int01 / int11, 0);
+		      TREE_TYPE (fint) = type;
+		      alt0 = fold (build (MULT_EXPR, type, arg00, fint));
+#else
 		      alt0 = fold (build (MULT_EXPR, type, arg00,
 					  build_int_2 (int01 / int11, 0)));
+#endif
 		      alt1 = arg10;
 		      same = arg11;
 		    }
