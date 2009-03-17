@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Mar 17 15:54:50 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-56031
+
+Description:
+------------
+	* [trunk] Fix for bug #56031: STLinux build requires -fasynchronous-unwind-tables
+	Deliver fixes/codex-56031 rev #20922 with authorization branch #58543
+
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/special_options.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Mar 17 14:28:15 CET 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

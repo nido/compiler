@@ -1831,18 +1831,24 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"enable generation of rtti information"
 -fno-rtti			;		CC	f,cpp	self
 	"disable generation of rtti information"
--fhandle-exceptions	toggle(&noexceptions,FALSE);	Cc	f,cpp	self "-LANG:exc=ON -CG:emit_unwind_info=on"
+-fhandle-exceptions	toggle(&noexceptions,FALSE);	Cc	f,cpp	self
 	"enable exception handling"
--fexceptions	toggle(&noexceptions,FALSE);	Cc	f,cpp	self "-LANG:exc=ON -CG:emit_unwind_info=on"
+-fexceptions	toggle(&noexceptions,FALSE);		Cc	f,cpp	self
 	"Enable exception handling"
--fno-exceptions	toggle(&noexceptions,TRUE);	Cc	f,cpp	self "-LANG:exc=OFF"
+-fno-exceptions	toggle(&noexceptions,TRUE);		Cc	f,cpp	self
 	"disable exception handling"
--fno-handle-exceptions	toggle(&noexceptions,TRUE);	Cc	f,cpp	self "-LANG:exc=OFF"
+-fno-handle-exceptions	toggle(&noexceptions,TRUE);	Cc	f,cpp	self
 	"Disable exception handling"
--funwind-tables	;		Cc	NONE	"-CG:emit_unwind_info=on -LANG:exc=ON"
-	""
--fno-unwind-tables	;	Cc	NONE	"-CG:emit_unwind_info=off"
-	""
+-funwind-tables	toggle(&unwindtables,TRUE);		Cc	f,cpp	self
+	"Generate unwind tables"
+-fno-unwind-tables toggle(&unwindtables,FALSE);		Cc	f,cpp	self
+	"Disable generation of unwind tables"
+#ifdef TARG_ST
+-fasynchronous-unwind-tables	toggle(&asyncunwindtables,TRUE);	Cc	f,cpp	self
+	"Generate unwind tables that are exact at each instruction boundary"
+-fno-asynchronous-unwind-tables	toggle(&asyncunwindtables,FALSE);	Cc	f,cpp	self
+	"Disable generation of unwind tables that are exact at each instruction boundary"
+#endif
 -fuse-cxa-atexit		;		CC	f,cpp	self
 	"use cxa_atexit to register destructors"
 -fno-use-cxa-atexit		;		CC	f,cpp	self

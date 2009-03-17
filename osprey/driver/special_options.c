@@ -122,8 +122,14 @@ set_defaults (void)
 	  prepend_option_seen(flag);
 	}
 
-	// Set exception support options.
-	if (invoked_lang == L_CC && !is_toggled(noexceptions)) {
+	// Set exception support options based on language defaults and override option
+	int except = ((invoked_lang == L_CC) && (!is_toggled(noexceptions))) || (is_toggled(noexceptions) && (noexceptions == FALSE)) ;
+	// Treat unwinding options regardless of the input language
+	int unwind = is_toggled(unwindtables) && (unwindtables == TRUE);
+	int asyncunwind = is_toggled(asyncunwindtables) && (asyncunwindtables == TRUE);
+	// Unwinding information emission is done either when exception, unwind or asyncrhonous-unwind are required
+	// We have to set both -LANG:exc and -CG:emit_unwind_info to have .eh_frame emission
+	if (unwind || asyncunwind || except) {
 	  flag = add_string_option(O_LANG_, "exc=ON");
 	  prepend_option_seen(flag);
 	  flag = add_string_option(O_CG_, "emit_unwind_info=ON");
