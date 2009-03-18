@@ -516,6 +516,11 @@ WFE_Start_Function (tree fndecl)
 	}
       }
 
+    // [VB] Update the return type of the current function (tree fndecl)
+    //      Necessary when a function has been implicitly declared before
+    //      being defined
+    Pu_Table[ST_pu(func_st)].prototype = Get_TY(TREE_TYPE(fndecl));
+
 #endif
     Set_ST_export (func_st, eclass);
 

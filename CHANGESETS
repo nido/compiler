@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Mar 18 16:01:01 CET 2009
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-61366
+
+Description:
+------------
+	* Update the return type of a function in WFE_Start_Function (gccfe/wfe_decl.cxx) to fix the bug concerning missing high part init of result in an implicitly declarated function returning long long int (bug #61366).
+
+
+Modified Files
+---------------
+	M      osprey/gccfe/wfe_decl.cxx
+
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Mar 18 14:44:37 CET 2009
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
