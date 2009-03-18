@@ -61,6 +61,12 @@ ST*& DECL_ST(tree);
 extern "C" void Update_TY (tree);
 #endif
 
+#ifdef TARG_ST
+/* [SC] KEY use these in C++ but not C, so provide stubs only here. */
+extern "C" void add_duplicates (tree, tree);
+extern "C" void erase_duplicates (tree);
+#endif
+
 /* 
  * either return a previously created TY_IDX associated with a type,
  * or create a new one.

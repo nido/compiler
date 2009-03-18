@@ -4505,14 +4505,6 @@ assign_parms (fndecl)
 
       promoted_mode = passed_mode;
 
-#ifdef TARG_ST
-      /* (cbr) don't generate rtl */
-      SET_DECL_RTL (parm, gen_rtx_MEM (nominal_mode, const0_rtx));
-      DECL_INCOMING_RTL (parm) = DECL_RTL (parm);
-      TREE_USED (parm) = 1;
-      continue;
-#endif
-
 #ifdef PROMOTE_FUNCTION_ARGS
       /* Compute the mode in which the arg is actually extended to.  */
       unsignedp = TREE_UNSIGNED (passed_type);

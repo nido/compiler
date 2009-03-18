@@ -1898,20 +1898,11 @@ struct lang_decl GTY(())
    just been used somewhere, even if it's not really needed.  We need
    anything that isn't comdat, but we don't know for sure whether or
    not something is comdat until end-of-file.  */
-#ifdef TARG_ST
-/* (cbr) needed also if addressable when syntax_only */
-#define DECL_NEEDED_P(DECL)					\
-  ((at_eof && TREE_PUBLIC (DECL) && !DECL_COMDAT (DECL))	\
-   || (DECL_ASSEMBLER_NAME_SET_P (DECL)				\
-       && TREE_SYMBOL_REFERENCED (DECL_ASSEMBLER_NAME (DECL)))	\
-   || ((TREE_USED (DECL) || TREE_ADDRESSABLE (DECL))))
-#else
 #define DECL_NEEDED_P(DECL)					\
   ((at_eof && TREE_PUBLIC (DECL) && !DECL_COMDAT (DECL))	\
    || (DECL_ASSEMBLER_NAME_SET_P (DECL)				\
        && TREE_SYMBOL_REFERENCED (DECL_ASSEMBLER_NAME (DECL)))	\
    || (flag_syntax_only && TREE_USED (DECL)))
-#endif
 
 /* Nonzero iff DECL is memory-based.  The DECL_RTL of
    certain const variables might be a CONST_INT, or a REG

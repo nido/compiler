@@ -66,33 +66,48 @@ extern "C" ST* Create_ST_For_Tree (tree);
 
 #else /* EXTRA_WORD_IN_TREE_NODES */
 
-//TB: Add undef of these dumy declaration to get think to compile with
-//common tree.h (remove all defined(FRONT_END_C) in tree.h)
+// These are defined in tree.h.
+#undef TREE_STRING_ST
 #undef TYPE_TY_IDX
-TY_IDX& TYPE_TY_IDX(tree);
+#undef TYPE_FIELD_IDS_USED
+#undef TYPE_DST_IDX
 #undef DECL_ST
+#undef DECL_FIELD_ID
+#undef DECL_DST_IDX
+
+TY_IDX& TYPE_TY_IDX(tree);
+#ifdef KEY
+extern "C" void add_duplicates (tree, tree);
+extern "C" void erase_duplicates (tree);
+void set_DECL_ST(tree, ST*);
+ST*& get_DECL_ST(tree);
+BOOL& expanded_decl(tree);
+#define DECL_ST(x)	get_DECL_ST(x)
+#else
 ST*& DECL_ST(tree);
+#endif
 #undef DECL_SYMTAB_IDX
 SYMTAB_IDX& DECL_SYMTAB_IDX(tree);
 #undef DECL_LABEL_IDX
 LABEL_IDX& DECL_LABEL_IDX(tree);
-#undef TREE_STRING_ST
 ST*& TREE_STRING_ST(tree);
 #undef DECL_LABEL_DEFINED
 BOOL& DECL_LABEL_DEFINED(tree);
-#undef DECL_FIELD_ID
 INT32& DECL_FIELD_ID(tree);
-#undef TYPE_FIELD_IDS_USED
+#ifdef TARG_ST
+void SET_TYPE_FIELD_IDS_USED(tree,INT32);
+INT32 GET_TYPE_FIELD_IDS_USED(tree);
+BOOL TYPE_FIELD_IDS_USED_KNOWN(tree t);
+#else
 INT32& TYPE_FIELD_IDS_USED(tree);
+#endif
 #undef SCOPE_NUMBER
 INT32& SCOPE_NUMBER(tree);
 #undef LABEL_SCOPE
 tree& LABEL_SCOPE(tree);
-#undef DECL_DST_IDX
 DST_INFO_IDX& DECL_DST_IDX(tree);
 #undef DECL_DST_FIELD_IDX
 DST_INFO_IDX& DECL_DST_FIELD_IDX(tree);
-#undef TYPE_DST_IDX
 DST_INFO_IDX& TYPE_DST_IDX(tree);
 #undef DECL_DST_SPECIFICATION_IDX
 DST_INFO_IDX& DECL_DST_SPECIFICATION_IDX(tree);
@@ -103,9 +118,18 @@ LABEL_IDX& HANDLER_LABEL(tree);
 #ifdef KEY
 #undef PARENT_SCOPE
 tree& PARENT_SCOPE(tree);
+INT32& WEAK_WORKAROUND(ST*);
 #endif
 
 #endif /* EXTRA_WORD_IN_TREE_NODES */
+
+#ifdef KEY
+// States for tracking whether we want to make a symbol weak as a workaround
+// for emitting all symbols referenced in cleanup code.
+#define WEAK_WORKAROUND_unknown		0
+#define WEAK_WORKAROUND_dont_make_weak	1
+#define WEAK_WORKAROUND_made_weak	2
+#endif
 
 /* 
  * either return a previously created TY_IDX associated with a type,

@@ -65,6 +65,12 @@ extern void WFE_Finish_Function (void);
 /* called for each initialized variable */
 extern void WFE_Initialize_Decl (tree decl);
 
+#ifdef TARG_ST
+// Stubs required for g++.
+extern void gxx_emits_decl (tree t);
+extern void gxx_emits_asm (char *str);
+#endif
+
 /* called for each aggregate initialization */
 extern void WFE_Start_Aggregate_Init (tree decl);
 

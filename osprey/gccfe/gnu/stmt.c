@@ -648,6 +648,9 @@ expand_computed_goto (exp)
   rtx x = expand_expr (exp, NULL_RTX, VOIDmode, 0);
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Computed_Goto (exp);
 #endif /* SGI_MONGOOSE */
 
@@ -697,6 +700,9 @@ expand_label (label)
 
 #ifdef SGI_MONGOOSE
   dump_parse_tree ("label", label);
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Label (label);
 #endif /* SGI_MONGOOSE */
 
@@ -734,6 +740,9 @@ declare_nonlocal_label (label)
   nonlocal_goto_handler_slots
     = gen_rtx_EXPR_LIST (VOIDmode, slot, nonlocal_goto_handler_slots);
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Declare_Nonlocal_Label (label);
 #endif /* SGI_MONGOOSE */
 }
@@ -750,6 +759,9 @@ expand_goto (label)
 
 #ifdef SGI_MONGOOSE
   dump_parse_tree ("goto", label);
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Goto (label);
 #endif /* SGI_MONGOOSE */
 
@@ -1667,12 +1679,18 @@ expand_asm_operands (string, outputs, inputs, clobbers, vol, filename, line)
   string = resolve_operand_names (string, outputs, inputs, constraints);
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator) {
+#endif
   dump_parse_tree ("asm string", string);
   dump_parse_tree ("asm outputs", outputs);
   dump_parse_tree ("asm inputs", inputs);
   dump_parse_tree ("asm clobbers", clobbers);
   Wfe_Expand_Asm_Operands (string, outputs, inputs, clobbers, vol,
                            filename, line);
+#ifdef TARG_ST
+  }
+#endif
 #endif /* SGI_MONGOOSE */
 
 #ifdef MD_ASM_CLOBBERS
@@ -2296,6 +2314,9 @@ expand_expr_stmt (exp)
   expand_expr_stmt_value (exp, -1, 1);
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_One_Stmt (exp);
 #endif /* SGI_MONGOOSE */
 }
@@ -2349,6 +2370,9 @@ expand_expr_stmt_value (exp, want_value, maybe_last)
    * trees -- they do not attempts to maintain them properly
    */
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_One_Stmt (exp);
 #endif /* SGI_MONGOOSE */
 #endif
@@ -2400,6 +2424,9 @@ expand_expr_stmt_value (exp, want_value, maybe_last)
 
 #ifndef TARG_ST
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_One_Stmt (exp);
 #endif /* SGI_MONGOOSE */
 #endif
@@ -2548,6 +2575,9 @@ expand_start_stmt_expr (has_scope)
   expr_stmts_for_value++;
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Start_Stmt_Expr (t);
 #endif /* SGI_MONGOOSE */
 
@@ -2597,6 +2627,9 @@ expand_end_stmt_expr (t)
   TREE_THIS_VOLATILE (t) = volatile_refs_p (last_expr_value);
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_End_Stmt_Expr (t);
 #endif /* SGI_MONGOOSE */
 
@@ -2643,6 +2676,9 @@ expand_start_cond (cond, exitflag)
 
   do_jump (cond, thiscond->data.cond.next_label, NULL_RTX);
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Start_Cond (cond, exitflag);
 #endif /* SGI_MONGOOSE */
 }
@@ -2676,6 +2712,9 @@ expand_start_else ()
   cond_stack->data.cond.next_label = 0;  /* No more _else or _elseif calls.  */
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Start_Else ();
 #endif /* SGI_MONGOOSE */
 }
@@ -2709,6 +2748,9 @@ expand_end_cond ()
   clear_last_expr ();
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_End_Cond ();
 #endif /* SGI_MONGOOSE */
 }
@@ -2755,6 +2797,9 @@ expand_start_loop (exit_flag)
   emit_label (thisloop->data.loop.start_label);
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Start_Loop (exit_flag, thisloop);
 #endif /* SGI_MONGOOSE */
 
@@ -2772,6 +2817,9 @@ expand_start_loop_continue_elsewhere (exit_flag)
   loop_stack->data.loop.continue_label = gen_label_rtx ();
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Start_Loop_Continue_Elsewhere (exit_flag, thisloop);
 #endif /* SGI_MONGOOSE */
 
@@ -2816,6 +2864,9 @@ expand_loop_continue_here ()
   emit_label (loop_stack->data.loop.continue_label);
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Loop_Continue_Here ();
 #endif /* SGI_MONGOOSE */
 }
@@ -2971,6 +3022,9 @@ expand_end_loop ()
   clear_last_expr ();
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_End_Loop ();
 #endif /* SGI_MONGOOSE */
 }
@@ -3014,6 +3068,9 @@ expand_continue_loop (whichloop)
 			NULL_RTX);
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Continue_Loop (whichloop);
 #endif /* SGI_MONGOOSE */
 
@@ -3035,6 +3092,9 @@ expand_exit_loop (whichloop)
   expand_goto_internal (NULL_TREE, whichloop->data.loop.end_label, NULL_RTX);
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Exit_Loop (whichloop);
 #endif /* SGI_MONGOOSE */
 
@@ -3075,6 +3135,9 @@ expand_exit_loop_if_false (whichloop, cond)
   emit_label (label);
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Exit_Loop_If_False (whichloop, cond);
 #endif /* SGI_MONGOOSE */
 
@@ -3153,6 +3216,9 @@ expand_exit_something ()
     if (n->exit_label != 0)
       {
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+	if (!WFE_CPlusPlus_Translator)
+#endif
         WFE_Expand_Exit_Something (n, cond_stack, loop_stack, case_stack,
                                    &n->exit_label_idx);
 #endif /* SGI_MONGOOSE */
@@ -3181,6 +3247,9 @@ expand_null_return ()
   expand_null_return_1 (last_insn);
 
 #ifdef TARG_ST
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Return (NULL);
 #endif 
 }
@@ -3304,6 +3373,9 @@ expand_return (retval)
 
 #ifdef SGI_MONGOOSE
   dump_parse_tree ("return value", retval);
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Return (retval);
 #endif /* SGI_MONGOOSE */
 
@@ -3432,7 +3504,8 @@ expand_return (retval)
 
 #ifdef TARG_ST
       // (cbr) could always return while generating whirl
-	  if (!result_val)
+	  // [SC] We need more complete RTL generation for C++
+	  if (!result_val && !WFE_CPlusPlus_Translator)
 	    return;
 #endif
 	  /* We need a new source operand each time bitpos is on a word
@@ -3508,8 +3581,13 @@ expand_return (retval)
       val = expand_expr (retval_rhs, val, GET_MODE (val), 0);
 #ifdef TARG_ST
       // (cbr) could always return while generating whirl
-      emit_queue ();
-      return;
+      // [SC] We need more complete RTL generation for C++, because
+      // we use symbol references in the RTL to determine if comdat definitions
+      // are needed.
+      if (!WFE_CPlusPlus_Translator) {
+	emit_queue ();
+	return;
+      }
 #endif
       val = force_not_mem (val);
       emit_queue ();
@@ -4313,6 +4391,9 @@ expand_decl (decl)
 	 cannot use it to conclude anything about the alignment of
 	 the size.  */
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
       WFE_Alloca_ST (decl);
       alloca_done = true;
 #endif /* SGI_MONGOOSE */
@@ -4339,7 +4420,7 @@ expand_decl (decl)
   // table. This is required for debugging. (DDTS MBTst23502)
   // [SC] Reworked to avoid using symtab_idx, which is not set
   // correctly in nested functions.
-  if (! alloca_done)
+  if (!WFE_CPlusPlus_Translator && ! alloca_done)
     (void)Create_ST_For_Tree(decl);
 #endif
 }
@@ -4411,6 +4492,9 @@ expand_decl_init (decl)
       && DECL_INITIAL (decl) != error_mark_node)
     {
       dump_parse_tree ("expand_decl_init", decl);
+#ifdef TARG_ST
+      if (!WFE_CPlusPlus_Translator)
+#endif
       WFE_Initialize_Decl (decl);
     }
 #endif /* SGI_MONGOOSE */
@@ -4791,6 +4875,9 @@ expand_start_case (exit_flag, expr, type, printname)
 
 #ifdef SGI_MONGOOSE
   dump_parse_tree ("start case", expr);
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Start_Case (exit_flag, expr, type, (char *) printname);
 #endif /* SGI_MONGOOSE */
 
@@ -4837,6 +4924,9 @@ expand_start_case_dummy ()
   struct nesting *thiscase = ALLOC_NESTING ();
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_Start_Case_Dummy ();
 #endif /* SGI_MONGOOSE */
 
@@ -4865,6 +4955,9 @@ void
 expand_end_case_dummy ()
 {
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_End_Case_Dummy ();
 #endif /* SGI_MONGOOSE */
 
@@ -5073,6 +5166,9 @@ add_case_node (low, high, label, duplicate)
 	}
       case_stack->data.case_stmt.default_label = label;
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+      if (!WFE_CPlusPlus_Translator)
+#endif
       WFE_Record_Switch_Default_Label (label);
 #endif /* SGI_MONGOOSE */
       expand_label (label);
@@ -5081,6 +5177,9 @@ add_case_node (low, high, label, duplicate)
     }
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Add_Case_Node (low, high, label);
 #endif /* SGI_MONGOOSE */
 
@@ -5650,6 +5749,9 @@ expand_end_case_type (orig_index, orig_type)
 
 #ifdef SGI_MONGOOSE
   dump_parse_tree ("end case", orig_index);
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Expand_End_Case ();
 #endif /* SGI_MONGOOSE */
 

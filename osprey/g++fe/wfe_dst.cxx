@@ -595,7 +595,11 @@ DST_enter_static_data_mem(tree  parent_tree,
 // not DST and not ST information. As this is not a definition point.
 // (for some functions it can be, but we don't yet handle that)
 // 
+#ifndef KEY
 static void
+#else
+void
+#endif
 DST_enter_member_function( tree parent_tree,
 		DST_INFO_IDX parent_idx,
                 TY_IDX parent_ty_idx,
@@ -627,6 +631,11 @@ DST_enter_member_function( tree parent_tree,
     if(restype) {
 	 TY_IDX itx = Get_TY(restype);
 	 ret_dst = TYPE_DST_IDX(restype);
+#ifdef TARG_ST
+	 if (DST_IS_NULL(ret_dst)) {
+	   ret_dst = Create_DST_type_For_Tree(restype, itx, 0);
+	 }
+#endif
     }
 
     BOOL is_prototyped = TRUE;
@@ -1735,6 +1744,8 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
 	   DST_append_child(current_scope_idx,dst_idx);
 	   TYPE_DST_IDX(type_tree) = dst_idx;
 #ifdef TARG_ST
+	 } else {
+	   dst_idx = unqual_dst;
 	 }
 #endif
        }
@@ -1755,6 +1766,8 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
 	   DST_append_child(current_scope_idx,dst_idx);
 	   TYPE_DST_IDX(type_tree) = dst_idx;
 #ifdef TARG_ST
+	 } else {
+	   dst_idx = unqual_dst;
 	 }
 #endif
        }
@@ -2772,8 +2785,13 @@ DST_Create_Subprogram (ST *func_st,tree fndecl)
 	   restype = TREE_TYPE(resdecl);
 	}
 	if(restype) {
-	 TY_IDX itx = Get_TY(restype);
-	 ret_dst = TYPE_DST_IDX(restype);
+	  TY_IDX itx = Get_TY(restype);
+	  ret_dst = TYPE_DST_IDX(restype);
+#ifdef TARG_ST
+	  if (DST_IS_NULL(ret_dst)) {
+	    ret_dst = Create_DST_type_For_Tree(restype, itx, 0);
+	  }
+#endif
 	}
 
         tree type = TREE_TYPE(fndecl);

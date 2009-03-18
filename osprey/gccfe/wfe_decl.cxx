@@ -115,6 +115,20 @@ static int __dtors = 0;
 // function for use by code common to gccfe and g++fe
 // (in particular, the builtins expansion).
 tree Current_Function_Decl(void) {return current_function_decl;}
+
+// [SC] For compatibility with g++fe, provide this
+// function, but it is just a stub.
+void
+gxx_emits_decl(tree t) {
+}
+// [SC] For compatibility with g++fe, provide this
+// function, but it is just a stub.
+void
+gxx_emits_asm(char *str) {}
+
+// [TTh] Remember the default type equivalence status that might
+// be temporarily overridden through pragma on a function scope
+static int default_type_equiv_status;
 #endif
 
 extern "C" tree lookup_name (tree);

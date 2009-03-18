@@ -1,6 +1,113 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Mar 18 14:44:37 CET 2009
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/clarkes/dev-merge-cplusplus-fixes
+
+Description:
+------------
+	*  Fix multiple C++ compilation problems.
+	Delivered clarkes/dev-merge-cplusplus-fixes rev #21061 with authorization art #62845.
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/tree_symtab.cxx
+	M      osprey/gccfe/gnu/function.c
+	M      osprey/gccfe/gnu/defaults.h
+	M      osprey/gccfe/gnu/tree.c
+	M      osprey/gccfe/gnu/tree.h
+	M      osprey/gccfe/gnu/final.c
+	M      osprey/gccfe/gnu/varasm.c
+	M      osprey/gccfe/gnu/toplev.c
+	M      osprey/gccfe/gnu/cp/decl.c
+	M      osprey/gccfe/gnu/cp/method.c
+	M      osprey/gccfe/gnu/cp/rtti.c
+	M      osprey/gccfe/gnu/cp/cp-tree.h
+	M      osprey/gccfe/gnu/cp/semantics.c
+	M      osprey/gccfe/gnu/cp/decl2.c
+	M      osprey/gccfe/gnu/cppinit.c
+	M      osprey/gccfe/gnu/c-semantics.c
+	M      osprey/gccfe/gnu/config/st200/lx.h
+	M      osprey/gccfe/gnu/stmt.c
+	M      osprey/gccfe/wfe_stmt.cxx
+	M      osprey/gccfe/wfe_dst.cxx
+	M      osprey/gccfe/wfe_decl.h
+	M      osprey/gccfe/tree_symtab.h
+	M      osprey/gccfe/wfe_decl.cxx
+	M      osprey/gccfe/wfe_stmt.h
+	M      osprey/g++fe/tree_symtab.cxx
+	M      osprey/g++fe/wfe_expr.cxx
+	M      osprey/g++fe/wfe_dst.h
+	M      osprey/g++fe/wfe_misc.h
+	M      osprey/g++fe/tree_verify.cxx
+	M      osprey/g++fe/wfe_stmt.cxx
+	M      osprey/g++fe/wfe_dst.cxx
+	M      osprey/g++fe/wfe_misc.cxx
+	M      osprey/g++fe/wfe_decl.h
+	M      osprey/g++fe/tree_symtab.h
+	M      osprey/g++fe/wfe_decl.cxx
+	M      osprey/g++fe/wfe_stmt.h
+	M      osprey/common/com/symtab_access.h
+	M      osprey/common/com/symtab_defs.h
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@21057 --new=https://codex.cro.st.com/svnroot/open64/branches/clarkes/dev-merge-cplusplus-fixes@21061 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@21057 https://codex.cro.st.com/svnroot/open64/branches/clarkes/dev-merge-cplusplus-fixes@21061" 
+
+Diff links to modified files:
+-----------------------------
+osprey/gccfe/tree_symtab.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/tree_symtab.cxx?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/tree_symtab.cxx&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/function.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/function.c?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/function.c&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/defaults.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/defaults.h?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/defaults.h&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/tree.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/tree.c?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/tree.c&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/tree.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/tree.h?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/tree.h&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/final.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/final.c?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/final.c&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/varasm.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/varasm.c?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/varasm.c&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/toplev.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/toplev.c?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/toplev.c&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/cp/decl.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/cp/decl.c?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/cp/decl.c&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/cp/method.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/cp/method.c?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/cp/method.c&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/cp/rtti.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/cp/rtti.c?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/cp/rtti.c&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/cp/cp-tree.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/cp/cp-tree.h?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/cp/cp-tree.h&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/cp/semantics.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/cp/semantics.c?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/cp/semantics.c&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/cp/decl2.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/cp/decl2.c?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/cp/decl2.c&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/cppinit.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/cppinit.c?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/cppinit.c&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/c-semantics.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/c-semantics.c?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/c-semantics.c&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/config/st200/lx.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/config/st200/lx.h?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/config/st200/lx.h&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/stmt.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/stmt.c?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/gnu/stmt.c&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_stmt.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_stmt.cxx?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/wfe_stmt.cxx&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_dst.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_dst.cxx?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/wfe_dst.cxx&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_decl.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_decl.h?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/wfe_decl.h&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/tree_symtab.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/tree_symtab.h?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/tree_symtab.h&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_decl.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_decl.cxx?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/wfe_decl.cxx&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_stmt.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_stmt.h?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/gccfe/wfe_stmt.h&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/tree_symtab.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/tree_symtab.cxx?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/g++fe/tree_symtab.cxx&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_expr.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_expr.cxx?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/g++fe/wfe_expr.cxx&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_dst.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_dst.h?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/g++fe/wfe_dst.h&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_misc.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_misc.h?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/g++fe/wfe_misc.h&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/tree_verify.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/tree_verify.cxx?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/g++fe/tree_verify.cxx&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_stmt.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_stmt.cxx?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/g++fe/wfe_stmt.cxx&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_dst.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_dst.cxx?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/g++fe/wfe_dst.cxx&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_misc.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_misc.cxx?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/g++fe/wfe_misc.cxx&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_decl.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_decl.h?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/g++fe/wfe_decl.h&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/tree_symtab.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/tree_symtab.h?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/g++fe/tree_symtab.h&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_decl.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_decl.cxx?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/g++fe/wfe_decl.cxx&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_stmt.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_stmt.h?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/g++fe/wfe_stmt.h&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/common/com/symtab_access.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/symtab_access.h?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/common/com/symtab_access.h&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+osprey/common/com/symtab_defs.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/symtab_defs.h?p2=branches/clarkes/dev-merge-cplusplus-fixes/osprey/common/com/symtab_defs.h&r1=21057&r2=21061&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Mar 18 13:38:50 CET 2009
 	Author:    chauveth
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

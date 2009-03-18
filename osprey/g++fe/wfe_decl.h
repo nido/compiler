@@ -32,6 +32,12 @@ extern void WFE_Finish_Function (void);
 extern void WFE_Initialize_Decl (tree decl);
 
 #ifdef KEY
+// Add a FUNCTION_DECL to the set of functions emitted by g++.
+extern void gxx_emits_decl (tree t);
+
+// Add a top-level asm to the set of asms emitted by g++.
+extern void gxx_emits_asm (char *str);
+
 // Add a VAR_DECL typeinfo to be emitted
 extern void gxx_emits_typeinfos (tree);
 
@@ -40,6 +46,12 @@ extern void defer_decl (tree);
 
 // Add struct fields whose type we want to expand last.
 extern void defer_field (tree, FLD_HANDLE);
+
+// Add type whose DST info we want to create last.
+extern void defer_DST_type (tree, TY_IDX, TY_IDX);
+
+// Add DSTs for the defered types.
+extern void add_deferred_DST_types();
 
 #endif
 
@@ -141,6 +153,18 @@ extern int Is_Dynamic_MachineMode_With_Equiv(machine_mode_t mode);
  */
 
 extern tree Current_Function_Decl(void);
+
+#ifdef KEY
+/* get the current function's entry wn.  This just comes from a static
+ * global variable in the absence of nested function declarations.
+ */
+extern WN *Current_Entry_WN(void);
+#endif
+
+#ifdef TARG_ST
+/* (cbr) C++ specific formal parameter */
+extern ST *first_formal;
+#endif
 
 #ifdef __cplusplus
 }

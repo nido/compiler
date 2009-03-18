@@ -140,6 +140,8 @@ static INT32        undefined_labels_max;
 #include <vector>
 #include <list>
 
+extern const int WFE_CPlusPlus_Translator = 0;
+
 bool need_manual_unwinding = false;
 
 typedef struct eh_cleanup_entry {

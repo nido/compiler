@@ -146,6 +146,7 @@ extern LABEL_IDX lookup_cleanups(INITV_IDX&);
 #ifdef __cplusplus
 extern "C" {
 #endif
+extern const int WFE_CPlusPlus_Translator;
 #if defined(_NO_WEAK_SUPPORT_)
 extern void Push_Scope_Cleanup (tree t);
 extern void Pop_Scope_And_Do_Cleanups ();

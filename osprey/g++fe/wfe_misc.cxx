@@ -48,6 +48,9 @@ extern "C" {
 #include "wfe_misc.h"
 #include "wfe_expr.h"
 #include "wfe_stmt.h"
+#ifdef KEY
+#include "tree_symtab.h"
+#endif
 #ifdef TARG_MIPS
 #include "mips/mips.h"
 #endif
@@ -829,3 +832,69 @@ void process_diag_override_option(an_option_kind kind,
 {
 }
 */
+
+#ifdef KEY
+// Stack of VAR_DECLs representing guard variables.  A NULL_TREE means the
+// guard variable is needed but not yet allocated.
+std::vector<tree> guard_vars;
+
+static void
+WFE_Guard_Var_Init()
+{
+  // Clear the stack.
+  guard_vars.clear();
+}
+
+// Indicate a new guard variable is needed.
+void
+WFE_Guard_Var_Push()
+{
+  guard_vars.push_back(NULL_TREE);
+}
+
+// Get the guard variable currently in effect.  NULL_TREE if guard variable is
+// needed but not yet allocated.
+tree
+WFE_Guard_Var_Pop()
+{
+  FmtAssert (!guard_vars.empty(), ("WFE_Guard_Var_Pop: no guard vars to pop"));
+  tree t = guard_vars.back();
+  guard_vars.pop_back();
+  return t;
+}
+
+// Return the current guard variable.  Allocate one if it doesn't exist.
+tree
+WFE_Get_Guard_Var()
+{
+  tree t;
+
+  // Empty stack means no guard variable is needed.
+  if (guard_vars.empty())
+    return NULL_TREE;
+
+  // If top of stack is not NULL_TREE, then it is a valid guard variable.
+  t = guard_vars.back();
+  if (t != NULL_TREE)
+    return t;
+
+  // Top of stack is NULL_TREE.  Replace top of stack with a real guard
+  // variable.
+  guard_vars.pop_back();	// Pop off the NULL_TREE.
+  t = build_decl(VAR_DECL, NULL_TREE, integer_type_node);
+#ifdef TARG_ST
+  static int i;
+  /* The call to build_decl does not set DECL_CONTEXT, so if we use Get_ST
+     we will get a guard of FSTATIC storage class.  Here create explicitly
+     the ST we want. */
+  ST *guard_st = New_ST (CURRENT_SYMTAB);
+  ST_Init (guard_st, Save_Str2i (".guard_dtor", "", i++), CLASS_VAR, SCLASS_AUTO,
+           EXPORT_LOCAL, MTYPE_To_TY(Integer_type));
+  set_DECL_ST(t, guard_st);
+#else
+  Get_ST(t);
+#endif
+  guard_vars.push_back(t);	// Push new guard variable onto stack.
+  return t;
+}
+#endif

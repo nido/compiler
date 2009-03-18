@@ -79,7 +79,17 @@ static void print_volatility(TY_IDX &ty_idx);
 
 extern FILE *tree_dump_file; // For debugging only
 
-/* extern */ INT pstatic_as_global;
+#ifdef TARG_ST
+INT pstatic_as_global = 0;
+#else
+extern INT pstatic_as_global;
+#endif
+
+#ifdef TARG_ST
+/* KEY use these for C++ but not for C, so provide stubs only here. */
+void add_duplicates (tree newdecl, tree olddecl) {}
+void erase_duplicates (tree decl) {}
+#endif
 
 static char*
 Get_Name (tree node)

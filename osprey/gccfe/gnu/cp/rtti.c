@@ -1442,6 +1442,28 @@ unemitted_tinfo_decl_p (t, data)
   return 0;
 }
 
+#ifdef KEY
+// We make this less strict than gcc's definition. It seems, only 
+// typeinfos should come to this function "emit_tinfo_decl" for 
+// emission. For some typeinfos, gcc sets TREE_SYMBOL_REFERENCED
+// in its exception handling code, which we do not use. Hence this 
+// flag does not get set, and hence the typeinfo does not get 
+// initialized, giving link-time errors.
+//
+// In some cases, though, this may result in emission of tinfos 
+// even if they are REALLY not used/referenced.
+//
+// Ideally, we could have initialized these typeinfos in our 
+// front-end when they are used/referenced. But that would require
+// invoking several gcc functions, and then changing the already
+// created ST entries.
+#define DECL_MAY_BE_NEEDED_P(DECL)                                     \
+  ((at_eof && TREE_PUBLIC (DECL) && !DECL_COMDAT (DECL))        \
+   || (DECL_ASSEMBLER_NAME_SET_P (DECL)                         \
+       /*&& TREE_SYMBOL_REFERENCED (DECL_ASSEMBLER_NAME (DECL))*/)  \
+   || (flag_syntax_only && TREE_USED (DECL)))
+#endif // KEY
+
 /* Finish a type info decl. DECL_PTR is a pointer to an unemitted
    tinfo decl.  Determine whether it needs emitting, and if so
    generate the initializer.  */
@@ -1465,11 +1487,23 @@ emit_tinfo_decl (decl_ptr, data)
 #endif
   
   import_export_tinfo (decl, type, in_library);
+#ifdef KEY
+  if (DECL_REALLY_EXTERN (decl) || !DECL_MAY_BE_NEEDED_P (decl))
+#else
   if (DECL_REALLY_EXTERN (decl) || !DECL_NEEDED_P (decl))
+#endif // KEY
     return 0;
 
   if (!doing_runtime && in_library)
     return 0;
+
+#ifdef KEY
+  if (TREE_SYMBOL_REFERENCED (DECL_ASSEMBLER_NAME (decl)))
+    TREE_NOT_EMITTED_BY_GXX (decl) = 0;
+  else
+  // at this point it seems g++ is not emitting this symbol, we will decide
+    TREE_NOT_EMITTED_BY_GXX (decl) = 1;
+#endif
 
   non_public = 0;
   var_desc = get_pseudo_ti_desc (type);

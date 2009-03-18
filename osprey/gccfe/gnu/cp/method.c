@@ -352,6 +352,9 @@ make_thunk (function, delta, vcall_index)
 
   return thunk;
 }
+#ifdef KEY
+extern void gxx_emits_decl PARAMS ((tree));
+#endif // KEY
 
 /* Emit the definition of a C++ multiple inheritance vtable thunk.  If
    EMIT_P is nonzero, the thunk is emitted immediately.  */
@@ -416,6 +419,9 @@ use_thunk (thunk_fndecl, emit_p)
     }
 
   push_to_top_level ();
+
+  DECL_INITIAL_2 (thunk_fndecl) = DECL_INITIAL (thunk_fndecl);
+  gxx_emits_decl (thunk_fndecl);
 
   /* The back-end expects DECL_INITIAL to contain a BLOCK, so we
      create one.  */

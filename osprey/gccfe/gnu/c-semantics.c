@@ -545,13 +545,14 @@ genrtl_for_stmt (t)
      pragmas from the BLOCK, and insert them just before the loop
      body. */
 #ifdef TARG_ST
-  void *p_pragmas = WFE_Save_Pragmas();
+  void *p_pragmas = !WFE_CPlusPlus_Translator ? WFE_Save_Pragmas() : NULL;
 #endif
 
   expand_stmt (FOR_INIT_STMT (t));
 
 #ifdef TARG_ST
-  WFE_Move_Pragmas(p_pragmas);
+  if (!WFE_CPlusPlus_Translator)
+    WFE_Move_Pragmas(p_pragmas);
 #endif
 
   /* Expand the initialization.  */
@@ -897,20 +898,22 @@ expand_stmt (t)
 	  genrtl_scope_stmt (t);
 #ifdef TARG_ST
 	  /* (cbr) support cleanup */
-	  if (SCOPE_BEGIN_P(t)) {
-	    Push_Scope_Cleanup (t);
-	    // [CL] support for lexical blocks
-	    if (!SCOPE_NULLIFIED_P(t)) {
-	      if (lang_start_lexical_block)
-		lang_start_lexical_block(t->common.scope);
+	  if (!WFE_CPlusPlus_Translator) {
+	    if (SCOPE_BEGIN_P(t)) {
+	      Push_Scope_Cleanup (t);
+	      // [CL] support for lexical blocks
+	      if (!SCOPE_NULLIFIED_P(t)) {
+		if (lang_start_lexical_block)
+		  lang_start_lexical_block(t->common.scope);
+	      }
 	    }
-	  }
-	  else {
-	    Pop_Scope_And_Do_Cleanups ();
-	    // [CL] support for lexical blocks
-	    if (!SCOPE_NULLIFIED_P(t)) {
-	      if (lang_end_lexical_block)
-	        lang_end_lexical_block(t->common.scope);
+	    else {
+	      Pop_Scope_And_Do_Cleanups ();
+	      // [CL] support for lexical blocks
+	      if (!SCOPE_NULLIFIED_P(t)) {
+		if (lang_end_lexical_block)
+		  lang_end_lexical_block(t->common.scope);
+	      }
 	    }
 	  }
 #endif
@@ -919,10 +922,12 @@ expand_stmt (t)
 	case CLEANUP_STMT:
 	  genrtl_decl_cleanup (t);
 #ifdef TARG_ST
-	  /* (cbr) support cleanup */
-	  extern bool need_manual_unwinding;
-	  need_manual_unwinding=true;
+	  if (!WFE_CPlusPlus_Translator) {
+	    /* (cbr) support cleanup */
+	    extern bool need_manual_unwinding;
+	    need_manual_unwinding=true;
 	    Push_Scope_Cleanup (t);
+	  }
 #endif
 	  break;
 

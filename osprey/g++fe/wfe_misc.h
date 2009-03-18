@@ -124,6 +124,12 @@ extern void WFE_Stmt_Move_To_End(WN *first_wn, WN *last_wn);
 #endif
 
 #ifdef KEY
+extern void WFE_Guard_Var_Push (void);
+extern tree WFE_Guard_Var_Pop (void);
+extern tree WFE_Get_Guard_Var (void);
+#endif
+
+#ifdef KEY
 extern bool Check_For_Call_Region (int cleanup=0);
 #endif
 

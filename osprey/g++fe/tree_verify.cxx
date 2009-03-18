@@ -1984,6 +1984,11 @@ void verify_target_expr(tree expr)
       verify_expr(arg);
     }
 
+#ifdef TARG_ST
+      // [SC] Gcc does a tree transformation in cp/semantics.c/expand_body()
+      // to remove all such AGGR_INIT_EXPR, so they should not exist here.
+      assert(! AGGR_INIT_VIA_CTOR_P(ini));
+#else
     if (AGGR_INIT_VIA_CTOR_P(ini)) { // It's a constructor invocation.
       // ??? What does this mean?
       // If @code{AGGR_INIT_VIA_CTOR_P} holds of the
@@ -1995,6 +2000,7 @@ void verify_target_expr(tree expr)
       // the @code{VAR_DECL} given by the first operand to the
       // @code{AGGR_INIT_EXPR}; constructors do not return a value.      
     }
+#endif
     
   }
   else                          // An ordinary expr, not an AGGR_INIT_EXPR.

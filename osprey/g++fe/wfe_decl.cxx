@@ -78,10 +78,17 @@ extern "C" {
 #include "tree_symtab.h"
 #include "wfe_expr.h"
 #include "wfe_stmt.h"
+#ifdef KEY
+#include "wfe_dst.h" // DST_enter_member_function
+#endif
 
 #ifdef TARG_ST
+#include <set>
 #include "wfe_pragmas.h"
 #include "wfe_loader.h" //[TB] For Map_Reg_To_Preg
+extern "C" {
+#include "gnu/tree-inline.h"
+}
 #endif
 
 //#define WFE_DEBUG
@@ -117,6 +124,8 @@ Push_Deferred_Function (tree decl)
 {
   //fprintf(stderr, "Push_Deferred_Function 1: %p %s\n", decl, IDENTIFIER_POINTER(DECL_NAME(decl)));
 #ifdef TARG_ST
+  /* [SC] Find cases where we come here before init. deferred_function_stack */
+  FmtAssert (deferred_function_stack, ("deferred_function_stack uninitialized"));
   /* (cbr) Init_Deferred_Function_Stack has not be called in case of error */
   if (!deferred_function_stack) { 
     return;
@@ -217,11 +226,44 @@ tree Current_Function_Decl(void) {return curr_func_decl;}
 // void (*back_end_hook) (tree) = &WFE_Expand_Decl;
 
 #ifdef KEY
+// A stack of entry WN's.  The current function's entry WN is at the top of
+// stack.
+static std::vector<WN*> curr_entry_wn;
+static void Push_Current_Entry_WN(WN *wn) { curr_entry_wn.push_back(wn); }
+static void Pop_Current_Entry_WN() { curr_entry_wn.pop_back(); }
+WN *Current_Entry_WN(void) { return curr_entry_wn.back(); }
 
+// Catch-all for all the functions that g++ turns into assembler, so that we
+// won't miss any while translating into WHIRL.
+std::vector<tree> gxx_emitted_decls;
+// Any typeinfo symbols that we have determined we should emit
+std::vector<tree> emit_typeinfos;
 // Any var_decls or type_decls that we want to expand last.
 std::vector<tree> emit_decls;
+// Any asm statements at file scope
+std::vector<char *> gxx_emitted_asm;
 // Struct fields whose type we want to set last.
 std::vector<std::pair<tree, FLD_HANDLE> > defer_fields;
+
+void
+gxx_emits_decl(tree t) {
+  const char *n = IDENTIFIER_POINTER(DECL_NAME(t));
+#if 0
+  fprintf (stderr, "gxx_emits_decl: %s", n);
+  if (DECL_NAME(t) && DECL_ASSEMBLER_NAME_SET_P(t)) {
+    fprintf (stderr, "(%s)", IDENTIFIER_POINTER(DECL_ASSEMBLER_NAME(t)));
+  }
+  fprintf (stderr, "\n");
+#endif
+  gxx_emitted_decls.push_back(t);
+}
+
+void
+gxx_emits_typeinfos (tree t) {
+  const char *n = IDENTIFIER_POINTER(DECL_NAME(t));
+  //  fprintf (stderr, "gxx_emits_typeinfos: %s\n", n);
+  emit_typeinfos.push_back (t);
+}
 
 void
 defer_decl (tree t) {
@@ -229,11 +271,514 @@ defer_decl (tree t) {
 }
 
 void
+gxx_emits_asm (char *str) {
+  gxx_emitted_asm.push_back (str);
+}
+
+void
 defer_field (tree t, FLD_HANDLE fld) {
   defer_fields.push_back (std::make_pair(t, fld));
 }
 
+// Support defer creating DST info until all types are created.
+typedef struct {
+  union {
+    struct {		// for is_member_function = 1
+      tree context;
+      tree fndecl;
+    } member_func;
+  } u1;
+  int is_member_function : 1;
+} DST_defer_misc_info;
+
+// List of things that we need to defer creating DST info for.
+std::vector<DST_defer_misc_info *> defer_DST_misc;
+
+typedef struct {
+  tree t;
+  TY_IDX ttidx;
+  TY_IDX idx;
+} DST_defer_type_info;
+
+// List of types that we defer creating DST info for.
+std::vector<DST_defer_type_info *> defer_DST_types;
+
+void
+defer_DST_type (tree t, TY_IDX ttidx, TY_IDX idx)
+{
+  DST_defer_type_info *p =
+    (DST_defer_type_info *) calloc(1, sizeof(DST_defer_type_info));
+  p->t = t;
+  p->ttidx = ttidx;
+  p->idx = idx;
+  defer_DST_types.push_back(p);
+}
 #endif
+
+#ifdef TARG_ST
+static void WFE_Generate_Thunk (tree decl);  /* forward */
+#endif
+
+#ifdef TARG_ST
+ class Target_Expr_Item {
+ private:
+   const tree target;
+   bool stabilized;
+   bool stabilize_change;
+   bool written;
+   std::set<tree> target_aliases;
+ public:
+   Target_Expr_Item (tree t) : target(t), stabilized(false),
+			       stabilize_change(false), written(false) {}
+   tree Use () {
+     FmtAssert (Target_Set_p (), ("Target_Expr_Info.Use() with no target set"));
+     if (! stabilized) {
+       tree stabilized_target = stabilize_reference (target);
+       stabilize_change = (stabilized_target != target);
+       stabilized = true;
+     }
+     return target;
+   }
+   bool Target_Set_p () {
+     return target != NULL_TREE;
+   }
+   void Add_Alias (tree slot) {
+     target_aliases.insert(slot);
+   }
+   void Remove_Alias (tree slot) {
+     target_aliases.erase(slot);
+   }
+   bool Is_Alias_p (tree slot) {
+     return target_aliases.find(slot) != target_aliases.end();
+   }
+   bool Stabilize_Change_p () {
+     return stabilize_change;
+   }
+   bool Written_p () {
+     return written;
+   }
+   void Set_Written (bool v) {
+     written = v;
+   }
+   tree Target () {
+     FmtAssert (Target_Set_p (), ("Target_Expr_Item.Target() with no target set"));
+     return target;
+   }
+ };   
+
+ class Target_Expr_Info {
+ private:
+   std::set<tree> visited_call_exprs;
+   // target_item_stack is basically a stack of target items, where the
+   // top of the stack is the current target item.  We sometimes want to
+   // iterate over all the target items on the stack, so we use
+   // std::vector rather than std:stack.
+   std::vector<Target_Expr_Item *> target_item_stack;
+ public:
+   Target_Expr_Info () {
+     visited_call_exprs.clear();
+     Push_Target (NULL_TREE);
+   }
+   bool Visited_Call_Expr_p (tree t) {
+     return visited_call_exprs.find(t) != visited_call_exprs.end();
+   }
+   void Add_Visited_Call_Expr (tree t) {
+     visited_call_exprs.insert(t);
+   }
+   bool Target_Set_p () {
+     return target_item_stack.back()->Target_Set_p();
+   }
+   bool Written_p () {
+     return target_item_stack.back()->Written_p();
+   }
+   void Set_Written (bool v) {
+     target_item_stack.back()->Set_Written (v);
+   }
+   bool Stabilize_Change_p () {
+     return target_item_stack.back()->Stabilize_Change_p();
+   }
+   tree Target () {
+     return target_item_stack.back()->Target();
+   }
+   void Add_Alias (tree slot) {
+     target_item_stack.back()->Add_Alias(slot);
+   }
+   void Remove_Alias (tree slot) {
+     target_item_stack.back()->Remove_Alias(slot);
+   }
+   void Push_Target (tree t) {
+     target_item_stack.push_back (new Target_Expr_Item (t));
+   }
+   void Pop_Target () {
+     delete target_item_stack.back();
+     target_item_stack.pop_back ();
+   }
+   tree Use () {
+     return target_item_stack.back()->Use();
+   }
+   tree Substitute (tree t) {
+     std::vector<Target_Expr_Item *>::reverse_iterator it;
+     for (it = target_item_stack.rbegin (); it != target_item_stack.rend (); it++) {
+       Target_Expr_Item *item = *it;
+       if (item->Is_Alias_p (t)) {
+	 return item->Use ();
+       }
+     }
+     return t;
+   }
+   void Write (tree t) {
+     std::vector<Target_Expr_Item *>::reverse_iterator it;
+     for (it = target_item_stack.rbegin (); it != target_item_stack.rend (); it++) {
+       Target_Expr_Item *item = *it;
+       if (item->Target_Set_p() && item->Target() == t) {
+	 item->Set_Written (true);
+	 break;
+       }
+     }
+   }
+ };
+   
+static void simplify_target_exprs (tree *tp, Target_Expr_Info &target_expr_info);
+
+static tree
+simplify_target_exprs_r (tree *tp,
+			 int *walk_subtrees,
+			 void *data) {
+  Target_Expr_Info *target_expr_info = (Target_Expr_Info *)data;
+  tree t = *tp;
+  if (TYPE_P (t)) {
+    *walk_subtrees = 0;
+    return NULL_TREE;
+  }
+
+  tree_code code = TREE_CODE (t);
+  switch (code) {
+  case TARGET_EXPR:
+    {
+      *walk_subtrees = 0;
+      /* Here it is indeterminate whether the expression is operand 1 or
+	 operand 3 (because gcc rtl generation may have moved it),
+	 so normalize it to operand 1. */
+      if (TREE_OPERAND (t, 1) == NULL_TREE) {
+	TREE_OPERAND (t, 1) = TREE_OPERAND (t, 3);
+	TREE_OPERAND (t, 3) = NULL_TREE;
+      }
+      tree slot = TREE_OPERAND (t, 0);
+      if (target_expr_info->Target_Set_p ()) {
+	/* This is a "normal" TARGET_EXPR.  We should treat SLOT as
+	   an alias of the real target.  No cleanup is required. */
+	target_expr_info->Add_Alias (slot);
+	/* Here assert that the types of target_expr_info->target and
+	   TREE_TYPE (t) are compatible. */
+	tree target = target_expr_info->Target ();
+	FmtAssert (TYPE_MAIN_VARIANT (TREE_TYPE (t))
+		   == TYPE_MAIN_VARIANT (TREE_TYPE (target)),
+		   ("Type mismatch in simplify_target_exprs_r"));
+	bool old_written = target_expr_info->Written_p ();
+	target_expr_info->Set_Written (false);
+	simplify_target_exprs (& TREE_OPERAND (*tp, 1), *target_expr_info);	
+	if (target_expr_info->Written_p ()) {
+	  /* Target is written in the rhs, so we can remove this
+	     TARGET_EXPR node completely. Remember no cleanup is required
+	     for a "normal" target expr. */
+	  *tp = TREE_OPERAND (t, 1);
+	} else {
+	  /* Rewrite this node to be a MODIFY_EXPR of the true target */
+	  *tp = build (MODIFY_EXPR, TREE_TYPE (t),
+		       target,
+		       TREE_OPERAND (t, 1));
+	  target_expr_info->Set_Written (old_written);
+	}
+	target_expr_info->Remove_Alias (slot);
+      } else {
+	/* This is an "orphaned" TARGET_EXPR.  SLOT is a real variable,
+	   not a temporary.  SLOT becomes the new target for the expression
+	   and the cleanup. */
+	target_expr_info->Push_Target (slot);
+	simplify_target_exprs (& TREE_OPERAND (t, 1), *target_expr_info);
+	if (target_expr_info->Written_p ()) {
+	  /* Put the expression as 3rd operand, as an indicator that the
+	     target is written in the expression, so we do not have to assign
+	     it when we evaluate this TARGET_EXPR node. */
+	  TREE_OPERAND (t, 3) = TREE_OPERAND (t, 1);
+	  TREE_OPERAND (t, 1) = NULL_TREE;
+	}
+	if (TREE_OPERAND(t, 2)) {
+	  simplify_target_exprs (& TREE_OPERAND (t, 2), *target_expr_info);
+	}
+	target_expr_info->Pop_Target ();
+      }
+    }
+    break;
+  case INIT_EXPR:
+  case MODIFY_EXPR:
+  case PREDECREMENT_EXPR:
+  case PREINCREMENT_EXPR:
+  case POSTDECREMENT_EXPR:
+  case POSTINCREMENT_EXPR:
+    {
+      *walk_subtrees = 0;
+      simplify_target_exprs (& TREE_OPERAND (t, 0), *target_expr_info);
+
+      target_expr_info->Push_Target (TREE_OPERAND (t, 0));
+      simplify_target_exprs (& TREE_OPERAND (t, 1), *target_expr_info);
+      if (target_expr_info->Written_p ()) {
+	/* If we can guarantee the target is written in the rhs, then
+	   there is no need to write to the target here, so here just evaluate
+	   for side-effects.
+	   This is used to avoid targets with copy constructors, where we do
+	   not want to assign multiple times. */
+	if (target_expr_info->Stabilize_Change_p ()
+	    && TREE_SIDE_EFFECTS(target_expr_info->Target ())) {
+	      *tp = build (COMPOUND_EXPR, TREE_TYPE (t),
+			   target_expr_info->Target(),
+			   TREE_OPERAND (t, 1));
+	} else {
+	  *tp = TREE_OPERAND (t, 1);
+	}
+      } else {
+	if (target_expr_info->Stabilize_Change_p ()
+	    && TREE_SIDE_EFFECTS(target_expr_info->Target ())) {
+	  /* We used the target somewhere inside the rhs, so we should precompute
+	     the stabilized form. */
+	  *tp = build (COMPOUND_EXPR, TREE_TYPE (t),
+		       target_expr_info->Target(),
+		       build (code, TREE_TYPE (t),
+			      target_expr_info->Target(),
+			      TREE_OPERAND (t, 1)));
+	}
+      }
+      target_expr_info->Pop_Target ();
+    }
+    break;
+  case VAR_DECL:
+    /* This could be an alias introduced by a TARGET_EXPR.  If so, substitute
+       the true target. */
+    *tp = target_expr_info->Substitute (*tp);
+    break;
+
+  case CALL_EXPR:
+    {
+      *walk_subtrees = 0;
+      simplify_target_exprs (& TREE_OPERAND (t, 0), *target_expr_info);
+
+      /* An outer INIT/MODIFY target does not propagate down into TARGET_EXPRs
+	 in the arglist.  However, the arglist may have references to
+	 a variable defined in an outer TARGET_EXPR. */
+      target_expr_info->Push_Target (NULL_TREE);
+      simplify_target_exprs (& TREE_OPERAND (t, 1), *target_expr_info);
+      target_expr_info->Pop_Target ();
+      
+      /* Set the written flag if this is a constructor of our target.
+         Do this after transforming the args so that we do not have to check
+	 for aliases. */
+      tree callee_fndecl = get_callee_fndecl (t);
+      tree first_arg = TREE_OPERAND(t, 1) ? TREE_VALUE(TREE_OPERAND(t, 1)) : NULL_TREE;
+      if (callee_fndecl != NULL_TREE
+	  && DECL_CONSTRUCTOR_P(callee_fndecl)
+	  && first_arg != NULL_TREE
+	  && TREE_CODE (first_arg) == ADDR_EXPR) {
+	tree constructor_dest = TREE_OPERAND(first_arg, 0);
+	target_expr_info->Write(constructor_dest);
+      }
+
+      /* Insert the return value address at the head of the args list. */
+      if (RETURN_IN_MEMORY (TREE_TYPE(t)) ||
+	  (TYPE_LANG_SPECIFIC(TREE_TYPE(t)) &&
+	   TREE_ADDRESSABLE (TREE_TYPE(t)) && 
+	   CLASSTYPE_NON_POD_P (TREE_TYPE(t)))) {  
+	if (! target_expr_info->Visited_Call_Expr_p (t)) {
+	  TREE_OPERAND (t, 1) = tree_cons (NULL_TREE,
+					   build1 (ADDR_EXPR,
+						   build_pointer_type(TREE_TYPE(t)),
+						   target_expr_info->Use()),
+					   TREE_OPERAND(t, 1));
+	}
+	target_expr_info->Set_Written(true);
+      }
+      target_expr_info->Add_Visited_Call_Expr(t);
+    }
+    break;
+
+  case COMPOUND_EXPR:
+    /* target is not propagated into arg0 of COMPOUND_EXPR. */
+    {
+      *walk_subtrees = 0;
+      target_expr_info->Push_Target (NULL_TREE);
+      simplify_target_exprs (& TREE_OPERAND (t, 0), *target_expr_info);
+      target_expr_info->Pop_Target ();
+      simplify_target_exprs (& TREE_OPERAND (t, 1), *target_expr_info);
+    }
+    break;
+
+  case SAVE_EXPR:
+  case ADDR_EXPR:
+  case INDIRECT_REF:
+  case COMPONENT_REF:
+  case BIT_FIELD_REF:
+  case ARRAY_RANGE_REF:
+      /* target is not propagated into arg of these. */
+    {
+      *walk_subtrees = 0;
+      target_expr_info->Push_Target (NULL_TREE);
+      simplify_target_exprs (& TREE_OPERAND (t, 0), *target_expr_info);
+      target_expr_info->Pop_Target ();
+    }
+    break;
+
+  case ARRAY_REF:
+      /* target is not propagated into arg of these. */
+    {
+      *walk_subtrees = 0;
+      target_expr_info->Push_Target (NULL_TREE);
+      simplify_target_exprs (& TREE_OPERAND (t, 0), *target_expr_info);
+      simplify_target_exprs (& TREE_OPERAND (t, 1), *target_expr_info);
+      target_expr_info->Pop_Target ();
+    }
+    break;
+    
+  case CONSTRUCTOR:
+      /* target is not propagated into arg of this. */
+    {
+      *walk_subtrees = 0;
+      target_expr_info->Push_Target (NULL_TREE);
+      simplify_target_exprs (& CONSTRUCTOR_ELTS (t), *target_expr_info);
+      target_expr_info->Pop_Target ();
+    }
+    break;
+
+  case COND_EXPR:
+    {
+      *walk_subtrees = 0;
+      /* Take care with written flag here:
+	 target is definitely written only if written in condition,
+	 or BOTH conditional operands.
+      */
+      simplify_target_exprs (& TREE_OPERAND (t, 0), *target_expr_info);
+      bool old_written = target_expr_info->Written_p ();
+      target_expr_info->Set_Written (false);
+      simplify_target_exprs (& TREE_OPERAND (t, 1), *target_expr_info);
+      bool lhs_written = target_expr_info->Written_p ();
+      target_expr_info->Set_Written (false);
+      simplify_target_exprs (& TREE_OPERAND (t, 2), *target_expr_info);
+      bool rhs_written = target_expr_info->Written_p ();
+      target_expr_info->Set_Written (old_written
+				     || (lhs_written && rhs_written));
+    }
+    break;
+
+  case TRUTH_ANDIF_EXPR:
+  case TRUTH_ORIF_EXPR:
+    {
+      *walk_subtrees = 0;
+      /* Take care with written flag here:
+	 target cannot be assumed written if only written in the
+	 conditional operand. */
+      simplify_target_exprs (& TREE_OPERAND (t, 0), *target_expr_info);
+      bool old_written = target_expr_info->Written_p ();
+      simplify_target_exprs (& TREE_OPERAND (t, 1), *target_expr_info);
+      target_expr_info->Set_Written (old_written);
+    }
+    break;
+
+  default:
+    break;
+  }
+  return NULL_TREE;
+}
+
+// simplify_target_exprs transforms the TARGET_EXPR nodes in *TP so that
+// they are easier to handle by the whirl generator.
+// Ref. the gcc documentation for definition of "normal" and "orphaned"
+// TARGET_EXPRs.
+//
+// This function removes all "normal" target exprs by substituting the
+// real target for the target variable in the target expression, and
+// transforming the TARGET_EXPR to a MODIFY_EXPR that assigns the real target.
+// The target variable is completely removed.  In the case where we
+// can determine that the real target is already assigned in the
+// target expression, then no MODIFY_EXPR is necessary, and the target
+// expression can be evaluated just for its side-effects.
+//
+// "Orphaned" target exprs are unchanged, except to indicate if the
+// target is assigned in the target expression: the target expression is
+// placed in operand 3 in that case, otherwise operand 1.  If the whirl
+// generator finds the target expression in operand 3, then the
+// target expression can be evaluated just for its side-effects, otherwise
+// the target expression value should be assigned to the target variable.
+//
+// This function also transforms calls to return-in-memory, by adding
+// a pointer to the result destination to the head of the argument list.
+// Since nodes can be visited more than once, and the argument list should
+// be transformed only once, it is necessary to remember which CALL_EXPR
+// nodes have been visited.
+static void
+simplify_target_exprs (tree *tp, Target_Expr_Info &target_expr_info)
+{
+  walk_tree (tp, simplify_target_exprs_r, &target_expr_info, NULL);
+}
+
+#endif
+
+// Return 1 if we actually expand decl.
+static int
+WFE_Expand_Function_Body (tree decl)
+{
+  tree body;
+
+#if defined (TARG_ST) && (GNU_FRONT_END==33)
+  /* (cbr) don't emit functions if we don't need them */
+  if (DECL_IGNORED_P (decl))
+    return 0;
+#endif
+
+#ifdef KEY
+  if (expanded_decl(decl) == TRUE)
+    return 0;
+
+  expanded_decl(decl) = TRUE;
+#endif
+  //  fprintf(stderr, "FUNCTION_DECL: %s\n", IDENTIFIER_POINTER(DECL_NAME(decl)));
+
+  (void) WFE_Start_Function(decl);
+
+  Set_Current_Function_Decl(decl);
+
+#ifdef TARG_ST
+  {
+    Target_Expr_Info target_expr_info;
+    simplify_target_exprs (& DECL_SAVED_TREE(decl), target_expr_info);
+  }
+#endif
+
+  for (body = DECL_SAVED_TREE(decl); body; body = TREE_CHAIN(body))
+    Mark_Scopes_And_Labels (body);
+
+  for (body = DECL_SAVED_TREE(decl); body; body = TREE_CHAIN(body))
+    WFE_Expand_Stmt(body);
+
+  WFE_Finish_Function();
+
+#ifdef TARG_ST
+  /* (cbr) expand needed thunks */
+  if (DECL_VIRTUAL_P (decl))
+    {
+      tree thunk;
+      for (thunk = DECL_THUNKS (decl); thunk; thunk = TREE_CHAIN (thunk))
+        WFE_Generate_Thunk (thunk);
+    }
+#endif
+
+#ifdef TARG_ST
+  /* (cbr) handle attribute */
+  if (DECL_STATIC_CONSTRUCTOR (decl))
+    WFE_Assemble_Constructor (decl);
+  if (DECL_STATIC_DESTRUCTOR (decl))
+    WFE_Assemble_Destructor (decl);
+#endif
+
+  return 1;
+}
 
 /*
  * WFE_Expand_Decl is called with the root of the g++ tree (always a
@@ -249,6 +794,12 @@ void WFE_Finish_Function(void);
 static void
 WFE_Generate_Thunk (tree decl)
 {
+#ifdef KEY
+  if (expanded_decl(decl) == TRUE)
+    return;
+  expanded_decl(decl) = TRUE;
+#endif
+
   Is_True(decl != NULL &&
           TREE_CODE(decl) == FUNCTION_DECL &&
           DECL_THUNK_P(decl) &&
@@ -411,51 +962,6 @@ static void process_local_classes()
   }
 }
 
-static
-void WFE_Expand_Function_Body (tree decl)
-{
-  tree body;
-
-#if defined (TARG_ST) && (GNU_FRONT_END==33)
-  /* (cbr) don't emit functions if we don't need them */
-  if (DECL_IGNORED_P (decl))
-    return;
-#endif
-
-  //  fprintf(stderr, "FUNCTION_DECL: %s\n", IDENTIFIER_POINTER(DECL_NAME(decl)));
-
-  (void) WFE_Start_Function(decl);
-
-  Set_Current_Function_Decl(decl);
-
-
-  for (body = DECL_SAVED_TREE(decl); body; body = TREE_CHAIN(body))
-    Mark_Scopes_And_Labels (body);
-
-  for (body = DECL_SAVED_TREE(decl); body; body = TREE_CHAIN(body))
-    WFE_Expand_Stmt(body);
-
-  WFE_Finish_Function();
-
-#ifdef TARG_ST
-  /* (cbr) expand needed thunks */
-  if (DECL_VIRTUAL_P (decl))
-    {
-      tree thunk;
-      for (thunk = DECL_THUNKS (decl); thunk; thunk = TREE_CHAIN (thunk))
-        WFE_Generate_Thunk (thunk);
-    }
-#endif
-
-#ifdef TARG_ST
-  /* (cbr) handle attribute */
-  if (DECL_STATIC_CONSTRUCTOR (decl))
-    WFE_Assemble_Constructor (decl);
-  if (DECL_STATIC_DESTRUCTOR (decl))
-    WFE_Assemble_Destructor (decl);
-#endif
-}
-
 void WFE_Expand_Decl(tree decl)
 {
   Is_True(decl != NULL && TREE_CODE_CLASS(TREE_CODE(decl)) == 'd',
@@ -490,39 +996,35 @@ void WFE_Expand_Decl(tree decl)
         //                char * name = (char *) IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (decl));
                 //                printf ("EXPAND_DECL %s 0x%x\n", name, decl);
 
-        if (body != NULL_TREE &&
-#if defined (TARG_ST) && (GNU_FRONT_END==33)
-            /* (cbr) don't output explicit extern comdat  */
-            (!DECL_EXTERNAL (decl) || (TREE_PUBLIC(decl) && DECL_COMDAT (decl))) &&
-            /* (cbr) gcc 3.3 upgrade */
-            (!DECL_MAYBE_IN_CHARGE_DESTRUCTOR_P (decl) && 
-             !DECL_MAYBE_IN_CHARGE_CONSTRUCTOR_P (decl)) &&
-#else
-            (!DECL_EXTERNAL (decl) || TREE_PUBLIC(decl)) &&
-#endif
+        if (body != NULL_TREE && !DECL_EXTERNAL(decl) &&
+#ifndef KEY
+	    // For now, emit all template-related funcs from GCC 3.2.  Fix
+	    // the code when we have more time, 
             (DECL_TEMPLATE_INFO(decl) == NULL 		   ||
              DECL_FRIEND_PSEUDO_TEMPLATE_INSTANTIATION(decl) ||
              DECL_TEMPLATE_INSTANTIATED(decl) 		   ||
-#if defined (TARG_ST) && (GNU_FRONT_END==33)
-             /* (cbr) defer instantiated template */
-             DECL_TEMPLATE_INSTANTIATION(decl) ||
-#endif  
-             DECL_TEMPLATE_SPECIALIZATION(decl))) {
-          (void) Get_ST(decl);
+             DECL_TEMPLATE_SPECIALIZATION(decl)) &&
+#endif
+	     !DECL_MAYBE_IN_CHARGE_CONSTRUCTOR_P(decl) &&
+	     !DECL_MAYBE_IN_CHARGE_DESTRUCTOR_P(decl)) {
+
+#ifndef KEY	// Don't call Get_ST we don't have a PU to attach the ST to
+		// yet.  It seems this Get_ST is unnecessary anyway because
+		// Get_ST is called again in WFE_Start_Function, which is
+		// called by WFE_Expand_Function_Body below.
+         (void) Get_ST(decl);
+#endif
           if (!Enable_WFE_DFE) {
             if (CURRENT_SYMTAB != GLOBAL_SYMTAB ||
-                DECL_FUNCTION_MEMBER_P(decl)    
-#if !defined (TARG_ST) || (GNU_FRONT_END!=33)
-                ||  strncmp (IDENTIFIER_POINTER(DECL_NAME(decl)), "__tcf", 5) == 0
-#endif
-                ) {
+                DECL_FUNCTION_MEMBER_P(decl)    ||
+		strncmp (IDENTIFIER_POINTER(DECL_NAME(decl)), "__tcf", 5) == 0)
               Push_Deferred_Function (decl);
-            }
-          else
- {
+          else {
             WFE_Expand_Function_Body (decl);
+#ifndef KEY
             while (deferred_function_i != -1)
               WFE_Expand_Function_Body (Pop_Deferred_Function ());
+#endif
           }
          }
         }
@@ -535,11 +1037,8 @@ void WFE_Expand_Decl(tree decl)
        * the namespace declarations.  
        */
 
-#ifndef TARG_ST
-      /* (cbr) why that ? */
-      if (decl == std_node)
-        break; // ignore namespace std
-#endif
+      /*      if (decl == std_node)
+	      break; // ignore namespace std */
       if (DECL_NAMESPACE_ALIAS(decl))
 	break;
       tree subdecl;
@@ -549,10 +1048,12 @@ void WFE_Expand_Decl(tree decl)
 	WFE_Expand_Decl(subdecl);
       if (decl == global_namespace)
 	process_local_classes(); 
+#ifndef KEY
       while (deferred_function_i != -1) {
 //      fprintf(stderr, "NAMESPACE_DECL: Pop_Deferred_Function\n");
 	WFE_Expand_Function_Body (Pop_Deferred_Function ());
       }
+#endif
       break;
     }
 
@@ -606,6 +1107,9 @@ void WFE_Expand_Decl(tree decl)
     }
 
   case VAR_DECL: {
+#ifdef KEY
+      expanded_decl(decl) = TRUE;
+#endif
 #ifdef TARG_ST
       /* (cbr) anon unions support */
       ST *st =  Get_ST(decl);
@@ -620,7 +1124,7 @@ void WFE_Expand_Decl(tree decl)
           DECL_ALIGN (decl_elt) = DECL_ALIGN (decl);
           DECL_USER_ALIGN (decl_elt) = DECL_USER_ALIGN (decl);
 
-          DECL_ST(decl_elt) = st;          
+          set_DECL_ST(decl_elt, st);
         }
       }
 #else
@@ -707,28 +1211,6 @@ Setup_Entry_For_EH (void)
 			EXPORT_LOCAL, MTYPE_To_TY(Pointer_Mtype));
     Set_ST_one_per_pu (exc_ptr_st);
 
-#ifdef TARG_ST
-#if 0
-    /* (cbr) valid if EH_RETURN_DATA_REGNO live in a callee registers.
-       if not must lower_landing_pad_entry to force their saving on handler's entry */
- {
-#ifndef TARG_ST
-	extern PREG_NUM Map_Reg_To_Preg [];
-#else
-	//TB now Map_Reg_To_Preg is defined.
-#endif
-  TY_IDX ty_idx = ST_type (exc_ptr_st);
-  Set_TY_is_volatile (ty_idx);
-  Set_ST_type (exc_ptr_st, ty_idx);
-  Set_ST_assigned_to_dedicated_preg (exc_ptr_st);
-  ST_ATTR_IDX st_attr_idx;
-  ST_ATTR&    st_attr = New_ST_ATTR (CURRENT_SYMTAB, st_attr_idx);
-  ST_ATTR_Init (st_attr, ST_st_idx (exc_ptr_st), ST_ATTR_DEDICATED_REGISTER,
-                Map_Reg_To_Preg[EH_RETURN_DATA_REGNO(0)]);
- }
-#endif
-#endif
-
     INITV_IDX exc_ptr_iv = New_INITV();
     INITV_Set_VAL (Initv_Table[exc_ptr_iv], Enter_tcon (Host_To_Targ (MTYPE_U4,
                                 ST_st_idx (exc_ptr_st))), 1);
@@ -737,28 +1219,6 @@ Setup_Entry_For_EH (void)
     ST_Init (filter_st, Save_Str ("__Exc_Filter__"), CLASS_VAR, SCLASS_AUTO,
 	                EXPORT_LOCAL, MTYPE_To_TY(TARGET_64BIT ? MTYPE_U8 : MTYPE_U4));
     Set_ST_one_per_pu (filter_st);
-
-#ifdef TARG_ST
-#if 0
-    /* (cbr) valid if EH_RETURN_DATA_REGNO live in a callee registers.
-       if not must lower_landing_pad_entry to force their saving on handler's entry */
- {
-#ifndef TARG_ST
-	extern PREG_NUM Map_Reg_To_Preg [];
-#else
-	//TB now Map_Reg_To_Preg is defined
-#endif
-  TY_IDX ty_idx = ST_type (filter_st);
-  Set_TY_is_volatile (ty_idx);
-  Set_ST_type (filter_st, ty_idx);
-  Set_ST_assigned_to_dedicated_preg (filter_st);
-  ST_ATTR_IDX st_attr_idx;
-  ST_ATTR&    st_attr = New_ST_ATTR (CURRENT_SYMTAB, st_attr_idx);
-  ST_ATTR_Init (st_attr, ST_st_idx (filter_st), ST_ATTR_DEDICATED_REGISTER,
-                Map_Reg_To_Preg[EH_RETURN_DATA_REGNO(1)]);
- }
-#endif
-#endif
 
     INITV_IDX filter_iv = New_INITV();
     INITV_Set_VAL (Initv_Table[filter_iv], Enter_tcon (Host_To_Targ (MTYPE_U4,
@@ -776,6 +1236,124 @@ Setup_Entry_For_EH (void)
     Set_INITV_next (tinfo, eh_spec);
 
     Get_Current_PU().unused = New_INITO (ST_st_idx (etable), exc_ptr_iv);
+}
+#endif
+
+#ifdef KEY
+// Generate WHIRL representing an asm at file scope (between functions).
+// Taken from kgccfe/wfe_decl.cxx
+void
+WFE_Assemble_Asm(char *asm_string)
+{
+  ST *asm_st = New_ST(GLOBAL_SYMTAB);
+  ST_Init(asm_st,
+	  Str_To_Index (Save_Str (asm_string),
+			Global_Strtab),
+	  CLASS_NAME,
+	  SCLASS_UNKNOWN,
+	  EXPORT_LOCAL,
+	  (TY_IDX) 0);
+
+  Set_ST_asm_function_st(*asm_st);
+
+  WN *func_wn = WN_CreateEntry(0,
+			       asm_st,
+			       WN_CreateBlock(),
+			       NULL,
+			       NULL);
+
+  /* Not sure how much setup of WN_MAP mechanism, etc. we need to do.
+   * Pretty certainly we need to set up some PU_INFO stuff just to get
+   * this crazy hack of a FUNC_ENTRY node written out to the .B file.
+   */
+
+  /* This code patterned after "wfe_decl.cxx":WFE_Start_Function, and
+     specialized for the application at hand. */
+
+#ifdef ASM_NEEDS_WN_MAP
+    /* deallocate the old map table */
+    if (Current_Map_Tab) {
+        WN_MAP_TAB_Delete(Current_Map_Tab);
+        Current_Map_Tab = NULL;
+    }
+
+    /* set up the mem pool for the map table and predefined mappings */
+    if (!map_mempool_initialized) {
+        MEM_POOL_Initialize(&Map_Mem_Pool,"Map_Mem_Pool",FALSE);
+        map_mempool_initialized = TRUE;
+    } else {
+        MEM_POOL_Pop(&Map_Mem_Pool);
+    }
+
+    MEM_POOL_Push(&Map_Mem_Pool);
+
+    /* create the map table for the next PU */
+    (void)WN_MAP_TAB_Create(&Map_Mem_Pool);
+#endif
+
+    // This non-PU really doesn't need a symbol table and the other
+    // trappings of a local scope, but if we create one, we can keep
+    // all the ir_bread/ir_bwrite routines much more blissfully
+    // ignorant of the supreme evil that's afoot here.
+
+    FmtAssert(CURRENT_SYMTAB == GLOBAL_SYMTAB,
+	      ("file-scope asm must be at global symtab scope."));
+
+    New_Scope (CURRENT_SYMTAB + 1, Malloc_Mem_Pool, TRUE);
+
+    if (Show_Progress) {
+      fprintf (stderr, "Asm(%s)\n", ST_name (asm_st));
+      fflush (stderr);
+    }
+    PU_Info *pu_info;
+    /* allocate a new PU_Info and add it to the list */
+    pu_info = TYPE_MEM_POOL_ALLOC(PU_Info, Malloc_Mem_Pool);
+    PU_Info_init(pu_info);
+
+    Set_PU_Info_tree_ptr (pu_info, func_wn);
+    PU_Info_maptab (pu_info) = Current_Map_Tab;
+    PU_Info_proc_sym (pu_info) = ST_st_idx(asm_st);
+    PU_Info_cu_dst (pu_info) = DST_Get_Comp_Unit ();
+
+    Set_PU_Info_state(pu_info, WT_SYMTAB, Subsect_InMem);
+    Set_PU_Info_state(pu_info, WT_TREE, Subsect_InMem);
+    Set_PU_Info_state(pu_info, WT_PROC_SYM, Subsect_InMem);
+
+    Set_PU_Info_flags(pu_info, PU_IS_COMPILER_GENERATED);
+
+    if (PU_Info_Table [CURRENT_SYMTAB])
+      PU_Info_next (PU_Info_Table [CURRENT_SYMTAB]) = pu_info;
+    else
+      PU_Tree_Root = pu_info;
+
+    PU_Info_Table [CURRENT_SYMTAB] = pu_info;
+
+  /* This code patterned after "wfe_decl.cxx":WFE_Finish_Function, and
+     specialized for the application at hand. */
+
+    // write out all the PU information
+    pu_info = PU_Info_Table [CURRENT_SYMTAB];
+
+    /* deallocate the old map table */
+    if (Current_Map_Tab) {
+        WN_MAP_TAB_Delete(Current_Map_Tab);
+        Current_Map_Tab = NULL;
+    }
+
+    PU_IDX pu_idx;
+    PU &pu = New_PU(pu_idx);
+    PU_Init(pu, (TY_IDX) 0, CURRENT_SYMTAB);
+    Set_PU_no_inline(pu);
+    Set_PU_no_delete(pu);
+    Set_ST_pu(*asm_st, pu_idx);
+
+    Write_PU_Info (pu_info);
+
+    // What does the following line do?
+    PU_Info_Table [CURRENT_SYMTAB+1] = NULL;
+
+    Delete_Scope(CURRENT_SYMTAB);
+    --CURRENT_SYMTAB;
 }
 #endif
 
@@ -813,6 +1391,12 @@ WFE_Start_Function (tree fndecl)
 #ifdef WFE_DEBUG
     fprintf (stdout, "Start Function:\n");
     print_tree (stdout, fndecl);
+#endif
+
+#ifdef KEY
+    // Add DSTs for all types seen so far.  Do this now because the expansion
+    // of formal parameters needs those DSTs.
+    add_deferred_DST_types();
 #endif
 
     if (CURRENT_SYMTAB != GLOBAL_SYMTAB)
@@ -889,7 +1473,7 @@ WFE_Start_Function (tree fndecl)
         if (!DECL_EXTERNAL (fndecl) && TREE_PUBLIC (fndecl)) {
           if ((func_st = DECL_ST (fndecl)) &&
               PU_must_delete (Pu_Table [ST_pu (func_st)])) {
-            DECL_ST (fndecl) = 0;
+            set_DECL_ST (fndecl, 0);
           }
         }
       }
@@ -1050,6 +1634,7 @@ WFE_Start_Function (tree fndecl)
 
 #ifdef TARG_ST
     // (cbr) create first formal parameter for nrv or return optimisations
+    first_formal = NULL;
     if (xtra_parm) {
       ST *formal;
       tree nrv = DECL_NRV (fndecl);
@@ -1074,6 +1659,11 @@ WFE_Start_Function (tree fndecl)
 
       Set_ST_is_value_parm(formal);
       WN_kid(entry_wn,0) = WN_CreateIdname (0, ST_st_idx(formal));
+      if (DECL_RESULT(fndecl)) {
+	set_DECL_ST(DECL_RESULT(fndecl), formal);
+      } else {
+	FmtAssert (thunk, ("missing DECL_RESULT in non-thunk function"));
+      }
       i++;
     }
 
@@ -1185,15 +1775,15 @@ WFE_Start_Function (tree fndecl)
     }
 
     if (!thunk && DECL_GLOBAL_CTOR_P(fndecl)) {
-#if !defined (TARG_ST) || (GNU_FRONT_END!=33)
-      /* (cbr) gcc 3.3 upgrade */
+#ifndef KEY
+      // GLOBAL_INIT_PRIORITY does not exist any more
       if (GLOBAL_INIT_PRIORITY(fndecl) != DEFAULT_INIT_PRIORITY) {
         DevWarn("Discarding ctor priority %d (default %d) at line %d",
                 GLOBAL_INIT_PRIORITY(fndecl),
                 DEFAULT_INIT_PRIORITY,
                 lineno);
       }
-#endif
+#endif // !KEY
 
       INITV_IDX initv = New_INITV ();
       INITV_Init_Symoff (initv, func_st, 0, 1);
@@ -1213,15 +1803,15 @@ WFE_Start_Function (tree fndecl)
     }
 
     if (!thunk && DECL_GLOBAL_DTOR_P(fndecl)) {
-#if !defined (TARG_ST) || (GNU_FRONT_END!=33)
-      /* (cbr) gcc 3.3 upgrade */
+#ifndef KEY
+      // GLOBAL_INIT_PRIORITY does not exist any more
       if (GLOBAL_INIT_PRIORITY(fndecl) != DEFAULT_INIT_PRIORITY) {
         DevWarn("Discarding dtor priority %d (default %d) at line %d",
                 GLOBAL_INIT_PRIORITY(fndecl),
                 DEFAULT_INIT_PRIORITY,
                 lineno);
       }
-#endif
+#endif // !KEY
 
       INITV_IDX initv = New_INITV ();
       INITV_Init_Symoff (initv, func_st, 0, 1);
@@ -1239,6 +1829,10 @@ WFE_Start_Function (tree fndecl)
       Set_PU_no_inline (Pu_Table [ST_pu (func_st)]);
       Set_PU_no_delete (Pu_Table [ST_pu (func_st)]);
     }
+#ifdef KEY
+    // Tell the rest of the front-end this is the current function's entry wn.
+    Push_Current_Entry_WN(entry_wn);
+#endif
 
     return entry_wn;
 }
@@ -1265,12 +1859,6 @@ WFE_Finish_Function (void)
     // Add any handler code
     Do_Handlers ();
     Do_EH_Cleanups ();
-
-#ifdef TARG_ST
-    /* (cbr) support for deferred cleanups. */
-    extern void Emit_Cleanup_Initializers();
-    Emit_Cleanup_Initializers();
-#endif
 
 #ifdef KEY
     //    if (key_exceptions)
@@ -1312,6 +1900,9 @@ WFE_Finish_Function (void)
 
 #ifdef KEY
     try_block_seen = false;
+
+    // Restore the previous entry wn, if any.
+    Pop_Current_Entry_WN();
 #endif
 
 #ifdef TARG_ST
@@ -1511,14 +2102,14 @@ WFE_Add_Aggregate_Init_String (char *s, INT size)
 void
 #ifdef TARG_ST
 /* (cbr) support for half address relocation */
-WFE_Add_Aggregate_Init_Symbol (ST *st, WN_OFFSET offset = 0, BOOL halfword = 0)
+WFE_Add_Aggregate_Init_Symoff (ST *st, WN_OFFSET offset = 0, BOOL halfword = 0)
 #else
-WFE_Add_Aggregate_Init_Symbol (ST *st, WN_OFFSET offset = 0)
+WFE_Add_Aggregate_Init_Symoff (ST *st, WN_OFFSET offset = 0)
 #endif
 {
 #ifdef WFE_DEBUG
     fprintf(stdout,"====================================================\n");
-    fprintf(stdout,"      WFE_Add_Aggregate_Init_Symbol %s \n\n", ST_name(st));
+    fprintf(stdout,"      WFE_Add_Aggregate_Init_Symoff %s \n\n", ST_name(st));
     fprintf(stdout,"  last_aggregate_initv = %d\n", last_aggregate_initv);
     fprintf(stdout,"====================================================\n");
 #endif
@@ -1610,22 +2201,26 @@ WFE_Add_Aggregate_Init_Address (tree init)
 
   case VAR_DECL:
   case FUNCTION_DECL:
-	WFE_Add_Aggregate_Init_Symbol (Get_ST (init));
+	{
+	ST *st = Get_ST (init);
+	WFE_Add_Aggregate_Init_Symoff (st);
+	}
 	break;
 
   case STRING_CST:
 	{
+#ifdef KEY
 	TCON tcon = Host_To_Targ_String (MTYPE_STRING,
-#if defined (TARG_ST) && (GNU_FRONT_END==33)
-                                         /* (cbr) gcc 3.3 upgrade */
-				       (char*)TREE_STRING_POINTER(init),
+			const_cast<char*>TREE_STRING_POINTER(init),
+			TREE_STRING_LENGTH(init));
 #else
+	TCON tcon = Host_To_Targ_String (MTYPE_STRING,
 				       TREE_STRING_POINTER(init),
-#endif
 				       TREE_STRING_LENGTH(init));
+#endif // KEY
 	ST *const_st = New_Const_Sym (Enter_tcon (tcon), 
 		Get_TY(TREE_TYPE(init)));
-      	WFE_Add_Aggregate_Init_Symbol (const_st);
+      	WFE_Add_Aggregate_Init_Symoff (const_st);
 	}
     	break;
 
@@ -1637,7 +2232,7 @@ WFE_Add_Aggregate_Init_Address (tree init)
 		FmtAssert(TREE_CODE(addr_kid) == VAR_DECL
 			|| TREE_CODE(addr_kid) == FUNCTION_DECL,
 			("expected decl under plus_expr"));
-		WFE_Add_Aggregate_Init_Symbol ( Get_ST (addr_kid),
+		WFE_Add_Aggregate_Init_Symoff ( Get_ST (addr_kid),
 			Get_Integer_Value(TREE_OPERAND(init,1)) );
 	}
 	else
@@ -1645,7 +2240,7 @@ WFE_Add_Aggregate_Init_Address (tree init)
 		WN *init_wn = WFE_Expand_Expr (init);
 		FmtAssert (WN_operator (init_wn) == OPR_LDA,
 				("expected decl under plus_expr"));
-		WFE_Add_Aggregate_Init_Symbol (WN_st (init_wn),
+		WFE_Add_Aggregate_Init_Symoff (WN_st (init_wn),
 					       WN_offset (init_wn));
 		WN_Delete (init_wn);
 	}
@@ -1691,7 +2286,7 @@ WFE_Add_Aggregate_Init_Address (tree init)
       aggregate_inito = save_aggregate_inito;
       last_aggregate_initv = save_last_aggregate_initv;
 
-      WFE_Add_Aggregate_Init_Symbol (temp);
+      WFE_Add_Aggregate_Init_Symoff (temp);
     }
     break;
 #endif
@@ -1700,7 +2295,7 @@ WFE_Add_Aggregate_Init_Address (tree init)
 		WN *init_wn = WFE_Expand_Expr (init);
 		FmtAssert (WN_operator (init_wn) == OPR_LDA,
 				("expected operator encountered"));
-		WFE_Add_Aggregate_Init_Symbol (WN_st (init_wn),
+		WFE_Add_Aggregate_Init_Symoff (WN_st (init_wn),
 					       WN_offset (init_wn));
 		WN_Delete (init_wn);
 	}
@@ -1817,15 +2412,9 @@ Use_Static_Init_For_Aggregate (ST *st, tree init)
 	if (TY_size(ST_type(st)) <= (2*MTYPE_byte_size(Spill_Int_Mtype))) {
 		return FALSE;
 	}
-	else if (Has_Non_Constant_Init_Value(init)) {
-		return FALSE;
-	}
-	else {
-		return TRUE;
-	}
-#else
-	return !Has_Non_Constant_Init_Value(init);
+	else
 #endif
+	return !Has_Non_Constant_Init_Value(init);
 }
 
 #ifdef TARG_ST
@@ -1879,7 +2468,7 @@ Add_Initv_For_Tree (tree val, UINT size)
 			FmtAssert(TREE_CODE(addr_kid) == VAR_DECL
 				  || TREE_CODE(addr_kid) == FUNCTION_DECL,
 				("expected decl under plus_expr"));
-			WFE_Add_Aggregate_Init_Symbol ( Get_ST (addr_kid),
+			WFE_Add_Aggregate_Init_Symoff ( Get_ST (addr_kid),
 			Get_Integer_Value(TREE_OPERAND(val,1)) );
 		}
 		else
@@ -1919,13 +2508,13 @@ Add_Initv_For_Tree (tree val, UINT size)
 		    (WN_opcode (init_wn) == OPC_I8U8CVT &&
 		     WN_opcode (WN_kid0 (init_wn)) == OPC_U8LDA)) {
 			WN *kid0 = WN_kid0(init_wn);
-			WFE_Add_Aggregate_Init_Symbol (WN_st (kid0), WN_offset(kid0));
+			WFE_Add_Aggregate_Init_Symoff (WN_st (kid0), WN_offset(kid0));
 			WN_DELETE_Tree (init_wn);
 			break;
 		}
 
 		if (WN_operator (init_wn) == OPR_LDA) {
-			WFE_Add_Aggregate_Init_Symbol (WN_st (init_wn),
+			WFE_Add_Aggregate_Init_Symoff (WN_st (init_wn),
 						       WN_offset (init_wn));
 			WN_DELETE_Tree (init_wn);
 			break;
@@ -1952,14 +2541,14 @@ Add_Initv_For_Tree (tree val, UINT size)
 #endif
 		 	if (WN_operator(kid0) == OPR_LDA &&
 			    WN_operator(kid1) == OPR_INTCONST) {
-			  WFE_Add_Aggregate_Init_Symbol (WN_st (kid0),
+			  WFE_Add_Aggregate_Init_Symoff (WN_st (kid0),
 				     WN_offset(kid0) + WN_const_val(kid1));
 			  WN_DELETE_Tree (init_wn);
 			  break;
 			}
 		 	else if (WN_operator(kid1) == OPR_LDA &&
 			    WN_operator(kid0) == OPR_INTCONST) {
-			  WFE_Add_Aggregate_Init_Symbol (WN_st (kid1),
+			  WFE_Add_Aggregate_Init_Symoff (WN_st (kid1),
 				     WN_offset(kid1) + WN_const_val(kid0));
 			  WN_DELETE_Tree (init_wn);
 			  break;
@@ -1975,7 +2564,7 @@ Add_Initv_For_Tree (tree val, UINT size)
 #endif
 		 	if (WN_operator(kid0) == OPR_LDA &&
 			    WN_operator(kid1) == OPR_INTCONST) {
-			  WFE_Add_Aggregate_Init_Symbol (WN_st (kid0),
+			  WFE_Add_Aggregate_Init_Symoff (WN_st (kid0),
 				     WN_offset(kid0) - WN_const_val(kid1));
 			  WN_DELETE_Tree (init_wn);
 			  break;
@@ -2449,6 +3038,7 @@ Traverse_Aggregate_Struct (
   // nonempty nonvirtual base class.
   // these are generated first in Create_TY_For_Tree (tree_symtab.cxx)
 
+#ifndef KEY     // g++'s class.c already laid out the base types.  Bug 11622.
   if (TYPE_BINFO(type) &&
       BINFO_BASETYPES(TYPE_BINFO(type))) {
     tree basetypes = BINFO_BASETYPES(TYPE_BINFO(type));
@@ -2456,26 +3046,23 @@ Traverse_Aggregate_Struct (
     for (i = 0; i < TREE_VEC_LENGTH(basetypes); ++i) {
       tree binfo = TREE_VEC_ELT(basetypes, i);
       tree basetype = BINFO_TYPE(binfo);
-#if defined (TARG_ST) && (GNU_FRONT_END==33)
-      /* (cbr) */
-      if (!is_empty_base_class(basetype)) {
-#else
       if (!is_empty_base_class(basetype) ||
           !TREE_VIA_VIRTUAL(binfo)) {
-#endif
         ++field_id;
         fld = FLD_next (fld);
         field_id += TYPE_FIELD_IDS_USED(basetype);
       }
     }
   }
-
+#endif
+ 
 #ifdef TARG_ST
 /* (cbr) real_field can't be static */
   bool real_field = true;
   while (field && TREE_CODE(field) != FIELD_DECL)
     field = next_real_or_virtual_field(type, field, real_field);
 #else
+  while (field && TREE_CODE(field) != FIELD_DECL)
     field = next_real_or_virtual_field(type, field);
 #endif
 
@@ -2500,17 +3087,6 @@ Traverse_Aggregate_Struct (
     fprintf(stdout, "    field_id %d --> ", field_id);
     print_node_brief (stdout, " init: ", init, 0);
     fprintf(stdout, "\n");
-#endif
-
-#if 0
-    // (cbr) wrong. (DDTS 22707, 22544)
-#ifdef TARG_ST
-    // (cbr) skip empty initialization aggregate
-    tree stype = TREE_TYPE (TYPE_SIZE(init));
-    if (AGGREGATE_TYPE_P(stype) && !Get_Integer_Value (TYPE_SIZE (stype))) {
-      continue;
-    }
-#endif
 #endif
 
     // if the initialization is not for the current field,
@@ -2735,13 +3311,7 @@ Traverse_Aggregate_Constructor (
   if (TY_kind (ty) == KIND_ARRAY) {
 
 // FdF 20050916: Fix for bug 180B/22 requires calling with current_offset. 
-#if 0//def TARG_ST
-    /* (cbr) element positions are given relatively to the start of the array,
-       not of the symbol */
-    Traverse_Aggregate_Array (st, init_list, type, gen_initv, 0);
-#else
     Traverse_Aggregate_Array (st, init_list, type, gen_initv, current_offset);
-#endif
   }
 
   else
@@ -2914,7 +3484,7 @@ Add_Inito_For_Tree (tree init, ST *st)
   if (WN_operator(init_wn) == OPR_LDA) {
 	aggregate_inito = New_INITO (st);
 	not_at_root = FALSE;
-	WFE_Add_Aggregate_Init_Symbol (WN_st (init_wn), WN_offset (init_wn));
+	WFE_Add_Aggregate_Init_Symoff (WN_st (init_wn), WN_offset (init_wn));
 	return;
   }
   else
@@ -2926,14 +3496,14 @@ Add_Inito_For_Tree (tree init, ST *st)
         WN_operator(kid1) == OPR_INTCONST) {
       aggregate_inito = New_INITO (st);
       not_at_root = FALSE;
-      WFE_Add_Aggregate_Init_Symbol (WN_st(kid0),
+      WFE_Add_Aggregate_Init_Symoff (WN_st(kid0),
 		WN_offset(kid0) + WN_const_val(kid1));
 #else
     if (WN_operator(WN_kid0(init_wn)) == OPR_LDA &&
         WN_operator(WN_kid1(init_wn)) == OPR_INTCONST) {
       aggregate_inito = New_INITO (st);
       not_at_root = FALSE;
-      WFE_Add_Aggregate_Init_Symbol (WN_st(WN_kid0(init_wn)),
+      WFE_Add_Aggregate_Init_Symoff (WN_st(WN_kid0(init_wn)),
 		WN_offset(WN_kid0(init_wn)) + WN_const_val(WN_kid1(init_wn)));
 #endif
       return;
@@ -2948,14 +3518,14 @@ Add_Inito_For_Tree (tree init, ST *st)
         WN_operator(kid1) == OPR_INTCONST) {
       aggregate_inito = New_INITO (st);
       not_at_root = FALSE;
-      WFE_Add_Aggregate_Init_Symbol (WN_st(kid0),
+      WFE_Add_Aggregate_Init_Symoff (WN_st(kid0),
 		WN_offset(kid0) - WN_const_val(kid1));
 #else
     if (WN_operator(WN_kid0(init_wn)) == OPR_LDA &&
         WN_operator(WN_kid1(init_wn)) == OPR_INTCONST) {
       aggregate_inito = New_INITO (st);
       not_at_root = FALSE;
-      WFE_Add_Aggregate_Init_Symbol (WN_st(WN_kid0(init_wn)),
+      WFE_Add_Aggregate_Init_Symoff (WN_st(WN_kid0(init_wn)),
 		WN_offset(WN_kid0(init_wn)) - WN_const_val(WN_kid1(init_wn)));
 #endif
       return;
@@ -3299,6 +3869,9 @@ WFE_Assemble_Alias (tree decl, tree target)
     return;
   }
 
+#ifdef KEY
+  expanded_decl(decl) = TRUE;
+#endif // KEY 
   WFE_Set_Alias (decl, base_decl);
 
 } /* WFE_Assemble_Alias */
@@ -3766,7 +4339,12 @@ decl_is_needed_vtable (tree decl)
   bool needed = false;
   if (DECL_NAME(decl) &&
       IDENTIFIER_POINTER(DECL_NAME(decl)) &&
-      !strncmp("__vt_", IDENTIFIER_POINTER(DECL_NAME(decl)), 5)) {
+#ifdef KEY
+      !strncmp("_ZTV", IDENTIFIER_POINTER(DECL_NAME(decl)), 4)
+#else
+      !strncmp("__vt_", IDENTIFIER_POINTER(DECL_NAME(decl)), 5)
+#endif
+      ) {
             
     tree entries = CONSTRUCTOR_ELTS (DECL_INITIAL (decl));
 
@@ -3775,26 +4353,43 @@ decl_is_needed_vtable (tree decl)
       tree fnaddr;
       tree fn;
 
-#if defined (TARG_ST) && (GNU_FRONT_END==33)
-      /* (cbr) gcc 3.3 upgrade */
       fnaddr = TREE_VALUE (entries);
-#else
-      fnaddr = (flag_vtable_thunks ? TREE_VALUE (entries)
-                : FNADDR_FROM_VTABLE_ENTRY (TREE_VALUE (entries)));
-#endif
 
+#ifdef KEY
+      if (TREE_CODE (fnaddr) == NOP_EXPR &&
+	  TREE_CODE (TREE_OPERAND (fnaddr, 0)) == ADDR_EXPR) {
+	fn = TREE_OPERAND (TREE_OPERAND (fnaddr, 0), 0);  // fn can be VAR_DECL
+	
+      } else if (TREE_CODE (fnaddr) != ADDR_EXPR) {
+        /* This entry is an offset: a virtual base class offset, a
+           virtual call offset, and RTTI offset, etc.  */
+        continue;
+      } else
+        fn = TREE_OPERAND (fnaddr, 0);
+#else
       if (TREE_CODE (fnaddr) != ADDR_EXPR)
         /* This entry is an offset: a virtual base class offset, a
            virtual call offset, and RTTI offset, etc.  */
         continue;
 
       fn = TREE_OPERAND (fnaddr, 0);
-      if (!DECL_EXTERNAL(fn) &&
-#ifndef TARG_ST
-          /* (cbr) */
-          !DECL_INLINE(fn) &&
 #endif
-          !DECL_WEAK(fn)) {
+
+#ifdef KEY
+      // As shown by bug 3133, some objects are emitted by g++ even though they
+      // are weak and external.
+      if (DECL_EMITTED_BY_GXX(fn)) {
+	needed = TRUE;
+	break;
+      }
+#endif
+
+      if (!DECL_EXTERNAL(fn) &&
+          !DECL_WEAK(fn)
+#ifndef KEY	// Under g++ 3.2 -O3, all functions are marked DECL_INLINE.
+          && !DECL_INLINE(fn)
+#endif
+	  ) {
         needed = TRUE;
         break;
       }
@@ -3812,10 +4407,18 @@ WFE_Process_Var_Decl (tree decl)
   if (TREE_PUBLIC(decl)    &&
 //    !DECL_WEAK(decl)     &&
       !DECL_EXTERNAL(decl) &&
+#ifdef TARG_ST
+      !expanded_decl(decl)) {
+#else
       !DECL_ST(decl)) {
+#endif
     if (!DECL_WEAK(decl) || decl_is_needed_vtable (decl)) {
+#ifdef KEY
+      WFE_Expand_Decl(decl);
+#else
       DECL_ST(decl) = (ST *) 1;
       Push_Deferred_Function (decl);
+#endif
     }
   }
 } /* WFE_Process_Var_Decl */
@@ -3841,7 +4444,11 @@ WFE_Process_Function_Decl (tree decl)
       DECL_FRIEND_PSEUDO_TEMPLATE_INSTANTIATION(decl) ||
       DECL_TEMPLATE_INSTANTIATED(decl)              ||
       DECL_TEMPLATE_SPECIALIZATION(decl))) {
+#ifdef KEY
+    set_DECL_ST(decl, (ST *) 1);
+#else
     DECL_ST(decl) = (ST *) 1;
+#endif
     Push_Deferred_Function (decl);
   }
 } /* WFE_Process_Function_Decl */
@@ -3915,13 +4522,103 @@ WFE_Expand_Top_Level_Decl (tree top_level_decl)
   }
 
   if (!Enable_WFE_DFE) {
-#ifdef TARG_ST
-    /* (cbr) must go through the namespaces */
-    walk_namespaces (WFE_Expand_Decl_stub, 0);
-#else
-    WFE_Expand_Decl (top_level_decl);
+#ifdef KEY
+    // Emit asm statements at global scope, before expanding the functions,
+    // to prevent them from getting into wrong sections (e.g. .except_table)
+    std::vector<char *>::iterator asm_iter;
+    for (asm_iter = gxx_emitted_asm.begin();
+         asm_iter != gxx_emitted_asm.end();
+	 asm_iter++)
+      WFE_Assemble_Asm (*asm_iter);
 #endif
+    WFE_Expand_Decl (top_level_decl);
 
+#ifdef KEY
+    // Catch all the functions that are emitted by g++ that we haven't
+    // translated into WHIRL.
+    std::vector<tree>::iterator it;
+    int changed;
+    do {
+      changed = 0;
+      for (it = gxx_emitted_decls.begin(); 
+           it != gxx_emitted_decls.end();
+           it++) {
+        tree decl = *it;
+        if (expanded_decl(decl) == TRUE)
+          continue;
+        if (TREE_CODE(decl) == FUNCTION_DECL) {
+	  if (DECL_THUNK_P(decl))
+	    WFE_Generate_Thunk(decl);
+	  else        
+	    changed |= WFE_Expand_Function_Body(decl);
+#ifndef TARG_ST
+	  // [SC] Do not need this since we already defer the generation
+	  // of debug information for classes.
+
+	  // Bugs 4471, 3041, 3531, 3572, 4563.
+	  // In line with the non-debug compilation, delay the DST entry 
+	  // creation for member functions for debug compilation.
+	  // This avoids the following problem 
+	  // (as noted by Tim in tree_symtab.cxx)
+	  // Expanding the methods earlier "will cause error when the
+	  // methods are for a class B that appears as a field in an
+	  // enclosing class A.  When Get_TY is run for A, it will
+	  // call Get_TY for B in order to calculate A's field ID's.
+	  // (Need Get_TY to find B's TYPE_FIELD_IDS_USED.)  If
+	  // Get_TY uses the code below to expand B's methods, it
+	  // will lead to error because the expansion requires the
+	  // field ID's of the enclosing record (A), and these field
+	  // ID's are not yet defined".
+	  if (Debug_Level > 0) {
+	    tree context = DECL_CONTEXT(decl);
+	    if (context && TREE_CODE(context) == RECORD_TYPE) {
+	      // member function
+	      // g++ seems to put the artificial ones in the output too 
+	      // for some reason. In particular, operator= is there.  We do 
+	      // want to omit the __base_ctor stuff though
+	      BOOL skip = FALSE;
+	      if (IDENTIFIER_CTOR_OR_DTOR_P(DECL_NAME(decl)))
+	        skip = TRUE;
+	      else if (DECL_THUNK_P(decl)) {
+		// Skip thunk to constructors and destructors.  Bug 6427.
+	        tree addr = DECL_INITIAL_2(decl);
+		Is_True(TREE_CODE(addr) == ADDR_EXPR &&
+			TREE_CODE(TREE_OPERAND(addr, 0)) == FUNCTION_DECL,
+			("WFE_Expand_Top_Level_Decl: invalid thunk decl"));
+		skip =
+		  IDENTIFIER_CTOR_OR_DTOR_P(DECL_NAME(TREE_OPERAND(addr, 0)));
+	      }
+	      if (!skip) {
+	      	TY_IDX context_ty_idx = Get_TY(context);
+		// The type could have been newly created by the above Get_TY.
+		// If so, call add_deferred_DST_types to create the DST for it.
+		add_deferred_DST_types();
+		DST_INFO_IDX context_dst_idx = TYPE_DST_IDX(context);
+		DST_enter_member_function(context, context_dst_idx,
+					  context_ty_idx, decl);
+	      }
+	    }
+	  }
+#endif
+        } else if (TREE_CODE(decl) == VAR_DECL) {
+	  WFE_Process_Var_Decl (decl);
+        } else if (TREE_CODE(decl) == NAMESPACE_DECL) {
+	  WFE_Expand_Decl (decl);
+        } else {
+	  FmtAssert(FALSE, ("WFE_Expand_Top_Level_Decl: invalid node"));
+        }
+      }
+    } while (changed);	// Repeat until emitted all needed copy constructors.
+    // Emit any typeinfos that we have referenced
+    for (it = emit_typeinfos.begin(); it != emit_typeinfos.end(); ++it) {
+    	tree decl = *it;
+	if (expanded_decl (decl))
+	    continue;
+	expanded_decl (decl) = TRUE;
+	FmtAssert (TREE_CODE (decl) == VAR_DECL, ("Unexpected node in typeinfo"));
+	WFE_Expand_Decl (decl);
+    }
+#endif
   }
   else {
 
@@ -3931,7 +4628,11 @@ WFE_Expand_Top_Level_Decl (tree top_level_decl)
     INT32 i;
     for (i = deferred_function_i;  i >= 0; --i) {
        decl = deferred_function_stack [i];
+#ifdef KEY
+       set_DECL_ST(decl, NULL);
+#else
        DECL_ST(decl) = NULL;
+#endif
     }
 
     ST *st;
@@ -4005,124 +4706,50 @@ WFE_Expand_Top_Level_Decl (tree top_level_decl)
       Set_FLD_type(fld, fty_idx);
     }
   }
+
+  {
+    // Create DST info.
+    int i;
+
+    // Add DSTs for types.
+    add_deferred_DST_types();
+
+    // Add DSTs for member functions.  Do this after all the types are handled.
+    for (i = 0; i < defer_DST_misc.size(); i++) {
+      DST_defer_misc_info *p = defer_DST_misc[i];
+      if (p->is_member_function) {
+	tree context = p->u1.member_func.context;
+	DST_INFO_IDX context_dst_idx = TYPE_DST_IDX(context);
+	TY_IDX context_ty_idx = Get_TY(context);
+	DST_enter_member_function(context, context_dst_idx, context_ty_idx,
+				  p->u1.member_func.fndecl);
+      }
+    }
+
+    // Add DSTs for new types created.  (Don't know if any new type is ever
+    // created.)
+    add_deferred_DST_types();
+  }
 #endif
 } /* WFE_Expand_Top_Level_Decl */
 
-#ifdef TARG_ST
-/* Generate WHIRL representing an asm at file scope (between
-  functions). This is an awful hack. */
+#ifdef KEY
+// Add DSTs for the defered types.  We defer adding DSTs for types in order to
+// avoid calling Get_TY on partially constructed structs, since their field IDs
+// are not yet valid.  It is safe to call add_deferred_DST_types to add DSTs
+// whenever we are sure there are no partially constructed types.
 void
-WFE_Assemble_Asm(char *asm_string)
+add_deferred_DST_types()
 {
-  ST *asm_st = New_ST(GLOBAL_SYMTAB);
-  ST_Init(asm_st,
-	  Str_To_Index (Save_Str (asm_string),
-			Global_Strtab),
-	  CLASS_NAME,
-	  SCLASS_UNKNOWN,
-	  EXPORT_LOCAL,
-	  (TY_IDX) 0);
+  static int last_type_index = -1;
+  int i;
 
-  Set_ST_asm_function_st(*asm_st);
-
-  WN *func_wn = WN_CreateEntry(0,
-			       asm_st,
-			       WN_CreateBlock(),
-			       NULL,
-			       NULL);
-
-  /* Not sure how much setup of WN_MAP mechanism, etc. we need to do.
-   * Pretty certainly we need to set up some PU_INFO stuff just to get
-   * this crazy hack of a FUNC_ENTRY node written out to the .B file.
-   */
-
-  /* This code patterned after "wfe_decl.cxx":WFE_Start_Function, and
-     specialized for the application at hand. */
-
-#ifdef ASM_NEEDS_WN_MAP
-    /* deallocate the old map table */
-    if (Current_Map_Tab) {
-        WN_MAP_TAB_Delete(Current_Map_Tab);
-        Current_Map_Tab = NULL;
-    }
-
-    /* set up the mem pool for the map table and predefined mappings */
-    if (!map_mempool_initialized) {
-        MEM_POOL_Initialize(&Map_Mem_Pool,"Map_Mem_Pool",FALSE);
-        map_mempool_initialized = TRUE;
-    } else {
-        MEM_POOL_Pop(&Map_Mem_Pool);
-    }
-
-    MEM_POOL_Push(&Map_Mem_Pool);
-
-    /* create the map table for the next PU */
-    (void)WN_MAP_TAB_Create(&Map_Mem_Pool);
-#endif
-
-    // This non-PU really doesn't need a symbol table and the other
-    // trappings of a local scope, but if we create one, we can keep
-    // all the ir_bread/ir_bwrite routines much more blissfully
-    // ignorant of the supreme evil that's afoot here.
-
-    FmtAssert(CURRENT_SYMTAB == GLOBAL_SYMTAB,
-	      ("file-scope asm must be at global symtab scope."));
-
-    New_Scope (CURRENT_SYMTAB + 1, Malloc_Mem_Pool, TRUE);
-
-    if (Show_Progress) {
-      fprintf (stderr, "Asm(%s)\n", ST_name (asm_st));
-      fflush (stderr);
-    }
-    PU_Info *pu_info;
-    /* allocate a new PU_Info and add it to the list */
-    pu_info = TYPE_MEM_POOL_ALLOC(PU_Info, Malloc_Mem_Pool);
-    PU_Info_init(pu_info);
-
-    Set_PU_Info_tree_ptr (pu_info, func_wn);
-    PU_Info_maptab (pu_info) = Current_Map_Tab;
-    PU_Info_proc_sym (pu_info) = ST_st_idx(asm_st);
-    PU_Info_cu_dst (pu_info) = DST_Get_Comp_Unit ();
-
-    Set_PU_Info_state(pu_info, WT_SYMTAB, Subsect_InMem);
-    Set_PU_Info_state(pu_info, WT_TREE, Subsect_InMem);
-    Set_PU_Info_state(pu_info, WT_PROC_SYM, Subsect_InMem);
-
-    Set_PU_Info_flags(pu_info, PU_IS_COMPILER_GENERATED);
-
-    if (PU_Info_Table [CURRENT_SYMTAB])
-      PU_Info_next (PU_Info_Table [CURRENT_SYMTAB]) = pu_info;
-    else
-      PU_Tree_Root = pu_info;
-
-    PU_Info_Table [CURRENT_SYMTAB] = pu_info;
-
-  /* This code patterned after "wfe_decl.cxx":WFE_Finish_Function, and
-     specialized for the application at hand. */
-
-    // write out all the PU information
-    pu_info = PU_Info_Table [CURRENT_SYMTAB];
-
-    /* deallocate the old map table */
-    if (Current_Map_Tab) {
-        WN_MAP_TAB_Delete(Current_Map_Tab);
-        Current_Map_Tab = NULL;
-    }
-
-    PU_IDX pu_idx;
-    PU &pu = New_PU(pu_idx);
-    PU_Init(pu, (TY_IDX) 0, CURRENT_SYMTAB);
-    Set_PU_no_inline(pu);
-    Set_PU_no_delete(pu);
-    Set_ST_pu(*asm_st, pu_idx);
-
-    Write_PU_Info (pu_info);
-
-    // What does the following line do?
-    PU_Info_Table [CURRENT_SYMTAB+1] = NULL;
-
-    Delete_Scope(CURRENT_SYMTAB);
-    --CURRENT_SYMTAB;
+  for (i = last_type_index + 1; i < defer_DST_types.size(); i++) {
+    DST_defer_type_info *p = defer_DST_types[i];
+    DST_INFO_IDX dst = Create_DST_type_For_Tree(p->t, p->ttidx, p->idx);
+    TYPE_DST_IDX(p->t) = dst;
+  }
+  last_type_index = defer_DST_types.size() - 1;
 }
 #endif
 

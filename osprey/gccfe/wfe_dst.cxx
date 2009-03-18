@@ -1299,6 +1299,8 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
             cp_to_tree_from_dst(&qual_dst_idx,&dst_idx);
             TYPE_DST_IDX(type_tree) = qual_dst_idx;
 #ifdef TARG_ST
+	 } else {
+	   cp_to_dst_from_tree(&dst_idx, &unqualtype);
 	 }
 #endif
        }
@@ -1329,6 +1331,8 @@ Create_DST_type_For_Tree (tree type_tree, TY_IDX ttidx  , TY_IDX idx)
             cp_to_tree_from_dst(&qual_dst_idx,&dst_idx);
             TYPE_DST_IDX(type_tree) = qual_dst_idx;
 #ifdef TARG_ST
+	 } else {
+	   cp_to_dst_from_tree(&dst_idx, &unqualtype);
 	 }
 #endif
        }
@@ -2203,6 +2207,12 @@ DST_Create_Subprogram (ST *func_st,tree fndecl)
 	 ret_g_idx = TYPE_DST_IDX(restype);
 
          cp_to_dst_from_tree(&ret_dst,&ret_g_idx);
+#ifdef TARG_ST
+	 if (DST_IS_NULL(ret_dst)) {
+	   ret_g_idx = Create_DST_type_For_Tree(restype, itx, 0);
+	   cp_to_dst_from_tree(&ret_dst,&ret_g_idx);
+	 }
+#endif
 	}
 
         tree type = TREE_TYPE(fndecl);

@@ -158,7 +158,11 @@ struct tree_common GTY(())
   unsigned readonly_flag : 1;
   unsigned unsigned_flag : 1;
   unsigned asm_written_flag: 1;
+#ifdef KEY
+  unsigned not_emitted_by_gxx : 1;
+#else
   unsigned unused_0 : 1;
+#endif
 
   unsigned used_flag : 1;
   unsigned nothrow_flag : 1;
@@ -569,6 +573,11 @@ extern void tree_vec_elt_check_failed PARAMS ((int, int, const char *,
    TREE_OVERFLOW because ANSI C requires a diagnostic when overflows
    occur in constant expressions.  */
 #define TREE_CONSTANT_OVERFLOW(NODE) ((NODE)->common.static_flag)
+
+#ifdef KEY
+#define TREE_NOT_EMITTED_BY_GXX(NODE) \
+  (IDENTIFIER_NODE_CHECK (DECL_ASSEMBLER_NAME (NODE))->common.not_emitted_by_gxx)
+#endif
 
 /* In an IDENTIFIER_NODE, this means that assemble_name was called with
    this string as an argument.  */
@@ -1531,6 +1540,9 @@ struct tree_type GTY(())
    values for parameters are encoded in the type of the function,
    not in the PARM_DECL slot.  */
 #define DECL_INITIAL(NODE) (DECL_CHECK (NODE)->decl.initial)
+#ifdef KEY
+#define DECL_INITIAL_2(NODE) (DECL_CHECK (NODE)->decl.initial_2)
+#endif  /* KEY */
 /* For a PARM_DECL, records the data type used to pass the argument,
    which may be different from the type seen in the program.  */
 #define DECL_ARG_TYPE(NODE) (PARM_DECL_CHECK (NODE)->decl.initial)
@@ -1905,6 +1917,12 @@ enum optlevel_t
 #define DECL_WIDEN_RETVAL(NODE) (DECL_CHECK (NODE)->decl.widen_retval_flag)
 #endif /* SGI_MONGOOSE */
 
+ #ifdef KEY
+/* Used to indicate that this decl is emitted by g++, regardless of the decl's
+   other attributes such as weak or external. */
+#define DECL_EMITTED_BY_GXX(NODE) (DECL_CHECK (NODE)->decl.emitted_by_gxx)
+#endif
+
 struct function;
 
 struct tree_decl GTY(())
@@ -1970,6 +1988,12 @@ struct tree_decl GTY(())
   unsigned syscall_linkage_flag : 1;    /* has syscall_linkage attribute */
   unsigned widen_retval_flag : 1;       /* widen return value attribute */
 #endif /* SGI_MONGOOSE */
+#ifdef KEY
+  unsigned emitted_by_gxx : 1;		/* g++ emitted the decl to assembly.
+					   This flag is only set for those
+					   decl's where kg++fe normally would
+					   assume the decl is not emitted. */
+#endif
 
   union tree_decl_u1 {
     /* In a FUNCTION_DECL for which DECL_BUILT_IN holds, this is
@@ -1992,6 +2016,9 @@ struct tree_decl GTY(())
   tree arguments;	/* Also used for DECL_FIELD_OFFSET */
   tree result;	/* Also used for DECL_BIT_FIELD_TYPE */
   tree initial;	/* Also used for DECL_QUALIFIER */
+#ifdef KEY
+  tree initial_2;       /* For thunks, saved value of initial. */
+#endif /* KEY */
   tree abstract_origin;
   tree assembler_name;
   tree section_name;

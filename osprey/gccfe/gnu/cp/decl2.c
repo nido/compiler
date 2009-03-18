@@ -46,6 +46,11 @@ Boston, MA 02111-1307, USA.  */
 #include "target.h"
 #include "c-common.h"
 #include "timevar.h"
+
+#ifdef KEY
+extern void gxx_emits_decl PARAMS ((tree));
+#endif // KEY
+
 extern cpp_reader *parse_in;
 
 /* This structure contains information about the initializations
@@ -2998,6 +3003,13 @@ finish_file ()
 	      if (flag_syntax_only)
 		TREE_ASM_WRITTEN (decl) = 1;
 	      reconsider = 1;
+
+#ifdef KEY
+              // Since this function is emitted by g++, tell the WHIRL
+              // translator to translate it into WHIRL.  This catches functions
+              // that are deferred by g++, such as those marked "inline".
+              gxx_emits_decl (decl);
+#endif
 	    }
 	}
 

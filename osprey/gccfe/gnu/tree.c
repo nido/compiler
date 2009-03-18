@@ -44,6 +44,10 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "target.h"
 #include "langhooks.h"
 
+#ifdef KEY
+extern void erase_duplicates (tree);
+#endif
+
 /* obstack.[ch] explicitly declined to prototype this.  */
 extern int _obstack_allocated_p PARAMS ((struct obstack *h, PTR obj));
 
@@ -2497,6 +2501,13 @@ build_decl (code, name, type)
   else if (code == FUNCTION_DECL)
     DECL_MODE (t) = FUNCTION_MODE;
 
+#ifdef KEY
+  // Remove t from the map that tracks duplicate FUNCTION_DECL's.  T could be
+  // using the same memory as an earlier node that was added to the map and
+  // later garbage-collected.
+  if (code == FUNCTION_DECL)
+    erase_duplicates (t);
+#endif
   return t;
 }
 

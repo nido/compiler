@@ -499,6 +499,56 @@ struct operator_from_tree_t {
 #endif /* GPLUSPLUSFE */
 };
 
+#ifdef KEY
+// Add guard variable GUARD_VAR to a conditional expression that may or may
+// not be evaluated, such as x and y in "foo ? x : y", or y in "if (x && y)".
+// Transform the code to:
+//   guard_var=0
+//   foo ? (guard_var=1, x) : y		// assuming VALUE_WN is x
+// and:
+//   guard_var=0
+//   if (x && (guard_var=1, y))
+static void
+WFE_add_guard_var (tree guard_var, WN *value_wn)
+{
+  WN *stid, *comma;
+
+  // Set the guard variable to 0 before the condition is evaluated.
+  WN *zero_wn = WN_Intconst(MTYPE_I4, 0);
+  stid = WN_Stid(MTYPE_I4, 0, Get_ST(guard_var), MTYPE_To_TY(MTYPE_I4),
+		 zero_wn, 0);
+#ifdef TARG_ST
+  // We need to initialize the guard at the place we started the current
+  // cleanup 'binding contour'.
+  Init_Guard (stid);
+#else
+  WFE_Stmt_Append(stid, Get_Srcpos());
+#endif
+
+  // Set the guard variable to 1 while evaluating the value of the conditional
+  // expression.
+  WN *one_wn = WN_Intconst(MTYPE_I4, 1);
+  stid = WN_Stid(MTYPE_I4, 0, Get_ST(guard_var), MTYPE_To_TY(MTYPE_I4),
+		 one_wn, 0);
+  if (WN_operator(value_wn) == OPR_COMMA) {
+    comma = value_wn;
+  } else if (WN_operator(WN_kid0(value_wn)) == OPR_COMMA) {
+    comma = WN_kid0(value_wn);
+  } else {
+    // Create a comma.
+    WN *wn0 = WN_CreateBlock();
+    WN *wn1 = WN_kid0(value_wn);
+    WN_Set_Linenum (wn0, Get_Srcpos());
+    comma = WN_CreateComma (OPR_COMMA, WN_rtype(wn1), MTYPE_V, wn0, wn1);
+    WN_kid0(value_wn) = comma;
+  }
+  WN *wn = WN_kid0(comma);
+  FmtAssert(WN_operator(wn) == OPR_BLOCK,
+    ("WFE_add_guard_var: unexpected WN operator"));
+  WN_INSERT_BlockFirst(wn, stid);
+}
+#endif
+
 #ifndef TARG_ST
 // [CG]: This function should not be used. Simplification on cvtl are
 // already handled in WN_Simplify...() functions
@@ -1257,7 +1307,9 @@ WFE_Array_Expr(tree exp,
 
     /* (cbr) target_expr */
   else if (code == TARGET_EXPR) {
-    wn = WFE_Expand_Expr(TREE_OPERAND(exp, 1));
+    tree te = TREE_OPERAND(exp, 1);
+    if (te == NULL_TREE) te = TREE_OPERAND(exp, 3);
+    wn = WFE_Expand_Expr(te);
     wn = WFE_Append_Expr_Stmt (wn);
 #ifdef WFE_DEBUG
       fdump_tree(stdout, wn);
@@ -1564,7 +1616,10 @@ WFE_Lhs_Of_Modify_Expr(tree_code assign_code,
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
       /* (cbr) gcc 3.3 upgrade: non_pods are reference parameters.
          Marked with TREE_ADDRESSABLE */
-      if (TREE_CODE (lhs) == PARM_DECL && TREE_ADDRESSABLE(TREE_TYPE(lhs))) {
+      /* [SC] For a write to RESULT_DECL, if we have a result pointer,
+	 then treat as an indirect write through that. */
+      if ((TREE_CODE (lhs) == PARM_DECL && TREE_ADDRESSABLE(TREE_TYPE(lhs)))
+	  || (TREE_CODE (lhs) == RESULT_DECL && st == first_formal)) {
         WN *w0 = WN_Ldid (Pointer_Mtype, 0, st, ST_type(st));
         wn = WN_CreateIstore(OPR_ISTORE, MTYPE_V, desc, component_offset, 
                              ST_type(st), rhs_wn, w0, field_id);
@@ -1577,9 +1632,31 @@ WFE_Lhs_Of_Modify_Expr(tree_code assign_code,
     }
     if (need_result) {
       if (! result_in_temp)
+#if defined (TARG_ST) && (GNU_FRONT_END==33)
+	{
+	  /* (cbr) gcc 3.3 upgrade: non_pods are reference parameters.
+	     Marked with TREE_ADDRESSABLE */
+	  /* [SC] For a write to RESULT_DECL, if we have a result pointer,
+	     then treat as an indirect write through that. */
+	  if ((TREE_CODE (lhs) == PARM_DECL && TREE_ADDRESSABLE(TREE_TYPE(lhs)))
+	      || (TREE_CODE (lhs) == RESULT_DECL && st == first_formal)) {
+	    WN *w0 = WN_Ldid (Pointer_Mtype, 0, st, ST_type(st));
+	    wn = WN_CreateIload(OPR_ILOAD, rtype, desc,
+				component_offset,
+				hi_ty_idx,
+				ST_type(st),
+				w0,
+				field_id);
+	  } else
+	    wn = WN_CreateLdid(OPR_LDID, rtype, desc, 
+			       ST_ofst(st) + component_offset, st, hi_ty_idx,
+			       field_id);
+	}
+#else
         wn = WN_CreateLdid(OPR_LDID, rtype, desc, 
 			   ST_ofst(st) + component_offset, st, hi_ty_idx,
 			   field_id);
+#endif
       else wn = WN_Ldid(rtype, result_preg, result_preg_st, desc_ty_idx, 0);
       if (is_realpart)
 	wn = WN_Unary (OPR_REALPART, Mtype_complex_to_real (rtype), wn);
@@ -2365,9 +2442,32 @@ WFE_Address_Of(tree arg0)
   case VAR_DECL:
   case PARM_DECL:
   case FUNCTION_DECL:
+#ifdef KEY
+  case RESULT_DECL:	// bug 3878
+#endif
 
       st = Get_ST (arg0);
       ty_idx = ST_type (st);
+#ifdef KEY
+      // Arg0 is the virtual function table (vtable) for a class.  Initialize
+      // the table.
+      if (code0 == VAR_DECL) {
+	if (DECL_INITIAL(arg0) &&
+#ifdef PATHSCALE_MERGE
+            (DECL_VIRTUAL_P(arg0) || tinfo_decl_p(arg0) /* bug 12781: typeinfo ? */) &&
+#else
+	    DECL_VIRTUAL_P(arg0) &&
+#endif
+	    !DECL_EXTERNAL(arg0)) {
+	  tree init = DECL_INITIAL(arg0);
+	  if (TREE_CODE(init) != ERROR_MARK) {
+	    FmtAssert (TREE_CODE(init) == CONSTRUCTOR,
+		       ("Unexpected initializer for virtual table"));
+	    WFE_Initialize_Decl(arg0);
+	  }
+	}
+      }
+#endif
       // for VLAs, use the base_st instead of st
 #ifdef TARG_ST
       /* (cbr) VLAs are auto */
@@ -2385,7 +2485,10 @@ WFE_Address_Of(tree arg0)
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
       /* (cbr) gcc 3.3 upgrade: non_pods are reference parameters.
          Marked with TREE_ADDRESSABLE */
-        else if (code0 == PARM_DECL && TREE_ADDRESSABLE(TREE_TYPE(arg0))) {
+      /* [SC] For RESULT_DECL where we have result pointer in first formal,
+	 here load value of first formal */
+        else if ((code0 == PARM_DECL && TREE_ADDRESSABLE(TREE_TYPE(arg0)))
+		 || (code0 == RESULT_DECL && st == first_formal)) {
           wn = WN_Ldid (Pointer_Mtype, 0, st, ST_type(st));
         }
 #endif
@@ -2454,6 +2557,7 @@ WFE_Address_Of(tree arg0)
          Marked with TREE_ADDRESSABLE */
       if (TREE_CODE(TREE_OPERAND(arg0, 0)) == PARM_DECL &&
           TREE_ADDRESSABLE(TREE_TYPE(TREE_OPERAND(arg0, 0)))) {
+	FmtAssert (false, ("Unexpected TARGET_EXPR(PARM_DECL) in WFE_Address_Of"));
         wn = WN_Ldid (Pointer_Mtype, 0, st, ST_type(st));        
       }
       else
@@ -2461,6 +2565,16 @@ WFE_Address_Of(tree arg0)
         wn = WN_Lda (Pointer_Mtype, ST_ofst(st), st);
     }
     break;
+
+#ifdef TARG_ST
+  case MODIFY_EXPR:
+    /* [SC] This can happen if we transform a TARGET_EXPR into a
+     * MODIFY_EXPR.  Evaluate the node, then take the address of the lhs.
+     */
+    WFE_Expand_Expr (arg0);
+    wn = WFE_Address_Of (TREE_OPERAND(arg0, 0));
+    break;
+#endif
 
   case COMPOUND_EXPR:
     {
@@ -2731,6 +2845,10 @@ WFE_Expand_Expr (tree exp,
 		 bool is_aggr_init_via_ctor)
 {
   FmtAssert(exp != NULL_TREE, ("WFE_Expand_Expr: null argument"));
+#ifdef TARG_ST
+  FmtAssert(! is_aggr_init_via_ctor, ("Unexpected is_aggr_init_via_ctor"));
+  bool voided_cond = FALSE;
+#endif
   enum tree_code code = TREE_CODE (exp);
   WN *wn, *wn0, *wn1, *wn2;
   ST *st;
@@ -2843,6 +2961,42 @@ WFE_Expand_Expr (tree exp,
       /*FALLTHRU*/
 #endif /* GPLUSPLUS_FE */
 
+#ifdef TARG_ST
+    case TARGET_EXPR:
+      /* We have normalized the tree to remove all "normal" TARGET_EXPR
+	 nodes, only "orphaned" TARGET_EPXR nodes remain.  Ref the gcc
+         tree documentation for definitions of normal and orphaned here.
+	 so here we do not have to worry about aliases of results.
+	 We can treat simply as an assignment to the slot,
+	 with a cleanup.
+	 The normalization also guarantees that if we may need the
+	 value of the exp, it is in operand 1; if we are sure we do not
+	 need it, then it is in operand 3.
+	 Also note that a gcc tree transformation in expand_body has
+	 replaced the messy case of aggr_init_expr with AGGR_INIT_VIA_CTOR_P
+	 by a call to the constructor, so we do not have to worry about
+	 that either.
+      */
+      {
+	tree slot     = TREE_OPERAND(exp, 0);
+	bool written_in_exp = TREE_OPERAND(exp, 1) == NULL_TREE;
+	tree t        = written_in_exp ? TREE_OPERAND(exp, 3) : TREE_OPERAND(exp, 1);
+	tree cleanup  = TREE_OPERAND(exp, 2);
+	st            = Get_ST (slot);
+	TY_IDX ty     = ST_type(st);
+	TYPE_ID mtype = TY_mtype (ty);
+	WN *rhs = WFE_Expand_Expr (t, ! written_in_exp);
+	if (rhs) {
+	  WFE_Set_ST_Addr_Saved (rhs);
+	  WFE_Stmt_Append(WN_Stid (mtype, ST_ofst(st), st, ty, rhs),
+			  Get_Srcpos());
+	}
+	if (cleanup) {
+	  Push_Temp_Cleanup(cleanup, true, CLEANUP_EH_ONLY(exp));
+	}
+	/* FALLTHRU to VAR_DECL */
+      }
+#else
     case TARGET_EXPR:
       {
 	st            = Get_ST (TREE_OPERAND(exp, 0));
@@ -2871,6 +3025,13 @@ WFE_Expand_Expr (tree exp,
 	 * cleanup in this case.
 	 */
 	tree t = TREE_OPERAND(exp, 1);
+#ifdef KEY
+	if (t == NULL_TREE) {
+	  t = TREE_OPERAND(exp, 3);
+	  FmtAssert(t != NULL_TREE,
+		    ("WFE_Expand_Expr: no initializer found for TARGET_EXPR"));
+	}
+#endif
  	if (TREE_CODE(t) == TARGET_EXPR)
 	  TREE_OPERAND(t, 2) = 0;
 
@@ -2922,6 +3083,9 @@ WFE_Expand_Expr (tree exp,
 #endif
 
 	if (TREE_CODE(t) == (enum tree_code)AGGR_INIT_EXPR && AGGR_INIT_VIA_CTOR_P(t)) {
+#ifdef TARG_ST
+	  FmtAssert(false, ("Unexpected aggr_init_via_ctor"));
+#endif
 	  tree args = TREE_OPERAND(t, 1);
 	  TREE_VALUE(args) = TREE_OPERAND(exp, 0);
 	  WFE_Expand_Expr (t, false, 0, 0, 0, 0, false, true);
@@ -2945,45 +3109,24 @@ WFE_Expand_Expr (tree exp,
 	}
 
         if (TREE_OPERAND(exp, 2)) {
-#ifdef TARG_ST
-          /* (cbr) support for deferred cleanups */
-          ST *guard_st=0;
-
-          if ((TREE_CODE (t) == COMPOUND_EXPR && TREE_SIDE_EFFECTS(t) ||
-              (TREE_CODE (t) == CALL_EXPR && TYPE_HAS_NONTRIVIAL_DESTRUCTOR (TREE_TYPE (t))))) {
-            guard_st = Get_Deferred_Cleanup(); 
-        }
-#endif
 
           tree cleanup = TREE_OPERAND(exp, 2);
 
-#ifdef TARG_ST
-            /* (cbr) conditionalize the cleanup.  */
-          if (guard_st) {
-            tree cond = build_decl (VAR_DECL, get_identifier(ST_name(ST_st_idx(guard_st))), unsigned_type_node);
-            DECL_ST(cond) = guard_st;
-
-            cleanup = build (COND_EXPR, void_type_node,
-                             c_common_truthvalue_conversion(cond),
-                             cleanup, integer_zero_node);
-            TREE_OPERAND(exp, 2) = cleanup;
-            }
-          
-          Push_Temp_Cleanup(cleanup, true, CLEANUP_EH_ONLY (exp));
-#else
 #ifdef KEY
           Push_Temp_Cleanup(TREE_OPERAND(exp, 2), true, CLEANUP_EH_ONLY (exp));
 #else
           Push_Temp_Cleanup(TREE_OPERAND(exp, 2), true);
 #endif
-#endif
         }
       }
-
+#endif
 
     case PARM_DECL: // for formal parms
     case CONSTRUCTOR:
     case VAR_DECL:
+#ifdef TARG_ST
+    case RESULT_DECL:
+#endif
       {
 	UINT xtra_BE_ofst = 0; 	// only needed for big-endian target
         PREG_NUM preg_num = 0;
@@ -3137,7 +3280,11 @@ WFE_Expand_Expr (tree exp,
 	  Set_TY_is_volatile(ty_idx);
 #endif
 
+#ifdef TARG_ST
+	if (code == PARM_DECL || code == VAR_DECL || code == RESULT_DECL) {
+#else
 	if (code == PARM_DECL || code == VAR_DECL) {
+#endif
             st = Get_ST (exp);
 
           if (ST_assigned_to_dedicated_preg (st))
@@ -3160,10 +3307,13 @@ WFE_Expand_Expr (tree exp,
 #ifdef TARG_ST
         /* (cbr) gcc 3.3 upgrade: non_pods are reference parameters.
            Marked with TREE_ADDRESSABLE */
+	/* [SC] RESULT_DECL where we have a pointer in first formal is
+	   treated as reference. */
 	TY_IDX ldid_ty_idx = field_id != 0 ? hi_ty_idx : ty_idx;
 	if (is_volatile) Set_TY_is_volatile(ldid_ty_idx);
 
-        if (code == PARM_DECL && TREE_ADDRESSABLE(TREE_TYPE(exp))) {
+        if ((code == PARM_DECL && TREE_ADDRESSABLE(TREE_TYPE(exp)))
+	    || (code == RESULT_DECL && st == first_formal)) {
           WN *w0 = WN_Ldid (Pointer_Mtype, 0, st, ST_type(st));
 
           wn = WN_CreateIload(OPR_ILOAD, rtype,
@@ -3333,10 +3483,11 @@ WFE_Expand_Expr (tree exp,
         TYPE_ID mtyp = TY_mtype(ty_idx);
 #ifdef TARG_ST //[CG] do not pass nop_ty_idx
 	// do not pass struct type down because will cause rtype of MTYPE_M
-        wn = WFE_Expand_Expr (TREE_OPERAND (exp, 0), TRUE,
+        wn = WFE_Expand_Expr (TREE_OPERAND (exp, 0), need_result,
 			      0,
                               component_ty_idx, component_offset,
                               field_id, is_bit_field);
+	if (! need_result) break;
 #else
 	// do not pass struct type down because will cause rtype of MTYPE_M
         wn = WFE_Expand_Expr (TREE_OPERAND (exp, 0), TRUE, 
@@ -3926,22 +4077,26 @@ WFE_Expand_Expr (tree exp,
     case TRUTH_ANDIF_EXPR:
     case TRUTH_ORIF_EXPR:
       {
-#ifdef TARG_ST
-        /* (cbr) support for deferred cleanups */
-        Push_Cleanup_Deferral ();
-#endif
+#ifdef KEY
+	// bug 2651: evaluate the 1st operand unconditionally
+        wn0 = WFE_Expand_Expr (TREE_OPERAND (exp, 0));
 
+	// Evaluate the second condition.  Add guard variable to the cleanup if
+	// there is cleanup.
+        WFE_Guard_Var_Push();
+        wn1 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 1),
+						   Boolean_type);
+        tree guard_var = WFE_Guard_Var_Pop();
+	if (guard_var != NULL_TREE) {
+	  WFE_add_guard_var(guard_var, wn1);
+	}
+#else
         wn0 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 0),
 						   Boolean_type);
 
-#ifdef TARG_ST
-        /* (cbr) support for deferred cleanups */
-        Push_Cleanup_Deferral ();
-#endif
-
         wn1 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 1),
 						   Boolean_type);
-
+#endif
         wn  = WN_Binary (Operator_From_Tree [code].opr,
                          Boolean_type, wn0, wn1);
         if (Boolean_type != MTYPE_B &&
@@ -4080,8 +4235,12 @@ WFE_Expand_Expr (tree exp,
         TY_IDX ty_idx1 = Get_TY (TREE_TYPE(TREE_OPERAND (exp, 1)));
         TY_IDX ty_idx2 = Get_TY (TREE_TYPE(TREE_OPERAND (exp, 2)));
 	ty_idx = Get_TY (TREE_TYPE(exp));
+#ifdef KEY // bug 2645
+	wn0 = WFE_Expand_Expr (TREE_OPERAND (exp, 0));
+#else
 	wn0 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 0),
 						   Boolean_type);
+#endif
 
 #ifdef TARG_ST
         /* (cbr) pro-release-1-9-0-B/26 select test is always a boolean */
@@ -4092,13 +4251,19 @@ WFE_Expand_Expr (tree exp,
 
 	if (TY_mtype (ty_idx)  == MTYPE_V ||
             TY_mtype (ty_idx1) == MTYPE_V ||
-            TY_mtype (ty_idx2) == MTYPE_V) {
+            TY_mtype (ty_idx2) == MTYPE_V
+#ifdef TARG_ST
+	    || ! need_result
+#endif
+	    ) {
+	  voided_cond = true;
 	  WN *then_block = WN_CreateBlock ();
 	  WN *else_block = WN_CreateBlock ();
 	  WN *if_stmt    = WN_CreateIf (wn0, then_block, else_block);
 	  WFE_Stmt_Append (if_stmt, Get_Srcpos());
 	  WFE_Stmt_Push (then_block, wfe_stmk_if_then, Get_Srcpos());
 #ifdef TARG_ST
+	  Push_Temp_Cleanup (TREE_OPERAND (exp, 1), false);
           /* (cbr) pro-release-1-9-0-B/6 need if throw_expr part of the conditiol assignment */
 	  wn1 = WFE_Expand_Expr (TREE_OPERAND (exp, 1), need_result);
 #else
@@ -4112,9 +4277,13 @@ WFE_Expand_Expr (tree exp,
 	    WFE_Stmt_Append (wn1, Get_Srcpos());
 #endif
 	  }
+#ifdef TARG_ST
+	  Do_Temp_Cleanups (TREE_OPERAND (exp, 1));
+#endif
 	  WFE_Stmt_Pop (wfe_stmk_if_then);
 	  WFE_Stmt_Push (else_block, wfe_stmk_if_else, Get_Srcpos());
 #ifdef TARG_ST
+	  Push_Temp_Cleanup (TREE_OPERAND (exp, 2), false);
           /* (cbr) need if throw_expr part of the conditiol assignment */
 	  wn2 = WFE_Expand_Expr (TREE_OPERAND (exp, 2), need_result);
 #else
@@ -4128,23 +4297,57 @@ WFE_Expand_Expr (tree exp,
 	    WFE_Stmt_Append (wn2, Get_Srcpos());
 #endif
 	  }
+#ifdef TARG_ST
+	  Do_Temp_Cleanups (TREE_OPERAND (exp, 2));
+#endif
 	  WFE_Stmt_Pop (wfe_stmk_if_else);
         }
 	else {
-#ifdef TARG_ST
-        /* (cbr) support for deferred cleanups */
-          Push_Cleanup_Deferral ();
-#endif
+#ifdef KEY
+	  // Prepare a guard variable for each part of the conditional, in case
+	  // the conditional has a cleanup that is executed after the whole
+	  // conditional expression is evaluated.  The guard variable ensures
+	  // that a cleanup is executed only if its part of the conditional is
+	  // executed.
+	  WFE_Guard_Var_Push();
+	  if(ty_idx != ty_idx1 &&
+	     Ty_Table[ty_idx].kind == KIND_POINTER &&
+	     Ty_Table[ty_idx1].kind == KIND_STRUCT) {
+	    wn1 = WFE_Address_Of (TREE_OPERAND (exp, 1));
+	  }
+	  else{
+	    wn1 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 1),
+						       TY_mtype (ty_idx));
+	  }
+	  
+	  tree guard_var1 = WFE_Guard_Var_Pop();
+
+	  WFE_Guard_Var_Push();
+	  if(ty_idx != ty_idx2 &&
+	     Ty_Table[ty_idx].kind == KIND_POINTER &&
+	     Ty_Table[ty_idx2].kind == KIND_STRUCT) {
+	    wn2 = WFE_Address_Of (TREE_OPERAND (exp, 2));
+	  }
+	  else{
+	    wn2 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 2),
+						       TY_mtype (ty_idx));
+	  }
+	  tree guard_var2 = WFE_Guard_Var_Pop();
+
+	  // Add guard variables if they are needed.
+	  if (guard_var1 != NULL_TREE) {
+	    WFE_add_guard_var(guard_var1, wn1);
+	  }
+	  if (guard_var2 != NULL_TREE) {
+	    WFE_add_guard_var(guard_var2, wn2);
+	  }
+#else
 	  wn1 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 1),
 						     TY_mtype (ty_idx));
 
-#ifdef TARG_ST
-        /* (cbr) support for deferred cleanups */
-          Push_Cleanup_Deferral ();
-#endif
 	  wn2 = WFE_Expand_Expr_With_Sequence_Point (TREE_OPERAND (exp, 2),
 						     TY_mtype (ty_idx));
-
+#endif
 	  wn  = WN_CreateExp3 (OPR_CSELECT, Mtype_comparison (TY_mtype (ty_idx)),
 			   MTYPE_V, wn0, wn1, wn2);
 
@@ -4155,6 +4358,12 @@ WFE_Expand_Expr (tree exp,
 
     case INIT_EXPR:
     case MODIFY_EXPR:
+#ifndef TARG_ST
+      /* [SC] No need to look for TARGET_EXPR nested inside the rhs,
+       * since earlier tree normalization (simplify_target_exprs_r) has
+       * fixed them all up.
+       */
+	       
       /*
        * When operand 1 of an init_expr or modify_expr is a target_expr,
        * then the temporary in the target_expr needs to be replaced by
@@ -4166,6 +4375,9 @@ WFE_Expand_Expr (tree exp,
       tree te = TREE_OPERAND(exp, 1);
 
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
+      while (TREE_CODE(te) == NOP_EXPR)
+	te = TREE_OPERAND(te, 0);
+
       if (TREE_CODE(te) == (enum tree_code)MUST_NOT_THROW_EXPR) {
 	tree t = TREE_OPERAND(te, 0);
 	TREE_OPERAND(t, 2) = NULL_TREE;
@@ -4182,6 +4394,9 @@ WFE_Expand_Expr (tree exp,
             (TREE_CODE (TREE_OPERAND ( TREE_OPERAND(exp, 0),0)) == VAR_DECL ||
              TREE_CODE (TREE_OPERAND ( TREE_OPERAND(exp, 0),0)) == PARM_DECL)) {
           tree t1 = TREE_OPERAND(t, 1);
+	  if (t1 == NULL_TREE) {
+	    t1 = TREE_OPERAND(t, 3);
+	  }
           tree arg = TREE_OPERAND (TREE_OPERAND(exp, 0), 0);
           if (TREE_CODE (t1) == COMPOUND_EXPR) {
             tree exp2 = TREE_OPERAND(t1, 0);
@@ -4209,6 +4424,7 @@ WFE_Expand_Expr (tree exp,
 	DevWarn ("INIT_EXPR/MODIFY_EXPR kid1 is TARGET_EXPR, kid0 is %s\n",
 		 Operator_From_Tree [TREE_CODE(TREE_OPERAND(exp, 0))].name);
       }
+#endif /* ndef TARG_ST */
 		
     case PREDECREMENT_EXPR:
     case PREINCREMENT_EXPR:
@@ -4370,6 +4586,17 @@ WFE_Expand_Expr (tree exp,
             // zero length struct return
             ret_mtype = MTYPE_V;
           }
+#ifdef TARG_ST
+	  else if (RETURN_IN_MEMORY (TREE_TYPE(exp)) ||
+               (TYPE_LANG_SPECIFIC(TREE_TYPE(exp)) &&
+                TREE_ADDRESSABLE (TREE_TYPE(exp)) && 
+                CLASSTYPE_NON_POD_P (TREE_TYPE(exp)))) {
+	    /* We have already inserted a return address argument
+	       (as part of simplify_target_expr), so treat as
+	       void. */
+	    ret_mtype = MTYPE_V;
+	  }
+#endif
           else
             ret_mtype = TY_mtype (ty_idx);
         }
@@ -4957,24 +5184,36 @@ WFE_Expand_Expr (tree exp,
 	for (list = TREE_OPERAND (exp, 1);
 	     list;
 	     list = TREE_CHAIN (list)) {
+#ifndef TARG_ST
+	  /* [SC] Note we have asserted ! is_aggr_init_via_ctor, so this if
+	   * can never be entered.
+	   */
 	  if (i == 0 && is_aggr_init_via_ctor) {
             ST * st = Get_ST(TREE_VALUE(list));
 	    arg_wn = WN_Lda(Pointer_Mtype, ST_ofst(st), st);
 	    arg_ty_idx = Get_TY(
 			   build_pointer_type(TREE_TYPE(TREE_VALUE(list))));
-          }
+          } else
+#endif
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
           /* (cbr) C++ uses a TARGET_EXPR to indicate that we want to make a
              new object from the argument.  It is safe in the only case where this
              is a useful optimization; namely, when the argument is a plain object.
           */
-          else if (TREE_CODE (TREE_VALUE(list)) == TARGET_EXPR 
-              && (DECL_P (TREE_OPERAND (TREE_VALUE(list), 1)))) {
+	  if (TREE_CODE (TREE_VALUE(list)) == TARGET_EXPR 
+		   && TREE_OPERAND (TREE_VALUE(list), 1)
+		   && (DECL_P (TREE_OPERAND (TREE_VALUE(list), 1)))) {
             arg_wn     = WFE_Expand_Expr (TREE_OPERAND (TREE_VALUE(list), 1));
 	    arg_ty_idx = Get_TY(TREE_TYPE(TREE_OPERAND (TREE_VALUE(list), 1)));
           }
+          else if (TREE_CODE (TREE_VALUE(list)) == TARGET_EXPR 
+		   && TREE_OPERAND (TREE_VALUE(list), 3)
+		   && (DECL_P (TREE_OPERAND (TREE_VALUE(list), 3)))) {
+            arg_wn     = WFE_Expand_Expr (TREE_OPERAND (TREE_VALUE(list), 3));
+	    arg_ty_idx = Get_TY(TREE_TYPE(TREE_OPERAND (TREE_VALUE(list), 3)));
+          } else 
 #endif
-	  else {
+	  {
             arg_wn     = WFE_Expand_Expr (TREE_VALUE (list));
 	    arg_ty_idx = Get_TY(TREE_TYPE(TREE_VALUE(list)));
 	  }
@@ -5028,6 +5267,18 @@ WFE_Expand_Expr (tree exp,
 
         if (ret_mtype == MTYPE_V) {
 	  WFE_Stmt_Append (call_wn, Get_Srcpos());
+#ifdef TARG_ST
+	  if (need_result
+	      && (RETURN_IN_MEMORY (TREE_TYPE(exp)) ||
+               (TYPE_LANG_SPECIFIC(TREE_TYPE(exp)) &&
+                TREE_ADDRESSABLE (TREE_TYPE(exp)) && 
+                CLASSTYPE_NON_POD_P (TREE_TYPE(exp))))) {
+	    /* The first argument is a result pointer, load from there. */
+	    tree result_address = TREE_OPERAND (exp, 1);
+	    wn = WFE_Expand_Expr(build1 (INDIRECT_REF, TREE_TYPE(exp),
+					 result_address));
+	  }
+#endif
         }
 
 	else {
@@ -5484,7 +5735,7 @@ WFE_Expand_Expr (tree exp,
                code == (enum tree_code)LOOP_EXPR ||
                code == (enum tree_code)NOP_EXPR ||
                code == (enum tree_code)THROW_EXPR ||
-               ((code == (enum tree_code)COND_EXPR) && (TY_mtype (ty_idx) == MTYPE_V)),
+               (code == (enum tree_code)COND_EXPR && voided_cond),
 	       ("WFE_Expand_Expr: NULL WHIRL tree for %s at line %d",
 		Operator_From_Tree [code].name, lineno));
    }

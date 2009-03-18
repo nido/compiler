@@ -62,6 +62,11 @@ static void genrtl_start_function PARAMS ((tree));
 static void genrtl_finish_function PARAMS ((tree));
 static tree clear_decl_rtl PARAMS ((tree *, int *, void *));
 
+#ifdef TARG_ST
+  /* (cbr) can't have nrv if not optimizing untill dwarf is fixed */
+extern int do_nrv; // set in toplev.c
+#endif
+
 /* Finish processing the COND, the SUBSTMT condition for STMT.  */
 
 #define FINISH_COND(COND, STMT, SUBSTMT) 		\
@@ -2396,10 +2401,8 @@ expand_body (fn)
 
   current_function_is_thunk = DECL_THUNK_P (fn);
 
-#ifndef TARG_ST
   /* Expand the body.  */
   expand_stmt (DECL_SAVED_TREE (fn));
-#endif
 
   /* Statements should always be full-expressions at the outermost set
      of curly braces for a function.  */
@@ -2421,11 +2424,11 @@ expand_body (fn)
     /* We might need the body of this function so that we can expand
        it inline somewhere else.  */
     ;
-#ifndef TARG_ST
+#ifndef SGI_MONGOOSE
   else
     /* We don't need the body; blow it away.  */
     DECL_SAVED_TREE (fn) = NULL_TREE;
-#endif
+#endif  /* SGI_MONGOOSE */
 
   /* And restore the current source position.  */
   current_function_decl = saved_function;
@@ -2525,7 +2528,11 @@ genrtl_start_function (fn)
     expand_main_function ();
 
   /* Give our named return value the same RTL as our RESULT_DECL.  */
+#ifdef TARG_ST
+  if (current_function_return_value && do_nrv)
+#else
   if (current_function_return_value)
+#endif
     COPY_DECL_RTL (DECL_RESULT (fn), current_function_return_value);
 }
 

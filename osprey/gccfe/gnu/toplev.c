@@ -87,6 +87,9 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "xcoffout.h"		/* Needed for external data
 				   declarations for e.g. AIX 4.x.  */
 #endif
+#ifdef TARG_ST
+extern const int WFE_CPlusPlus_Translator;
+#endif
 
 /* Carry information from ASM_DECLARE_OBJECT_NAME
    to ASM_FINISH_DECLARE_OBJECT.  */
@@ -109,6 +112,9 @@ static void set_target_switch PARAMS ((const char *));
 
 static void crash_signal PARAMS ((int)) ATTRIBUTE_NORETURN;
 #ifdef SGI_MONGOOSE
+#ifdef KEY
+extern void gxx_emits_decl PARAMS ((tree));
+#endif /* KEY */
 int parse_tree_dump = 0;
 #endif
 static void compile_file PARAMS ((void));
@@ -425,6 +431,19 @@ int quiet_flag = 1;
 int quiet_flag = 0;
 #endif /* SGI_MONGOOSE */
 
+#ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+/* [SC] Defined in WFE since we want different initial values for C and C++. */
+extern int pstatic_as_global;
+#else
+#ifdef KEY
+int pstatic_as_global = 1;
+#else
+int pstatic_as_global = 0;
+#endif
+#endif
+#endif /* SGI_MONGOOSE */
+
 /* Print times taken by the various passes.  -ftime-report.  */
 
 int time_report = 0;
@@ -693,7 +712,11 @@ int flag_keep_inline_functions;
 
 /* Nonzero means that functions will not be inlined.  */
 
+#ifdef KEY
+int flag_no_inline = 1; // disable GNU inliner
+#else
 int flag_no_inline = 2;
+#endif
 
 /* Nonzero means that we don't want inlining by virtue of -fno-inline,
    not just because the tree inliner turned us off.  */
@@ -2330,6 +2353,16 @@ rest_of_decl_compilation (decl, asmspec, top_level, at_end)
 	alias = TREE_VALUE (TREE_VALUE (alias));
 	alias = get_identifier (TREE_STRING_POINTER (alias));
 	assemble_alias (decl, alias);
+#ifndef TARG_ST
+	// [SC] We are not yet using the KEY method of handling aliases.
+#ifdef KEY
+	// Put aliases into the list of decls emitted by g++ so that we can
+	// iterate through the list when expanding aliases to WHIRL.  An An
+	// alias can be expanded only if its target, which can be another
+	// alias, is expanded.  Bug 4393.
+	gxx_emits_decl (decl);
+#endif
+#endif
       }
   }
 
@@ -2665,6 +2698,18 @@ rest_of_compilation (decl)
   rtx_equal_function_value_matters = 0;
   purge_hard_subreg_sets (get_insns ());
 
+#ifdef KEY
+#ifdef TARG_ST
+  if (WFE_CPlusPlus_Translator) {
+    /* [SC] insns can be uninitialized ... no idea how open64-4.2 works without this */
+    insns = get_insns ();
+#endif
+    goto turn_rtl_into_assembler_code;
+#ifdef TARG_ST
+  }
+#endif
+#endif
+
   /* Early return if there were errors.  We can run afoul of our
      consistency checks, and there's not really much point in fixing them.
      Don't return yet if -Wreturn-type; we need to do cleanup_cfg.  */
@@ -2719,21 +2764,6 @@ rest_of_compilation (decl)
 	  delete_insn (insn);
     }
   close_dump_file (DFI_sibling, print_rtl, get_insns ());
-#ifndef TARG_ST
-//TB: bug #31540 Now done in the code generator (whirl2ops.cxx)
-#ifdef TARG_ST
-  /* (cbr) expand_stmts is not done so the return values are not seen */
-  if (Current_Function_Decl())
-#endif
-  /* We have to issue these warnings now already, because CFG cleanups
-     further down may destroy the required information.  However, this
-     must be done after the sibcall optimization pass because the barrier
-     emitted for noreturn calls that are candidate for the optimization
-     is folded into the CALL_PLACEHOLDER until after this pass, so the
-     CFG is inaccurate.  */
-  check_function_return_warnings ();
-#endif
-
   timevar_pop (TV_JUMP);
 
 #ifdef TARG_ST
@@ -3686,6 +3716,34 @@ rest_of_compilation (decl)
        of other functions later in this translation unit.  */
     TREE_NOTHROW (current_function_decl) = 1;
 
+#ifdef KEY
+  // Run final() in order to find all the functions that are called from the
+  // current function.  The called functions will have their
+  // TREE_SYMBOL_REFERENCED flag set, which will cause those functions to be
+  // emitted.  This is the only way to emit functions that GCC defers emitting.
+
+  turn_rtl_into_assembler_code:
+
+  // Add the function to the list of functions to be emitted.  Emitting only
+  // the functions in the global namespace and the functions defined as methods
+  // within class definitions are not enough, because methods that are defined
+  // as standalone are missed, such as C::foo:
+  //   struct A {virtual void foo()=0;};
+  //   struct B {virtual void foo()=0;};
+  //   struct C : public A, public B {virtual void foo();};
+  //   void C::foo() {}
+  // Func_emitted_by_gxx is a catch-all for all functions that g++ turns into
+  // assembler.
+  //
+  // (Gxx_emits_funcs adds the function to the list of decls that are emitted
+  // by g++ into assembly.  The list is a hack to catch all such functions.
+  // The correct way is to find all the places where g++ decides that the
+  // function should be emitted, and then put the fndecl into the top-level
+  // namespace using pushdecl_top_level(fndecl).)
+
+  gxx_emits_decl (decl);
+#endif
+
   /* Now turn the rtl into assembler code.  */
 
   timevar_push (TV_FINAL);
@@ -3724,6 +3782,10 @@ rest_of_compilation (decl)
 
     if (! quiet_flag)
       fflush (asm_out_file);
+
+#ifdef KEY
+    goto exit_rest_of_compilation;
+#endif
 
     /* Release all memory allocated by flow.  */
     free_basic_block_vars (0);
@@ -4330,8 +4392,12 @@ ignoring option `%s' due to invalid debug level specification",
 		}
 	    }
 
+#ifndef KEY
+	  // Debugging is handled by the WHIRL front-end. Ignore what Gnu
+	  // has to say.
 	  if (type == NO_DEBUG)
 	    warning ("`%s': unknown or unsupported -g option", arg - 2);
+#endif // KEY
 
 	  /* Does it conflict with an already selected type?  */
 	  if (type_explicitly_set_p
@@ -4489,6 +4555,10 @@ independent_decode_option (argc, argv)
 	pedantic = 1;
       else if (!strcmp (arg, "pedantic-errors"))
 	flag_pedantic_errors = pedantic = 1;
+#ifdef SGI_MONGOOSE
+      else if (!strcmp (arg, "pstatic_as_global"))
+        pstatic_as_global = 1;
+#endif /* SGI_MONGOOSE */
       else if (arg[1] == 0)
 	profile_flag = 1;
       else
@@ -4816,7 +4886,17 @@ static void
 init_asm_output (name)
      const char *name;
 {
+#ifdef KEY
 #ifdef TARG_ST
+  /* [SC] Worry about portability to windows here. */
+  asm_out_file = fopen (HOST_BIT_BUCKET, "w");
+#else
+  asm_out_file = fopen ("/dev/null", "w");
+#endif
+  return;
+#endif  // KEY
+
+#ifdef SGI_MONGOOSE
   asm_out_file = NULL;
 #else
   if (name == NULL && asm_file_name == 0)

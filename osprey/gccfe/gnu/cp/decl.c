@@ -52,6 +52,11 @@ Boston, MA 02111-1307, USA.  */
 #include "timevar.h"
 #include "input.h"
 
+#ifdef KEY
+extern void add_duplicates (tree, tree);
+extern void gxx_emits_decl PARAMS ((tree));
+#endif
+
 #ifdef TARG_ST
   /* (cbr) can't have nrv if not optimizing untill dwarf is fixed */
 extern int do_nrv; // set in toplev.c
@@ -2539,6 +2544,12 @@ push_namespace (name)
     {
       /* Make a new namespace, binding the name to it.  */
       d = build_lang_decl (NAMESPACE_DECL, name, void_type_node);
+
+#ifdef KEY
+      /* Tell the WHIRL translator about the new namespace. */
+      gxx_emits_decl (d);
+#endif
+
       /* The global namespace is not pushed, and the global binding
 	 level is set elsewhere.  */
       if (!global)
@@ -3276,6 +3287,11 @@ decls_match (newdecl, olddecl)
 				 COMPARE_REDECLARATION);
     }
 
+#ifdef KEY
+  // Limit it to FUNCTION_DECL for now
+  if (types_match && TREE_CODE (newdecl) == FUNCTION_DECL)
+  	add_duplicates (newdecl, olddecl);
+#endif
   return types_match;
 }
 

@@ -274,11 +274,14 @@ do { fputs (integer_asm_op (POINTER_SIZE / UNITS_PER_WORD, TRUE), FILE); \
 #define LINK_ELIMINATE_DUPLICATE_LDIRECTORIES 0
 #endif /* LINK_ELIMINATE_DUPLICATE_LDIRECTORIES */
 
+#ifndef KEY     // Don't need to support DWARF when writing assembly,
+                // since the assembly will be thrown away anyway.
 /* If we have a definition of INCOMING_RETURN_ADDR_RTX, assume that
    the rest of the DWARF 2 frame unwind support is also provided.  */
 #if !defined (DWARF2_UNWIND_INFO) && defined (INCOMING_RETURN_ADDR_RTX)
 #define DWARF2_UNWIND_INFO 1
 #endif
+#endif  // KEY
 
 /* If we have named sections, and we're using crtstuff to run ctors,
    use them for registering eh frame information.  */
@@ -476,6 +479,11 @@ do { fputs (integer_asm_op (POINTER_SIZE / UNITS_PER_WORD, TRUE), FILE); \
 #ifndef DEFAULT_GDB_EXTENSIONS
 #define DEFAULT_GDB_EXTENSIONS 1
 #endif
+
+#ifdef KEY
+#undef PREFERRED_DEBUGGING_TYPE
+#define PREFERRED_DEBUGGING_TYPE NO_DEBUG
+#endif // KEY
 
 /* If more than one debugging type is supported, you must define
    PREFERRED_DEBUGGING_TYPE to choose a format in a system-dependent way.

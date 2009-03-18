@@ -16,6 +16,7 @@ extern void Do_Handlers (void);
 extern void Do_EH_Cleanups (void);
 #ifdef TARG_ST
 extern void Do_Cleanups_For_EH (void);
+void Init_Guard (WN *);
 #endif
 extern void Call_Throw();
 
@@ -30,6 +31,7 @@ extern void Push_Temp_Cleanup (tree, bool, bool=0);
 extern void Do_EH_Tables (void);
 extern void Call_Terminate();
 extern LABEL_IDX lookup_cleanups(INITV_IDX&);
+extern int make_symbols_weak;
 extern bool try_block_seen;
 extern bool in_cleanup;
 #ifdef TARG_ST
@@ -101,6 +103,13 @@ extern LABEL_IDX WFE_last_label_idx;
 #ifdef TARG_ST
 extern bool Current_Function_Has_EH_Spec();
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern const int WFE_CPlusPlus_Translator;
+#ifdef __cplusplus
+}
+#endif
 #endif
 
 #endif

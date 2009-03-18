@@ -238,6 +238,10 @@ static int final_addr_vec_align PARAMS ((rtx));
 #ifdef HAVE_ATTR_length
 static int align_fuzz		PARAMS ((rtx, rtx, int, unsigned));
 #endif
+
+#ifdef KEY
+static void mark_referenced_symbols (rtx);
+#endif  // KEY
 
 /* Initialize data in final at the beginning of a compilation.  */
 
@@ -1887,6 +1891,7 @@ final (first, file, optimize, prescan)
   /* Output the insns.  */
   for (insn = NEXT_INSN (first); insn;)
     {
+#ifndef KEY
 #ifdef HAVE_ATTR_length
       if ((unsigned) INSN_UID (insn) >= INSN_ADDRESSES_SIZE ())
 	{
@@ -1900,7 +1905,7 @@ final (first, file, optimize, prescan)
       else
 	insn_current_address = INSN_ADDRESSES (INSN_UID (insn));
 #endif /* HAVE_ATTR_length */
-
+#endif
       insn = final_scan_insn (insn, file, optimize, prescan, 0);
     }
 
@@ -1996,6 +2001,10 @@ final_scan_insn (insn, file, optimize, prescan, nopeepholes)
      int prescan;
      int nopeepholes ATTRIBUTE_UNUSED;
 {
+#ifdef KEY
+  mark_referenced_symbols (insn);
+  return NEXT_INSN (insn);
+#else
 #ifdef HAVE_cc0
   rtx set;
 #endif
@@ -2844,6 +2853,7 @@ final_scan_insn (insn, file, optimize, prescan, nopeepholes)
       }
     }
   return NEXT_INSN (insn);
+#endif  // KEY
 }
 
 /* Output debugging info to the assembler file FILE
@@ -4168,3 +4178,51 @@ leaf_renumber_regs_insn (in_rtx)
       }
 }
 #endif
+
+#ifdef KEY
+// Find all the SYMBOL_REF's in X and mark their symbols as being referenced.
+void
+mark_referenced_symbols (rtx x)
+{
+  int i, j;
+  const char *fmt;
+                                                                                 
+  if (!x)
+    return;
+                                                                                 
+  if (GET_CODE (x) == SYMBOL_REF) {
+    const char *name = XSTR (x, 0);
+    const char *real_name;
+    tree id;
+                                                                                 
+    if (!name)
+      abort();
+                                                                                 
+    // Code copied from assemble_name in varasm.c.
+    //STRIP_NAME_ENCODING (real_name, name);
+    // avoid poisoned STRIP_NAME_ENCODING
+    real_name = (* targetm.strip_name_encoding) (name);
+                                                                                 
+    id = maybe_get_identifier (real_name);
+    if (id)
+      TREE_SYMBOL_REFERENCED (id) = 1;
+    return;
+                                                                                 
+  } else if (GET_CODE (x) == CALL_PLACEHOLDER) {
+    rtx tem;
+    for (tem = XEXP (x, 0); tem != 0; tem = NEXT_INSN (tem))
+      mark_referenced_symbols (tem);
+    return;
+  }
+                                                                                 
+  fmt = GET_RTX_FORMAT (GET_CODE (x));
+  for (i = 0; i < GET_RTX_LENGTH (GET_CODE (x)); i++)
+    {
+      if (fmt[i] == 'e')
+        mark_referenced_symbols (XEXP (x, i));
+      else if (fmt[i] == 'E')
+        for (j = 0; j < XVECLEN (x, i); j++)
+          mark_referenced_symbols (XVECEXP (x, i, j));
+    }
+}
+#endif // KEY

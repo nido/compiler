@@ -123,6 +123,9 @@ extern DST_INFO_IDX Create_DST_type_For_Tree(
 extern DST_INFO_IDX Create_DST_decl_For_Tree(
 	tree decl_node, ST* var_st);
 
+#ifdef KEY
+void DST_enter_member_function ( tree, DST_INFO_IDX, TY_IDX, tree );
+#endif
 #endif /* __cplusplus */
 
 #ifdef __cplusplus

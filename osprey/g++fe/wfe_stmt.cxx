@@ -46,6 +46,7 @@ extern int isdigit(int);
 
 #ifdef KEY
 #include "wn.h"		// New_Region_Id()
+int make_symbols_weak = FALSE;	// if TRUE, emit all new symbols as weak
 bool in_cleanup = FALSE;	// TRUE if we are expanding code to be executed during stack unwinding
 #endif // KEY
 
@@ -138,23 +139,17 @@ typedef struct temp_cleanup_info_t {
 #ifdef KEY
   bool		    cleanup_eh_only;
 #endif
+#ifdef TARG_ST
+  // When label_idx == 0 (i.e. no cleanup), this is where
+  // we should insert guard initializers.
+  WN               *body;
+  WN               *last;
+#endif
 } TEMP_CLEANUP_INFO;
 
 static TEMP_CLEANUP_INFO *temp_cleanup_stack;
 static INT32	    	  temp_cleanup_i;
 static INT32	    	  temp_cleanup_max;
-
-#ifdef TARG_ST
-/* (cbr) support for deferred cleanups */
-typedef struct nested_cleanup_t {
-  ST *guard_st;
-  int emit_needed;
-} NESTED_COND_CLEANUP;
-
-static NESTED_COND_CLEANUP *cond_cleanup_stack;
-static INT32	 cond_cleanup_i;
-static INT32	 cond_cleanup_max;
-#endif
 
 #ifdef KEY
 #include <vector>
@@ -307,6 +302,10 @@ Function_ST_For_String (const char * s)
 static void
 Emit_Cleanup(tree cleanup)
 {
+  int saved_make_symbols_weak;
+
+  saved_make_symbols_weak = make_symbols_weak;
+  make_symbols_weak = TRUE;
   if (TREE_CODE(cleanup) == (enum tree_code)IF_STMT) {
     // Mimick WFE_Expand_If but don't call it, because WFE_Expand_If calls
     // WFE_Expand_Stmt which creates temp cleanups.  This leads to infinite
@@ -336,7 +335,12 @@ Emit_Cleanup(tree cleanup)
       cleanup = CLEANUP_EXPR(cleanup);
     WFE_One_Stmt_Cleanup (cleanup);
   }
+  make_symbols_weak = saved_make_symbols_weak;
 }
+#endif
+
+#ifdef TARG_ST
+extern const int WFE_CPlusPlus_Translator = 1;
 #endif
 
 #if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
@@ -460,6 +464,9 @@ void
 Do_Handlers (void)
 {
 #ifdef KEY
+  int saved_make_symbols_weak = make_symbols_weak;
+  make_symbols_weak = TRUE;
+
   if (flag_exceptions) processing_handler = true;
   //   if (key_exceptions) processing_handler = true;
 #endif
@@ -505,6 +512,7 @@ Do_Handlers (void)
   if (flag_exceptions) 
   //   if (key_exceptions) 
     FmtAssert (cleanup_list_for_eh.empty(), ("EH Cleanup list not completely processed"));
+  make_symbols_weak = saved_make_symbols_weak;
 #endif
 }
 
@@ -806,6 +814,16 @@ Push_Temp_Cleanup (tree t, bool is_cleanup
 #endif
 )
 {
+#ifdef KEY
+  // If a guard var is required, conditionalize the cleanup.
+  tree guard_var = WFE_Get_Guard_Var();
+  if (guard_var != NULL_TREE) {
+    t = build_stmt((tree_code) IF_STMT,
+		   c_common_truthvalue_conversion(guard_var),
+		   t, NULL_TREE);
+  }
+#endif
+
   if (++temp_cleanup_i == temp_cleanup_max) {
     temp_cleanup_max = ENLARGE (temp_cleanup_max);
     temp_cleanup_stack =
@@ -825,6 +843,14 @@ Push_Temp_Cleanup (tree t, bool is_cleanup
     New_LABEL (CURRENT_SYMTAB, temp_cleanup_stack [temp_cleanup_i].label_idx);
   else
     temp_cleanup_stack [temp_cleanup_i].label_idx = 0;
+#ifdef TARG_ST
+  if (!is_cleanup) {
+    WN *body = WFE_Stmt_Top ();
+    WN *last = body ? WN_last (body) : NULL;
+    temp_cleanup_stack [temp_cleanup_i].body = body;
+    temp_cleanup_stack [temp_cleanup_i].last = last;
+  }
+#endif
 #ifdef KEY
   temp_cleanup_stack [temp_cleanup_i].cleanup_eh_only = cleanup_eh_only;
 #endif
@@ -846,6 +872,23 @@ cleanup_matches (tree candidate, tree target)
   return FALSE;
 }
 
+#ifdef TARG_ST
+void
+Init_Guard (WN *wn)
+{
+  INT i;
+  for (i = temp_cleanup_i; i >= 0; --i) {
+    if (temp_cleanup_stack[i].label_idx == 0) {
+      WN_INSERT_BlockAfter (temp_cleanup_stack[i].body,
+			    temp_cleanup_stack[i].last,
+			    wn);
+      temp_cleanup_stack[i].last = wn;
+      break;
+    }
+  }
+  FmtAssert (i >= 0, ("Init_Guard: cannot find insertion point"));
+}
+#endif
 
 void
 Do_Temp_Cleanups (tree t)
@@ -1804,83 +1847,7 @@ WFE_Stmt_Init (void)
 #endif // __GNUC__ >=3
 
   scope_number           = 0;
-
-#ifdef TARG_ST
-  cond_cleanup_max       = 32;
-  cond_cleanup_i	 = -1;
-  cond_cleanup_stack	 =
-	// [HK]
-    (NESTED_COND_CLEANUP *) xmalloc (sizeof (NESTED_COND_CLEANUP) * 
-				  cond_cleanup_max);
-#endif
 } /* WFE_Stmt_Init */
-
-#ifdef TARG_ST
-/* (cbr) support for deferred cleanups */
-void
-Push_Cleanup_Deferral ()
-{
-  static int i = 0;
-
-  if (cond_cleanup_i > 0 && !cond_cleanup_stack [cond_cleanup_i].emit_needed)
-  return;
-
-  if (++cond_cleanup_i == cond_cleanup_max) {
-    cond_cleanup_max = ENLARGE (cond_cleanup_max);
-    cond_cleanup_stack =
-      (NESTED_COND_CLEANUP *) xrealloc (cond_cleanup_stack,
-	 	        cond_cleanup_max * sizeof (NESTED_COND_CLEANUP));
-  }
-
-  ST *guard_st = New_ST (CURRENT_SYMTAB);
-  ST_Init (guard_st, Save_Str2i (".guard_dtor", "", i++), CLASS_VAR, SCLASS_AUTO,
-           EXPORT_LOCAL, MTYPE_To_TY(Boolean_type));
-
-  cond_cleanup_stack [cond_cleanup_i].guard_st=guard_st;
-  cond_cleanup_stack [cond_cleanup_i].emit_needed=0;
-}
-
-ST *
-Get_Deferred_Cleanup() 
-{
-   if (cond_cleanup_i == -1)
-      return 0;
-
-   NESTED_COND_CLEANUP *nested_cond = &cond_cleanup_stack[cond_cleanup_i];
-
-   ST *guard_st = nested_cond->guard_st;
-   WN *val = WN_Intconst (Boolean_type, 1);
-   val = WN_Stid (Boolean_type, 0, guard_st, ST_type (guard_st), val);
-   WFE_Stmt_Append (val, Get_Srcpos());
-
-   nested_cond->emit_needed=1;
-   return guard_st;
- }
-
-void Emit_Cleanup_Initializers()
-{
-  WN *body =  WFE_Stmt_Top ();
-  WN *first = WN_first(body);
-
-  for (int i = 0; i <= cond_cleanup_i; i++) {
-    NESTED_COND_CLEANUP *nested_cond = &cond_cleanup_stack[i];
-
-    if (nested_cond->emit_needed) {
-      ST *guard_st = nested_cond->guard_st;
-
-      WN *val = WN_Intconst (Boolean_type, 0);
-      val = WN_Stid (Boolean_type, 0, guard_st, ST_type (guard_st), val);
-    
-      if (WN_pragma(first) == WN_PRAGMA_PREAMBLE_END)
-          WN_INSERT_BlockAfter (body, first, val);
-      else
-          WN_INSERT_BlockBefore (body, first, val);
-    }
-  }
-  cond_cleanup_i = -1;
-}
-
-#endif
 
 #ifdef KEY
 // Special case to also handle while we are inside a handler
@@ -2247,8 +2214,16 @@ WFE_Expand_Loop (tree stmt)
 			0, NULL),
 	Get_Srcpos());
     }
+#ifdef KEY	// bug 3265
+    if (incr) {
+      Push_Temp_Cleanup(incr, false);
+      WFE_One_Stmt(incr);
+      Do_Temp_Cleanups(incr);
+    }
+#else
     if (incr)
       WFE_One_Stmt(incr);
+#endif
 
     WFE_Stmt_Pop (wfe_stmk_while_body);
   }
@@ -2478,58 +2453,17 @@ WFE_Expand_Return (tree stmt, tree retval)
   BOOL allocate_hidden_param = FALSE;
   /* (cbr) try to allocate the hidden parameter here, rather in vm_lower.cxx
      that avoid extra copies from .preg_return_val difficult to remove */
-  extern ST *first_formal;
-
   if (retval &&
       (RETURN_IN_MEMORY (TREE_TYPE(retval)) ||
        (TYPE_LANG_SPECIFIC(TREE_TYPE(retval)) &&
         TREE_ADDRESSABLE (TREE_TYPE(retval)) && 
         CLASSTYPE_NON_POD_P (TREE_TYPE(retval))))) {
-
-    bool need_result=true;
-
-    while (TREE_CODE (retval) == NOP_EXPR) {
-      retval = TREE_OPERAND(retval, 0);
-    }
-
-    if (TREE_CODE (retval) == TARGET_EXPR) {
-      extern tree  make_indirect_tree(tree);
-      tree prett = make_indirect_tree(TREE_OPERAND(retval, 0));
-
-      DECL_ST (prett) = first_formal;
-      
-      tree targexp = TREE_OPERAND(retval, 1);
-
-      if (TREE_CODE (targexp) == CALL_EXPR) {
-        tree args = tree_cons (NULL_TREE, prett, TREE_OPERAND(targexp, 1));
-        TREE_OPERAND(targexp, 1) = args;
-
-        need_result=FALSE;
-      }
-      else if (TREE_CODE (targexp) == COMPOUND_EXPR) {
-        need_result=FALSE;
-      }
-
-      retval = targexp;
-
-      WN *rhs_wn = WFE_Expand_Expr (retval, need_result);
-      
-      if (need_result) {
-        WN *w0 = WN_Ldid (Pointer_Mtype, 0, first_formal,
-                          ST_type(first_formal));
-
-        rhs_wn = WN_CreateIstore(OPR_ISTORE, MTYPE_V, MTYPE_M, 0, 
-                                 ST_type(first_formal), rhs_wn, w0);
-
-        WFE_Stmt_Append(rhs_wn, Get_Srcpos());
-      }
-
-      retval = NULL_TREE;
-#ifdef TARG_ST
-      //TB: Keep a trace that this return is a not a return void
-      allocate_hidden_param = TRUE;
-#endif
-    }
+    /* [SC] In this case, the result will be assigned through the
+       first formal, so no need to assign here. */
+    WFE_Expand_Expr (retval, FALSE);
+    retval = NULL_TREE;
+    //TB: Keep a trace that this return is a not a return void
+    allocate_hidden_param = TRUE;
   }
 #endif
 
@@ -3142,53 +3076,15 @@ Get_typeinfo_var (tree t)
 	ti_var = CLASSTYPE_TYPEINFO_VAR (TYPE_MAIN_VARIANT (t));
     else // e.g. ordinary type
       ti_var = IDENTIFIER_GLOBAL_VALUE (mangle_typeinfo_for_type(t));
-
-#ifdef TARG_ST
-    /* (cbr) if needed create it */
-    if (!ti_var)
-      ti_var = get_tinfo_decl (t);        
-#endif
-
     FmtAssert (ti_var, ("Typeinfo of handler unavailable"));
     if (DECL_ASSEMBLER_NAME_SET_P (ti_var) && 
+    	TREE_NOT_EMITTED_BY_GXX (ti_var) && 
 	!TREE_SYMBOL_REFERENCED (DECL_ASSEMBLER_NAME (ti_var)))
     {
 	// Add it to the vector so that we emit them later
+	TREE_NOT_EMITTED_BY_GXX (ti_var) = 0;
 	TREE_SYMBOL_REFERENCED (DECL_ASSEMBLER_NAME (ti_var)) = 1;
-#ifdef TARG_ST
-        /* (cbr) emit typeinfos while we are at it */
-        FmtAssert (TREE_CODE (ti_var) == VAR_DECL,
-                   ("Unexpected node in typeinfo"));
-      if (emit_tinfo_decl (&ti_var, 0)) {
-        tree init = DECL_INITIAL (ti_var);
-        WFE_Expand_Decl (ti_var);
-        if (init && TREE_CODE (init) == CONSTRUCTOR) {
-          tree init2;
-          for (init2 = CONSTRUCTOR_ELTS(init);
-               init2;
-               init2 = TREE_CHAIN(init2)) {
-            if (TREE_PURPOSE(init2) && TREE_CODE(TREE_PURPOSE(init2)) == FIELD_DECL) {
-              tree init3;
-              for (init3 = CONSTRUCTOR_ELTS(TREE_VALUE(init2));
-                   init3;
-                   init3 = TREE_CHAIN(init3)) {
-                tree t4 = TREE_VALUE(init3);
-                while (TREE_CODE (t4) == NOP_EXPR)
-                  t4 = TREE_OPERAND(t4, 0);
-                if (TREE_CODE (t4) == ADDR_EXPR) {
-                  t4 = TREE_OPERAND (t4, 0);
-                  if (TREE_CODE (t4) == VAR_DECL) {
-                    WFE_Expand_Decl (t4);
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-#else
-      gxx_emits_typeinfos (ti_var);
-#endif
+	gxx_emits_typeinfos (ti_var);
     }
     return ti_var;
 }
@@ -4295,23 +4191,9 @@ WFE_Expand_Stmt(tree stmt)
   	Is_True(TREE_CODE(TREE_OPERAND(t, 0)) == RESULT_DECL,
 			  ("WFE_Expand_Stmt: expected RESULT_DECL"));
 	tree t1 = TREE_OPERAND(t, 1);
-#ifdef TARG_ST
-        /* (cbr) get cleanup expr */
-        tree te = t1;
-        while (TREE_CODE (te) == NOP_EXPR)
-          te = TREE_OPERAND(te, 0);
-	if (TREE_CODE(te) == TARGET_EXPR) {
-  	  TREE_OPERAND(te, 2) = 0;
-          if (TREE_CODE (TREE_OPERAND (te, 1)) == COND_EXPR) {
-            tree t2 = TREE_OPERAND(TREE_OPERAND(te, 1), 1);
-            if (TREE_CODE (t2) == TARGET_EXPR)
-              TREE_OPERAND(t2, 2) = 0;    
-            t2 = TREE_OPERAND(TREE_OPERAND(te, 1), 2);
-            if (TREE_CODE (t2) == TARGET_EXPR)
-              TREE_OPERAND(t2, 2) = 0;    
-          }
-        }
-#else
+#ifndef TARG_ST
+	/* [SC] TARGET_EXPR normalization means that unneeded
+	   cleanups will already be removed. */
 	if (TREE_CODE(t1) == TARGET_EXPR)
   	  TREE_OPERAND(t1, 2) = 0;
 #endif

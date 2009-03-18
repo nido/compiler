@@ -1390,7 +1390,7 @@ do {                                              \
 
 #undef EXTRA_SECTION_FUNCTIONS
 
-#undef  MAKE_DECL_ONE_ONLY 
+#define MAKE_DECL_ONE_ONLY(DECL) (DECL_WEAK (DECL) = 1)
 #define SUPPORTS_ONE_ONLY 1
 
 #define SUPPORTS_INIT_PRIORITY 0

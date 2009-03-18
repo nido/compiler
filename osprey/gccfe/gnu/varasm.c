@@ -55,6 +55,9 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 
 #ifdef SGI_MONGOOSE
 #include "wfe_decl.h"
+#ifdef TARG_ST
+#include "wfe_stmt.h"
+#endif
 #endif /* SGI_MONGOOSE */
 
 #ifndef TRAMPOLINE_ALIGNMENT
@@ -521,6 +524,10 @@ asm_output_bss (file, decl, name, size, rounded)
 #ifdef ASM_DECLARE_OBJECT_NAME
   last_assemble_variable_decl = decl;
   ASM_DECLARE_OBJECT_NAME (file, name, decl);
+#ifdef KEY
+  DECL_EMITTED_BY_GXX (decl) = 1;
+  gxx_emits_decl (decl);
+#endif
 #else
   /* Standard thing is just output label for the object.  */
   ASM_OUTPUT_LABEL (file, name);
@@ -549,6 +556,10 @@ asm_output_aligned_bss (file, decl, name, size, align)
 #ifdef ASM_DECLARE_OBJECT_NAME
   last_assemble_variable_decl = decl;
   ASM_DECLARE_OBJECT_NAME (file, name, decl);
+#ifdef KEY
+  DECL_EMITTED_BY_GXX (decl) = 1;
+  gxx_emits_decl (decl);
+#endif
 #else
   /* Standard thing is just output label for the object.  */
   ASM_OUTPUT_LABEL (file, name);
@@ -944,6 +955,9 @@ make_decl_rtl (decl, asmspec)
 	      /* Make this register global, so not usable for anything
 		 else.  */
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+	      if (!WFE_CPlusPlus_Translator)
+#endif
               WFE_Record_Asmspec_For_ST (decl, asmspec, reg_number);
 #endif /* SGI_MONGOOSE */
 #ifdef ASM_DECLARE_REGISTER_GLOBAL
@@ -1078,6 +1092,11 @@ assemble_asm (string)
     string = TREE_OPERAND (string, 0);
 
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (WFE_CPlusPlus_Translator)
+    gxx_emits_asm ((char *)TREE_STRING_POINTER (string));
+  else
+#endif
   WFE_Assemble_Asm(TREE_STRING_POINTER (string));
 #else
   fprintf (asm_out_file, "\t%s\n", TREE_STRING_POINTER (string));
@@ -1331,6 +1350,9 @@ assemble_zeros (size)
      int size;
 {
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Add_Aggregate_Init_Padding (size);
   return;
 #else
@@ -1374,6 +1396,9 @@ assemble_string (p, size)
      int size;
 {
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Add_Aggregate_Init_String (p, size);
   return;
 #else
@@ -1593,12 +1618,6 @@ assemble_variable (decl, top_level, at_end, dont_output_data)
   if (flag_syntax_only)
     return;
 
-#ifdef TARG_ST
-  /* need to have the translator initialized in c++*/
-  if (!Current_Function_Decl())
-    return;
-#endif
-
   app_disable ();
 
   if (! dont_output_data
@@ -1609,6 +1628,11 @@ assemble_variable (decl, top_level, at_end, dont_output_data)
     }
 
   name = XSTR (XEXP (decl_rtl, 0), 0);
+#ifdef KEY
+  // Translate DECL into WHIRL.
+  gxx_emits_decl (decl);
+  align = DECL_ALIGN (decl);
+#else
   if (TREE_PUBLIC (decl) && DECL_NAME (decl)
       && ! first_global_object_name
       && ! (DECL_COMMON (decl) && (DECL_INITIAL (decl) == 0
@@ -1664,6 +1688,7 @@ assemble_variable (decl, top_level, at_end, dont_output_data)
      from it in get_pointer_alignment.  */
   DECL_ALIGN (decl) = align;
   set_mem_align (decl_rtl, align);
+#endif  /* KEY */
 
   if (TREE_PUBLIC (decl))
     maybe_assemble_visibility (decl);
@@ -1694,6 +1719,7 @@ assemble_variable (decl, top_level, at_end, dont_output_data)
 	       && !TREE_READONLY (decl)
 	       && initializer_zerop (DECL_INITIAL (decl))))
     {
+#ifndef KEY
       unsigned HOST_WIDE_INT size = tree_low_cst (DECL_SIZE_UNIT (decl), 1);
       unsigned HOST_WIDE_INT rounded = size;
 
@@ -1714,21 +1740,16 @@ assemble_variable (decl, top_level, at_end, dont_output_data)
 	  (decl, "requested alignment for %s is greater than implemented alignment of %d",rounded);
 #endif
 
-#ifndef TARG_ST
-      /* (cbr) don't output to asm_out_file */
       /* If the target cannot output uninitialized but not common global data
 	 in .bss, then we have to use .data, so fall through.  */
       if (asm_emit_uninitialised (decl, name, size, rounded))
 	return;
-#endif
+#endif  /* KEY */
     }
 
   /* Handle initialized definitions.
      Also handle uninitialized global definitions if -fno-common and the
      target doesn't support ASM_OUTPUT_BSS.  */
-
-#ifndef TARG_ST
-  /* (cbr) don't output to asm_out_file */
 
   /* First make the assembler name(s) global if appropriate.  */
   if (TREE_PUBLIC (decl) && DECL_NAME (decl))
@@ -1752,12 +1773,14 @@ assemble_variable (decl, top_level, at_end, dont_output_data)
 #ifdef ASM_DECLARE_OBJECT_NAME
   last_assemble_variable_decl = decl;
   ASM_DECLARE_OBJECT_NAME (asm_out_file, name, decl);
+#ifdef KEY
+  DECL_EMITTED_BY_GXX (decl) = 1;
+  gxx_emits_decl (decl);
+#endif
 #else
   /* Standard thing is just output label for the object.  */
   ASM_OUTPUT_LABEL (asm_out_file, name);
 #endif /* ASM_DECLARE_OBJECT_NAME */
-
-#endif
 
   if (!dont_output_data)
     {
@@ -2074,9 +2097,14 @@ assemble_integer (x, size, align, force)
   else {
         ival = INTVAL(x);
   }
-  WFE_Add_Aggregate_Init_Integer (ival, size);
-  return 1;
-#else
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator) {
+    WFE_Add_Aggregate_Init_Integer (ival, size);
+    return 1;
+  }
+#endif
+#endif
+
   int aligned_p;
 
   aligned_p = (align >= MIN (size * BITS_PER_UNIT, BIGGEST_ALIGNMENT));
@@ -2085,6 +2113,11 @@ assemble_integer (x, size, align, force)
   if ((*targetm.asm_out.integer) (x, size, aligned_p))
     return true;
 
+#ifdef KEY
+  // [SC] For C++, we must return after the previous call to target hook, to
+  // ensure that symbols are marked referenced correctly.
+  return true;
+#else
   /* If the object is a multi-byte one, try splitting it up.  Split
      it into words it if is multi-word, otherwise split it into bytes.  */
   if (size > 1)
@@ -2117,7 +2150,7 @@ assemble_integer (x, size, align, force)
     abort ();
 
   return false;
-#endif /* SGI_MONGOOSE */
+#endif // KEY
 }
 
 void
@@ -2127,6 +2160,9 @@ assemble_real (d, mode, align)
      unsigned int align;
 {
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+  if (!WFE_CPlusPlus_Translator)
+#endif
   WFE_Add_Aggregate_Init_Real (d, GET_MODE_SIZE(mode));
   return;
 #else
@@ -2973,8 +3009,6 @@ output_constant_def_contents (exp, reloc, labelno)
   align = CONSTANT_ALIGNMENT (exp, align);
 #endif
 
-#ifndef TARG_ST
-  /* (cbr) don't output to asm_out_file */
   if (IN_NAMED_SECTION (exp))
     named_section (exp, NULL, reloc);
   else
@@ -3000,8 +3034,6 @@ output_constant_def_contents (exp, reloc, labelno)
   /* Standard thing is just output label for the constant.  */
   ASM_OUTPUT_INTERNAL_LABEL (asm_out_file, "LC", labelno);
 #endif /* ASM_DECLARE_CONSTANT_NAME */
-
-#endif
 
   /* Output the value of EXP.  */
   output_constant (exp, size, align);
@@ -4186,6 +4218,10 @@ output_constant (exp, size, align)
     case POINTER_TYPE:
     case REFERENCE_TYPE:
 #ifdef SGI_MONGOOSE
+#ifdef TARG_ST
+      if (!WFE_CPlusPlus_Translator) {
+#endif
+
       if (TREE_CODE(exp) == ADDR_EXPR &&
           (code == POINTER_TYPE || code == INTEGER_TYPE))
       {
@@ -4211,6 +4247,9 @@ output_constant (exp, size, align)
         WFE_Add_Aggregate_Init_Address (exp);
         return;
       }
+#ifdef TARG_ST
+      }
+#endif
 #endif /* SGI_MONGOOSE */
       if (! assemble_integer (expand_expr (exp, NULL_RTX, VOIDmode,
 					   EXPAND_INITIALIZER),
@@ -4653,7 +4692,7 @@ output_constructor (exp, size, align)
 
 /* This TREE_LIST contains any weak symbol declarations waiting
    to be emitted.  */
-#if !defined (TARG_ST) || (GNU_FRONT_END!=33)
+#ifndef SGI_MONGOOSE
 static
 #endif
 GTY(()) tree weak_decls;
