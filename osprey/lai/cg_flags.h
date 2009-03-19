@@ -224,6 +224,7 @@ extern BOOL CG_enable_range_propagation;
 // After this, they decay to Bottom.
 extern INT32 CG_range_recompute_limit;
 extern BOOL CG_enable_rename_after_GRA;
+extern BOOL CG_enable_min_max_abs;
 #endif
 CG_EXPORTED extern INT32 CG_LAO_activation;	/* LAO activation */
 CG_EXPORTED extern INT32 CG_LAO_regiontype;	/* LAO scheduling region type */

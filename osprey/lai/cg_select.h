@@ -72,6 +72,7 @@ inline float CGTARG_Ifc_Factor(void)
 
 extern void Optimize_Conditional_Branches();
 extern void Convert_Select(RID *, const BB_REGION&);
+extern void Convert_Min_Max(RID *, const BB_REGION&);
 extern void Select_Init(void);
 extern void draw_CFG(void);
 
@@ -122,4 +123,8 @@ extern void CG_SCHED_EST_Add_Merge_Pred(CG_SCHED_EST *se);
 extern float CGTARG_Compute_est_cost_before(CG_SCHED_EST *se1, CG_SCHED_EST *se2, CG_SCHED_EST *sehead, float taken_prob, float fallthr_prob, BOOL will_need_predicate_merge) ;
 extern float CGTARG_Compute_est_cost_after(CG_SCHED_EST *se1, CG_SCHED_EST *se2, CG_SCHED_EST *sehead, float taken_prob, float fallthr_prob, BOOL will_need_predicate_merge,BB* head) ;
 extern BOOL CGTARG_Check_Profitable_Select(CG_SCHED_EST *se1, CG_SCHED_EST *se2,int size_se1, int size_se2, float est_cost_before, float est_cost_after, float fallthr_prob);
+extern BOOL CGTARG_apply_min_max_transformation(OP *cmp, OP* phi, BOOL cmp_order);
+extern BOOL CGTARG_IsNegOP(OP* op);
+extern BOOL CGTARG_apply_abs_transformation(OP *cmp, OP* phi, BOOL cmp_order);
+extern BOOL CGTARG_OP_is_float_cst_load(OP *op, INT32 val);
 #endif /* SELECT_H_INCLUDED */

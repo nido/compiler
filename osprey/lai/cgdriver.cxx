@@ -1124,6 +1124,8 @@ static OPTION_DESC Options_CG[] = {
   // Misc TARG_ST part
   { OVK_BOOL,	OV_INTERNAL, TRUE,"GRA_rename", "",
     0, 0, 0, &CG_enable_rename_after_GRA, NULL },
+  { OVK_BOOL,	OV_INTERNAL, TRUE,"SSA_min_max_abs", "",
+    0, 0, 0, &CG_enable_min_max_abs, NULL },    
   { OVK_INT32,  OV_INTERNAL,	TRUE,	"bblength",		"bb",
     CG_bblength_default, CG_bblength_min, CG_bblength_max, &CG_split_BB_length, &CG_split_BB_length_overridden,
     "Restrict BB length by splitting longer BBs" },
@@ -1837,6 +1839,11 @@ Configure_CG_Options(void)
   // target specific CG option setting
   Configure_CG_Target();
 
+#ifdef TARG_ST
+  //TDR - Initialize CG_enable_min_max_abs according to architecture
+  CG_enable_min_max_abs = (!PROC_is_select() && CGTARG_Has_min_max_abs());
+#endif
+  
   return;
 }
 

@@ -101,6 +101,7 @@
 #include "cg_ssa.h"
 #include "cg_select.h"
 #include "DaVinci.h"
+#include "cg_ssaopt.h"
 
 extern char *Cur_PU_Name;
 
@@ -1277,6 +1278,92 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
   return KnuthCompareLE(est_cost_after, est_cost_before);
 }
 
+
+static BOOL
+Are_equivalent_defininition_TNs(TN *tn1, TN *tn_ref) {
+	if (!tn1 || !tn_ref)  return FALSE;
+	if (!TN_is_register(tn1) || !TN_is_register(tn_ref)) return FALSE;
+	if (TNs_Are_Equivalent(tn1,tn_ref)) return TRUE;
+	OP *def_op = TN_ssa_def(tn1);
+	if (!def_op) return FALSE;
+	if (!OP_copy(def_op)) return FALSE;
+	return Are_equivalent_defininition_TNs(OP_Copy_Operand_TN(def_op),tn_ref);
+}
+
+static BOOL
+Are_equivalent_defininition_negated_TNs(TN *tn1, TN *tn_ref, BOOL found_neg) {
+	if (!tn1 || !tn_ref)  return FALSE;
+	if (!TN_is_register(tn1) || !TN_is_register(tn_ref)) return FALSE;
+	if (TNs_Are_Equivalent(tn1,tn_ref)) return found_neg;
+	OP *def_op = TN_ssa_def(tn1);
+	if (!def_op) return FALSE;
+	if (found_neg && !OP_copy(def_op)) return FALSE;
+	if (CGTARG_IsNegOP(def_op)) found_neg=!found_neg;
+	return Are_equivalent_defininition_negated_TNs(OP_Opnd1(def_op),tn_ref,found_neg);
+}
+
+static BOOL
+Check_min_max_abs_candidate(BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg, BB *tail) {
+	BB *bb1,*bb2;
+	OP *op;
+	TN *cond_tn;
+	TN *dummy;
+	OP *br_op = BB_branch_op(head);
+	BOOL modification_applied=FALSE;
+	(void) CGTARG_Analyze_Branch(br_op, &cond_tn, &dummy);
+	OP *cond_op = TN_ssa_def (cond_tn);
+	if (!TOP_is_cmp(OP_code(cond_op))) return FALSE;
+	if (!TN_is_register(OP_Opnd1(cond_op))) return FALSE;
+	if (!TN_is_register(OP_Opnd2(cond_op)) && !TN_is_zero(OP_Opnd2(cond_op))) return FALSE;
+	//If we do not compare to 0 or to a register we do not deal with min/max/abs
+	if (TN_is_zero(OP_Opnd2(cond_op)) && !OP_fcmp(cond_op)) {
+		// Treatment of float cmp on STxP70 V3: compare from fcmp to register then compare this register to 0
+		if (OP_cmp_variant(cond_op) == V_CMP_NE) {
+			OP *fpx_cond_op = TN_ssa_def(OP_Opnd1(cond_op));
+			if (fpx_cond_op && OP_fcmp(fpx_cond_op)) {
+				cond_op=fpx_cond_op;
+			} 
+		}
+	} 
+	OP *phi;
+	FOR_ALL_BB_PHI_OPs(tail, phi) {
+		if (OP_opnds(phi) == 2) {
+			bb1 = Get_PHI_Predecessor (phi, 0);
+			bb2 = Get_PHI_Predecessor (phi, 1);
+			TN *tn1 = OP_opnd(phi,0);
+			TN *tn2 = OP_opnd(phi,1);
+			FmtAssert(TN_is_register(tn1) && TN_is_register(tn2),("Tns in a Phi operation must be registers\n")); 
+			OP *def_op1 = TN_ssa_def(tn1);
+			OP *def_op2 = TN_ssa_def(tn2);
+			if (!def_op1 || !def_op2) continue;
+			if (!(BB_SET_MemberP(taken_reg, bb1) && BB_SET_MemberP(fallthru_reg, bb2)) &&
+			!(BB_SET_MemberP(fallthru_reg, bb1) && BB_SET_MemberP(taken_reg, bb2))) continue;
+			//min/max case : we search simple affectation (copy)
+			if(Are_equivalent_defininition_TNs(tn1,OP_Opnd1(cond_op)) && Are_equivalent_defininition_TNs(tn2,OP_Opnd2(cond_op))) {
+				if(CGTARG_apply_min_max_transformation(cond_op,phi,BB_SET_MemberP(fallthru_reg, bb1))) modification_applied = TRUE;
+				continue;
+			}
+			if(Are_equivalent_defininition_TNs(tn2,OP_Opnd1(cond_op)) && Are_equivalent_defininition_TNs(tn1,OP_Opnd2(cond_op))) {
+				if( CGTARG_apply_min_max_transformation(cond_op,phi,BB_SET_MemberP(fallthru_reg, bb2))) modification_applied = TRUE;
+				continue;
+			}
+			
+			//abs search
+			BOOL Abs_Pattern = TN_is_zero(OP_Opnd2(cond_op)) || (OP_fcmp(cond_op) && CGTARG_OP_is_float_cst_load(TN_ssa_def(OP_Opnd2(cond_op)),0));
+			if (Abs_Pattern) {
+				if (Are_equivalent_defininition_TNs(tn1,OP_Opnd1(cond_op)) && Are_equivalent_defininition_negated_TNs(tn2,OP_Opnd1(cond_op),FALSE)) {
+					if(CGTARG_apply_abs_transformation(cond_op,phi,BB_SET_MemberP(fallthru_reg, bb2))) modification_applied = TRUE;
+				}
+				if (Are_equivalent_defininition_TNs(tn2,OP_Opnd1(cond_op)) && Are_equivalent_defininition_negated_TNs(tn1,OP_Opnd1(cond_op),FALSE)) {
+					if(CGTARG_apply_abs_transformation(cond_op,phi,BB_SET_MemberP(fallthru_reg, bb1))) modification_applied = TRUE;
+				}
+			}					
+		}
+	}
+	return (modification_applied);
+}
+
+
 static BOOL
 Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
                          BB *tail)
@@ -1486,6 +1573,7 @@ Is_Hammock_Legacy (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail, bool allo
   else
     return FALSE;
 }
+
 
 static BOOL
 Is_Hammock (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail, bool allow_dup) 
@@ -3580,6 +3668,40 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
      Print_All_BBs();
    }
 }
+
+
+void
+Convert_Min_Max(RID *rid, const BB_REGION& bb_region)
+{
+
+	INT i;
+	BOOL modification_applied=FALSE;
+	Identify_Logifs_Candidates();
+	// make sure dominator information are correct 
+	// before starting optimizing
+	Calculate_Dominators();
+	
+	if_bb_map = BB_MAP_Create();
+
+	for (i = 0; i < max_cand_id; i++) {
+		BB *bb = cand_vec[i];
+		BB *bbb;
+	
+		if (bb == NULL) continue;
+	
+		BB_SET *t_set = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_Select_pool);
+		BB_SET *ft_set = BB_SET_Create_Empty(PU_BB_Count+2, &MEM_Select_pool);
+	
+		// test of conditional expression
+		if (Is_Hammock_Legacy(bb, t_set, ft_set, &bbb, true)) {
+			if(Check_min_max_abs_candidate(bb, t_set, ft_set, bbb)) modification_applied = TRUE;
+		}
+	}
+	BB_MAP_Delete(if_bb_map);
+	Free_Dominators_Memory();
+	if (modification_applied) SSA_DeadCode();
+}
+
 
 /* ================================================================
  *

@@ -1,6 +1,35 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Mar 19 09:46:29 CET 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-23127
+
+Description:
+------------
+	* [trunk] Fix for bug #23127: Trivial patterns (abs/min/max/fabs, ... ) not recognized.
+	Deliver fixes/codex-23127 rev #21081 with authorization branch #60677
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_select.h
+	M      osprey/lai/cg_select.cxx
+	M      osprey/lai/cg_flags.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cg_flags.h
+	M      osprey/targinfo/stxp70/cg/targ_cg.h
+	M      osprey/targinfo/stxp70/cg/targ_select.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.h
+	M      osprey/targinfo/st200/cg/targ_select.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Mar 18 16:01:01 CET 2009
 	Author:    bv11
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -637,6 +637,10 @@ CG_Generate_Code(
 	// Perform SSA controlflow optimizations
 	// Precondition: code in PSI-SSA, live-analysis ok.
 	Set_Error_Phase( "CG SSA ControlFlow Optimizations");
+	if (CG_enable_min_max_abs) 	{
+		Convert_Min_Max(region ? REGION_get_rid(rwn) : NULL, NULL);
+		Check_for_Dump(TP_SSA, NULL);
+	}
 #ifdef SUPPORTS_SELECT
 	if (CG_enable_select) {
 	  // Perform select generation (partial predication if-conversion). 

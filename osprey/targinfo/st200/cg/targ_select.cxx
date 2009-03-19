@@ -42,6 +42,7 @@
 #include "tn.h"
 #include "targ_cg_private.h"
 #include "cg_ssa.h"
+#include "cg_ssaopt.h"
 #include "cg_sched_est.h"
 #include "cg_select.h"
 
@@ -402,4 +403,50 @@ float CGTARG_Compute_est_cost_after(CG_SCHED_EST *se1, CG_SCHED_EST *se2, CG_SCH
 
 BOOL CGTARG_Check_Profitable_Select(CG_SCHED_EST *se1, CG_SCHED_EST *se2,int size_se1, int size_se2, float est_cost_before, float est_cost_after, float fallthr_prob) {
     return KnuthCompareLE(est_cost_after, est_cost_before);
+}
+
+
+BOOL CGTARG_apply_min_max_transformation(OP *cmp, OP* phi, BOOL cmp_order) {
+	OP *new_op;
+	TOP new_top;
+	if (OP_fcmp(cmp)) return FALSE;
+	VARIANT variant = OP_cmp_variant(cmp);
+	switch (variant) {
+		// Min/max
+		case V_CMP_GT:
+		case V_CMP_GE:
+			new_top = cmp_order ? TOP_max_r_r_r: TOP_min_r_r_r;
+		break;
+		case V_CMP_LT:
+		case V_CMP_LE:
+			new_top = cmp_order ? TOP_min_r_r_r: TOP_max_r_r_r;
+		break;
+		case V_CMP_GTU:
+		case V_CMP_GEU:
+			new_top = cmp_order ? TOP_maxu_r_r_r: TOP_minu_r_r_r;
+		break;
+		case V_CMP_LTU:
+		case V_CMP_LEU:
+			new_top = cmp_order ? TOP_minu_r_r_r: TOP_maxu_r_r_r;
+		break;
+		default:
+		return FALSE;
+	}
+	new_op = Mk_OP(new_top, OP_result(phi,0),OP_Opnd2(cmp), OP_Opnd1(cmp));
+	BB_Remove_Op(OP_bb(phi),phi);
+	BB_Insert_Op_Before(OP_bb(cmp), cmp, new_op);
+	return TRUE;
+}
+
+BOOL CGTARG_IsNegOP(OP* op) {
+	return FALSE; 
+}
+
+
+BOOL CGTARG_apply_abs_transformation(OP *cmp, OP* phi, BOOL cmp_order) {
+	return FALSE;
+}
+
+BOOL CGTARG_OP_is_float_cst_load(OP *op, INT32 val) {
+	return FALSE; 
 }

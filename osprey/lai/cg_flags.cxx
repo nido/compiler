@@ -83,6 +83,7 @@ const char *FREQ_eh_freq = "0.1";
 BOOL CG_enable_rename = TRUE;
 #ifdef TARG_ST
 BOOL CG_enable_rename_after_GRA = TRUE;
+BOOL CG_enable_min_max_abs = TRUE;
 #endif
 BOOL CG_enable_prefetch = FALSE;
 BOOL CG_enable_z_conf_prefetch  = FALSE;
