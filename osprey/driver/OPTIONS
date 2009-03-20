@@ -178,6 +178,8 @@
 -version {show_version = TRUE; execute_flag = FALSE;} ALL	NONE	""
 	"Show the version of the compiler being used"
 #ifdef TARG_ST
+-dryipa	{show_cmd_line = TRUE;} ALL	cpp,ld,binopt,ipap  ""
+   "display commands that would be executed"
 -dumpmachine	{dump_machine = TRUE; execute_flag = FALSE;} ALL	NONE	""
 	"Print the compiler's target machine --and don't do anything else."
 -dumpversion	{show_version = TRUE; dump_version = TRUE; dump_machine = FALSE; execute_flag = FALSE;} ALL	NONE	""

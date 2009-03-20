@@ -583,12 +583,13 @@ ipacom_process_symtab (char* symtab_file)
 #ifdef TARG_ST
   // [CL] do not embed "cc" name yet. Update it later,
   // when it has been determined by other input files
-  sprintf(buf, " -c %s %s -o %s -TENV:emit_global_data=%s %s",
+  sprintf(buf, " -c %s %s -o %s -TENV:emit_global_data=%s %s %s",
             abi(),
             input_symtab_name,
             elf_symtab_name,
             whirl_symtab_name,
-            IPA_Enable_AutoGnum?"-Gspace 0":"");
+            IPA_Enable_AutoGnum?"-Gspace 0":"",
+  			ld_ipa_opt[LD_IPA_SHOW_ONLY].flag?"-Wb,-ttMSC:0x40":"");
 #else
   sprintf(buf, "%s -c %s %s -o %s -TENV:emit_global_data=%s %s",
             (*command_map)["cc"],
@@ -676,6 +677,12 @@ size_t ipacom_process_file (char* input_file,
   //strcpy(gspace, "-Gspace 0");
   //argv.push_back(gspace);
 
+#ifdef TARG_ST
+  if (ld_ipa_opt[LD_IPA_SHOW_ONLY].flag) {
+    argv.push_back("-Wb,-ttMSC:0x40");
+  }
+#endif
+  
 #ifdef TODO
   if (gspace_size) {
     WRITE_STRING("-Gspace", argv->argv[i]);
@@ -1114,12 +1121,20 @@ static int run_program(ARGV& myargv)
        it != myargv.end();
        ++it, i++) {
     symtab_cmd_argv[i] = *it;
+#ifdef TARG_ST
+    if (ld_ipa_opt[LD_IPA_SHOW].flag || ld_ipa_opt[LD_IPA_SHOW_ONLY].flag) {
+#else
     if (ld_ipa_opt[LD_IPA_SHOW].flag) {
+#endif
       fprintf(stderr, "%s ", *it);
     }
   }
   symtab_cmd_argv[i] = NULL;
-  if (ld_ipa_opt[LD_IPA_SHOW].flag) {
+#ifdef TARG_ST
+    if (ld_ipa_opt[LD_IPA_SHOW].flag || ld_ipa_opt[LD_IPA_SHOW_ONLY].flag) {
+#else
+    if (ld_ipa_opt[LD_IPA_SHOW].flag) {
+#endif
     fprintf(stderr, "\n");
   }
 
@@ -1336,7 +1351,11 @@ void ipacom_doit (const char* ipaa_filename)
 
 #ifdef USE_MAKE
     // If we're compiling with -show, make sure we see the link line.
+#ifdef TARG_ST
+    if (ld_ipa_opt[LD_IPA_SHOW].flag || ld_ipa_opt[LD_IPA_SHOW_ONLY].flag) {
+#else
     if (ld_ipa_opt[LD_IPA_SHOW].flag) {
+#endif
 #ifndef TARG_ST
       fprintf(makefile, "\techo -n %s ' ' ; cat %s\n",
               link_line->front(), link_cmdfile_name);
@@ -1580,7 +1599,11 @@ void ipacom_doit (const char* ipaa_filename)
 
     string2argv(symtab_extra_args, myargv);
 
+#ifdef TARG_ST
+    if (ld_ipa_opt[LD_IPA_SHOW].flag || ld_ipa_opt[LD_IPA_SHOW_ONLY].flag) {
+#else
     if (ld_ipa_opt[LD_IPA_SHOW].flag) {
+#endif
       fprintf(stderr, "cd %s\n", tmpdir);
     }
     chdir(tmpdir);
@@ -1657,7 +1680,11 @@ void ipacom_doit (const char* ipaa_filename)
 
 #ifndef USE_MAKE
 	  // [CL] get back to original dir before link step
+#ifdef TARG_ST
+    if (ld_ipa_opt[LD_IPA_SHOW].flag || ld_ipa_opt[LD_IPA_SHOW_ONLY].flag) {
+#else
     if (ld_ipa_opt[LD_IPA_SHOW].flag) {
+#endif
       fprintf(stderr, "cd %s\n", current_dir);
     }
   int res = chdir(current_dir);
@@ -1791,7 +1818,11 @@ void ipacom_doit (const char* ipaa_filename)
   fprintf(sh_cmdfile, "%s -f %s ", smake_name, makefile_name);
 
 #if 1
-  if (!ld_ipa_opt[LD_IPA_SHOW].flag)
+#ifdef TARG_ST
+    if (ld_ipa_opt[LD_IPA_SHOW].flag || ld_ipa_opt[LD_IPA_SHOW_ONLY].flag) 
+#else
+    if (ld_ipa_opt[LD_IPA_SHOW].flag) 
+#endif
 #else
   if (!IPA_Echo_Commands)
 #endif

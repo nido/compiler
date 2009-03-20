@@ -44,6 +44,9 @@ extern boolean dump_version;	/* show only the compiler version number */
 extern boolean dump_machine;	/* show only the compiler's target machine */
 extern boolean show_flag;	/* show what driver does */
 extern boolean execute_flag;	/* execute phases */
+#ifdef TARG_ST
+extern boolean show_cmd_line; /* Show command lines*/
+#endif
 extern boolean time_flag;	/* give time info */
 extern boolean memory_flag;	/* give memory usage info */
 extern boolean run_m4;		/* run m4 on each ratfor file */

@@ -1219,7 +1219,11 @@ add_file_args (string_list_t *args, phases_t index)
 			add_string(args,str);
 		}
 #endif
-
+#ifdef TARG_ST
+		if(show_cmd_line) {
+			add_string(args,"-ttMSC:0x40");
+		}
+#endif
 		/* ipl_cmds must be added last */
 		if (ipl_cmds != 0) {
 		    add_string (args, "-cmds");
@@ -1521,6 +1525,11 @@ add_file_args (string_list_t *args, phases_t index)
 			add_string(args, "-V");
 		}
 
+#ifdef TARG_ST
+		if (show_cmd_line) {
+			add_string(args, "-dryipa");
+		}
+#endif
 		/* add lib paths for standard libraries */
 		append_libraries_to_list (args);
 

@@ -73,6 +73,9 @@
 
 boolean show_flag = FALSE;
 boolean execute_flag = TRUE;
+#ifdef TARG_ST
+boolean show_cmd_line = FALSE;
+#endif
 boolean time_flag = FALSE;
 boolean prelink_flag = TRUE;
 boolean quiet_flag = TRUE;
@@ -485,7 +488,11 @@ run_phase (phases_t phase, string name, string_list_t *args)
 			(phase == P_f90_fe || phase == P_f90_cpp ||
 			 phase == P_cppf90_fe);
 
+#ifdef TARG_ST
+	if (show_flag || show_cmd_line) {
+#else
 	if (show_flag) {
+#endif
 		/* echo the command */
 		fprintf(stderr, "%s ", name);
 		print_string_list(stderr, args);

@@ -60,7 +60,10 @@ typedef enum{
     LD_IPA_ISA,
     LD_IPA_RELOCATABLE, /* [CL] generate a relocatable file */
     LD_IPA_EXPORTS,     /* [CL] all symbols are exported (-E)*/
-    LD_IPA_XXXX, 
+    LD_IPA_XXXX,
+#ifdef TARG_ST
+    LD_IPA_SHOW_ONLY,
+#endif
     MAX_LD_IPA
 }ld_ipa_option_enum;
 
