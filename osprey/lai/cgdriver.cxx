@@ -278,6 +278,7 @@ static BOOL LRA_minregs_overridden = FALSE;
 
 #ifdef TARG_ST
 static BOOL LOCS_POST_Scheduling_overriden;
+static BOOL CG_enable_min_max_abs_overriden = FALSE;
 /* 
  * TDR options controlled by mask, previously mixed with option -Wb,-tt...
  * See art #41947 
@@ -1125,7 +1126,7 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE,"GRA_rename", "",
     0, 0, 0, &CG_enable_rename_after_GRA, NULL },
   { OVK_BOOL,	OV_INTERNAL, TRUE,"SSA_min_max_abs", "",
-    0, 0, 0, &CG_enable_min_max_abs, NULL },    
+    0, 0, 0, &CG_enable_min_max_abs, &CG_enable_min_max_abs_overriden },    
   { OVK_INT32,  OV_INTERNAL,	TRUE,	"bblength",		"bb",
     CG_bblength_default, CG_bblength_min, CG_bblength_max, &CG_split_BB_length, &CG_split_BB_length_overridden,
     "Restrict BB length by splitting longer BBs" },
@@ -1841,7 +1842,8 @@ Configure_CG_Options(void)
 
 #ifdef TARG_ST
   //TDR - Initialize CG_enable_min_max_abs according to architecture
-  CG_enable_min_max_abs = (!PROC_is_select() && CGTARG_Has_min_max_abs());
+  if(!CG_enable_min_max_abs_overriden)  
+	  CG_enable_min_max_abs = (!PROC_is_select() && CGTARG_Has_min_max_abs());
 #endif
   
   return;

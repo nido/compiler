@@ -3120,6 +3120,7 @@ Optimize_Branches(void)
 			Set_BBINFO_kind(bp, BBKIND_REGION_EXIT);
 			Set_BB_exit(bp);
 			BB_Copy_Annotations(bp, targ_0, ANNOT_EXITINFO);
+			changed = TRUE;
 			if (CFLOW_Trace_Branch) {
 				#pragma mips_frequency_hint NEVER
 				fprintf(TFile, "Block After\n");

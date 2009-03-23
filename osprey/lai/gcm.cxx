@@ -1612,7 +1612,8 @@ Can_OP_Move(OP *cur_op, BB *src_bb, BB *tgt_bb, BB_SET **pred_bbs,
 
 #ifdef TARG_ST
 	 // TDR: If we have an exit block, we must consider parameters
-	 if (BB_exit(cur_bb) && TN_is_dedicated(result)) 
+	 if (BB_exit(cur_bb) && TN_is_register(result) &&  
+		 ABI_PROPERTY_Is_func_val(TN_register_class(result), REGISTER_machine_id(TN_register_class(result),TN_register(result)))) 
      	 return FALSE; 
 #endif 
 	 

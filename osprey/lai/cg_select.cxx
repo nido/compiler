@@ -3700,6 +3700,7 @@ Convert_Min_Max(RID *rid, const BB_REGION& bb_region)
 	BB_MAP_Delete(if_bb_map);
 	Free_Dominators_Memory();
 	if (modification_applied) SSA_DeadCode();
+	clear_spec_lists();
 }
 
 
