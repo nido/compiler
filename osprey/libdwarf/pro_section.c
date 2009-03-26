@@ -53,6 +53,9 @@
 #include "pro_die.h"
 #include "pro_macinfo.h"
 #include "pro_types.h"
+#ifdef TARG_ST
+#include "W_alloca.h"
+#endif
 
 #ifndef SHF_MIPS_NOSTRIP
 /* if this is not defined, we probably don't need it: just use 0 */
@@ -1228,7 +1231,13 @@ _dwarf_pro_generate_debugframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
               data += uwordb_size;
 
 	      /* offset to cie */
+#ifdef TARG_ST
+	      /* [SC] This value is to be subtracted from (not added to)
+                 current address to get CIE pointer, so negate it. */
+	      du = -cie_offs[curfde->fde_cie-1];
+#else
 	      du = cie_offs[curfde->fde_cie-1];
+#endif
 	      WRITE_UNALIGNED(dbg,(void *)data, 
 		(const void *)&du,
 			sizeof(du),uwordb_size);
@@ -1421,6 +1430,10 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 	long *cie_offs;		/* holds byte offsets for links to fde's */
 	unsigned long cie_length;
 	int cie_no;
+#ifdef TARG_ST
+	long cur_cie_offs = 0;
+	unsigned char *data_start;
+#endif
         int uwordb_size = dbg->de_offset_size;
         int extension_size =  dbg->de_64bit_extension? 4:0;
         int upointer_size = dbg->de_pointer_size;
@@ -1450,20 +1463,24 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 	    char buff3[ENCODE_SPACE_NEEDED];
 	    char *augmentation;
 	    char *augmented_al;
+#ifdef TARG_ST
+	    char *augmentation_string = alloca(strlen(curcie->cie_aug)+1);
+#endif
 	    long augmented_fields_length;
 	    int  a_bytes;
-#ifdef TARG_ST
-	    /* (cbr) */
-	    int v0_lsda = 0;
-#endif
 	    Dwarf_Unsigned personality = curcie->personality;
 	    int personality_length = personality ? upointer_size : 0;
 
+#ifndef TARG_ST
 	    if (cie_no != 1) {
 		fprintf (stderr,"Implement multiple CIE's"); exit(-1);
 	    }
+#endif
 // store relocation for cie length
             res = dbg->de_reloc_name(dbg, EH_FRAME,
+#ifdef TARG_ST
+                                 cur_cie_offs+
+#endif
 				 extension_size, /* r_offset */
 				 0, 
 				 dwarf_drt_none,
@@ -1473,6 +1490,9 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 	    }
 // store relocation for cie id
             res = dbg->de_reloc_name(dbg, EH_FRAME,
+#ifdef TARG_ST
+				 cur_cie_offs+
+#endif
 				 extension_size+uwordb_size, /* r_offset */
 				 0, 
 				 dwarf_drt_none,
@@ -1523,30 +1543,166 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 			uwordb_size + extension_size;
 	    }
 	    cie_no++;	
-	    augmentation = curcie->cie_aug;
-	    if (strcmp(augmentation, DW_CIE_AUGMENTER_STRING_V0) == 0
-		|| !strcmp(augmentation, PIC_DW_CIE_AUGMENTER_STRING_V0)
-	    ) {
 #ifdef TARG_ST
-	      /* (cbr) do we have lsda information to encode ? */
-	      curfde = dbg->eh_frame_fdes;
-	      while (curfde) {
-	        if(curfde->fde_offset_into_exception_tables >= 0) {
-		  v0_lsda = 1;		  
+	    strcpy (augmentation_string, curcie->cie_aug);
+	    /* (cbr) do we have lsda information to encode ? */
+	    int v0_lsda = 0;
+	    for (curfde = dbg->eh_frame_fdes; curfde; curfde = curfde->fde_next) {
+	      if(curfde->fde_cie == cie_no - 1
+		 && curfde->fde_offset_into_exception_tables >= 0) {
+		v0_lsda = 1;		  
+		break;
+	      }
+	    }
+	    if (!v0_lsda) {
+	      /* Remove any 'L' from the augmentation string. */
+	      char *L = strchr (augmentation_string, 'L');
+	      if (L) {
+		memmove(L, L+1, strlen(L));
+	      }
+	    }
+	    /* Now if augmentation_string is just a 'z', delete it completely */
+	    if (strcmp(augmentation_string, "z") == 0) {
+	      strcpy(augmentation_string, "");
+	    }
+	    /* Calculate augmentation data length */
+	    int augmentation_data_length = 0;
+	    if (augmentation_string[0] == 'z') {
+	      char *p;
+	      for (p = &augmentation_string[1]; *p != '\0'; p++) {
+		switch (*p) {
+		case 'L':
+		case 'R':
+		  augmentation_data_length += sizeof(Dwarf_Ubyte);
+		  break;
+		case 'P':
+		  augmentation_data_length += sizeof(Dwarf_Ubyte) + personality_length;
 		  break;
 		}
-		curfde = curfde->fde_next;
 	      }
-	      if (!v0_lsda) 
-		curcie->cie_aug = zP_DW_CIE_AUGMENTER_STRING_V0;
-#endif
+	      res = _dwarf_pro_encode_leb128_nm(augmentation_data_length,
+						&a_bytes, buff3,
+						sizeof(buff3));
+	      if (res != DW_DLV_OK) {
+		DWARF_P_DBG_ERROR(dbg,DW_DLE_CIE_OFFS_ALLOC,-1);
+	      }
+	      augmented_al = buff3;
+	    } else {
+	      a_bytes = 0;
+	    }
+	    cie_length = 
+	      uwordb_size +   /* cie_id */
+	      sizeof(Dwarf_Ubyte) +		/* cie version */
+	      strlen(augmentation_string)+1  + 	/* augmentation */
+	      c_bytes +	/* code alignment factor */
+	      d_bytes +      /* data alignment factor */
+	      sizeof(Dwarf_Ubyte) +	  /* return reg address */
+	      a_bytes +      /* augmentation length   */
+	      augmentation_data_length +
+	      0 + /* fde encoding */
+	      curcie->cie_inst_bytes;
+	    pad = (int)PADDING(cie_length, upointer_size);
+	    cie_length += pad;
+	    
+	    GET_CHUNK(dbg,elfsectno,data,cie_length+uwordb_size
+		      +extension_size, error);
+	    data_start = data;
+	    if(extension_size) {
+	      Dwarf_Unsigned x = DISTINGUISHED_VALUE;
+              WRITE_UNALIGNED(dbg,(void *)data,
+			      (const void *)&x,
+			      sizeof(x), extension_size);
+	      data += extension_size;
+	    }
+	    du = cie_length;
+            /* total length of cie */
+            WRITE_UNALIGNED(dbg,(void *)data,
+			    (const void *)&du,
+			    sizeof(du), uwordb_size);
+	    data += uwordb_size;
+	    
+	    /*cie-id is a special value. */
+            du = 0;
+	    WRITE_UNALIGNED(dbg,(void *)data, (const void *)&du,
+			    sizeof(du), uwordb_size);
+	    data += uwordb_size;
+	    
+	    db = curcie->cie_version;
+	    WRITE_UNALIGNED(dbg,(void *)data, (const void *)&db, 
+			    sizeof(db),sizeof(Dwarf_Ubyte));
+	    data += sizeof(Dwarf_Ubyte);
+	    strcpy((char *)data, augmentation_string);
+	    data += strlen(augmentation_string)+1;
+	    
+	    /* no eh_data */
+	    
+	    memcpy((void *)data, (const void *)code_al, c_bytes);
+	    data += c_bytes;
+	    memcpy((void *)data, (const void *)data_al, d_bytes);
+	    data += d_bytes;
+	    db = curcie->cie_ret_reg;
+	    WRITE_UNALIGNED(dbg,(void *)data, (const void *)&db, 
+			    sizeof(db),sizeof(Dwarf_Ubyte));
+	    data += sizeof(Dwarf_Ubyte);
+	    if (a_bytes) {
+	      memcpy((void *)data, (const void *)augmented_al, a_bytes);
+	      data += a_bytes;
+	      char *p;
+	      for (p = augmentation_string; *p != '\0'; p++) {
+		switch (*p) {
+		case 'L':
+		  {
+		    // lsda encoding
+		    Dwarf_Unsigned lsda_encoding = 0;
+		    WRITE_UNALIGNED(dbg, (void *)data,
+				    (const void *)&lsda_encoding,
+				    sizeof(p), sizeof(Dwarf_Ubyte));
+		    data += sizeof(Dwarf_Ubyte);
+		  }
+		  break;
+		case 'R':
+		  {
+		    // FDE address pointer encoding
+		    // Currently we only support absolute encoding.
+		    Dwarf_Unsigned fde_pointer_encoding = 0;
+		    WRITE_UNALIGNED(dbg, (void *)data,
+				    (const void *)&fde_pointer_encoding,
+				    sizeof(p), sizeof(Dwarf_Ubyte));
+		    data += sizeof(Dwarf_Ubyte);
+		  }
+		  break;
+		case 'P':
+		  {
+		    Dwarf_Unsigned p = 0;
+		    // personality pointer format
+		    WRITE_UNALIGNED(dbg, (void *)data,
+				    (const void *)&Personality_Format,
+				    sizeof(p), sizeof(Dwarf_Ubyte));
+		    data += sizeof(Dwarf_Ubyte);
+		    // Relocation for personality routine
+		    res = dbg->de_reloc_name(dbg, EH_FRAME,
+					     cur_cie_offs+(data-data_start),
+					     personality, 
+					     dwarf_drt_data_reloc_by_str_id,
+					     upointer_size);
+		    if(res != DW_DLV_OK) {
+		      DWARF_P_DBG_ERROR(dbg,DW_DLE_CHUNK_ALLOC,-1);
+		    }
+		    // Personality routine.
+		    WRITE_UNALIGNED(dbg, (void *)data, (const void *)&p,
+				    sizeof(p), upointer_size);
+		    data += upointer_size;
+		  }
+		  break;
+		}
+	      }
+	    }
+#else
+	 augmentation = curcie->cie_aug;
+	 if (strcmp(augmentation, DW_CIE_AUGMENTER_STRING_V0) == 0
+		|| !strcmp(augmentation, PIC_DW_CIE_AUGMENTER_STRING_V0)
+	    ) {
 	        augmented_fields_length = 6;
-#ifdef TARG_ST
-		// [CL] if no LSDA, augmentation data is shorter
-	      if (!v0_lsda) 
-		augmented_fields_length = 5;
-#endif
-
 		res = _dwarf_pro_encode_leb128_nm(augmented_fields_length,
 		     				   &a_bytes, buff3,
 						   sizeof(buff3));
@@ -1566,12 +1722,7 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 #if 1
 			 sizeof(Dwarf_Ubyte) +	  /* personality format */
 			 personality_length +	/* personality routine */
-#ifdef TARG_ST
-		  // [CL] if no LSDA, no encoding
-		  (v0_lsda ? sizeof(Dwarf_Ubyte) : 0) +
-#else
 			 sizeof(Dwarf_Ubyte) +	  /* lsda encoding */
-#endif
 #endif
 			 0 + /* fde encoding */
 			 curcie->cie_inst_bytes;
@@ -1619,12 +1770,7 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 	    data += uwordb_size;
 
 	    /*cie-id is a special value. */
-#ifdef TARG_ST
-            /* (cbr) use 0 to identify the CIE. */
-            du = 0;
-#else
 	    du = DW_CIE_ID;
-#endif
 	    WRITE_UNALIGNED(dbg,(void *)data, (const void *)&du,
 			sizeof(du), uwordb_size);
 	    data += uwordb_size;
@@ -1670,19 +1816,13 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 		  WRITE_UNALIGNED(dbg, (void *)data, (const void *)&p,
 				  sizeof(p), upointer_size);
 		  data += upointer_size;
-#ifdef TARG_ST
-		  // [CL] if no LSDA, output nothing
-		  if (v0_lsda) {
-#endif
 		  // lsda encoding
 		  WRITE_UNALIGNED(dbg, (void *)data, (const void *)&p,
 				  sizeof(p), sizeof(Dwarf_Ubyte));
 		  data += sizeof(Dwarf_Ubyte);
-#ifdef TARG_ST
-		  }
-#endif
 		}
 	    }
+#endif
 
 	    memcpy((void *)data, (const void *)curcie->cie_inst, curcie->cie_inst_bytes);
 	    data += curcie->cie_inst_bytes;
@@ -1690,6 +1830,9 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 		*data = DW_CFA_nop;
 		data++;
 	    }
+#ifdef TARG_ST
+	    cur_cie_offs += (data-data_start);
+#endif
 	    curcie = curcie->cie_next;
 	}
 
@@ -1858,7 +2001,13 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
               data += uwordb_size;
 
 	      /* offset to cie */
+#ifdef TARG_ST
+	      /* [SC] This value is to be subtracted from (not added to)
+                 current address to get CIE pointer, so negate it. */
+	      du = -cie_offs[curfde->fde_cie-1];
+#else
 	      du = cie_offs[curfde->fde_cie-1];
+#endif
 	      WRITE_UNALIGNED(dbg,(void *)data, 
 		(const void *)&du,
 			sizeof(du),uwordb_size);

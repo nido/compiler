@@ -248,6 +248,7 @@ typedef void  (*Dwarf_Handler)(Dwarf_Error /*error*/, Dwarf_Ptr /*errarg*/);
 /* The augmenter string for CIE */
 #ifdef KEY
 #define DW_CIE_AUGMENTER_STRING_V0              "zPL"
+#define z_DW_CIE_AUGMENTER_STRING_V0            "zL"
 #define PIC_DW_CIE_AUGMENTER_STRING_V0		"zPLR"
 #ifdef TARG_ST
   /* (cbr) no lsda */

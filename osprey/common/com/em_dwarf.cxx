@@ -66,8 +66,10 @@ static pSCNINFO dwarf_scn[MAX_DWARF_SECTIONS];
 static size_t num_dwarf_scns = 0;
 /* Allocate only one cie for the whole file. */
 static Dwarf_Unsigned cie_index;
+#ifndef TARG_ST
 #ifdef KEY
 static Dwarf_Unsigned eh_cie_index;
+#endif
 #endif
 
 #ifdef TARG_ST
@@ -320,9 +322,6 @@ Em_Dwarf_Begin (BOOL is_64bit, BOOL dwarf_trace, BOOL is_cplus,
   MEM_POOL_Push (&mempool);
 
   Init_CIEs(dw_dbg, &mempool);
-  if (CXX_Exceptions_On) {
-      eh_cie_index = eh_CIE_index(Get_Current_PU());
-  }
 #else
 
   cie_index = dwarf_add_frame_cie (dw_dbg, augmenter,
@@ -1203,11 +1202,28 @@ Dwarf_Unsigned
 CreateEhCIE(PU& pu, const Dwarf_Small& retAddr, unsigned char* initialBytes,
             Dwarf_Unsigned size_of_init_bytes)
 {
+#ifndef TARG_ST
     char *augmenter = DW_CIE_AUGMENTER_STRING_V0;
+#endif
     Dwarf_Unsigned personality;
     DST_INFO* cuInfo = DST_INFO_IDX_TO_PTR(DST_get_compile_unit());
     DST_COMPILE_UNIT *cu = DST_ATTR_IDX_TO_PTR(DST_INFO_attributes(cuInfo),
                                                DST_COMPILE_UNIT);
+#ifdef TARG_ST
+    char* personality_str;
+    char *augmenter;
+    if (PU_has_exc_scopes(pu)) {
+      augmenter = DW_CIE_AUGMENTER_STRING_V0;
+      if (DST_COMPILE_UNIT_language(cu) == DW_LANG_C_plus_plus)
+	personality_str = "__gxx_personality_v0";
+      else
+	personality_str = "__gcc_personality_v0";
+    } else {
+      augmenter = z_DW_CIE_AUGMENTER_STRING_V0;
+      personality_str = 0;
+    }
+    personality = Save_Str (personality_str);
+#else
     if(DST_COMPILE_UNIT_language(cu) == DW_LANG_C_plus_plus)
         {
             personality = Save_Str ("__gxx_personality_v0");
@@ -1216,6 +1232,7 @@ CreateEhCIE(PU& pu, const Dwarf_Small& retAddr, unsigned char* initialBytes,
         {
             personality = Save_Str ("__gcc_personality_v0");
         }
+#endif
     Dwarf_Error dw_error;
     return dwarf_add_ehframe_cie(g_current_dw_dbg, augmenter,
                                  Dwarf_Small(CodeAlignmentFactor(pu)),

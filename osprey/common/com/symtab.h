@@ -303,6 +303,9 @@ Get_Current_PU ()
 #ifdef FRONT_END
     return Pu_Table[ST_pu (Scope_tab[CURRENT_SYMTAB].st)];
 #else
+#ifdef TARG_ST
+    Is_True (Current_pu != NULL, ("Current_PU not available"));
+#endif
     return *Current_pu;
 #endif
 }

@@ -2190,6 +2190,12 @@ Write_INITO (
 #endif
     }
 #endif // KEY
+#ifdef TARG_ST
+    if (range_table && !action_table_started) {
+      fprintf ( Asm_File, "%s:\n", LABEL_name(labels[0]));
+      Set_LABEL_emitted(labels[0]);
+    }
+#endif
   }
 
   if (Assembly || Lai_Code) {

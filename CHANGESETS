@@ -1,6 +1,49 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Mar 26 15:13:52 CET 2009
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-55455
+
+Description:
+------------
+	*  Fix for bug #55455 (EH personality optimization) 
+	Delivered fixes/codex-55455 rev #21199 with authorization art #63360.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgemit.cxx
+	M      osprey/include/libdwarf.h
+	M      osprey/common/com/symtab.h
+	M      osprey/common/com/em_dwarf.cxx
+	M      osprey/libdwarf/pro_section.c
+	M      osprey/targinfo/st200/emit/targ_em_dwarf.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@21192 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-55455@21199 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@21192 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-55455@21199" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgemit.cxx?p2=branches/fixes/codex-55455/osprey/lai/cgemit.cxx&r1=21192&r2=21199&roottype=svn&root=open64&diff_format=h
+osprey/include/libdwarf.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/include/libdwarf.h?p2=branches/fixes/codex-55455/osprey/include/libdwarf.h&r1=21192&r2=21199&roottype=svn&root=open64&diff_format=h
+osprey/common/com/symtab.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/symtab.h?p2=branches/fixes/codex-55455/osprey/common/com/symtab.h&r1=21192&r2=21199&roottype=svn&root=open64&diff_format=h
+osprey/common/com/em_dwarf.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/em_dwarf.cxx?p2=branches/fixes/codex-55455/osprey/common/com/em_dwarf.cxx&r1=21192&r2=21199&roottype=svn&root=open64&diff_format=h
+osprey/libdwarf/pro_section.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/libdwarf/pro_section.c?p2=branches/fixes/codex-55455/osprey/libdwarf/pro_section.c&r1=21192&r2=21199&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/emit/targ_em_dwarf.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/emit/targ_em_dwarf.cxx?p2=branches/fixes/codex-55455/osprey/targinfo/st200/emit/targ_em_dwarf.cxx&r1=21192&r2=21199&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Mar 25 15:49:15 CET 2009
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
