@@ -2588,7 +2588,12 @@ WFE_Expand_Expr (tree exp,
 #endif
               wn = WN_LdaLabel (Pointer_Mtype, label_idx);
 	      Set_LABEL_addr_saved (label_idx);
+#ifndef TARG_ST
+	      /* <http://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html>
+		 If &&foo is used in a static variable initializer, inlining is forbidden
+		 Treated in WFE_Add_Aggregate_Init_Label  */
               Set_PU_no_inline (Get_Current_PU ());
+#endif
             }
             break;
 

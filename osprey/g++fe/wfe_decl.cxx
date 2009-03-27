@@ -1501,6 +1501,14 @@ WFE_Start_Function (tree fndecl)
       wfe_invoke_inliner = TRUE;
     }
 #ifdef TARG_ST
+    // [CL] noinline and always_inline attributes
+    if (DECL_UNINLINABLE(fndecl)) {
+      Set_PU_no_inline (Pu_Table [ST_pu (func_st)]);
+    }
+    if (DECL_ALWAYS_INLINE(fndecl)) {
+      Set_PU_must_inline (Pu_Table [ST_pu (func_st)]);
+      wfe_invoke_inliner = TRUE;
+    }
     /* (cbr) const attribute */
     /* Warning: 
        gcc pure maps to open64 no_side_effect
@@ -1876,6 +1884,15 @@ WFE_Finish_Function (void)
     function_update_volatile_accesses(func_wn);
 #endif
 
+#ifdef TARG_ST
+    // We cannot have both no_inline and must_inline set, but this can happen 
+    // Since for instance functions taking addresses of local labels cannot be inlined
+    // But may be given the attribute always_inline
+    // We fix these contradictions here (time for a user message if -Winline is on)
+    if (PU_no_inline (Get_Current_PU ()) && PU_must_inline (Get_Current_PU ()))
+      Clear_PU_must_inline(Get_Current_PU ());
+#endif
+
 #ifdef WFE_DEBUG
     fprintf(stdout, "================= Dump function ================\n");
     fdump_tree(stdout, func_wn);
@@ -2143,6 +2160,7 @@ WFE_Add_Aggregate_Init_Labeldiff (LABEL_IDX lab1, LABEL_IDX lab2)
     fprintf(stdout,"====================================================\n");
 #endif
 
+  Set_PU_no_inline (Get_Current_PU ());
   if (aggregate_inito == 0) return;
   INITV_IDX inv = New_INITV();
 
