@@ -3654,6 +3654,11 @@ void GCM_Schedule_Region (HBS_TYPE hbs_type)
 				   &loop_descr_pool); 
   }
 
+#ifdef TARG_ST
+  CFLOW_Optimize(CFLOW_BRANCH | CFLOW_UNREACHABLE, "CFLOW (end of gcm)",
+		 hbs_type & (HBS_BEFORE_LRA | HBS_BEFORE_GRA));
+#endif
+
   if (Trace_GCM) {
     #pragma mips_frequency_hint NEVER
     fprintf (TFile, "GCM_For_Loop: Loop characteristics \n");

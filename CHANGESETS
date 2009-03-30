@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar 30 13:48:29 CEST 2009
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-63222
+
+Description:
+------------
+	* Added a pass of cflow, in order to optimize branches and delete unreachable blocks, at the end of GCM. 
+
+
+Modified Files:
+---------------
+	M      osprey/lai/gcm.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Mar 30 09:10:56 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
