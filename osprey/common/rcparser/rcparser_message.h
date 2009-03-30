@@ -29,4 +29,12 @@
     "RCPRS-007", "getextinfo function call not supported for [%s] resource file type"
     /**< getextinfo function call not supported for this resource file type */
 
+    #define RCPARSER_INTERNAL_ERROR_FLEXCC_NO_MORE_SUPPORTED \
+    "RCPRS-008", "RCParser does not support FlexCC mode anymore"
+    /**< RCParser does not support FlexCC mode anymore */
+    
+    #define RCPARSER_INTERNAL_ERROR_NO_COMPILER_NO_MORE_SUPPORTED \
+    "RCPRS-009", "RCParser does not support reconfiguration without compiler mode anymore"
+    /**< RCParser does not support reconfiguration without compiler mode anymore */
+    
 #endif

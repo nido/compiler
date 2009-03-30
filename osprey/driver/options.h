@@ -121,11 +121,30 @@ typedef struct extension_implies_list_rec {
 
 typedef struct {
    string name;
+   string architecture;
+   string exthwtype;
    string help;
    string libpath;
    string libname;
    extension_implies_list_T * implies;
 } extension_T;
 
-extern int extract_from_sxextensionrc ( char * driver_path, extension_T ** ext_opt );
+typedef enum {
+  STXP70_ARCH_V3 = 0,
+  STXP70_ARCH_V4 = 1,
+  STXP70_ARCH_SIZE = 2
+} stxp70_architecture_dim;
+
+typedef enum {
+  STXP70_EXTHWTYPE_SINGLE = 0,
+  STXP70_EXTHWTYPE_SINGLE_DUAL = 1,
+  STXP70_EXTHWTYPE_DUAL_DUAL = 2,
+  STXP70_EXTHWTYPE_SIZE = 3
+} stxp70_exthwtype_dim;
+
+#define STXP70_MAX_EXTENSION 50
+extern extension_T static_ext_opt[STXP70_ARCH_SIZE][STXP70_EXTHWTYPE_SIZE][STXP70_MAX_EXTENSION];
+extern int static_ext_nr[STXP70_ARCH_SIZE][STXP70_EXTHWTYPE_SIZE];
+extern void extract_from_sxextensionrc ( char * driver_path );
+extern void connect_extensions ( void ) ;
 #endif

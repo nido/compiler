@@ -97,15 +97,19 @@ get_option_help (int flag)
 #ifdef TARG_STxP70
    if ((NULL!=options[flag].help_msg) && (flag==O_Mextension__)) {
       static char extension_help[4096];
-      extension_T * ext_opt;
-      int ext_nr;
+      int archi, exthwtype, extcount=0;
       int i, j;
       
-      ext_nr = extract_from_sxextensionrc(orig_program_name,&ext_opt);
+      extract_from_sxextensionrc(orig_program_name);
       strcpy(extension_help,"-Mextension[=");
-      for (i=0;i<ext_nr;i++) {
-         if (i!=0) strcat(extension_help,"|");
-         strcat(extension_help,ext_opt[i].name);
+      for (archi=0;archi<STXP70_ARCH_SIZE;archi++) {
+         for (exthwtype=0;exthwtype<STXP70_EXTHWTYPE_SIZE;exthwtype++) {
+            for (i=0;i<static_ext_nr[archi][exthwtype];i++) {
+               if (extcount!=0) strcat(extension_help,"|");
+	       extcount++;
+               strcat(extension_help,static_ext_opt[archi][exthwtype][i].name);
+            }
+	 }
       }
       if (strlen(extension_help)>=19) {
          strcat(extension_help,"]\n                    ");
@@ -116,14 +120,18 @@ get_option_help (int flag)
          }
       }
       strcat(extension_help,options[flag].help_msg);
-      for (i=0;i<ext_nr;i++) {
-         strcat(extension_help,"\n    ");
-         strcat(extension_help,ext_opt[i].name);
-         for (j=6+strlen(ext_opt[i].name);j<20;j++) {
-            strcat(extension_help," ");
-         }
-         strcat(extension_help,"  ");
-         strcat(extension_help,ext_opt[i].help);
+      for (archi=0;archi<STXP70_ARCH_SIZE;archi++) {
+         for (exthwtype=0;exthwtype<STXP70_EXTHWTYPE_SIZE;exthwtype++) {
+            for (i=0;i<static_ext_nr[archi][exthwtype];i++) {
+               strcat(extension_help,"\n    ");
+               strcat(extension_help,static_ext_opt[archi][exthwtype][i].name);
+               for (j=6+strlen(static_ext_opt[archi][exthwtype][i].name);j<20;j++) {
+                  strcat(extension_help," ");
+               }
+               strcat(extension_help,"  ");
+               strcat(extension_help,static_ext_opt[archi][exthwtype][i].help);
+            }
+	 }
       }
       return (extension_help);
    }

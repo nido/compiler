@@ -1146,6 +1146,7 @@ Check_Target ( void )
              " is conflicting. Priority is on size then on alignment.\n");
     }
 
+  connect_extensions();
 #endif
 
 #ifdef TARG_ARM

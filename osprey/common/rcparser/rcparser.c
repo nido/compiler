@@ -24,6 +24,9 @@ typedef struct Block {
   int  must_not_be_written;
 
   int  delimiter_counter;
+  
+  char * architecture;
+  char * exthwtype;
 } BlockT;
 
 typedef struct Patch {
@@ -127,12 +130,49 @@ check_found_blocks_size ( void ) {
 
 }
 
+static char * get_architecture( char * buf ) {
+  char * architecture;
+
+  architecture = strstr(buf,"ARCHITECTURE=");
+  if (NULL!=architecture) {
+    char * back_end;
+    
+    architecture += 13;
+    back_end = strchr(architecture,'\n');
+    if (back_end!=NULL) *back_end = 0;
+    architecture = strdup(architecture);
+    if (back_end!=NULL) *back_end = '\n';
+  } else {
+    architecture = strdup("stxp70v3");
+  }
+  return architecture;
+}
+
+static char * get_exthwtype( char * buf ) {
+  char * exthwtype;
+
+  exthwtype = strstr(buf,"EXTHWTYPE=");
+  if (NULL!=exthwtype) {
+    char * back_end;
+    
+    exthwtype += 10;
+    back_end = strchr(exthwtype,'\n');
+    if (back_end!=NULL) *back_end = 0;
+    exthwtype = strdup(exthwtype);
+    if (back_end!=NULL) *back_end = '\n';
+  } else {
+    exthwtype = strdup("novliw");
+  }
+  return exthwtype;
+}
+
 static void
 add_block( char *block_header, char *block_body ) {
-
   check_found_blocks_size();
 
   patch.found_blocks[patch.current_block_nb_used].header_start = block_header;
+  patch.found_blocks[patch.current_block_nb_used].architecture = get_architecture(block_body);
+  patch.found_blocks[patch.current_block_nb_used].exthwtype = get_exthwtype(block_body);
   patch.found_blocks[patch.current_block_nb_used++].body_start = block_body;
 }
 
@@ -148,6 +188,8 @@ insert_block( int insert_idx, char *block_header, char *block_body ) {
   }
 
   patch.found_blocks[insert_idx].header_start = block_header;
+  patch.found_blocks[insert_idx].architecture = get_architecture(block_body);
+  patch.found_blocks[insert_idx].exthwtype = get_exthwtype(block_body);
   patch.found_blocks[insert_idx].body_start = block_body;
 }
 
@@ -749,9 +791,10 @@ getExtensionSwitch( FILE *infile, int infile_size ) {
   UTILS_DEBUG( "GRC-PTCH", ( "macro block header:\n%s %s\n",patch.macro_block.header,patch.macro_block.begin));
 
   for(i=0; i < patch.current_block_nb_used; i++) {
-    UTILS_DEBUG( "GRC-PTCH", ( "Find block '%s' %s\n%s%s\n",
-	    patch.found_blocks[i].header_start,patch.block_def.begin,
-       patch.found_blocks[i].body_start,patch.block_def.end));
+    UTILS_DEBUG( "GRC-PTCH", ( "Find block '%s'-%s-%s %s\n%s%s\n",
+	    patch.found_blocks[i].header_start,patch.found_blocks[i].architecture,
+	    patch.found_blocks[i].exthwtype,patch.block_def.begin,
+	    patch.found_blocks[i].body_start,patch.block_def.end));
   }
 
   UTILS_DEBUG( "GRC-PTCH", ( "after macro block header:\n %s%s\n",patch.macro_block.end,patch.buffer_end));
@@ -769,7 +812,9 @@ applyPatch( FILE *outfile ) {
   if(patch.action == REMOVE_BLOCK) {
     for(j=0; j < patch.block_to_patch_nb; j++) {
       for(i=0; i < patch.current_block_nb_used; i++) {
-	if(strcmp(patch.block_to_patch[j].header_start,patch.found_blocks[i].header_start) == 0) {
+	if((strcmp(patch.block_to_patch[j].header_start,patch.found_blocks[i].header_start) == 0) &&
+	   (strcmp(patch.block_to_patch[j].architecture,patch.found_blocks[i].architecture) == 0) &&
+	   (strcmp(patch.block_to_patch[j].exthwtype,patch.found_blocks[i].exthwtype) == 0)) {
 	  patch.found_blocks[i].must_not_be_written = TRUE;
 	}
       }
@@ -779,7 +824,9 @@ applyPatch( FILE *outfile ) {
     int find_blocks = 0;
     for(j=0; j < patch.block_to_patch_nb; j++) {
       for(i=0; i < patch.current_block_nb_used; i++) {
-	if(strcmp(patch.block_to_patch[j].header_start,patch.found_blocks[i].header_start) == 0) {
+	if((strcmp(patch.block_to_patch[j].header_start,patch.found_blocks[i].header_start) == 0) &&
+	   (strcmp(patch.block_to_patch[j].architecture,patch.found_blocks[i].architecture) == 0) &&
+	   (strcmp(patch.block_to_patch[j].exthwtype,patch.found_blocks[i].exthwtype) == 0)) {
 	  find_blocks++;
 	  patch.found_blocks[i].body_start = patch.block_to_patch[j].body_start;
 	}
@@ -817,7 +864,7 @@ applyPatch( FILE *outfile ) {
     if(! patch.found_blocks[i].must_not_be_written) {
       fprintf(outfile,"           %s %s\n%s%s\n",
 	      patch.found_blocks[i].header_start,patch.block_def.begin,patch.found_blocks[i].body_start,
-         patch.block_def.end);
+              patch.block_def.end);
     }
   }
 
@@ -844,6 +891,10 @@ applyPatch( FILE *outfile ) {
    }                                                            \
 }
 static void Getextinfo_open64 ( char * buffer, RCparser_ExtensionInfoT * extinfo ) {
+   GET_EXTINFO(buffer,"ARCHITECTURE",extinfo->Architecture)
+   if (extinfo->Architecture[0]==0) extinfo->Architecture=strdup("stxp70v3");
+   GET_EXTINFO(buffer,"EXTHWTYPE",extinfo->ExtHwType)
+   if (extinfo->ExtHwType[0]==0) extinfo->ExtHwType=strdup("novliw");
    GET_EXTINFO(buffer,"O64LIBPATH",extinfo->CmpLibPath)
    GET_EXTINFO(buffer,"O64LIBNAME",extinfo->CmpLibName)
    GET_EXTINFO(buffer,"ASMLIBPATH",extinfo->AsmLibPath)
@@ -920,8 +971,11 @@ void RCparser_Init ( RCparser_rctypeT rctype ) {
 }
 
 void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name, 
-                             char *ext_long_name, int remove ) {
-  char *body_with_default_port_format_open64 = 
+                             char *ext_long_name, int remove, int Multiplier, int CompilerDll,
+			     char *ext_arch, char * ext_hwtype ) {
+  static char *body_with_default_port_format_open64_stxp70v3 = 
+    "              ARCHITECTURE=%s\n"
+    "              EXTHWTYPE=%s\n"
     "              O64LIBPATH=%s\n"
     "              O64LIBNAME=%sopen64\n"
     "              ASMLIBPATH=%s\n"
@@ -934,15 +988,109 @@ void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name,
     "              EXTLIBNAME=%sext\n"
     "              DEFINES=-D__%s -D__%s__ -D__%s -D__%s__\n"
     "              INCLUDES=%s\n"
-    "              HELP=Activate %s\n"
+    "              HELP=Activate %s - STxP70 v3 architecture\n"
     "           ";
-  char *body_with_default_port_format_flexcc = 
-    "              help(Activate %s)\n"
-    "              append(CGARGS=)\n"
-    "              append(USRDDEF=-D__%s -D__%s__ -D__%s -D__%s__)\n"
-    "              append(ASARGS=-Mextension=%s)\n"
-    "              append(LDARGS=-Mextension=%s)\n"
+  static char *body_with_default_port_format_open64_multiplier_stxp70v3 = 
+    "              ARCHITECTURE=%s\n"
+    "              EXTHWTYPE=%s\n"
+    "              O64LIBPATH=%s\n"
+    "              O64LIBNAME=%sopen64\n"
+    "              ASMLIBPATH=%s\n"
+    "              ASMLIBNAME=%sasm\n"
+    "              LDLIBPATH=%s\n"
+    "              LDLIBNAME=%sld\n"
+    "              DISASMLIBPATH=%s\n"
+    "              DISASMLIBNAME=%sdisasm\n"
+    "              EXTLIBPATH=%s\n"
+    "              EXTLIBNAME=%sext\n"
+    "              DEFINES=-D__%s -D__%s__ -D__%s -D__%s__\n"
+    "              INCLUDES=%s\n"
+    "              HELP=Activate %s - STxP70 v3 architecture\n"
+    "              O64TARG=-TARG:enable_mx=on\n"
     "           ";
+  static char *body_with_default_port_format_open64_stxp70v4 = 
+    "              ARCHITECTURE=%s\n"
+    "              EXTHWTYPE=%s\n"
+    "              O64LIBPATH=%s\n"
+    "              O64LIBNAME=%sopen64\n"
+    "              EXTLIBPATH=%s\n"
+    "              EXTLIBNAME=%sext\n"
+    "              DEFINES=-D__%s -D__%s__ -D__%s -D__%s__\n"
+    "              INCLUDES=%s\n"
+    "              HELP=Activate %s - STxP70 v4 architecture - %s extension\n"
+    "           ";
+  static char *body_with_default_port_format_open64_multiplier_stxp70v4 = 
+    "              ARCHITECTURE=%s\n"
+    "              EXTHWTYPE=%s\n"
+    "              O64LIBPATH=%s\n"
+    "              O64LIBNAME=%sopen64\n"
+    "              EXTLIBPATH=%s\n"
+    "              EXTLIBNAME=%sext\n"
+    "              DEFINES=-D__%s -D__%s__ -D__%s -D__%s__\n"
+    "              INCLUDES=%s\n"
+    "              HELP=Activate %s - STxP70 v4 architecture - %s extension\n"
+    "              O64TARG=-TARG:enable_mx=on\n"
+    "           ";
+  char *ext_architecture=NULL;
+  char *ext_exthwtype=NULL;
+  char *body_with_default_port_format = NULL;
+  char *inc_path1;
+  int   body_size;
+  int   Architecture;
+  char *exthwtype_helpstr = "???";
+  
+  if (patch.rctype != RCPARSER_OPEN64) {
+  	utilsPrintInternalError(RCPARSER_INTERNAL_ERROR_FLEXCC_NO_MORE_SUPPORTED);
+  }
+  if (CompilerDll != 1) {
+  	utilsPrintInternalError(RCPARSER_INTERNAL_ERROR_NO_COMPILER_NO_MORE_SUPPORTED);
+  }
+  
+  if ((ext_arch==NULL) || (strcmp(ext_arch,"stxp70v3")==0)) {
+     ext_architecture = "stxp70v3";
+     ext_exthwtype = "novliw";
+     if (Multiplier) {
+       body_with_default_port_format = body_with_default_port_format_open64_multiplier_stxp70v3;
+     } else {
+       body_with_default_port_format = body_with_default_port_format_open64_stxp70v3;
+     }
+     body_size = strlen(body_with_default_port_format) + /* format length */
+                 strlen(ext_architecture) +              /* extension architecture */
+                 strlen(ext_exthwtype) +                 /* extension HW type */
+                 strlen(ext_long_name) +                 /* long name size used one time */
+                 9 * strlen(ext_name) +                  /* ext name size used 9 times */
+                 5 * strlen(lib_path) +                  /* shared object path used 5 times */
+                 strlen(inc_path) + 2 +                  /* include path + -I */
+                 1;                                      /* ending null char */
+     Architecture = 3;
+  } else {
+     ext_architecture = ext_arch;
+     ext_exthwtype = (NULL==ext_hwtype)?"novliw":ext_hwtype;
+     if (!strcmp(ext_exthwtype,"novliw")) {
+       exthwtype_helpstr = "single issue";
+     } else if (!strcmp(ext_exthwtype,"single")) {
+       exthwtype_helpstr = "dual issue single pipeline";
+     } else if (!strcmp(ext_exthwtype,"dual")) {
+       exthwtype_helpstr = "dual issue dual pipeline";
+     } else {
+       exthwtype_helpstr = "???";
+     }
+     if (Multiplier) {
+       body_with_default_port_format = body_with_default_port_format_open64_multiplier_stxp70v4;
+     } else {
+       body_with_default_port_format = body_with_default_port_format_open64_stxp70v4;
+     }
+     body_size = strlen(body_with_default_port_format) + /* format length */
+                 strlen(ext_architecture) +              /* extension architecture */
+                 strlen(ext_exthwtype) +                 /* extension HW type */
+                 strlen(ext_long_name) +                 /* long name size used one time */
+                 6 * strlen(ext_name) +                  /* ext name size used 6 times */
+                 2 * strlen(lib_path) +                  /* shared object path used 2 times */
+                 strlen(inc_path) + 2 +                  /* include path + -I */
+                 strlen(exthwtype_helpstr) +             /* extension HW type */
+                 1;                                      /* ending null char */
+     Architecture = 4;
+  }
 
   patch.block_to_patch[0].header_start = (char*) getmem_curarea(strlen(ext_name) + 1);
   if(patch.block_to_patch[0].header_start == NULL) {
@@ -950,30 +1098,28 @@ void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name,
   }
 
   strcpy(patch.block_to_patch[0].header_start,ext_name);
+  patch.block_to_patch[0].architecture = strdup(ext_architecture);
+  patch.block_to_patch[0].exthwtype = strdup(ext_exthwtype);
 
-  if (patch.rctype == RCPARSER_OPEN64) {
-    char *inc_path1;
-    
-    inc_path1=(char*) getmem_curarea(strlen(inc_path)+5);
-    if (inc_path1 == NULL) {
-      utilsPrintInternalError(RCPARSER_INTERNAL_ERROR_NOT_ENOUGH_MEMORY);
-    }
-    if (strlen(inc_path)) {
-      sprintf(inc_path1,"-I%s",inc_path);
-    } else {
-      inc_path1[0]=0;
-    }
-    patch.block_to_patch[0].body_start = getmem_curarea(strlen(body_with_default_port_format_open64) +  /* body format size */
-                                                        strlen(ext_long_name) +                  /* long name size used one time */
-                                                        9 * strlen(ext_name) +                   /* ext name size used 9 times */
-                                                        5 * strlen(lib_path) +                   /* shared object path used 5 times */
-                                                        strlen(inc_path) + 2 +                   /* include path + -I */
-                                                        1 );                                     /* ending null char */
+  inc_path1=(char*) getmem_curarea(strlen(inc_path)+5);
+  if (inc_path1 == NULL) {
+    utilsPrintInternalError(RCPARSER_INTERNAL_ERROR_NOT_ENOUGH_MEMORY);
+  }
+  if (strlen(inc_path)) {
+    sprintf(inc_path1,"-I%s",inc_path);
+  } else {
+    inc_path1[0]=0;
+  }
 
-    if (patch.block_to_patch[0].body_start == NULL) {
-      utilsPrintInternalError(RCPARSER_INTERNAL_ERROR_NOT_ENOUGH_MEMORY);
-    }
-    sprintf(patch.block_to_patch[0].body_start,body_with_default_port_format_open64,
+  patch.block_to_patch[0].body_start = getmem_curarea(body_size);
+  if (patch.block_to_patch[0].body_start == NULL) {
+    utilsPrintInternalError(RCPARSER_INTERNAL_ERROR_NOT_ENOUGH_MEMORY);
+  }
+  if (Architecture==3) {
+    sprintf(patch.block_to_patch[0].body_start,
+            body_with_default_port_format,
+	    ext_architecture,
+	    ext_exthwtype,
 	    lib_path,ext_name,
   	    lib_path,ext_name,
 	    lib_path,ext_name,
@@ -981,27 +1127,23 @@ void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name,
   	    lib_path,ext_name,
 	    str_uc(ext_name),
 	    str_uc(ext_name),
-       ext_name,
-       ext_name,
-       inc_path1,
-  	    ext_long_name);
-  } else { /* it is then RCPARSER_FLEXCC */
-    patch.block_to_patch[0].body_start = getmem_curarea(strlen(body_with_default_port_format_flexcc) +  /* body format size */
-                                                        strlen(ext_long_name) +                  /* long name size used one time */
-                                                        6 * strlen(ext_name) +                   /* ext name size used 3 times */
-                                                        1 );                                     /* ending null char */
-
-    if(patch.block_to_patch[0].body_start == NULL) {
-      utilsPrintInternalError(RCPARSER_INTERNAL_ERROR_NOT_ENOUGH_MEMORY);
-    }
-    sprintf(patch.block_to_patch[0].body_start,body_with_default_port_format_flexcc,
-	    ext_long_name,
-	    str_uc(ext_name),
-	    str_uc(ext_name),
-       ext_name,
-       ext_name,
 	    ext_name,
- 	    ext_name);
+	    ext_name,
+	    inc_path1,
+  	    ext_long_name);
+  } else {
+    sprintf(patch.block_to_patch[0].body_start,
+            body_with_default_port_format,
+	    ext_architecture,
+	    ext_exthwtype,
+	    lib_path,ext_name,
+  	    lib_path,ext_name,
+	    str_uc(ext_name),
+	    str_uc(ext_name),
+	    ext_name,
+	    ext_name,
+	    inc_path1,
+  	    ext_long_name,exthwtype_helpstr);
   }
   
   patch.block_to_patch_nb = 1;
@@ -1078,6 +1220,8 @@ RCparser_ExtensionInfoT * RCparser_getextinfo ( int index, char * ModuleName ) {
 #define PRINT_EXTINFO(stream,str,var) fprintf(stream,"%s = %s\n",str,var)
 void RCparser_printextinfo ( RCparser_ExtensionInfoT * extinfo ) {
    fprintf(stdout,"ExtName [%s]\n",extinfo->Name);
+   PRINT_EXTINFO(stdout,"   ARCHITECTURE ",extinfo->Architecture);
+   PRINT_EXTINFO(stdout,"   EXTHWTYPE    ",extinfo->ExtHwType);
    PRINT_EXTINFO(stdout,"   O64LIBPATH   ",extinfo->CmpLibPath);
    PRINT_EXTINFO(stdout,"   O64LIBNAME   ",extinfo->CmpLibName);
    PRINT_EXTINFO(stdout,"   O64TARG      ",extinfo->CmpTargOpt);

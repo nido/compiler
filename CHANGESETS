@@ -1,6 +1,65 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar 30 17:33:40 CEST 2009
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/chauveth/dev-reconf-stxp70v4
+
+Description:
+------------
+	* [trunk] STxP70 v4 reconfigurability setup. Deliver chauveth/dev-reconf-stxp70v4 rev #21279 with authorization branch #59499
+
+
+Modified Files:
+---------------
+	M      osprey/driver/options.h
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/stxp70_options.i
+	M      osprey/driver/options.c
+	M      osprey/libair/air/air_loader.cxx
+	M      osprey/common/rcparser/rcparser.c
+	M      osprey/common/rcparser/rcparser.h
+	M      osprey/common/rcparser/rcparser_message.h
+	M      osprey/common/rcparser/README
+	M      osprey/common/com/isa_loader.cxx
+	M      osprey/targinfo/stxp70/expand/exp_memrf.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+	M      osprey/targinfo/stxp70/isa/isa_relocs.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/generate/isa_syntax_gen.cxx
+	M      osprey/targinfo/generate/isa_relocs_gen.cxx
+	M      osprey/targinfo/generate/isa_relocs_gen.h
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed Feb 25 14:02:33 CET 2009
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/branches/chauveth/dev-reconf-stxp70v4
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/chauveth/dev-sda-v4
+
+Description:
+------------
+	* [chauveth/dev-reconf-stxp70v4] DA/TDA/SDA support for STxP70 v4 architecture + Relocation renumbering to allow relocation reconfigurability on STxP70 v4 architecture
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/expand/exp_memrf.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+	M      osprey/targinfo/stxp70/isa/isa_relocs.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/generate/isa_relocs_gen.cxx
+	M      osprey/targinfo/generate/isa_relocs_gen.h
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Mar 30 13:48:29 CEST 2009
 	Author:    bv11
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

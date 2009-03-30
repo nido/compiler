@@ -3,6 +3,8 @@
 
 typedef struct {
    char * Name;
+   char * Architecture;
+   char * ExtHwType;
    char * CmpLibPath;
    char * CmpLibName;
    char * AsmLibPath;
@@ -27,7 +29,8 @@ typedef enum {
 extern void RCparser_Init ( RCparser_rctypeT rctype );
 extern void RCparser_CreatePatch ( char *lib_path, char *incpath, 
                                    char *ext_name, char *ext_long_name, 
-                                   int remove );
+                                   int remove, int Multiplier, 
+                                   int CompilerDll, char * ext_arch, char * ext_hwtype );
 extern void RCparser_parse ( char * infilename, char * ModuleName );
 extern void RCparser_patch ( char * outfilename );
 extern int RCparser_getextnr ( void );
