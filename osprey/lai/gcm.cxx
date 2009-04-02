@@ -2960,12 +2960,22 @@ Is_Schedule_Worse(BB *bb, BB *cand_bb, BBSCH *new_bbsch,
   // is high too.
 
   INT times = (GCM_Test) ? 10 : 1;
+#ifdef TARG_ST
+  // [TTh] Insure more deterministic float comparison
+  float old_cost = ((BB_freq(bb) * new_from_time) + 
+		    (BB_freq(cand_bb) * new_to_time));
+  float new_cost = (times * ((BB_freq(bb) * old_from_time) + 
+			     (BB_freq(cand_bb) * old_to_time) + 
+			     branch_penalty));
+  BOOL worsen_schedule = (KnuthCompareGT(old_cost, new_cost) ||
+#else
   BOOL worsen_schedule =
     (((BB_freq(bb) * new_from_time) + 
       (BB_freq(cand_bb) * new_to_time)) >
      (times * ((BB_freq(bb) * old_from_time) + 
 	       (BB_freq(cand_bb) * old_to_time) + 
 	       branch_penalty)) ||
+#endif
      
      // to check that we only do speculation if it's free
      (!equiv_blocks && (new_to_time > (times * (old_to_time + 

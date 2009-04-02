@@ -304,10 +304,6 @@ Compare_Float_Nearly_Equal(float p1, float p2)
   }
 
   // FdF: Fix floating point difference between SunOS and Linux/Cygwin
-#ifdef TARG_ST
-  return (fabs(p1-p2) < 0.0001 || (fabs(p1-p2)/max) < .01);
-#else
-  return ((fabs(p1-p2)/max) < .01);
-#endif
+  return (fabs(p1-p2) < 0.005 || (fabs(p1-p2)/max) < .01);
 }
 #endif

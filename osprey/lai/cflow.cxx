@@ -6709,7 +6709,14 @@ Order_Chains(BBCHAIN *unordered, BB_MAP chain_map)
     max_weight = unordered->weight;
     chain = unordered;
     for (ch = unordered->next; ch; ch = ch->next) {
-      if (   (ch->never == chain->never && ch->weight > max_weight)
+      if ((ch->never == chain->never &&
+#ifdef TARG_ST
+	   // [TTh] Use KnuthCompare() for more deterministic float comparison
+	   KnuthCompareGT(ch->weight, max_weight)
+#else
+	   ch->weight > max_weight
+#endif
+	  )
 	  || (!ch->never && chain->never))
       {
 	chain = ch;
@@ -6721,7 +6728,12 @@ Order_Chains(BBCHAIN *unordered, BB_MAP chain_map)
      * not find a candidate. Strongly complain and then just take 
      * the first thing on the list. 
      */
+#ifdef TARG_ST
+    // [TTh] Use KnuthCompare() for more deterministic float comparison
+    if (KnuthCompareLT(max_weight, 0.0)) {
+#else
     if (max_weight < 0.0) {
+#endif
       if (CG_warn_bad_freqs) {
 	#pragma mips_frequency_hint NEVER
 	DevWarn("cflow (Order_Chains) found inconsistent freqs:\n"
@@ -6758,7 +6770,12 @@ Order_Chains(BBCHAIN *unordered, BB_MAP chain_map)
       if (ch->never) break;
 
       for (bb = ch->head; bb; bb = BB_next(bb)) {
+#ifdef TARG_ST
+	// [TTh] Use KnuthCompare() for more deterministic float comparison
+	if (KnuthCompareGT(BB_freq(bb), cold_threshold)) {
+#else
 	if (BB_freq(bb) > cold_threshold) {
+#endif
 	  ch = ch->next;
 	  goto found_hot;
 	}
