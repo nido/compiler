@@ -3093,14 +3093,15 @@ Optimize_Branches(void)
 	    changed = TRUE;
 	    Cflow_Change_Succ(bp, 1, old_tgt, new_tgt);
 	  }
-	}
 #ifdef TARG_ST
-    if (CFLOW_Enable_Hoist_rts) {
+	  if (CFLOW_Enable_Hoist_rts) {
     	// [TDR] Do not perform optimization if retrun instruction cannot be predicated
 		if (!CGTARG_Can_Predicate_Returns()) break;
 		BB* targ_0= BBINFO_succ_bb(bp,0);
 		BB* targ_1= BBINFO_succ_bb(bp,1);
-		if (BB_length(targ_0) == 1 && BBINFO_nsuccs(targ_0) == 0 && BBINFO_kind(targ_0) == BBKIND_RETURN) {
+		if (BB_length(targ_0) == 1 && BBINFO_nsuccs(targ_0) == 0 
+			&& BBINFO_kind(targ_0) == BBKIND_RETURN 
+			&& OP_Predicate(BB_first_op(targ_0)) == True_TN) {
 			if (CFLOW_Trace_Branch) {
 				#pragma mips_frequency_hint NEVER
 				fprintf(TFile, "Only one inst and Tail Block\n");
@@ -3129,6 +3130,7 @@ Optimize_Branches(void)
 		}
 	}
 #endif
+	}
 	break;
       case BBKIND_GOTO:
 	if (BBINFO_nsuccs(bp) == 0) break;
