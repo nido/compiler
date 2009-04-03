@@ -736,6 +736,26 @@ WFE_Expand_End_Stmt_Expr (tree t)
   wfe_bind_expr_stack [wfe_bind_expr_stack_last].block    = block;
 } /* WFE_End_Stmt_Expr */
 
+#ifdef TARG_ST
+// [SC] If the frontend starts expanding a COMPOUND_LITERAL_EXPR, 
+// we want to ignore all the whirl generated for that, since we
+// translate them to whirl during our gcc expression tree walk.
+// It is convenient to put the whirl on the wfe_bind_expr_stack
+// (and never take it off again).  This is actually what also
+// happens for STMT_EXPR nodes that are not wrapped in BIND_EXPR.
+void
+WFE_Expand_Start_Compound_Literal_Expr (tree t)
+{
+  WFE_Expand_Start_Stmt_Expr (t);
+}
+
+void
+WFE_Expand_End_Compound_Literal_Expr (tree t)
+{
+  WFE_Expand_End_Stmt_Expr (t);
+}
+#endif
+
 typedef struct wfe_save_expr_t {
   tree  exp;
   ST   *st;
@@ -5643,15 +5663,87 @@ WFE_Expand_Expr (tree exp,
 			      component_offset, field_id, is_bit_field);
         break;
 
+#ifdef KEY
       case COMPOUND_LITERAL_EXPR:
-        {
-          tree decl = COMPOUND_LITERAL_EXPR_DECL_STMT (exp);
-          tree arg0 = TREE_OPERAND (decl, 0);
-          wn = WFE_Expand_Expr (DECL_INITIAL (arg0),
-                                need_result, nop_ty_idx, component_ty_idx,
-                                component_offset, field_id, is_bit_field);
-          break;
-        }
+#ifdef TARG_ST
+	{
+	  tree decl = TREE_OPERAND (TREE_OPERAND (exp, 0), 0);
+	  WFE_Initialize_Decl (decl);
+	  wn = WFE_Expand_Expr (decl,
+				need_result, nop_ty_idx, component_ty_idx,
+				component_offset, field_id, is_bit_field);
+	}
+#else
+	{
+	  tree oper = TREE_OPERAND (TREE_OPERAND (exp, 0), 0);
+	  if (TREE_CODE (DECL_INITIAL (oper)) == CONSTRUCTOR)
+	    exp = DECL_INITIAL (oper);
+	  else exp = oper;
+	  
+	  PREG_NUM preg_num = 0;
+	  desc_ty_idx = component_ty_idx;
+	  TY_IDX hi_ty_idx = Get_TY (TREE_TYPE(exp));
+	  if (desc_ty_idx == 0)
+	    desc_ty_idx = hi_ty_idx;
+	  
+	  if (! MTYPE_is_integral(TY_mtype(desc_ty_idx)))
+	    ty_idx = desc_ty_idx;
+	  else {
+	    ty_idx = nop_ty_idx;
+	    if (ty_idx == 0) 
+	      ty_idx = desc_ty_idx;
+	  }
+	  
+	  UINT cvtl_size = 0; // if non-zero, need to generate CVTL with this size
+	  if (! is_bit_field) {
+	    if (TY_size(desc_ty_idx) > TY_size(ty_idx)) {
+	      cvtl_size = TY_size(ty_idx) * 8;
+	      ty_idx = desc_ty_idx;
+	    }
+	  }
+	  else {
+	    if (TY_size(desc_ty_idx) > TY_size(ty_idx)) 
+	      ty_idx = desc_ty_idx;
+	  }
+	  
+	  TYPE_ID rtype = Widen_Mtype(TY_mtype(ty_idx));
+	  TYPE_ID desc = TY_mtype(desc_ty_idx);
+	  if (MTYPE_is_integral(desc)) {
+	    if (MTYPE_signed(rtype) != MTYPE_signed(desc)) {
+	      if (MTYPE_size_min(rtype) > MTYPE_size_min(desc) ||
+		  is_bit_field)
+		rtype = Mtype_TransferSign(desc, rtype);
+	      else desc = Mtype_TransferSign(rtype, desc);
+	    }
+	  }
+	  
+	  if (TREE_THIS_VOLATILE(exp))
+	    Set_TY_is_volatile(ty_idx);
+	  
+	  if (TREE_CODE (exp) == CONSTRUCTOR)
+	    {
+	      DevWarn ("Encountered CONSTRUCTOR at line %d", lineno);
+	      st = WFE_Generate_Temp_For_Initialized_Aggregate (exp, "");
+	    }
+	  else 
+	    {
+	      st = Get_ST (exp);
+	      if (ST_assigned_to_dedicated_preg (st))
+		Set_TY_is_volatile(ty_idx);
+	    }
+	  
+	  Is_True(! is_bit_field || field_id <= MAX_FIELD_ID,
+		  ("WFE_Expand_Expr: field id for bit-field exceeds limit"));
+	  wn = WN_CreateLdid (OPR_LDID, rtype,
+			      is_bit_field ? MTYPE_BS : desc,
+			      ST_ofst(st)+component_offset+preg_num, st,
+			      field_id != 0 ? hi_ty_idx : ty_idx, field_id);
+	  if (cvtl_size != 0)
+	    wn = WN_CreateCvtl(OPR_CVTL, rtype, MTYPE_V, cvtl_size, wn);
+	}
+#endif
+	break;
+#endif
 
       case GOTO_STMT:
         {

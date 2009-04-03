@@ -25,6 +25,8 @@ extern void WFE_Null_Return (void);
 #if defined TARG_ST && defined (_NO_WEAK_SUPPORT_)
 extern void WFE_Expand_Start_Stmt_Expr (tree t);
 extern void WFE_Expand_End_Stmt_Expr (tree t);
+extern void WFE_Expand_Start_Compound_Literal_Expr (tree t);
+extern void WFE_Expand_End_Compound_Literal_Expr (tree t);
 #endif
 
 #ifdef __cplusplus
@@ -86,7 +88,10 @@ extern "C" {
 
 extern void WFE_Expand_Start_Stmt_Expr (tree);
 extern void WFE_Expand_End_Stmt_Expr (tree);
-
+#ifdef TARG_ST
+extern void WFE_Expand_Start_Compound_Literal_Expr (tree);
+extern void WFE_Expand_End_Compound_Literal_Expr (tree);
+#endif
 
 #ifdef __cplusplus
 }

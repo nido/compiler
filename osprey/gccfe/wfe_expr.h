@@ -114,9 +114,13 @@ extern "C" {
 #if defined (TARG_ST) && !defined(_NO_WEAK_SUPPORT_)
 extern __attribute__ ((weak)) void WFE_Expand_Start_Stmt_Expr (tree);
 extern __attribute__ ((weak)) void WFE_Expand_End_Stmt_Expr (tree);
+extern __attribute__ ((weak)) void WFE_Expand_Start_Compound_Literal_Expr (tree);
+extern __attribute__ ((weak)) void WFE_Expand_End_Compound_Literal_Expr (tree);
 #else
 extern void WFE_Expand_Start_Stmt_Expr (tree);
 extern void WFE_Expand_End_Stmt_Expr (tree);
+extern void WFE_Expand_Start_Compound_Literal_Expr (tree);
+extern void WFE_Expand_End_Compound_Literal_Expr (tree);
 #endif
 
 #ifdef __cplusplus

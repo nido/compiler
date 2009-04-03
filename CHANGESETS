@@ -1,6 +1,49 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Apr 03 11:26:30 CEST 2009
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-63283
+
+Description:
+------------
+	*  Fix for bug #63283: Incorrect code gen for statement expression
+	Deliver fixes/codex-63283 rev #21390 with authorization branch #63356.
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/wfe_expr.cxx
+	M      osprey/gccfe/gnu/c-common.c
+	M      osprey/gccfe/gnu/stmt.c
+	M      osprey/gccfe/wfe_expr.h
+	M      osprey/g++fe/wfe_expr.cxx
+	M      osprey/g++fe/wfe_expr.h
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@21380 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-63283@21390 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@21380 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-63283@21390" 
+
+Diff links to modified files:
+-----------------------------
+osprey/gccfe/wfe_expr.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_expr.cxx?p2=branches/fixes/codex-63283/osprey/gccfe/wfe_expr.cxx&r1=21380&r2=21390&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/c-common.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/c-common.c?p2=branches/fixes/codex-63283/osprey/gccfe/gnu/c-common.c&r1=21380&r2=21390&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/stmt.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/stmt.c?p2=branches/fixes/codex-63283/osprey/gccfe/gnu/stmt.c&r1=21380&r2=21390&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_expr.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_expr.h?p2=branches/fixes/codex-63283/osprey/gccfe/wfe_expr.h&r1=21380&r2=21390&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_expr.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_expr.cxx?p2=branches/fixes/codex-63283/osprey/g++fe/wfe_expr.cxx&r1=21380&r2=21390&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_expr.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_expr.h?p2=branches/fixes/codex-63283/osprey/g++fe/wfe_expr.h&r1=21380&r2=21390&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr  3 09:45:59 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

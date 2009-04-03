@@ -845,6 +845,22 @@ WFE_Expand_End_Stmt_Expr (tree t)
 #endif
 #endif /* GPLUSPLUS_FE */
 
+#ifdef TARG_ST
+#if ! defined GPLUSPLUS_FE || defined (_NO_WEAK_SUPPORT_)
+void
+WFE_Expand_Start_Compound_Literal_Expr (tree t)
+{
+  WFE_Expand_Start_Stmt_Expr (t);
+}
+
+void
+WFE_Expand_End_Compound_Literal_Expr (tree t)
+{
+  WFE_Expand_End_Stmt_Expr (t);
+}
+#endif
+#endif
+
 typedef struct wfe_save_expr_t {
   tree  exp;
   ST   *st;

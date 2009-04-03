@@ -2365,18 +2365,6 @@ expand_expr_stmt_value (exp, want_value, maybe_last)
   if (want_value && TREE_CODE (TREE_TYPE (exp)) == FUNCTION_TYPE)
     exp = build1 (ADDR_EXPR, build_pointer_type (TREE_TYPE (exp)), exp);
 
-#ifdef TARG_ST
-  /* Seems like rtl generating routines may be corrupting the
-   * trees -- they do not attempts to maintain them properly
-   */
-#ifdef SGI_MONGOOSE
-#ifdef TARG_ST
-  if (!WFE_CPlusPlus_Translator)
-#endif
-  WFE_One_Stmt (exp);
-#endif /* SGI_MONGOOSE */
-#endif
-
   /* The call to `expand_expr' could cause last_expr_type and
      last_expr_value to get reset.  Therefore, we set last_expr_value
      and last_expr_type *after* calling expand_expr.  */
@@ -2422,14 +2410,12 @@ expand_expr_stmt_value (exp, want_value, maybe_last)
 
   emit_queue ();
 
-#ifndef TARG_ST
 #ifdef SGI_MONGOOSE
 #ifdef TARG_ST
   if (!WFE_CPlusPlus_Translator)
 #endif
   WFE_One_Stmt (exp);
 #endif /* SGI_MONGOOSE */
-#endif
 }
 
 /* Warn if EXP contains any computations whose results are not used.

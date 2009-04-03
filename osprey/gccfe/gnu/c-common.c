@@ -41,6 +41,8 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "tree-inline.h"
 #include "c-tree.h"
 #ifdef TARG_ST
+#include "wfe_stmt.h"
+#include "wfe_expr.h"
   extern tree dynamic_tree_type[MAX_LIMIT_MACHINE_MODE - STATIC_COUNT_MACHINE_MODE];
   extern tree dynamic_tree_unsigned_type[MAX_LIMIT_MACHINE_MODE - STATIC_COUNT_MACHINE_MODE];
 //TB for loader initialization
@@ -4426,8 +4428,21 @@ c_expand_expr (exp, target, tmode, modifier)
 	}
 #endif
 #endif
+#if defined TARG_ST && defined SGI_MONGOOSE
+        {
+          rtx retval;
+	  if (!WFE_CPlusPlus_Translator)
+	    WFE_Expand_Start_Compound_Literal_Expr (decl);
+	  emit_local_var (decl);
+	  retval = expand_expr (decl, target, tmode, modifier);
+	  if (!WFE_CPlusPlus_Translator)
+	    WFE_Expand_End_Compound_Literal_Expr (decl);
+	  return retval;
+	}
+#else
 	emit_local_var (decl);
 	return expand_expr (decl, target, tmode, modifier);
+#endif
       }
 
     default:
