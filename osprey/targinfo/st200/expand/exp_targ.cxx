@@ -1366,7 +1366,25 @@ Expand_High_Multiply (
   OPS *ops
 )
 {
-  FmtAssert(FALSE,("Not Implemented"));
+  FmtAssert ((MTYPE_bit_size(mtype) == 32),
+	     ("Expand_High_Multiply: unsupported dest size\n"));
+
+  // We implement this using the intrinsic interface, see also Expand_Shift
+  TN *opnds[2];
+  TN *results[1];
+  INTRINSIC intr_id;
+  switch (mtype) {
+  case MTYPE_I4: intr_id = INTRN_MULHW; break;    
+  case MTYPE_U4: intr_id = INTRN_MULHUW; break; 
+
+  default:
+    Is_True(FALSE, ("High_Multiply: MTYPE_%s is not handled",
+		    Mtype_Name(mtype)));
+  }
+  opnds[0] = src1;
+  opnds[1] = src2;
+  results[0] = result ;
+  Exp_Intrinsic_Op (intr_id, 1, 2, results, opnds, ops, 0, NULL);
 
   return;
 }

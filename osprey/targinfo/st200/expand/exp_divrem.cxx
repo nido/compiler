@@ -309,6 +309,256 @@ Expand_NonConst_DivRem (TN *quot, TN *rem, TN *x, TN *y, TYPE_ID mtype, OPS *ops
 }
 
 /* ====================================================================
+ *   Expand_Power_Of_2_Divide
+ * ====================================================================
+ */
+static void
+Expand_Power_Of_2_Divide (TN *result, TN *numer, INT64 dvsr, 
+			  TYPE_ID mtype, OPS *ops)
+{
+  FmtAssert(mtype == MTYPE_I4 || mtype == MTYPE_U4,
+	    ("Expand_Power_Of_2_Divide: mtype %s not handled",
+	      MTYPE_name(mtype)));
+
+  INT pow2 = Get_Power_Of_2 (dvsr, mtype);
+
+  if (MTYPE_is_unsigned(mtype)) {
+    Build_OP (TOP_shru_i_r_r, result,
+	      numer, Gen_Literal_TN (pow2, MTYPE_byte_size(mtype)), ops);
+  } else {
+    // signed is more complicated
+    TN *t0 = Build_TN_Of_Mtype(mtype);
+    TN *t1 = Build_TN_Of_Mtype(mtype);
+    TN *t2 = dvsr < 0 ? Build_TN_Of_Mtype(mtype) : result;
+    INT64 absdvsr = dvsr < 0 ? -dvsr : dvsr;
+
+    if (absdvsr == 2) {
+      /* Optimize for abs(divisor) == 2:
+       *      extr.u tmp0=numer,signbit,1  -- dvsr-1 if numer negative else 0
+       *      add tmp1=tmp0,numer
+       *      shr result=tmp1,1
+       * if (dvsr<0) sub result=0,result
+       */
+      // extract the sign bit
+      Build_OP(TOP_shru_i_r_r,t0, numer, Gen_Literal_TN(31,4), ops);
+      // add sign to numer
+      Build_OP(TOP_add_r_r_r, t1, t0, numer, ops);
+      // shr by 1
+      Build_OP(TOP_shr_i_r_r, t2, t1, Gen_Literal_TN(1, 4), ops);
+    } else {
+      /* General case:
+       *      cmp.lt p1,p2=numer,zero         -- numerator negative?
+       *      add tmp1=abs(dvsr)-1,numer      -- speculatively add dvsr-1 to numer
+       * (p1) shr result=tmp1,pow2(abs(dvsr))
+       * (p2) shr result=numer,pow2(abs(dvsr))
+       * if (dvsr<0) sub result=0,result
+       */
+#if 1 /* CGuillon: better sequence for ST200 */
+      TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+
+      Build_OP(TOP_cmplt_r_r_b, p1, numer, Zero_TN, ops);
+      Expand_Add (t0, Gen_Literal_TN(absdvsr-1,4), numer, mtype, ops);
+
+      Build_OP(TOP_targ_slct_r_r_b_r, t1, p1, t0, numer, ops);
+      Build_OP(TOP_shr_i_r_r, t2, t1, Gen_Literal_TN(pow2, 4), ops);
+#else
+      TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
+      TN *t3 = Build_TN_Of_Mtype(mtype);
+
+      Build_OP(TOP_cmplt_r_r_b, p1, numer, Zero_TN, ops);
+      Expand_Add (t0, Gen_Literal_TN(absdvsr-1,4), numer, mtype, ops);
+      
+      Build_OP(TOP_shr_i_r_r, t1, t0, Gen_Literal_TN(pow2, 4), ops);
+      Build_OP(TOP_shr_i_r_r, t3, numer, Gen_Literal_TN(pow2, 4), ops);
+      Build_OP(TOP_targ_slct_r_r_b_r, t2, p1, t1, t3, ops);
+#endif
+    }
+    if (dvsr < 0) {
+      // must negate the result
+	Build_OP (TOP_sub_r_r_r, result, Zero_TN, t2, ops);
+    }
+  }
+}
+
+/* ====================================================================
+ *   Expand_Non_Power_Of_2_Signed_Divide
+ *   Uses the method described in Hacker's Delight, 1st edition
+ *   The magic method is described Figure-10.1 p. 174
+ * ====================================================================
+ */
+struct ms {
+  INT32 M; /* Magic variable */
+  INT32 s;  /* Shift amount */
+} ;
+
+static ms
+magics(INT32 d)
+{
+  INT32 p ;
+  UINT32 ad, anc, delta, q1, r1, q2, r2, t;
+  const UINT32 two31 = 0x80000000;
+  struct ms mags ;
+  FmtAssert( ((2 <= d ) && (d <= 0x7FFFFFFF)) || ((-0x80000000 <= d) && (d <= -2)),
+	     ("Expand_Non_Power_Of_2_Signed_Divide::magic: value : %d not handled",d));
+
+  ad = d < 0 ? -d : d ;
+  t = two31 + ((UINT32)d >> 31);
+  anc = t - 1 - t % ad;
+  p = 31;
+  q1 = two31 / anc;
+  r1 = two31 - q1 * anc;
+  q2 = two31 / ad;
+  r2 = two31 - q2 * ad; 
+  do {
+    p = p + 1;
+    q1 = 2 * q1;
+    r1 = 2 * r1;
+    if (r1 >= anc) {
+      q1 = q1 + 1;
+      r1 = r1 - anc;
+    }
+    q2 = 2 * q2;
+    r2 = 2 * r2;
+    if (r2 >= ad) {
+      q2 = q2 + 1;
+      r2 = r2 - ad;
+    }
+    delta = ad - r2;
+  } while(q1 < delta || (q1 == delta && r1 == 0)) ;
+
+  mags.M = q2 + 1;
+  if (d < 0) mags.M = -mags.M;
+  mags.s = p - 32;
+  return mags ;
+}
+
+static BOOL
+Expand_Non_Power_Of_2_Signed_Divide (TN *result, TN *numer_tn, INT64 dvsr, 
+				     TYPE_ID mtype, OPS *ops)
+{
+  FmtAssert(mtype == MTYPE_I4,
+	    ("Expand_Non_Power_Of_2_Signed_Divide: mtype %s not handled",
+	     MTYPE_name(mtype)));
+
+  /* Choose to handle code generation regardless of the sign of the
+   divisor instead of normalizing it and then negating the result */
+  struct ms mags = magics((INT32)dvsr);
+
+  TN *M_tn = Build_TN_Of_Mtype (mtype);
+  TN *q_tn = Build_TN_Of_Mtype (mtype);
+  TN *r_tn = Build_TN_Of_Mtype (mtype);
+
+  // Create the magic constant, then expand the instruction sequence
+  Expand_Immediate (M_tn, Gen_Literal_TN (mags.M, 4), MTYPE_is_signed(mtype), ops);
+  Expand_High_Multiply (q_tn, M_tn, numer_tn, mtype, ops);
+
+  if (((INT32)dvsr>0) && (mags.M<0)) 
+    Expand_Add(q_tn, q_tn, numer_tn, mtype, ops);
+  else if (((INT32)dvsr<0) && (mags.M>0)) 
+    Expand_Sub(q_tn, q_tn, numer_tn, mtype, ops);
+
+  if (((INT32)dvsr>0))
+    Expand_Shift(r_tn, numer_tn, Gen_Literal_TN(31, 4), mtype, shift_lright, ops);
+  else
+    Expand_Shift(r_tn, q_tn, Gen_Literal_TN(31, 4), mtype, shift_lright, ops);
+
+  if (mags.s > 0)
+    Expand_Shift(q_tn, q_tn, Gen_Literal_TN(mags.s, 4), mtype, shift_aright, ops);
+
+  Expand_Add(result, q_tn, r_tn, mtype, ops);
+
+  return TRUE;
+}
+
+/* ====================================================================
+ *   Expand_Non_Power_Of_2_Unsigned_Divide
+ *   Uses the method described in Hacker's Delight, 1st edition
+ *   The magicu method is described Figure-10.2 p. 185
+ * ====================================================================
+ */
+struct mu {
+  UINT32 M; /* Magic variable */
+  INT32 a;  /* Add indicator */
+  INT32 s;  /* Shift amount */
+} ;
+
+static mu 
+magicu(UINT32 d)
+{
+  INT32 p ;
+  UINT32 nc, delta, q1, r1, q2, r2 ;
+  struct mu magu ;
+  FmtAssert( d>= 1,
+	     ("Expand_Non_Power_Of_2_Unsigned_Divide::magicu: value : %d not handled",d));
+
+  magu.a = 0;		// Clear 'add' indicator
+  nc = -1 - (-d) % d;	// Unsigned arithmetic here
+  p = 31;
+  q1 = 0x80000000 / nc;
+  r1 = 0x80000000 - q1 * nc;
+  q2 = 0x7fffffff / d;
+  r2 = 0x7fffffff - q2 * d;
+  do {
+    p = p + 1;
+    if (r1 >= nc - r1) {
+      q1 = 2 * q1 + 1;
+      r1 = 2 * r1 - nc; 
+    } else {
+      q1 = 2 * q1;
+      r1 = 2 * r1;
+    }
+    if (r2 + 1 >= d - r2) {
+      if (q2 >= 0x7fffffff) 
+	magu.a = 1;
+      q2 = 2 * q2 + 1;
+      r2 = 2 * r2 + 1 - d;
+    } else {
+      if (q2 >= 0x80000000)
+	magu.a = 1;
+      q2 = 2 * q2;
+      r2 = 2*r2 + 1;
+    }
+    delta = d - 1 - r2;
+  } while (p < 64 &&
+	   (q1 < delta || (q1 == delta && r1 == 0)));
+
+  magu.M = q2 + 1;
+  magu.s = p - 32;
+  return magu ;
+}
+
+static BOOL
+Expand_Non_Power_Of_2_Unsigned_Divide (TN *result, TN *numer_tn, INT64 dvsr, 
+				       TYPE_ID mtype, OPS *ops)
+{
+  FmtAssert(mtype == MTYPE_U4,
+	    ("Expand_Non_Power_Of_2_Unsigned_Divide: mtype %s not handled",
+	     MTYPE_name(mtype)));
+  
+  /* Code generation depends on the 'add' indicator */
+  struct mu magu = magicu((UINT32)dvsr);
+
+  TN *M_tn = Build_TN_Of_Mtype (mtype);
+  TN *q_tn = Build_TN_Of_Mtype (mtype);
+
+  // Create the magic constant, then expand the instruction sequence
+  Expand_Immediate (M_tn, Gen_Literal_TN (magu.M, 4), MTYPE_is_signed(mtype), ops);
+  Expand_High_Multiply (q_tn, M_tn, numer_tn, mtype, ops);
+
+  if (magu.a) {
+    TN *t_tn = Build_TN_Of_Mtype (mtype);
+    Expand_Sub(t_tn, numer_tn, q_tn, mtype, ops);
+    Expand_Shift(t_tn, t_tn, Gen_Literal_TN(1, 4), mtype, shift_lright, ops);
+    Expand_Add(t_tn, q_tn, t_tn, mtype, ops);
+    Expand_Shift(result, t_tn, Gen_Literal_TN(magu.s - 1, 4), mtype, shift_lright, ops);
+  } else {
+    Expand_Shift(result, q_tn, Gen_Literal_TN(magu.s, 4), mtype, shift_lright, ops);
+  }
+
+  return TRUE;
+}
+
+/* ====================================================================
  *   Expand_Divide_By_Constant
  * ====================================================================
  */
@@ -325,7 +575,8 @@ Expand_Divide_By_Constant (
   BOOL is_signed = MTYPE_is_signed(mtype);
 
   FmtAssert(mtype == MTYPE_I4 || mtype == MTYPE_U4,
-	         ("Expand_Divide_By_Constant: mtype not handled"));
+	    ("Expand_Divide_By_Constant: mtype %s not handled",
+	     MTYPE_name(mtype)));
 
   /* Handle the trivial ones:
    */
@@ -340,75 +591,17 @@ Expand_Divide_By_Constant (
   /* Look for simple shift optimizations:
    */
   if (Is_Power_Of_2 (src2_val, mtype)) {
-    TN *numer = src1;
-    INT64 dvsr = src2_val;
-    INT pow2 = Get_Power_Of_2 (src2_val, mtype);
-
-    if (MTYPE_is_unsigned(mtype)) {
-      Build_OP (TOP_shru_i_r_r, result,
-	 src1, Gen_Literal_TN (pow2, MTYPE_byte_size(mtype)), ops);
-      //
-      //if (src2_val < 0) {
-	// must negate the result
-      //Build_OP (TOP_sub_r_r_r, result, Zero_TN, result, ops);
-      //}
-    } else {
-      // signed is more complicated
-      TN *t0 = Build_TN_Of_Mtype(mtype);
-      TN *t1 = Build_TN_Of_Mtype(mtype);
-      TN *t2 = dvsr < 0 ? Build_TN_Of_Mtype(mtype) : result;
-      INT64 absdvsr = dvsr < 0 ? -dvsr : dvsr;
-
-      if (absdvsr == 2) {
-
-	/* Optimize for abs(divisor) == 2:
-	 *      extr.u tmp0=numer,signbit,1  -- dvsr-1 if numer negative else 0
-	 *      add tmp1=tmp0,numer
-	 *      shr result=tmp1,1
-	 * if (dvsr<0) sub result=0,result
-	 */
-
-	// extract the sign bit
-	Build_OP(TOP_shru_i_r_r,t0, numer, Gen_Literal_TN(31,4), ops);
-	// add sign to numer
-	Build_OP(TOP_add_r_r_r, t1, t0, numer, ops);
-	// shr by 1
-	Build_OP(TOP_shr_i_r_r, t2, t1, Gen_Literal_TN(1, 4), ops);
-      } else {
-	/* General case:
-	 *      cmp.lt p1,p2=numer,zero         -- numerator negative?
-	 *      add tmp1=abs(dvsr)-1,numer      -- speculatively add dvsr-1 to numer
-	 * (p1) shr result=tmp1,pow2(abs(dvsr))
-	 * (p2) shr result=numer,pow2(abs(dvsr))
-	 * if (dvsr<0) sub result=0,result
-	 */
-#if 1 /* CGuillon: better sequence for ST200 */
-	TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
-
-	Build_OP(TOP_cmplt_r_r_b, p1, numer, Zero_TN, ops);
-	Expand_Add (t0, Gen_Literal_TN(absdvsr-1,4), numer, mtype, ops);
-
-	Build_OP(TOP_targ_slct_r_r_b_r, t1, p1, t0, numer, ops);
-	Build_OP(TOP_shr_i_r_r, t2, t1, Gen_Literal_TN(pow2, 4), ops);
-#else
-	TN *p1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch);
-	TN *t3 = Build_TN_Of_Mtype(mtype);
-
-	Build_OP(TOP_cmplt_r_r_b, p1, numer, Zero_TN, ops);
-	Expand_Add (t0, Gen_Literal_TN(absdvsr-1,4), numer, mtype, ops);
-
-	Build_OP(TOP_shr_i_r_r, t1, t0, Gen_Literal_TN(pow2, 4), ops);
-	Build_OP(TOP_shr_i_r_r, t3, numer, Gen_Literal_TN(pow2, 4), ops);
-	Build_OP(TOP_targ_slct_r_r_b_r, t2, p1, t1, t3, ops);
-#endif
-      }
-      if (dvsr < 0) {
-	// must negate the result
-	Build_OP (TOP_sub_r_r_r, result, Zero_TN, t2, ops);
-      }
-    }
-
+    Expand_Power_Of_2_Divide(result, src1, src2_val, mtype, ops);
     return TRUE;
+  }
+
+  /* Conversions to multiplications may be disabled */
+  if (!CGEXP_cvrt_int_div_to_mult) return FALSE;
+
+  if (is_signed) {
+    return Expand_Non_Power_Of_2_Signed_Divide(result, src1, src2_val, mtype, ops);
+  } else {
+    return Expand_Non_Power_Of_2_Unsigned_Divide(result, src1, src2_val, mtype, ops);
   }
 
   return FALSE;
@@ -504,7 +697,6 @@ Expand_Power_Of_2_Rem (
   OPS *ops
 )
 {
-
   Is_True(MTYPE_is_class_integer(mtype),("wrong mtype"));
   Is_True(MTYPE_byte_size(mtype) <= 4,("longlong ?"));
 
@@ -611,28 +803,25 @@ Expand_Rem (
       return;
     }
 
-#if 0
-    //
-    // Arthur: TODO -- implement this
-    //
+    // Handle remainders when divisions are generated in terms of multiplications
     if (CGEXP_cvrt_int_div_to_mult) {
       TN *div_tn = Build_TN_Like (result);
 
-      if (Expand_Integer_Divide_By_Constant(div_tn, src1, src2_val, mtype, ops)) {
+      if (Expand_Divide_By_Constant(div_tn, src1, src2, src2_val, mtype, ops)) {
 	TN *mult_tn;
 
 	/* Generate a multiply:
 	 */
 	mult_tn = Build_TN_Like (result);
-	Expand_Multiply(mult_tn, div_tn, src2, mtype, ops);
+	Expand_Multiply(mult_tn, mtype, div_tn, mtype, src2, mtype, ops);
 
 	/* Subtract the result of the multiply from the original value.
 	 */
-	Build_OP(TOP_sub, result, True_TN, src1, mult_tn, ops);
+	Expand_Sub(result, src1, mult_tn, mtype, ops);
 	return;
       }
     }
-#endif
+
     if (!TN_is_constant(src2))
       src2 = Gen_Literal_TN(src2_val, MTYPE_byte_size(mtype));
     TN* tmp2;
