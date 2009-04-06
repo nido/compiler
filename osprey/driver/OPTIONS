@@ -956,6 +956,11 @@ I-cpp_nonansi_f77	;		f77	cpp	KRDEFS NONANSI_svr4
 #   endif
 
 #ifdef TARG_ST
+-gipa	toggle(&gipa,TRUE);		ALL     NONE    self ""
+        NA__"force the -ipa -g combination - not for end-users!!"
+#endif
+
+#ifdef TARG_ST
 // [CL] force spill of return address (RA) so that unwinding/backtracing
 // is still possible
 -msave-return-address	;			ALL	CMP	"-CG:save_return_address=on"

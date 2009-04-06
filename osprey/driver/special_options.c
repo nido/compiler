@@ -1386,8 +1386,11 @@ add_special_options (void)
 	if (Gen_feedback && ipa == TRUE) {
 		turn_off_ipa ("-IPA -fbgen combination not allowed, replaced with -fbgen");
 	}
-	if (glevel == 2 && ipa == TRUE) {
-		turn_off_ipa ("-IPA -g combination not allowed, replaced with -g");
+
+        /* Fix for codex-58046                                                                 */
+	/* Import behavior from open64-4.2.1-0, stated to be a fix for Bug451 in their comment */
+	if (glevel > 1 && ipa == TRUE) {
+		if(gipa!=TRUE) turn_off_ipa ("-IPA -g combination not allowed, replaced with -g");
 	}
 
 	if (ipa == TRUE) {
