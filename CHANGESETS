@@ -1,6 +1,42 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Apr  6 09:42:13 CEST 2009
+	Author:    torrett
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/torrett/dev-builtin_buildonly_check
+
+Description:
+------------
+	* [trunk] dev for stxp70 builtin test only check and stxp70v4 tests. deliver branch dev-builtin_only_check rev #18670 with authorization #52946
+
+
+Modified Files:
+---------------
+	A  +   osprey/targinfo/stxp70/intrn/model_tests/src/builtins_sx_compatibility.h
+	A  +   osprey/targinfo/stxp70/intrn/model_tests/src/builtins_x3_compatibility.h
+	M      osprey/targinfo/stxp70/intrn/model_tests/src/get_SR.s
+	M      osprey/targinfo/stxp70/intrn/model_tests/src/templates/cxp_builtin_test_main_template.c
+	M      osprey/targinfo/stxp70/intrn/model_tests/src/templates/builtin_sx.lst
+	M      osprey/targinfo/stxp70/intrn/model_tests/src/templates/builtin_x3.lst
+	M      osprey/targinfo/stxp70/intrn/model_tests/src/templates/cxp_basic_builtin.c
+	D      osprey/targinfo/stxp70/intrn/model_tests/src/templates/builtin_test_main_template.c
+	D      osprey/targinfo/stxp70/intrn/model_tests/src/templates/builtin.lst
+	D      osprey/targinfo/stxp70/intrn/model_tests/src/templates/basic_builtin.c
+	A  +   osprey/targinfo/stxp70/intrn/model_tests/src/sx_compatibility.h
+	A  +   osprey/targinfo/stxp70/intrn/model_tests/src/x3_compatibility.h
+	M      osprey/targinfo/stxp70/intrn/model_tests/README.txt
+	D      osprey/targinfo/stxp70/intrn/model_tests/makedir/generate_builtin_src_test.pl
+	M      osprey/targinfo/stxp70/intrn/model_tests/makedir/Makefile_builtin_open64.in
+	M      osprey/targinfo/stxp70/intrn/model_tests/makedir/generate_cxp_builtin_src_test.pl
+	M      osprey/targinfo/stxp70/intrn/model_tests/makedir/check_builtin.pl
+	M      osprey/targinfo/stxp70/intrn/builtins_model_sx.c
+	M      osprey/targinfo/stxp70/intrn/builtins_model_sx.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Apr  6 08:07:43 CEST 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
