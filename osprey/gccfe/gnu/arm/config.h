@@ -15,6 +15,11 @@ typedef union tree_node *tree;
 #define GTY(x)
 #ifdef IN_GCC
 # include "ansidecl.h"
+/* since we do not use the regular gcc configure way, we need to
+   distinguish here between the different host platforms... */
+#ifdef __MINGW32__
+# include "config/i386/xm-mingw32.h"
+#endif
 # include "dbxelf.h"
 # include "elfos.h"
 # include "hwint.h"

@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Apr  6 17:35:05 CEST 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-64728
+
+Description:
+------------
+	* [trunk] Fix for bug #64728: [Windows] - Gfec segmentation fault.
+	Deliver fixes/codex-64728 rev #21450 with authorization branch #64956
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/gnu/st200/config.h
+	M      osprey/gccfe/gnu/arm/config.h
+	M      osprey/gccfe/gnu/stxp70/config.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Apr  6 10:35:54 CEST 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
