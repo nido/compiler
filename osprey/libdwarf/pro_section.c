@@ -1231,13 +1231,7 @@ _dwarf_pro_generate_debugframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
               data += uwordb_size;
 
 	      /* offset to cie */
-#ifdef TARG_ST
-	      /* [SC] This value is to be subtracted from (not added to)
-                 current address to get CIE pointer, so negate it. */
-	      du = -cie_offs[curfde->fde_cie-1];
-#else
 	      du = cie_offs[curfde->fde_cie-1];
-#endif
 	      WRITE_UNALIGNED(dbg,(void *)data, 
 		(const void *)&du,
 			sizeof(du),uwordb_size);

@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Apr  7 08:35:02 CEST 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-64394
+
+Description:
+------------
+	* [trunk] Fix for bug #64394: [TSTx] Assertion failure raised in cgdwarf.cxx.
+	Deliver fixes/codex-64394 rev #21459 with authorization branch #64745
+
+	-> In libdwarf, removed incorrect patch for CIE_pointer offset of standard FDE
+
+
+Modified Files:
+---------------
+	M      osprey/libdwarf/pro_section.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Apr  6 17:35:05 CEST 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
