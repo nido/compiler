@@ -50,9 +50,6 @@
 //  void LOOP_IVS::Init( LOOP_DESCR *loop )
 //    Initializes a LOOP_IVS instance for a Single_BB loop
 //
-//  INT Lookup_Op(OP *op);
-//    Returns an ID for an OP in the LOOP_IVS instance.
-//
 //  DefID_t OPND_IV_cycle(INT op_idx, INT opnd_idx);
 //    Returns an ID for an Induction Variable. 
 //
@@ -100,6 +97,22 @@ class LOOP_IVS {
     INT     IV_offset[OP_MAX_FIXED_RESULTS];
     /* For each argument */
     DefID_t opnd_source[OP_MAX_FIXED_OPNDS];
+
+    void initIV(INT res_idx) {
+      IV_cycle[res_idx] = 0; IV_offset[res_idx] = 0;
+    }
+    void setNotIV(INT res_idx)  {
+      IV_cycle[res_idx] = 0; IV_offset[res_idx] = 1;
+    }
+    void setIV(INT res_idx, DefID_t iv_cycle, INT iv_offset)  {
+      IV_cycle[res_idx] = iv_cycle; IV_offset[res_idx] = iv_offset;
+    }
+    BOOL isIV(INT res_idx) {
+      return (IV_cycle[res_idx] > 0);
+    }
+    BOOL notIV(INT res_idx) {
+      return (IV_cycle[res_idx] == 0) && (IV_offset[res_idx] != 0);
+    }
   } IVs_entry_t;
 
   MEM_POOL *_loc_mem_pool;
@@ -109,23 +122,23 @@ class LOOP_IVS {
 
   IVs_entry_t& DEFID_entry(DefID_t defid) { return ivs_table[DEFID_idx(defid)]; }
   OP *DEFID_op(DefID_t defid) { return ivs_table[DEFID_idx(defid)].op; }
-  INT OPND_omega(INT op_idx, INT opnd_idx) { return DEFID_idx(OPND_defid(op_idx, opnd_idx)) >= op_idx; }
-  INT OPND_omega(IVs_entry_t *ivs_entry, INT opnd_idx) { return OPND_omega(ivs_entry-ivs_table, opnd_idx); }
 
-  // TBD: Must return 0 when IV_offset is used to represent the step
-  // of the induction variable
+  // Return whether the use-def link crosses an iteration or not.
+  BOOL OPND_hasOmega(INT op_idx, INT opnd_idx) { return DEFID_idx(OPND_defid(op_idx, opnd_idx)) >= op_idx; }
+  BOOL OPND_hasOmega(IVs_entry_t *ivs_entry, INT opnd_idx) { return OPND_hasOmega(ivs_entry-ivs_table, opnd_idx); }
+
+  void DEFID_setIV(DefID_t defid, DefID_t iv_cycle, INT iv_offset) {
+    ivs_table[DEFID_idx(defid)].setIV(DEFID_res(defid), iv_cycle, iv_offset);
+  }
+  void DEFID_setNotIV(DefID_t defid) { ivs_table[DEFID_idx(defid)].setNotIV(DEFID_res(defid)); }
+  BOOL DEFID_isIV(DefID_t defid) { return ivs_table[DEFID_idx(defid)].isIV(DEFID_res(defid)); }
+  BOOL DEFID_notIV(DefID_t defid) { return ivs_table[DEFID_idx(defid)].notIV(DEFID_res(defid)); }
+
   DefID_t IV_cycle(DefID_t defid) { return ivs_table[DEFID_idx(defid)].IV_cycle[DEFID_res(defid)]; }
   INT IV_offset(DefID_t defid) { return ivs_table[DEFID_idx(defid)].IV_offset[DEFID_res(defid)]; }
 
-  void Set_IV_cycle(DefID_t defid_src, DefID_t defid_cycle) {
-    ivs_table[DEFID_idx(defid_src)].IV_cycle[DEFID_res(defid_src)] = defid_cycle;
-  }
-  void Set_IV_offset(DefID_t defid_src, INT offset) {
-    ivs_table[DEFID_idx(defid_src)].IV_offset[DEFID_res(defid_src)] = offset;
-  }
-
   void Init_IVs_Table(OP *first_op, hTN_MAP32 tn_last_op);
-  DefID_t Find_IV( INT use_index, INT opnd_idx );
+  DefID_t Find_IV( DefID_t defid, DefID_t in_iv_cycle );
 
  public:
 
@@ -136,16 +149,17 @@ class LOOP_IVS {
 
   ~LOOP_IVS(void) {}
 
+  MEM_POOL *Mem_pool() { return _loc_mem_pool; }
+
   void Init( LOOP_DESCR *loop );
+  void Replace_Op(INT index, OP *new_op);
   INT First_opidx() { return 1; }
   INT Last_opidx() { return ivs_count-1; }
+  INT Size() { return ivs_count; }
 
   OP *Op(INT op_idx) {
     return ((op_idx > 0) && (op_idx < ivs_count)) ? ivs_table[op_idx].op : NULL;
   }
-#if 0
-  INT Lookup_Op(OP *op);
-#endif
   DefID_t OPND_defid(INT op_idx, INT opnd_idx) { return ivs_table[op_idx].opnd_source[opnd_idx]; }
   DefID_t OPND_IV_cycle(INT op_idx, INT opnd_idx);
   INT OPND_IV_offset(INT op_idx, INT opndx_idx);

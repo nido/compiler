@@ -1851,8 +1851,6 @@ Find_PREG_For_Symbol (
 #ifdef ENABLE_64_BITS
 #define MTYPE_bsize(type) ((MTYPE_bit_size(type)+7)/8)
 extern void Expand_Multi(TN *tgt_tn, TN *src_tn, OPS *ops);
-extern void Expand_Extract(TN *low_tn, TN *high_tn, TN *src_tn, OPS *ops);
-extern void Expand_Compose(TN *tgt_tn, TN *low_tn, TN *high_tn, OPS *ops);
 #endif
 
 /* ====================================================================
@@ -3202,6 +3200,38 @@ Handle_STID (
 #endif
       }
     }
+
+#ifdef TARG_ST
+    // FdF ipa-align: Handle STID to add an AFFIRM if needed. This
+    // handles functions parameters, on which IPA may have set an
+    // alignment information. This also handle return values from
+    // call, on which range analysis may have set an alignment
+    // information. Finally, pointers on structs that includes a long
+    // long or a double are also aligned on 8, this information is
+    // lost after this point, so add also an AFFIRM.
+    if (TY_kind(WN_ty(stid)) == KIND_POINTER) {
+      int alignment = TY_align(TY_pointed(WN_ty(stid)));
+      if ((WN_prev(stid) != NULL) &&
+	  (WN_operator(WN_prev(stid)) == OPR_CALL)) {
+	WN *call_wn = WN_prev(stid);
+	ST *call_st = WN_st(call_wn);
+	IPRA_INFO info = cg_ipra.Get_Info(call_st);
+	alignment = (info != NULL) ? info->alignment : 1;
+      }
+
+      // FdF ipa-align: add an assume instruction if there is a more
+      // accurate alignment information.
+      // TBD: Compare WN_ty(stid) with
+      // MTYPE_alignment(WN_desc/WN_rtype(stdid))
+      if (alignment > ST_alignment(WN_st(stid))) {
+	OPS_Insert_Affirm_for_modulo(&New_OPs, result, alignment, 0);
+	if (Get_Trace(TP_CGEXP, 8))
+	  fprintf(TFile, "For PU %s, added AFFIRM for alignment %d\n", Cur_PU_Name, alignment);
+      }
+      else if (Get_Trace(TP_CGEXP, 8))
+	fprintf(TFile, "For PU %s, no AFFIRM for pointer parameter with alignment %d\n", Cur_PU_Name, alignment);
+    }
+#endif
 
     return;
   }

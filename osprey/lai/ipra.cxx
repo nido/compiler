@@ -51,18 +51,14 @@ IPRA::IPRA ()
 }
 
 /* =================================================================
- *   CG_Note_Used_Registers
+ *   Save_Used_Registers
  *
  *   Remember the set of registers used by the current PU.
  */
 static void
-Note_Used_Registers (IPRA_INFO info)
+Save_Used_Registers (IPRA_INFO info)
 {
   ISA_REGISTER_CLASS i;
-
-  FOR_ALL_ISA_REGISTER_CLASS(i) {
-    info->used_regs[i] = REGISTER_SET_EMPTY_SET;
-  }
 
   for (BB *bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
     BB_Modified_Registers(bb, info->used_regs);
@@ -80,12 +76,33 @@ Note_Used_Registers (IPRA_INFO info)
   }
 }
 
-void
-IPRA::Save_Info (const ST *pu)
+IPRA_INFO
+IPRA::Give_Info (const ST *pu)
 {
-  IPRA_INFO info = CXX_NEW (ipra_info, Malloc_Mem_Pool);
-  Note_Used_Registers (info);
-  st_to_ipra_info_map->Enter (pu, info);
+  IPRA_INFO info = st_to_ipra_info_map->Find (pu);
+  if (info == NULL) {
+    info = CXX_NEW (ipra_info, Malloc_Mem_Pool);
+    st_to_ipra_info_map->Enter (pu, info);
+
+    ISA_REGISTER_CLASS i;
+    FOR_ALL_ISA_REGISTER_CLASS(i) {
+      info->used_regs[i] = REGISTER_SET_EMPTY_SET;
+    }
+    info->alignment = 0;
+  }
+  return info;
+}
+
+IPRA_INFO
+IPRA::Get_Info (const ST *pu)
+{
+  return st_to_ipra_info_map->Find (pu);
+}
+
+void
+IPRA::Note_Used_Registers (const ST *pu) {
+  IPRA_INFO info = Give_Info(pu);
+  Save_Used_Registers (info);
   if (Get_Trace(TP_GRA, 0x4000)) {
     ISA_REGISTER_CLASS rc;
     fprintf (TFile, "<ipra> Used registers for %s:",
@@ -98,10 +115,4 @@ IPRA::Save_Info (const ST *pu)
     }
     fputc ('\n', TFile);
   }
-}
-
-IPRA_INFO
-IPRA::Get_Info (const ST *pu)
-{
-  return st_to_ipra_info_map->Find (pu);
 }

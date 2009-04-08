@@ -655,8 +655,10 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL,	TRUE, "licm_passes", "", 
     0x07, 0, 0x07,	&IPFEC_Enable_LICM_passes, &IPFEC_Enable_LICM_passes_overridden },
 #ifdef TARG_ST200
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "packing_load_store", "packing", 
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "packing_load_store", "", 
     0x25B, 0, 0x3FF,	&CG_LOOP_Packing_flags, NULL },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "packing_sizes", "", 
+    0x25B, 0, 0x3FF,	&CG_LOOP_Packing_sizes, NULL },
 #endif
   { OVK_INT32, OV_INTERNAL,	TRUE, "stream_align", "", 
     8, 0, 8,	&CG_LOOP_stream_align, NULL },

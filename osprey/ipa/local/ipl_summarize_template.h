@@ -70,6 +70,11 @@
 #include "ipl_lno_util.h" 
 #include "wb_ipl.h"
 
+#ifdef TARG_ST
+// FdF ipa-align
+#include "ipa_trace.h"
+#endif
+
 extern BOOL DoPreopt;
 IPL_EXPORTED  extern BOOL Do_Par;
 extern BOOL Do_Common_Const;
@@ -1980,8 +1985,21 @@ SUMMARIZE<program>::Process_callsite (WN *w, INT id, INT loopnest)
     // if there are parameters in this routine
     // then process them one at a time
 
-    for (INT i = 0; i < callsite->Get_param_count (); i++)
-	Process_actual (WN_actual (w, i));
+    for (INT i = 0; i < callsite->Get_param_count (); i++) {
+      Process_actual (WN_actual (w, i));
+#ifdef TARG_ST
+      if (IPA_Enable_Align_prop && Get_Trace(TP_IPA, IPA_TRACE_ALIGNMENT)) {
+	SUMMARY_ACTUAL *actual = Get_actual (Get_actual_idx ());
+	if (actual->Get_value_index () != -1) {
+	  SUMMARY_VALUE *value = Get_value (actual->Get_value_index ());
+	  if (value->Get_alignment() > 1) {
+	    fprintf(TFile, "In PU %s, call to %s, parameter %d, actual alignment is %d\n",
+		    Cur_PU_Name, WN_has_sym(w) ? ST_name(WN_st(w)) : "null", i, value->Get_alignment());
+	  }
+	}
+      }
+#endif
+    }
 
     if (callsite->Get_param_count () > 0)
 	callsite->Set_actual_index (Get_actual_idx () -
@@ -2157,6 +2175,10 @@ SUMMARIZE<program>::Process_actual (WN* w)
       else {
         entry_cache->Insert (SUM_VALUE, Get_value_idx ());
         actual->Set_value_index (Get_value_idx ());
+#ifdef TARG_ST
+	// FdF ipa-align
+	value->Set_alignment(OPR_INTCONST_get_align(WN_const_val (w)));
+#endif
       }
       return;
     }
@@ -2191,8 +2213,18 @@ SUMMARIZE<program>::Process_actual (WN* w)
   Process_jump_function (w, Get_value_idx ());
 
   value = Get_value (actual->Get_value_index ());
-    
+ 
+#ifdef TARG_ST
+  // FdF ipa-align
+  //  TY_IDX actual_ty_idx = actual->Get_ty();
+  //  if (TY_kind(actual_ty_idx) == KIND_POINTER) {
+  //    if (value->Get_alignment() < TY_align(TY_pointed(actual_ty_idx)))
+  //      value->Set_alignment(TY_align(TY_pointed(actual_ty_idx)));
+  //  }
+  if (value->Is_not_const () && !value->Has_alignment()) {
+#else
   if (value->Is_not_const ()) {
+#endif
     Restore_from_check_point (&chk_pt);
     actual->Set_value_index (-1);
   } 

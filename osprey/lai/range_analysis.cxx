@@ -666,8 +666,11 @@ RangeAnalysis::Value (const TN *tn)
   // weed out non-SSA-var tns before the look up, because
   // they always have a constant value.
   LRange_p result;
-  if (TN_is_register (tn)) {
-    
+  if (tn == SP_TN || tn == FP_TN) {
+    result = lattice->makeAlign (Stack_Alignment(), 0);
+  }
+  else if (TN_is_register (tn)) {
+
     TN_Lattice_Info *v = (TN_Lattice_Info *)TN_MAP_Get (tn_value, tn);
 
     if (! v) {
@@ -688,13 +691,11 @@ RangeAnalysis::Value (const TN *tn)
   } else if (TN_has_value (tn)) {
     result = lattice->makeRangeValue (TN_value(tn));
   } else if (TN_is_symbol (tn)) {
-      result = lattice->makeAlign (ST_alignment(TN_var(tn)), TN_offset(tn));
-  } else if (tn == SP_TN || tn == FP_TN) {
-      result = lattice->makeAlign (Stack_Alignment(), 0);
+    result = lattice->makeAlign (ST_alignment(TN_var(tn)), TN_offset(tn));
   } else {
     result = lattice->makeBottom ();
   }
-  
+
   return result;
 }
 

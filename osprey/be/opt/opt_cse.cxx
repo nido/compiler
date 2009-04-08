@@ -429,6 +429,19 @@ CSE::Save_real_occurrence(EXP_OCCURS *occur)
     savestmt->Set_stmt_id(occur->Stmt()->Stmt_id());
     savestmt->Bb()->Stmtlist()->Insert_Before(savestmt, occur->Stmt());
 
+#ifdef TARG_ST
+    // FdF 20080930: Also keep the original type when this is a simple
+    // copy from one symbol to another
+    if ((rhs == occur->Stmt()->Rhs()) && (rhs->Kind() == CK_VAR)
+	&& (tempcr->Kind() == CK_VAR) &&
+	(occur->Stmt()->Lhs() != NULL) && (occur->Stmt()->Lhs()->Kind() == CK_VAR)) {
+      savestmt->Lhs()->Set_lod_ty(occur->Stmt()->Lhs()->Lod_ty());
+      // fprintf(stdout, "Save_real_occurrence: Restored TY_IDX from sym%dv%d to sym%dv%d\n",
+      //      occur->Stmt()->Lhs()->Aux_id(), occur->Stmt()->Lhs()->Version(),
+      //      tempcr->Aux_id(), tempcr->Version());
+    }
+#endif
+
     // if this statement saves a boolean comparison, find the
     // corresponding comp occur and update stmt ptr
     if (lftr->Lftr_on() && lftr->Is_comparison(occur->Occurrence())) {

@@ -49,4 +49,11 @@ Reset_param_list (IPA_NODE *caller, IPA_NODE *callee, IPA_EDGE *e,
 		  IPA_CALL_GRAPH* cg);
 extern void
 IPO_propagate_globals(IPA_NODE* n);		  
+
+#ifdef TARG_ST
+// FdF ipa-align
+extern void
+IPA_propagate_alignments (IPA_NODE* n);
+#endif
+
 #endif /* ipo_const */

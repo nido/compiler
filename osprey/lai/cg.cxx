@@ -1049,7 +1049,7 @@ CG_Generate_Code(
   if (CG_opt_level >= 3)
     Schedule_Prefetch_Postpass ();
   if (!region) {
-    cg_ipra.Save_Info (Get_Current_PU_ST() );
+    cg_ipra.Note_Used_Registers (Get_Current_PU_ST() );
   }
 #endif
 

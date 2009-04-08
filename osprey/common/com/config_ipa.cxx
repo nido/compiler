@@ -113,6 +113,10 @@ BOOL IPA_Debug_AC_Temp_Files = FALSE;   /* save alias class temps til done? */
 BOOL IPA_Enable_Readonly_Ref = TRUE;	/* find out readonly ref parameter */
 BOOL IPA_Enable_Cprop = TRUE;		/* Constant Propagation */
 BOOL IPA_Enable_Cprop2 = TRUE;		/* Aggressive constant propagation */
+#ifdef TARG_ST
+// FdF ipa-align
+BOOL IPA_Enable_Align_prop = FALSE;	/* Alignment Propagation */
+#endif
 BOOL IPA_Enable_Assert = FALSE;		// generate assert statement for
 					// cprop debugging
 BOOL IPA_Enable_daVinci = FALSE;	/* Graphical display of call graph */
@@ -551,6 +555,12 @@ static OPTION_DESC Options_IPA[] = {
     { OVK_BOOL, OV_INTERNAL,	FALSE, "eh_opt",	"",
 	  0, 0, 0,		&IPA_Enable_EH_Region_Removal,	NULL,
 	  "Enable removal of exception regions"},
+#endif
+#ifdef TARG_ST
+    // FdF ipa-allign
+    { OVK_BOOL,	OV_VISIBLE,	FALSE, "align_prop",	"",
+	  0, 0, 0,		&IPA_Enable_Align_prop,	NULL,
+	  "Enable alignment propagation" },    
 #endif
     { OVK_COUNT }	    /* List terminator -- must be last */
 };

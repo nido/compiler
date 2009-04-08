@@ -543,8 +543,23 @@ IPA_CPROP_DF_FLOW::PerformCloning (IPA_NODE* node)
 	    if ((*cprop_annot)[i].Is_constant()) {
 		node->Set_Propagated_Const();
 		fix_caller = TRUE;
+#ifdef TARG_ST
+		// FdF ipa-align
+		if (!IPA_Enable_Align_prop || node->Has_Propagated_Align())
+#endif
 		break;
 	    }
+#ifdef TARG_ST
+	    // FdF ipa-align: Also check if there is alignment greater
+	    // than minimum alignment
+	    if (IPA_Enable_Align_prop &&
+		((*cprop_annot)[i].Get_alignment() > 1)) {
+	      node->Set_Propagated_Align();
+	      fix_caller = TRUE;
+	      if (node->Has_Propagated_Const())
+		break;
+	    }
+#endif
 	}
     }
 
@@ -554,13 +569,27 @@ IPA_CPROP_DF_FLOW::PerformCloning (IPA_NODE* node)
 	IPA_PRED_ITER edge_iter(node);
 	for (edge_iter.First(); !edge_iter.Is_Empty(); edge_iter.Next()) {
 	    IPA_EDGE *edge = edge_iter.Current_Edge();
-	    if (edge)
+#ifdef TARG_ST
+	    // FdF ipa-align
+	    if (edge) {
+	      if (node->Has_Propagated_Const())
 		edge->Set_Propagated_Const();
+	      if (node->Has_Propagated_Align())
+		edge->Set_Propagated_Align();
+	    }
+#else
+	    if (edge)
+	      edge->Set_Propagated_Const();
+#endif
 	}
     } else {
 	CXX_DELETE (cprop_annot, Malloc_Mem_Pool);
 	node->Set_Cprop_Annot (NULL);
         node->Clear_Propagated_Const();
+#ifdef TARG_ST
+	// FdF IPA-align
+        node->Clear_Propagated_Align();
+#endif
     }
 } // IPA_CPROP_DF_FLOW::PerformCloning
 

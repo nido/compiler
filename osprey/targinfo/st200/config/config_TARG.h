@@ -177,6 +177,7 @@ BE_EXPORTED extern BOOL Enable_Speculate_DivRem_Set;
 
 BE_EXPORTED extern INT32 CG_LOOP_Packing_level;
 BE_EXPORTED extern INT32 CG_LOOP_Packing_flags;
+BE_EXPORTED extern INT32 CG_LOOP_Packing_sizes;
 #endif
 
 /* ====================================================================

@@ -385,6 +385,25 @@ Union_Formal_Cprop_Annot (IPA_NODE* callee, IPA_EDGE *e)
 	TYPE_ID mtype = ipa_symbol[sum_formal.Get_symbol_index()].Get_btype();
 	updated |= Update_node ((*formals)[pos], (*actuals)[pos], mtype,
 				sum_formal.Is_ref_parm ());
+#ifdef TARG_ST
+	// FdF ipa-align
+	if (IPA_Enable_Align_prop) {
+	  if ((*actuals)[pos].Has_alignment()) {
+	    if (!(*formals)[pos].Has_alignment() ||
+		(*actuals)[pos].Get_alignment() < (*formals)[pos].Get_alignment()) {
+	      if (Get_Trace(TP_IPA, IPA_TRACE_ALIGNMENT)) 
+		fprintf(TFile, "For PU %s, meet for parameter %d with actual alignment %d\n", callee->Name(), pos, (*actuals)[pos].Get_alignment());
+	      (*formals)[pos].Set_alignment((*actuals)[pos].Get_alignment());
+	      updated = true;
+	      continue;
+	    }
+	  }
+	  else
+	    (*formals)[pos].Set_alignment(1);
+	  if (Get_Trace(TP_IPA, IPA_TRACE_ALIGNMENT))
+	    fprintf(TFile, "For PU %s, meet for parameter %d gives formal alignment %d\n", callee->Name(), pos, (*formals)[pos].Get_alignment());
+	}
+#endif
     }
 
     return updated;
@@ -1146,6 +1165,56 @@ Get_expr_operand (const SUMMARY_EXPR *expr, INT operand,
 } // Get_expr_operand
 
 
+#ifdef TARG_ST
+static UINT32 Get_Expr_Alignment(const SUMMARY_EXPR *expr);
+
+static UINT32
+Get_Expr_Alignment_operand(const SUMMARY_EXPR *expr, INT operand) {
+  
+  if (expr->Has_const_operand () && expr->Get_kid () != operand) {
+    // This operand is constant
+    return OPR_INTCONST_get_align(expr->Get_const_value ());
+  }
+
+  if (expr->Is_expr_value (operand)) {
+    const SUMMARY_VALUE& value = ipa_value[expr->Get_node_index (operand)];
+    if (value.Is_formal()) {
+      if (formal_value == 0)
+	return 1;
+      const SUMMARY_FORMAL& sum_formal = ipa_formal[value.Get_formal_index ()];
+      INT idx = sum_formal.Get_position ();
+      const SUMMARY_VALUE& formal = (*formal_value)[idx];
+      return formal.Has_alignment() ? formal.Get_alignment() : 1;
+    }
+    else {
+      return 1;
+    }
+  }
+
+  if (expr->Is_expr_expr (operand)) {
+    SUMMARY_EXPR *sub_expr = ipa_expr + expr->Get_node_index (operand);
+    return Get_Expr_Alignment(sub_expr);
+  }
+
+  return 1;
+}
+
+static UINT32
+Get_Expr_Alignment(const SUMMARY_EXPR *expr) {
+
+  OPERATOR opr = OPCODE_operator(expr->Get_opcode());
+  if ((opr == OPR_ADD) || (opr == OPR_MPY)) {
+    UINT32 align1 = Get_Expr_Alignment_operand(expr, 0);
+    UINT32 align2 = Get_Expr_Alignment_operand(expr, 1);
+    if (opr == OPR_ADD)
+      return OPR_ADD_get_align(align1, align2);
+    else
+      return OPR_MPY_get_align(align1, align2);
+  }
+  return 1;
+}
+#endif
+
 static void
 Evaluate_expr (const SUMMARY_EXPR *expr, SUMMARY_VALUE &return_value)
 {
@@ -1173,7 +1242,10 @@ Evaluate_expr (const SUMMARY_EXPR *expr, SUMMARY_VALUE &return_value)
     if (first_operand.Is_not_const ()) {
 	return_value.Set_not_const ();
 	(*eval_hash)[expr] = 0;
+#ifndef TARG_ST
+	// FdF ipa-align
 	return;
+#endif
     } else if (!first_operand.Is_int_const ()) {
 	/* ignore floating point constant for now */
 	return_value.Set_not_const ();
@@ -1188,7 +1260,10 @@ Evaluate_expr (const SUMMARY_EXPR *expr, SUMMARY_VALUE &return_value)
 	if (second_operand.Is_not_const ()) {
 	    return_value.Set_not_const ();
 	    (*eval_hash)[expr] = 0;
+#ifndef TARG_ST
+	    // FdF ipa-align
 	    return;
+#endif
 	} else if (!second_operand.Is_int_const ()) {
 	    /* ignore floating point constant for now */
 	    return_value.Set_not_const ();
@@ -1196,6 +1271,21 @@ Evaluate_expr (const SUMMARY_EXPR *expr, SUMMARY_VALUE &return_value)
 	    return;
 	}
     }
+
+#ifdef TARG_ST
+    // FdF ipa-align. If one operand is not const, only alignment can
+    // be propagated.
+    if (first_operand.Is_not_const () ||
+	((OPCODE_nkids (expr->Get_opcode ()) == 2) &&
+	 second_operand.Is_not_const ())) {
+      int align = Get_Expr_Alignment(expr);
+      if (IPA_Enable_Align_prop && (align > 1)) {
+	return_value.Set_alignment(align);
+	(*eval_hash)[expr] = eval_value->Insert (return_value);
+      }
+      return;
+    }
+#endif
 
     op = OPCODE_make_op (OPR_INTCONST, first_operand.Get_mtype (), MTYPE_V);
     kid0 = WN_CreateIntconst (op, first_operand.Get_int_const_value ());
@@ -1389,6 +1479,14 @@ Evaluate_value (const SUMMARY_VALUE& value, SUMMARY_VALUE &return_value)
 	return_value.Set_global_st_idx (st_idx);
 	return_value.Set_global_index (-1);
 
+#ifdef TARG_ST
+	// FdF ipa-align
+	const ST& st = St_Table[st_idx];
+	if (IPA_Enable_Align_prop &&
+	    ((ST_sym_class (st) == CLASS_CONST) ||
+	     (ST_sym_class (st) == CLASS_VAR)))
+	  return_value.Set_alignment(TY_align(ST_type(St_Table[st_idx])));
+#endif
         if (!ST_is_const_var (St_Table[st_idx])) {
           if (Evaluate_common_const(sym, value, return_value)) {
             return;

@@ -1224,6 +1224,44 @@ Exp_Deposit_Bits (
 }
 
 /* ======================================================================
+ *   Exp_SIMD_Shuffle_Bits
+ *
+ *   Extract bit_size1 bits from src1 starting at bit offset
+ *   bit_offset1 and bit_size2 bits from src2 starting at bit offset
+ *   bit_offset2, and compose them in tgt_tn
+ *   
+ * ======================================================================
+ */
+void
+Exp_SIMD_Shuffle_Bits (
+  TN *tgt_tn, 
+  TN *src1, 
+  UINT bit_offset1, 
+  UINT bit_size1,
+  TN *src2, 
+  UINT bit_offset2, 
+  UINT bit_size2,
+  OPS *ops
+)
+{
+
+  FmtAssert(bit_size1 == bit_size2, ("Exp_SIMD_Shuffle_Bits with different size not implemented."));
+
+  if (bit_size1 == 16) {
+    FmtAssert((bit_offset1 == bit_offset2) && (bit_offset1 == 0),
+	      ("Exp_SIMD_Shuffle_Bits for 16bits with non-zero offset not implemented."));
+    if (ISA_SUBSET_LIST_Member (ISA_SUBSET_List, TOP_shuff_phl_r_r_r))
+      Build_OP(TOP_shuff_phl_r_r_r, tgt_tn, src1, src2, ops);
+    else
+      FmtAssert(FALSE, ("Exp_SIMD_Shuffle_Bits: unexpected attempt to generate a shuff.phl instruction"));
+  }
+  else
+    FmtAssert(0, ("Exp_SIMD_Shuffle_Bits for size other than 16bits not implemented."));
+
+  return;
+}
+
+/* ======================================================================
  *   Exp_LRotate 
  *
  *   rotate-left src1_tn from the value src2_tn

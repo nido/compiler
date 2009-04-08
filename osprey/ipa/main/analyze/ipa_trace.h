@@ -58,5 +58,9 @@
 #define IPA_TRACE_SIMPLIFY          131072
 #define IPA_TRACE_TUNING           0x40000
 #define IPA_TRACE_TUNING_NEW       0x80000
+#ifdef TARG_ST
+// FdF ipa-align
+#define IPA_TRACE_ALIGNMENT	  0x100000
+#endif
 
 #endif /* ipa_trace_INCLUDED */

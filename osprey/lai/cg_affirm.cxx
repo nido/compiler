@@ -194,8 +194,64 @@ Affirm_Insert_wn(WN *wn_affirm, WN *wn_new) {
   return WN_CreateAffirm(WN_LAND(WN_kid0(wn_affirm), wn_new));
 }
 
+static BOOL
+OP_Insert_Affirm_for_modulo(OP *op_affirm, INT base, INT bias) {
+
+  // Fisrt, look if there is already an AFFIRM property on this op
+  WN *wn_affirm = OP_Get_Affirm(op_affirm);
+  INT affirm_base = -1;
+  INT affirm_bias = -1;
+  WN *wn_modulo = NULL;
+
+  // Check if wn_affirm is a superset of the modulo property we get
+  if ((wn_affirm != NULL) &&
+      Get_Affirm_modulo(wn_affirm, &wn_modulo, &affirm_base, &affirm_bias)) {
+
+    FmtAssert((affirm_bias < affirm_base),
+	      ("Unsupported base/bias information on affirm: %d %d", affirm_base, affirm_bias));
+
+    // Affirm node already includes this modulo information
+    if (affirm_base >= base)
+      return FALSE;
+  }
+
+  // Normalize bias such that 0 <= bias < base
+  bias = bias % base;
+  if (bias < 0) bias += base;
+  Is_True((0 <= bias) && (bias < base), ("bias must be normalized here"));
+
+  // Create a new affirm whirl node
+  WN *wn_new_modulo;
+  ST *st = Gen_Temp_Symbol(MTYPE_To_TY(MTYPE_I4), ".affirm");
+  wn_new_modulo = WN_EQ(MTYPE_I4,
+			WN_Binary(OPR_MOD, MTYPE_I4,
+				  WN_Ldid(MTYPE_I4, 0, st, 4),
+				  WN_Intconst(MTYPE_I4, base)),
+			WN_Intconst(MTYPE_I4, bias));
+
+  // If there was already a modulo information, replace it with this
+  // new, more precise, one
+  if (affirm_base != -1)
+    wn_affirm = Affirm_Replace_wn(wn_affirm, wn_modulo, wn_new_modulo);
+
+  // If there was already an affirm property, complete it with this
+  // modulo information
+  else if (wn_affirm != NULL)
+    wn_affirm = Affirm_Insert_wn(wn_affirm, wn_new_modulo);
+
+  // There was no affirm property, create a new one with this modulo
+  // information.
+  else
+    wn_affirm = WN_CreateAffirm(wn_new_modulo);
+
+  // Finally, attach the information to the operation
+  OP_Set_Affirm(op_affirm, wn_affirm);
+
+  return TRUE;
+}
+
 BOOL
-Insert_Affirm_for_modulo(TN *tn, INT base, INT bias, BB *bb) {
+BB_Insert_Affirm_for_modulo(BB *bb, TN *tn, INT base, INT bias) {
 
   WN *wn_affirm = NULL;
   WN *wn_modulo = NULL;
@@ -211,62 +267,59 @@ Insert_Affirm_for_modulo(TN *tn, INT base, INT bias, BB *bb) {
   }
 
   // First, look if the definition for tn is not already in bb, or in
-  // predecessors bb while there is no incomming or outgoing edges.
-  OP *tn_def = TN_ssa_def(tn);
-  // First look for an operation with AFFIRM property, following COPY operations.
-  while (tn_def != NULL) {
-    // Found an operation with AFFIRM property
-    if (OP_Is_Affirm(tn_def)) {
-      break;
-    }
-    // Found a COPY operation, continue with the def of its argument
-    else if ((OP_results(tn_def) == 1) && (OP_Copy_Operand_TN(tn_def) != NULL)) {
-      tn_def = TN_ssa_def(OP_Copy_Operand_TN(tn_def));
-    }
-    // Did not find an operation with AFFIRM property.
-    else
-      tn_def = NULL;
-  }
-
-
-  // Then, check that tn_def is defined in the current basic block or
-  // in predecessors bb while there is no incomming or outgoing edges.
-  if (tn_def != NULL) {
-    BB *bb_def = bb;
-    do {
-      if (OP_bb(tn_def) == bb_def) {
-	op_affirm = tn_def;
+  // predecessors bb while there is no incoming or outgoing edges.
+  if (SSA_Active()) {
+    OP *tn_def = TN_ssa_def(tn);
+    OP *tn_copy = tn_def;
+    // First look for an operation with AFFIRM property, following COPY operations.
+    while (tn_copy != NULL) {
+      // Found an operation with AFFIRM property
+      if (OP_Is_Affirm(tn_copy)) {
 	break;
       }
-      bb_def = BB_Unique_Predecessor(bb_def);
-    } while ((bb_def != NULL) && (BB_succs_len(bb_def) == 1));
+      // Found a COPY operation, continue with the def of its argument
+      else if ((OP_results(tn_copy) == 1) && (OP_Copy_Operand_TN(tn_copy) != NULL)) {
+	tn_copy = TN_ssa_def(OP_Copy_Operand_TN(tn_copy));
+      }
+      // Did not find an operation with AFFIRM property.
+      else
+	tn_copy = NULL;
+    }
+
+    // Then, check that tn_def is defined in the current basic block
+    // or in predecessors bb while there is no incoming or outgoing
+    // edges.
+    if (tn_def != NULL) {
+      BB *bb_def = bb;
+      do {
+	// Initialize op_affirm with the copy operation. It may be
+	// redefined if tn_def is also in a proper predecessor.
+	if (OP_bb(tn_def) == bb_def) {
+	  op_affirm = tn_def;
+	}
+	if ((tn_copy != NULL) && (OP_bb(tn_copy) == bb_def)) {
+	  op_affirm = tn_copy;
+	  break;
+	}
+	
+	bb_def = BB_Unique_Predecessor(bb_def);
+      } while ((bb_def != NULL) && (BB_succs_len(bb_def) == 1));
+    }
   }
-
-  // Then, look if there is already an AFFIRM property on this op
-  if (op_affirm)
-    wn_affirm = OP_Get_Affirm(op_affirm);
-
-  // Check if wn_affirm is a superset of the modulo property we get
-  if (wn_affirm != NULL) {
-    if (!Get_Affirm_modulo(wn_affirm, &wn_modulo, &affirm_base, &affirm_bias))
-      return FALSE;
-
-    FmtAssert((affirm_bias < 0) || (affirm_base < affirm_bias),
-	      ("Unsupported base/bias information on affirm: %d %d", affirm_base, affirm_bias));
-
-    // Affirm node already includes this modulo information
-    if (affirm_base >= base)
-      return FALSE;
+  else {
+    // Not in SSA form, just look for a definition of tn in bb.
+    OP *op;
+    FOR_ALL_BB_OPs_REV(bb, op) {
+      for (INT i = 0; i < OP_results(op); i++) {
+	if (OP_result(op,i) == tn) {
+	  op_affirm = op;
+	  break;
+	}
+      }
+      if (op_affirm != NULL)
+	break;
+    }
   }
-
-  // Create a new affirm whirl node
-  WN *wn_new_modulo;
-  ST *st = Gen_Temp_Symbol(MTYPE_To_TY(MTYPE_I4), ".affirm");
-  wn_new_modulo = WN_EQ(MTYPE_I4,
-			WN_Binary(OPR_MOD, MTYPE_I4,
-			    WN_Ldid(MTYPE_I4, 0, st, 4),
-			    WN_Intconst(MTYPE_I4, base)),
-		    WN_Intconst(MTYPE_I4, bias));
 
   if (op_affirm == NULL) {
     OPS New_OPs = OPS_EMPTY;
@@ -276,28 +329,64 @@ Insert_Affirm_for_modulo(TN *tn, INT base, INT bias, BB *bb) {
     BOOL before = (point != NULL) && OP_xfer(point);
     // Disable SSA while inserting this non-SSA op, because otherwise
     // it tries to set an SSA def.
-    SSA_unset(op_affirm);
-    SSA_Disable();
-    BB_Insert_Ops(bb, point, &New_OPs, before);
-    SSA_Enable();
+    if (SSA_Active()) {
+      SSA_unset(op_affirm);
+      SSA_Disable();
+      BB_Insert_Ops(bb, point, &New_OPs, before);
+      SSA_Enable();
+    }
+    else
+      BB_Insert_Ops(bb, point, &New_OPs, before);
+
     if (Get_Trace(TP_AFFIRM, 0x1))
       fprintf(TFile, "Inserted COPY operation to attach AFFIRM property.\n");
   }
-  else
-    // FdF TBD: Put the affirm property on the initial op_affirm and TN_ssa_def ???
-    op_affirm = TN_ssa_def(tn);
 
-  // If there was already a modulo information, replace it with this
-  // new, more precise, one
-  if (affirm_base != -1)
-    wn_affirm = Affirm_Replace_wn(wn_affirm, wn_modulo, wn_new_modulo);
-  else if (wn_affirm != NULL)
-    wn_affirm = Affirm_Insert_wn(wn_affirm, wn_new_modulo);
-  else
-    wn_affirm = WN_CreateAffirm(wn_new_modulo);
+  OP_Insert_Affirm_for_modulo(op_affirm, base, bias);
 
-  // Finally, attach the information to the operation
-  OP_Set_Affirm(op_affirm, wn_affirm);
+  return TRUE;
+}
+
+BOOL
+OPS_Insert_Affirm_for_modulo(OPS *ops, TN *tn, INT base, INT bias) {
+
+  WN *wn_affirm = NULL;
+  WN *wn_modulo = NULL;
+  OP *op_affirm = NULL;
+  INT affirm_base = -1;
+  INT affirm_bias = -1;
+
+//   Is_True((base > 0) && ((base&(base-1)) == 0), ("Unsupported value for base (%d) in Insert_Affirm_for_modulo", base));
+
+  if (Get_Trace(TP_AFFIRM, 0x1)) {
+    fPrint_TN(TFile, "TN has modularity %s%%", tn);
+    fprintf(TFile, "%d==%d, will set AFFIRM property.\n", base, bias);
+  }
+
+  // First, look if the definition for tn is not already in ops
+  OP *op;
+  FOR_ALL_OPS_OPs_REV(ops, op) {
+    for (INT i = 0; i < OP_results(op); i++) {
+      if (OP_result(op,i) == tn) {
+	op_affirm = op;
+	break;
+      }
+    }
+    if (op_affirm != NULL)
+      break;
+  }
+
+  if (op_affirm == NULL) {
+    Exp_COPY(tn, tn, ops);
+    op_affirm = OPS_last(ops);
+
+    if (Get_Trace(TP_AFFIRM, 0x1))
+      fprintf(TFile, "Inserted COPY operation to attach AFFIRM property.\n");
+  }
+
+  OP_Insert_Affirm_for_modulo(op_affirm, base, bias);
+
+  return TRUE;
 }
 
 // =======================================================================
@@ -369,7 +458,7 @@ Generate_Affirm(RangeAnalysis *range_analysis, BB *bb)
       if ((base != 0) && (base != 1)) {
 	  if (Get_Trace(TP_AFFIRM, 0x1))
 	      fprintf(TFile, "Trip count: ");
-	  if (Insert_Affirm_for_modulo(trip_count_tn, base, bias, prolog))
+	  if (BB_Insert_Affirm_for_modulo(prolog, trip_count_tn, base, bias))
 	    Update_SSA = TRUE;
 	}
       }
@@ -393,7 +482,7 @@ Generate_Affirm(RangeAnalysis *range_analysis, BB *bb)
 	if ((base != 0) && (base != 1) && (base <= 0x10000)) {
 	  if (Get_Trace(TP_AFFIRM, 0x1))
 	      fprintf(TFile, "PHI Operand: ");
-	  if (Insert_Affirm_for_modulo(tn, base, bias, prolog))
+	  if (BB_Insert_Affirm_for_modulo(prolog, tn, base, bias))
 	    Update_SSA = TRUE;
 	}
       }

@@ -169,6 +169,7 @@ BOOL Enable_Speculate_DivRem_Set;
 
 INT32 CG_LOOP_Packing_level = -1;
 INT32 CG_LOOP_Packing_flags = -1;
+INT32 CG_LOOP_Packing_sizes = 0;
 #endif
 
 /* Target machine specification options.  This group defines the target

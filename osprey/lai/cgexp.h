@@ -278,6 +278,9 @@ extern void Exp_Pred_Compare(TN *dest, TN *cdest, TN *src1, TN *src2,
 #ifdef TARG_ST
 extern void Exp_Var_Extract (INT count, TN **dests, TN *src, OPS *ops);
 extern void Exp_Var_Compose (INT count, TN *dst, TN **srcs, OPS *ops);
+extern void Exp_SIMD_Shuffle_Bits (TN *tgt_tn, TN *src1, UINT bit_offset1, UINT bit_size1, TN *src2, UINT bit_offset2, UINT bit_size2, OPS *ops);
+extern void Expand_Compose (TN *tgt_tn, TN *low_tn, TN *high_tn, OPS *ops);
+extern void Expand_Extract (TN *low_tn, TN *high_tn, TN *src_tn, OPS *ops);
 #endif
 
 #ifndef TARG_ST

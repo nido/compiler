@@ -78,6 +78,9 @@ BE_EXPORTED extern BOOL IPA_Enable_Addressing;	/* Addr_taken analysis */
 BE_EXPORTED extern BOOL IPA_Enable_Readonly_Ref;	/* find out readonly ref parameter */
 BE_EXPORTED extern BOOL IPA_Enable_Cprop;		/* Constant Propagation */
 BE_EXPORTED extern BOOL IPA_Enable_Cprop2;		/* Aggressive constant propagation */
+#ifdef TARG_ST
+BE_EXPORTED extern BOOL IPA_Enable_Align_prop;		/* Alignment Propagation */
+#endif
 BE_EXPORTED extern BOOL IPA_Enable_Assert;		/* assert cprop value */
 BE_EXPORTED extern BOOL IPA_Enable_daVinci;		/* Graphical display of call graph */
 BE_EXPORTED extern BOOL IPA_Enable_ipacom;		/* Call ipacom after IPA */

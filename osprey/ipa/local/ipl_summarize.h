@@ -672,11 +672,18 @@ public:
 	value->Set_mtype (MTYPE_I4);
 	value->Set_int_const ();
 	value->Set_int_const_value (0);
+#ifdef TARG_ST
+	value->Set_alignment(OPR_INTCONST_get_align(0));
+#endif
 
 	value = New_value ();
 	value->Set_mtype (MTYPE_I4);
 	value->Set_int_const ();
 	value->Set_int_const_value (1);
+#ifdef TARG_ST
+	// FdF ipa-align
+	value->Set_alignment(OPR_INTCONST_get_align(1));
+#endif
 
     };
 

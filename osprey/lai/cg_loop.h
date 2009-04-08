@@ -556,19 +556,26 @@ enum CG_LOOP_FLAGS {
 #endif  
 };
 
+#define MAX_SPECIAL_STREAM 4
+
 class CG_LOOP {
 
 private:
   LOOP_DESCR *loop;
   BOOL        unroll_fully;
 #ifdef TARG_ST
-  BOOL	      even_factor; // Unroll the loop an even number of times, for packing
-  BOOL	      remainder_after; // Put remainder loop after the unrolled loop, for packing
+  UINT8	      packing_factor; // For packing, unroll factor must be a multiple of packing_factor.
+  INT8        remainder_after:1;  // Put remainder loop after the unrolled loop, for packing
+  INT8        do_peeling:1;
+  INT8        do_specialize:1;
+  UINT8       load_streams;
+  UINT8       store_streams;
+  TN *	      stream_tn[MAX_SPECIAL_STREAM];    // TN that must be checked and modified for alignment
+  INT16	      stream_base[MAX_SPECIAL_STREAM]; // (IV+stream_offset)%stream_base must be 0 at loop entry
+  INT16	      stream_offset[MAX_SPECIAL_STREAM];
+  BB *        check_bb; // Pointer to the BB that controls peeling or specialization,
+                        // so as to be able to undo loop peeling/specialization
   INT32	      unroll_sched_est;
-  INT	      special_streams; // -1 means cond peeling, -2 means uncond peeling, 1..4 means specialization.
-  OP *        stream_op[4];    // Load or store operation that represents the peeled stream.
-  TN *	      stream_tn[4];    // TN that must be checked and modified for alignment
-  INT32	      stream_align[4]; // Alignment expected after loop peeling
 #endif
   INT32       unroll_factor;
   OP_MAP      op_map;
@@ -609,37 +616,48 @@ public:
   INT32 Unroll_factor() const     { return unroll_factor; }
   void Set_unroll_factor(INT32 n) { unroll_factor = n; }
 #ifdef TARG_ST
-  BOOL Even_factor()		  { return even_factor; }
-  void Set_even_factor()	  { even_factor = TRUE; }
-  void Reset_even_factor()	  { even_factor = FALSE; }
+  UINT8 Packing_factor()	  { return packing_factor; }
+  void Set_packing_factor(UINT8 factor)	  { packing_factor = factor; }
   BOOL Remainder_after()	  { return remainder_after; }
   void Set_remainder_after()	  { remainder_after = TRUE; }
   void Reset_remainder_after()	  { remainder_after = FALSE; }
   INT32 Unroll_sched_est() const  { return unroll_sched_est; }
   void Set_unroll_sched_est(INT32 n) { unroll_sched_est = n; }
-  OP *Peel_op() const	  	  { return stream_op[0]; }
-  void Set_peel_op(OP *op)	  { stream_op[0] = op; }
+
+  void Set_peel_loop()            { do_peeling = TRUE; }
+  void Reset_peel_loop()	  { do_peeling = FALSE; stream_tn[0] = NULL; }
+  BOOL Peel_loop()                { return do_peeling; }
+  BOOL Cond_peel_loop()		  { return (stream_tn[0] != NULL); }
   TN *Peel_tn() const	  	  { return stream_tn[0]; }
-  void Set_peel_tn(TN *tn)	  { stream_tn[0] = tn; }
-  void Set_peel_stream(BOOL cond) { special_streams = (cond) ? -1 : -2; }
-  BOOL Peel_stream()              { return (special_streams < 0); }
-  BOOL Peel_cond()                { return (special_streams == -1); }
-  BOOL Specialize_streams()       { return (special_streams > 0); }
-  void Reset_special_stream()        { special_streams = 0; }
-  INT32 Special_streams()         { return special_streams; }
-  void Set_special_streams(INT32 n) { special_streams = n; }
-  INT32 Peel_align() const	  { return stream_align[0]; }
-  void Set_peel_align(INT32 n)    { stream_align[0] = n; }
-  OP * Special_stream_op(INT32 i) { return stream_op[i]; }
-  INT32 Special_stream_align(INT32 i) { return stream_align[i]; }
+  INT32 Peel_base() const	  { return stream_base[0]; }
+  INT32 Peel_offset() const	  { return stream_offset[0]; }
+
+  BOOL Set_specialize_loop()      { do_specialize = TRUE; }
+  BOOL Reset_specialize_loop()    { do_specialize = FALSE; stream_tn[0] = NULL; }
+  BOOL Specialize_loop()          { return do_specialize; }
+  TN * Specialize_tn(INT32 i)     { return stream_tn[i]; }
+  INT32 Specialize_base(INT32 i)  { return stream_base[i]; }
+  INT32 Specialize_offset(INT32 i){ return stream_offset[i]; }
+
+  INT Set_streams(int load, int store) { load_streams = load; store_streams = store; };
+  INT Load_streams()              { return load_streams; };
+  INT Store_streams()             { return store_streams; };
   
-  void Push_special_stream(OP *op, TN* tn, INT32 aligned) {
-    stream_op[special_streams] = op;
-    stream_tn[special_streams] = tn;
-    stream_align[special_streams] = aligned;
-    special_streams ++;
+  void Push_stream(TN* tn, INT32 align_base, INT32 align_offset) {
+    INT stream_idx;
+    for (stream_idx = 0; stream_tn[stream_idx] != NULL; stream_idx++);
+    Is_True(stream_idx < MAX_SPECIAL_STREAM, ("Cannot push more than %d streams for loop specialization", MAX_SPECIAL_STREAM));
+    stream_tn[stream_idx] = tn;
+    stream_base[stream_idx] = align_base;
+    stream_offset[stream_idx] = align_offset;
+    // Initialize the next location to NULL so that a next push can
+    // use it.
+    stream_idx ++;
+    if (stream_idx < MAX_SPECIAL_STREAM) stream_tn[stream_idx] = NULL;
   }
-  
+
+  void Set_check_bb(BB *bb) { check_bb = bb; }
+  BB * Check_bb() { return check_bb; }
 #endif
 
   void Recompute_Liveness();
@@ -649,6 +667,7 @@ public:
   void Determine_Sched_Est_Unroll_Factor();
   void Unroll_Specialize_Loop();
   void Undo_Specialize_Loop(BB *loop_prolog, BB *loop_epilog);
+  void Unroll_Peel_Loop();
   void Undo_Peel_Loop(BB *loop_prolog);
 #endif
   void Determine_Unroll_Factor();

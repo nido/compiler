@@ -6593,7 +6593,9 @@ Find_BB_TNs (BB *bb)
 	    }
 	  } else 
 #endif
-          if (!OP_glue(op) && (cix >= 0)) {
+	    // FdF 20080801: In EBO_in_pre, do not propagate through
+	    // an op with Affirm property
+	  if (!OP_glue(op) && !(EBO_in_pre && OP_Is_Affirm(op)) && (cix >= 0)) {
             tninfo->replacement_tn = opnd_tn[cix];
             tninfo->replacement_tninfo = opnd_tninfo[cix];
 #ifdef TARG_ST

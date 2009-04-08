@@ -129,6 +129,7 @@
 #include "cgexp.h"
 #include "config_TARG.h"
 #include "cg_select.h"
+#include "cg_affirm.h"
 
 INT32 IPFEC_Enable_LICM = 0;
 INT32 IPFEC_Enable_LICM_passes = 0;
@@ -1219,6 +1220,11 @@ LOOP_INVAR_CODE_MOTION :: Identify_Loop_Invariants (void) {
 
 	    // FdF 20060407: This was not checked ! (ddts 25090)
 	    if (OP_has_implicit_interactions(op))
+	      it_is = FALSE;
+
+	    // FdF 20080724: Do not mov loop invariant AFFIRM
+	    // operation out of the loop
+	    if (OP_Is_Affirm(op))
 	      it_is = FALSE;
 
 #ifdef TARG_ST

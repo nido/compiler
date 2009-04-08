@@ -352,6 +352,13 @@ IPO_Process_node (IPA_NODE* node, IPA_CALL_GRAPH* cg)
     IPO_propagate_globals(node);
   }
 
+#ifdef TARG_ST
+  // FdF ipa-align
+  if (IPA_Enable_Align_prop && node->Has_Propagated_Align()) {
+    IPA_propagate_alignments(node);
+  }
+#endif
+
   if (IPA_Enable_Cloning && node->Is_Clone_Candidate()) {
 
     IPA_NODE *cloned_node = cg->Create_Clone(node);

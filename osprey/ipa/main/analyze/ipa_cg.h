@@ -211,6 +211,10 @@ private:
 #ifdef KEY
   static const mUINT32 _recursive =	    0x800000;	// recursive
 #endif
+#ifdef TARG_ST
+  // FdF ipa-align
+  static const mUINT32 _alignment =	   0x1000000;	// alignment
+#endif
 
   // map to the file I/O info
   mINT32 _file_index;			// index into the file header structure
@@ -457,6 +461,14 @@ public:
   void Set_Propagated_Const ()          { _flags |= _constants; }
   void Clear_Propagated_Const ()        { _flags &= ~_constants; }
   BOOL Has_Propagated_Const ()          { return _flags & _constants; }
+
+#ifdef TARG_ST
+  // FdF ipa-align
+  // node has propagated alignments
+  void Set_Propagated_Align ()          { _flags |= _alignment; }
+  void Clear_Propagated_Align ()        { _flags &= ~_alignment; }
+  BOOL Has_Propagated_Align ()          { return _flags & _alignment; }
+#endif
 
   // node needs to be cloned
   void Set_Clone_Candidate ()	        { _flags |= _clone_candidate; }
@@ -785,6 +797,11 @@ private:
   static const mUINT32 _inline		= 0x10;
   static const mUINT32 _must_inline	= 0x20;
   static const mUINT32 _no_inline	= 0x40;
+#ifdef TARG_ST
+  // FdF ipa-align
+  static const mUINT32 _alignments	= 0x80;
+#endif
+
   
   EDGE_INDEX _edge_index;			// index to the edge array in graph
   IPA_EDGE_INDEX _array_index;		// index into the IPA_EDGE_ARRAY
@@ -864,6 +881,12 @@ public:
 
   void Set_Propagated_Const ()	        { _flags |= _constants; } 
   BOOL Has_Propagated_Const () const    { return _flags & _constants; }
+
+#ifdef TARG_ST
+  // FdF ipa-align
+  void Set_Propagated_Align ()	        { _flags |= _alignments; } 
+  BOOL Has_Propagated_Align () const    { return _flags & _alignments; }
+#endif
 
   void Set_Deletable ()			{ _flags |= _deletable; }
   BOOL Is_Deletable () const		{ return _flags & _deletable; }

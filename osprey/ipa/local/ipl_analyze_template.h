@@ -67,6 +67,12 @@
 #endif // opt_mu_chi_INCLUDED
 
 #ifdef TARG_ST
+// FdF ipa-align
+#include "ipa_trace.h"
+#include "ipl_summary.h"
+#endif
+
+#ifdef TARG_ST
 
 #ifdef _LIGHTWEIGHT_INLINER
 // [CL] for the lightweight inliner, we define empty functions for
@@ -642,6 +648,13 @@ SUMMARIZE<program>::Process_operand (WN *w, INT kid, INT expr_idx)
 	break;
 
     case VALUE_NOT_CONST:
+#ifdef TARG_ST
+      // FdF ipa-align
+      if (IPA_Enable_Align_prop) {
+	expr->Set_expr_value (kid);
+	break;
+      }
+#endif
     default:
 	expr->Set_expr_unknown ();
 	break;
@@ -1377,7 +1390,18 @@ SUMMARIZE<program>::Process_jump_function (SUMMARY_DESC *desc)
 	break;
 
     default:
-	return -1;
+#ifdef TARG_ST
+      // FdF ipa-align: Create a VALUE_NOT_CONST, with alignment 1.
+      if (IPA_Enable_Align_prop) {
+	value = New_value ();
+	value->Set_mtype (MTYPE_I4);
+	value->Set_not_const ();
+	value->Set_alignment (1);
+	desc->Set_type (VALUE_NOT_CONST);
+      }
+      else
+#endif
+      return -1;
     }
 
     // should only reach here if a new SUMMARY_VALUE is created
@@ -1415,6 +1439,10 @@ SUMMARIZE<program>::Process_jump_function (WN *w, INT value_idx)
 	if (summary_desc.Is_convertible_to_global ())
 	    value->Set_convertible_to_global ();
     }
+#ifdef TARG_ST
+    // FdF ipa-align
+    WN *w_parm = w;
+#endif
 
     w = summary_desc.Get_wn ();
     switch (summary_desc.Get_type ()) {
@@ -1456,6 +1484,11 @@ SUMMARIZE<program>::Process_jump_function (WN *w, INT value_idx)
 	    break;
 	}
 
+#ifdef TARG_ST
+	// FdF ipa-align, 20090128: value may have been modified by
+	// Process_chi_jump_function, refresh it.
+	value = Get_value (value_idx);
+#endif
         // See nenad's comment for the similar function above.
 
 	/* if we cannot determine the chi node, and if the symbol is a
@@ -1471,8 +1504,14 @@ SUMMARIZE<program>::Process_jump_function (WN *w, INT value_idx)
 	    break;
 	    // break out and fall through down to VALUE_GLOBAL
 	default:
-	    Get_value (value_idx)->Set_not_const ();
-	    return;
+	  Get_value (value_idx)->Set_not_const ();
+#ifdef TARG_ST
+	  // FdF ipa-align
+	  value->Set_alignment(WN_get_align(w_parm));
+	  // if (Get_Trace(TP_IPA, IPA_TRACE_ALIGNMENT))
+	  //  value->Print(TFile, value_idx);
+#endif
+	  return;
 	}
 
 	// fall through
@@ -1504,6 +1543,14 @@ SUMMARIZE<program>::Process_jump_function (WN *w, INT value_idx)
 	value->Set_not_const ();
 	break;
     }
+
+#ifdef TARG_ST
+    // FdF ipa-align
+    value = Get_value (value_idx);
+    value->Set_alignment(WN_get_align(w_parm));
+    // if (Get_Trace(TP_IPA, IPA_TRACE_ALIGNMENT))
+    //   value->Print(TFile, value_idx);
+#endif
 
 } // SUMMARIZE<program>::Process_jump_function
 

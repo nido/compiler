@@ -498,23 +498,32 @@ process_whirl64 (an_object_file_ptr p_obj, INT nsec,
 
 #if defined(TARG_IA64) || defined(TARG_ST) // [CL]
     /* This is just a door to the be.so open routines. */
-extern "C" void *
+extern "C" {
 #ifdef TARG_ST
+#include "W_unistd.h"
+void *
 ipa_open_input(char *name, off_t *p_size, INT argc, char **argv)
 #else
+void *
 ipa_open_input(char *name, off_t *p_size)
 #endif
 {
 #ifdef TARG_ST
   if (!ipa_dot_so_initialized) {
-      ipa_dot_so_initialized = TRUE;
-	ipa_dot_so_init (argc, argv);
+    ipa_dot_so_initialized = TRUE;
+    ipa_dot_so_init (argc, argv);
+#ifdef Is_True_On
+    if (getenv("IPAPID")) {
+      fprintf(stderr, "IPAPID=%d\n", getpid());
+      scanf("\n");
+    }
+#endif
   }
 #endif
 
   return WN_open_input(name,p_size);
 }
-
+}
 #endif // TARG_IA64 || TARG_ST */
 
 #else // _STANDALONE_INLINER

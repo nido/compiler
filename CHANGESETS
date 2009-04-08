@@ -1,6 +1,60 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Apr  8 10:25:26 CEST 2009
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/ferriere/dev-ipa-align
+
+Description:
+------------
+	* [trunk] Merge of branch ferriere/dev-ipa-align
+   	Deliver branch ferriere/dev-ipa-align rev #21511 with authorization branch #64031
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_cse.cxx
+	M      osprey/lai/cg_loop.cxx
+	M      osprey/lai/cg_affirm.h
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/cg_loop.h
+	M      osprey/lai/cg_ivs.cxx
+	M      osprey/lai/loop_invar_hoist.cxx
+	M      osprey/lai/cgexp.h
+	M      osprey/lai/cg_ivs.h
+	M      osprey/lai/ipra.h
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/ipra.cxx
+	M      osprey/lai/cg_affirm.cxx
+	M      osprey/lai/range_analysis.cxx
+	M      osprey/common/com/wn_util.cxx
+	M      osprey/common/com/config_ipa.cxx
+	M      osprey/common/com/config_ipa.h
+	M      osprey/common/com/wn_util.h
+	M      osprey/ipa/main/optimize/ipo_const.h
+	M      osprey/ipa/main/optimize/ipo_main.cxx
+	M      osprey/ipa/main/optimize/ipo_const.cxx
+	M      osprey/ipa/main/analyze/ipa_cg.h
+	M      osprey/ipa/main/analyze/ipa_cprop_annot.cxx
+	M      osprey/ipa/main/analyze/ipa_cprop.cxx
+	M      osprey/ipa/main/analyze/ipa_trace.h
+	M      osprey/ipa/common/ipc_symtab.cxx
+	M      osprey/ipa/local/ipl_summary.h
+	M      osprey/ipa/local/ipl_analyze_template.h
+	M      osprey/ipa/local/ipl_summarize_template.h
+	M      osprey/ipa/local/ipl_summarize.h
+	M      osprey/targinfo/st200/expand/exp_memrf.cxx
+	M      osprey/targinfo/st200/config/config_TARG.cxx
+	M      osprey/targinfo/st200/config/config_TARG.h
+	M      osprey/targinfo/st200/config/config_target.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Apr  8 09:52:10 CEST 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

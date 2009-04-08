@@ -926,6 +926,54 @@ Check_If_Global_Has_Const_Value (IPA_NODE* node,
   }
 }
 
+#ifdef TARG_ST
+// FdF ipa-align
+static void
+Propagate_Alignments (IPA_NODE* node, WN* w, VALUE_DYN_ARRAY* cprop_annot)
+{
+    Is_True (w != NULL && cprop_annot != NULL &&
+	     cprop_annot != (VALUE_DYN_ARRAY*) -1,
+	     ("Invalid input to Propagate_Constants"));
+
+    for (INT i = 0; i < WN_num_formals(w); ++i) {
+	
+	SUMMARY_VALUE& annot_node = (*cprop_annot)[i];
+
+	WN *idname = WN_kid(w, i);
+	TY_IDX ty_idx = ST_type(WN_st(idname));
+
+	if (TY_kind(ty_idx) == KIND_POINTER) {
+	  INT alignment = annot_node.Get_alignment();
+	  TY_IDX pointed_ty_idx = TY_pointed(ty_idx);
+	  if (TY_align(pointed_ty_idx) < alignment) {
+	    // Create a new pointer type where pointed type is aligned
+	    // on alignment
+	    TY_IDX new_pointed_ty_idx = pointed_ty_idx;
+	    Set_TY_align(new_pointed_ty_idx, alignment);
+	    TY_IDX new_ty_idx = Make_Pointer_Type(new_pointed_ty_idx);
+	    Set_ST_type(WN_st(idname), new_ty_idx);
+
+	    if (Get_Trace(TP_IPA, IPA_TRACE_ALIGNMENT))
+	      fprintf(TFile, "For PU %s, pointer parameter %d, propagated alignment is %d\n", ST_name(WN_st(w)), i, alignment);
+	  }
+	  else if (Get_Trace(TP_IPA, IPA_TRACE_ALIGNMENT)) {
+	    if (alignment <= 1)
+	      fprintf(TFile, "For PU %s, pointer parameter %d, propagated alignment is BOTTOM(%d)\n", ST_name(WN_st(w)), i, TY_align(pointed_ty_idx));
+	    else if (alignment < TY_align(pointed_ty_idx)) {
+	      fprintf(TFile, "For PU %s, pointer parameter %d, propagated alignment is lower than default alignment (%d < %d)\n", ST_name(WN_st(w)), i, alignment, TY_align(pointed_ty_idx));
+	    }
+	    else {
+	      fprintf(TFile, "For PU %s, pointer parameter %d, default alignment is %d\n",
+		      ST_name(WN_st(w)), i, TY_align(pointed_ty_idx));
+	    }
+	  }
+	}
+	else if (Get_Trace(TP_IPA, IPA_TRACE_ALIGNMENT)) {
+	  fprintf(TFile, "For PU %s, scalar parameter %d\n", ST_name(WN_st(w)), i);
+	}
+    }
+}
+#endif
 
 //-------------------------------------------------------------------
 // propagate the constant value to the formal parameter by either
@@ -1065,6 +1113,29 @@ struct fix_aliased_formals
 	}
     }
 };
+
+#ifdef TARG_ST
+// FdF ipa-align
+void
+IPA_propagate_alignments (IPA_NODE* n)
+{
+    INT i;
+
+    VALUE_DYN_ARRAY* cprop_annot = n->Cprop_Annot();
+
+    if (cprop_annot == NULL || cprop_annot == (VALUE_DYN_ARRAY*) -1)
+	return;
+
+    IPA_NODE_CONTEXT context (n);		// switch the symtab context
+
+    WN* w = n->Whirl_Tree();
+
+    Propagate_Alignments (n, w, cprop_annot);
+
+    return;
+
+}
+#endif
 
 //-------------------------------------------------------------------
 // a) Find the number of constants for each procedure

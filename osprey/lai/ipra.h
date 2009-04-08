@@ -38,10 +38,15 @@
  * Methods:
  *
  *   IPRA () - constructor
- *   Save_Info (pu) - save information about the current PU for later
- *                    retrieval.
- *   Restore_Info (pu) - restore information for pu.
+ *   Note_Used_Registers (pu) - save information about the current PU
+ *                              for later retrieval.
  *
+ *   Set_Return_Alignment (pu) - save information on alignment of
+ *                               returned value
+ *
+ *   Get_Info (pu) - Return stored info for pu
+ *
+ *   
  * ====================================================================
  * ====================================================================
  */
@@ -54,6 +59,8 @@
 typedef struct ipra_info {
 #ifdef TARG_ST
   REGISTER_SET used_regs[ISA_REGISTER_CLASS_MAX_LIMIT+1];
+  // FdF ipa-align
+  int alignment;
 #else
   REGISTER_SET used_regs[ISA_REGISTER_CLASS_MAX+1];
 #endif
@@ -63,9 +70,11 @@ class IPRA {
  private:
   typedef HASH_TABLE<const ST *,IPRA_INFO> ST_TO_IPRA_INFO_MAP;
   ST_TO_IPRA_INFO_MAP *st_to_ipra_info_map;
+  IPRA_INFO Give_Info (const ST *pu);
  public:
   IPRA ();
-  void Save_Info (const ST *pu);
+  void Note_Used_Registers (const ST *pu);
+  void Set_Return_Alignment(const ST *pu, int alignment);
   IPRA_INFO Get_Info (const ST *pu);
 };
 

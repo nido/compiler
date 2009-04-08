@@ -1156,10 +1156,18 @@ private:
     mTYPE_ID _target_mtype;		// used only when _addr_of is true: 
 					// specify the mtype of what this
 					// value points to
-    
+
     // the following determine which of the above union is used.
+#ifdef TARG_ST
+    // FdF ipa-align
+    IPA_CONST_TYPE _const_type : 4;
+    // Value 0 is used for Unknown_alignement
+    // Values 1-15 represents alignments 2^0 to 2^14
+#define align_SIZE 4
+    mUINT8 _align : 4;			// Propagate alignment from actual to formal
+#else
     IPA_CONST_TYPE _const_type : 8;
-    
+#endif
     // distinguish between pre- and post-merge const_st_idx
     mBOOL _merged_const_st_idx : 1;
 
@@ -1198,6 +1206,23 @@ public:
 
     void Set_mtype (TYPE_ID m)	{ _mtype = m; }
     TYPE_ID Get_mtype () const	{ return _mtype; }
+
+#ifdef TARG_ST
+    // FdF ipa-align
+    void Set_alignment (const UINT16 algn) {
+      Is_True ((algn > 0) && ((algn & (algn-1)) == 0),
+	       ("Incorrect alignment for SUMMARY_VALUE"));
+      INT max_align = (1<<align_SIZE)-1;
+      if (algn >= (1<<(max_align-1)))
+	_align = max_align;
+      else {
+	for (_align = 0; (1 << _align) < algn; _align++);
+	_align ++;
+      }
+    }
+    UINT16 Get_alignment () const { return (1 << _align) >> 1; }
+    BOOL   Has_alignment() const  { return _align > 0; }
+#endif
 
     void Set_target_mtype (TYPE_ID m) { _target_mtype = m; }
     TYPE_ID Target_mtype () const { return _target_mtype; }
@@ -1342,7 +1367,7 @@ public:
     void Set_is_global_st_idx()		{ _is_global_st_idx = TRUE; } 
 
     /* operations */
-    
+
     void Init ()		{ BZERO (this, sizeof(SUMMARY_VALUE)); }
 
     // print the constant value in ascii form

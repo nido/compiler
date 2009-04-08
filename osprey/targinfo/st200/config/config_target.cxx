@@ -728,15 +728,27 @@ Configure_Target ()
 	CG_LOOP_Packing_flags = 0x200;
 	break;
       case 1:
-	CG_LOOP_Packing_flags = 0x203;
+	if (Enable_64_Bits_Ops)
+	  CG_LOOP_Packing_flags = 0x203;
+	else
+	  CG_LOOP_Packing_flags = 0x201;
 	break;
       case 2:
-	CG_LOOP_Packing_flags = 0x21b;
+	if (Enable_64_Bits_Ops)
+	  CG_LOOP_Packing_flags = 0x21b;
+	else
+	  CG_LOOP_Packing_flags = 0x219;
 	break;
       }
     }
   }
 
+  if (CG_LOOP_Packing_sizes == 0) {
+    if (Enable_64_Bits_Ops)
+      CG_LOOP_Packing_sizes = 8;
+    else
+      CG_LOOP_Packing_sizes = 4;
+  }
   
   Init_Targ_Sim();	/* must be done before initialize_stack_frame */
 
