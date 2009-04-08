@@ -1061,6 +1061,11 @@ INT32 ENV_Symbol_Visibility = 0; /* Default visibility value.
 char *ENV_Symbol_Visibility_String;	/* Visibility string. */
 char *ENV_Symbol_Visibility_Spec_Filename; /* Visibility spec. file. */
 #endif
+#ifdef TARG_ST
+// FdF 20090318: Deactivate loop recurrences until it is retargeted.
+BOOL CG_LOOP_fix_recurrences = FALSE;
+BOOL CG_LOOP_fix_recurrences_specified = FALSE;
+#endif
 BOOL Gen_PIC_Calls = FALSE;	/* PIC calls */
 BOOL Guaranteed_Small_GOT = TRUE; /* GOT < 64kB? */
 BOOL Non_Volatile_GOT = FALSE;	/* GOT entries volatile? */

@@ -402,6 +402,8 @@ const char *CGEXP_sqrt_algorithm = "sgi";
 //   CG_LOOP:
 // ====================================================================
 
+#ifndef TARG_ST
+// FdF 20090318: Moved into config.cxx
 /* Recurrence Breaking flags */
 #ifdef MIPS
 // Disable fix recurrence because CG_DEF_Op_Opnd_Changed
@@ -413,6 +415,7 @@ BOOL CG_LOOP_fix_recurrences = TRUE;
 #endif
 
 BOOL CG_LOOP_fix_recurrences_specified = FALSE;
+#endif
 BOOL CG_LOOP_back_substitution = TRUE;
 BOOL CG_LOOP_back_substitution_specified = FALSE;
 BOOL CG_LOOP_back_substitution_variant = TRUE;

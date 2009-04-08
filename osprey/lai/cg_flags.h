@@ -501,8 +501,11 @@ extern const char *CGEXP_sqrt_algorithm;
 // ====================================================================
 
 /* Recurrence breaking flags */
+#ifndef TARG_ST
+// FdF 20090318: Moved into config.h
 extern BOOL CG_LOOP_fix_recurrences;
 extern BOOL CG_LOOP_fix_recurrences_specified;
+#endif
 extern BOOL CG_LOOP_back_substitution;
 extern BOOL CG_LOOP_back_substitution_specified;
 extern BOOL CG_LOOP_back_substitution_variant;

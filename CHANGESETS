@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Apr  8 09:52:10 CEST 2009
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-63608
+
+Description:
+------------
+	* [trunk] Fix for bug #63608: compiler assertion(mode debug only) in targinfo/stxp70/cg/targ_loop_recur.cxx.
+	Deliver fixes/codex-63608 rev #21505 with authorization branch #63645
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_flags.cxx
+	M      osprey/lai/cg_flags.h
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/config.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Apr  7 08:35:02 CEST 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
