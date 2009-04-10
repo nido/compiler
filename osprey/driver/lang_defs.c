@@ -103,6 +103,7 @@ static lang_info_t language_info[] = {
 #define NAMEPREFIX	""
 #define BINOPTPREFIX	""
 #define BINPATH		"/bin"
+#define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/st100/lib"
 #define INCPATH         "/include"
@@ -114,6 +115,7 @@ static lang_info_t language_info[] = {
 #define NAMEPREFIX      "st200-"
 #define BINOPTPREFIX    ""
 #define BINPATH		"/bin"
+#define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
@@ -125,6 +127,7 @@ static lang_info_t language_info[] = {
 #define NAMEPREFIX	"st200-"
 #define BINOPTPREFIX	""
 #define BINPATH		"/bin"
+#define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
@@ -136,6 +139,7 @@ static lang_info_t language_info[] = {
 #define NAMEPREFIX	"st200-"
 #define BINOPTPREFIX	""
 #define BINPATH		"/bin"
+#define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
@@ -147,6 +151,7 @@ static lang_info_t language_info[] = {
 #define NAMEPREFIX	"st200-"
 #define BINOPTPREFIX	""
 #define BINPATH		"/bin"
+#define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
@@ -198,6 +203,7 @@ static lang_info_t language_info[] = {
 #define NAMEPREFIX      "stxp70v3-"
 #define BINOPTPREFIX	"stxp70v3-"
 #define BINPATH		"/bin"
+#define IPALINKPREFIX	"stxp70v3-"
 #define LIBPATH		"/stxp70v3/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
@@ -209,6 +215,7 @@ static lang_info_t language_info[] = {
 #define NAMEPREFIX	"stxp70v3-"
 #define BINOPTPREFIX	"stxp70v3-"
 #define BINPATH		"/bin"
+#define IPALINKPREFIX	"stxp70v3-"
 #define LIBPATH		"/stxp70v3/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
@@ -220,6 +227,7 @@ static lang_info_t language_info[] = {
 #define NAMEPREFIX	"stxp70v3-"
 #define BINOPTPREFIX	"stxp70v3-"
 #define BINPATH		"/bin"
+#define IPALINKPREFIX	"stxp70v3-"
 #define LIBPATH		"/stxp70v3/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
@@ -231,6 +239,7 @@ static lang_info_t language_info[] = {
 #define NAMEPREFIX	"stxp70v3-"
 #define BINOPTPREFIX	"stxp70v3-"
 #define BINPATH		"/bin"
+#define IPALINKPREFIX	"stxp70v3-"
 #define LIBPATH		"/stxp70v3/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
@@ -241,12 +250,14 @@ static lang_info_t language_info[] = {
 #if defined(HOST_IA32) && !defined(NUE)
 #define NAMEPREFIX	"ia64-sgi-linux-"
 #define BINOPTPREFIX	""
+#define IPALINKPREFIX	""
 #define BINPATH		"/usr/ia64-sgi-linux/bin"
 #define LIBPATH		"/usr/ia64-sgi-linux/lib/gcc-lib/ia64-sgi-linux/sgicc-1.0"
 #define ALTLIBPATH	"/usr/ia64-sgi-linux/ia64-sgi-linux/lib"
 #else
 #define NAMEPREFIX	""
 #define BINOPTPREFIX	""
+#define IPALINKPREFIX	""
 #define BINPATH		"/usr/bin"
 #define LIBPATH		"/usr/lib/gcc-lib/ia64-sgi-linux/sgicc-1.0"
 #define ALTLIBPATH	"/usr/lib"
@@ -257,6 +268,7 @@ static lang_info_t language_info[] = {
 #elif defined(linux) && defined(TARG_IA32)
 #define NAMEPREFIX	""
 #define BINOPTPREFIX	""
+#define IPALINKPREFIX	""
 #define BINPATH		"/usr/bin"
 #define LIBPATH		"/usr/lib"
 #define ALTLIBPATH	LIBPATH
@@ -265,6 +277,7 @@ static lang_info_t language_info[] = {
 #else
 #define NAMEPREFIX	""
 #define BINOPTPREFIX	""
+#define IPALINKPREFIX	""
 #define BINPATH		"/usr/bin"
 #define LIBPATH		"/usr/lib"
 #define ALTLIBPATH	LIBPATH
@@ -369,7 +382,7 @@ static phase_info_t phase_info[] = {
    {'a',  0x0000003000000000LL,	"",	"",		FALSE},	/* any_as */
 
    {'d',  0x0000008000000000LL, "dsm_prelink", PHASEPATH,FALSE},/* dsm_prelink*/
-   {'j',  0x0000010000000000LL,	"ipa_link", PHASEPATH,TRUE},	/* ipa_link */
+   {'j',  0x0000010000000000LL,	IPALINKPREFIX "ipa_link", PHASEPATH,TRUE},	/* ipa_link */
    {'l',  0x0000020000000000LL,	"collect2", GNUPHASEPATH,TRUE},	/* collect */
 #ifdef TARG_ST
    {'l',  0x0000040000000000LL,	NAMEPREFIX "ld", BINPATH, FALSE}, /* ld */

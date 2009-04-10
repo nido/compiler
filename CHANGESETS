@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Apr 10 15:22:28 CEST 2009
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-65220
+
+Description:
+------------
+	* [trunk] Fix for bug #65220: ipa_link should be splitted by -mcore for v3 and v4 architecture. Deliver fixes/codex-65220 rev #21595 with authoruzation branch #65227
+
+
+Modified Files:
+---------------
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/lang_defs.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr 10 14:32:09 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

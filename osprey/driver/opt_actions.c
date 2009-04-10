@@ -950,6 +950,7 @@ Check_Target ( void )
       change_phase_name(P_as,"stxp70v4-as");
       change_phase_name(P_gas,"stxp70v4-as");
       change_phase_name(P_ld,"stxp70v4-ld");
+      change_phase_name(P_ipa_link,"stxp70v4-ipa_link");
 #ifdef BCO_ENABLED
       change_phase_name(P_ldsimple,"stxp70v4-ld");
       change_phase_name(P_binopt,"stxp70v4-binopt");
@@ -972,6 +973,7 @@ Check_Target ( void )
       change_phase_name(P_as,"stxp70v3-as");
       change_phase_name(P_gas,"stxp70v3-as");
       change_phase_name(P_ld,"stxp70v3-ld");
+      change_phase_name(P_ipa_link,"stxp70v3-ipa_link");
 #ifdef BCO_ENABLED
       change_phase_name(P_ldsimple,"stxp70v3-ld");
       change_phase_name(P_binopt,"stxp70v3-binopt");
@@ -2658,6 +2660,7 @@ Process_STxP70_Targ (string option,  string targ_args )
       change_phase_name(P_as,"stxp70v4-as");
       change_phase_name(P_gas,"stxp70v4-as");
       change_phase_name(P_ld,"stxp70v4-ld");
+      change_phase_name(P_ipa_link,"stxp70v4-ipa_link");
 #ifdef BCO_ENABLED
       change_phase_name(P_ldsimple,"stxp70v4-ld");
       change_phase_name(P_binopt,"stxp70v4-binopt");
@@ -2675,6 +2678,7 @@ Process_STxP70_Targ (string option,  string targ_args )
       change_phase_name(P_as,"stxp70v3-as");
       change_phase_name(P_gas,"stxp70v3-as");
       change_phase_name(P_ld,"stxp70v3-ld");
+      change_phase_name(P_ipa_link,"stxp70v3-ipa_link");
 #ifdef BCO_ENABLED
       change_phase_name(P_ldsimple,"stxp70v3-ld");
       change_phase_name(P_binopt,"stxp70v3-binopt");
