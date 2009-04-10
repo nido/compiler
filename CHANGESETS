@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Apr 10 15:47:29 CEST 2009
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-62249
+
+Description:
+------------
+	* [trunk] Fix for bug #62249: Inconsistent option parsing in stxp70cc. Deliver fixes/codex-62249 rev #21602 with authorization branch #63693
+
+
+Modified Files:
+---------------
+	M      osprey/driver/stxp70_options.i
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr 10 15:22:28 CEST 2009
 	Author:    chauveth
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
