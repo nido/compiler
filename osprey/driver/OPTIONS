@@ -2184,19 +2184,19 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -Wid-clash%d	;		Cc	f,cpp	self
 	"warn if 2 identifiers have the same first <num> chars"
 -Wimplicit	;		Cc	f,cpp	self
-	""
+        "warn about implicit declarations of functions or variables"
 -Wno-implicit	;		Cc	f,cpp	self
- 	""
+        "do not warn about implicit declarations of functions or variables"
 -Wimplicit-int	;		Cc	f,cpp	self
 	"warn when a declaration does not specify a type"
 -Wno-implicit-int	;		Cc	f,cpp	self
 	""
 -Wimplicit-function-declaration	;		Cc	f,cpp	self
-	""
+        "warn when a function is used before being declared"
 -Wno-implicit-function-declaration	;		Cc	f,cpp	self
-	""
+        "do not warn when a function is used before being declared"
 -Werror-implicit-function-declaration	;		Cc	f,cpp	self
-	""
+        "give an error when a function is used before being declared"
 %-Wno-error-implicit-function-declaration	;		Cc	f,cpp	self
 %	""
 -Wimport	;		Cc	cpp,f	self
@@ -2241,7 +2241,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -Wno-missing-prototypes	;		Cc	f,cpp	self
 	""
 -Wmultichar	;		Cc	f,cpp	self
-	""
+        "warn if a multicharacter constant is used"
 -Wno-multichar	;		Cc	f,cpp	self
 	""
 -Wnested-externs	;		Cc	f,cpp	self
@@ -2352,13 +2352,13 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -Wuninitialized	Wuninitialized_is_asked=TRUE;		Cc	cpp,f	-WOPT:warn_uninit=on
 	"warn about unitialized automatic variables"
 -Wno-uninitialized	;		Cc	cpp,f	-WOPT:warn_uninit=off
-	""
+        "Do not warn about unitialized automatic variables"
 -Wunknown-pragmas	;		Cc	f,cpp	self
-	""
+        "warn when an unknown #pragma directive is encountered"
 -Wno-unknown-pragmas	;		Cc	f,cpp	self
 	""
 -Wunused	;		Cc	f,cpp	self
-	NA__"warn when a variable is unused"
+	"warn when a variable is unused"
 -Wno-unused	;		Cc	f,cpp	self
 	""
 -Wwrite-strings	;		Cc	f,cpp	self
