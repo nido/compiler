@@ -2898,7 +2898,10 @@ Convert_Goto_To_Return ( BB *bp )
     if ( offset == 0 ) break;
   }
   if ( !OP_br(rtn_op) ) return FALSE;
-
+#ifdef TARG_ST
+  // TDR fix #65158: when optimizing rts, it must not be predicated.
+  if (CGTARG_Can_Predicate_Returns() && OP_Predicate(rtn_op) != True_TN) return FALSE;
+#endif
   /* If the return has a delay slot op, make sure it's a noop.
    */
   if ( PROC_has_branch_delay_slot() ) {
@@ -3094,19 +3097,20 @@ Optimize_Branches(void)
 	    Cflow_Change_Succ(bp, 1, old_tgt, new_tgt);
 	  }
 #ifdef TARG_ST
-	  if (CFLOW_Enable_Hoist_rts) {
+	  if (CFLOW_Enable_Hoist_rts && !changed) {
     	// [TDR] Do not perform optimization if retrun instruction cannot be predicated
 		if (!CGTARG_Can_Predicate_Returns()) break;
 		BB* targ_0= BBINFO_succ_bb(bp,0);
 		BB* targ_1= BBINFO_succ_bb(bp,1);
 		if (BB_length(targ_0) == 1 && BBINFO_nsuccs(targ_0) == 0 
 			&& BBINFO_kind(targ_0) == BBKIND_RETURN 
-			&& OP_Predicate(BB_first_op(targ_0)) == True_TN) {
+			&& OP_Predicate(BB_first_op(targ_0)) == True_TN
+			&& BB_next(bp) == targ_1) {
 			if (CFLOW_Trace_Branch) {
 				#pragma mips_frequency_hint NEVER
-				fprintf(TFile, "Only one inst and Tail Block\n");
+				fprintf(TFile, "==========================\nOnly one inst and Tail Block\n");
 				Print_OP_No_SrcLine(BB_branch_op(bp));
-				fprintf(TFile, "Successors are : BB(%d), BB(%d)\n",	BB_id(targ_0), BB_id(targ_1));
+				fprintf(TFile, "NB succ=%d Successors are : BB(%d), BB(%d)\n",BBINFO_nsuccs(bp),BB_id(targ_0), BB_id(targ_1));
 				fprintf(TFile, "Block Before\n");
 				Print_BB(bp);
 			}
