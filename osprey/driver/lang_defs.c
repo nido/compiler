@@ -162,6 +162,7 @@ static lang_info_t language_info[] = {
 
 #define NAMEPREFIX      "arm-"
 #define BINPATH		"/bin"
+#define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
@@ -172,6 +173,7 @@ static lang_info_t language_info[] = {
 
 #define NAMEPREFIX	"arm-"
 #define BINPATH		"/bin"
+#define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
@@ -182,6 +184,7 @@ static lang_info_t language_info[] = {
 
 #define NAMEPREFIX	"arm-"
 #define BINPATH		"/bin"
+#define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
@@ -192,6 +195,7 @@ static lang_info_t language_info[] = {
 
 #define NAMEPREFIX	"arm-"
 #define BINPATH		"/bin"
+#define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
