@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Apr 15 11:57:28 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-64988
+
+Description:
+------------
+	* [trunk] Fix for bug #64988: [STxP70v4] - H264 failed in v4 Os if-conversion.
+	Deliver fixes/codex-64988 rev #21679 with authorization branch #64989
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_select.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Apr 15 09:22:18 CEST 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -1182,9 +1182,7 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
   if (!CG_ifc_logif) return FALSE;
   
   //TDR In size, a logif transfomration is not profitable without bundles.
-  if (!CG_ifc_cycles) {
-    return PROC_has_bundles();
-  }
+  if (!CG_ifc_cycles && !PROC_has_bundles())  return FALSE;
 
   OP *op;
   TN *cond_tn;
