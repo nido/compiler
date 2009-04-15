@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Apr 15 08:44:59 CEST 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-64974
+
+Description:
+------------
+	* [trunk] Fix for bug #64974: [ISPx][P2012] Compiler crash when using indexed AM in place of direct one to access an array containing extension types.
+	Deliver fixes/codex-64974 rev #21651 with authorization branch #65016
+
+	-> Avoid memory accesses through NULL pointer
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/gnu/c-typeck.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Apr 15 08:35:13 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -4103,6 +4103,7 @@ convert_for_assignment (type, rhs, errtype, fundecl, funname, parmnum)
    */
   limited_convert =
       is_extension_builtin(fundecl) &&
+      codel == REFERENCE_TYPE &&
       TREE_CODE(TREE_TYPE (rhs))  == VECTOR_TYPE &&
       TREE_CODE(TREE_TYPE (type)) == VECTOR_TYPE;
 #endif                                      /* TARG_ST */ 
