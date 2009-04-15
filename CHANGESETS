@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Apr 15 09:22:18 CEST 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-65322
+
+Description:
+------------
+	* [trunk] Fix for bug #65322: [MP1x] Missed SHRRX2R mapping opportunity in Huffman (audio) .
+	Deliver fixes/codex-65322 rev #21655 with authorization branch #65324
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/be/targ_pattern_rec.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Apr 15 08:44:59 CEST 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
