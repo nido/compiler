@@ -1356,9 +1356,9 @@ put_structure_type(DST_flag flag, DST_STRUCTURE_TYPE *attr, Dwarf_P_Die die)
   // that does not have a byte size attribute and that has a
   // DW_AT_declaration attribute. GDB expects this for enums too.
 
-  // We can have 0 sized structs, so check the declaration flag too
-  if ( (DST_STRUCTURE_TYPE_byte_size(attr) != 0) 
-       && (!DST_IS_declaration(flag)) )
+  // We can have 0 sized structs, so check the declaration flag to
+  // decide whether to generate size information.
+  if (!DST_IS_declaration(flag))
 #endif
   dwarf_add_AT_unsigned_const (dw_dbg, die, DW_AT_byte_size,
 		  DST_STRUCTURE_TYPE_byte_size(attr), &dw_error);

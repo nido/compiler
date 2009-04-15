@@ -833,6 +833,10 @@ DST_enter_struct_union(tree type_tree, TY_IDX ttidx  , TY_IDX idx,
 	if (TYPE_STUB_DECL(type_tree)) {
 	  USRCPOS_srcpos(src) = Get_Srcpos_From_Tree(TYPE_STUB_DECL(type_tree));
 	}
+	// Is this a declaration or a definition?
+	int complete = (TYPE_SIZE (type_tree)
+			&& (! TYPE_STUB_DECL (type_tree)
+			    || ! TYPE_DECL_SUPPRESS_DEBUG (TYPE_STUB_DECL (type_tree))));
 #endif
 
 	char *name = Get_Name(type_tree);
@@ -842,7 +846,14 @@ DST_enter_struct_union(tree type_tree, TY_IDX ttidx  , TY_IDX idx,
 		  name , // struct tag name
 		  tsize,
 		  DST_INVALID_IDX, // not inlined
+#ifdef TARG_ST
+		  // [CL] fix bug #64311: we need to ouput size even
+		  // if it is zero, but only if it's an empty
+		  // struct/union definition (not declaration)
+		  !complete
+#else
 		   TREE_PURPOSE(type_tree)== 0   // 1 if incomplete
+#endif
 		   );
 #ifdef TARG_ST
 	   DST_set_structure_being_built(dst_idx);
@@ -852,7 +863,11 @@ DST_enter_struct_union(tree type_tree, TY_IDX ttidx  , TY_IDX idx,
 		  name  , // union tag name
 		  tsize,
 		  DST_INVALID_IDX, // not inlined
+#ifdef TARG_ST
+		  !complete
+#else
 		   TREE_PURPOSE(type_tree)== 0   // arg 1 if incomplete
+#endif
 		   );
 #ifdef TARG_ST
 	   DST_set_union_being_built(dst_idx);
