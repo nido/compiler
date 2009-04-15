@@ -146,6 +146,9 @@ typedef struct local_spills {
 // that is no more constant (reconfigurability)
 static LOCAL_SPILLS lra_spills[MTYPE_MAX_LIMIT+1];
 static LOCAL_SPILLS swp_spills[MTYPE_MAX_LIMIT+1];
+// Data to emit stack alignment warning on per PU basis
+#define STACK_ALIGN_WARNING_NONE 0
+static INT stack_align_warning = STACK_ALIGN_WARNING_NONE;
 #else
 static LOCAL_SPILLS lra_float_spills, lra_int_spills;
 static LOCAL_SPILLS swp_float_spills, swp_int_spills;
@@ -406,6 +409,8 @@ CGSPILL_Initialize_For_PU(void)
     LOCAL_SPILLS_free(slc) = NULL;
     LOCAL_SPILLS_used(slc) = NULL;
   }
+  // Reset alignment warning
+  stack_align_warning = STACK_ALIGN_WARNING_NONE;
 #else
   slc = &lra_int_spills;
   LOCAL_SPILLS_mem_type(slc) = Spill_Int_Type;
@@ -447,6 +452,16 @@ void
 CGSPILL_Finalize_For_PU(void)
 {
   if (spill_ids) MEM_POOL_Pop(&spill_id_pool);
+
+#ifdef TARG_ST
+  // [TTh] Emit a warning if the stack alignment is
+  // too small for efficient spill code generation.
+  // This warning is emitted only once for a given PU
+  // and print the optimal alignment expected.
+  if (stack_align_warning != STACK_ALIGN_WARNING_NONE) {
+    ErrMsg(EC_Warn_Misaligned_Spill, Cur_PU_Name, stack_align_warning);
+  }
+#endif
 }
 
 
@@ -517,6 +532,27 @@ CGSPILL_Get_TN_Spill_Location (TN *tn, CGSPILL_CLIENT client)
     }
     return (ST *)TN_home(tn);
   }
+
+#ifdef TARG_ST
+  {
+    // [TTh] Check if stack alignment is optimal for spill code generation.
+    // If not, register the optimal stack alignment for warning emission
+    // later on.
+    // Note: at this point of the compilation flow, it is too late to 
+    //       automatically update the stack alignment
+    INT idx = Spill_Type_Index(tn);
+    TYPE_ID mty = CGTARG_Spill_Mtype[idx];
+    if (MTYPE_is_dynamic(mty) && !MTYPE_is_composed(mty)) {
+      ISA_REGISTER_CLASS cl = EXTENSION_MTYPE_to_REGISTER_CLASS (mty);
+      UINT64 size = MTYPE_RegisterSize (mty);
+      INT optimal_align = EXTENSION_Get_REGISTER_CLASS_Optimal_Alignment (cl, size);
+      if (optimal_align > TY_align(CGTARG_Spill_Type[idx]) &&
+	  optimal_align > stack_align_warning) {
+	stack_align_warning = optimal_align;
+      }
+    }
+  }
+#endif
 
   switch (client) {
   case CGSPILL_GRA:

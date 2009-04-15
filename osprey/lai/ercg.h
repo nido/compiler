@@ -79,6 +79,11 @@
 /* Scheduling Prefetch warning */
 #define EC_Warn_Prefetch EC_BASE_CG+7 /* string, string, string, int */
 
+#ifdef TARG_ST
+/* Register allocation: (additional) */
+#define EC_Warn_Misaligned_Spill EC_BASE_CG+8   /* string, int */
+#endif
+
 /* Start all target-specific codes here: */
 #define EC_TARGET	EC_BASE_CG+200
 

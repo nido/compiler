@@ -83,6 +83,14 @@ ERROR_DESC EDESC_CG[] = {
     "%s%s%d prefetch instruction(s) could not be analyzed for padding",
     3, ET_STRING, ET_STRING, ET_INT, 0, 0, 0 },
 
+#ifdef TARG_ST
+  /* Misaligned spill code generated due to insufficient stack alignment */
+  { EC_Warn_Misaligned_Spill,	EM_User | ES_WARNING,	RAG_EN_NONE,
+    "In function `%s', stack alignment too small for efficient memory access. "
+    "Can be improved thanks to aligned_stack(%d) function attribute.",
+    2, ET_STRING, ET_INT, 0, 0, 0, 0 },
+#endif
+
   /* All error descriptor lists must end with a -1 error code: */
   { -1,	0, RAG_EN_NONE, "", 0, 0,0,0,0,0,0 }
 };
