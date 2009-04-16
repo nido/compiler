@@ -222,6 +222,10 @@ BE_EXPORTED extern ST *Int_Preg, *Ptr_Preg, *Float_Preg, *Return_Val_Preg;
 //TB: Return specific PREG to handle think like non general register in
 //clobber asm list
 BE_EXPORTED extern ST *Untyped_Preg(void);
+
+//Return smallest used alignment in type ty_id
+BE_EXPORTED extern UINT32 TY_smallest_align(TY_IDX ty_id);
+
 #endif
 BE_EXPORTED const char *
 Preg_Name (PREG_NUM i);

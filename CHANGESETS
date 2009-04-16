@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 16 15:51:37 CEST 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-39029
+
+Description:
+------------
+	* [UNIMAC]  structure placed in sda4 instead of sda1 
+
+
+Modified Files:
+---------------
+	M      osprey/common/com/symtab.cxx
+	M      osprey/common/com/symtab_utils.h
+	M      osprey/targinfo/stxp70/be/targ_sections.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Apr 15 14:33:02 CEST 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

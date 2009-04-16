@@ -1433,6 +1433,55 @@ Base_Offset_Is_Known (ST     *st)
   }
   return TRUE;
 }
+
+/** 
+  * Exported function that returns the smallest used alignement in type
+  * 
+  * @param ty_id 
+  * 
+  * @return alignment value in bytes
+  */
+UINT32
+TY_smallest_align(TY_IDX ty_id) {
+  UINT32 res;
+  TY_KIND kind = TY_kind(ty_id);
+  /* kind is scalar */
+  if (kind == KIND_SCALAR || kind == KIND_POINTER) {
+    res = TY_align(ty_id);
+  }
+  /* kind is a struct. we need to parse all its fields */
+  else if (kind == KIND_STRUCT) {
+    res = UINT32_MAX;
+    /* check that we do not have an empty struct */
+    if (TY_size(ty_id) > 0) {
+      FLD_ITER fld_iter = Make_fld_iter (TY_fld(ty_id));
+      while (!FLD_last_field (fld_iter)) {
+        UINT32 tmp = TY_smallest_align(FLD_type(fld_iter));
+        if (tmp < res) {
+          res= tmp;
+          /* if byte alignment is achieved, stop parsing the structure
+             fields */
+          if (res==1)
+            break;
+        }
+        ++fld_iter;
+      }
+    }
+  }
+  /* kind is an array. use array element type instead. */
+  else if (kind == KIND_ARRAY) {
+    res = TY_smallest_align(TY_etype(ty_id));
+  }
+  /* unknown kind */
+  else {
+    DevWarn ("Unexpected TY_kind() %d\n", TY_kind(ty_id));
+    /* using smallest alignment conservatively. */
+    res = 1;
+  }
+  return res;
+}
+
+
 #endif
 
 //----------------------------------------------------------------------
