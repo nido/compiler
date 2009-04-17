@@ -165,6 +165,7 @@ typedef struct local_tn_info {
 #ifdef TARG_ST
 	TN *copy_tn;			/* Alternative physical replacement TN. */
 	EBO_TN_INFO *copy_tninfo;	/* Alternative physical replacement tninfo.   */
+	mBOOL false_predicate_tn; 	/* To manage ! True_TN */
 #endif
 	EBO_TN_INFO *predicate_tninfo;	/* link to predicate tninfo. */
         BB *in_bb;			/* The defining BB. */
@@ -353,6 +354,7 @@ get_new_tninfo (BB *current_bb, OP *current_op, TN *local_tn)
 #ifdef TARG_ST
   tninfo->copy_tn = NULL;
   tninfo->copy_tninfo = NULL;
+  tninfo->false_predicate_tn = (current_op)?OP_PredOnFalse(current_op):false; ;
 #endif
   tninfo->predicate_tninfo = NULL;
   tninfo->omega = 0;
@@ -658,11 +660,15 @@ tn_info_use (BB *current_bb, OP *current_op, TN *local_tn,
 				 ? tninfo->predicate_tninfo->local_tn
 				 : True_TN);
 
-      /* [TTh] Retrieve Pred_False value */
-      BOOL false_tninfo_predicate_tn = (tninfo->predicate_tninfo != NULL && tninfo->in_op)?
-	OP_Pred_False(tninfo->in_op,
- 		      OP_find_opnd_use(tninfo->in_op, OU_predicate)) : false;
-
+     /* [TTh] Retrieve Pred_False value */
+      BOOL false_tninfo_predicate_tn = false;
+	  if (tninfo->predicate_tninfo != NULL) {
+		if(tninfo->in_op) 
+			false_tninfo_predicate_tn = OP_Pred_False(tninfo->in_op,   OP_find_opnd_use(tninfo->in_op, OU_predicate));
+		  else {
+			false_tninfo_predicate_tn = tninfo->false_predicate_tn;
+		  }
+	  }
       if (EBO_predicate_complements(tninfo_predicate_tn,
 				    false_tninfo_predicate_tn,
 				    tninfo->predicate_tninfo,
@@ -724,6 +730,7 @@ tn_info_use (BB *current_bb, OP *current_op, TN *local_tn,
   if (tninfo == NULL) {
     tninfo = get_new_tninfo (current_bb, NULL, local_tn);
     tninfo->predicate_tninfo = predicate_info;
+    tninfo->false_predicate_tn = false_predicate_tn;
     tninfo->same = tninfo_prev;
     tninfo->omega = associated_omega;
   }
