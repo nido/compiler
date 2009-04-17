@@ -989,6 +989,48 @@ Null_Ptr_Deref_Spec(OP *deref_op, BB *src, BB *dest)
   return FALSE;
 }
 
+
+#ifdef TARG_ST
+// =======================================================================
+// Mem_op_has_cond_def_in_targ_block
+// Check if a GTN used as base/offset of a memory access is not
+// conditionally defined in the target block (when moving above)
+// Purpose here is to avoid bug #65738 where we have:
+// BB1 : G0 = cmp a,b
+//       G4 ? Rx = base
+//       ...
+//       G0 ? jump to BB3
+// BB2 : Ry = load @(Rx + offste)
+//       ...
+// BB3:
+// In such a case moving load from BB2 to BB1 is not correct as 
+// Rx may not be initialized 
+// =======================================================================
+
+static BOOL 
+Mem_op_has_cond_def_in_targ_block(OP *mem_op, BB *bb) {
+	for (INT i = 0; i < OP_opnds(mem_op); ++i) {
+    	TN *opnd_tn = OP_opnd(mem_op, i);
+	    if (TN_is_constant(opnd_tn)) continue;
+    	if (TN_is_global_reg(opnd_tn))  {
+			OP *cur_op;
+			BOOL cond_def=FALSE;
+			for (cur_op = BB_last_op(bb); cur_op ; cur_op = OP_prev(cur_op)) {
+				if (!OP_Defs_TN(cur_op,opnd_tn)) continue;
+				if ((OP_has_predicate(cur_op) && OP_Predicate(cur_op) == True_TN) || !OP_has_predicate(cur_op)) {
+					cond_def=FALSE;
+					break;
+				} else {
+					cond_def=TRUE;
+				}
+			}
+			if(cond_def) return TRUE;
+		}
+	}
+	return FALSE;
+}
+#endif
+
 // =======================================================================
 // Can_Mem_Op_Be_Moved
 // checks to see if a <mem_op> can be moved from <src> to <dest>. For 
@@ -1080,6 +1122,12 @@ Can_Mem_Op_Be_Moved(OP *mem_op, BB *cur_bb, BB *src_bb, BB *dest_bb,
       }
     }
   }
+
+
+#ifdef TARG_ST
+  // Fix for Bug #65738: Conditional def of base/offset TN
+  if(Mem_op_has_cond_def_in_targ_block(mem_op,dest_bb)) return FALSE;
+#endif
 
   // #642858, #641258;
   // If we have reached this point, have convinced ourselves, that there
