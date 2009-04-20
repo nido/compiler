@@ -587,6 +587,14 @@ enum OP_COND_DEF_KIND {
 // FdF 20080320
 #define OP_MASK_SAMERES	   0x0200 /* This op has one or more SameRes constraint. */
 
+/* on STxP70, add/sub intructions are not "pure. These instructions
+   write the carry flag. To avoid a preformance regression, this flag
+   can be used to mark add/sub instructions that do not generate a
+   usefull carry (meaning a carry value that is always ignored)
+ */
+#define OP_MASK_CARRY_IS_IGNORED    0x0400 /* carry result can be ignored for
+                                              this op */
+
 #endif
 
 # define OP_glue(o)		(OP_flags(o) & OP_MASK_GLUE)
@@ -684,6 +692,9 @@ enum OP_COND_DEF_KIND {
 # define OP_sameres(o)		(OP_flags2(o) & OP_MASK_SAMERES)
 # define Set_OP_sameres(o)	(OP_flags2(o) |= OP_MASK_SAMERES)
 # define Reset_OP_sameres(o)	(OP_flags2(o) &= ~OP_MASK_SAMERES)
+# define OP_carryisignored(o)		(OP_flags2(o) & OP_MASK_CARRY_IS_IGNORED)
+# define Set_OP_carryisignored(o)	(OP_flags2(o) |= OP_MASK_CARRY_IS_IGNORED)
+# define Reset_OP_carryisignored(o)	(OP_flags2(o) &= ~OP_MASK_CARRY_IS_IGNORED)
 #endif
 
 extern BOOL OP_cond_def( const OP*);

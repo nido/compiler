@@ -3580,6 +3580,7 @@ EBO_Constant_Operand1 (
           }
 	  else 
 	    new_op = Mk_OP (new_opcode, tnr, ptn0, Gen_Literal_TN(new_const_val, TN_size(tnr)));
+          OP_Copy_Properties(new_op, op);
 
 	  OP_srcpos(new_op) = OP_srcpos(op);
 	  if (EBO_in_loop) EBO_Set_OP_omega ( new_op, opnd_tninfo[OP_find_opnd_use(new_op, OU_predicate)], ptn0_tninfo, NULL);

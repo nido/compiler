@@ -1,6 +1,35 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Apr 20 12:43:39 CEST 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-xp70-carry
+
+Description:
+------------
+	* [trunk] Deliver cv17/dev-xp70-carry rev #21744 with authorization branch #63799
+
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/op.h
+	M      osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M      osprey/targinfo/stxp70/expand/exp_divrem.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M      osprey/targinfo/stxp70/cg/targ_op.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/intrn/sx.h
+	M      osprey/targinfo/stxp70/intrn/builtins_sx.h
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr 17 14:06:44 CEST 2009
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
