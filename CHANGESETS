@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Apr 21 09:09:58 CEST 2009
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-65380
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-65380 rev #21756 with authorization branch #65382
+
+
+Modified Files:
+---------------
+	M      osprey/libair/air/air_stxp70.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Apr 20 12:43:39 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
