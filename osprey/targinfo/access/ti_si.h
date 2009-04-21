@@ -865,8 +865,8 @@ TARGINFO_EXPORTED extern TI_SI_CONST INT SI_ID_count;
 // TARGINFO_EXPORTED extern SI ** TI_SI_CONST SI_ID_si;
 // TARGINFO_EXPORTED extern SI ** TI_SI_CONST SI_top_si;
 
-extern INT                          Get_SI_resource_count  ();
-extern SI_RESOURCE * TI_SI_CONST*   Get_SI_resources       ();
+BE_EXPORTED INT                          Get_SI_resource_count  ();
+BE_EXPORTED SI_RESOURCE * TI_SI_CONST*   Get_SI_resources       ();
 extern TI_SI_CONST SI_RRW           Get_SI_RRW_initializer ();
 extern TI_SI_CONST SI_RRW           Get_SI_RRW_overuse_mask();
 extern INT                          Get_SI_issue_slot_count();

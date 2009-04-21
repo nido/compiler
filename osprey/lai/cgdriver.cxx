@@ -1812,6 +1812,21 @@ Configure_CG_Options(void)
 #endif
 
 #ifdef TARG_ST
+  /* The maximum number of resources matched the max number of slots
+     on the processor */
+  int i,nb_slots= -1;
+  SI_RESOURCE * const *resources = Get_SI_resources();
+  for (i=0; i< Get_SI_resource_count(); i++) {
+    if ((int)(resources[i]->avail_per_cycle)  > nb_slots) {
+      nb_slots = (int)resources[i]->avail_per_cycle;
+    }
+  }
+  /* Isa_Max_Slots is defined in two simultaneous instances of the same
+  targinfo library under windows and thus the necessity to double its
+  initialization */
+  set_Max_Slots(nb_slots);
+  TI_BUNDLE_initialize(nb_slots);
+
   // [CG] Initialize default max_issue width
   if (!CGTARG_max_issue_width_overriden) {
     CGTARG_max_issue_width = ISA_MAX_SLOTS;
@@ -1824,10 +1839,6 @@ Configure_CG_Options(void)
     FmtAssert(0, ("CG: Max issue width %d invalid, must be >= %d", 
 		  CGTARG_max_issue_width, 1));
   }
-  //TDR - Fix related to windows issue when using ISA_MAX_SLOTS. bug #48051
-  // ti_bundle.c is from targinfo, loaded in be and loaded in CG => issue in definitions
-  //CM - ISA_MAX_SLOTS can be overriden, thus use CGTARG_max_issue_width
-  TI_BUNDLE_initialize(CGTARG_max_issue_width);
 #endif
 
 #ifndef TARG_STxP70

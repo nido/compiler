@@ -1521,24 +1521,15 @@ static void Emit_Bundle_Packing(FILE *hfile, FILE *cfile, FILE *efile)
 	    tabname);
 
     fprintf (hfile, "\nBE_EXPORTED extern const mUINT8 *ISA_BUNDLE_slot_count;\n\n");
+    fprintf (hfile, "BE_EXPORTED extern void set_Max_Slots(int nb);\n");
 
     fprintf(cfile,"\nint Isa_Max_Slots = -1;\n");
+    fprintf(cfile, "void set_Max_Slots(int nb) { Isa_Max_Slots= nb; /* printf(\"set_Max_Slots %%d %%x\\n\",  Isa_Max_Slots, &Isa_Max_Slots); */ }\n");
     fprintf(cfile,
 	    "\nint get_Max_Slot(void)\n"
 	    "{\n"
-	    "  int max_slots = -1;\n"
-	    "  int isa_subset;\n"
-	    "  for(isa_subset = ISA_SUBSET_MIN; isa_subset <= ISA_SUBSET_MAX; isa_subset++) {\n"
-	    "    if(ISA_SUBSET_LIST_Contains(ISA_SUBSET_List,isa_subset)) {\n"
-	    "      if(max_slots != -1 && ISA_BUNDLE_slot_count[isa_subset] != max_slots) {\n"
-	    "        return -1; /* Error: All active subset must have the same max slot value. */\n"
-	    "      }\n"
-	    "      max_slots = ISA_BUNDLE_slot_count[isa_subset];\n"
-	    "    }\n"
-	    "  }\n"
-	    "  return max_slots;\n"
-	    "}\n");
-
+            "   return Isa_Max_Slots;\n"
+            "}\n");
     fprintf (efile, "ISA_BUNDLE_slot_count\n");
   }
   else {

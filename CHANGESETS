@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Apr 21 15:28:28 CEST 2009
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-61489
+
+Description:
+------------
+	* [trunk] Fix for bug #61489: 1239114108      .
+	Deliver fixes/codex-61489 rev #21798 with authorization branch #61772
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/targinfo/access/ti_si.h
+	M      osprey/targinfo/generate/isa_bundle_gen.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Apr 21 14:54:20 CEST 2009
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
