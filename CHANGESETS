@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Apr 21 14:23:06 CEST 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-65840
+
+Description:
+------------
+	* [trunk] Fix for bug #65840: 
+	Deliver fixes/codex-65840 rev #21782 with authorization branch #65884
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/expand/exp_memrf.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Apr 21 09:09:58 CEST 2009
 	Author:    chauveth
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
