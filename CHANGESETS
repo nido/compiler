@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Apr 22 09:11:22 CEST 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-66119
+
+Description:
+------------
+	* [trunk] Fix for bug #66119: Optimization of __divuw through shift-add-sub sequence is wrong
+	Deliver fixes/codex-66119 rev #21808 with authorization branch #66127
+
+	-> xp70: Fixed add-sub-shift model of divide by 11
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/expand/exp_divrem.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Apr 21 15:28:28 CEST 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
