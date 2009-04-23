@@ -6680,11 +6680,13 @@ Find_BB_TNs (BB *bb)
         }
 
       }
+#ifdef TARG_ST
+    if ((op_replaced || no_barriers_encountered) && BB_scheduled(bb))  Reset_BB_scheduled(bb);
+#endif
     }
 
     if (PROC_has_branch_delay_slot()) in_delay_slot = OP_xfer(op);
     }
-
   return no_barriers_encountered;
 }
   
