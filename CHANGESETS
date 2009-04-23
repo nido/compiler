@@ -1,6 +1,32 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 23 14:21:12 CEST 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-65537
+
+Description:
+------------
+	* [trunk] Fix for bug #65537: [IPA] Compilation dies on dhrystone with -IPA:dfe=OFF command line switch
+	Deliver fixes/codex-65537 rev #21853 with authorization branch #65880
+
+	-> Imported fix for -IPA:dfe=off from open64 4.2.1-0 (referenced as bug 2175 in code). Also get another IPA fix in constant propagation in presence of recursive functions.
+	-> Fix for bug #66039: insure that load of asm stmt results that follow the asm stmt are receiving a valid PREGs
+	-> Fix DevWarn in release mode [TDe]
+
+
+Modified Files:
+---------------
+	M      osprey/driver/phases.c
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/ipa/main/analyze/ipa_cprop_annot.cxx
+	M      osprey/ipa/common/ipc_compile.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Apr 23 11:20:52 CEST 2009
 	Author:    bv11
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

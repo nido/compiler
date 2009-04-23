@@ -580,7 +580,7 @@ ipacom_process_symtab (char* symtab_file)
             && strlen((*command_map)["cc"]) != 0,
           ("Full pathname for cc not set up"));
 
-#ifdef TARG_ST
+#if defined(TARG_ST) && defined(Is_True_On)
   // [CL] do not embed "cc" name yet. Update it later,
   // when it has been determined by other input files
   sprintf(buf, " -c %s %s -o %s -TENV:emit_global_data=%s %s %s",
@@ -677,7 +677,7 @@ size_t ipacom_process_file (char* input_file,
   //strcpy(gspace, "-Gspace 0");
   //argv.push_back(gspace);
 
-#ifdef TARG_ST
+#if defined(TARG_ST) && defined(Is_True_On)
   if (ld_ipa_opt[LD_IPA_SHOW_ONLY].flag) {
     argv.push_back("-Wb,-ttMSC:0x40");
   }

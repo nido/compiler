@@ -1219,7 +1219,7 @@ add_file_args (string_list_t *args, phases_t index)
 			add_string(args,str);
 		}
 #endif
-#ifdef TARG_ST
+#if defined(TARG_ST) && defined(Is_True_On)
 		if(show_cmd_line) {
 			add_string(args,"-ttMSC:0x40");
 		}

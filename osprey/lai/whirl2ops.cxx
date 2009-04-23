@@ -5532,7 +5532,14 @@ Find_Asm_Out_Parameter_Load (const WN* stmt, PREG_NUM preg_num, ST** ded_st)
     // Otherwise we will attach the load to the wrong asm statement.
     if (WN_opcode(stmt) == OPC_ASM_STMT) break;
 #endif
-    if (OPERATOR_is_store(WN_operator(stmt))) {
+    if (OPERATOR_is_store(WN_operator(stmt))
+#ifdef TARG_ST
+	// [TTh] At low optimization levels (-O0, -O1),
+	// the store might have been optimized away
+	// and replaced by EVAL node.
+	|| WN_operator(stmt) == OPR_EVAL
+#endif
+	) {
       WN* load = WN_kid0(stmt);
       OPERATOR opr = WN_operator(load);
       if (opr == OPR_CVT || opr == OPR_CVTL) {

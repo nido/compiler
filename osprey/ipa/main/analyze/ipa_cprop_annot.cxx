@@ -1807,6 +1807,22 @@ Intra_PU_Formal_Cprop (IPA_NODE *node)
       formal_value = 0;
     }
 
+#ifdef KEY
+    {
+        // Also if there is a recursive in-edge, we cannot propagate the
+        // formal parameter value down. Because the const-ness of the
+        // parameters may not have been determined yet. So, don't consider
+        // the formal parameter values in flow analysis below
+        IPA_PRED_ITER edge_iter (node);
+        for (edge_iter.First (); !edge_iter.Is_Empty(); edge_iter.Next()) {
+            IPA_EDGE *e = edge_iter.Current_Edge();
+            if (e && e->Is_Recursive()) {
+                formal_value = 0;
+                break;
+            }
+        }
+    }
+#endif
     // set up summary info arrays
     Set_summary_info (node);
 
@@ -2483,7 +2499,12 @@ Intra_PU_Global_Cprop (IPA_NODE* node)
 
   BOOL change = FALSE;
 
-  if (PU_is_dead(node, &change)) {
+#ifdef KEY // bug 2175
+  if (IPA_Enable_DFE && PU_is_dead(node, &change))
+#else
+  if (PU_is_dead(node, &change))
+#endif
+  {
     return change;
   }
 
