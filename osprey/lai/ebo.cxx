@@ -7761,7 +7761,7 @@ EBO_Process ( BB *first_bb )
 
   if (rerun_cflow) {
 #ifdef TARG_ST
-    CFLOW_Optimize(CFLOW_BRANCH | CFLOW_UNREACHABLE, "CFLOW (from ebo)", TRUE);
+    CFLOW_Optimize(CFLOW_BRANCH | CFLOW_UNREACHABLE, "CFLOW (from ebo)", !EBO_in_peep);
 #else
     CFLOW_Optimize(CFLOW_BRANCH | CFLOW_UNREACHABLE, "CFLOW (from ebo)");
 #endif
@@ -7826,7 +7826,7 @@ EBO_Pre_Process_Region ( RID *rid )
   EBO_in_before_unrolling = FALSE;
   EBO_in_after_unrolling = FALSE;
   EBO_in_peep = FALSE;
-
+  
   EBO_in_loop = FALSE;
 
   if ((EBO_Opt_Level < 5) && ((EBO_Opt_Level > 0) || (EBO_Opt_Level != -5))) return;

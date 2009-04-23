@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 23 11:20:52 CEST 2009
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-66103
+
+Description:
+------------
+	* Modified parameter of CFLOW_Optimize called in EBO indicating if the function is called before or after register allocation.  
+
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Apr 22 10:07:42 CEST 2009
 	Author:    chauveth
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
