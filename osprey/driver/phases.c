@@ -1965,6 +1965,8 @@ add_final_ld_args (string_list_t *args)
       if ((st200_runtime == RUNTIME_OS21) || (st200_runtime == RUNTIME_OS21_DEBUG)) {
 	if (os21_trace_options_set())
 	  add_string(args, "-los21trace") ;
+	if (os21_profiler_options_set())
+	  add_string(args, "-los21profiler") ;
 	add_string (args, st200_runtime == RUNTIME_OS21 ? "-los21" : "-los21_d") ;
       }
 #endif
@@ -2077,6 +2079,8 @@ add_final_ld_args (string_list_t *args)
       if ((st200_runtime == RUNTIME_OS21) || (st200_runtime == RUNTIME_OS21_DEBUG)) {
 	if (os21_trace_options_set())
 	  add_string(args, "-los21trace") ;
+	if (os21_profiler_options_set())
+	  add_string(args, "-los21profiler") ;
 	add_string (args, st200_runtime == RUNTIME_OS21 ? "-los21" : "-los21_d") ;
       }
 #endif /* MUMBLE_ST200_BSP */

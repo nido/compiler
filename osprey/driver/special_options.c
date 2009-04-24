@@ -869,6 +869,24 @@ add_special_options (void)
 	    }
 	  }
 	}
+
+	if (!os21_profiler_options_set() && !get_os21_profiler_options_emit_undefined() &&
+	    (st200_runtime == RUNTIME_OS21 || st200_runtime == RUNTIME_OS21_DEBUG)) {
+	  warning("OS21 -profiler-no-constructor command used without -profiler: command has no effect");
+	}
+
+	if (os21_profiler_options_set() &&
+	    (st200_runtime == RUNTIME_OS21 || st200_runtime == RUNTIME_OS21_DEBUG))
+	{
+	  /* We may have to emit --undefined options to the linker command line but take care of the right link phase */
+	  if (get_os21_profiler_options_emit_undefined()) {
+	    const char *profileroptionsstring= "--undefined os21_profiler_constructor --undefined os21_profiler_destructor" ;
+	    flag = add_new_option(profileroptionsstring) ;
+	    add_phase_for_option(flag, P_any_ld) ;
+	    prepend_option_seen(flag) ;
+	    remove_phase_for_option(flag, P_ldsimple);
+	  }
+	}
 #endif
 
 #ifdef TARG_STxP70

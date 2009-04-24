@@ -2585,6 +2585,48 @@ Process_ST200_OS21_Trace (string option,  string targ_args )
   }
 #endif
 }
+
+/* 
+   The following functions expose the os21 profiler options to the driver
+   *
+   * get_os21_profiler_options_set :
+   *
+   * get_os21_profiler_options_noctordtor :
+*/
+static int os21_profiler_options = UNDEFINED ;
+static int os21_profiler_options_emit_undefined = UNDEFINED ;
+
+int os21_profiler_options_set() {
+  return os21_profiler_options == TRUE ;
+}
+
+int get_os21_profiler_options_emit_undefined() {
+  return os21_profiler_options_emit_undefined == TRUE ;
+}
+
+/* This is the central function for the OS21 profiler support 
+   Analyze the options and parameters, calls for action and record...
+*/
+void
+Process_ST200_OS21_Profiler (string option)
+{
+  if (debug)
+    fprintf ( stderr, "Process_ST200_OS21_Profiler option=[%s]\n", option);
+
+#ifdef MUMBLE_ST200_BSP
+  if (strncasecmp (option, "-profiler-no-constructor", 24) == 0) {
+    /* -los21profiler */
+    os21_profiler_options_emit_undefined = FALSE ;
+  } else if (strncasecmp (option, "-profiler", 9) == 0) {
+    /* -undefined os21_profiler_constructor --undefined os21_profiler_destructor -los21profiler */
+      os21_profiler_options = TRUE ;
+      if (os21_profiler_options_emit_undefined == UNDEFINED) 
+	os21_profiler_options_emit_undefined = TRUE ;
+  } else {
+    warning("OS21PROFILER : Unexpected option [%s].", option);
+  }
+#endif
+}
 #endif /* TARG_ST200 */
 
 
