@@ -847,10 +847,10 @@ TYPE_ID MachineMode_To_Mtype(machine_mode_t mode) {
      the current callers to this function are:
      - the loader when creating new dynamic types.
      - the intrinsics arguments results mapping for extension/multi result
-     intrinsincs. For the intrinsincs we restrict the types to the simple ones below.
+     intrinsics. For the intrinsics we restrict the types to the simple ones below.
      Note that unsigned types and bool type are not present, 
-     which is not a problem for extension intrinscs but may be necessary
-     for standard intrinsincs if the two flow are merged.
+     which is not a problem for extension intrinsics but may be necessary
+     for standard intrinsics if the two flow are merged.
   */
   switch (mode) {
   case VOIDmode:
@@ -859,6 +859,7 @@ TYPE_ID MachineMode_To_Mtype(machine_mode_t mode) {
     return MTYPE_I1;
   case HImode:
     return MTYPE_I2;
+  case PSImode:
   case SImode:
     return MTYPE_I4;
   case DImode:

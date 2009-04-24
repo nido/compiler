@@ -29,7 +29,12 @@
   http: 
 */
 
-/* This file is in charge of providing extension sepcific feature */
+/* This file provides extension specific code required by GCCFE, including:
+ * - Addition of dynamic machine modes,
+ * - Addition of dynamic builtins,
+ * - Initialization of targinfo registers,
+ * - Association between Pregs and targinfo registers
+ */
 
 #include "gnu_config.h"
 #include "gnu/system.h"
@@ -59,21 +64,15 @@ extern "C" {
 #include "symtab_idx.h"
 #include "targ_sim.h"
 
-extern "C" {
-#include "W_dlfcn.h"		    /* for sgidladd(), dlerror() */
-};
-
-#include "gccfe_targinfo_interface.h" // TB: Draft of an ABI between targinfo and gccfe
-#ifdef TARG_ST
-//FOR ISA_REGISTER_CLASS_INFO
-#include "targ_isa_registers.h"
+#include "gccfe_targinfo_interface.h" // ABI between targinfo and gccfe
+#include "targ_isa_registers.h"       // For ISA_REGISTER_CLASS_INFO
 #include "register_preg.h"
-#endif
+
 #ifdef TARGET_DUMP_INFO
 static FILE *dumpinfofile;
 #endif
 
-//Mapping between gcc reg and open64 PREG
+// Mapping between gcc reg and open64 PREG
 int *Map_Reg_To_Preg;
 int Map_Reg_To_Preg_Size;
 
@@ -83,16 +82,16 @@ int Map_Reg_To_Preg_Size;
 // occurs before the loader initialization.
 machine_mode_t COUNT_MACHINE_MODE = MAX_LIMIT_MACHINE_MODE;
 
-/* Loader interface */
+// Loader interface
 static void Load_Machine_Type(const Extension_dll_t *dll_instance);
 static void Load_Builtins(const Extension_dll_t *dll_instance);
 static void Init_Builtins(int nb_builtins_to_add);
 static void Init_Machmode(int nb_machmode_to_add);
 
-/* Extension tables */
+// Extension tables
 static INTRINSIC *INTRINSIC_For_Builtin = (INTRINSIC*)NULL;
 
-//Tables to access the global MTYPE for a given extension rclass
+// Tables to access the global MTYPE for a given extension rclass
 static TYPE_ID *Rclass_to_Mtype;
 
 // Keep access to extension info table
@@ -100,11 +99,13 @@ static Lai_Loader_Info_t *wfe_ext_info_table;
 
 // Matching between open64 attributes and gcc attributes
 static tree
-get_gcc_attributes( extension_builtins_t btype){
+get_gcc_attributes( extension_builtins_t btype) {
   return c_get_gcc_attributes(btype.never_returns, btype.is_pure && btype.has_no_side_effects, btype.has_no_side_effects);
 }
 
-/* Add the dynamic builtins */
+/*
+ * Add the dynamic builtins defined within specified extension dll
+ */
 static void WFE_Add_Builtins_dll(Extension_dll_t *dll_instance) {
   FmtAssert (dll_instance != NULL,
 	     ("Extension instance not found"));
@@ -140,8 +141,8 @@ static void WFE_Add_Builtins_dll(Extension_dll_t *dll_instance) {
     }
 
     int arg;
-    tree arg_type = void_list_node;
-    //Input parameters
+    tree arg_type_list = void_list_node;
+    // Build Input parameter list
     for (arg = btypes[i].arg_count-1; arg >= 0; arg--) {
       if (wfe_ext_info_table->trace_on) {
 	if (btypes[i].arg_inout[arg] == BUILTARG_OUT)
@@ -153,21 +154,32 @@ static void WFE_Add_Builtins_dll(Extension_dll_t *dll_instance) {
 	fprintf(TFile, "\targ[%d]:%s [%d]\t", arg,
 		GET_MODE_NAME(btypes[i].arg_type[arg]),btypes[i].arg_type[arg]);
       }
-      if (btypes[i].arg_inout[arg] == BUILTARG_IN)
-	arg_type = tree_cons (NULL_TREE,
-			      (*lang_hooks.types.type_for_mode)(DLL_TO_GLOBAL_MMODE(dll_instance, btypes[i].arg_type[arg]), 0),
-			      arg_type);
-      else
-	arg_type = tree_cons (NULL_TREE,
-			      build_reference_type((*lang_hooks.types.type_for_mode)(DLL_TO_GLOBAL_MMODE(dll_instance, btypes[i].arg_type[arg]), 0)),
-			      arg_type);
+
+      // Build type for current parameter, with special handling for pointer type
+      // (use of universal pointer type (void *))
+      tree cur_arg_type;
+      if (btypes[i].arg_type[arg] == PSImode) {
+	cur_arg_type = build_pointer_type(void_type_node);
+      }	else {
+	cur_arg_type = (*lang_hooks.types.type_for_mode)(DLL_TO_GLOBAL_MMODE(dll_instance, btypes[i].arg_type[arg]), 0);
+      }
+      
+      if (btypes[i].arg_inout[arg] == BUILTARG_IN) {
+	arg_type_list = tree_cons (NULL_TREE,
+				   cur_arg_type,
+				   arg_type_list);
+      } else {
+	arg_type_list = tree_cons (NULL_TREE,
+				   build_reference_type(cur_arg_type),
+				   arg_type_list);
+      }
     }
 
     if (wfe_ext_info_table->trace_on)
       fprintf(TFile, "\n");
     
     function_type = build_function_type (return_type,
-					 arg_type);
+					 arg_type_list);
     
     // Get GCC builtins attributes
     tree attrs = get_gcc_attributes(btypes[i]);
@@ -184,6 +196,9 @@ static void WFE_Add_Builtins_dll(Extension_dll_t *dll_instance) {
   }
 }
 
+/*
+ * Add the dynamic builtins defined by enabled extensions
+ */
 void WFE_Add_Builtins(void) {
   int i;
   if (!Extension_Is_Present) {
@@ -209,7 +224,7 @@ INTRINSIC WFE_Intrinsic(enum built_in_function built)
 }
 
 /* ===========================================================================
- * This function initializes all gcc arrarys for registers properties,
+ * This function initializes all gcc arrays for register properties,
  * These arrays are filled with targinfo data.
  ===========================================================================*/
 void WFE_Loader_Initialize_Register () {
@@ -232,11 +247,11 @@ void WFE_Loader_Initialize_Register () {
   for (i = 0; i < add_size; i++) {
     last_gcc_id = (last_gcc_id > add_names[i].number) ? last_gcc_id : add_names[i].number;
   }
-  //Check that both solutions give the same result
+  // Check that both solutions give the same result
   if (last_gcc_id != map_reg_size - 1)
     Fail_FmtAssertion("Map_Reg_To_Preg in config_target.cxx and Additional_Register_Names are not compatible");
 
-  //Check that last_dedicated_preg_offset == ARRAY_SIZE(Map_Reg_To_Preg)
+  // Check that last_dedicated_preg_offset == ARRAY_SIZE(Map_Reg_To_Preg)
   if (Last_Dedicated_Preg_Offset != map_reg_size)
     Fail_FmtAssertion("Last_Dedicated_Preg_Offset and ARRAY_SIZE(Map_Reg_To_Preg) are not compatible");
 
@@ -250,7 +265,7 @@ void WFE_Loader_Initialize_Register () {
   Additional_Register_Names = add_names;
   Additional_Register_Names_Size = add_size;
 
-  //Call used register array
+  // Call used register array
 #if 0
   Call_Used_Registers = TYPE_MEM_POOL_ALLOC_N(char, Malloc_Mem_Pool,
 					      reg_size);
@@ -259,7 +274,7 @@ void WFE_Loader_Initialize_Register () {
   Call_Used_Registers = call_used;
   Number_Of_Registers = reg_size;
 
-  //Fixed register array
+  // Fixed register array
 #if 0
   Fixed_Registers = TYPE_MEM_POOL_ALLOC_N(char, Malloc_Mem_Pool,
 					      Number_Of_Registers);
@@ -267,7 +282,7 @@ void WFE_Loader_Initialize_Register () {
 #endif
   Fixed_Registers = fixed;
 
-  //register to open64 PREG mapping
+  // register to open64 PREG mapping
 #if 0
   Map_Reg_To_Preg = TYPE_MEM_POOL_ALLOC_N(PREG_NUM, Malloc_Mem_Pool,
 					  map_reg_size);
@@ -277,68 +292,65 @@ void WFE_Loader_Initialize_Register () {
   Map_Reg_To_Preg_Size = map_reg_size;
 }
 
-/* Initialize dynamic machine mode */
+/*
+ * Initialize extension related info required by front-end:
+ * - dynamic machine modes,
+ * - dynamic builtins,
+ */
 void WFE_Init_Loader(void)
 {
-  int i;
-  int nb_ext_mtypes;
-  int nb_ext_intrinsics;
-
-
   if (Extension_Is_Present) {
+    int i;
+    int nb_ext_mtypes = 0;
+    int nb_ext_intrinsics = 0;
     BOOL verbose = wfe_ext_info_table->trace_on;
     Extension_dll_t *extension_tab = Get_Extension_dll_tab( );
     FmtAssert (extension_tab != NULL,
 	       ("Extension instance not found"));
-    nb_ext_mtypes     = 0;
-    nb_ext_intrinsics = 0;
     for (i=0; i<wfe_ext_info_table->nb_ext; i++) {
       nb_ext_mtypes     += extension_tab[i].hooks->get_modes_count();
       nb_ext_intrinsics += extension_tab[i].hooks->get_builtins_count();
     }
-    
-    //GCC machine mode init
-    Init_Machmode(nb_ext_mtypes);
-    // Open64 MTYPE
-    Init_Mtypes(nb_ext_mtypes);
-    // GCC builtins initialization
-    Init_Builtins(nb_ext_intrinsics);
-    // Open64 intrinsics initialization
-    Init_Intrinsics(nb_ext_intrinsics);
-    // Open64 PREG initialization
-    //    Init_Preg(nb_ext_register);
 
+    // Initializations prior to effective additions
+    Init_Machmode  (nb_ext_mtypes);     // GCC machine mode
+    Init_Mtypes    (nb_ext_mtypes);     // Open64 MTYPE
+    Init_Builtins  (nb_ext_intrinsics); // GCC builtins
+    Init_Intrinsics(nb_ext_intrinsics); // Open64 intrinsics
+  
     for (i=0; i<wfe_ext_info_table->nb_ext; i++) {
       int *Mtype_Local_RegisteClass;
       int Mtype_Count;
       // Add GCC machine mode
       Load_Machine_Type(&extension_tab[i]);
-      // Add OPEN64 MTYPE
+
+      // Add Open64 MTYPE
       // This function returns also a mapping between MTYPE and extension local register file
       TYPE_ID base_Mtype = Add_MTypes(&extension_tab[i], &Mtype_Local_RegisteClass, &Mtype_Count, verbose);
+
       // Build the Register class to mtype mappimg
       for (int type = Mtype_Count -1; type >= 0; type--) {
 	ISA_REGISTER_CLASS rclass = Mtype_Local_RegisteClass[type]  + wfe_ext_info_table->base_REGISTER_CLASS[i];
 	Rclass_to_Mtype[rclass - ISA_REGISTER_CLASS_STATIC_MAX - 1] = type + base_Mtype;
       }
+
       // Add GCC builtins
       Load_Builtins(&extension_tab[i]);
-      // Add open64 Intrinsics
+
+      // Add Open64 Intrinsics
       Add_Intrinsics(&extension_tab[i], verbose);
     }
-    //TB: Add a new pass to create new MTYPE for mutiple result intrinsics
+    // Create new MTYPE for multiple result intrinsics
     Add_Composed_Mtype();
   }
   else {
-    //GCC machine mode init
-    Init_Machmode(0);
-    // Open64 MTYPE
-    Init_Mtypes(0);
-    // GCC builtins initialization
-    Init_Builtins(0);
-    // Open64 intrinsics initialization
-    Init_Intrinsics(0);
+    // No extension
+    Init_Machmode  (0); // GCC machine mode
+    Init_Mtypes    (0); // Open64 MTYPE
+    Init_Builtins  (0); // GCC builtins
+    Init_Intrinsics(0); // Open64 intrinsics
   }
+
   //Dump info
 #ifdef TARGET_DUMP_INFO
   if (TARGET_DUMP_INFO) {
@@ -361,7 +373,9 @@ void WFE_Init_Loader(void)
 tree dynamic_tree_type[MAX_LIMIT_MACHINE_MODE - STATIC_COUNT_MACHINE_MODE];
 tree dynamic_tree_unsigned_type[MAX_LIMIT_MACHINE_MODE - STATIC_COUNT_MACHINE_MODE];
 
-/* Function exported from GCCFE to the exension loader */
+/*
+ * Add the specified dynamic machine mode in FE structure
+ */
 static void Add_New_Machine_Type(machine_mode_t mmode, const char *name, 
 				 enum mode_class mclass, unsigned short mbitsize, 
 				 unsigned char msize, unsigned char munitsize,
@@ -374,7 +388,8 @@ static void Add_New_Machine_Type(machine_mode_t mmode, const char *name,
     fprintf(TFile,"\tsize:%d\n", msize);
     fprintf(TFile,"\tinnermode:%s [%d]\n", GET_MODE_NAME(innermode),innermode);
   }
-  // Check that mmode is < to MAX_LIMIT_MACHINE_MODE
+  FmtAssert(COUNT_MACHINE_MODE < MAX_LIMIT_MACHINE_MODE,
+	    ("Limit of machine mode reached."));
   mode_name[COUNT_MACHINE_MODE] = name;
   mode_class[COUNT_MACHINE_MODE] = mclass;
   mode_bitsize[COUNT_MACHINE_MODE] = mbitsize;
@@ -389,17 +404,22 @@ static void Add_New_Machine_Type(machine_mode_t mmode, const char *name,
   dynamic_tree_type[COUNT_MACHINE_MODE - STATIC_COUNT_MACHINE_MODE] = make_vector (COUNT_MACHINE_MODE, (*lang_hooks.types.type_for_mode)(innermode, 0), 0);
   dynamic_tree_unsigned_type[COUNT_MACHINE_MODE - STATIC_COUNT_MACHINE_MODE] = make_vector (COUNT_MACHINE_MODE, (*lang_hooks.types.type_for_mode)(innermode, 1), 1);
 
-  // increment MAX_MACHINE_MODE at the end
   COUNT_MACHINE_MODE = (machine_mode_t)((int)COUNT_MACHINE_MODE + 1);
 }
 
+/*
+ * Machine mode initialization
+ */
 static void Init_Machmode(int nb_machmode_to_add)
 {
   COUNT_MACHINE_MODE = STATIC_COUNT_MACHINE_MODE;
 }
 
-// This function is responsible for heap array allocation and copy
-// static value to heap arrays
+/*
+ * Builtins table initialization:
+ *   This function is responsible for heap array allocation and copy
+ *   static value to heap arrays
+ */
 static void Init_Builtins(int nb_builtins_to_add)
 {
   BUILT_IN_COUNT = BUILT_IN_STATIC_COUNT;
@@ -473,6 +493,7 @@ static void Load_Builtins(const Extension_dll_t *dll_instance)
     Add_New_Builtins(dll_instance, btypes[i]);
   }
 }
+
 /*
  * Return the register class associated to the specified PREG number .
  */
@@ -485,7 +506,9 @@ static TYPE_ID  EXTENSION_REGISTER_CLASS_to_MTYPE(ISA_REGISTER_CLASS rclass) {
   FmtAssert((0),("Unexpected Register class out of extension bounds: %d", rclass));
 }
 
-//TB: For a given PREG, return the associated MTYPE
+/*
+ * Return MTYPE associated to specified extension PREG
+ */
 TYPE_ID EXTENSION_Get_Mtype_For_Preg(PREG_NUM preg)
 {
   // First check that this PREG is an extension PREG
@@ -493,7 +516,7 @@ TYPE_ID EXTENSION_Get_Mtype_For_Preg(PREG_NUM preg)
   FmtAssert ((preg > static_last_dedicated_preg_offset) && (preg <=  Last_Dedicated_Preg_Offset),
 	     ("EXTENSION_Get_Mtype_For_Preg: invalid preg number %d", preg));
 
-  //Get the register class associated to this PREG
+  // Get the register class associated to this PREG
   ISA_REGISTER_CLASS rclass = EXTENSION_PREG_to_REGISTER_CLASS(preg);
   // Get the MTYPE associated to this Register Class
   TYPE_ID type = EXTENSION_REGISTER_CLASS_to_MTYPE(rclass);
@@ -522,7 +545,7 @@ static void Gccfe_Initialize_Extension_Loader () {
       Set_Trace_File("gccext_debug.t");
   }
 #endif
- // Allocate and initialize wfe specific extension table
+  // Allocate and initialize wfe specific extension table
   wfe_ext_info_table = TYPE_MEM_POOL_ALLOC_N(Lai_Loader_Info_t, Malloc_Mem_Pool, 1);
   // Load extension dlls and count extension specific mtypes and intrinsics
   Load_Extension_dlls(verbose);

@@ -1,6 +1,32 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Apr 24 14:37:39 CEST 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-65170
+
+Description:
+------------
+	* [trunk] Fix for bug #65170: [MP1x] No error/warning emitted when passing MPx value as adr of LD/ST builtins
+	  -> RECONF: Added handling of pointer type in builtins parameter description,
+	             in order to emit an error when a non-pointer argument is passed.
+	  	     This commit also contains some cleanup of wfe_loader.cxx
+
+	Deliver fixes/codex-65170 rev #21917 with authorization branch #65522
+
+Modified Files:
+---------------
+	M      osprey/gccfe/wfe_loader.cxx
+	M      osprey/common/com/dyn_dll_api.h
+	M      osprey/common/com/isa_loader.cxx
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/dyn_dll_api_access.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr 24 11:22:27 CEST 2009
 	Author:    
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
