@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Apr 24 10:28:31 CEST 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-65230
+
+Description:
+------------
+	* [trunk] Fix for bug #65230: __builtin_constant_p(sizeof(_)) evaluates to 0 when 1 required (st200, linux).
+	Deliver fixes/codex-65230 rev #21885 with authorization branch #65308
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/wfe_decl.cxx
+	M      osprey/g++fe/wfe_decl.cxx
+	M      osprey/common/com/wn_simp_code.h
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr 24 09:38:05 CEST 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

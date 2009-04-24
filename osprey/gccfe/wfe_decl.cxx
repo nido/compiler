@@ -782,15 +782,6 @@ WFE_Finish_Function (void)
     function_update_volatile_accesses(func_wn);
 #endif
 
-#ifdef TARG_ST
-    // We cannot have both no_inline and must_inline set, but this can happen 
-    // Since for instance functions taking addresses of local labels cannot be inlined
-    // But may be given the attribute always_inline
-    // We fix these contradictions here (time for a user message if -Winline is on)
-    if (PU_no_inline (Get_Current_PU ()) && PU_must_inline (Get_Current_PU ()))
-      Clear_PU_must_inline(Get_Current_PU ());
-#endif
-
 #ifdef WFE_DEBUG
     fprintf(stdout, "================= Dump function ================\n");
     fdump_tree(stdout, func_wn);
@@ -811,6 +802,15 @@ WFE_Finish_Function (void)
       Set_PU_no_inline (Get_Current_PU ());
       Return_Address_ST [CURRENT_SYMTAB] = NULL;
     }
+
+#ifdef TARG_ST
+    // We cannot have both no_inline and must_inline set, but this can happen 
+    // Since for instance functions taking addresses of local labels cannot be inlined
+    // But may be given the attribute always_inline
+    // We fix these contradictions here (time for a user message if -Winline is on)
+    if (PU_no_inline (Get_Current_PU ()) && PU_must_inline (Get_Current_PU ()))
+      Clear_PU_must_inline(Get_Current_PU ());
+#endif
 
     Delete_Scope (CURRENT_SYMTAB);
     --CURRENT_SYMTAB;

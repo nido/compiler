@@ -5811,6 +5811,15 @@ simpnode SIMPNODE_SimplifyIntrinsic(OPCODE opc, UINT32 intrinsic, INT32 n, simpn
 	    SIMP_DELETE(k[i]);
 	 }
       }
+#ifdef KEY /* bug 14470 */
+      /* Handling BUILTIN_CONSTANT_P is trivial, so handle it separately. */
+      else if (intrinsic == INTRN_BUILTIN_CONSTANT_P) {
+	 /* constant argument */
+	 r = SIMP_INTCONST(MTYPE_U4, 1);
+	 SHOW_TREE(opc,k[0],NULL,r);
+	 SIMP_DELETE(k[0]);
+      }
+#endif /* KEY */
    }
    return (r);
 }
