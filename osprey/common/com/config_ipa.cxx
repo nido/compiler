@@ -114,6 +114,13 @@ BOOL IPA_Enable_Readonly_Ref = TRUE;	/* find out readonly ref parameter */
 BOOL IPA_Enable_Cprop = TRUE;		/* Constant Propagation */
 BOOL IPA_Enable_Cprop2 = TRUE;		/* Aggressive constant propagation */
 #ifdef TARG_ST
+// CRo ipa automatic placement
+BOOL IPA_Enable_MEM_Placement = TRUE;	/* Automatic MEM placement */
+BOOL IPA_MEM_Placement_Size = TRUE;	/* MEM placement based on code size opt, not perf*/
+BOOL IPA_MEM_Placement_Array = TRUE;	/* MEM placement done for arrays*/
+BOOL IPA_MEM_Placement_Struct = TRUE;	/* MEM placement done for struct*/
+#endif
+#ifdef TARG_ST
 // FdF ipa-align
 BOOL IPA_Enable_Align_prop = FALSE;	/* Alignment Propagation */
 #endif
@@ -201,6 +208,13 @@ BOOL IPA_Use_Effective_Size = TRUE;
 
 /* max. gp-relative space available for auto Gnum */
 UINT32	IPA_Gspace = DEFAULT_GSPACE - 72;// Kluge to get around gcc problem
+
+#ifdef TARG_ST
+/* max. mem space available for automatic data placement */
+UINT32	IPA_SDAspace = DEFAULT_SDA_SPACE;
+/* max. da space available for automatic data placement */
+UINT32	IPA_DAspace = DEFAULT_DA_SPACE;
+#endif
 
 /* % of estimtated external got size used for estimating the whole .got size */
 UINT32  IPA_Extgot_Factor = 0;
@@ -307,6 +321,20 @@ static OPTION_DESC Options_IPA[] = {
     { OVK_BOOL, OV_VISIBLE,	FALSE, "aggr_cprop",		"",
 	  0, 0, 0,		&IPA_Enable_Cprop2,	NULL,
 	  "Enable aggressive constant propagation" },
+#ifdef TARG_ST
+    { OVK_BOOL, OV_VISIBLE,	FALSE, "mem_placement",		"",
+	  0, 0, 0,		&IPA_Enable_MEM_Placement,	NULL,
+	  "Enable automatic SDA placement" },
+    { OVK_BOOL, OV_VISIBLE,	FALSE, "mem_size",		"",
+	  0, 0, 0,		&IPA_MEM_Placement_Size,	NULL,
+	  "Base automatic SDA placement on code size opt" },
+    { OVK_BOOL, OV_VISIBLE,	FALSE, "mem_array",		"",
+	  0, 0, 0,		&IPA_MEM_Placement_Array,	NULL,
+	  "Do automatic SDA placement for arrays" },
+    { OVK_BOOL, OV_VISIBLE,	FALSE, "mem_struct",		"",
+	  0, 0, 0,		&IPA_MEM_Placement_Struct,	NULL,
+	  "Do automatic SDA placement for struct" },
+#endif
     { OVK_BOOL,	OV_VISIBLE,	FALSE, "alias",	"",
 	  0, 0, 0,		&IPA_Enable_Simple_Alias,NULL,
 	  "Enable variable mod, use, and alias analysis" },
@@ -399,6 +427,12 @@ static OPTION_DESC Options_IPA[] = {
     { OVK_UINT32,OV_VISIBLE,	FALSE, "Gnum",	"",
 	  DEFAULT_GSPACE, 0, DEFAULT_GSPACE, &IPA_user_gnum, NULL,
 	  "Specific size limit for data in gp-relative space" },
+#ifdef TARG_ST
+    { OVK_UINT32,OV_VISIBLE,	FALSE, "SDAspace",	"",
+	  DEFAULT_SDA_SPACE, 0, DEFAULT_SDA_SPACE, &IPA_SDAspace, NULL},
+    { OVK_UINT32,OV_VISIBLE,	FALSE, "DAspace",	"",
+	  DEFAULT_DA_SPACE, 0, DEFAULT_DA_SPACE, &IPA_DAspace, NULL},
+#endif
     { OVK_UINT32,OV_INTERNAL,	FALSE, "Gfactor",   "",
           DEFAULT_EXTGOT_FACTOR, 0, UINT32_MAX, &IPA_Extgot_Factor, NULL,
 	  "Percentage used to multiply the number of External GOTs, for AutoGnum purpose" },

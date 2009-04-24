@@ -110,6 +110,10 @@
 
 #include "ipc_option.h" 
 
+#ifdef TARG_ST
+#include "targ_placement.h"
+#endif
+
 #ifdef KEY
 #include "ipo_parent.h"
 #endif
@@ -247,7 +251,6 @@ Build_Transformation_Order (IPA_NODE_VECTOR& vect, IPA_GRAPH* cg,
     Trans_Order_Walk (vect, visited, cg, root);
 
 } // Build_Transformation_Order
-
 
 
 /* rename the callsite to point to the cloned procedure */
@@ -1003,6 +1006,11 @@ IPO_main (IPA_CALL_GRAPH* cg)
         fprintf ( stderr, "Total number of edges = %d\n", IPA_Call_Graph->Edge_Size() );
     }
 
+#ifdef TARG_ST
+  if (IPA_Enable_MEM_Placement) {
+    Perform_MEM_Placement();
+  }
+#endif
 } // IPO_main
 
 

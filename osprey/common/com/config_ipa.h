@@ -79,6 +79,12 @@ BE_EXPORTED extern BOOL IPA_Enable_Readonly_Ref;	/* find out readonly ref parame
 BE_EXPORTED extern BOOL IPA_Enable_Cprop;		/* Constant Propagation */
 BE_EXPORTED extern BOOL IPA_Enable_Cprop2;		/* Aggressive constant propagation */
 #ifdef TARG_ST
+BE_EXPORTED extern BOOL IPA_Enable_MEM_Placement;	/* Automatic MEM placement */
+BE_EXPORTED extern BOOL IPA_MEM_Placement_Size;		/* MEM placement based on code size opt, not perf*/
+BE_EXPORTED extern BOOL IPA_MEM_Placement_Array;	/* MEM placement done for arrays*/
+BE_EXPORTED extern BOOL IPA_MEM_Placement_Struct;	/* MEM placement done for struct*/
+#endif
+#ifdef TARG_ST
 BE_EXPORTED extern BOOL IPA_Enable_Align_prop;		/* Alignment Propagation */
 #endif
 BE_EXPORTED extern BOOL IPA_Enable_Assert;		/* assert cprop value */
@@ -175,6 +181,12 @@ BE_EXPORTED extern BOOL	IPA_Max_Jobs_Set;
 
 /* max. gp-relative space available for auto Gnum */
 BE_EXPORTED extern UINT32	IPA_Gspace;	
+
+#ifdef TARG_ST
+/* max. SDA/DA sizes */
+BE_EXPORTED extern UINT32	IPA_SDAspace;	
+BE_EXPORTED extern UINT32	IPA_DAspace;	
+#endif
 
 /* user specified -G num */
 BE_EXPORTED extern UINT32	IPA_user_gnum;	

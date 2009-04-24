@@ -1,6 +1,59 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Apr 24 11:22:27 CEST 2009
+	Author:    
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/robinec/dev-IPA
+
+Description:
+------------
+	* [trunk] Implement automatic data placement in ipa mode, mainly for STxP70
+	  v3 architecture. Deliver from rev #21906 with authorization branch #65196
+
+
+Modified Files:
+---------------
+	M      osprey/driver/opt_actions.c
+	M      osprey/common/com/config_ipa.cxx
+	M      osprey/common/com/config_ipa.h
+	M      osprey/ipa/main/optimize/ipo_main.cxx
+	M      osprey/ipa/main/Makefile.gbase
+	M      osprey/targinfo/arm/config/config_target.h
+	A  +   osprey/targinfo/arm/be/targ_placement.cxx
+	A  +   osprey/targinfo/arm/be/targ_placement.h
+	M      osprey/targinfo/stxp70/config/config_target.h
+	A  +   osprey/targinfo/stxp70/be/targ_placement.cxx
+	A  +   osprey/targinfo/stxp70/be/targ_placement.h
+	M      osprey/targinfo/st200/config/config_target.h
+	A  +   osprey/targinfo/st200/be/targ_placement.cxx
+	A  +   osprey/targinfo/st200/be/targ_placement.h
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@21896 --new=https://codex.cro.st.com/svnroot/open64/branches/robinec/dev-IPA@21903 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@21896 https://codex.cro.st.com/svnroot/open64/branches/robinec/dev-IPA@21903" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/opt_actions.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/opt_actions.c?p2=branches/robinec/dev-IPA/osprey/driver/opt_actions.c&r1=21896&r2=21903&roottype=svn&root=open64&diff_format=h
+osprey/common/com/config_ipa.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config_ipa.cxx?p2=branches/robinec/dev-IPA/osprey/common/com/config_ipa.cxx&r1=21896&r2=21903&roottype=svn&root=open64&diff_format=h
+osprey/common/com/config_ipa.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config_ipa.h?p2=branches/robinec/dev-IPA/osprey/common/com/config_ipa.h&r1=21896&r2=21903&roottype=svn&root=open64&diff_format=h
+osprey/ipa/main/optimize/ipo_main.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/main/optimize/ipo_main.cxx?p2=branches/robinec/dev-IPA/osprey/ipa/main/optimize/ipo_main.cxx&r1=21896&r2=21903&roottype=svn&root=open64&diff_format=h
+osprey/ipa/main/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/main/Makefile.gbase?p2=branches/robinec/dev-IPA/osprey/ipa/main/Makefile.gbase&r1=21896&r2=21903&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/arm/config/config_target.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/config/config_target.h?p2=branches/robinec/dev-IPA/osprey/targinfo/arm/config/config_target.h&r1=21896&r2=21903&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_target.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_target.h?p2=branches/robinec/dev-IPA/osprey/targinfo/stxp70/config/config_target.h&r1=21896&r2=21903&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/config/config_target.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/config/config_target.h?p2=branches/robinec/dev-IPA/osprey/targinfo/st200/config/config_target.h&r1=21896&r2=21903&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr 24 10:44:42 CEST 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
