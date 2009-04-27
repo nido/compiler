@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Apr 27 10:41:28 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-66334
+
+Description:
+------------
+	* [trunk] Fix for bug #66334: 1240408090      .
+	Deliver fixes/codex-66334 rev #21923 with authorization branch #66390
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgdriver.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr 24 14:37:39 CEST 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

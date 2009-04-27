@@ -1638,12 +1638,18 @@ Configure_CG_Options(void)
     Enable_LOH = Enable_LOH_For_Target();
 #endif
 
+#ifdef TARG_ST
+    if (!EBO_Opt_Level_overridden) {
+      EBO_Opt_Level = (CG_opt_level > 1) ? EBO_Opt_Level_Default : 0;
+    }
+#else    
   if (!EBO_Opt_Level_overridden) {
     EBO_Opt_Level = (CG_opt_level > 0) ? EBO_Opt_Level_Default : 0;
   }
+#endif
 #ifdef TARG_ST
   if (!Enable_CG_Peephole_overridden) {
-    CG_enable_peephole = (CG_opt_level > 0) ? TRUE : FALSE;
+    CG_enable_peephole = (CG_opt_level > 1 ) ? TRUE : FALSE;
   }
 
   // [CG]: turned on ssa
