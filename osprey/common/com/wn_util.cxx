@@ -1609,8 +1609,12 @@ WN_get_align (WN *wn)
   switch (opr) {
 
   case OPR_LDA:
-    Is_True(TY_kind(WN_ty(wn)) == KIND_POINTER, ("TY_kind on LDA should be KIND_POINTER"));
-    return OPR_ADD_get_align(TY_align(TY_pointed(WN_ty(wn))), OPR_INTCONST_get_align(WN_offset(wn)));
+    // FdF 20090424: As a result of Whirl optimizations there may be a
+    // different type on a LDA.
+    if (TY_kind(WN_ty(wn)) == KIND_POINTER)
+      return OPR_ADD_get_align(TY_align(TY_pointed(WN_ty(wn))), OPR_INTCONST_get_align(WN_offset(wn)));
+    else
+      return 1;
 
   case OPR_MPY:
     return OPR_MPY_get_align(WN_get_align(WN_kid0(wn)), WN_get_align(WN_kid1(wn)));

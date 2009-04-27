@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Apr 27 13:51:05 CEST 2009
+	Author:    FdF
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-66475
+
+Description:
+------------
+	* [trunk] Fix for bug #66475: compiler (compiled in debug mode) asserts in O3 ipa (in HR_4.2)
+	Deliver fixes/codex-66475 rev #21933 with authorization branch #66775
+
+	-> Added support for non pointer type on LDA node when looking for alignment [FdF]
+
+Modified Files:
+---------------
+	M      osprey/common/com/wn_util.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Apr 27 10:41:28 CEST 2009
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
