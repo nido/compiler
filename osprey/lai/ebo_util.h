@@ -391,6 +391,7 @@ EBO_Exp_COPY(TN *predicate_tn, TN *tgt_tn, TN *src_tn, OPS *ops)
   // is dedicated. In the later case we must keep the explicit dedicated
   // use or def as it expresses parameter passing information.
   if (tn_registers_identical (tgt_tn, src_tn) &&
+      !Is_Predicate_REGISTER_CLASS(TN_register_class(tgt_tn)) &&
       (EBO_in_peep ||
        (!TN_is_dedicated(tgt_tn) && !TN_is_dedicated(src_tn)) ||
        REGISTER_SET_EmptyP(REGISTER_CLASS_allocatable(TN_register_class(src_tn))))) {

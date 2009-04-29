@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Apr 29 13:23:01 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-66621
+
+Description:
+------------
+	* [trunk] Fix for bug #66621: 1240996137      .
+	Deliver fixes/codex-66621 rev #21953 with authorization branch #67014
+
+
+Modified Files:
+---------------
+	M      osprey/lai/ebo_util.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Apr 27 13:51:05 CEST 2009
 	Author:    FdF
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
