@@ -122,6 +122,11 @@ endif
 ## Should go away after elf.h cleanup !
 TARGDEFS += -D__MIPS_AND_IA64_ELF_H
 
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+ifeq ($(ENABLE_BOOST), true)
+TARGDEFS += -DBOOST_ENABLED
+endif
+
 #----------------------------------------------------------------------
 #  Where to look for libraries:
 #----------------------------------------------------------------------
@@ -162,6 +167,14 @@ COMMON_TARG_ACCESS_DIR = $(BUILD_TOT)/targinfo/access
 COMMON_TARG_PARSER_INC_DIR = $(BUILD_TOT)/targinfo/parser/inc
 COMMON_LIBAIR_DIR = $(BUILD_TOT)/libair/air
 
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+DFGFORISE_DIR		= $(BUILD_TOT)/dfgforise
+ifeq ($(ENABLE_BOOST), true)
+DFGFORISE_COMMON_DIR	= $(DFGFORISE_DIR)/common
+DFGFORISE_DUMPS_DIR	= $(DFGFORISE_DIR)/dumps
+DFGFORISE_GRAPHS_DIR	= $(DFGFORISE_DIR)/graphs
+endif
+
 #CGG_DEV{
 COMMON_TARG_CGG_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/cgg
 #}CGG_DEV
@@ -186,6 +199,15 @@ SRC_DIRS = 			\
   $(COMMON_TARG_EXP_DIR)	\
   $(COMMON_TARG_ACCESS_DIR)
 
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+SRC_DIRS += 					\
+  $(DFGFORISE_DIR)
+ifeq ($(ENABLE_BOOST), true)
+SRC_DIRS +=					\
+  $(DFGFORISE_COMMON_DIR) 			\
+  $(DFGFORISE_DUMPS_DIR)			\
+  $(DFGFORISE_GRAPHS_DIR)
+endif
 
 ifdef LAO_ENABLED
 SRC_DIRS +=	\
@@ -222,6 +244,12 @@ ifdef LAO_ENABLED
 HEADER_DIRS +=	\
   $(BE_LAO_DIR) \
   $(BE_LAO_TARG_DIR)
+endif
+
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+ifeq ($(ENABLE_BOOST), true)
+HEADER_DIRS += 					\
+  /sw/st/gnu_compil/gnu/linux-rh-ws-3/include/boost-1_35
 endif
 
 #----------------------------------------------------------------------
@@ -331,6 +359,32 @@ COMMON_TARG_CG_CXX_SRCS =	\
   targ_range_analysis.cxx       \
   targ_range_prop.cxx		
 
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+DFGFORISE_CXX_SRCS =		\
+  ExportFromBackEnd.cxx
+
+ifeq ($(ENABLE_BOOST), true)
+
+DFGFORISE_CXX_SRCS +=		\
+  Constant.cxx			\
+  OperandResult.cxx		\
+  Operation.cxx			\
+  Variable.cxx			\
+  XmlUtils.cxx			\
+  DumpToGraphml.cxx		\
+  BasicBlock.cxx		\
+  DfgEdge.cxx			\
+  DfgGraph.cxx			\
+  DfgVertexConstant.cxx		\
+  DfgVertex.cxx			\
+  DfgVertexOperation.cxx	\
+  DfgVertexVariable.cxx		\
+  Function.cxx			\
+  Subgraph.cxx			\
+  SubgraphMeritData.cxx
+endif # ENABLE_BOOST
+
+
 ifeq ($(BUILD_TARGET), STxP70)
   COMMON_TARG_EXP_CXX_SRCS += exp_extension.cxx
 endif
@@ -430,6 +484,10 @@ CG_CXX_SRCS = 		\
   $(DERIVED_SRCS) \
   gcov_profile.cxx \
   gcov_coverage.cxx 
+
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+CG_CXX_SRCS += 		\
+  $(DFGFORISE_CXX_SRCS)
 
 DERIVED_INCS += gcov-iov.h
 

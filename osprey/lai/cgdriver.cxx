@@ -109,6 +109,9 @@
 #ifdef TARG_ST
 // [TB] gcov coverage utilities  
 #include "gcov_profile.h"
+
+// [GS-DFGforISE] for exportation to DFGs
+#include "ExportFromBackEnd.h"
 #endif
 
 #include "W_errno.h"
@@ -286,6 +289,12 @@ static BOOL CG_enable_min_max_abs_overriden = FALSE;
 INT32 CG_sched_mask = 0;
 INT32 CG_LRA_mask = 0;
 INT32 CG_sched_extract_earliest = SCHED_EXTRACT_EARLIEST_ON;
+
+/* 
+ * [GS] options for the exportation to DfgGraph and ISE identification.
+ */
+INT32 CG_dfg_ise_mask = 0;
+INT32 CG_dfg_debug_mask = 0;
 #endif
 
 /* Keep	a copy of the command line options for assembly	output:	*/
@@ -1302,6 +1311,13 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL, TRUE, "sched_extract_earliest", "",
     1, 0, 2,	&CG_sched_extract_earliest, NULL,
     "Schedule EXTRACT ops as early as possible in BB to reduce reg pressure (0:off, 1:on, 2:on + aggressive mode)" },
+  // [GS] for the exportation to DFGs and ISE identification.	
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "dfg_ise_mask", "", 
+    0, 0, INT32_MAX,	&CG_dfg_ise_mask, NULL,
+    "Control Exportation to DfgGraphs, dumping to graphml for ISE identification algorithms(mask)" },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "dfg_debug_mask", "", 
+    0, 0, INT32_MAX,	&CG_dfg_debug_mask, NULL,
+    "Control Exportation to DfgGraphs, dumping to graphml for debug and code analysis(mask)" },
 #endif
 
   { OVK_COUNT }
@@ -2368,6 +2384,12 @@ CG_Init (void)
   // TB: initialize coverage module
   if (Profile_Arcs_Enabled_Cgir)
     gcov_init (Remove_Extension(Src_File_Name));
+
+  // [GS-DFGforISE] Init of exportation to DfgForIseclasses.
+  if ( (CG_dfg_ise_mask & 0xff)
+       || (CG_dfg_debug_mask & 0xff) ) {
+    DfgForIse::ExportFromBackEnd_Initialize();
+  }
 #endif
 
   return;
@@ -2384,6 +2406,12 @@ CG_Fini (void)
 {
 
 #ifdef TARG_ST
+  // [GS-DFGforISE] End of exportation to DfgForIse classes.
+  if ( (CG_dfg_ise_mask & 0xff)
+       || (CG_dfg_debug_mask & 0xff) ) {
+    DfgForIse::ExportFromBackEnd_Finalize();
+  }
+
   // TB: finalize coverage module
   if (Profile_Arcs_Enabled_Cgir)
     gcov_finish (Asm_File);

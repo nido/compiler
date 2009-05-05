@@ -2195,6 +2195,35 @@ Compute_Frequencies(void)
 }
 
 
+#ifdef TARG_ST
+/* ====================================================================
+ * [GS-DFGforISE]
+ * Copy_Entry_point_Frequency
+ *
+ * Copy the not already normalized entry point frequency to the global
+ * variable PU_freq: in order to be able to unnormalize the basic block
+ * frequencies later on
+ *
+ * ====================================================================
+ */
+static void
+Copy_Entry_point_Frequency(void)
+{
+  BB    *bb;
+
+  PU_freq = 1.0;
+
+  if (Compiling_Proper_REGION) {
+    bb = CGRIN_entry(RID_Find_Cginfo(REGION_First_BB));
+    PU_freq = BB_freq_fb_based(bb) ? BB_freq(bb) : 0.0;
+  } else if (BB_LIST_rest(Entry_BB_Head) == NULL) {
+    bb = BB_LIST_first(Entry_BB_Head);
+    PU_freq = BB_freq_fb_based(bb) ? BB_freq(bb) : 0.0;
+  }
+}
+#endif
+
+
 /* ====================================================================
  *
  * Normalize_BB_Frequencies
@@ -2698,6 +2727,11 @@ FREQ_Compute_BB_Frequencies(void)
 
     Finalize_Compute_BB_Frequencies();
 
+#ifdef TARG_ST
+    // [GS-DFGforISE] for completing the entry point frequency.
+    PU_freq = CG_enable_feedback ? 0.0 : 1.0;
+#endif
+
     if (CFLOW_Trace_Freq) {
       #pragma mips_frequency_hint NEVER
       BB *bb;
@@ -3194,6 +3228,13 @@ FREQ_Incorporate_Feedback(const WN* entry)
     #pragma mips_frequency_hint NEVER
     FREQ_View_CFG("Before feedback-based freq computation");
   }
+
+#ifdef TARG_ST
+  /* [GS-DFGforISE] for completing the entry point frequency before
+   *               normalization.
+   */
+  Copy_Entry_point_Frequency();
+#endif
   
   /* The frequency data we have created from the feedback is absolute.
    * CG conventions expect it to be normalized such that the entry

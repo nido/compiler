@@ -129,11 +129,12 @@
 #ifdef TARG_ST
 #include "top_properties.h"
 #include "mexpand.h"
-#endif
 
-#ifdef TARG_ST
 // [TB] gcov coverage utilities  
 #include "gcov_profile.h"
+
+// [GS-DFGforISE] : for exportation to DFGs
+#include "ExportFromBackEnd.h"
 #endif
 
 MEM_POOL MEM_local_region_pool;	/* allocations local to processing a region */
@@ -147,6 +148,12 @@ BOOL PU_References_GP;
 BOOL PU_Has_Asm;
 BOOL PU_Has_Hwloops;
 BOOL PU_Has_EH_Return;
+
+/* [GS-DFGforISE] variable used for keeping the frequency of the 
+ *                entry point of the pu, before normalization of
+ *                the frequencies.
+ */
+float PU_freq;
 #endif
 #ifdef KEY
 BOOL PU_Has_Exc_Handler;
@@ -269,6 +276,11 @@ CG_PU_Initialize (
   if (CG_LAO_activation != 0) lao_init_pu();
 #endif
 
+#ifdef TARG_ST
+  // [GS-DFGforISE] Init of exportation to DfgForIseclasses for PU.
+  DfgForIse::ExportFromBackEnd_PU_Initialize();
+#endif
+
   return;
 }
 
@@ -279,6 +291,11 @@ CG_PU_Initialize (
 void
 CG_PU_Finalize(void)
 {
+
+#ifdef TARG_ST
+  // [GS-DFGforISE] End of exportation to DfgForIseclasses for PU.
+  DfgForIse::ExportFromBackEnd_PU_Finalize();
+#endif
 
 #ifdef LAO_ENABLED
   if (CG_LAO_activation != 0) lao_fini_pu();
@@ -821,6 +838,22 @@ CG_Generate_Code(
     // of NaT bits, then need to save and restore ar.unat. 
   }
 
+
+
+
+#ifdef TARG_ST
+  // [GS-DFGforISE] Exportation to DfgForIse classes.
+  if (CG_dfg_ise_mask & 0xff) {
+    Set_Error_Phase("Exportation to DFGforISE classes");	 
+    // Computing the frequencies of basic blocks if not already done.
+    if (!CG_enable_feedback && !FREQ_Frequencies_Computed()) {	 
+      FREQ_Compute_BB_Frequencies();
+    }
+    DfgForIse::ExportFromBackEndForIse();
+  }
+#endif
+
+
   /* Global register allocation, Scheduling:
    *
    * The overall algorithm is as follows:
@@ -1261,6 +1294,14 @@ Check_for_Dump ( INT32 pass, BB *bb )
     /* Check to see if we should give a memory allocation trace.
      */
     Trace_Memory_Allocation ( pass, s );
+#ifdef TARG_ST
+    /* [GS-DFGforISE]
+     * Check to see if we should export the DFG. If yes, check each BB.
+     */
+    if (CG_dfg_debug_mask & 0xff) {
+      DfgForIse::ExportFromBackEndForDebug( pass, s, bb );
+    }
+#endif
   }
 }
 

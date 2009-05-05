@@ -537,17 +537,14 @@ extern BOOL Use_Page_Zero;  /* set bit in object to allow use of page 0 */
  */
 
 /* ====================================================================
- *   TAILMERGE:
+ *   TAILMERGE and other ST specific flags:
  * ====================================================================
  */
 #ifdef TARG_ST
 extern INT CG_tailmerge;
 extern INT CG_simp_flow_in_tailmerge;
-#endif
-
 
 /*Other options controled by mask value*/
-#ifdef TARG_ST
 extern INT32 CG_sched_mask;
 extern INT32 CG_LRA_mask;
 
@@ -557,6 +554,10 @@ enum {
   SCHED_EXTRACT_EARLIEST_AGGRESSIVE_ON
 };
 extern INT32 CG_sched_extract_earliest;
+
+/*Options for the exportation to DFGs and ISE identification. */
+extern INT32 CG_dfg_ise_mask;
+extern INT32 CG_dfg_debug_mask;
 #endif
 
 #endif /* cg_flags_INCLUDED */

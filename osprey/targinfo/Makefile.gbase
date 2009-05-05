@@ -171,6 +171,8 @@ LDIRT += *.[ch] *.Exported isa_gen$(BEXE) isa_subset_gen$(BEXE)		\
 	isa_binutils_gen$(BEXE) si_gen.so ii_files so_locations         \
 	si_gen.a *.o
 
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+LDIRT += dfgforise_opcode_gen$(BEXE)
 
 #----------------------------------------------------------------------
 #  Defining the targets 
@@ -317,6 +319,10 @@ TARG_INFO_SRCS += targ_isa_binutils.c
 endif
 
 TARG_INFO_HDRS = $(TARG_INFO_SRCS:.c=.h)
+
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+TARG_INFO_HDRS += DfgForIse_OpCode.h
+
 TARG_INFO_HOST_OBJS = $(TARG_INFO_SRCS:.c=.o)
 TARG_INFO_HOST_OBJS += targ_isa_topcode.o
 TARG_INFO_HOST_OBJS += targ_proc_proc.o
@@ -1148,8 +1154,14 @@ ifeq ($(BUILD_TARGET), ST200)
 ti_si.o: ti_si.c ti_si.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
+build_ti_si.o: ti_si.c ti_si.h
+	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
+
 st2%.o: st2%.c ti_si.h
 	$(CC) $(CFLAGS) -c $< -o $@
+
+build_st2%.o: st2%.c ti_si.h
+	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
 
 st2%.c: st2%_si_gen$(BEXE)
 	$(SETPATH) $(RUN) ./$<
@@ -1179,6 +1191,24 @@ st2%.dll st2%_dll.a : st2%.o  ti_si.o st2%_DllMain.o
 libst220.a : st220.o
 	$(AR) rc $@ $<
 
+DfgForIse_OpCode.h: dfgforise_opcode_gen$(BEXE)
+	$(RUN) ./dfgforise_opcode_gen$(BEXE)
+
+dfgforise_opcode_gen$(BEXE): dfgforise_opcode_gen.o gen_util.o dfgforise_opcode.o \
+	build_topcode.o build_isa_properties.o build_isa_operands.o	\
+	build_isa_registers.o build_isa_subset.o build_isa_lits.o build_isa_selector.o	\
+	build_st220.o build_ti_si.o
+	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
+
+dfgforise_opcode_gen.o: dfgforise_opcode_gen.cxx dfgforise_opcode_gen.h \
+	topcode.h targ_isa_properties.h targ_isa_operands.h targ_isa_selector.h	\
+	ti_si.h gen_util.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+dfgforise_opcode.o: dfgforise_opcode.cxx	\
+	dfgforise_opcode_gen.h topcode.h targ_isa_properties.h targ_isa_selector.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
 PARSER_INPUT_CFILES = \
 	st220_subset_targ_isa_parse.c \
 	st231_subset_targ_isa_parse.c	\
@@ -1200,8 +1230,14 @@ ifeq ($(BUILD_TARGET), STxP70)
 ti_si.o: ti_si.c ti_si.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
+build_ti_si.o: ti_si.c ti_si.h
+	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
+
 stxp%.o: stxp%.c ti_si.h
 	$(CC) $(CFLAGS) -c $< -o $@
+
+build_stxp%.o: stxp%.c ti_si.h
+	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
 
 stxp%.c: stxp%_si_gen$(BEXE)
 	$(SETPATH) $(RUN) ./$<
@@ -1231,6 +1267,27 @@ stxp%.dll stxp%_dll.a : stxp%.o  ti_si.o stxp%_DllMain.o
 lib_stxp70_v3.a : stxp70_v3.o
 	$(AR) rc $@ $<
 
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+# For DfgForIse OpCode infos
+DfgForIse_OpCode.h: dfgforise_opcode_gen$(BEXE)
+	$(RUN) ./dfgforise_opcode_gen$(BEXE)
+
+dfgforise_opcode_gen$(BEXE): dfgforise_opcode_gen.o gen_util.o dfgforise_opcode.o \
+	build_topcode.o build_isa_properties.o build_isa_operands.o	\
+	build_isa_registers.o build_isa_subset.o build_isa_lits.o build_isa_selector.o	\
+	build_ti_si.o build_stxp70_v3.o
+	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
+
+dfgforise_opcode_gen.o: dfgforise_opcode_gen.cxx dfgforise_opcode_gen.h \
+	topcode.h targ_isa_properties.h targ_isa_operands.h targ_isa_selector.h	\
+	ti_si.h gen_util.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+dfgforise_opcode.o: dfgforise_opcode.cxx	\
+	dfgforise_opcode_gen.h topcode.h targ_isa_properties.h targ_isa_selector.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+
 #
 # Assembly parser files
 #
@@ -1258,8 +1315,14 @@ ifeq ($(BUILD_TARGET), ARM)
 ti_si.o: ti_si.c ti_si.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
+build_ti_si.o: ti_si.c ti_si.h
+	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
+
 arm%.o: arm%.c ti_si.h
 	$(CC) $(CFLAGS) -c $< -o $@
+
+build_arm%.o: arm%.c ti_si.h
+	$(BUILD_CC) $(BUILD_CFLAGS) -c $< -o $@
 
 arm%.c: arm%_si_gen$(BEXE)
 	$(SETPATH) $(RUN) ./$<
@@ -1291,6 +1354,27 @@ lib_armv5e.a : armv5e.o
 
 lib_armv6.a : armv6.o
 	$(AR) rc $@ $<
+
+
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+# For DfgForIse OpCode infos
+DfgForIse_OpCode.h: dfgforise_opcode_gen$(BEXE)
+	$(RUN) ./dfgforise_opcode_gen$(BEXE)
+
+dfgforise_opcode_gen$(BEXE): dfgforise_opcode_gen.o gen_util.o dfgforise_opcode.o \
+	build_topcode.o build_isa_properties.o build_isa_operands.o	\
+	build_isa_registers.o build_isa_subset.o build_isa_lits.o build_isa_selector.o	\
+	build_ti_si.o build_armv6.o
+	$(BUILD_CXX) $(BUILD_CXXLDFLAGS) $^ -o $@
+
+dfgforise_opcode_gen.o: dfgforise_opcode_gen.cxx dfgforise_opcode_gen.h \
+	topcode.h targ_isa_properties.h targ_isa_operands.h targ_isa_selector.h	\
+	ti_si.h gen_util.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
+
+dfgforise_opcode.o: dfgforise_opcode.cxx	\
+	dfgforise_opcode_gen.h topcode.h targ_isa_properties.h targ_isa_selector.h
+	$(BUILD_CXX) $(BUILD_CXXFLAGS) -c $< -o $@
 
 #
 # Assembly parser files

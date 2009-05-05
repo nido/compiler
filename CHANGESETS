@@ -1,6 +1,85 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue May  5 14:26:49 CEST 2009
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/sg29/dev-DFGforISE
+
+Description:
+------------
+	* Branch to help to identify extensions to instruction sets, based on extended Data Flow Graphs.
+        * Generation of DFGs in graphml files depends on the value of ENABLE_BOOST in the configure file of the chosen target and on the compilation option -CG:dfg_ise_mask=<mask>.
+ 
+
+
+Modified Files:
+---------------
+	M      osprey/configure
+	M      osprey/targia32_stxp70/configure
+	M      osprey/lai/cg.h
+	M      osprey/lai/freq.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cg_flags.h
+	M      osprey/lai/Makefile.gbase
+	A  +   osprey/doc/howto-export-dfgs.txt
+	A  +   osprey/dfgforise
+	A  +   osprey/dfgforise/ExportFromBackEnd.h
+	A  +   osprey/dfgforise/graphs
+	A  +   osprey/dfgforise/graphs/DfgVertexOperation.cxx
+	A  +   osprey/dfgforise/graphs/BasicBlock.h
+	A  +   osprey/dfgforise/graphs/DfgGraph.cxx
+	A  +   osprey/dfgforise/graphs/DfgVertex.h
+	A  +   osprey/dfgforise/graphs/Function.cxx
+	A  +   osprey/dfgforise/graphs/DfgEdge.cxx
+	A  +   osprey/dfgforise/graphs/DfgVertexVariable.h
+	A  +   osprey/dfgforise/graphs/SubgraphMeritData.h
+	A  +   osprey/dfgforise/graphs/BasicBlock.cxx
+	A  +   osprey/dfgforise/graphs/DfgVertexConstant.h
+	A  +   osprey/dfgforise/graphs/DfgVertex.cxx
+	A  +   osprey/dfgforise/graphs/Subgraph.h
+	A  +   osprey/dfgforise/graphs/DfgVertexOperation.h
+	A  +   osprey/dfgforise/graphs/DfgVertexVariable.cxx
+	A  +   osprey/dfgforise/graphs/SubgraphMeritData.cxx
+	A  +   osprey/dfgforise/graphs/DfgInternalTypes.h
+	A  +   osprey/dfgforise/graphs/DfgGraph.h
+	A  +   osprey/dfgforise/graphs/DfgVertexConstant.cxx
+	A  +   osprey/dfgforise/graphs/DfgEdge.h
+	A  +   osprey/dfgforise/graphs/Function.h
+	A  +   osprey/dfgforise/graphs/Subgraph.cxx
+	A  +   osprey/dfgforise/graphs/DfgExternalTypes.h
+	A  +   osprey/dfgforise/common
+	A  +   osprey/dfgforise/common/Constant.h
+	A  +   osprey/dfgforise/common/Operation.cxx
+	A  +   osprey/dfgforise/common/XmlUtils.cxx
+	A  +   osprey/dfgforise/common/common_config.h
+	A  +   osprey/dfgforise/common/GraphmlTypes.h
+	A  +   osprey/dfgforise/common/Operation.h
+	A  +   osprey/dfgforise/common/Variable.cxx
+	A  +   osprey/dfgforise/common/XmlUtils.h
+	A  +   osprey/dfgforise/common/OperandResult.cxx
+	A  +   osprey/dfgforise/common/Constant.cxx
+	A  +   osprey/dfgforise/common/OpClass.h
+	A  +   osprey/dfgforise/common/Variable.h
+	A  +   osprey/dfgforise/common/OperandResult.h
+	A  +   osprey/dfgforise/dumps
+	A  +   osprey/dfgforise/dumps/DumpToGraphml.cxx
+	A  +   osprey/dfgforise/dumps/DumpToGraphml.h
+	A  +   osprey/dfgforise/ExportFromBackEnd.cxx
+	M      osprey/make/template/Makefile.sub.in
+	A  +   osprey/targinfo/arm/isa/dfgforise_opcode.cxx
+	A  +   osprey/targinfo/stxp70/isa/dfgforise_opcode.cxx
+	A  +   osprey/targinfo/st200/isa/dfgforise_opcode.cxx
+	A  +   osprey/targinfo/generate/dfgforise_opcode_gen.h
+	M      osprey/targinfo/generate/gen_util.h
+	A  +   osprey/targinfo/generate/dfgforise_opcode_gen.cxx
+	M      osprey/targinfo/Makefile.gbase
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue May  5 11:11:17 CEST 2009
 	Author:    chauveth
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

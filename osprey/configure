@@ -179,6 +179,8 @@ PLATFORMS=default
 TOOLDEFS=default
 SITE=${ST_SITE:-default}
 
+ENABLE_BOOST=false
+
 CORE_EXTENSIONS=""
 EXTENSION_LIST=""
 
@@ -213,7 +215,7 @@ while [ $# != 0 ]; do
       -v) \
 	  verbose=`expr $verbose + 1`
 	  ;;
-      BUILD=*|PLATFORMS=*|TOOLDEFS=*|SITE=*|CORE_EXTENSIONS=*) \
+      BUILD=*|PLATFORMS=*|TOOLDEFS=*|SITE=*|CORE_EXTENSIONS=*|ENABLE_BOOST=*) \
 	  var=`echo $1 | sed 's!=.*$!!'`
 	  value=`echo $1 | sed 's!^.*=!!'`
 	  eval ${var}=\'${value}\'
@@ -230,6 +232,12 @@ while [ $# != 0 ]; do
   esac
   shift
 done
+
+#
+#
+if [ "$ENABLE_BOOST" != "true" ]; then
+    ENABLE_BOOST=false
+fi
 
 # 
 # List of subdirectories is updated if CORE_EXTENSIONS variable is set.
@@ -266,6 +274,7 @@ if [ $verbose -ge 1 ]; then
     if [ "$CORE_EXTENSIONS" != "" ]; then
       echo "CORE_EXTENSIONS=$CORE_EXTENSIONS"
     fi
+    echo "ENABLE_BOOST=$ENABLE_BOOST"
 
     subst_all_print
 fi
@@ -378,6 +387,7 @@ for i in $conf_subdirs; do
 	-e \'s!@BUILD_TOT@!${BUILD_TOT}!\' \
         -e \'s!@CORE_EXTENSIONS@!${CORE_EXTENSIONS}!\' \
         -e \'s!@EXTENSION_LIST@!${EXTENSION_LIST}!\' \
+	-e \'s!@ENABLE_BOOST@!${ENABLE_BOOST}!\' \
 	${subst_sed_args} \
 	<$input >$i/Makefile
     if [ $? != 0 ]; then

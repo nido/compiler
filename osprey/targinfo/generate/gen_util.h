@@ -223,6 +223,11 @@ gen_util_file_type_last = gen_util_file_type_dyn_hfile,
 #define FNAME_TARG_CG_TOP_MULTI     FNAME_TARG  FNAME_CG_TOP_MULTI
 #define FNAME_STUB_CG_TOP_MULTI     FNAME_STUB  FNAME_CG_TOP_MULTI
 
+//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+// Adding the name of DfgForIse generated files.
+#define FNAME_DFGFORISE             "DfgForIse_"
+#define FNAME_DFGFORISE_OPCODE      FNAME_DFGFORISE "OpCode"
+
 /* Managing dynamic extensions */
 extern bool  Is_Static_Code           (void         );
 extern bool  Is_Dynamic_Code          (void         );
