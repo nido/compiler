@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed May  6 16:31:08 CEST 2009
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-65283
+
+Description:
+------------
+	* [trunk] Fix for bug #65283: [CG] Compiler asserts in cgemit.cxx : TOP_asm in BB  which is not BB_asm (st200, -O3)
+        Deliver fixes/codex-65283 rev #22062 with authorization branch #66164
+
+
+Modified Files:
+---------------
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed May  6 15:19:42 CEST 2009
 	Author:    chauveth
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
