@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed May  6 15:19:42 CEST 2009
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-67126
+
+Description:
+------------
+	* [trunk] Fix for bug #67126 (sda code generation fails on dhrystone [-O3 -Msda=all] on stxp70 v4). Deliver fixes/codex-67126 rev #22057 with authorization branch #67128
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue May  5 14:26:49 CEST 2009
 	Author:    bv11
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
