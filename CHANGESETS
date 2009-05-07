@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu May  7 15:27:03 CEST 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-56107
+
+Description:
+------------
+	* [trunk] Fix for bug #56107: Missing -lgcc_eh from (st200, -fexceptions).
+	Deliver fixes/codex-56107 rev #22083 with authorization branch #67569
+
+
+Modified Files:
+---------------
+	M      osprey/driver/phases.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu May  7 12:56:06 CEST 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

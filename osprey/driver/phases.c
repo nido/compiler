@@ -1953,8 +1953,11 @@ add_final_ld_args (string_list_t *args)
       // [CG] Whole section conditionalized on target as libraries support
       // vary greatly.
       
-      /* (cbr) libc++ comes before libc */
-      if (invoked_lang == L_CC) {
+      if (invoked_lang == L_cc) {
+	/* (cm) exception support library can be needed in C */
+	add_string(args, "-lgcc_eh");
+      } else if (invoked_lang == L_CC) {
+	/* (cbr) libc++ comes before libc */
 	add_string(args, "-lstdc++");
 	/* (cbr) for C++ exceptions unwinding */
 	add_string(args, "-lgcc_eh");
