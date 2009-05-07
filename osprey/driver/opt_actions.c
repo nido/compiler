@@ -2628,6 +2628,13 @@ int get_os21_profiler_options_emit_undefined() {
   return os21_profiler_options_emit_undefined == TRUE ;
 }
 
+int get_os21_profiler_options_warn() {
+  // Warn if we are required not to emit the undefined (meaning -profiler-no-constructor is set)
+  // And not requiring profiling (meaning -profiler is not used)
+  return  os21_profiler_options_emit_undefined == FALSE && 
+    (os21_profiler_options == FALSE || os21_profiler_options == UNDEFINED);
+}
+
 /* This is the central function for the OS21 profiler support 
    Analyze the options and parameters, calls for action and record...
 */

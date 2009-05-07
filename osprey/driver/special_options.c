@@ -870,7 +870,7 @@ add_special_options (void)
 	  }
 	}
 
-	if (!os21_profiler_options_set() && !get_os21_profiler_options_emit_undefined() &&
+	if (get_os21_profiler_options_warn() &&
 	    (st200_runtime == RUNTIME_OS21 || st200_runtime == RUNTIME_OS21_DEBUG)) {
 	  warning("OS21 -profiler-no-constructor command used without -profiler: command has no effect");
 	}
@@ -880,11 +880,16 @@ add_special_options (void)
 	{
 	  /* We may have to emit --undefined options to the linker command line but take care of the right link phase */
 	  if (get_os21_profiler_options_emit_undefined()) {
-	    const char *profileroptionsstring= "--undefined os21_profiler_constructor --undefined os21_profiler_destructor" ;
-	    flag = add_new_option(profileroptionsstring) ;
-	    add_phase_for_option(flag, P_any_ld) ;
-	    prepend_option_seen(flag) ;
-	    remove_phase_for_option(flag, P_ldsimple);
+	    const char *profileroptionsstring[] = { 
+	      "--undefined=os21_profiler_constructor",
+	      "--undefined=os21_profiler_destructor" } ;
+	    int i ;
+	    for (i=0; i< sizeof(profileroptionsstring)/sizeof(0[profileroptionsstring]); i++) {
+	      flag = add_new_option(profileroptionsstring[i]) ;
+	      add_phase_for_option(flag, P_any_ld) ;
+	      prepend_option_seen(flag) ;
+	      remove_phase_for_option(flag, P_ldsimple);
+	    }
 	  }
 	}
 #endif

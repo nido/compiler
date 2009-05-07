@@ -166,4 +166,5 @@ extern int get_os21_trace_options_nelements(OS21_TRACE kind) ;
 extern int get_os21_trace_options_elements(OS21_TRACE kind, char *elts[], size_t maxnelts) ;
 extern int os21_profiler_options_set() ;
 extern int get_os21_profiler_options_emit_undefined() ;
+extern int get_os21_profiler_options_warn() ;
 #endif

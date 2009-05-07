@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu May  7 12:56:06 CEST 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-67486
+
+Description:
+------------
+	* [trunk] Fix for bug #67486: [DRIVER] st200cc linking for OS21 dynamic profiling fails.
+	Deliver fixes/codex-67486 rev #22074 with authorization branch #67525
+
+
+Modified Files:
+---------------
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/opt_actions.h
+	M      osprey/driver/special_options.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed May  6 16:31:08 CEST 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
