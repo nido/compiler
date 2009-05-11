@@ -1152,7 +1152,7 @@ Check_Target ( void )
    in O2/Os/O3 it is prioritary to command line memory options. */
   if (ipa ==TRUE) {
     if (olevel <= 1) {
-      add_stxp70_int_option("-IPA::mem_placement=%d", 0, P_ipa_link);
+      add_stxp70_int_option("-IPA:mem_placement=%d", 0, P_ipa_link);
     }
     else if (option_was_seen(O_Msda__) ||
 	     option_was_seen(O_Mda__) ||
@@ -1161,7 +1161,10 @@ Check_Target ( void )
       int flag;
       int seen = 0;
       FOREACH_OPTION_SEEN(flag) {
-	if (strcmp(get_option_name(flag),"-IPA::mem_placement=OFF") == 0) {
+	if ((strcasecmp(get_option_name(flag),"-IPA:mem_placement=OFF") == 0) ||
+	    (strcasecmp(get_option_name(flag),"-IPA:mem_placement=NO") == 0) ||
+	    (strcasecmp(get_option_name(flag),"-IPA:mem_placement=FALSE") == 0) ||
+	    (strcasecmp(get_option_name(flag),"-IPA:mem_placement=0") == 0)) {
 	  seen = 1;
 	}
       }
