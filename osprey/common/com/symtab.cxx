@@ -1455,17 +1455,17 @@ TY_smallest_align(TY_IDX ty_id) {
     /* check that we do not have an empty struct */
     if (TY_size(ty_id) > 0) {
       FLD_ITER fld_iter = Make_fld_iter (TY_fld(ty_id));
-      while (!FLD_last_field (fld_iter)) {
+      do {
         UINT32 tmp = TY_smallest_align(FLD_type(fld_iter));
         if (tmp < res) {
           res= tmp;
           /* if byte alignment is achieved, stop parsing the structure
              fields */
-          if (res==1)
+          if (res==1) {
             break;
+	  }
         }
-        ++fld_iter;
-      }
+      } while (!FLD_last_field (fld_iter++));
     }
   }
   /* kind is an array. use array element type instead. */
