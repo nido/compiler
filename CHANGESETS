@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu May 14 10:02:26 CEST 2009
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-67443
+
+Description:
+------------
+	*  Fix for bug #67443 [GFECC] #pragma trigger compiler assertion in C++ (st200).
+	Deliver fixes/codex-67443 with authorization branch #67845.
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/gnu/c-common.c
+	M      osprey/gccfe/gnu/c-semantics.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@22130 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-67443@22138 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@22130 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-67443@22138" 
+
+Diff links to modified files:
+-----------------------------
+osprey/gccfe/gnu/c-common.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/c-common.c?p2=branches/fixes/codex-67443/osprey/gccfe/gnu/c-common.c&r1=22130&r2=22138&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/c-semantics.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/c-semantics.c?p2=branches/fixes/codex-67443/osprey/gccfe/gnu/c-semantics.c&r1=22130&r2=22138&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon May 11 14:03:24 CEST 2009
 	Author:    
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

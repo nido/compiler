@@ -4020,6 +4020,9 @@ statement_code_p (code)
     case ASM_STMT:
     case FILE_STMT:
     case CASE_LABEL:
+#ifdef TARG_ST
+    case PRAGMA_STMT:
+#endif
       return 1;
 
     default:

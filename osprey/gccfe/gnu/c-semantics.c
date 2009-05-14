@@ -933,7 +933,9 @@ expand_stmt (t)
 
 #ifdef HANDLE_WFE_PRAGMAS
 	case PRAGMA_STMT:
-	  expand_pragma_stmt(t);
+	  if (!WFE_CPlusPlus_Translator) {
+	    expand_pragma_stmt(t);
+	  }
 	  break;
 #endif
 
