@@ -2167,7 +2167,14 @@ build_binary_op (code, orig_op0, orig_op1, convert_p)
 	  && (code1 == INTEGER_TYPE || code1 == REAL_TYPE
 	      || code1 == COMPLEX_TYPE
 	      || code1 == VECTOR_TYPE))
-	short_compare = 1;
+	{
+#ifdef TARG_ST
+	  /* [TTh] Reject comparisons involving extension type */
+	  if (!IS_DYNAMIC_MACHINE_MODE(TYPE_MODE(type0)) &&
+	      !IS_DYNAMIC_MACHINE_MODE(TYPE_MODE(type1)))
+#endif
+	    short_compare = 1;
+	}
       else if (code0 == POINTER_TYPE && code1 == POINTER_TYPE)
 	{
 	  tree tt0 = TREE_TYPE (type0);
