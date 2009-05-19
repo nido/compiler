@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue May 19 14:20:25 CEST 2009
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-64556
+
+Description:
+------------
+	* Lowered the kid of OPR_ALLOCA in RT_LOWER_expr (rt_lower_wn.cxx). 
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/rt_lower_wn.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon May 18 15:46:28 CEST 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

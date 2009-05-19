@@ -959,12 +959,15 @@ RT_LOWER_expr (
     // If this is not a hilo type or we're not emulating, get out
     //
 #ifdef TARG_ST
-    if (!WN_Is_Emulated(tree))
+    if (!WN_Is_Emulated(tree)) {
+      WN_kid0(new_nd) = RT_LOWER_expr(WN_kid0(tree));
+      return new_nd;
+    }
 #else
     if (!(Emulate_FloatingPoint_Ops && MTYPE_is_float(res)) && 
 	!(Only_32_Bit_Ops && (MTYPE_is_longlong(res) || MTYPE_is_double(res))))
-#endif
       return tree;
+#endif
 
     FmtAssert(FALSE,("can't handle operator %s", OPERATOR_name(opr)));
     return new_nd;
