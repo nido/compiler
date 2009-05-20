@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed May 20 15:30:58 CEST 2009
+	Author:    knochelh
+	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
+	Branch:    http://svn.open64.codex.cro.st.com/svnroot/open64/branches/fixes/codex-67489
+
+Description:
+------------
+	* [trunk] Fix for bug #67489: [CG] Possible code generation improvement on logical or expressions (st200)
+	Deliver fixes/codex-67489 rev #22219 with authorization branch #67534
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/expand/exp_targ.cxx
+	M      osprey/targinfo/st200/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue May 19 14:20:25 CEST 2009
 	Author:    bv11
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

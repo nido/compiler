@@ -3107,7 +3107,17 @@ op_match_lnot(OP *op,
     *op0_tn = OP_opnd (op, 0);
     *op0_tninfo = opnd_tninfo[0];
     return TRUE;
-   }
+  } else if ((((top == TOP_slct_i_r_b_r) || (top == TOP_slct_r_r_b_r)) && 
+	      (TN_Has_Value(OP_opnd(op, 1)) && TN_Has_Value(OP_opnd(op, 2))) &&
+	      (TN_Value(OP_opnd(op, 1)) == 0 && TN_Value(OP_opnd(op, 2)) == 1)) ||
+	     (((top == TOP_slctf_i_r_b_r) || (top == TOP_slctf_r_r_b_r)) && 
+	      (TN_Has_Value(OP_opnd(op, 1)) && TN_Has_Value(OP_opnd(op, 2))) &&
+	      (TN_Value(OP_opnd(op, 2)) == 0 && TN_Value(OP_opnd(op, 1)) == 1))) {  
+    *op0_tn = OP_opnd(op, 0);
+    *op0_tninfo = opnd_tninfo[0];
+    return TRUE;   
+  } 
+  
   return FALSE;
 }
 
@@ -4864,6 +4874,110 @@ and_or_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
 
 
 /*
+ * cmp_notl_sequence
+ *
+ * Convert :
+ * - (notl (cmp a b)) into (invcmp a b)
+ * for instance:
+ * (notl (a > b)) into (a <= b)
+ * or
+ * (notl (norl a b) into (orl a b)
+ */
+static BOOL
+cmp_notl_sequence(OP *op, TN **opnd_tn, EBO_TN_INFO **opnd_tninfo)
+{
+  TN *l1_tn, *l2_tn, *lhs_tn, *rhs_tn;
+  EBO_TN_INFO *l1_tninfo, *l2_tninfo, *lhs_tninfo, *rhs_tninfo;
+  EBO_OP_INFO *def_opinfo;
+  BB *bb = OP_bb(op);
+
+  if (EBO_Trace_Optimization) 
+    fprintf(TFile,"Enter cmp_notl_sequence\n");
+
+  if (!op_match_lnot(op, opnd_tninfo, &l1_tn, &l1_tninfo))
+    return FALSE;
+
+  if (find_def_opinfo(l1_tninfo, &def_opinfo)) {
+    if (!op_match_compare(def_opinfo->in_op, 
+			  def_opinfo->actual_opnd, 
+			  &lhs_tn, &lhs_tninfo, &rhs_tn, &rhs_tninfo))
+      return FALSE;
+
+    if ((lhs_tninfo != NULL && !EBO_tn_available (bb, lhs_tninfo)) ||
+	(rhs_tninfo != NULL && !EBO_tn_available (bb, rhs_tninfo)))
+      return FALSE;
+
+    VARIANT variant = OP_cmp_variant(def_opinfo->in_op);
+    VARIANT new_variant = variant;
+    OPS ops = OPS_EMPTY;
+    
+    switch (variant) {
+    case V_CMP_ORL: 
+      new_variant = V_CMP_NORL; 
+      Expand_Logical_Or(OP_result(op, 0), lhs_tn, rhs_tn, new_variant, &ops);
+      break;
+    case V_CMP_ANDL: 
+      new_variant = V_CMP_NANDL;
+      Expand_Logical_And(OP_result(op, 0), lhs_tn, rhs_tn, new_variant, &ops);
+      break;
+    case V_CMP_NORL: 
+      new_variant = V_CMP_ORL;
+      Expand_Logical_Or(OP_result(op, 0), lhs_tn, rhs_tn, new_variant, &ops);
+      break;
+    case V_CMP_NANDL: 
+      new_variant = V_CMP_ANDL;
+      Expand_Logical_And(OP_result(op, 0), lhs_tn, rhs_tn, new_variant, &ops);
+      break;
+    case V_CMP_NE: 
+      Expand_Int_Equal(OP_result(op, 0), lhs_tn, rhs_tn, MTYPE_I4, &ops);
+      break;
+    case V_CMP_LT: 
+      Expand_Int_Greater_Equal(OP_result(op, 0), lhs_tn, rhs_tn, MTYPE_I4, &ops);
+      break;
+    case V_CMP_GT: 
+      Expand_Int_Less_Equal(OP_result(op, 0), lhs_tn, rhs_tn, MTYPE_I4, &ops);
+      break;
+    case V_CMP_LTU: 
+      Expand_Int_Greater_Equal(OP_result(op, 0), lhs_tn, rhs_tn, MTYPE_U4, &ops);
+      break;
+    case V_CMP_GTU: 
+      Expand_Int_Less_Equal(OP_result(op, 0), lhs_tn, rhs_tn, MTYPE_U4, &ops);
+      break;
+    case V_CMP_LE: 
+      Expand_Int_Greater(OP_result(op, 0), lhs_tn, rhs_tn, MTYPE_I4, &ops);
+      break;
+    case V_CMP_GE: 
+      Expand_Int_Less(OP_result(op, 0), lhs_tn, rhs_tn, MTYPE_I4, &ops);
+      break;
+    case V_CMP_EQ: 
+      Expand_Int_Not_Equal(OP_result(op, 0), lhs_tn, rhs_tn, MTYPE_I4, &ops);
+      break;
+    case V_CMP_LEU: 
+      Expand_Int_Greater(OP_result(op, 0), lhs_tn, rhs_tn, MTYPE_U4, &ops);
+      break;
+    case V_CMP_GEU:
+      Expand_Int_Less(OP_result(op, 0), lhs_tn, rhs_tn, MTYPE_U4, &ops);
+      break;
+    default:
+      FmtAssert(0, ("Unexpected comparison variant"));
+      break;
+    }
+    
+    if (OPs_Are_Equivalent(op, OPS_first(&ops)))
+      return FALSE;
+    OP_srcpos(OPS_last(&ops)) = OP_srcpos(op);
+    if (EBO_in_loop) EBO_OPS_omega (&ops,  NULL, NULL);
+    if (!EBO_Verify_Ops(&ops)) return FALSE;
+    BB_Insert_Ops_After(bb, op, &ops);
+    if (EBO_Trace_Optimization) 
+      fprintf(TFile,"Convert cmp/notl into invcmp\n");
+    return TRUE;
+  }
+  return FALSE;
+}
+
+
+/*
  * andl_orl_sequence
  *
  * Convert :
@@ -5651,6 +5765,8 @@ EBO_Special_Sequence (
 	&& reduce_predicate_logical_sequence (op, opnd_tn, opnd_tninfo)) return TRUE;
   }
 
+  if (cmp_notl_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
+  
   if (opcode == TOP_convib_r_b && convib_op_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
   if (opcode == TOP_convbi_b_r && convbi_op_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;
   if (predicate_invert_sequence(op, opnd_tn, opnd_tninfo)) return TRUE;

@@ -1569,6 +1569,7 @@ Expand_Logical_And (
   OPS *ops
 )
 {
+  
   TOP opcode = TOP_UNDEFINED;
   
   FmtAssert(TN_size(dest) <= 4, ("Result TN size unexpected"));
@@ -1596,7 +1597,10 @@ Expand_Logical_And (
     return;
   }
 
-  opcode = TOP_result_register_variant(TOP_andl_r_r_r, 0, TN_register_class(dest));
+  if (variant == V_CMP_NANDL)
+    opcode = TOP_result_register_variant(TOP_nandl_r_r_r, 0, TN_register_class(dest));
+  else 
+    opcode = TOP_result_register_variant(TOP_andl_r_r_r, 0, TN_register_class(dest));
 
   FmtAssert(opcode != TOP_UNDEFINED, ("Expand_Logical_And"));
 
@@ -1646,7 +1650,10 @@ Expand_Logical_Or (
     return;
   }
 
-  opcode = TOP_result_register_variant (TOP_orl_r_r_r, 0, TN_register_class(dest));
+  if (variant == V_CMP_NORL)
+    opcode = TOP_result_register_variant(TOP_norl_r_r_r, 0, TN_register_class(dest));
+  else 
+    opcode = TOP_result_register_variant(TOP_orl_r_r_r, 0, TN_register_class(dest));
 
   FmtAssert(opcode != TOP_UNDEFINED, ("Expand_Logical_Or"));
 
