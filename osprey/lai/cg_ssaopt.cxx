@@ -1306,6 +1306,19 @@ Generate_Common_Base(vec_base_ops& Base_Ops_List) {
       INT64 val;
       if (!TN_is_constant(tn_offset) || CGTARG_offset_is_extended(tn_offset, &val))
         extended_count ++;
+      //TDR: fix for bug #58284 min_offset_alignment according to reg type 
+      // needed by wide registers of STxP70 extensions
+      INT offset_idx = OP_find_opnd_use(BO_op(op_offset[j]), OU_offset);
+      if (offset_idx!=-1) {
+        const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(BO_op(op_offset[j])));
+        const ISA_OPERAND_VALTYP *vtype = ISA_OPERAND_INFO_Operand(oinfo,offset_idx);
+        const ISA_LIT_CLASS_INFO *plc = ISA_LIT_CLASS_info + ISA_OPERAND_VALTYP_Literal_Class(vtype);
+        INT i;
+        for (i = 1; i <= plc->num_ranges; ++i) {
+          if ((int)plc->range[i].scaling_mask+1 > min_offset_alignment) 
+            min_offset_alignment = (int)plc->range[i].scaling_mask+1;
+        }
+      }
     }
 
     if (all_same_base && (extended_count <= 2))

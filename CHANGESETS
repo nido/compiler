@@ -1,6 +1,44 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon May 25 17:38:48 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-58284
+
+Description:
+------------
+	* [trunk] Fix for bug #58284: 1242302119      .
+	Deliver fixes/codex-58284 rev #22270 with authorization branch #67650
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_ssaopt.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Mon May 25 16:52:31 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-58284
+
+Description:
+------------
+	* [trunk] Fix for bug #58284: 1242302119      .
+	Deliver fixes/codex-58284 rev #22263 with authorization branch #67650
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_ssaopt.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon May 25 17:20:07 CEST 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
