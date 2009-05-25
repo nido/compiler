@@ -1589,6 +1589,8 @@ Is_Hammock_ft (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail, bool allow_du
 		  BB_Fall_Thru_and_Target_Succs(head, &fall_thru, &target);
 		  BB_SET_ClearD(t_set);
 		  clear_spec_lists();
+		  // No need to check the return value, this has already
+		  // been checked by the call above to Is_Hammock_Legacy
 		  Check_Suitable_Chain (*tail, fall_thru, ft_set, allow_dup);
 		  BB *my_bb,*last_bb;
 		  FOR_ALL_BB_SET_members(ft_set,my_bb) {

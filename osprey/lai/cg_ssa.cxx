@@ -2006,6 +2006,7 @@ SSA_Update ()
  *   predecessors. The reason is that the number of opnds in an OP is
  *   encoded on an uINT8, and a PHI operation has as many operands as
  *   the number of predecessors of the basic block it is in.
+ *   FdF 20090507: Get rid of this limit in op.h
  * ================================================================ */
 BOOL
 SSA_Check (
@@ -2013,11 +2014,13 @@ SSA_Check (
   BOOL region 
 )
 {
+#if 0
   BB *bb;
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     if (BBlist_Len(BB_preds(bb)) > 255)
       return FALSE;
   }
+#endif
   return TRUE;
 }
 

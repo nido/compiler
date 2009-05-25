@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon May 25 17:20:07 CEST 2009
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-65119
+
+Description:
+------------
+	* [trunk] [BE] Compiler asserts during Select Region Formation phase (st200, -O3, gcc, spec2006)
+	Deliver fixes/codex-65119 rev #22265 with authorization branch #66349
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_ssa.cxx
+	M      osprey/lai/cg_select.cxx
+	M      osprey/lai/op.h
+	M      osprey/targinfo/stxp70/cg/targ_ebo.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon May 25 10:19:21 CEST 2009
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

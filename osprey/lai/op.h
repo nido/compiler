@@ -365,12 +365,21 @@ typedef struct op {
   mUINT16	flags;		/* attributes associated with OP */
 #ifdef TARG_ST
   mUINT16	flags2;		/* [CL] attributes extension */
+  mUINT8	unrolling;	/* which unrolled replication (if any) */
   UINT64	g_map_idx;	/* Global unique id for OP */
-#endif
+  mTOP		opr;		/* Opcode. topcode.h */
+  // FdF 20090507: The limit of 255 operands is reached for PHI
+  // operations in basic blocks with more than 256 predecessors.
+  // FdF 20090514: The limit of 255 results may be reached on parallel
+  // copies
+  mUINT32	opnds;		/* Number of operands */
+  mUINT32	results;	/* Number of results */
+#else
   mTOP		opr;		/* Opcode. topcode.h */
   mUINT8	unrolling;	/* which unrolled replication (if any) */
   mUINT8	results;	/* Number of results */
   mUINT8	opnds;		/* Number of operands */
+#endif
 #ifdef TARG_ST
   struct tn	*spilled_tn;	/* Spilled TN if OP_spill(). */
 #endif
