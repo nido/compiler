@@ -291,28 +291,48 @@ Get_Dir_Dst_Info (char *name)
 	return last_dir_num;
 }
 
+#ifdef TARG_ST
+// [CL] bug #64842
+static std::vector< std::pair< char *, std::pair <UINT, UINT> > > file_dst_list;
+#else
 static std::vector< std::pair< char *, UINT > > file_dst_list;
+#endif
 
 // get the file dst info.
 // if already exists, return existing info, else append to list.
 static UINT
 Get_File_Dst_Info (char *name, UINT dir)
 {
+#ifdef TARG_ST
+// [CL] bug #64842
+        std::vector< std::pair < char*, std::pair <UINT, UINT> > >::iterator found;
+#else
         std::vector< std::pair < char*, UINT > >::iterator found;
+#endif
 	// assume linear search is okay cause list will be small?
         for (found = file_dst_list.begin(); 
 		found != file_dst_list.end(); 
 		++found)
         {
+#ifdef TARG_ST
+// [CL] bug #64842: don't compare the filename only, check the directory too
+	  if ( (strcmp ((*found).first, name) == 0)
+	       && ((*found).second.second == dir)) {
+	    return (*found).second.first;
+	  }
+#else
 		if (strcmp ((*found).first, name) == 0) {
 			return (*found).second;
 		}
+#endif
 	}
 	// not found, so append file to dst list
 #ifdef TARG_ST
 	// [CG] Merge fix from gccfe:
 	// //[CM] (MBTst16964, MBTst16965) Extend name livetime
-	file_dst_list.push_back (std::make_pair (xstrdup(name), ++last_file_num));
+	// [CL] bug #64842
+	file_dst_list.push_back (std::make_pair (xstrdup(name), std::make_pair (++last_file_num, dir)));
+
 #else
 	file_dst_list.push_back (std::make_pair (name, ++last_file_num));
 #endif

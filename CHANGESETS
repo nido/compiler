@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon May 25 10:19:21 CEST 2009
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-64842
+
+Description:
+------------
+	*  Deliver fixes/codex-64842 rev #22256
+	fix bug #64842 ([DWARF] #line xx "file.c" implies a directory)
+
+
+Modified Files:
+---------------
+	M      osprey/gccfe/wfe_dst.cxx
+	M      osprey/g++fe/wfe_dst.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed May 20 15:30:58 CEST 2009
 	Author:    knochelh
 	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
