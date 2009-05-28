@@ -425,6 +425,34 @@ Expand_ST_into_base_and_ofst(ST *st, INT64 st_ofst, ST **base, INT64 *ofst)
   *base = tmpbase;
 }
 
+#ifdef TARG_ST
+// FdF 20090520: Recursively check that a TY_IDX only contains SCALAR
+// and POINTER types
+static BOOL
+TY_has_only_scalar_types(TY_IDX ty)
+{
+  if (ty == TY_IDX_ZERO)
+    return FALSE;
+
+  switch (TY_kind(ty)) {
+  case KIND_SCALAR:
+  case KIND_POINTER:
+    return TRUE;
+
+  case KIND_STRUCT:    
+    if (!TY_fld (ty).Is_Null ()) {
+      FLD_ITER fld_iter = Make_fld_iter (TY_fld (ty));
+      do {
+	TY_IDX fld_ty = FLD_type (fld_iter);
+	if (!TY_has_only_scalar_types(fld_ty))
+	  return FALSE;
+      } while (!FLD_last_field (fld_iter++));
+    }
+    return TRUE;
+  }
+  return FALSE;
+}
+#endif
 
 //  Build the POINTS_TO for a scalar
 //  The POINTS_TO contains fully lowered base and ofst.
@@ -447,6 +475,12 @@ POINTS_TO::Analyze_ST(ST *st, INT64 byte_ofst, INT64 byte_size,
   Set_named();   // this variable has a name
 
   // Fix 363108: simple scalar and structure can be speculated
+#ifdef TARG_ST
+  // FdF 20090520: For a STRUCT, it must contains only SCALAR, POINTER
+  // and STRUCT, not ARRAYs
+  if (TY_has_only_scalar_types(ty))
+    Set_safe_to_speculate();
+#else
   if (ty != (TY_IDX)0) {
     switch (TY_kind (ty)) {
     case KIND_SCALAR:
@@ -458,6 +492,7 @@ POINTS_TO::Analyze_ST(ST *st, INT64 byte_ofst, INT64 byte_size,
       break;
     }
   }
+#endif
   
   // get to its base
   ST  *base;
