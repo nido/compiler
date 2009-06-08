@@ -320,6 +320,20 @@ static void WFE_Generate_Thunk (tree decl);  /* forward */
 #endif
 
 #ifdef TARG_ST
+static tree
+take_address (tree t)
+{
+  if (TREE_CODE (t) == COMPONENT_REF) {
+    tree base = take_address (TREE_OPERAND (t, 0));
+    tree field = TREE_OPERAND (t, 1);
+    tree offset = DECL_FIELD_OFFSET (field);
+    return build (PLUS_EXPR, build_pointer_type(TREE_TYPE(t)), base, offset);
+  } else {
+    return build1 (ADDR_EXPR,
+		   build_pointer_type(TREE_TYPE(t)), t);
+  }
+}
+
  class Target_Expr_Item {
  private:
    const tree target;
@@ -589,9 +603,7 @@ simplify_target_exprs_r (tree *tp,
 	   CLASSTYPE_NON_POD_P (TREE_TYPE(t)))) {  
 	if (! target_expr_info->Visited_Call_Expr_p (t)) {
 	  TREE_OPERAND (t, 1) = tree_cons (NULL_TREE,
-					   build1 (ADDR_EXPR,
-						   build_pointer_type(TREE_TYPE(t)),
-						   target_expr_info->Use()),
+					   take_address(target_expr_info->Use ()),
 					   TREE_OPERAND(t, 1));
 	}
 	target_expr_info->Set_Written(true);
@@ -612,7 +624,6 @@ simplify_target_exprs_r (tree *tp,
     break;
 
   case SAVE_EXPR:
-  case ADDR_EXPR:
   case INDIRECT_REF:
   case COMPONENT_REF:
   case BIT_FIELD_REF:
@@ -626,6 +637,23 @@ simplify_target_exprs_r (tree *tp,
     }
     break;
 
+  case ADDR_EXPR:
+      /* target is not propagated into arg of this. */
+    {
+      tree old_operand = TREE_OPERAND (t, 0);
+      *walk_subtrees = 0;
+      target_expr_info->Push_Target (NULL_TREE);
+      simplify_target_exprs (& TREE_OPERAND (t, 0), *target_expr_info);
+      target_expr_info->Pop_Target ();
+      tree new_operand = TREE_OPERAND (t, 0);
+      if (new_operand != old_operand
+	  && TREE_CODE (new_operand) == COMPONENT_REF) {
+	*tp = take_address (new_operand);
+      }
+    }
+    break;
+
+
   case ARRAY_REF:
       /* target is not propagated into arg of these. */
     {
@@ -638,12 +666,21 @@ simplify_target_exprs_r (tree *tp,
     break;
     
   case CONSTRUCTOR:
-      /* target is not propagated into arg of this. */
     {
       *walk_subtrees = 0;
-      target_expr_info->Push_Target (NULL_TREE);
-      simplify_target_exprs (& CONSTRUCTOR_ELTS (t), *target_expr_info);
-      target_expr_info->Pop_Target ();
+      tree elt;
+      for (elt = CONSTRUCTOR_ELTS (t); elt; elt = TREE_CHAIN (elt)) {
+	tree field = TREE_PURPOSE (elt);
+	tree value = TREE_VALUE (elt);
+	tree component = (target_expr_info->Target_Set_p ()
+			  ? build (COMPONENT_REF, TREE_TYPE(field),
+				   target_expr_info->Target (),
+				   field)
+			  : NULL_TREE);
+	target_expr_info->Push_Target (component);
+        simplify_target_exprs (& TREE_VALUE (elt), *target_expr_info);
+	target_expr_info->Pop_Target ();
+      }
     }
     break;
 

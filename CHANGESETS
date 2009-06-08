@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jun 08 14:37:06 CEST 2009
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-67986
+
+Description:
+------------
+	*  Fix for bug #67986 [GFECC] Miscompilation of class initializer.
+	Deliver fixes/codex-67986 with authorization branch #68704.
+
+
+Modified Files:
+---------------
+	M      osprey/g++fe/wfe_decl.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@22379 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-67986@22457 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@22379 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-67986@22457" 
+
+Diff links to modified files:
+-----------------------------
+osprey/g++fe/wfe_decl.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_decl.cxx?p2=branches/fixes/codex-67986/osprey/g++fe/wfe_decl.cxx&r1=22379&r2=22457&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu May 28 15:25:11 CEST 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
