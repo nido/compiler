@@ -57,6 +57,6 @@ class WN;
  * @see    tailmerge.h for the detail of tailmerge algorithm (CTailmerge class)
  */
 extern void
-OPT_Tailmerge(CFG& cfg, WN* wn_tree, int phase);
+OPT_Tailmerge(COMP_UNIT* comp_unit, WN* wn_tree, int phase);
 
 #endif

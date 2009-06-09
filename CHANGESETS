@@ -1,6 +1,42 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jun 09 14:38:15 CEST 2009
+	Author:    janiny
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-66130
+
+Description:
+------------
+	* [trunk] Fix for bug #66130: bug in WOPT tailmerge. Deliver fixes/codex-66130 rev #22444 with authorization branch #67629.
+
+
+Modified Files:
+---------------
+	M      osprey/be/opt/opt_tailmerge.h
+	M      osprey/be/opt/opt_tailmerge.cxx
+	M      osprey/be/opt/opt_main.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@22459 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-66130@22496 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@22459 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-66130@22496" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/opt/opt_tailmerge.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_tailmerge.h?p2=branches/fixes/codex-66130/osprey/be/opt/opt_tailmerge.h&r1=22459&r2=22496&roottype=svn&root=open64&diff_format=h
+osprey/be/opt/opt_tailmerge.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_tailmerge.cxx?p2=branches/fixes/codex-66130/osprey/be/opt/opt_tailmerge.cxx&r1=22459&r2=22496&roottype=svn&root=open64&diff_format=h
+osprey/be/opt/opt_main.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_main.cxx?p2=branches/fixes/codex-66130/osprey/be/opt/opt_main.cxx&r1=22459&r2=22496&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jun 08 14:37:06 CEST 2009
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

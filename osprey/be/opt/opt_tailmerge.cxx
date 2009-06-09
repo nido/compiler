@@ -43,11 +43,12 @@
 #include <list>               // For list usage
 #include <utility>            // For pair usage
 
-#include "opt_tailmerge.h"
 #include "opt_cfg.h"           // For CFG
 #include "opt_bb.h"            // For BB_NODE
 #include "opt_htable.h"        // For STMTREP
 #include "wn.h"                // For WN manipulation
+#include "opt_main.h"          // For COMP_UNIT
+#include "opt_tailmerge.h"
 #include "tailmerge.h"         // For tailmerge algorithm
 #include "tracing.h"           // For tracing
 #include "glob.h"              // For Cur_PU_Name
@@ -66,6 +67,11 @@ static BOOL Trace_Tailmerge = FALSE;
  * Value of an invalid label index
  */
 static const LABEL_IDX INVALID_LABEL = 0;
+
+/**
+ * Current compilation unit.
+ */
+static COMP_UNIT *cur_comp_unit = NULL;
 
 // Shortcuts
 typedef std::map<LABEL_IDX, TAILMERGE_NAMESPACE::CNode<BB_NODE, WN>::
@@ -307,8 +313,12 @@ IsFallThrough(CFG& a_cfg, BB_NODE* bb);
 // Functions definition
 //------------------------------------------------------------------------------
 void
-OPT_Tailmerge(CFG& a_cfg, WN* wn_tree, int phase)
+OPT_Tailmerge(COMP_UNIT *comp_unit, WN* wn_tree, int phase)
 {
+    CFG &a_cfg = *comp_unit->Cfg();
+
+    cur_comp_unit = comp_unit;
+
     // LNO does not support empty basic blocks under certain circumstances
     // (loopinfo invalid) so avoid calling tailmerge.
     if(phase == PREOPT_LNO_PHASE) return;
@@ -1039,19 +1049,74 @@ AreEquivalent<WN>(WN* wn1, WN* wn2)
     // location. As a consequence, this exposes a SFR which cannot be allocated 
     // explicitly, leading to assertion in code expansion phase.
     // This conservative hot fix prevents such patterns to be tailmerged.
+    //
+    //
+    // YJ, 2009/05/19, Fix for #66310
+    // We need to prevent the case where LDID is used to get back the
+    // return of an INTRINSIC_CALL. Typically, we want to avoid the
+    // following sequence of code
+    //
+    //       I4_INTRINSIC_CALL <...>
+    //          I4LDID <...>  # r0
+    //       I4STID <...>
+    //       ...
+    //       I4_INTRINSIC_CALL <...>
+    //          I4LDID <...>  # r0
+    //       I4STID <...>
+    //       GOTO L2
+    //       ...
+    //       LABEL L2
+    //
+    // to be transformed into:
+    //
+    //       I4_INTRINSIC_CALL <...>
+    //       LABEL L1
+    //          I4LDID <...>  # r0
+    //       I4STID <...>
+    //       GOTO L2
+    //       ...
+    //       I4_INTRINSIC_CALL <...>
+    //       GOTO L1
+    //       ...
 
     if (result && wn1 && wn2 && WN_Equiv(wn1, wn2) )
         {
         if( WN_operator(wn1)==OPR_LDID && WN_operator(wn2)==OPR_LDID &&
             MTYPE_is_composed(WN_rtype(wn1)) && MTYPE_is_composed(WN_rtype(wn2)))
                 {
-                    result=false;
+                   result=false;
                 }
                                                                                                                       
         if( WN_operator(wn1)==OPR_STID && WN_operator(wn2)==OPR_STID &&
             MTYPE_is_composed(WN_desc(wn1)) && MTYPE_is_composed(WN_desc(wn2)))
                 {
-                    result=false;
+                   result=false;
+                }
+
+        if( WN_operator(wn1)==OPR_LDID && WN_operator(wn2)==OPR_LDID)
+                {
+                   // WOPT tailmerge is called after building the
+                   // auxiliary symbol table. We have to retrieve information
+                   // there.
+                   AUX_ID wn1_aux;
+                   AUX_ID wn2_aux;
+                   AUX_STAB_ENTRY *wn1_stab;
+                   AUX_STAB_ENTRY *wn2_stab;
+
+                   wn1_aux = WN_aux(wn1);
+                   wn1_stab= cur_comp_unit->Opt_stab()->Aux_stab_entry(wn1_aux);
+
+                   wn2_aux = WN_aux(wn2);
+                   wn2_stab= cur_comp_unit->Opt_stab()->Aux_stab_entry(wn2_aux);
+
+                   if(wn1_stab->Is_dedicated_preg() ||
+                      wn2_stab->Is_dedicated_preg())
+                        result=false;
+
+                   if(Get_Trace(TP_TAIL, 1))
+                    { fprintf(TAILMERGE_NAMESPACE::debugOutput,
+                        "LDID with dedicated Preg -> block tailmerge\n");
+                    }
                 }
         }
 
