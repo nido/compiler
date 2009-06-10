@@ -2521,6 +2521,16 @@ _dwarf_pro_generate_debuginfo(Dwarf_P_Debug dbg,Dwarf_Error *error)
 	}
 
 
+#ifdef TARG_ST
+	// [CL] bug #69051. This code fragment has been copied from a
+	// more recent libdwarf release.
+    GET_CHUNK(dbg, abbrevsectno, data, 1, error);       /* one zero,
+                                                           for end of
+                                                           cu, see
+                                                           dwarf2 sec
+                                                           7.5.3 */
+    *data = 0;
+#endif
     return (int)dbg->de_n_debug_sect;
 }
 
