@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jun 16 08:49:27 CEST 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-69726
+
+Description:
+------------
+	* [trunk] Fix for bug #69726      .
+	Deliver fixes/codex-69726 rev #22584 with authorization branch #69727
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgemit.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jun 10 14:43:11 CEST 2009
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

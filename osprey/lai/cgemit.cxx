@@ -4586,7 +4586,7 @@ Verify_Operand (
        }
 #endif
        FmtAssert(ISA_LC_Value_In_Class(imm, lc),
- 		("literal for %s %d is not in range for top: %s", res_or_opnd, opnd, TOP_Name(OP_code(op))));
+                 ("literal %lld for %s %d is not in range for top: %s", imm, res_or_opnd, opnd, TOP_Name(OP_code(op))));
     } else if (TN_is_label(tn)) {
 
 #ifndef TARG_ST
