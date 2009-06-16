@@ -1,6 +1,37 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jun 16 09:49:56 CEST 2009
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-65153
+
+Description:
+------------
+	* Implementation of the remainder of the unsigned division by 3, 5 and 7 with basic instructions.
+        * Implementation of the remainder of the division by 6, 9, 10, 11, 12 and 13 (and signed division by 3, 5 and 7) using a multiplier, when available.
+        * Recalculation of the unroll factor given by an unroll pragma when the calculation of the remainder number of iterations after loop unrolling is not possible => in such a case, the unroll factor takes the default value. 
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/wn_lower_util.cxx
+	M      osprey/be/com/w2op.h
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/cg_loop.cxx
+	M      osprey/lai/cgtarget.h
+	M      osprey/targinfo/arm/be/betarget.cxx
+	M      osprey/targinfo/arm/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/expand/exp_divrem.cxx
+	M      osprey/targinfo/stxp70/be/betarget.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/be/betarget.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jun 16 08:49:27 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -633,6 +633,10 @@ extern void CGTARG_Compute_Branch_Parameters(INT32 *mispredict,
 						    INT32 *brtaken,
 						    double *factor);
 
+#ifdef TARG_ST
+extern BOOL CGTARG_Able_To_Calculate_Remainder(UINT32 ntimes);
+#endif
+
 extern void CGTARG_Generate_Remainder_Branch(TN *trip_count, TN *label_tn,
 					     OPS *prolog_ops, OPS *body_ops);
 

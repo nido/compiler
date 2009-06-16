@@ -88,6 +88,7 @@
 #include "freq.h"
 
 #include "erglob.h"
+#include "ercg.h"
 #include "erlib.h"
 #include "em_elf.h"
 #include "dwarf_DST_mem.h"         /* for DST_IDX */
@@ -5654,8 +5655,13 @@ Emit_Loop_Note (
 #else
       else if (BB_innermost(bb))
 #endif
-	DevWarn("BB:%d unrolled %d times but pragma says to unroll %d times",
-		BB_id(bb), unrollings, WN_pragma_arg1(wn));
+	{
+	  char buffer[128];
+	  sprintf(buffer,
+		  "loop unrolled %d times but pragma says to unroll %d times",
+		  unrollings, WN_pragma_arg1(wn));
+	  ErrMsg(EC_CG_Generic_Warning, buffer);
+	}
     }
   }
 

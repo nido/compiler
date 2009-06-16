@@ -411,6 +411,11 @@ Should_Call_Remainder (WN *tree)
     INT64 constval = Get_Intconst_Val(WN_kid1(tree));
     
     if (Can_Do_Fast_Remainder(rtype, constval)) return FALSE;
+#ifdef TARG_ST
+    /* Allows target-specific easy way to handle remainders */
+    /* (translated into asm sequence) */
+    if (Target_Inlines_Remainder(rtype, constval))  return FALSE;
+#endif
   }
 
   /* In all other cases, we fall back to per operator check. */

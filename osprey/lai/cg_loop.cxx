@@ -6651,7 +6651,7 @@ void CG_LOOP::Determine_Unroll_Factor()
       Set_unroll_factor(const_trip_count);
     } else {
       UINT32 ntimes = unroll_times_max;
-      if (pragma_unroll) {
+      if (pragma_unroll && CGTARG_Able_To_Calculate_Remainder(ntimes)) {
 	// Just keep the pragma value
       }
       else if (const_trip) {
