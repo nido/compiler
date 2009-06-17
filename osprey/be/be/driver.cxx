@@ -132,7 +132,14 @@
 #include "loader.h"
 #include "ext_info.h"
 #endif
- 
+
+#ifdef TARG_ST
+BOOL option_file_set = FALSE;
+char *option_file_name = NULL;
+BOOL Trace_Opt_Cfg = FALSE;
+BOOL Trace_Opt_Cfg_Detailed = FALSE;
+#endif
+
 extern void* Initialize_Targ_Info(void);
 
 // symbols defined in cg.so
@@ -2277,6 +2284,19 @@ main (INT argc, char **argv)
   Options_Stack = CXX_NEW(OPTIONS_STACK(&MEM_src_nz_pool), &MEM_src_nz_pool);
   Options_Stack->Push_Current_Options();
 
+#ifdef TARG_ST
+  //TDR  Set point where parsing should be done
+  if (option_file_set) {
+    appliconfig_parser(option_file_name);
+    set_active_cfg();
+#ifdef Is_True_On
+    Trace_Opt_Cfg = (getenv("TRACE_CFG")!=NULL);
+    Trace_Opt_Cfg_Detailed = (getenv("TRACE_CFG2")!=NULL);
+    if (Trace_Opt_Cfg_Detailed) dump_cfg();
+#endif
+    if(!active_configuration) option_file_set=FALSE;
+  }
+#endif
   Start_Timer (T_ReadIR_Comp);
   if (Read_Global_Data) {
 	// get input from two separate files
@@ -2389,6 +2409,47 @@ main (INT argc, char **argv)
 #ifdef TARG_ST
     //TB: Set the defaultt option
     Set_Options_For_File();
+    //TDR  Set point where options will apply
+	if (option_file_set) {
+		char *file_name=NULL;
+	    DST_IDX pu_idx = PU_Info_pu_dst(current_pu);
+	    if (!DST_IS_NULL(pu_idx)) {
+	      USRCPOS decl;
+	      DST_INFO* info = DST_INFO_IDX_TO_PTR(pu_idx);
+	      const DST_flag     flag = DST_INFO_flag(info);
+	      DST_SUBPROGRAM* pu_attr = DST_ATTR_IDX_TO_PTR(DST_INFO_attributes(info), DST_SUBPROGRAM);
+		  if (DST_IS_memdef(flag)) {  
+	    	decl = DST_SUBPROGRAM_memdef_decl(pu_attr);
+	      } else if (DST_IS_declaration(flag)) {
+	        decl = DST_SUBPROGRAM_decl_decl(pu_attr);
+	      } else {
+	        decl = DST_SUBPROGRAM_def_decl(pu_attr);
+	      }
+	 	  DST_FILE_IDX f_idx = DST_get_file_names();
+		  DST_FILE_NAME *file;
+		  mUINT16 i;
+		  for (i = 0; i < USRCPOS_filenum(decl); i++) {
+			  file = DST_FILE_IDX_TO_PTR(f_idx);
+			  f_idx = DST_FILE_NAME_next(file);
+		  }
+		  file_name = strdup(DST_STR_IDX_TO_PTR(DST_FILE_NAME_name(file)));
+		  char *p = strrchr (file_name, '.');
+		  if (p != NULL)  *p = '\0';
+		  Pt_string_list my_opts;
+		  if (FILE_INFO_ipa (File_info)) {
+			  my_opts = get_file_options(file_name); 
+			  if (Trace_Opt_Cfg && option_file_set && my_opts) printf("TDR - BE Application options for file %s\n",file_name);
+			  Process_Extra_Command_Line(my_opts);
+		  }
+		  char *func_name=strdup(ST_name(PU_Info_proc_sym(current_pu)));
+		  p = strchr (func_name, '.');
+		  if (p != NULL)  *p = '\0';
+		  my_opts = get_func_options(file_name,func_name);
+		  if (Trace_Opt_Cfg && option_file_set && my_opts) printf("TDR - BE Application options for func %s\n",ST_name(PU_Info_proc_sym(current_pu)));
+		  Process_Extra_Command_Line(my_opts);
+		  free(func_name);
+	    }
+	}    
     Apply_Opt_Level(Opt_Level);
     //opt_size must be called after.
     // Set PU size_opt field if -OS/-OS2 has been asked

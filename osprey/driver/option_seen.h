@@ -79,4 +79,6 @@ extern void set_current_option_unseen (void);
 
 #ifdef TARG_ST
 extern int already_provided (int);
+extern void save_options_status(boolean init);
+extern void restore_options_status(boolean init);
 #endif

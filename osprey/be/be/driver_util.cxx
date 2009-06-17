@@ -146,7 +146,6 @@ Handle_Phase_Specific_Options (char *flag)
 	    phase = og->phase;
 	    break;
 	}
-
     if (phase == PHASE_COMMON || phase >= PHASE_COUNT)
 	return FALSE;
 
@@ -155,6 +154,312 @@ Handle_Phase_Specific_Options (char *flag)
     return TRUE;
 
 } /* Handle_Phase_Specific_Options */
+
+#ifdef TARG_ST
+#if defined(__linux__) || defined(_NO_WEAK_SUPPORT_)
+BE_EXPORTED extern void (*CG_Process_Command_Line_p) (INT, char **, INT, char **);
+#define CG_Process_Command_Line (*CG_Process_Command_Line_p)
+#else
+#pragma weak CG_Process_Command_Line
+#endif
+static BOOL
+Add_Phase_Specific_Options (char *flag)
+{
+    register PHASE_SPECIFIC_OPTION_GROUP *og;
+    BE_PHASES phase = PHASE_COMMON;
+
+    for (og = phase_ogroup_table; og->group_name != NULL; og++)
+	/* skip the leading '-' before comparing */
+	if (flag[1] == og->group_name[0] &&
+	    strncmp (flag+1, og->group_name, og->group_name_length) == 0) {
+	    phase = og->phase;
+	    break;
+	}
+    if (phase == PHASE_COMMON || phase >= PHASE_COUNT)
+	return FALSE;
+
+    if(phase == PHASE_CG) {
+    	char *cgflag[2];
+    	CG_Process_Command_Line (1, &flag, -1, NULL);
+    } else {
+    	DevWarn("Specific option: phase=%d; flag=%s Not yet handlesd\n",phase,flag);
+    }
+    return TRUE;
+
+} /* Handle_Phase_Specific_Options */
+
+
+/* ====================================================================
+ *
+ * Process_Extra_Command_Line
+ *
+ * Process the command line arguments.  Evaluate all flags and set up
+ * global options. 
+ *
+ * ==================================================================== */
+void 
+Process_Extra_Command_Line (Pt_string_list list)
+{
+    INT16 i, j;
+    char *cp;
+    Pt_string_list opt=list;
+    Pt_string_list next=list;
+    Pt_string_list my_tmp;
+    BOOL Echo_Flag = FALSE;
+    if (!opt) return;
+    /* Check the command line flags: */
+    while (opt) {
+        opt=next;
+        if (!opt) return; 
+        next=opt->next;
+        if (opt->name != NULL && opt->name[0] == '-' && opt->name[1] != '\0') {
+            cp = opt->name+1; /* Pointer to next flag character */
+            //If we have a CG/GRA opt, we should force parsing
+            if (Add_Phase_Specific_Options(opt->name))  continue;
+
+            /* process as command-line option group */
+            if (Process_Command_Line_Group(cp, Common_Option_Groups))
+                continue;
+
+            switch ( *cp++) {
+
+            case 'c':
+                if (strcmp(cp, "mds") == 0 && Run_ipl) {
+                    while (opt) {
+                        add_phase_args(PHASE_IPL, opt->name);
+                        opt=next;
+                        next=next->next;
+                    }
+                } else
+                    ErrMsg(EC_Unknown_Flag, *(cp-1), opt->name);
+                break;
+
+            case 'l':
+                if (strcmp(cp, "ai") == 0) {
+                    Run_cg = TRUE;
+                    Enable_LAI = TRUE;
+                } else
+                    ErrMsg(EC_Unknown_Flag, *(cp-1), opt->name);
+                break;
+
+            case 'd':
+                if (strcmp(cp, "sm_clone") == 0)
+                    Run_Dsm_Cloner = TRUE;
+                else if (strcmp(cp, "sm") == 0)
+                    Run_Dsm_Common_Check = TRUE;
+                else if (strcmp(cp, "sm_check") == 0)
+                    Run_Dsm_Check = TRUE;
+                else if (strcmp(cp, "sm_recompile") == 0)
+                    Dsm_Recompile = TRUE;
+                else
+                    ErrMsg(EC_Unknown_Flag, *(cp-1), opt->name);
+                break;
+
+            case '#': /* Echo command lines: */
+            case 'v':
+                if (Echo_Flag)
+                    break; /* Don't do this twice */
+                Echo_Flag = TRUE;
+                my_tmp=list;
+                while (my_tmp) {
+                    fprintf(stderr, " %s", my_tmp->name);
+                    my_tmp=my_tmp->next;
+                }
+                fprintf(stderr, "\n");
+                break;
+
+            case 'f': /* file options */
+                if (*cp == 0)
+                    ErrMsg(EC_File_Name, '?', opt->name);
+                else if (*(cp+1) != ',' && *(cp+1) != ':')
+                    ErrMsg(EC_File_Name, *cp, opt->name);
+                else {
+                    switch (*cp) {
+                    case 'f':
+                        Feedback_File_Name = cp + 2;
+                        break;
+                    case 'i':
+                        Set_Instrumentation_File_Name(cp + 2);
+                        break;
+                    case 'o':
+                        Obj_File_Name = cp + 2;
+                        /* fall through */
+                    case 's': /* CG-specific */
+                    case 'a':
+                    case 'L':
+                        add_phase_args(PHASE_CG, opt->name);
+                        break;
+
+                    case 'l': /* listing file */
+                        List_Enabled = TRUE;
+                        Lst_File_Name = cp + 2;
+                        break;
+
+                    case 'q': /* Transformation log file: */
+                        Tlog_File_Name = cp + 2;
+                        break;
+
+                    case 't': /* Error file: */
+                        Trc_File_Name = cp + 2;
+                        break;
+
+                    case 'B': /* WHIRL file */
+                        Irb_File_Name = cp + 2;
+                        break;
+
+                    case 'G': /* WHIRL file */
+                        Global_File_Name = cp + 2;
+                        break;
+
+                    default:
+                        ErrMsg(EC_File_Flag, *cp, opt->name);
+                        break;
+                    }
+                }
+                break;
+
+            case 'g': /* Debug level: */
+                Debug_Level = Get_Numeric_Flag(&cp, 0, MAX_DEBUG_LEVEL, 2,
+                        opt->name);
+                break;
+            case 'G': /* max size of elements in .sdata/.sbss */
+                Max_Sdata_Elt_Size = Get_Numeric_Flag(&cp, 0,
+                        MAX_SDATA_ELT_SIZE, DEF_SDATA_ELT_SIZE, opt->name);
+                break;
+
+            case 'm': /* Message reporting: */
+                if (!strcmp(cp, "pio")) {
+                    mp_io = TRUE;
+                    cp += 3;
+                    break;
+                } else if (!strcmp(cp, "plist")) {
+                    Run_w2fc_early = TRUE;
+                    cp += 5;
+                    break;
+                } else if (!strcmp(cp, "emctr")) {
+                    Run_MemCtr = TRUE;
+                    cp += 5;
+                    break;
+                }
+                j = Get_Numeric_Flag(&cp, 0, MAX_MSG_LEVEL, MAX_MSG_LEVEL,
+                        opt->name);
+                switch (j) {
+                case 0:
+                    Min_Error_Severity = ES_ERROR;
+                    break;
+                case 1:
+                    Min_Error_Severity = ES_WARNING;
+                    break;
+                case 2:
+                    Min_Error_Severity = ES_ADVISORY;
+                    break;
+                }
+                break;
+
+            case 'n':
+                if (!strcmp(cp, "o_exceptions")) {
+                    CXX_Exceptions_On = FALSE;
+                } else {
+                    ErrMsg(EC_Unknown_Flag, *(cp-1), opt->name);
+                }
+                break;
+
+            case 'e':
+                if (!strcmp(cp, "xceptions")) {
+                    CXX_Exceptions_On = TRUE;
+                } else {
+                    ErrMsg(EC_Unknown_Flag, *(cp-1), opt->name);
+                }
+                break;
+
+            case 'O': /* Optimization level: */
+                OPTION_Space = !strcmp(cp, "s");
+                Opt_Level = Get_Numeric_Flag(&cp, 0, MAX_OPT_LEVEL,
+                        DEF_O_LEVEL, opt->name);
+                break;
+                //TB: Add object dir repository
+            case 'o':
+                if (*(cp) != ',' && *(cp) != ':')
+                    ErrMsg(EC_File_Name, *cp, opt->name);
+                else
+                    Object_Dir = cp +1;
+                break;
+
+            case 's':
+                if (strcmp(cp, "how") == 0) {
+                    Show_Progress = TRUE;
+                    break;
+                }
+                /* else fall through */
+                /* CG-specific flags */
+            case 'a': /* -align(8,16,32,64) */
+            case 'S': /* -S: Produce assembly file: */
+                add_phase_args(PHASE_CG, opt->name);
+                break;
+
+            case 't': /* Trace specification: */
+                /* handle the -tfprev10 option to fix tfp hardware bugs. */
+                if (strncmp(cp-1, "tfprev10", 8) == 0) {
+                    add_phase_args(PHASE_CG, opt->name);
+                    break;
+                } else {
+                    Process_Trace_Option(cp-2);
+                }
+
+                break;
+
+            case 'w': /* Suppress warnings */
+                if (strncmp(cp, "off", 3) == 0) {
+                    Rag_Handle_Woff_Args(cp + 3);
+                } else {
+                    Min_Error_Severity = ES_ERROR;
+                }
+                break;
+            case 'W':           /* Warnings are errors */
+                if (strncmp(cp, "error", 5) == 0) {
+                  warnings_are_errors = TRUE;
+                } else if (strncmp(cp, "no-error", 8) == 0) {
+                  warnings_are_errors = FALSE;
+                } else if (strncmp(cp-1, "Wb,",3) == 0)  {
+                    Process_Trace_Option(cp+2);
+                } else
+                  ErrMsg (EC_Unknown_Flag, *(cp-1), opt->name); 
+                break;
+            case 'p':
+                if (strncmp(cp, "fa", 2) == 0) {
+                    Run_autopar = TRUE;
+                    cp += 2;
+                } else
+                    ErrMsg(EC_Unknown_Flag, *(cp-1), opt->name);
+                break;
+
+            default: /* What's this? */
+                ErrMsg(EC_Unknown_Flag, *(cp-1), opt->name);
+                break;
+            }
+        }
+
+        if (Dsm_Recompile)      Run_Dsm_Common_Check = FALSE;
+        if (Tracing_Enabled)    Initialize_Timing(TRUE);
+        if (Run_lno && Run_preopt) Run_preopt = FALSE;
+
+        /* -tt1:1 requests all of the performance trace flags: */
+        if (Get_Trace(TP_PTRACE1, TP_PTRACE1_ALL) ) {
+            Set_Trace(TP_PTRACE1, 0xffffffff);
+            Set_Trace(TP_PTRACE2, 0xffffffff);
+        }
+        /* and any individual performance tracing enables tlogs */
+        if (Get_Trace(TP_PTRACE1, 0xffffffff) || Get_Trace(TP_PTRACE2, 0xffffffff) ) {
+            Tlog_Enabled=TRUE;
+        }
+        /* -ti64 requests a listing of all the -tt flags: */
+        if (Get_Trace(TKIND_INFO, TINFO_TFLAGS) ) {
+            List_Phase_Numbers();
+        }
+    }
+}
+#endif
+
 
 
 /* ====================================================================
@@ -301,6 +606,16 @@ Process_Command_Line (INT argc, char **argv)
 		break;
               
 	    case 'm':		    /* Message reporting: */
+#ifdef TARG_ST
+        //TDR - Identify application file
+        if (!strcmp(cp, "cfgappli-decl")) {
+          i++;
+          option_file_set = TRUE;
+          FmtAssert (argc >= i, ("Error: option -cfgappli-decl expect a file name as parameter"));
+          option_file_name = argv[i++];
+          break;
+        } 
+#endif               
 		if (!strcmp( cp, "pio" )) {
 		  mp_io = TRUE;
 		  cp += 3;

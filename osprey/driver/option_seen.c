@@ -80,6 +80,88 @@ static int_list* IMPLICITLY_SEEN;
 
 static int_list* current_seen;	/* for iterator */
 
+#ifdef TARG_ST
+
+static linked_list saved_init_order_options_seen;
+static int_list_p *saved_init_option_is_seen;
+static linked_list saved_current_order_options_seen;
+static int_list_p *saved_current_option_is_seen;
+
+extern void 
+save_options_status(boolean init) {
+    int i;
+    int_list *p,*q;
+    linked_list my_link_list;
+    int_list_p *my_int_list;
+    my_int_list = (int_list_p*) malloc(max_options*sizeof(int_list_p));
+    if(my_int_list == NULL) internal_error("Out of memory allocating my_int_list");
+    for (i = 0; i < max_options; i++) {
+        my_int_list[i] = NOT_SEEN;
+    }
+    my_link_list.head = (int_list*)malloc(sizeof(int_list));
+    if(my_link_list.head == NULL) internal_error("Out of memory allocating my_link_list.head");
+    my_link_list.head->value = -1;
+    my_link_list.head->next = NULL;
+    my_link_list.tail = my_link_list.head;
+    q = my_link_list.head;
+    for (p = order_options_seen.head->next; p != NULL; p = p->next) {
+        q->next = (int_list*)malloc(sizeof(int_list));
+        if(q->next == NULL) internal_error("Out of memory allocating q->next");
+        q=q->next;
+        q->value=p->value;
+        q->next=NULL;
+        my_int_list[q->value] = q;
+    }
+    my_link_list.tail=q;
+    if (init == TRUE) {
+        saved_init_option_is_seen = my_int_list;
+        saved_init_order_options_seen = my_link_list;
+    } else {
+        saved_current_option_is_seen = my_int_list;
+        saved_current_order_options_seen = my_link_list;       
+    }
+}
+
+extern void 
+restore_options_status(boolean init) {
+    int i;
+    int_list *p,*q;
+    linked_list my_link_list;
+    int_list_p *my_int_list;
+    if (init == TRUE) {
+        my_int_list = saved_init_option_is_seen;
+        my_link_list = saved_init_order_options_seen;
+    } else {
+        my_int_list = saved_current_option_is_seen;
+        my_link_list = saved_current_order_options_seen;       
+    }
+
+    option_is_seen = (int_list_p*) malloc(max_options*sizeof(int_list_p));
+    if(option_is_seen == NULL) internal_error("Out of memory allocating option_is_seen");
+    for (i = 0; i < max_options; i++) {
+        if (my_int_list[i] == NOT_SEEN)  option_is_seen[i] = NOT_SEEN;
+    }
+
+    order_options_seen.head = (int_list*)malloc(sizeof(int_list));
+    if(order_options_seen.head == NULL) internal_error("Out of memory allocating order_options_seen.head");
+    order_options_seen.head->value = -1;
+    order_options_seen.head->next = NULL;
+    order_options_seen.tail = order_options_seen.head;
+    IMPLICITLY_SEEN = order_options_seen.head;
+    current_seen = 0;  
+    q = order_options_seen.head;
+    for (p = my_link_list.head->next; p != NULL; p = p->next) {
+        q->next = (int_list*)malloc(sizeof(int_list));
+        if(q->next == NULL) internal_error("Out of memory allocating q->next");
+        q=q->next;
+        q->value=p->value;
+        q->next=NULL;
+        option_is_seen[q->value] = q;
+    }
+    order_options_seen.tail=q;
+}
+
+#endif
 /* init the option_seen list */
 extern void 
 init_option_seen (void)

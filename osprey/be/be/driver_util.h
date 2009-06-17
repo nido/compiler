@@ -58,6 +58,13 @@ extern void Get_Phase_Args (BE_PHASES, INT*, char ***);
 
 extern void Process_Command_Line (INT, char **);
 
+#ifdef TARG_ST
+#include "applicfg_common.h"
+extern BOOL option_file_set;
+extern char *option_file_name;
+extern void Process_Extra_Command_Line (Pt_string_list list);
+#endif
+
 extern void Prepare_Source (void);
 
 extern void Prepare_Listing_File (void);

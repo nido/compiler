@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jun 17 14:06:29 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-IPA-opt
+
+Description:
+------------
+	* [trunk] Deliver dt25/dev-IPA-opt rev #22631 with authorization branch #57721
+
+
+Modified Files:
+---------------
+	M      osprey/be/be/driver.cxx
+	M      osprey/be/be/driver_util.cxx
+	M      osprey/be/be/Makefile.gbase
+	M      osprey/be/be/driver_util.h
+	M      osprey/driver/option_seen.c
+	M      osprey/driver/phases.c
+	M      osprey/driver/option_seen.h
+	M      osprey/driver/phases.h
+	M      osprey/driver/Makefile.gbase
+	M      osprey/driver/main.c
+	M      osprey/lai/cgdriver.cxx
+	A  +   osprey/common/applicfg
+	A  +   osprey/common/applicfg/applicfg.yacc
+	A  +   osprey/common/applicfg/applicfg_common.h
+	A  +   osprey/common/applicfg/applicfg.lex
+	A  +   osprey/common/applicfg/README
+	M      osprey/common/util/flags.c
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jun 16 14:49:22 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

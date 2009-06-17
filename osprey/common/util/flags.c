@@ -234,6 +234,9 @@ typedef struct odesc_aux {
   OPTION_DESC *primary;	/* Primary option for ODK_LIST option */
   OPTVAL orig;		/* Original value */
   OPTVAL last;		/* Last value */
+#ifdef TARG_ST
+  void * backup;
+#endif
 } ODESC_AUX;
 
 #define ODF_SET_USER	0x01	/* Set since a user print */
@@ -448,7 +451,9 @@ Initialize_Option_Group ( OPTION_GROUP *ogroup )
   INT16 count, i;
   OPTION_DESC *odesc;
   ODESC_AUX *odaux;
-
+#ifdef TARG_ST
+  ODESC_AUX *odbackup;
+#endif 
   /* If we've already done it, never mind: */
   if ( OGROUP_aux(ogroup) != NULL ) return;
 
@@ -472,18 +477,33 @@ Initialize_Option_Group ( OPTION_GROUP *ogroup )
   if ( odaux == NULL ) {
     ErrMsg ( EC_No_Mem, "Initialize_Option_Group: ODESC_aux" );
   }
+#ifdef TARG_ST
+  odbackup = (ODESC_AUX *) calloc ( count, sizeof (ODESC_AUX) );
+  if ( odbackup == NULL ) {
+    ErrMsg ( EC_No_Mem, "Initialize_Option_Group: ODESC_backup" );
+  }
+#endif 
   OGA_odesc_aux(ogaux) = odaux;
   OGA_count(ogaux) = count-1;	/* Not including terminator */
 
   /* Initialize the auxiliary option descriptors: */
   for ( i = 0, odesc = OGROUP_options(ogroup);
 	i < count;
+#ifdef TARG_ST
+	++i, ++odesc, ++odaux, ++odbackup )
+#else
 	++i, ++odesc, ++odaux )
+#endif
   {
     ODA_specified(odaux) = ODESC_orig_specified(odesc);
     Set_ODESC_aux ( odesc, odaux );
     Duplicate_Value ( odesc, &ODA_orig(odaux) );
     ODA_last(odaux) = ODA_orig(odaux);
+#ifdef TARG_ST
+    odaux->backup = (ODESC_AUX *)odbackup;
+    Duplicate_Value ( odesc, &ODA_orig(odbackup) );
+    ODA_last(odbackup) = ODA_orig(odbackup);
+#endif
   }
 
   /* Special initialization for OVK_LIST options.  Several such options
@@ -518,7 +538,7 @@ Initialize_Option_Group ( OPTION_GROUP *ogroup )
 	if ( ODESC_variable(sdesc) == ODESC_variable(odesc)
 	  && ODESC_specified(sdesc) == ODESC_specified(odesc) )
 	{
-	  Set_ODESC_aux ( sdesc, ODESC_aux(odesc) );
+		Set_ODESC_aux ( sdesc, ODESC_aux(odesc) );
 	}
       }
     }
@@ -593,9 +613,8 @@ static void
 Save_Option ( OPTION_DESC *odesc )
 {
   //  void *var = ODESC_variable(odesc);
-  ODESC_AUX *aux = ODESC_aux(odesc);
+  ODESC_AUX *aux = (ODESC_AUX *)ODESC_aux(odesc)->backup;
   Duplicate_Value(odesc, &ODA_last(aux));;
-  //  ODA_last_i(aux) = *(INT64*)var;
 }
 
 static void
@@ -630,7 +649,7 @@ static void Update_Pointer_Value ( OPTION_DESC *odesc, void *val );
 static void
 Reset_Option ( OPTION_DESC *odesc )
 {
-  ODESC_AUX *aux = ODESC_aux(odesc);
+  ODESC_AUX *aux = (ODESC_AUX *)ODESC_aux(odesc)->backup;
   switch ( ODESC_kind(odesc) ) {
     case OVK_NONE:
     case OVK_BOOL:
@@ -724,7 +743,7 @@ Update_Scalar_Value ( OPTION_DESC *odesc, UINT64 val )
       break;
     default:
       break;
-  }
+   }
 }
 
 /* ====================================================================

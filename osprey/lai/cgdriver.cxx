@@ -2289,6 +2289,12 @@ CG_Process_Command_Line (
 		Whirl_Revision, WHIRL_REVISION));
 
   /* Perform preliminary command line processing: */
+#ifdef TARG_ST
+  if(be_argc == -1) {
+	  Process_Command_Line (cg_argc, cg_argv);
+	  return;
+  }
+#endif
   Build_Option_String (be_argc, be_argv);
   Process_Command_Line (cg_argc, cg_argv);
 #ifdef TARG_ST

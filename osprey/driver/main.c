@@ -57,6 +57,9 @@
 #include "run.h"
 #include "objects.h"
 #include "libiberty/libiberty.h"
+#ifdef TARG_ST
+#include "applicfg_common.h"
+#endif
 
 string help_pattern = NULL;
 boolean debug = FALSE;
@@ -64,6 +67,9 @@ boolean nostdinc = FALSE;
 #ifdef TARG_ST
 /* (cbr) don't exclude non c++ standard paths */
 boolean nostdincc = FALSE;
+boolean Trace_Opt_Cfg = FALSE;
+boolean Trace_Opt_Cfg_Detailed = FALSE;
+
 #endif
 boolean show_version = FALSE;
 boolean dump_version = FALSE;
@@ -172,6 +178,10 @@ main (int argc, char *argv[])
 	int i;		/* index to argv */
 	string_item_t *p, *q;
 	int num_files = 0;
+#ifdef Is_True_On
+	Trace_Opt_Cfg = (getenv("TRACE_CFG")!=NULL);
+	Trace_Opt_Cfg_Detailed = (getenv("TRACE_CFG2")!=NULL);
+#endif 
 
 	time0 = times(&tm0);
 	save_command_line(argc, argv);		/* for prelinker    */	
@@ -224,6 +234,16 @@ main (int argc, char *argv[])
 		option_name = argv[i];
 		set_current_arg_pos(i);
 		if (argv[i][0] == '-' && !dashdash_flag) {
+#ifdef TARG_ST
+		    //TDR - Identify application file
+		    if (strcmp(argv[i], "-mcfgappli-decl") == 0) {
+                i++;
+                option_file_set = TRUE;
+                option_file_name = argv[i++];
+                if(Trace_Opt_Cfg) printf("TDR - Application file configuration %s found\n",option_file_name);
+                continue;
+            }
+#endif               
 			treat_one_arg(&i,argv);
          
 		} else if (argv[i][0] == '+') {
@@ -564,15 +584,43 @@ main (int argc, char *argv[])
 
 	/* add defaults if not already set */
 	set_defaults();
-
+	
 	if (num_files > 1) {
 		multiple_source_files = TRUE;
 	}
 	/* handle anything else */
 	check_makedepend_flags ();
 	add_library_options();
+#ifdef TARG_ST
+	//TDR -  Parse configuration file
+	// and save initial configuration file
+	if (option_file_set) {
+		appliconfig_parser(option_file_name);
+	    set_active_cfg();
+#ifdef Is_True_On
+	    if (Trace_Opt_Cfg_Detailed) dump_cfg();
+#endif
+	    if(!active_configuration) option_file_set=FALSE;
+	    else {
+	        if (active_configuration->options) {
+	            //printf("TDR - Add global options section: \n");
+	            Pt_string_list my_list=active_configuration->options;
+	            int  i = 0;
+                char *newargv[] = { NULL };
+	            while (my_list) {
+	                if (Trace_Opt_Cfg) printf("TDR - Add Global option %s \n", my_list->name);
+	                newargv[0]=my_list->name;
+	                i = 0;
+	                treat_one_arg(&i,newargv);
+	                my_list=my_list->next;
+	            }
+	        }
+	        save_options_status(TRUE);
+	    }
+	}
+#endif
 	add_special_options();
-
+	
 	if (debug) {
 		dump_args("with defaults", stdout);
 		dump_objects();
@@ -690,6 +738,14 @@ main (int argc, char *argv[])
 		return error_status;
 	}
 
+#ifdef TARG_ST
+    //TDR in order to quickly restore option state 
+    boolean is_initial_state=TRUE;
+    if (option_file_set) {
+    	save_options_status(FALSE);
+    }
+#endif
+
 	for (p = files->head, q=file_suffixes->head; p != NULL; p = p->next, q=q->next) 
 	{
 		source_file = p->name;
@@ -714,6 +770,37 @@ main (int argc, char *argv[])
 		{
 			warning("compiler not invoked with language of source file; will compile with %s but link with %s", get_lang_name(source_lang), get_lang_name(invoked_lang));
 		}
+#ifdef TARG_ST
+        //TDR - Add parse options
+        if (option_file_set && ipa != TRUE) {
+        	if (Trace_Opt_Cfg) printf("TDR - Main Driver treat args from file %s\n",option_file_name);
+            string base_name=string_copy(drop_path(source_file));
+            string p = strrchr (base_name, '.');
+            if (p != NULL)  *p = NIL;
+            Pt_string_list file_opts = get_file_options(base_name); 
+            if (file_opts) {
+                Pt_string_list my_list=file_opts;
+                int  i = 0;
+                char *newargv[] = { NULL };
+                is_initial_state=FALSE;
+                restore_options_status(TRUE);
+                while (my_list) {
+                	if (Trace_Opt_Cfg) printf("TDR - Add file option %s \n", my_list->name);
+                    newargv[0]=my_list->name;
+                    i = 0;
+                    treat_one_arg(&i,newargv); 
+                    my_list=my_list->next;
+                }
+                add_special_options();
+            } else {
+                if (is_initial_state == FALSE) {
+                    is_initial_state=TRUE;
+                    if (Trace_Opt_Cfg) printf("TDR - Restore option status\n", base_name);
+                    restore_options_status(FALSE);
+                }
+            }
+        }
+#endif      
 		run_compiler();
 		if (multiple_source_files) cleanup();
 	}
@@ -974,7 +1061,7 @@ dump_args (string msg, FILE *file)
 		if (is_replacement_combo(i)) {
 			int iflag;
 			FOREACH_IMPLIED_OPTION(iflag, i) {
-			    fprintf(file, " %s", get_current_implied_name());
+			    fprintf(file, "Implied %s", get_current_implied_name());
 			}
 		} else {
 			fprintf(file, " %s", get_option_name(i));

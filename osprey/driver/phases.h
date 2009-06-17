@@ -68,6 +68,11 @@ extern boolean use_cpp;		/* Use cpp instead of ftpp for F90 */
 extern boolean expand_ftpp_macros; /* fully macro-expand in ftpp */
 extern int     fortran_line_length;	/* Line length for fixed form fortran */
 
+#ifdef TARG_ST
+extern boolean option_file_set;
+extern string option_file_name;
+#endif 
+
 #ifdef BCO_ENABLED /* Thierry */
 /*Thierry*/
 extern boolean icache_opt;
