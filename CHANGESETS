@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jun 18 09:48:10 CEST 2009
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70522
+
+Description:
+------------
+	* [trunk] Fix for bug #70522: 1245137803      .
+	Deliver fixes/codex-70522 rev #22662 with authorization branch #70537
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jun 18 08:34:24 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
