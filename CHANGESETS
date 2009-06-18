@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jun 18 16:27:16 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70781
+
+Description:
+------------
+	* [trunk] Fix for bug #70781: 1245327520      .
+	Deliver fixes/codex-70781 rev #22675 with authorization branch #70782
+
+
+Modified Files:
+---------------
+	M      osprey/be/be/driver_util.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jun 18 09:48:10 CEST 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

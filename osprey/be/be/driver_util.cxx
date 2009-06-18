@@ -71,6 +71,7 @@
 #include "errno.h"
 
 #ifdef TARG_ST
+#include "cgdriver.h"		    /* for CG_Process_Command_Line. */
 BOOL warnings_are_errors = FALSE;
 #endif
 
