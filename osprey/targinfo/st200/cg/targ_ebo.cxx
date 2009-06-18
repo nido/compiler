@@ -1198,8 +1198,12 @@ EBO_Resolve_Conditional_Branch (
       branch_bb = BBLIST_item(BBLIST_next(BB_succs(bb)));
   }
 
-  if (OP_code(op) == TOP_br_i_b) {
-    TN *predicate = OP_opnd(op,0);
+  if ((OP_code(op) == TOP_br_i_b) || (OP_code(op) == TOP_brf_i_b)) {
+    BOOL branch_on_true = (OP_code(op) == TOP_br_i_b);
+    TN *predicate = opnd_tn[0];
+
+    Is_True((OP_opnd(op,0) != True_TN) || (TN_has_value(predicate) && (TN_value(predicate) != 0)),
+	    ("EBO_Resolve_Conditional_Branch: Missing optimization on True_TN predicate"));
 
     if (EBO_Trace_Optimization) {
       INT i;
@@ -1213,7 +1217,11 @@ EBO_Resolve_Conditional_Branch (
       fprintf(TFile,"\n");
     }
 
-    if (predicate == True_TN) {
+    if (!TN_has_value(predicate))
+      return FALSE;
+
+    if ((branch_on_true && (TN_value(predicate) != 0)) ||
+	(!branch_on_true && (TN_value(predicate) == 0))) {
      /* 
       * Branch IS taken - replace the conditional branch with a 
       * simple branch. 
@@ -1228,9 +1236,15 @@ EBO_Resolve_Conditional_Branch (
       BB_Insert_Ops(OP_bb(op), op, &ops, FALSE);
       Unlink_Pred_Succ (bb, fall_bb);
       Change_Succ_Prob (bb, branch_bb, 1.0);
-
-      return TRUE;;
-    } 
+    }
+    else {
+     /* 
+      * Branch IS NOT taken - Will just remove the instruction
+      */
+      Unlink_Pred_Succ (bb, branch_bb);
+      Change_Succ_Prob (bb, fall_bb, 1.0);
+    }
+    return TRUE;
   }
   return FALSE;
 }
