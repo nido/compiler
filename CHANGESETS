@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jun 22 19:30:06 CEST 2009
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70625
+
+Description:
+------------
+	*  Fix for bug #70625 Range propagation: illegal transformation.
+	Deliver fixes/codex-70625 with authorization branch #70684.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/range_prop.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@22749 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70625@22754 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@22749 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70625@22754" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/range_prop.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/range_prop.cxx?p2=branches/fixes/codex-70625/osprey/lai/range_prop.cxx&r1=22749&r2=22754&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jun 22 17:20:02 CEST 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -288,6 +288,11 @@ unneeded_extension (RangeAnalysis &range_analysis,
   // provided that:
   //        the top leftshift bits of opnd are already zero/sign extension.
   // or the top rightshift bits of the result are unneeded.
+
+  // If opnd is not an SSA variable, we cannot be sure that it still has
+  // the correct value at the insertion point, so we cannot make the
+  // transformation.
+  if (!TN_is_ssa_var(opnd)) return FALSE;
   
   Range::RangeSign sign = is_signed ? Range::Signed : Range::Unsigned;
   LRange_p ropnd;
