@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jun 22 09:43:40 CEST 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70321
+
+Description:
+------------
+	* [trunk] Fix for bug #70321:  AdressModes Rn+Rp not available for instruction SSFR/SGS 
+	Deliver fixes/codex-70321 rev #22725 with authorization branch #70324
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_dual_arith_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx
+	M      osprey/targinfo/stxp70/isa/isa_decode.cxx
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_variants.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M      osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      osprey/targinfo/stxp70/isa/isa.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jun 19 10:19:05 CEST 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
