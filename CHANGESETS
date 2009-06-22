@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jun 22 17:20:02 CEST 2009
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-69917
+
+Description:
+------------
+	* [trunk] Fix for bug #69917: 1244722799      .
+	Deliver fixes/codex-69917 rev #22745 with authorization branch #69918
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_spill.cxx
+	M      osprey/lai/ercg.desc
+	M      osprey/lai/ercg.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jun 22 09:43:40 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

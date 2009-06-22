@@ -452,16 +452,6 @@ void
 CGSPILL_Finalize_For_PU(void)
 {
   if (spill_ids) MEM_POOL_Pop(&spill_id_pool);
-
-#ifdef TARG_ST
-  // [TTh] Emit a warning if the stack alignment is
-  // too small for efficient spill code generation.
-  // This warning is emitted only once for a given PU
-  // and print the optimal alignment expected.
-  if (stack_align_warning != STACK_ALIGN_WARNING_NONE) {
-    ErrMsg(EC_Warn_Misaligned_Spill, Cur_PU_Name, stack_align_warning);
-  }
-#endif
 }
 
 
@@ -549,6 +539,7 @@ CGSPILL_Get_TN_Spill_Location (TN *tn, CGSPILL_CLIENT client)
       if (optimal_align > TY_align(CGTARG_Spill_Type[idx]) &&
 	  optimal_align > stack_align_warning) {
 	stack_align_warning = optimal_align;
+	ErrMsg(EC_Warn_Misaligned_Spill, Cur_PU_Name, MTYPE_name(mty), stack_align_warning);
       }
     }
   }

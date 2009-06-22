@@ -81,7 +81,7 @@
 
 #ifdef TARG_ST
 /* Register allocation: (additional) */
-#define EC_Warn_Misaligned_Spill EC_BASE_CG+8   /* string, int */
+#define EC_Warn_Misaligned_Spill EC_BASE_CG+8   /* string, string, int */
 #endif
 
 /* Start all target-specific codes here: */

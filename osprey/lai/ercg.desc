@@ -86,9 +86,10 @@ ERROR_DESC EDESC_CG[] = {
 #ifdef TARG_ST
   /* Misaligned spill code generated due to insufficient stack alignment */
   { EC_Warn_Misaligned_Spill,	EM_User | ES_WARNING,	RAG_EN_NONE,
-    "In function `%s', stack alignment too small for efficient memory access. "
-    "Can be improved thanks to aligned_stack(%d) function attribute.",
-    2, ET_STRING, ET_INT, 0, 0, 0, 0 },
+    "In function `%s', stack alignment too small for efficient memory access"
+    " on type '%s'. This might also result in very long compilation time. "
+    "Use aligned_stack(%d) function attribute for more efficient memory access(es) and faster compilation.",
+    3, ET_STRING, ET_STRING, ET_INT, 0, 0, 0 },
 #endif
 
   /* All error descriptor lists must end with a -1 error code: */
