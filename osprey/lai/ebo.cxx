@@ -6203,6 +6203,15 @@ Find_BB_TNs (BB *bb)
           Print_TN(tn_replace, FALSE);
           fprintf(TFile,"\n");
         }
+#ifdef TARG_ST
+      if(tn_replace == True_TN)  {
+        if ((OP_has_predicate(op) && OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)) && OP_Predicate(op)==actual_tn ) ||
+        (OP_Condition(op) && OP_Pred_False(op, OP_find_opnd_use(op, OU_condition)) && OP_Condition(op)==actual_tn )) {
+          OP_Change_To_Noop(op);
+          break;    	  
+        }
+      }
+#endif
 
 	// [CG] Can logically replace
 	new_tn = tn_replace;

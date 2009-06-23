@@ -1034,7 +1034,6 @@ Can_Speculate_BB(BB *bb)
       Set_PredOp (op, 0, false);
       pred_av = true;
     }
-    
     else if (!OP_Can_Be_Speculative(op))
       return FALSE;
   }
@@ -1169,6 +1168,8 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
 {
   float prob = 0.0;
 
+  //TDR Add an option to force multiple logif 
+  if (CG_force_select & 0x2) return TRUE;
 #if 0
   if (BB_length(bb1) + BB_length(bb2) >= CG_split_BB_length) {
     if (Trace_Select_Candidates) {
@@ -1372,6 +1373,9 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   int size_se1=0;
   int size_se2=0;
   int size_sehead=0;
+
+  //TDR force select
+  if (CG_force_select & 0x1) return TRUE;
 
   // Find block probs
   bb2 = BBlist_Fall_Thru_Succ(head);
@@ -2221,7 +2225,6 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
   while(i_iter != i_end) {
 
     OP* op = PredOp_Map_Op(i_iter);
-
     if (BB_SET_MemberP(t_set, OP_bb (op))) {
 
       TN *pred_tn = PredOp_Map_Pred(i_iter).tn;
@@ -2449,7 +2452,6 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
        move into Exp_Pred_Complement */
     OP* cond_op = TN_ssa_def (cond_tn);
     TOP new_cmp = TOP_UNDEFINED;
-
     if (cond_op ) {
       OP* new_op = CGTARG_Negate_OP(cond_op);
       Set_OP_result(new_op, 0, tn2);
@@ -3466,7 +3468,7 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
     }
   }
 
-  if (target_bb != tail) {
+if (target_bb != tail) {
     BB *pred = last_target;
 
     while (pred != head) {
@@ -3543,6 +3545,7 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
 	break;
     }
   }
+
   BB_Insert_Ops_Before(head, opb, &ops);
 
   // can remove the branch op
@@ -3615,14 +3618,13 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
   
     select_count++;
   }
-  
+ 
   if (target_bb != tail) {
     Promote_BB_Chain (head, target_bb, tail);
   }
   if (fall_thru_bb != tail) {
     Promote_BB_Chain (head, fall_thru_bb, tail);
   }
-
    if (Trace_Select_Gen) {
      fprintf(Select_TFile, "<select> Insert selects in BB%d", BB_id(head));
      Print_OPS (&cmov_ops); 
@@ -3652,7 +3654,7 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
        Add_Goto (head, tail);
      }
    }
-   
+    
    // Update edge probability to 1.0
    BBLIST_prob(BB_Find_Succ(head, tail)) = 1.0;
 

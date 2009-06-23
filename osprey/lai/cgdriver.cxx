@@ -256,6 +256,7 @@ static BOOL GCM_Forw_Circ_Motion_overridden = FALSE;
 
 BOOL  CG_ifc_subpart = FALSE ;
 static BOOL CG_ifc_subpart_overridden = FALSE;
+INT32 CG_force_select=0;
 
 BOOL  CG_safe_memmove = FALSE ;
 
@@ -1236,12 +1237,14 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 0,	&CG_enable_select, &CG_enable_select_overridden,
     "Enable if conversion using select op"},
 
-    { OVK_BOOL,	OV_INTERNAL, TRUE, "ifc_subpart", "",
-      0, 0, 0,	&CG_ifc_subpart, &CG_ifc_subpart_overridden,
-      "Enable if conversion using select op only on then or else part"},
-    
-    
-    
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "ifc_subpart", "",
+    0, 0, 0,	&CG_ifc_subpart, &CG_ifc_subpart_overridden,
+    "Enable if conversion using select op only on then or else part"},
+
+  { OVK_INT32,	OV_INTERNAL, TRUE, "ifc_forced", "",
+    0, 0, 3,	&CG_force_select, NULL,
+     "Force if conversion using select op"},
+
   { OVK_BOOL,	OV_INTERNAL, TRUE, "range_propagation", "",
     0, 0, 0,	&CG_enable_range_propagation, &CG_enable_range_propagation_overridden,
     "Enable range analysis"},
