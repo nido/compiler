@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jun 23 16:35:35 CEST 2009
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70716
+
+Description:
+------------
+	*  Fix for bug #70716 [GFECC] Functional error in Perennial C++ P12165
+        (st200,ccvs)
+	Deliver fixes/codex-70716 with authorization branch #70829.
+
+
+
+Modified Files:
+---------------
+	M      osprey/g++fe/wfe_decl.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@22804 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70716@22812 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@22804 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70716@22812" 
+
+Diff links to modified files:
+-----------------------------
+osprey/g++fe/wfe_decl.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_decl.cxx?p2=branches/fixes/codex-70716/osprey/g++fe/wfe_decl.cxx&r1=22804&r2=22812&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jun 23 15:28:28 CEST 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -326,7 +326,7 @@ take_address (tree t)
   if (TREE_CODE (t) == COMPONENT_REF) {
     tree base = take_address (TREE_OPERAND (t, 0));
     tree field = TREE_OPERAND (t, 1);
-    tree offset = DECL_FIELD_OFFSET (field);
+    tree offset = byte_position (field);
     return build (PLUS_EXPR, build_pointer_type(TREE_TYPE(t)), base, offset);
   } else {
     return build1 (ADDR_EXPR,
