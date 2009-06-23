@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jun 23 10:58:02 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70571
+
+Description:
+------------
+	* [trunk] Fix for bug #70571: 1245671219      .
+	Deliver fixes/codex-70571 rev #22769 with authorization branch #70788
+
+
+Modified Files:
+---------------
+	M      osprey/common/applicfg/applicfg.lex
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jun 22 19:30:06 CEST 2009
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
