@@ -6261,7 +6261,7 @@ SIMPNODE_SimplifyComparisons(OPCODE opc, simpnode k0, simpnode k1)
   OPERATOR op_k0 = SIMPNODE_operator(k0);
   OPERATOR op_k1 = SIMPNODE_operator(k1);
 
- /* filters comparison opcodes  >,<,>=,<= */
+  /* filters comparison opcodes  >,<,>=,<= */
   if (! (SIMPNODE_is_GTGELTLE(op_k0) &&
          SIMPNODE_is_GTGELTLE(op_k1))) {
     return result;
@@ -6269,6 +6269,14 @@ SIMPNODE_SimplifyComparisons(OPCODE opc, simpnode k0, simpnode k1)
 
   /* filters types: both comparisons must compare same type data */
   if (SIMPNODE_rtype(SIMPNODE_kid0(k0)) != SIMPNODE_rtype(SIMPNODE_kid0(k1))) {
+    return result;
+  }
+
+  /* abort if operands are unsigned. Check is made on kids rather than  
+   * on variables because casts inbetween will also make transformation 
+   * non conservative. We test only one of them thanks to former test   
+   */
+  if(MTYPE_is_unsigned(SIMPNODE_rtype(SIMPNODE_kid0(k0)))) {
     return result;
   }
 
@@ -6307,7 +6315,8 @@ SIMPNODE_SimplifyComparisons(OPCODE opc, simpnode k0, simpnode k1)
 
 
     /* filters unsigned int since wrapping may imply a change of
-     * behavior.
+     * behavior. Notice that we also reject here the case where 
+     * an unsigned variable is casted into a signed.
      * Optimisation is only possible if no arithmetic normalisation
      * has occured !
      */
@@ -6316,7 +6325,6 @@ SIMPNODE_SimplifyComparisons(OPCODE opc, simpnode k0, simpnode k1)
          shift_res(search1) != var_equal)) {
       return result;
     }
-    
     
     /* as it is possible to switch comparisons between LT and LE (resp GT
      * and GE) here by adding 1 to expr. we need to
