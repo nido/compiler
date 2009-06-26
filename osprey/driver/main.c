@@ -612,6 +612,8 @@ main (int argc, char *argv[])
 	                newargv[0]=my_list->name;
 	                i = 0;
 	                treat_one_arg(&i,newargv);
+	                //Fix for bug #70574: If counter is not modified, option must be parsed again.
+			if(i==0) treat_one_arg(&i,newargv);
 	                my_list=my_list->next;
 	            }
 	        }
@@ -785,10 +787,12 @@ main (int argc, char *argv[])
                 is_initial_state=FALSE;
                 restore_options_status(TRUE);
                 while (my_list) {
-                	if (Trace_Opt_Cfg) printf("TDR - Add file option %s \n", my_list->name);
+               	    if (Trace_Opt_Cfg) printf("TDR - Add file option %s \n", my_list->name);
                     newargv[0]=my_list->name;
                     i = 0;
                     treat_one_arg(&i,newargv); 
+                    if(i==0) treat_one_arg(&i,newargv);
+                    //Fix for bug #70574: If counter is not modified, option must be parsed again.
                     my_list=my_list->next;
                 }
                 add_special_options();

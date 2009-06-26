@@ -927,6 +927,12 @@ add_special_options (void)
 		if (olevel == UNDEFINED) {
 			/* if no default, use -O0 */
 			olevel = 0;
+#ifdef TARG_ST
+			char *savd_option_name=option_name;
+			option_name=strdup("-O0");
+			toggle(&olevel,0);
+			option_name=savd_option_name;
+#endif
 		}
 		flag = get_olevel_flag(olevel);
 		prepend_option_seen (flag);
