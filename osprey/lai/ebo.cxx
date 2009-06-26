@@ -4710,6 +4710,7 @@ EBO_Fold_Constant_Expression (
 #ifdef TARG_ST
   if (OP_has_implicit_interactions(op)) return FALSE;
   if (OP_results(op) > 1) return FALSE;
+  if (OP_icmp(op) && OP_Predicate(op) && OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)) && OP_Predicate(op)==True_TN) return FALSE;
 #endif
 
   if (EBO_Trace_Execution) {
