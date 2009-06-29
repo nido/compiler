@@ -95,6 +95,11 @@ extern string
 get_option_help (int flag)
 {
 #ifdef TARG_STxP70
+   static const char * archi_str[STXP70_ARCH_SIZE][STXP70_EXTHWTYPE_SIZE] = 
+     {
+       { " (STxP70 v3 extension)", " (STxP70 v3 extension)", " (STxP70 v3 extension)" },
+       { " (STxP70 v4 no VLIW extension)", " (STxP70 v4 SINGLE pipeline extension)", " (STxP70 v4 DUAL pipeline extension)" }
+     };  
    if ((NULL!=options[flag].help_msg) && (flag==O_Mextension__)) {
       static char extension_help[4096];
       int archi, exthwtype, extcount=0;
@@ -111,14 +116,7 @@ get_option_help (int flag)
             }
 	 }
       }
-      if (strlen(extension_help)>=19) {
-         strcat(extension_help,"]\n                    ");
-      } else {
-         strcat(extension_help,"]");
-         for (i=strlen(extension_help);i<20;i++) {
-            strcat(extension_help," ");
-         }
-      }
+      strcat(extension_help,"][:novliw|single|dual]\n                    ");
       strcat(extension_help,options[flag].help_msg);
       for (archi=0;archi<STXP70_ARCH_SIZE;archi++) {
          for (exthwtype=0;exthwtype<STXP70_EXTHWTYPE_SIZE;exthwtype++) {
@@ -130,6 +128,7 @@ get_option_help (int flag)
                }
                strcat(extension_help,"  ");
                strcat(extension_help,static_ext_opt[archi][exthwtype][i].help);
+	       strcat(extension_help,archi_str[archi][exthwtype]);
             }
 	 }
       }

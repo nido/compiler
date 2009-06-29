@@ -254,6 +254,9 @@ void ISA_Lits_Begin (void)
    }
   else
    { fprintf(cfile, 
+        "mUINT32 ISA_LC_CLASS_dyn_offset = ISA_LC_STATIC_MAX+1;\n");
+   
+     fprintf(cfile, 
         "static const ISA_LIT_CLASS_INFO ISA_LIT_CLASS_dynamic_info [] = {\n");
    }
 
@@ -432,8 +435,10 @@ void ISA_Create_Lit_Class(const char* name, LIT_CLASS_TYPE type, ...)
 
   if(gen_static_code)
    fprintf(hfile,"#define LC_%-17s %d\n",name,lc_count);
-  else
+  else {
    fprintf(hfile,"#define LC_dyn_%-17s (ISA_LC_STATIC_MAX+1+%d)\n",name,lc_count);
+   fprintf(hfile,"#define LC_dyn_%s_gbu (ISA_LC_CLASS_dyn_offset+%d)\n",name,lc_count);
+  }
 
   // Increment the number of range.
   ++lc_count;
@@ -528,8 +533,15 @@ void ISA_Lits_End(void)
              "}\n\n",
              fct_name3);
      
+     fprintf(cfile,
+             "void dyn_set_ISA_LIT_CLASS_offset (mUINT32 offs)\n"
+             "{  ISA_LC_CLASS_dyn_offset = offs;\n"
+             "}\n\n");
+	     
      fprintf(hfile,
              "\n\n"
+             "extern mUINT32 ISA_LC_CLASS_dyn_offset;\n"
+             "extern void dyn_set_ISA_LIT_CLASS_offset ( mUINT32 );\n"
              "extern const ISA_LIT_CLASS_INFO* %s ( void );\n"
              "extern const mUINT32 %s ( void );\n"
              "extern const mUINT32 %s ( void );\n",

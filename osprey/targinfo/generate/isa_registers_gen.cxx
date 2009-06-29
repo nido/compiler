@@ -769,8 +769,11 @@ void ISA_Registers_End(void)
                hfile, 
                "#define ISA_REGISTER_CLASS_LOCAL_%s_%-9s %d\n"
                "#define ISA_REGISTER_CLASS_%s_%-15s "
-               "(ISA_REGISTER_CLASS_LOCAL_%s_%s+ISA_REGISTER_CLASS_STATIC_MAX+1)\n",
-                extname,rclass->name,i,extname,rclass->name,extname,rclass->name);
+	       "(ISA_REGISTER_CLASS_LOCAL_%s_%s+ISA_REGISTER_CLASS_STATIC_MAX+1)\n"
+               "#define ISA_REGISTER_CLASS_%s_%s_gbu "
+               "(ISA_REGISTER_CLASS_LOCAL_%s_%s+ISA_REGISTER_CLASS_dyn_offset)\n",
+                extname,rclass->name,i,extname,rclass->name,extname,rclass->name,
+		extname,rclass->name,extname,rclass->name);
           }
 
       fprintf(hfile, 
@@ -1013,8 +1016,11 @@ void ISA_Registers_End(void)
            "#define ISA_REGISTER_SUBCLASS_LOCAL_%s_%-9s %d\n"
            "#define ISA_REGISTER_SUBCLASS_%s_%-15s "
            "(ISA_REGISTER_SUBCLASS_LOCAL_%s_%s+ISA_REGISTER_SUBCLASS_STATIC_MAX+1)\n"
+           "#define ISA_REGISTER_SUBCLASS_%s_%s_gbu "
+           "(ISA_REGISTER_SUBCLASS_LOCAL_%s_%s+ISA_REGISTER_SUBCLASS_dyn_offset)\n"
            "\n",
            extname,subclass->name,i,
+           extname,subclass->name,extname,subclass->name,
            extname,subclass->name,extname,subclass->name);
            }
 
@@ -1121,16 +1127,29 @@ void ISA_Registers_End(void)
   else
    { fprintf(cfile,
              "\n"
+	     "mUINT32 ISA_REGISTER_CLASS_dyn_offset = ISA_REGISTER_CLASS_STATIC_MAX+1;\n"
+	     "mUINT32 ISA_REGISTER_SUBCLASS_dyn_offset = ISA_REGISTER_SUBCLASS_STATIC_MAX+1;\n"
+             "\n"
              "const ISA_REGISTER_SUBCLASS_INFO *dyn_get_ISA_REGISTER_SUBCLASS_tab (void)\n"
              "{  return %s;\n"
              "}\n"
              "const mUINT32 dyn_get_ISA_REGISTER_SUBCLASS_tab_sz (void)\n"
              "{  return  ISA_REGISTER_SUBCLASS_EXTENSION_%s_COUNT;\n"
+             "}\n"
+             "void dyn_set_ISA_REGISTER_CLASS_offset (mUINT32 offs)\n"
+             "{  ISA_REGISTER_CLASS_dyn_offset = offs;\n"
+             "}\n"
+             "void dyn_set_ISA_REGISTER_SUBCLASS_offset (mUINT32 offs)\n"
+             "{  ISA_REGISTER_SUBCLASS_dyn_offset = offs;\n"
              "}\n\n",
              tabname,extname);
      fprintf(hfile,
              "extern const ISA_REGISTER_SUBCLASS_INFO *dyn_get_ISA_REGISTER_SUBCLASS_tab ( void );\n"
-             "extern const mUINT32 dyn_get_ISA_REGISTER_SUBCLASS_tab_sz ( void );\n");
+             "extern const mUINT32 dyn_get_ISA_REGISTER_SUBCLASS_tab_sz ( void );\n"
+	     "extern mUINT32 ISA_REGISTER_CLASS_dyn_offset;\n"
+	     "extern mUINT32 ISA_REGISTER_SUBCLASS_dyn_offset;\n"
+             "extern void dyn_set_ISA_REGISTER_CLASS_offset (mUINT32);\n"
+             "extern void dyn_set_ISA_REGISTER_SUBCLASS_offset (mUINT32);\n");
    }
 
   /**************************************************
