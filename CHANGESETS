@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jun 30 13:10:58 CEST 2009
+	Author:    knochelh
+	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
+	Branch:    http://svn.open64.codex.cro.st.com/svnroot/open64/branches/fixes/codex-70678
+
+Description:
+------------
+	* [trunk] Fix for bug #70678 : Range analysis assertion failure
+	Deliver fixes/codex-70678 rev #22930 with authorization branch #71187 
+
+
+Modified Files:
+---------------
+	M      osprey/common/util/lalign.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jun 29 16:13:47 CEST 2009
 	Author:    chauveth
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
