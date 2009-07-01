@@ -745,14 +745,9 @@ void ISA_Pack_End(void)
 
   int isa_pack_index = 0;
 
-  /* In the static case, first line is a dummy line */
-  if(gen_static_code) {
-    fprintf (cfile, isa_pack_null_format, Print_Name(END), -1, -1, mask_digits, -1, "UNDEFINED", isa_pack_index);
-    index = 1;
-   }
-  else {
-    index = 0;
-  }
+  /* Both in the static and dynamic cases, first line is a dummy line */
+  fprintf (cfile, isa_pack_null_format, Print_Name(END), -1, -1, mask_digits, -1, "UNDEFINED", isa_pack_index);
+  index = 1;
 
   for ( isi = all_packs.begin(); isi != all_packs.end(); ++isi ) {
     ISA_PACK_TYPE curr_ptype = *isi;

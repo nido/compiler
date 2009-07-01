@@ -242,7 +242,7 @@ void ISA_Create (const char *isa_name, ...)
     else
      { fprintf(hfile,
                "#define TOP_dyn_%s_%-30s (%s%s + %4d)\n"
-               "#define TOP_dyn_local_%s_%-24s %d\n\n",
+               "#define TOP_local_dyn_%s_%-24s %d\n\n",
 
                 extname,                 /* First line */
                 instname,

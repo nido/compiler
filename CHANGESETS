@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jul  1 13:07:54 CEST 2009
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-69903
+
+Description:
+------------
+	* [trunk] Fix for bug #69903 : Incorrect management of 'multiplier' instructions from extension. Deliver fixes/codex-69903 rev #22953 with authorization branch #69904
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo_ext/stxp70_ext/vx/isa/vx_isa_injected.c
+	M      osprey/targinfo/generate/isa_binutils_gen.cxx
+	M      osprey/targinfo/generate/isa_pack_gen.cxx
+	M      osprey/targinfo/generate/isa_gen.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jun 30 13:10:58 CEST 2009
 	Author:    knochelh
 	Parent:    http://svn.open64.codex.cro.st.com/svnroot/open64/trunk
