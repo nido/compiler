@@ -600,10 +600,11 @@ main (int argc, char *argv[])
 #ifdef Is_True_On
 	    if (Trace_Opt_Cfg_Detailed) dump_cfg();
 #endif
-	    if(!active_configuration) option_file_set=FALSE;
-	    else {
+	    if(!active_configuration) {
+	    	warning("Configuration file specified without any active configuration defined\n application configuration file will be ignored.");
+	    	option_file_set=FALSE;
+	    } else {
 	        if (active_configuration->options) {
-	            //printf("TDR - Add global options section: \n");
 	            Pt_string_list my_list=active_configuration->options;
 	            int  i = 0;
                 char *newargv[] = { NULL };
