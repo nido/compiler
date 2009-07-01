@@ -613,7 +613,7 @@ Process_Command_Line (INT argc, char **argv)
           i++;
           option_file_set = TRUE;
           FmtAssert (argc >= i, ("Error: option -cfgappli-decl expect a file name as parameter"));
-          option_file_name = argv[i++];
+          option_file_name = argv[i];
           break;
         } 
 #endif               

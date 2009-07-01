@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jul  1 14:40:16 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70572
+
+Description:
+------------
+	* [trunk] Fix for bug #70572: 1245742606      .
+	Deliver fixes/codex-70572 rev #22959 with authorization branch #70967
+
+
+Modified Files:
+---------------
+	M      osprey/be/be/driver_util.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jul  1 13:07:54 CEST 2009
 	Author:    chauveth
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
