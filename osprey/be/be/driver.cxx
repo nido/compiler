@@ -134,10 +134,8 @@
 #endif
 
 #ifdef TARG_ST
-BOOL option_file_set = FALSE;
-char *option_file_name = NULL;
-BOOL Trace_Opt_Cfg = FALSE;
-BOOL Trace_Opt_Cfg_Detailed = FALSE;
+BOOL Trace_Appli_Config_File = FALSE;
+BOOL Trace_Appli_Config_File_Detailed = FALSE;
 #endif
 
 extern void* Initialize_Targ_Info(void);
@@ -2286,15 +2284,15 @@ main (INT argc, char **argv)
 
 #ifdef TARG_ST
   //TDR  Set point where parsing should be done
-  if (option_file_set) {
-    appliconfig_parser(option_file_name);
-    set_active_cfg();
+  if (appli_config_file_set) {
+    appliconfig_parser(appli_config_file_name);
+    set_active_appli_config(active_appli_config_file_name);
 #ifdef Is_True_On
-    Trace_Opt_Cfg = (getenv("TRACE_CFG")!=NULL);
-    Trace_Opt_Cfg_Detailed = (getenv("TRACE_CFG2")!=NULL);
-    if (Trace_Opt_Cfg_Detailed) dump_cfg();
+    Trace_Appli_Config_File = (getenv("TRACE_APPLI_CONFIG")!=NULL);
+    Trace_Appli_Config_File_Detailed = (getenv("TRACE_APPLI_CONFIG_DETAILED")!=NULL);
+    if (Trace_Appli_Config_File_Detailed) dump_cfg();
 #endif
-    if(!active_configuration) option_file_set=FALSE;
+    if(!active_configuration) appli_config_file_set=FALSE;
   }
 #endif
   Start_Timer (T_ReadIR_Comp);
@@ -2410,7 +2408,7 @@ main (INT argc, char **argv)
     //TB: Set the defaultt option
     Set_Options_For_File();
     //TDR  Set point where options will apply
-	if (option_file_set) {
+	if (appli_config_file_set) {
 		char *file_name=NULL;
 	    DST_IDX pu_idx = PU_Info_pu_dst(current_pu);
 	    if (!DST_IS_NULL(pu_idx)) {
@@ -2438,14 +2436,14 @@ main (INT argc, char **argv)
 		  Pt_string_list my_opts;
 		  if (FILE_INFO_ipa (File_info)) {
 			  my_opts = get_file_options(file_name); 
-			  if (Trace_Opt_Cfg && option_file_set && my_opts) printf("TDR - BE Application options for file %s\n",file_name);
+			  if (Trace_Appli_Config_File && appli_config_file_set && my_opts) printf("BE Application options for file %s\n",file_name);
 			  Process_Extra_Command_Line(my_opts);
 		  }
 		  char *func_name=strdup(ST_name(PU_Info_proc_sym(current_pu)));
 		  p = strchr (func_name, '.');
 		  if (p != NULL)  *p = '\0';
 		  my_opts = get_func_options(file_name,func_name);
-		  if (Trace_Opt_Cfg && option_file_set && my_opts) printf("TDR - BE Application options for func %s\n",ST_name(PU_Info_proc_sym(current_pu)));
+		  if (Trace_Appli_Config_File && appli_config_file_set && my_opts) printf("BE Application options for func %s\n",ST_name(PU_Info_proc_sym(current_pu)));
 		  Process_Extra_Command_Line(my_opts);
 		  free(func_name);
 	    }

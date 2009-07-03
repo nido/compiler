@@ -179,8 +179,7 @@ Add_Phase_Specific_Options (char *flag)
     if (phase == PHASE_COMMON || phase >= PHASE_COUNT)
 	return FALSE;
 
-    if(phase == PHASE_CG) {
-    	char *cgflag[2];
+    if(phase == PHASE_CG && Run_cg) {
     	CG_Process_Command_Line (1, &flag, -1, NULL);
     } else {
     	DevWarn("Specific option: phase=%d; flag=%s Not yet handlesd\n",phase,flag);
@@ -607,16 +606,6 @@ Process_Command_Line (INT argc, char **argv)
 		break;
               
 	    case 'm':		    /* Message reporting: */
-#ifdef TARG_ST
-        //TDR - Identify application file
-        if (!strcmp(cp, "cfgappli-decl")) {
-          i++;
-          option_file_set = TRUE;
-          FmtAssert (argc >= i, ("Error: option -cfgappli-decl expect a file name as parameter"));
-          option_file_name = argv[i];
-          break;
-        } 
-#endif               
 		if (!strcmp( cp, "pio" )) {
 		  mp_io = TRUE;
 		  cp += 3;

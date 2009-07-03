@@ -367,6 +367,9 @@ static BOOL Short_Lits_Set = FALSE;	/* ... option seen? */
 INT32 Max_Sdata_Elt_Size = DEF_SDATA_ELT_SIZE;	/* -Gn: sdata size */
 INT32 Max_Srdata_Elt_Size = DEF_SRDATA_ELT_SIZE;
 static BOOL Max_Srdata_Elt_Size_Set = FALSE;
+BOOL appli_config_file_set          = FALSE;
+char *appli_config_file_name        = NULL;
+char *active_appli_config_file_name = NULL;
 
 BOOL Constant_GP = FALSE;		/* gp never changes? */
 
@@ -755,6 +758,12 @@ static OPTION_DESC Options_TENV[] = {
   { OVK_NAME,   OV_INTERNAL,    FALSE, "disabled_native_extensions", NULL,
     0, 0, 0,    &Disabled_Native_Extensions, &Disabled_Native_Extensions_Set,
     "List of extension names with disabled native support" },
+  { OVK_NAME,   OV_INTERNAL,    FALSE, "application_configuration_decl", NULL,
+    0, 0, 0,    &appli_config_file_name, &appli_config_file_set,
+    "Apply configuration file" },
+  { OVK_NAME,   OV_INTERNAL,    FALSE, "application_configuration_select", NULL,
+    0, 0, 0,    &active_appli_config_file_name, NULL,
+    "Active application configuration selection" },
 #endif
 
   { OVK_COUNT }		/* List terminator -- must be last */

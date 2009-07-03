@@ -1092,6 +1092,11 @@ BE_EXPORTED extern BOOL Emulate_DivRem_Integer_Ops_Set;
   BE_EXPORTED void Apply_Opt_Size_For_Common(UINT32 level);
   // TB: set option for optimization level.
   BE_EXPORTED void Apply_Opt_Level_For_Common(UINT32 level);
+  
+BE_EXPORTED extern BOOL appli_config_file_set;
+BE_EXPORTED extern char *appli_config_file_name;
+BE_EXPORTED extern char *active_appli_config_file_name;
+
 #endif
 
 #ifdef TARG_ST

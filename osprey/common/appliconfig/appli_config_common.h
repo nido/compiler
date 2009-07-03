@@ -36,8 +36,7 @@
 typedef struct string_list *Pt_string_list;
 typedef struct func_list *Pt_func_list;
 typedef struct file_list *Pt_file_list;
-typedef struct cfg_struct *Pt_cfg_struct;
-typedef struct applicfg_struct *Pt_applicfg_struct;
+typedef struct appli_config_struct *Pt_appli_config_struct;
 
 
 typedef struct string_list{
@@ -60,40 +59,43 @@ typedef struct file_list{
 } file_list;
 
 
-typedef struct cfg_struct {
+typedef struct appli_config_struct {
 	char *name;
 	Pt_string_list options;
 	Pt_file_list files;
-	Pt_cfg_struct next;
-} cfg_struct;
+	Pt_appli_config_struct next;
+} appli_config_struct;
 
 
-extern char *active_configuration_name;
-extern Pt_cfg_struct appli_configurations;
-extern Pt_cfg_struct active_configuration;
+extern char    *appli_config_file_name;
+extern char    *active_appli_config_file_name;
+
+extern Pt_appli_config_struct appli_configurations;
+extern Pt_appli_config_struct active_configuration;
 
 
 /********************************************************************************/
 /* initializations procedures                                                   */
 /********************************************************************************/
 int appliconfig_parser(char *filename);
-void add_configuration(Pt_cfg_struct cfg);
+void add_configuration(Pt_appli_config_struct cfg);
 
 Pt_string_list add_string_to_list(Pt_string_list l1, char *opt);
 Pt_func_list generate_func_conf(char *name, Pt_string_list l1);
 Pt_file_list generate_file_conf(char *name, Pt_file_list l1);
 Pt_file_list generate_one_file_conf(Pt_file_list l1, Pt_func_list l2, Pt_string_list l3);
-Pt_cfg_struct generate_full_conf(char *name, Pt_cfg_struct l1);
-Pt_cfg_struct generate_one_full_conf(Pt_cfg_struct l1, Pt_file_list l2, Pt_string_list l3);
+Pt_appli_config_struct generate_full_conf(char *name, Pt_appli_config_struct l1);
+Pt_appli_config_struct generate_one_full_conf(Pt_appli_config_struct l1, Pt_file_list l2, Pt_string_list l3);
 
 /********************************************************************************/
 /* Access functions                                                             */
 /********************************************************************************/
 
-void set_active_cfg();
+void set_active_appli_config(char *name);
 Pt_string_list get_file_options(char *file);
 Pt_string_list get_func_options(char *file, char *func);
 
 #ifdef Is_True_On
 void dump_cfg();
 #endif
+

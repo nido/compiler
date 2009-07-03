@@ -126,7 +126,7 @@ INSTALLNAME = install
 LEXNAME	= flex
 YACCNAME= bison --output-file=y.tab.c
 AWKNAME	= awk
-
+YACCNAME_NO = bison
 
 # host platform definitions, may be set before in Makefile.tooldefs
 COMPILER_LOC?=
@@ -242,6 +242,7 @@ INSTALL = $(INSTALL_LOC)$(INSTALLNAME)
 LEX     = $(LEX_LOC)$(LEXNAME)
 YACC    = $(YACC_LOC)$(YACCNAME)
 AWK     = $(AWKNAME)$(AWKNAME)
+YACC_NO = $(YACC_LOC)$(YACCNAME_NO)
 
 DLLTOOL = $(COMPILER_LOC)$(PREFIX)$(DLLTOOLNAME)$(SUFFIX)
 DLLTOOL_FLAGS = 

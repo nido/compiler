@@ -155,10 +155,6 @@ boolean Disable_old_mp = FALSE;
 boolean O3_flag = FALSE;
 boolean use_cpp = FALSE;
 boolean expand_ftpp_macros = FALSE;
-#ifdef TARG_ST
-boolean option_file_set = FALSE;
-string option_file_name = NULL;
-#endif 
 int     fortran_line_length = 72; /* Fortran line length */
 char roundoff=0;
 boolean nocpp_flag = FALSE;
@@ -3090,18 +3086,6 @@ run_compiler (void)
 	input_source = source_file;
 	for (i = 0; phase_order[i] != P_NONE; i++) {
 
-#ifdef TARG_ST
-    // TDR - Pass option -mcfgappli-decl <option_file_name> to be
-    if (phase_order[i] == P_be && option_file_set) {
-      int appflag = add_new_option("-mcfgappli-decl");
-      add_phase_for_option(appflag, P_be);
-      add_option_seen (appflag);
-      appflag = add_new_option(option_file_name);
-      add_phase_for_option(appflag, P_be);
-      add_option_seen (appflag);
-    }
-#endif
-	    
 #ifdef TARG_STxP70
           /* [VCdV] Dump Command-Line to temporary file and pass as an option
            *       temp filename to back-end.
@@ -3883,19 +3867,6 @@ save_ipl_commands (void)
 #endif
 	}
     }
-#ifdef TARG_ST
-    // TDR - Pass option -appcfg <option_file_name> to Phase BE
-    if (option_file_set) {
-      add_string (ipl_cmds, "-mcfgappli-decl");
-      string tmp = drop_path(option_file_name);
-      if (!strcmp(tmp,option_file_name)) {
-        tmp = concat_path(getpwd(),option_file_name);
-        add_string (ipl_cmds, tmp);
-      } else {
-        add_string (ipl_cmds, option_file_name);            
-      }
-    }
-#endif
 } /* save_ipl_commands */
 
 

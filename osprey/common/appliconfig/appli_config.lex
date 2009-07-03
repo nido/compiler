@@ -33,8 +33,9 @@ alphamL		[a-zA-Z$]
 alphanumerics 	[a-zA-Z_$0-9@]*
 
 %{
-#include "applicfg_common.h"
-#include "applicfg_yacc.h"
+#include "appli_config_common.h"
+#include "appli_config_yacc.h"
+#include "errors.h"
 
 #define MAX_INCLUDE_DEPTH 20
 YY_BUFFER_STATE include_stack[MAX_INCLUDE_DEPTH];
@@ -46,6 +47,13 @@ char *current_compiled_file;
 FILE *current_file;
 extern int yyparse();
 void yyerror (char *s);
+#ifdef DRIVER
+ #define APPLICONFIG_warning warning
+ #define APPLICONFIG_error   error
+#else
+ #define APPLICONFIG_warning DevWarn
+ #define APPLICONFIG_error   Fatal_Error
+#endif
 %}
 
 %x FL_comment
@@ -63,11 +71,11 @@ void yyerror (char *s);
 <FL_comment>"*"+[^*/\n]*\n	++line_num;
 <FL_comment>"*"+"/"		BEGIN(INITIAL);
 
-"//"				    	BEGIN(FL_line_comment);
-<FL_line_comment>[^\n]*\n   { ++line_num; BEGIN(INITIAL);}
+"//"			    	BEGIN(FL_line_comment);
+<FL_line_comment>[^\n]*\n       { ++line_num; BEGIN(INITIAL);}
 
 
-"\""			BEGIN(FL_string);
+"\""				BEGIN(FL_string);
 <FL_string>[^"\""]+"\""		{
 				char *tmp_name;
 				BEGIN(INITIAL);
@@ -84,7 +92,7 @@ void yyerror (char *s);
 <FL_include>[ \t]*
 <FL_include>[^ "\""\t\n]+"\""	{ 
 				if(include_stack_ptr >= MAX_INCLUDE_DEPTH) {
-					printf("Parse error in file %s at line %d, exceed include depth\n",current_compiled_file,line_num);
+					APPLICONFIG_error("Parse error in file %s at line %d, exceed include depth\n",current_compiled_file,line_num);
 				}
 				include_stack[include_stack_ptr++]=YY_CURRENT_BUFFER;
 				tmp=current_compiled_file;
@@ -93,7 +101,7 @@ void yyerror (char *s);
 				current_compiled_file[strlen(yytext)-1]='\0';
 				yyin=fopen(current_compiled_file,"r");
 				if(yyin==NULL) {
-					printf("Parse error in file %s at line %d, Unable to open include file %s\n",tmp,line_num,current_compiled_file);
+					APPLICONFIG_error("Parse error in file %s at line %d, Unable to open include file %s\n",tmp,line_num,current_compiled_file);
 					exit(1);
 				}
 				saved_line_num=line_num;
@@ -103,7 +111,7 @@ void yyerror (char *s);
 				}
 
 
-<<EOF>>			{ 
+<<EOF>>				{ 
 				if(--include_stack_ptr < 0 ) yyterminate();
 				yy_delete_buffer(YY_CURRENT_BUFFER);
 				yy_switch_to_buffer(include_stack[include_stack_ptr]);
@@ -112,13 +120,13 @@ void yyerror (char *s);
 				line_num=saved_line_num;
 				}
 
-"configuration"	 	return (FL_CONF);
+"configuration"	 		return (FL_CONF);
 "file"	 			return (FL_FILE);
 "function"	 		return (FL_FUNC);
 
-"active"[ \t]+"configuration" return (FL_ACTIVE_CONF);
-"{"	return (FL_OPEN_C);
-"}"	return (FL_CLOSE_C);
+"active"[ \t]+"configuration" 	return (FL_ACTIVE_CONF);
+"{"				return (FL_OPEN_C);
+"}"				return (FL_CLOSE_C);
 
 "-"[^ \t\n\r]+	{yylval.name = strdup(yytext); return (FL_OPTION); }
 
@@ -126,46 +134,39 @@ void yyerror (char *s);
 
 %%
 
-static void set_applicfg_input_file(FILE *file_pt) {
-	yyin = file_pt;
-	current_file = yyin;
-	line_num = 1;
+static void set_appli_config_input_file(FILE *file_pt) {
+    yyin = file_pt;
+    current_file = yyin;
+    line_num = 1;
 }
 
 
 int appliconfig_parser(char *filename) {
-	int status=0;
-	FILE *source_file;
-	current_compiled_file=filename;
-	source_file = fopen(filename, "r");
-	if (source_file == NULL) {
-		printf("Unable to open file %s\n",current_compiled_file);
-		return 0;
-	}
-	set_applicfg_input_file(source_file);
-	//printf("<Loading Configuration %s>\n", current_compiled_file);
-	active_configuration=NULL;
-	appli_configurations=NULL;
-	status = yyparse ();
-	fclose (source_file);
-	//printf("<parsing successfully completed>\n");
-	return status;
+    int status=0;
+    FILE *source_file;
+    current_compiled_file=filename;
+    source_file = fopen(filename, "r");
+    if (source_file == NULL) {
+        APPLICONFIG_error("Unable to open file %s\n",current_compiled_file);
+        return 0;
+    }
+    set_appli_config_input_file(source_file);
+    active_configuration=NULL;
+    appli_configurations=NULL;
+    status = yyparse ();
+    fclose (source_file);
+    return status;
 }
 
 
 void yyerror (char *s) {
-	extern int yychar;
-	printf ("\nsyntax error: %s while parsing file : %s\n",s,current_compiled_file);
-	printf("yychar = %d, yytext = %s\n", yychar, yytext);
-	printf ("yylineno = %d\n", line_num);
-	//FmtAssert(FALSE,("Stop parsing of Application configuration File"));
-	exit(1);
+    extern int yychar;
+    APPLICONFIG_error("\nsyntax error: %s while parsing file : %s\n:yychar = %d, yytext = %s yylineno = %d\n",s,current_compiled_file,yychar, yytext,line_num);
+    exit(1);
 }
 
 int yywrap () {	return (1);}
 	 
-
-
 Pt_string_list add_string_to_list(Pt_string_list l1, char *opt) {
 	Pt_string_list new_list = (Pt_string_list) malloc(sizeof(string_list));
 	new_list->next=NULL;
@@ -178,136 +179,135 @@ Pt_string_list add_string_to_list(Pt_string_list l1, char *opt) {
 	} else return new_list;
 }
 
-
 Pt_func_list generate_func_conf(char *name, Pt_string_list l1) {
-	Pt_func_list new_list = (Pt_func_list) malloc(sizeof(func_list));
-	new_list->next=NULL;
-	new_list->name=strdup(name);
-	new_list->options=l1;
-	return new_list;
+    Pt_func_list new_list = (Pt_func_list) malloc(sizeof(func_list));
+    new_list->next=NULL;
+    new_list->name=strdup(name);
+    new_list->options=l1;
+    return new_list;
 }
 
 Pt_file_list generate_file_conf(char *name, Pt_file_list l1) {
-	l1->name=strdup(name);
-	return l1;
+    l1->name=strdup(name);
+    return l1;
 }
 
 Pt_file_list generate_one_file_conf(Pt_file_list l1, Pt_func_list l2, Pt_string_list l3) {
-	if (l1 == NULL) {
-		l1 = (Pt_file_list) malloc(sizeof(file_list));
-		l1->functions=l2;
-		l1->options=l3;
-		l1->next=NULL;
-		return l1;
-	}
-	if(l2 != NULL) {
-		if (l1->functions != NULL) {
-			Pt_func_list tmp_pt=l1->functions;
-			while (tmp_pt->next) tmp_pt=tmp_pt->next;
-			tmp_pt->next=l2;
-		} else l1->functions = l2;
-	}
-	
-	if(l3 != NULL) {
-		if (l1->options != NULL) {
-			Pt_string_list tmp_pt=l1->options;
-			while (tmp_pt->next) tmp_pt=tmp_pt->next;
-			tmp_pt->next=l3;
-		} else l1->options = l3;
-	}
-	return l1;
+    if (l1 == NULL) {
+        l1 = (Pt_file_list) malloc(sizeof(file_list));
+        l1->functions=l2;
+        l1->options=l3;
+        l1->next=NULL;
+        return l1;
+    }
+    if(l2 != NULL) {
+        if (l1->functions != NULL) {
+            Pt_func_list tmp_pt=l1->functions;
+            while (tmp_pt->next) tmp_pt=tmp_pt->next;
+            tmp_pt->next=l2;
+        } else l1->functions = l2;
+    }
+    if(l3 != NULL) {
+        if (l1->options != NULL) {
+            Pt_string_list tmp_pt=l1->options;
+            while (tmp_pt->next) tmp_pt=tmp_pt->next;
+                tmp_pt->next=l3;
+        } else l1->options = l3;
+    }
+    return l1;
 }
 
-Pt_cfg_struct generate_full_conf(char *name, Pt_cfg_struct l1) {
-	l1->name=strdup(name);
-	return l1;
+Pt_appli_config_struct generate_full_conf(char *name, Pt_appli_config_struct l1) {
+    l1->name=strdup(name);
+    return l1;
 }
 
-Pt_cfg_struct generate_one_full_conf(Pt_cfg_struct l1, Pt_file_list l2, Pt_string_list l3) {
-	if (l1 == NULL) {
-		l1 = (Pt_cfg_struct) malloc(sizeof(cfg_struct));
-		l1->files=l2;
-		l1->options=l3;
-		l1->next=NULL;
-		return l1;
-	}
-	
-	if(l2 != NULL) {
-		if (l1->files != NULL) {
-			Pt_file_list tmp_pt=l1->files;
-			while (tmp_pt->next) tmp_pt=tmp_pt->next;
-			tmp_pt->next=l2;
-		} else l1->files = l2;
-	}
-	
-	if(l3 != NULL) {
-		if (l1->options != NULL) {
-			Pt_string_list tmp_pt=l1->options;
-			while (tmp_pt->next) tmp_pt=tmp_pt->next;
-			tmp_pt->next=l3;
-		} else l1->options = l3;
-	}
-	return l1;
+Pt_appli_config_struct generate_one_full_conf(Pt_appli_config_struct l1, Pt_file_list l2, Pt_string_list l3) {
+    if (l1 == NULL) {
+        l1 = (Pt_appli_config_struct) malloc(sizeof(appli_config_struct));
+        l1->files=l2;
+        l1->options=l3;
+        l1->next=NULL;
+        return l1;
+    }
+    if(l2 != NULL) {
+        if (l1->files != NULL) {
+            Pt_file_list tmp_pt=l1->files;
+            while (tmp_pt->next) tmp_pt=tmp_pt->next;
+            tmp_pt->next=l2;
+        } else l1->files = l2;
+    }
+    if(l3 != NULL) {
+        if (l1->options != NULL) {
+            Pt_string_list tmp_pt=l1->options;
+            while (tmp_pt->next) tmp_pt=tmp_pt->next;
+            tmp_pt->next=l3;
+        } else l1->options = l3;
+    }
+    return l1;
 }
 
-void add_configuration(Pt_cfg_struct cfg) {
-	if (appli_configurations == NULL) {
-		appli_configurations = cfg;
-	} else {
-		Pt_cfg_struct tmp_pt;
-		tmp_pt=appli_configurations;
-		while (tmp_pt->next) tmp_pt=tmp_pt->next;
-		tmp_pt->next=cfg;
-	}
+void add_configuration(Pt_appli_config_struct cfg) {
+    if (appli_configurations == NULL) {
+        appli_configurations = cfg;
+    } else {
+        Pt_appli_config_struct tmp_pt;
+        tmp_pt=appli_configurations;
+        while (tmp_pt->next) tmp_pt=tmp_pt->next;
+        tmp_pt->next=cfg;
+    }
 }
 
-void set_active_cfg() {
-	active_configuration=NULL;
-	if(!active_configuration_name) return;
-	if(!appli_configurations) return;
-	active_configuration=appli_configurations;
-	while (active_configuration) {
-		if (!strcmp(active_configuration->name,active_configuration_name)) {
-			return;
-		}
-		active_configuration=active_configuration->next;
-	}
-	active_configuration=NULL;
-	return;
+void set_active_appli_config(char *name) {
+    active_configuration=NULL;
+    if(!name) {
+        APPLICONFIG_warning("Configuration Application File (-mcfgappli-decl) defined without active configuration defined");
+        return;
+    }
+    if(!appli_configurations) return;
+    active_configuration=appli_configurations;
+    while (active_configuration) {
+        if (!strcmp(active_configuration->name,name)) {
+            return;
+        }
+        active_configuration=active_configuration->next;
+    }
+    active_configuration=NULL;
+    return;
 }
 
 Pt_string_list get_file_options(char *file) {
-	Pt_file_list tmp_list;
-	if(!active_configuration) return NULL;
-	tmp_list=active_configuration->files;
-	while(tmp_list) {
-		if (!strcmp(tmp_list->name,file)) return  tmp_list->options;
-		tmp_list=tmp_list->next;
-	}
-	return NULL;
+    Pt_file_list tmp_list;
+    if(!active_configuration) return NULL;
+    tmp_list=active_configuration->files;
+    while(tmp_list) {
+        if (!strcmp(tmp_list->name,file)) return  tmp_list->options;
+        tmp_list=tmp_list->next;
+    }
+    return NULL;
 }
 
 static Pt_file_list get_file_options_pt(char *file) {
-	Pt_file_list tmp_list;
-	if(!active_configuration) return NULL;
-	tmp_list=active_configuration->files;
-	while(tmp_list) {
-		if (!strcmp(tmp_list->name,file)) return  tmp_list;
-		tmp_list=tmp_list->next;
-	}
-	return NULL;
+    Pt_file_list tmp_list;
+    if(!active_configuration) return NULL;
+    tmp_list=active_configuration->files;
+    while(tmp_list) {
+        if (!strcmp(tmp_list->name,file)) return  tmp_list;
+        tmp_list=tmp_list->next;
+    }
+    return NULL;
 }
 
 Pt_string_list get_func_options(char *file, char *func) {
-	Pt_func_list tmp_list;
-	Pt_file_list file_info=get_file_options_pt(file);
-	if(!file_info) return NULL;
-	tmp_list=file_info->functions;
-	while(tmp_list) {
-		if (!strcmp(tmp_list->name,func)) return  tmp_list->options;
-		tmp_list=tmp_list->next;
-	}
-	return NULL;
+    Pt_func_list tmp_list;
+    Pt_file_list file_info=get_file_options_pt(file);
+    if(!file_info) return NULL;
+        tmp_list=file_info->functions;
+        while(tmp_list) {
+            if (!strcmp(tmp_list->name,func)) return  tmp_list->options;
+            tmp_list=tmp_list->next;
+        }
+    return NULL;
 }
 
 #ifdef Is_True_On
@@ -345,9 +345,9 @@ void dump_file_spec(Pt_file_list l) {
 
 
 void dump_cfg() {
-    Pt_cfg_struct tmp = appli_configurations;
+    Pt_appli_config_struct tmp = appli_configurations;
     printf("Check parsed file:\n");
-    printf("Active conf is : %s\n",active_configuration_name);
+    printf("Active conf is : %s\n",active_appli_config_file_name);
     while (tmp) {
         printf("Current config name is: %s\n",tmp->name);       
         printf("Options are :\n"); 

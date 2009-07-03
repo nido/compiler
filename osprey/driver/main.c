@@ -58,7 +58,10 @@
 #include "objects.h"
 #include "libiberty/libiberty.h"
 #ifdef TARG_ST
-#include "applicfg_common.h"
+#include "appli_config_common.h"
+boolean appli_config_file_set          = FALSE;
+char    *appli_config_file_name        = NULL;
+char    *active_appli_config_file_name = NULL;
 #endif
 
 string help_pattern = NULL;
@@ -67,8 +70,8 @@ boolean nostdinc = FALSE;
 #ifdef TARG_ST
 /* (cbr) don't exclude non c++ standard paths */
 boolean nostdincc = FALSE;
-boolean Trace_Opt_Cfg = FALSE;
-boolean Trace_Opt_Cfg_Detailed = FALSE;
+boolean Trace_Appli_Config_File = FALSE;
+boolean Trace_Appli_Config_File_Detailed = FALSE;
 
 #endif
 boolean show_version = FALSE;
@@ -179,8 +182,8 @@ main (int argc, char *argv[])
 	string_item_t *p, *q;
 	int num_files = 0;
 #ifdef Is_True_On
-	Trace_Opt_Cfg = (getenv("TRACE_CFG")!=NULL);
-	Trace_Opt_Cfg_Detailed = (getenv("TRACE_CFG2")!=NULL);
+    Trace_Appli_Config_File = (getenv("TRACE_APPLI_CONFIG")!=NULL);
+    Trace_Appli_Config_File_Detailed = (getenv("TRACE_APPLI_CONFIG_DETAILED")!=NULL);
 #endif 
 
 	time0 = times(&tm0);
@@ -234,18 +237,7 @@ main (int argc, char *argv[])
 		option_name = argv[i];
 		set_current_arg_pos(i);
 		if (argv[i][0] == '-' && !dashdash_flag) {
-#ifdef TARG_ST
-		    //TDR - Identify application file
-		    if (strcmp(argv[i], "-mcfgappli-decl") == 0) {
-                i++;
-                option_file_set = TRUE;
-                option_file_name = argv[i++];
-                if(Trace_Opt_Cfg) printf("TDR - Application file configuration %s found\n",option_file_name);
-                continue;
-            }
-#endif               
 			treat_one_arg(&i,argv);
-         
 		} else if (argv[i][0] == '+') {
 			check_old_CC_options(argv[i]);
 			i++;
@@ -594,27 +586,27 @@ main (int argc, char *argv[])
 #ifdef TARG_ST
 	//TDR -  Parse configuration file
 	// and save initial configuration file
-	if (option_file_set) {
-		appliconfig_parser(option_file_name);
-	    set_active_cfg();
+	if (appli_config_file_set) {
+		appliconfig_parser(appli_config_file_name);
+		set_active_appli_config(active_appli_config_file_name);
 #ifdef Is_True_On
-	    if (Trace_Opt_Cfg_Detailed) dump_cfg();
+	    if (Trace_Appli_Config_File_Detailed) dump_cfg();
 #endif
 	    if(!active_configuration) {
 	    	warning("Configuration file specified without any active configuration defined\n application configuration file will be ignored.");
-	    	option_file_set=FALSE;
+	    	appli_config_file_set=FALSE;
 	    } else {
 	        if (active_configuration->options) {
 	            Pt_string_list my_list=active_configuration->options;
 	            int  i = 0;
                 char *newargv[] = { NULL };
 	            while (my_list) {
-	                if (Trace_Opt_Cfg) printf("TDR - Add Global option %s \n", my_list->name);
+	                if (Trace_Appli_Config_File) printf("Add Global option %s \n", my_list->name);
 	                newargv[0]=my_list->name;
 	                i = 0;
 	                treat_one_arg(&i,newargv);
 	                //Fix for bug #70574: If counter is not modified, option must be parsed again.
-			if(i==0) treat_one_arg(&i,newargv);
+	                if(i==0) treat_one_arg(&i,newargv);
 	                my_list=my_list->next;
 	            }
 	        }
@@ -744,7 +736,7 @@ main (int argc, char *argv[])
 #ifdef TARG_ST
     //TDR in order to quickly restore option state 
     boolean is_initial_state=TRUE;
-    if (option_file_set) {
+    if (appli_config_file_set) {
     	save_options_status(FALSE);
     }
 #endif
@@ -775,8 +767,8 @@ main (int argc, char *argv[])
 		}
 #ifdef TARG_ST
         //TDR - Add parse options
-        if (option_file_set && ipa != TRUE) {
-        	if (Trace_Opt_Cfg) printf("TDR - Main Driver treat args from file %s\n",option_file_name);
+        if (appli_config_file_set && ipa != TRUE) {
+        	if (Trace_Appli_Config_File) printf("Main Driver treat args from file %s\n",appli_config_file_name);
             string base_name=string_copy(drop_path(source_file));
             string p = strrchr (base_name, '.');
             if (p != NULL)  *p = NIL;
@@ -788,7 +780,7 @@ main (int argc, char *argv[])
                 is_initial_state=FALSE;
                 restore_options_status(TRUE);
                 while (my_list) {
-               	    if (Trace_Opt_Cfg) printf("TDR - Add file option %s \n", my_list->name);
+               	    if (Trace_Appli_Config_File) printf("Add file option %s \n", my_list->name);
                     newargv[0]=my_list->name;
                     i = 0;
                     treat_one_arg(&i,newargv); 
@@ -800,7 +792,7 @@ main (int argc, char *argv[])
             } else {
                 if (is_initial_state == FALSE) {
                     is_initial_state=TRUE;
-                    if (Trace_Opt_Cfg) printf("TDR - Restore option status\n", base_name);
+                    if (Trace_Appli_Config_File) printf("Restore option status\n", base_name);
                     restore_options_status(FALSE);
                 }
             }

@@ -38,7 +38,7 @@
 
 include	$(COMMONDEFS)
  COMMON_DIR 		= $(BUILD_TOT)/common
- COMMON_APPCFG_DIR 		= $(COMMON_DIR)/applicfg
+ COMMON_APPLICONFIG_DIR 		= $(COMMON_DIR)/appliconfig
 
 GNU_COMMON_DIR          = $(BUILD_TOT)/gnu_common
 
@@ -122,7 +122,7 @@ LDLIBS += -llmsgi
 endif
 
 # don't want to use common/com/defs.h
-LCINCS	= -I. -I$(BUILD_BASE) -I$(BUILD_TOT)/common/rcparser -I$(BUILD_TOT)/common/rtkutils -I$(GNU_COMMON_DIR)/include -I$(BUILD_TOT)/common/applicfg
+LCINCS	= -I. -I$(BUILD_BASE) -I$(BUILD_TOT)/common/rcparser -I$(BUILD_TOT)/common/rtkutils -I$(GNU_COMMON_DIR)/include -I$(BUILD_TOT)/common/appliconfig
 
 TARGETS	= driver$(HEXE)
 
@@ -134,8 +134,8 @@ GEN_HFILES = \
 	opt_action.i
 
 APPCG_HFILES = \
-	applicfg_common.h \
-	applicfg_yacc.h
+	appli_config_common.h \
+	appli_config_yacc.h
 
 SHARED_HFILES = \
 	basic.h \
@@ -166,8 +166,8 @@ GEN_CFILES = \
 	implicits.c
 
 APPCG_CFILES = \
-	applicfg_yacc.c \
-	applicfg_lex.c
+	appli_config_yacc.c \
+	appli_config_lex.c
 	
 SHARED_CFILES = \
 	errors.c \
@@ -206,11 +206,11 @@ LDIRT = OPTIONS.P table$(BEXE) generated $(GEN_HFILES) $(GEN_CFILES) *.bo tmp.*
 
 LANGS = as cc c89 CC f77 fort77 f90
 
-applicfg_yacc.h applicfg_yacc.c : $(COMMON_APPCFG_DIR)/applicfg.yacc 
-	bison -d $(COMMON_APPCFG_DIR)/applicfg.yacc -o applicfg_yacc.c
+appli_config_yacc.h appli_config_yacc.c : $(COMMON_APPLICONFIG_DIR)/appli_config.yacc 
+	$(YACC_NO) -d $(COMMON_APPLICONFIG_DIR)/appli_config.yacc -o appli_config_yacc.c
 
-applicfg_lex.c : $(COMMON_APPCFG_DIR)/applicfg.lex applicfg_yacc.h
-	flex -oapplicfg_lex.c  $(COMMON_APPCFG_DIR)/applicfg.lex
+appli_config_lex.c : $(COMMON_APPLICONFIG_DIR)/appli_config.lex appli_config_yacc.h
+	$(LEX) -oappli_config_lex.c  $(COMMON_APPLICONFIG_DIR)/appli_config.lex
 
 default: first
 	$(MAKE) local last

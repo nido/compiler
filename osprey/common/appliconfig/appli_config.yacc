@@ -32,22 +32,30 @@
 %token FL_CONF FL_FILE FL_FUNC FL_STRING FL_OPTION FL_OPEN_C FL_CLOSE_C FL_ACTIVE_CONF
 
 %{
-#include "applicfg_common.h"
-#include "applicfg_yacc.h"
+#include "appli_config_common.h"
+#include "appli_config_yacc.h"
+#include "errors.h"
 
 extern char *yytext;
 extern char *lex_ident;
 extern int yylineno;
 extern int yylex();
 extern void yyerror();
-char *active_configuration_name;
-Pt_cfg_struct active_configuration;
-Pt_cfg_struct appli_configurations;
+Pt_appli_config_struct active_configuration;
+Pt_appli_config_struct appli_configurations;
 
-#ifdef APPCFG_DEBUG
+#ifdef APPLICONFIG_DEBUG
  #define DBG_printf(...) printf(...)
 #else
  #define DBG_printf(...)
+#endif
+
+#ifdef DRIVER
+ #define APPLICONFIG_warning warning
+ #define APPLICONFIG_error   error
+#else
+ #define APPLICONFIG_warning DevWarn
+ #define APPLICONFIG_error   Fatal_Error
 #endif
 
 %}
@@ -58,8 +66,7 @@ Pt_cfg_struct appli_configurations;
 	Pt_string_list 	str_list;
 	Pt_func_list 	func_list;
 	Pt_file_list	file_list;
-	Pt_cfg_struct   cfg;
-	Pt_applicfg_struct	appcfg;
+	Pt_appli_config_struct   cfg;
     }
 
 %type <name>
@@ -87,21 +94,20 @@ Pt_cfg_struct appli_configurations;
 
 
 configuration_file:
-	configuration_file configuration 			{ add_configuration($2);}
+	configuration_file configuration 		{ add_configuration($2);}
 	| configuration_file active_configuration	
 	| 
 ;	
 
 active_configuration:
 	FL_ACTIVE_CONF FL_STRING 
-		{ 
-			if(active_configuration_name != NULL)  { 
-				fprintf(stderr,"Active configuration already set to %s \n",active_configuration_name);
-				fprintf(stderr,"Last value taken : %s\n",$2);
-			}
-			active_configuration_name = strdup($2); 
-			DBG_printf("Active configuration is %s\n",$2);
-		}
+	{ 
+		if(active_appli_config_file_name != NULL)  { 
+			APPLICONFIG_warning("Command-line active configuration (-mcfgappli-active) already defined with value: %s, ignoring configuration file value %s",active_appli_config_file_name,$2);
+		} else 
+			active_appli_config_file_name = strdup($2); 
+		DBG_printf("Active configuration is %s\n",$2);
+	}
 ;
 
 configuration:
@@ -110,15 +116,15 @@ configuration:
 ;
 
 one_configuration:
-	one_configuration file_conf 			{ $$ = generate_one_full_conf($1,$2,NULL); }
-	| one_configuration global_option 		{ $$ = generate_one_full_conf($1,NULL,$2); }
-	| file_conf								{ $$ = generate_one_full_conf(NULL,$1,NULL); }
-	| global_option							{ $$ = generate_one_full_conf(NULL,NULL,$1); }
+	one_configuration file_conf 		{ $$ = generate_one_full_conf($1,$2,NULL); }
+	| one_configuration global_option 	{ $$ = generate_one_full_conf($1,NULL,$2); }
+	| file_conf				{ $$ = generate_one_full_conf(NULL,$1,NULL); }
+	| global_option				{ $$ = generate_one_full_conf(NULL,NULL,$1); }
 ;
 
 
 global_option:
-	FL_OPTION 						{ $$ = add_string_to_list(NULL,$1); DBG_printf("Found Global Option %s\n",$1);}
+	FL_OPTION 				{ $$ = add_string_to_list(NULL,$1); DBG_printf("Found Global Option %s\n",$1);}
 ;
 
 file_conf:
@@ -129,12 +135,12 @@ file_conf:
 one_file_conf:
 	 one_file_conf func_conf		{ $$ = generate_one_file_conf($1,$2,NULL); }
 	| one_file_conf file_option		{ $$ = generate_one_file_conf($1,NULL,$2); }
-	| func_conf						{ $$ = generate_one_file_conf(NULL,$1,NULL); }
-	| file_option					{ $$ = generate_one_file_conf(NULL,NULL,$1); }
+	| func_conf				{ $$ = generate_one_file_conf(NULL,$1,NULL); }
+	| file_option				{ $$ = generate_one_file_conf(NULL,NULL,$1); }
 ;
 
 file_option:
-	FL_OPTION 					{ $$ = add_string_to_list(NULL,$1); DBG_printf("Found File Option %s\n",$1);}
+	FL_OPTION 				{ $$ = add_string_to_list(NULL,$1); DBG_printf("Found File Option %s\n",$1);}
 
 ;
 
