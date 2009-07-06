@@ -1212,13 +1212,6 @@ SSA_Operation_Properties() {
 	  TN *tn_opnd =  OP_opnd(op, opnd_idx);
 	  TN *new_tn = Copy_TN(tn_opnd);
 
-	  // Add an SSA_Info only for TNs that will or may be
-	  // coalesced, so as to reduce the size of the interference
-	  // graph.
-
-	  SSA_Info_TN_add(new_tn);
-	  SSA_Info_TN_add(OP_result(op, res_idx));
-
 	  OPS copy_ops = OPS_EMPTY;
 	  Exp_COPY(new_tn, tn_opnd, &copy_ops);
 	  Set_OP_ssa_move(OPS_last(&copy_ops));
@@ -1226,6 +1219,13 @@ SSA_Operation_Properties() {
 	  Set_OP_opnd(op, opnd_idx, new_tn);
 
 	  Set_OP_sameres(op);
+
+	  // Add an SSA_Info only for TNs that will or may be
+	  // coalesced, so as to reduce the size of the interference
+	  // graph.
+
+	  SSA_Info_TN_add(new_tn);
+	  SSA_Info_TN_add(OP_result(op, res_idx));
 	}
 
 	// Check if res is in conflict with one or more operands,
