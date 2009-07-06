@@ -990,6 +990,16 @@ CGIR_OP_make(CGIR_OP cgir_op, Operator o64operator, CGIR_TN arguments[],
   int argCount = 0, resCount = 0;
   for (argCount = 0; arguments[argCount] != NULL; argCount++);
   for (resCount = 0; results[resCount] != NULL; resCount++);
+
+  // Special case to convert this pseudo op into a target machine op
+  if (top == TOP_COPY) {
+    OPS copy_ops = OPS_EMPTY;
+    Is_True(argCount == 1 && resCount == 1, ("CGIR_OP: Incorrect COPY pseudo op"));
+    Exp_COPY(results[0], arguments[0], &copy_ops);
+    Is_True(OPS_length(&copy_ops) == 1, ("CGIR_OP: Pseudo COPY is expanded into more than 1 target instruction"));
+    top = OP_code(OPS_last(&copy_ops));
+  }
+
   if (cgir_op == 0) {
     // Create a new cgir_op.
     cgir_op = Mk_VarOP(top, resCount, argCount, results, arguments);

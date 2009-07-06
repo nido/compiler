@@ -97,6 +97,7 @@
 
 #ifdef TARG_ST
 #include "cg_ssa.h"                 /* for SSA flags */
+#include "cg_outssa.h"
 #include "cg_select.h"              /* for SELECT flags */
 #include "cg_ivs.h"		    /* for packing flags */
 #include "cg_affirm.h"		    /* for Affirm flags */
@@ -1225,9 +1226,9 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE, "ssa_opt", "",
     0, 0, 0,	&CG_enable_ssa, &CG_enable_ssa_overridden },
 
-  { OVK_INT32,  OV_INTERNAL,	TRUE,	"ssa_algorithm", "",
-    1, 1, 3, &CG_ssa_algorithm, NULL,
-    "Specify method for translating out of the SSA" },
+  { OVK_INT32,  OV_INTERNAL,	TRUE,	"ssa_coalescing", "",
+    1, 0, 3, &CG_ssa_coalescing, NULL,
+    "Specify the level of colaescing to perform during out of SSA" },
 
   { OVK_BOOL,  OV_INTERNAL,	TRUE,	"ssa_remat", "",
     0, 0, 0, &CG_ssa_rematerialization, NULL,

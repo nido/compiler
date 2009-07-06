@@ -195,6 +195,7 @@ main()
 		 TOP_KILL,
 		 TOP_label,
 		 TOP_nop,
+		 TOP_PCOPY,
 		 TOP_phi,
 		 TOP_prgins,
 		 TOP_psi,

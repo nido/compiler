@@ -114,6 +114,7 @@
 
 #ifdef TARG_ST
 #include "cg_ssa.h"
+#include "cg_outssa.h"
 #include "cg_ssaopt.h"
 #include "dominate.h"
 #include "loop_invar_hoist.h"
@@ -703,8 +704,9 @@ CG_Generate_Code(
       // Exit SSA.
       // Precondition: code in PSI-SSA, live-analysis ok, dominator freed.
       Set_Error_Phase("Out of SSA Translation");
-      SSA_Make_Conventional (region ? REGION_get_rid(rwn) : NULL, region);
-      SSA_Remove_Pseudo_OPs(region ? REGION_get_rid(rwn) : NULL, region);
+      Start_Timer(T_OutSSA_CU);
+      SSA_Deconstruct(region ? REGION_get_rid(rwn) : NULL, region);
+      Stop_Timer(T_OutSSA_CU);
       GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid(rwn) : NULL);
       Check_for_Dump(TP_SSA, NULL);
       // Postcondition: live-analysis ok, dominator freed.

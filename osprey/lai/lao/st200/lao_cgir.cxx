@@ -553,6 +553,7 @@ CGIR_LAO_Init(void) {
     TOP__Operator[TOP_packs_ph_r_r_r] = Operator_st200_packs_ph_1general_2general_3general;
     TOP__Operator[TOP_pack_pb_r_r_r] = Operator_st200_pack_pb_1general_2general_3general;
     TOP__Operator[TOP_pack_ph_r_r_r] = Operator_st200_pack_ph_1general_2general_3general;
+    TOP__Operator[TOP_PCOPY] = Operator__PCOPY;
     TOP__Operator[TOP_perm_pb_r_r_r] = Operator_st200_perm_pb_1general_2general_3general;
     TOP__Operator[TOP_perm_pb_i_r_r] = Operator_st200_perm_pb_1general_2general_3isrc2;
     TOP__Operator[TOP_perm_pb_ii_r_r] = Operator_st200_perm_pb_1general_2general_3xsrc2;

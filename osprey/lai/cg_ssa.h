@@ -66,12 +66,12 @@
 #define cg_ssa_INCLUDED
 
 #include "tn_map.h"
+#include "dominate.h"
 
 /* ========================================================================
  *   SSA flags:
  * ========================================================================
  */
-extern INT32 CG_ssa_algorithm;
 extern BOOL CG_ssa_rematerialization;
 
 /* ========================================================================
@@ -149,10 +149,6 @@ extern BOOL SSA_Check (RID *rid, BOOL region);
 extern BOOL SSA_Verify (RID *rid, BOOL region);
 extern void SSA_Enter (RID *rid, BOOL region);
 extern void SSA_Update ();
-extern void SSA_Make_Conventional (RID *rid, BOOL region);
-extern void SSA_Remove_Pseudo_OPs (RID *rid, BOOL region);
-
-extern void SSA_Collect_Info (RID *rid, BOOL region, INT phase);
 
 // which BB corresponds to PHI-node operand 'opnd_idx' ?
 extern BB*  Get_PHI_Predecessor (const OP *phi, UINT8 opnd_idx);
@@ -168,6 +164,7 @@ extern UINT8 Get_PHI_Predecessor_Idx (const OP *phi, BB *);
 extern void Set_PSI_opnd(OP *, UINT8, TN *);
 extern TN *PSI_guard(const OP *, UINT8);
 extern void Set_PSI_guard(OP *, UINT8, TN *);
+extern void Set_PSI_Pred(OP *, UINT8, BOOL);
 
 #ifdef EFFECT_PRED_FALSE
 // (cbr) Support for guards on false
@@ -193,12 +190,14 @@ extern OP * PSI_inline (OP *psi);
 extern OP * PSI_reduce (OP *psi);
 
 // Conditional move operations
-extern OP *OP_Make_movc (TN *guard, TN *dst, TN *src);
-extern OP *OP_Make_movcf (TN *guard, TN *dst, TN *src);
+extern void OP_Make_movc (TN *guard, TN *dst, TN *src, OPS *cmov_ops, bool on_false);
+
+#define OP_guard(op) OP_has_predicate(op) ? OP_Predicate(op) : True_TN
 
 //
 // Initialise the 'phi_op' mapping
 //
+extern OP_MAP phi_op_map;
 extern void Initialize_PHI_map(OP   *phi);
 
 // Tracing flags
@@ -253,5 +252,7 @@ extern BOOL BB_is_SSA_region_entry (BB *bb);
 extern const BB_SET *SSA_region_entries ();
 extern const BB_SET *SSA_region_exits ();
 
+extern void SSA_Dominance_init(RID *rid);
+extern void SSA_Dominance_fini();
 
 #endif /* cg_ssa_INCLUDED */

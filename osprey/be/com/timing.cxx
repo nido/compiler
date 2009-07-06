@@ -230,6 +230,10 @@ Initialize_Timing ( BOOL enable )
 	    Resource_Alloc ( "  Select if conversion", NULL );
     Timer ( T_Select_CU) =
 	    Resource_Alloc ( "  Select if conversion", Timer(T_Select_Comp));
+    Timer ( T_OutSSA_Comp) =
+	    Resource_Alloc ( "  SSA Deconstruction", NULL );
+    Timer ( T_OutSSA_CU) =
+	    Resource_Alloc ( "  SSA Deconstruction", Timer(T_OutSSA_Comp));
     Timer ( T_LAO_Interface_Comp ) =
 	    Resource_Alloc ( "  LAO Interface", NULL );
     Timer ( T_LAO_Interface_CU ) =
@@ -390,6 +394,7 @@ Report_CG_Region_Timing (FILE *file, char *name)
   Report_Delta_Time ( file, T_THR_CU );
   Report_Delta_Time ( file, T_GCM_CU );
   Report_Delta_Time ( file, T_Select_CU );
+  Report_Delta_Time ( file, T_OutSSA_CU );
   Report_Delta_Time ( file, T_LAO_Interface_CU );
   Report_Delta_Time ( file, T_LAO_PRE_CU );
   Report_Delta_Time ( file, T_LAO_REG_CU );
@@ -452,6 +457,7 @@ Finish_BE_Timing (
 	Report_Delta_Time ( file, T_THR_CU );
 	Report_Delta_Time ( file, T_GCM_CU );
 	Report_Delta_Time ( file, T_Select_CU );
+	Report_Delta_Time ( file, T_OutSSA_CU );
 	Report_Delta_Time ( file, T_LAO_Interface_CU );
 	Report_Delta_Time ( file, T_LAO_PRE_CU );
 	Report_Delta_Time ( file, T_LAO_REG_CU );
@@ -491,6 +497,7 @@ Finish_BE_Timing (
     Add_Timer_To_Parent ( T_THR_CU );
     Add_Timer_To_Parent ( T_GCM_CU );
     Add_Timer_To_Parent ( T_Select_CU );
+    Add_Timer_To_Parent ( T_OutSSA_CU );
     Add_Timer_To_Parent ( T_LAO_Interface_CU );
     Add_Timer_To_Parent ( T_LAO_PRE_CU );
     Add_Timer_To_Parent ( T_LAO_REG_CU );
@@ -553,6 +560,7 @@ Finish_Compilation_Timing (
 	Report_Delta_Time ( file, T_THR_Comp );
 	Report_Delta_Time ( file, T_GCM_Comp );
 	Report_Delta_Time ( file, T_Select_Comp );
+	Report_Delta_Time ( file, T_OutSSA_Comp );
 	Report_Delta_Time ( file, T_LAO_Interface_Comp );
 	Report_Delta_Time ( file, T_LAO_PRE_Comp );
 	Report_Delta_Time ( file, T_LAO_REG_Comp );

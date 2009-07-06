@@ -1,6 +1,59 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jul  6 14:37:20 CEST 2009
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/ferriere/dev-outssa
+
+Description:
+------------
+	* [trunk] Implementation of the out-of-SSA algorithm from Compsys/ST
+	Deliver ferriere/dev-outssa rev #22997 with authorization branch #70971
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/timing.h
+	M      osprey/be/com/timing.cxx
+	M      osprey/lai/cg_ssa.cxx
+	A  +   osprey/lai/cg_outssa.cxx
+	M      osprey/lai/dominate.h
+	M      osprey/lai/lao/arm/lao_cgir.cxx
+	M      osprey/lai/lao/st200/lao_cgir.cxx
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/cg_select.cxx
+	M      osprey/lai/cg.cxx
+	M      osprey/lai/dominate.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/op.h
+	M      osprey/lai/cg_ssa.h
+	M      osprey/lai/Makefile.gbase
+	A  +   osprey/lai/cg_outssa.h
+	M      osprey/targinfo/arm/isa/isa_syntax.cxx
+	M      osprey/targinfo/arm/isa/isa_properties.cxx
+	M      osprey/targinfo/arm/isa/isa_subset.cxx
+	M      osprey/targinfo/arm/isa/isa_bundle.cxx
+	M      osprey/targinfo/arm/isa/isa_operands.cxx
+	M      osprey/targinfo/arm/isa/isa.cxx
+	M      osprey/targinfo/stxp70/expand/exp_targ.cxx
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_variants.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa.cxx
+	M      osprey/targinfo/st200/isa/isa_syntax.cxx
+	M      osprey/targinfo/st200/isa/isa_properties.cxx
+	M      osprey/targinfo/st200/isa/isa_subset.cxx
+	M      osprey/targinfo/st200/isa/isa_operands.cxx
+	M      osprey/targinfo/st200/isa/isa.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jul  3 16:13:03 CEST 2009
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

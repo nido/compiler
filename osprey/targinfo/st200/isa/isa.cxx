@@ -418,6 +418,7 @@ main ()
 		 "packs_ph_r_r_r",
 		 "pack_pb_r_r_r",
 		 "pack_ph_r_r_r",
+		 "PCOPY",	 // dummy
 		 "perm_pb_r_r_r",
 		 "perm_pb_i_r_r",
 		 "perm_pb_ii_r_r",

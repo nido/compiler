@@ -125,7 +125,7 @@ typedef struct {
   BB_Lst bbs;
 } phi_t;
 
-static OP_MAP phi_op_map;
+static OP_MAP phi_info_map;
 
 // List of of memory accesses found in if-then-else region. 
 // Load and stores lists are used in a slightly different manner:
@@ -321,13 +321,13 @@ static void
 Initialize_Hammock_Memory()
 {
   btn_map = TN_MAP_Create();
-  phi_op_map = OP_MAP_Create();
+  phi_info_map = OP_MAP_Create();
 }
 
 static void
 Finalize_Hammock_Memory()
 {
-  OP_MAP_Delete(phi_op_map);
+  OP_MAP_Delete(phi_info_map);
   TN_MAP_Delete(btn_map);
 }
 
@@ -790,10 +790,10 @@ BB_Create_And_Map_Phi (UINT8 nopnds, TN *result[], TN *opnd[],
   else
     phi_info->phi = Mk_VarOP (TOP_phi, 1, nopnds, result, opnd);
 
-  OP_MAP_Set(phi_op_map, old_phi, phi_info);
+  OP_MAP_Set(phi_info_map, old_phi, phi_info);
 }
      
-// Remove old phis or replace it with a new one from phi_op_map.
+// Remove old phis or replace it with a new one from phi_info_map.
 // Note that we cannot use the same list to insert selects because they
 // would be inserted in the 'head' bblock.
 static void
@@ -802,7 +802,7 @@ BB_Update_Phis(BB *bb)
   OP *phi;
 
   for (phi = BB_first_op(bb); phi && OP_phi(phi); ) {
-    phi_t *phi_info = (phi_t *)OP_MAP_Get(phi_op_map, phi);
+    phi_t *phi_info = (phi_t *)OP_MAP_Get(phi_info_map, phi);
 
     OP *next = OP_next(phi);
     BB_Remove_Op(bb, phi);
@@ -823,7 +823,7 @@ BB_Update_Phis(BB *bb)
           phi_info->bbs.pop_back();
         }
 
-      OP_MAP_Set(phi_op_map, phi, NULL);
+      OP_MAP_Set(phi_info_map, phi, NULL);
     }
 
     phi = next;

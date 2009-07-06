@@ -127,5 +127,6 @@ CG_EXPORTED extern void Free_Dominators_Memory(void);
 #ifdef TARG_ST
 CG_EXPORTED extern BOOL PU_Has_Dominator_Info(void);
 CG_EXPORTED extern BOOL BB_Dominates(BB* bb1, BB* bb2);
+CG_EXPORTED extern BOOL OP_Dominates(OP *op1, OP* op2);
 #endif
 #endif /* DOMINATE_INCLUDED */

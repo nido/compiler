@@ -1336,6 +1336,7 @@ CGIR_LAO_Init(void) {
     TOP__Operator[TOP_orr_i5_ror_r_r_npc_cond] = Operator_arm_orr_ror_imm_2noPC_1cond_3general_4general_5shfimml;
     TOP__Operator[TOP_orr_npc_ror_npc_npc_npc_cond] = Operator_arm_orr_ror_reg_2noPC_1cond_3noPC_4noPC_5noPC;
     TOP__Operator[TOP_armv5e_orr_r_r_npc_cond] = Operator_arm_orr_rrx_2noPC_1cond_3general_4general;
+    TOP__Operator[TOP_PCOPY] = Operator__PCOPY;
     TOP__Operator[TOP_phi] = Operator__PHI;
     TOP__Operator[TOP_pkhbt_i5_lsl_npc_npc] = Operator_arm_pkhbtal_lsl_imm_1noPC_2noPC_3noPC_4shfimml;
     TOP__Operator[TOP_pkhbt_npc_npc] = Operator_arm_pkhbtal_reg_1noPC_2noPC_3noPC;

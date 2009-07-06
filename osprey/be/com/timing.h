@@ -138,6 +138,8 @@ typedef enum {
 #ifdef TARG_ST
 	T_Select_Comp,               /* Select if conversion */
 	T_Select_CU,
+	T_OutSSA_Comp,               /* SSA deconstruction */
+	T_OutSSA_CU,
 	T_LAO_Interface_Comp,        /* LAO Interface */
 	T_LAO_Interface_CU,
 	T_LAO_PRE_Comp,        	     /* LAO Prepass optimizations */

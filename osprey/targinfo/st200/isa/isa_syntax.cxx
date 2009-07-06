@@ -44,7 +44,7 @@
 #include "targ_isa_subset.h"
 #include "isa_syntax_gen.h"
 
-static const char *mnemonic_names[531] = { 
+static const char *mnemonic_names[532] = { 
   "abss.ph", 	 /* TOP_abss_ph_r_r */  
   "absubu.pb", 	 /* TOP_absubu_pb_r_r_r */  
   "addcg", 	 /* TOP_addcg_b_r_r_b_r */  
@@ -415,6 +415,7 @@ static const char *mnemonic_names[531] = {
   "packs.ph", 	 /* TOP_packs_ph_r_r_r */  
   "pack.pb", 	 /* TOP_pack_pb_r_r_r */  
   "pack.ph", 	 /* TOP_pack_ph_r_r_r */  
+  "PCOPY", 	 /* TOP_PCOPY */  
   "perm.pb", 	 /* TOP_perm_pb_r_r_r */  
   "perm.pb", 	 /* TOP_perm_pb_i_r_r */  
   "perm.pb", 	 /* TOP_perm_pb_ii_r_r */  

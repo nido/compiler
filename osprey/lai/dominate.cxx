@@ -833,4 +833,15 @@ BB_Dominates(BB* bb1, BB* bb2) {
     return ((BB_id(bb1) == BB_id(bb2)) || BB_SET_MemberP(BB_dom_set(bb1), bb2));
 }            
 
+BOOL
+OP_Dominates(OP *op1, OP* op2) {
+
+  BB *bb1 = OP_bb(op1), *bb2 = OP_bb(op2);
+
+  if (bb1 != bb2)
+    return BB_SET_MemberP (BB_dom_set((bb2)), bb1);
+
+  return !OP_Follows(op1, op2);
+}
+
 #endif

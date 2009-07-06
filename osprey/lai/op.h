@@ -604,6 +604,9 @@ enum OP_COND_DEF_KIND {
 #define OP_MASK_CARRY_IS_IGNORED    0x0400 /* carry result can be ignored for
                                               this op */
 
+// FdF 20090605
+#define OP_MASK_UNIQRES   0x0800 /* This op has one or more Conflict constraint. */
+
 #endif
 
 # define OP_glue(o)		(OP_flags(o) & OP_MASK_GLUE)
@@ -704,6 +707,9 @@ enum OP_COND_DEF_KIND {
 # define OP_carryisignored(o)		(OP_flags2(o) & OP_MASK_CARRY_IS_IGNORED)
 # define Set_OP_carryisignored(o)	(OP_flags2(o) |= OP_MASK_CARRY_IS_IGNORED)
 # define Reset_OP_carryisignored(o)	(OP_flags2(o) &= ~OP_MASK_CARRY_IS_IGNORED)
+# define OP_uniqres(o)		(OP_flags2(o) & OP_MASK_UNIQRES)
+# define Set_OP_uniqres(o)	(OP_flags2(o) |= OP_MASK_UNIQRES)
+# define Reset_OP_uniqres(o)	(OP_flags2(o) &= ~OP_MASK_UNIQRES)
 #endif
 
 extern BOOL OP_cond_def( const OP*);
@@ -1029,6 +1035,27 @@ inline BOOL OP_uniq_res(OP *op, INT i) {
 
   return FALSE; 
 } 
+
+#ifdef TARG_ST
+/* Check if a given result and operand must not share the same
+   register. */
+inline BOOL OP_conflict(OP *op, INT res_idx, INT opnd_idx) { 
+  const ISA_OPERAND_INFO *oinfo = OP_operand_info(op);
+  if (res_idx >= ISA_OPERAND_INFO_Results(oinfo) ||
+      opnd_idx >= ISA_OPERAND_INFO_Operands(oinfo))
+    return FALSE;
+  ISA_OPERAND_USE this_def = ISA_OPERAND_INFO_Def(oinfo, res_idx);
+  // This result must not share a register with any operand
+  if (this_def & OU_uniq_res)  
+    return TRUE;
+ 
+  if(ISA_OPERAND_INFO_Conflicts(oinfo, res_idx) &&
+     ISA_OPERAND_INFO_Has_Conflict(oinfo, res_idx, opnd_idx))
+    return TRUE;
+
+  return FALSE; 
+}
+#endif
 
 #ifdef TARG_ST
 /* Returns index of operand that must be same register as result i.
