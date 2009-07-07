@@ -6208,8 +6208,14 @@ Find_BB_TNs (BB *bb)
       if(tn_replace == True_TN)  {
         if ((OP_has_predicate(op) && OP_Pred_False(op, OP_find_opnd_use(op, OU_predicate)) && OP_Predicate(op)==actual_tn ) ||
         (OP_Condition(op) && OP_Pred_False(op, OP_find_opnd_use(op, OU_condition)) && OP_Condition(op)==actual_tn )) {
-          OP_Change_To_Noop(op);
-          break;    	  
+	    if (OP_xfer(op)) {
+	        // [TDR] Bug #71342 In case of conditional branche, we need to links 
+		Set_OP_opnd(op,OP_find_opnd_use(op, OU_condition),True_TN);
+		opnd_tn[opndnum] = True_TN;
+		EBO_Resolve_Conditional_Branch(op, opnd_tn);
+	    }
+            OP_Change_To_Noop(op);
+            break;    	  
         }
       }
 #endif
