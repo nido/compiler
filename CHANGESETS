@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jul  7 09:24:30 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-71184
+
+Description:
+------------
+	* [trunk] Fix for bug #71184: 1246541589      .
+	Deliver fixes/codex-71184 rev #23028 with authorization branch #71190
+
+
+Modified Files:
+---------------
+	M      osprey/lai/gcm.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jul  6 14:37:20 CEST 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -909,9 +909,67 @@ Null_Ptr_Deref_Spec(OP *deref_op, BB *src, BB *dest)
   TN *opnd1, *opnd2;
   INT variant;
 
+#ifdef TARG_ST
+  // TDR: Bug #71184. To avoid wrong memory speculation in case
+  // of conditional execution
+  OP *cmp_op;
+  variant = CGTARG_Analyze_Compare(branch_op, &opnd1, &opnd2, &cmp_op);
+  if(!cmp_op) {
+	  // Invoke the target-independent interface to analyze the branch.
+	  variant = CGTARG_Analyze_Branch(branch_op, &opnd1, &opnd2);
+	  if(variant & V_BR_P_TRUE) {
+		  //TDR check that predicate does not come from conv of the adress reg
+	      OP *defop = OP_Find_TN_Def_In_BB(branch_op, opnd1);
+	      if(defop) {
+	    	   switch(OP_br_variant(defop)) {
+	    	   case V_BR_I4NE0:
+	    	   case V_BR_U4NE0:
+	    	   case V_BR_I8NE0:
+	    	   case V_BR_U8NE0:
+	     		    condition_tn = OP_opnd(defop, 0);
+	    		    taken_path = !V_false_br(variant);
+	    		    break;
+	    	   case V_BR_I4EQ0:
+	    	   case V_BR_U4EQ0:
+	    	   case V_BR_I8EQ0:
+	    	   case V_BR_U8EQ0:
+	     		    condition_tn = OP_opnd(defop, 0);
+	    		    taken_path = V_false_br(variant);
+	    		    break;
+	    	   default:
+	     		    return FALSE;
+	    	   }
+	    	   if (Ignore_TN_Dep)
+	    	     condition_reg = TN_register(condition_tn);
+	    	   
+	    	   // need to make sure that the condition in <dest> is actually the boundary 
+	    	   // test condition for <op> in <src> and that <dest> post-dominates <src>.
+	    	   BOOL post_dom = BS_MemberP (BB_dom_set(src), BB_id(dest)) &&
+	    	 		  !BS_MemberP (BB_pdom_set(dest), BB_id(src));
+	    	   if (post_dom || (dest == BB_prev(src))) { 
+	    	 	if (taken_path) return FALSE;
+	    	   } else {
+	    	 	if (!taken_path) return FALSE;
+	    	   }
+	    	   
+	    	   TN *base_tn = OP_Base(deref_op) ;
+	    	   TN *offset_tn = OP_Offset(deref_op);
+	    	   if (Ignore_TN_Dep) {
+	    	       REGISTER base_reg = TN_register(base_tn);
+	    	       if (base_reg == condition_reg && TN_value(offset_tn) >= 0)
+	    	    	   return TRUE;
+	    	   } else {
+	    	     if (TN_number(base_tn) == TN_number(condition_tn) && TN_value(offset_tn) >= 0)
+	    	       return TRUE;
+	    	   }
+	    	   return FALSE;
+	      }
+	  }
+  }
+#else  
   // Invoke the target-independent interface to analyze the branch.
   variant = CGTARG_Analyze_Branch(branch_op, &opnd1, &opnd2);
-
+#endif
   // Some branches only have one operand, e.g. mips branch on fcc,
   // these aren't interesting.
   if (opnd2 == NULL) return FALSE;
@@ -967,6 +1025,11 @@ Null_Ptr_Deref_Spec(OP *deref_op, BB *src, BB *dest)
 #ifdef TARG_ST
   TN *base_tn = OP_Base(deref_op) ;
   TN *offset_tn = OP_Offset(deref_op);
+  if (!TN_has_value(offset_tn)){
+	  if (Ignore_TN_Dep && TN_register(base_tn) == condition_reg)  return TRUE;
+	  else if (TN_number(base_tn) == TN_number(condition_tn))  return TRUE;
+	  else return FALSE;
+  }
 #else
   TN *base_tn = OP_load(deref_op) ? OP_opnd(deref_op, 0) : 
 				    OP_opnd(deref_op, 1);
