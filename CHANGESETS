@@ -1,6 +1,37 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jul  9 10:11:16 CEST 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-expand_xjop
+
+Description:
+------------
+	*  
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_dual_arith_si.cxx
+	M      osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx
+	M      osprey/targinfo/stxp70/isa/isa_decode.cxx
+	M      osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M      osprey/targinfo/stxp70/isa/isa_variants.cxx
+	M      osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M      osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M      osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M      osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M      osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M      osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M      osprey/targinfo/stxp70/isa/isa.cxx
+	M      DEPENDENCIES
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jul  8 14:12:55 CEST 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
