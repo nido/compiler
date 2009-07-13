@@ -1532,6 +1532,78 @@ match_permute_or_and (const RangeAnalysis &range_analysis,
   return TRUE;
 }
 
+static BOOL
+match_shift_add_sequence(const RangeAnalysis &range_analysis,
+			  OP *op,
+			  OPS *ops)
+{
+  // Match
+  //   r2 = r3 + r4 (or immediate)
+  //   r0 = r1 shift r2
+  // and transform to
+  //   r2 = r1 shift r4 (or immediate)
+  //   r0 = r2 shift r3
+  // if and only if
+  //   range of r2,r3,r4 is [0,31]
+  //
+  int val; 
+  TOP opcode = OP_code (op);
+
+  if (opcode != TOP_shl_r_r_r && opcode != TOP_shr_r_r_r && opcode != TOP_shru_r_r_r ) 
+    return FALSE;
+
+  TN *opnd_r1 = OP_opnd(op, 0);
+  TN *opnd_r2 = OP_opnd(op, 1);
+  TN *result_shift = OP_result (op, 0);
+
+  OP *l1_op = TN_ssa_def (opnd_r2);
+  if (l1_op == NULL)  //if r2 is return value from a function call
+    return FALSE;
+
+  TOP opcode_l1 = OP_code(l1_op);
+  if (opcode_l1 != TOP_add_i_r_r && opcode_l1 != TOP_add_r_r_r) 
+    return FALSE;
+  
+  TN *opnd_r2_1 = OP_opnd(l1_op,0);
+  TN *opnd_r2_2 = OP_opnd(l1_op,1);
+
+  LRange_pc shifts = range_analysis.Get_Value (opnd_r2);
+  LRange_pc val1 = range_analysis.Get_Value(opnd_r2_1);
+  LRange_pc val2 = range_analysis.Get_Value(opnd_r2_2);
+  LRange_pc rref = range_analysis.getLattice ()->makeRangeMinMax (0,31);
+
+  if(!rref->ContainsOrEqual(val1)||!rref->ContainsOrEqual(val2)||!rref->ContainsOrEqual(shifts))
+    return FALSE;
+
+  TOP new_opcode;
+  if(opcode_l1 == TOP_add_i_r_r ){
+    switch (opcode) {
+    case TOP_shl_r_r_r:
+      new_opcode = TOP_shl_i_r_r; 
+      break;
+    case TOP_shr_r_r_r:
+      new_opcode = TOP_shr_i_r_r; 
+      break;
+    case TOP_shru_r_r_r: 
+      new_opcode = TOP_shru_i_r_r; 
+      break;
+    default:
+      FmtAssert(FALSE, ("Unexpected opcode %s in match_shift_add_sequence\n", TOP_Name(opcode)));
+    }
+  }
+  else if (opcode_l1 == TOP_add_r_r_r ){
+    new_opcode = opcode;
+  }
+  else{
+    FmtAssert(FALSE, ("Unexpected opcode_l1 %s in match_shift_add_sequence\n", TOP_Name(opcode_l1)));
+  }
+
+  TN *r_new = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);  
+  Build_OP (new_opcode, r_new, opnd_r1,opnd_r2_2, ops);
+  Build_OP (opcode, result_shift, r_new,opnd_r2_1, ops);
+  return TRUE;
+}
+
 
 BOOL
 TARG_RangePropagate (const RangeAnalysis &range_analysis,
@@ -1590,7 +1662,10 @@ TARG_RangePropagate (const RangeAnalysis &range_analysis,
     if (match_permute_or_and (range_analysis, op, ops)) {
       return TRUE;
     }
-   if (match_permute_combine (range_analysis, op, ops)) {
+    if (match_permute_combine (range_analysis, op, ops)) {
+      return TRUE;
+    }   
+    if (match_shift_add_sequence(range_analysis, op, ops)) {
       return TRUE;
     }
   }

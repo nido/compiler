@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jul 13 15:28:55 CEST 2009
+	Author:    jourdanl
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-68913
+
+Description:
+------------
+	* [trunk] Fix for bug #68913: Fix for [EBO] Shift optimizations << (const + var) (st200).
+	Deliver fixes/codex-68913 rev #23088 with authorization branch #
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/cg/targ_range_prop.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@23079 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-68913@23088 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@23079 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-68913@23088" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/st200/cg/targ_range_prop.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/cg/targ_range_prop.cxx?p2=branches/fixes/codex-68913/osprey/targinfo/st200/cg/targ_range_prop.cxx&r1=23079&r2=23088&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jul  9 10:11:16 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
