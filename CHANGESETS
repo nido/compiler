@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jul 17 09:17:38 CEST 2009
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70851
+
+Description:
+------------
+	* [trunk] Fix for bug #70851: [PACKING] Infinite run-time loop on Perennial C++ P26737 (st240,-O3,-mpacking=2)
+	Deliver fixes/codex-70851 rev #23117 with authorization branch #71477
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_affirm.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jul 13 15:28:55 CEST 2009
 	Author:    jourdanl
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

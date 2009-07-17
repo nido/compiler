@@ -407,7 +407,12 @@ Get_Affirm_modulo(TN *tn, BB *bb, INT* base, INT* bias) {
       }
       for (INT i = 0; i < OP_results(op); i++) {
 	if (OP_result(op,i) == tn) {
-	  if ((OP_results(op) == 1) && (OP_Copy_Operand_TN(op) != NULL))
+	  if ((OP_results(op) == 1) &&
+	      (OP_Copy_Operand_TN(op) != NULL) &&
+	      // FdF 20090630: Do not propagate through a dedicated
+	      // register, otherwise more checks are needed to detect
+	      // operations such as call, asm, ...
+	      !TN_is_dedicated(OP_Copy_Operand_TN(op)))
 	    tn = OP_Copy_Operand_TN(op);
 	  else
 	    return FALSE;
