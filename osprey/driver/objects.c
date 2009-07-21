@@ -380,10 +380,6 @@ add_library_options (void)
 	  append_phase_dir(P_library, "st210");
 	  append_phase_dir(P_startup, "st210");
 	  break;
-	case PROC_ST221:
-	  append_phase_dir(P_library, "st221");
-	  append_phase_dir(P_startup, "st221");
-	  break;
 	case PROC_ST220:
 	  append_phase_dir(P_library, "st220");
 	  append_phase_dir(P_startup, "st220");
@@ -555,8 +551,8 @@ add_library_options (void)
 #ifdef MUMBLE_ST200_BSP
 	/* set core path */
 	if (!st200_core) {
-	  st200_core = concat_path(get_phase_dir(P_alt_library), concat_path("core", "st220"));
-	  st200_core_name = string_copy ("st220");
+	  st200_core = concat_path(get_phase_dir(P_alt_library), concat_path("core", "st231"));
+	  st200_core_name = string_copy ("st231");
 	}
 	if (st200_targetdir) {
 	  st200_core = concat_path(st200_targetdir, concat_path("core", st200_core_name));
@@ -621,7 +617,7 @@ add_library_options (void)
 	    st200_soc = concat_path (st200_soc, 
 				     concat_path(proc == PROC_ST220 ? "st220" :  
 						 proc == PROC_ST231 ? "st231" : 
-						 proc == PROC_ST240 ? "st240" : "st220" ,
+						 proc == PROC_ST240 ? "st240" : "st231" ,
 						 concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 							     (st200_runtime == RUNTIME_OS21 || 
 							      st200_runtime == RUNTIME_OS21_DEBUG) ? 
@@ -634,8 +630,7 @@ add_library_options (void)
 	    st200_board = concat_path (st200_board, 
 				       concat_path(proc == PROC_ST220 ? "st220" :  
 						   proc == PROC_ST231 ? "st231" : 
-						   proc == PROC_ST240 ? "st240" : "st220" ,
-						   
+						   proc == PROC_ST240 ? "st240" : "st231" ,						   
 						   concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 							     (st200_runtime == RUNTIME_OS21 || 
 							      st200_runtime == RUNTIME_OS21_DEBUG) ? 
@@ -649,8 +644,7 @@ add_library_options (void)
 	  st200_libdir = concat_path (st200_libdir, 
 				      concat_path(proc == PROC_ST220 ? "st220" :  
 						  proc == PROC_ST231 ? "st231" : 
-						  proc == PROC_ST240 ? "st240" : "st220" ,
-						  
+						  proc == PROC_ST240 ? "st240" : "st231" ,						  
 						  concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 							      (st200_runtime == RUNTIME_OS21 || 
 							       st200_runtime == RUNTIME_OS21_DEBUG) ? 

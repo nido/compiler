@@ -1,6 +1,30 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jul 21 12:51:47 CEST 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-67555
+
+Description:
+------------
+	* [trunk] Fix for bug #67555: Remove st220 support (st200)
+	Deliver fixes/codex-67555 rev #23146 with authorization branch #69774
+
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+	M      osprey/driver/opt_actions.c
+	M      osprey/driver/objects.c
+	M      osprey/driver/special_options.c
+	M      osprey/driver/config_platform.c
+	M      osprey/driver/config_platform.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jul 17 09:17:38 CEST 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

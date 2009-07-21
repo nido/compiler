@@ -94,10 +94,9 @@ static PLATFORM_OPTIONS PF_Opts[] =
   { IP0, "ip??", "st100", PROC_ST100, "ST100" },
   { IP0, "ip??", "st210", PROC_ST210, "ST210" },
   { IP0, "ip??", "st220", PROC_ST220, "ST220" },
-  { IP0, "ip??", "st221", PROC_ST220, "ST221" },
-  { IP0, "ip??", "st231", PROC_ST221, "ST231" },
+  { IP0, "ip??", "st231", PROC_ST231, "ST231" },
   { IP0, "ip??", "st240", PROC_ST240, "ST240" },
-  { IP0, "ip??", "arm9", PROC_armv5, "ARM9" },
+  { IP0, "ip??", "arm9",  PROC_armv5, "ARM9" },
   { IP0, "ip??", "arm11", PROC_armv6, "ARM11" },
 
   { IP_END,	"",	"",	PROC_NONE, "End of list" } /* Must be last */

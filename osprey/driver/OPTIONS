@@ -2855,8 +2855,8 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -mkernel	; ALL	Cc 	self "-D__kernel__" "-TENV:registers_not_allocatable=r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r13,r28,r29,r30,r31,r32,r33,r34,r35,r36,r37,r38,r39,r40,r41,r42,r43,r44,r45,r46,r47,r48,r49,r50,r51,r52,r53,r54,r55,r56,r57,r58,r59,r60,r61,r62"
 	""
 #endif /*MKERNEL_SUPPORTED*/
--mcore=%s	Process_ST200_Targ(option_name,optargs);		ALL	as	-mcore=%s
-	"Specifies core specific file paths [st220,st230,st231,st240]"
+-mcore=%s	Process_ST200_Targ(option_name,optargs);		ALL	NONE	-mcore=%s
+	"Specifies core specific file paths [st231,st240]"
 #ifdef MUMBLE_ST200_BSP
 -mboard=%s	Process_ST200_Targ(option_name,optargs);		ALL	NONE	-mboard=%s
 	"Specifies core specific file paths"

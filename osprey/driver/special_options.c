@@ -1155,12 +1155,6 @@ add_special_options (void)
  	      flag = add_string_option(O_D, "__st220__");
 	      prepend_option_seen (flag);
 	    }
-	    else if (proc == PROC_ST221) {
- 	      flag = add_string_option(O_D, "__ST221__");
-	      prepend_option_seen (flag);
- 	      flag = add_string_option(O_D, "__st221__");
-	      prepend_option_seen (flag);
-	    }
 	    else if (proc == PROC_ST231) {
  	      flag = add_string_option(O_D, "__ST231__");
 	      prepend_option_seen (flag);

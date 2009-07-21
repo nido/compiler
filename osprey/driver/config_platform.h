@@ -103,7 +103,6 @@ typedef enum {
   PROC_ST100    = 30,
   PROC_ST210    = 40,
   PROC_ST220    = 41,
-  PROC_ST221    = 42,
   PROC_ST231    = 44,
   PROC_ST240    = 46,
   PROC_stxp70_v3    = 47,

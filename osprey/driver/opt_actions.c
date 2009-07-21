@@ -124,8 +124,8 @@ static struct {
   { PROC_ST100, ISA_ST100, O_Unrecognized },
   { PROC_ST210, ISA_ST210, O_Unrecognized },
   { PROC_ST220, ISA_ST220, O_Unrecognized },
-  { PROC_ST221, ISA_ST220, O_Unrecognized },
   { PROC_ST231, ISA_ST220, O_Unrecognized },
+  { PROC_ST240, ISA_ST220, O_Unrecognized },
   { PROC_armv5, ISA_armv5, O_Unrecognized },
   { PROC_armv6, ISA_armv6, O_Unrecognized },
   { PROC_NONE,	ISA_NONE,  O_Unrecognized }
@@ -154,7 +154,6 @@ static struct {
   { "st100",    PROC_ST100 },
   { "st210",    PROC_ST210 },
   { "st220",    PROC_ST220 },
-  { "st221",    PROC_ST221 },
   { "st231",    PROC_ST231 },
   { "st240",    PROC_ST240 },
   { "arm9",     PROC_armv5 },
@@ -840,6 +839,9 @@ Check_Target ( void )
   int opt_id;
   int opt_val;
   int flag;
+#ifdef TARG_ST200
+  int flag_as ;
+#endif
   string old_dir;
   string new_P_library_dir;
   string new_P_startup_dir;
@@ -860,27 +862,31 @@ Check_Target ( void )
 #ifdef TARG_ST200
   switch (proc) {
   case UNDEFINED:
-    toggle(&proc, PROC_ST220);
-    /* fallthru ST220 default. */
-  case PROC_ST220:
-    flag = add_new_option("-TARG:proc=st220");
-    break;
-  case PROC_ST221:
-    flag = add_new_option("-TARG:proc=st221");
-    break;
+    toggle(&proc, PROC_ST231);
+    /* fallthru ST231 default. */
   case PROC_ST231:
     flag = add_new_option("-TARG:proc=st231");
+    flag_as = add_new_option("-mcore=st231");
     break;
   case PROC_ST240:
     flag = add_new_option("-TARG:proc=st240");
+    flag_as = add_new_option("-mcore=st240");
+    break;
+    // This one is kept interim to still support st220 internally
+  case PROC_ST220:
+    flag = add_new_option("-TARG:proc=st220");
+    flag_as = add_new_option("-mcore=st220");
     break;
   case PROC_ST210:
     flag = add_new_option("-TARG:proc=st210");
+    flag_as = add_new_option("-mcore=st210");
     break;
   }
 
   if (proc != PROC_NONE) {
     add_st200_phase_for_option(flag);
+    add_phase_for_option(flag_as, P_any_as);
+    prepend_option_seen (flag_as); 
   }
 
   extern int packing_level;
