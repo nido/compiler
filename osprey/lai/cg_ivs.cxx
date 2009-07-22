@@ -563,9 +563,11 @@ typedef struct {
 enum {
   STREAM_NONE              = 0,   // The stream cannot be packed
   STREAM_ALIGNED           = 0x1, // The stream is well aligned
-  STREAM_PEEL_ALIGNED      = 0x2, // The stream is well aligned after unconditional loop peeling
-  STREAM_COND_PEEL_ALIGNED = 0x4, // The stream will be well aligned after conditional loop peeling
-  STREAM_SPECIAL_ALIGNED   = 0x8  // The stream may be well aligned in specialized loop
+  STREAM_UNC_PEEL_ALIGNED  = 0x2, // The stream is well aligned after unconditional loop peeling
+  STREAM_NEXT_ALIGNED      = 0x4, // The second load in the stream is well aligned
+  STREAM_UNC_PEEL_NEXT_ALIGNED = 0x8, // The second load in the stream is well aligned after unconditional loop peeling
+  STREAM_COND_PEEL_ALIGNED = 0x10, // The stream will be well aligned after conditional loop peeling
+  STREAM_SPECIAL_ALIGNED   = 0x20  // The stream may be well aligned in specialized loop
 };
 
 // What transformation can be applied on a loop to enable stream
@@ -897,7 +899,7 @@ Get_Memop_Alignment(OP *memop, INT64 offset, INT *base, INT *bias) {
   if (base_alignment > 1) {
     Is_True(IS_POWER_OF_2(base_alignment), ("base_alignment must be a power of 2"));
     *base = base_alignment;
-    *bias = (base_offset+offset+bias_alignment)&(base_alignment-1);
+    *bias = (base_offset+offset+bias_alignment)%base_alignment;
   }
 }
 
@@ -969,7 +971,7 @@ Combine_Adjacent_Loads(LOOP_IVS *loop_ivs, MemoryStream_t *load_stream, int pack
   Is_True(IS_POWER_OF_2(packed_size), ("Packed size must be 2^n"));
 
   if ((load_stream->align_base < packed_size) ||
-      ((load_stream->align_bias&((packed_size>>1)-1)) != 0))
+      ((load_stream->align_bias%(packed_size/2)) != 0))
     return FALSE;
 
   Is_True(load_stream->allmemsize == (packed_size/2), ("Packing not implemented for 4h->1L"));
@@ -996,7 +998,7 @@ Combine_Adjacent_Loads(LOOP_IVS *loop_ivs, MemoryStream_t *load_stream, int pack
   //   by
   // op[t0 = load @IV_addr_tn+(IV_offset+offset)]
 
-  if ((load_stream->align_bias&(packed_size-1)) != 0) {
+  if ((load_stream->align_bias%packed_size) != 0) {
     Is_True(CG_LOOP_prolog != NULL, ("Incorrect loop: Missing loop prolog"));
 
     // Check if alignment for next operation is OK, in which case the
@@ -1005,7 +1007,7 @@ Combine_Adjacent_Loads(LOOP_IVS *loop_ivs, MemoryStream_t *load_stream, int pack
     INT next_bias = load_stream->align_bias + (load_stream->increasing
 					       ? load_stream->memory_ops[0].memsize
 					       : - load_stream->memory_ops[0].memsize);
-    if ((next_bias&(packed_size-1)) != 0)
+    if ((next_bias%packed_size) != 0)
       return FALSE;
 
     int load_index = load_stream->memory_ops[0].index;
@@ -1268,7 +1270,7 @@ Combine_Adjacent_Stores(LOOP_IVS *loop_ivs, MemoryStream_t *store_stream, int pa
   Is_True(IS_POWER_OF_2(packed_size), ("Packed_size must be 2^n"));
 
   if ((store_stream->align_base < packed_size) ||
-      ((store_stream->align_bias&(packed_size-1)) != 0))
+      ((store_stream->align_bias%packed_size) != 0))
     return FALSE;
 
   // Current limitations
@@ -1501,7 +1503,7 @@ Compute_Packing_IVs(LOOP_IVS *loop_ivs) {
     INT64 step = loop_ivs->IV_step(IV_index);
     // It must be a multiple of the memory size
     int memsize = OP_Mem_Ref_Bytes(op);
-    if (step & (memsize-1)) {
+    if (step % memsize) {
       Reset_OP_flag1(op);
       continue;
     }
@@ -1615,10 +1617,10 @@ Get_Stream_Alignment(LOOP_IVS *loop_ivs, MemoryStream_t *stream) {
 
   // There is at least one operation with a base alignment greater to
   // base.
-  if (base <= (stream->allmemsize>>1)) {
+  if (base <= (stream->allmemsize/2)) {
     do {
-      base <<= 1;
-    } while (base <= (stream->allmemsize>>1));
+      base *= 2;
+    } while (base <= (stream->allmemsize/2));
     // Now, find the operation in the stream with alignment
     // constraint equal to base, and use the offset of this
     // operation to adjust the bias.
@@ -1822,7 +1824,7 @@ Find_All_Streams(LOOP_IVS *loop_ivs, INT candidate_count, INT allSizes ) {
     // Check also that the stream contains memory operations that can
     // be packed to form an operation of the size in allSizes
 
-    if ((cur_stream->allmemsize & (allSizes>>1)) == 0)
+    if ((cur_stream->allmemsize & (allSizes/2)) == 0)
       continue;
 
     // Link this stream in the list
@@ -1840,7 +1842,7 @@ Find_All_Streams(LOOP_IVS *loop_ivs, INT candidate_count, INT allSizes ) {
 
   STREAM_ALIGNED if align_base >= pack_base et align_bias%pack_base == 0
 
-  STREAM_PEEL_ALIGNED if align_base >= pack_base et (align_bias+size)%pack_base == 0
+  STREAM_UNC_PEEL_ALIGNED if align_base >= pack_base et (align_bias+size)%pack_base == 0
 
   STREAM_COND_PEEL_ALIGNED if (align_base == pack_base/2 && (align_bias == 0) && (size%pack_base == pack_base/2))
 
@@ -1880,14 +1882,14 @@ Initialize_Stream_Packing_Property(MemoryStream_t *cur_stream, INT pack_base) {
   // First, analyze the alignment property to set the stream
   // properties.
 
-  if ((cur_base >= pack_base) && ((cur_bias&(pack_base-1)) == 0))
+  if ((cur_base >= pack_base) && ((cur_bias%pack_base) == 0))
     cur_stream->align_kind |= STREAM_ALIGNED;
 
-  if ((cur_base >= pack_base) && (((cur_bias+cur_stream->size)&(pack_base-1)) == 0))
-    cur_stream->align_kind |= STREAM_PEEL_ALIGNED;
+  if ((cur_base >= pack_base) && (((cur_bias+cur_stream->size)%pack_base) == 0))
+    cur_stream->align_kind |= STREAM_UNC_PEEL_ALIGNED;
 
-  if ((cur_base == (pack_base>>1)) && (cur_bias == 0) &&
-      ((cur_stream->size&(pack_base-1)) == (pack_base>>1)))
+  if ((cur_base == (pack_base/2)) && (cur_bias == 0) &&
+      ((cur_stream->size%pack_base) == (pack_base/2)))
     cur_stream->align_kind |= STREAM_COND_PEEL_ALIGNED;
 
   if ((cur_base < pack_base) && (cur_bias == 0))
@@ -1895,11 +1897,11 @@ Initialize_Stream_Packing_Property(MemoryStream_t *cur_stream, INT pack_base) {
 
   if (cur_stream->memop_kind == MEMOP_LOAD /* && Allow_Next_Load_Packing*/) {
     INT next_bias = cur_bias + cur_stream->memory_ops[0].memsize;
-    if ((cur_base >= pack_base) && ((next_bias&(pack_base-1)) == 0))
-      cur_stream->align_kind |= STREAM_ALIGNED;
+    if ((cur_base >= pack_base) && ((next_bias%pack_base) == 0))
+      cur_stream->align_kind |= STREAM_NEXT_ALIGNED;
 
-    if ((cur_base >= pack_base) && (((next_bias+cur_stream->size)&(pack_base-1)) == 0))
-      cur_stream->align_kind |= STREAM_PEEL_ALIGNED;
+    if ((cur_base >= pack_base) && (((next_bias+cur_stream->size)%pack_base) == 0))
+      cur_stream->align_kind |= STREAM_UNC_PEEL_NEXT_ALIGNED;
   }
 
   // Now, mark which loop transformation would allow this stream to be
@@ -1907,18 +1909,22 @@ Initialize_Stream_Packing_Property(MemoryStream_t *cur_stream, INT pack_base) {
 
   cur_stream->transform_kind = 0;
 
-  if (cur_stream->align_kind & STREAM_ALIGNED)
+  if ((cur_stream->align_kind & STREAM_ALIGNED) ||
+      (cur_stream->align_kind & STREAM_NEXT_ALIGNED))
     SET_STREAM_TRANSFORM(cur_stream, LOOP_TRANSFORM_NONE);
 
-  if (cur_stream->align_kind & STREAM_PEEL_ALIGNED)
+  if (cur_stream->align_kind & STREAM_UNC_PEEL_ALIGNED)
     SET_STREAM_TRANSFORM(cur_stream, LOOP_TRANSFORM_UNC_PEEL);
 
   if (((cur_stream->align_kind & STREAM_ALIGNED) &&
-       (cur_stream->align_kind & STREAM_PEEL_ALIGNED)) ||
+       (cur_stream->align_kind & STREAM_UNC_PEEL_ALIGNED)) ||
+      ((cur_stream->align_kind & STREAM_NEXT_ALIGNED) &&
+       (cur_stream->align_kind & STREAM_UNC_PEEL_NEXT_ALIGNED)) ||
       (cur_stream->align_kind & STREAM_COND_PEEL_ALIGNED))
     SET_STREAM_TRANSFORM(cur_stream, LOOP_TRANSFORM_COND_PEEL);
 
   if ((cur_stream->align_kind & STREAM_ALIGNED) ||
+      (cur_stream->align_kind & STREAM_NEXT_ALIGNED) ||
       (cur_stream->align_kind & STREAM_SPECIAL_ALIGNED))
     SET_STREAM_TRANSFORM(cur_stream, LOOP_TRANSFORM_SPECIALIZE);
 
@@ -1937,8 +1943,16 @@ Initialize_Stream_Packing_Property(MemoryStream_t *cur_stream, INT pack_base) {
       fprintf(TFile, "%caligned", sep);
       sep = ' ';
     }
-    if (cur_stream->align_kind & STREAM_PEEL_ALIGNED) {
+    if (cur_stream->align_kind & STREAM_UNC_PEEL_ALIGNED) {
       fprintf(TFile, "%cunc_peel", sep);
+      sep = ' ';
+    }
+    if (cur_stream->align_kind & STREAM_NEXT_ALIGNED) {
+      fprintf(TFile, "%caligned_next", sep);
+      sep = ' ';
+    }
+    if (cur_stream->align_kind & STREAM_UNC_PEEL_NEXT_ALIGNED) {
+      fprintf(TFile, "%cunc_peel_next", sep);
       sep = ' ';
     }
     if (cur_stream->align_kind & STREAM_COND_PEEL_ALIGNED) {
@@ -2195,7 +2209,7 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes)
 	fprintf(TFile, "<ivs packing> Store stream, %d memops, alignment static(%d)\n", cur_stream->memop_count, cur_stream->align_base);
     }
 
-    for (INT packedSize = 2; packedSize <= allSizes; packedSize <<= 1) {
+    for (INT packedSize = 2; packedSize <= allSizes; packedSize *= 2) {
 
       // Check if packing is enabled for this size
       if ((allSizes & packedSize) == 0)
@@ -2207,7 +2221,7 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes)
 
       // Check if the stream contains elements that can be packed into
       // a packedSize element.
-      if ((cur_stream->allmemsize & (packedSize>>1)) == 0)
+      if ((cur_stream->allmemsize & (packedSize/2)) == 0)
 	continue;
 
       if (cur_stream->memop_kind == MEMOP_LOAD) {
@@ -2303,7 +2317,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes )
   // Compute the maximum alignment that a stream must satisfy to be
   // packed to the largest size.
   INT maxAlign;
-  for (maxAlign = 2; maxAlign <= (allSizes/2); maxAlign <<= 1);
+  for (maxAlign = 2; maxAlign <= (allSizes/2); maxAlign *= 2);
 
   MemoryStream_t *first_stream = Find_All_Streams(loop_ivs, candidate_count, allSizes);
 
@@ -2314,7 +2328,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes )
     - No loop transform: All well aligned streams will be packed == STREAM_ALIGNED
 
     - Unconditional loop peeling: All well aligned streams after
-      unconditional peeling will be packed == STREAM_PEEL_ALIGNED
+      unconditional peeling will be packed == STREAM_UNC_PEEL_ALIGNED
 
     - Conditional loop peeling: All well aligned streams with and
       without loop peeling, plus the stream on which the peel
@@ -2553,7 +2567,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes )
       cg_loop.Set_peel_loop();
       // Use the IV TN instead of the base_tn, since base_tn may not be
       // available.
-      cg_loop.Push_stream(peel_stream->IV_tn, maxAlign, peel_stream->align_offset);
+      cg_loop.Push_stream(peel_stream->IV_tn, maxAlign, peel_stream->align_offset%maxAlign);
       cg_loop.Set_remainder_after();
 
       // In this case, it is also necessary to insert ASSUME on loop
@@ -2577,9 +2591,16 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes )
 	    continue;
 	  }
 
+	  // This stream, or the second load op in the stream, is well
+	  // aligned with and without loop peeling
+	  Is_True(((cur_stream->align_kind & STREAM_ALIGNED) &&
+		   (cur_stream->align_kind & STREAM_UNC_PEEL_ALIGNED)) ||
+		  ((cur_stream->align_kind & STREAM_NEXT_ALIGNED) &&
+		   (cur_stream->align_kind & STREAM_UNC_PEEL_NEXT_ALIGNED)), 
+		  ("Unexpected stream"));
 	  // Use the IV TN instead of the base_tn, since base_tn may
 	  // not be available.
-	  cg_loop.Push_stream(cur_stream->IV_tn, cur_stream->align_base, cur_stream->align_offset);
+	  cg_loop.Push_stream(cur_stream->IV_tn, maxAlign, cur_stream->align_offset%maxAlign);
 	}
 
 	Is_True(stream_idx == (static_streams+1), ("Inconsistency in the number of static streams"));
@@ -2602,7 +2623,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes )
       if (special_stream_count <= MAX_SPECIAL_STREAM) {
 	for (cur_stream = first_stream; cur_stream != NULL; cur_stream = cur_stream->next) {
 	  if (cur_stream->align_kind & STREAM_SPECIAL_ALIGNED)
-	    cg_loop.Push_stream(cur_stream->IV_tn, maxAlign, cur_stream->align_offset);
+	    cg_loop.Push_stream(cur_stream->IV_tn, maxAlign, cur_stream->align_offset%maxAlign);
 	}
       }
       else {
@@ -2626,7 +2647,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes )
 
 	for (special_stream_idx = 0; special_stream_idx < MAX_SPECIAL_STREAM; special_stream_idx ++) {
 	  cg_loop.Push_stream(special_streams[special_stream_idx]->IV_tn,
-			      maxAlign, special_streams[special_stream_idx]->align_offset);
+			      maxAlign, special_streams[special_stream_idx]->align_offset%maxAlign);
 	}
 	for (; special_stream_idx < special_stream_count; special_stream_idx ++)
 	  RESET_STREAM_TRANSFORM(special_streams[special_stream_idx], LOOP_TRANSFORM_SPECIALIZE);

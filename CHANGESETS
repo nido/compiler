@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jul 22 10:47:11 CEST 2009
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70848
+
+Description:
+------------
+	* [trunk] Fix for bug #70848: [PACKING] Functional error (misaligned access) on LAO kernel fir8.c (st231,-O3,-mpacking=2)
+	Deliver fixes/codex-70848 rev #23174 with authorization branch #71476
+
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_ivs.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jul 22 09:21:38 CEST 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
