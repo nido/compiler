@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jul 22 09:21:38 CEST 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-56513
+
+Description:
+------------
+	* [trunk] Fix for bug #56513: -fhsort-double missing from trunk (st200).
+	Deliver fixes/codex-56513 rev #23169 with authorization branch #67567
+
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jul 21 12:51:47 CEST 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -2701,6 +2701,9 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 #ifdef TARG_STxP70
 -fshort-double	toggle(&lib_short_double,TRUE);		Cc	cpp,FE	"-fshort-double -D_DOUBLE_IS_32BITS -TARG:double_is_short"
 	"use the same size for double as for float"
+#elif defined( TARG_ST200 )
+-fshort-double	;		Cc	cpp,FE	"-fshort-double -D_DOUBLE_IS_32BITS"
+	"use the same size for double as for float"
 #else
 -fshort-double	;		Cc	cpp,FE	"-fshort-double"
 	"use the same size for double as for float"
