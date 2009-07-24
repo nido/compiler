@@ -309,8 +309,13 @@ write_output (UINT64 e_shoff, const typename ELF::Elf_Shdr& strtab_sec,
     ehdr->e_machine = Get_Elf_Target_Machine();
     ehdr->e_version = EV_CURRENT;
     ehdr->e_shoff = e_shoff;
+#ifdef TARG_ST
+    ehdr->e_flags = Config_ELF_From_Target (! Use_ELF_32, FALSE,
+					    (INT) Target_ISA);  
+#else
     ehdr->e_flags = Config_ELF_From_Target (! Use_32_Bit_Pointers, FALSE,
 					    (INT) Target_ISA);  
+#endif
 //[HK]      ehdr->e_ehsize = sizeof(ELF::Elf_Ehdr);
 //      ehdr->e_shentsize = sizeof(ELF::Elf_Shdr);
     ehdr->e_ehsize = sizeof(typename ELF::Elf_Ehdr);
@@ -454,8 +459,15 @@ WN_open_output (char *file_name)
 #ifdef __ALWAYS_USE_64BIT_ELF__
     fl->file_size = sizeof(Elf64_Ehdr);
 #else
+
+#ifdef TARG_ST
+    fl->file_size = Use_ELF_32 ?
+	sizeof(Elf32_Ehdr) : sizeof(Elf64_Ehdr);
+#else
     fl->file_size = Use_32_Bit_Pointers ?
 	sizeof(Elf32_Ehdr) : sizeof(Elf64_Ehdr);
+#endif
+
 #endif
 
     /* go to the PU-specific section */
@@ -1360,11 +1372,21 @@ WN_close_output (Output_File *fl)
 	ErrMsg (EC_IR_Close, fl->file_name, EBADF);
     
 #ifndef __ALWAYS_USE_64BIT_ELF__
+
+#ifdef TARG_ST
+    if (Use_ELF_32) {
+	Elf32_Shdr strtab_sec;	    /* for section string table */
+	UINT64 offset = layout_sections (strtab_sec, fl);
+	write_output (offset, strtab_sec, fl, ELF32());
+    } else 
+#else
     if (Use_32_Bit_Pointers) {
 	Elf32_Shdr strtab_sec;	    /* for section string table */
 	UINT64 offset = layout_sections (strtab_sec, fl);
 	write_output (offset, strtab_sec, fl, ELF32());
     } else 
+#endif
+
 #endif
     {
 	Elf64_Shdr strtab_sec;

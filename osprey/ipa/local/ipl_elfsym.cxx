@@ -195,9 +195,17 @@ IPL_Write_Elf_Symtab (Output_File *fl)
 	return;
     
 #ifndef __ALWAYS_USE_64BIT_ELF__
+
+#ifdef TARG_ST
+    if (Use_ELF_32)
+	Write_Elf_Symtab (fl, ELF32());
+    else
+#else
     if (Use_32_Bit_Pointers)
 	Write_Elf_Symtab (fl, ELF32());
     else
+#endif  // TARG_ST
+
 #endif
 	Write_Elf_Symtab (fl, ELF64());
 }

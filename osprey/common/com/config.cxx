@@ -149,6 +149,10 @@ CLASS_INDEX Def_Uint_Mtype = 0;
 /* On MIPS III targets, should we use 32-bit pointers? */
 BOOL Use_32_Bit_Pointers = FALSE;
 
+#ifdef TARG_ST
+BOOL Use_ELF_32          = Use_32_Bit_Pointers;
+#endif
+
 /* For various targets, what are the characteristics of pointers */
 INT		Pointer_Size; 
 #ifdef TARG_ST

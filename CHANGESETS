@@ -1,6 +1,33 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jul 24 13:43:16 CEST 2009
+	Author:    janiny
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-stxp70-ipav4
+
+Description:
+------------
+	* [trunk] IPA for STxP70 v4. Deliver janiny/dev-stxp70-ipav4 rev#23224 with authorization branch #70058.
+
+
+Modified Files:
+---------------
+	M      osprey/driver/opt_actions.c
+	M      osprey/libair/air/air_loader.cxx
+	M      osprey/common/com/ir_bwrite.cxx
+	M      osprey/common/com/config.cxx
+	M      osprey/common/com/config.h
+	M      osprey/ipa/local/ipl_elfsym.cxx
+	M      osprey/targinfo/arm/config/config_target.cxx
+	M      osprey/targinfo/stxp70/config/config_elf_targ.cxx
+	M      osprey/targinfo/stxp70/config/config_target.cxx
+	M      osprey/targinfo/st200/config/config_target.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jul 22 10:47:11 CEST 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -828,6 +828,18 @@ BE_EXPORTED extern CLASS_INDEX Def_Int_Mtype, Def_Uint_Mtype;
 /* On MIPS III targets, should we use 32-bit pointers? */
 BE_EXPORTED extern BOOL  Use_32_Bit_Pointers;	/* -Tc.P32 */
 
+#ifdef TARG_ST
+/* A 64-bit target always use ELF64, but sometimes we
+ * might want a 32-bit target to use ELF64 instead of
+ * ELF32.
+ *
+ * More precisely, Use_32_Bit_Pointers is true whenever the
+ * size of an item pointed to by a pointer is 32 bits. In
+ * some cases, ELF64 might be useful even for this kind of target.
+ */
+BE_EXPORTED extern BOOL  Use_ELF_32;
+#endif
+
 /* For various targets, what are the characteristics of pointers */
 BE_EXPORTED extern INT		Pointer_Size;	/* in bytes */
 BE_EXPORTED extern CLASS_INDEX	Pointer_Mtype;
