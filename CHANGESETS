@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jul 27 12:44:54 CEST 2009
+	Author:    
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/robinec/dev-predicat-automod
+
+Description:
+------------
+	* Catch more auto-modification thanks to hardware property on ld/st auto-modified.  
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_automod.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@23228 --new=https://codex.cro.st.com/svnroot/open64/branches/robinec/dev-predicat-automod@23249 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@23228 https://codex.cro.st.com/svnroot/open64/branches/robinec/dev-predicat-automod@23249" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cg_automod.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_automod.cxx?p2=branches/robinec/dev-predicat-automod/osprey/lai/cg_automod.cxx&r1=23228&r2=23249&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jul 24 13:43:16 CEST 2009
 	Author:    janiny
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -930,7 +930,8 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
 
 
         // (cbr) conservatively check predicates.
-        if(Opnds_Are_Equivalent(useop, op, OP_find_opnd_use(useop, OU_predicate), OP_find_opnd_use(op, OU_predicate)) ) {
+        if(Opnds_Are_Equivalent(useop, op, OP_find_opnd_use(useop, OU_predicate), OP_find_opnd_use(op, OU_predicate))  ||
+	   (OP_Predicate(useop) == True_TN)) {
 
 	  // Compute cost
 	  int cost = postincr_Cost(dud, op, useop);
