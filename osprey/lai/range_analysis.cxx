@@ -821,6 +821,12 @@ RangeAnalysis::Visit_Forward (OP *op, BOOL *succs_done)
       LRange_p shifted = Value (shifted_tn);
       LRange_p shiftcount = MakeUnsigned (Value (shiftcount_tn),
 				       TN_bitwidth (shiftcount_tn));
+      //TDR Fix for bug #72758: in some cases, EBO may have optimized out explicit cast as operation 
+	  // take only part of the register. In such cases, the range must be computed based on used bits.
+   	  if(TOP_opnd_use_signed(opcode,OP_find_opnd_use(op,OU_opnd2)))
+   		  shiftcount = SignExtend (shiftcount, TOP_opnd_use_bits(opcode, OP_find_opnd_use(op,OU_opnd2)));
+   	  else
+   		  shiftcount = ZeroExtend (shiftcount, TOP_opnd_use_bits(opcode, OP_find_opnd_use(op,OU_opnd2)));
       if (TOP_is_unsign (opcode)) {
 	shifted = MakeUnsigned (shifted, TN_bitwidth (shifted_tn));
       }

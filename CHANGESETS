@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Aug  3 16:37:18 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72758
+
+Description:
+------------
+	* [trunk] Fix for bug #72758: 1248346746      .
+	Deliver fixes/codex-72758 rev #23321 with authorization branch #73019
+
+
+Modified Files:
+---------------
+	M      osprey/lai/range_analysis.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jul 27 12:44:54 CEST 2009
 	Author:    
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
