@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Aug  4 15:17:53 CEST 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-73239
+
+Description:
+------------
+	* [trunk] Fix for bug #73239: [EXT-v4] Segmentation fault in be/Assembly phase with RF > 64 bits
+	Deliver fixes/codex-73239 rev #23339 with authorization branch #73297
+
+	-> Reworked handling of Addressing mode optimization performed
+	   in CGTARG_Fixup_ASM_Code() (convert from AM @(Rn-0) into AM @(Rn+0)).
+	   It solves compilation failures raised with extension RF > 64 bits.
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Aug  4 14:37:08 CEST 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
