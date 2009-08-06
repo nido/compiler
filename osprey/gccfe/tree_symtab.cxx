@@ -1330,6 +1330,17 @@ Create_ST_For_Tree (tree decl_node)
 		Set_TY_is_const (ty_idx);
 	if (TREE_THIS_VOLATILE(decl_node))
 		Set_TY_is_volatile (ty_idx);
+
+#ifdef KEY
+	// Handle aligned attribute (bug 7331)
+	if (DECL_USER_ALIGN (decl_node))
+	  Set_TY_align (ty_idx, DECL_ALIGN_UNIT (decl_node));
+	// NOTE: we do not update the ty_idx value in the TYPE_TREE. So
+	// if any of the above properties are set, the next time we get into
+	// Get_ST, the ty_idx in the TYPE_TREE != ty_idx in st. The solution
+	// is either to update TYPE_TREE now, or compare the ty_idx_index
+	// in Get_ST (instead of ty_idx). Currently we do the latter.
+#endif // KEY
 #ifdef TARG_ST
 	if (TYPE_RESTRICT(decl_node))
 	    Set_TY_is_restrict (ty_idx) ;

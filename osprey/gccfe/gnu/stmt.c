@@ -4336,10 +4336,19 @@ expand_decl (decl)
 	  oldaddr = XEXP (DECL_RTL (decl), 0);
 	}
 
+#ifdef TARG_ST
+      // [TTh] Keep user alignment if defined.
+      // A warning will be emitted later on if this alignment cannot be respected
+      // (for instance if it is bigger than the actual stack alignment)
+      if (!DECL_USER_ALIGN(decl)) {
+#endif
       /* Set alignment we actually gave this decl.  */
       DECL_ALIGN (decl) = (DECL_MODE (decl) == BLKmode ? BIGGEST_ALIGNMENT
 			   : GET_MODE_BITSIZE (DECL_MODE (decl)));
       DECL_USER_ALIGN (decl) = 0;
+#ifdef TARG_ST
+      }
+#endif
 
       x = assign_temp (decl, 1, 1, 1);
       set_mem_attributes (x, decl, 1);
