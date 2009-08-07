@@ -377,6 +377,11 @@ BOOL CG_emit_unwind_info  = TRUE;
 #endif
 BOOL CG_emit_unwind_directives = FALSE;
 
+#ifdef TARG_STxP70
+INT32 CG_itstackalign_val = 8;
+BOOL  CG_itstackalign_val_overridden = FALSE;
+#endif
+
 // ====================================================================
 //   CGEXP:
 // ====================================================================

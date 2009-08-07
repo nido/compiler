@@ -459,6 +459,11 @@ extern BOOL CG_emit_asm_dwarf;
 extern BOOL CG_emit_unwind_info;
 extern BOOL CG_emit_unwind_directives;
 
+#ifdef TARG_STxP70
+extern INT32 CG_itstackalign_val;
+extern BOOL  CG_itstackalign_val_overridden;
+#endif
+
 #ifdef TARG_ST
 /* CBPO */
 extern BOOL CG_enable_cbpo;

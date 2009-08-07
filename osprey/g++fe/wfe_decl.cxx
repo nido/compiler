@@ -1577,8 +1577,8 @@ WFE_Start_Function (tree fndecl)
 	  l = l << 32 >> 32;	
 	  h = h << 32;
 	  UINT64 val = h | l;
-	  FmtAssert (((val > 8) && (val <= 256) && ((val & (val-1)) == 0)),
-		     ("Malformed stack alignment attribute - value must be a power of 2 strictly greater than 8 and less than or equal to 256"));
+	  FmtAssert (((val > 8) && (val <= 512) && ((val & (val-1)) == 0)),
+		     ("Malformed stack alignment attribute - value must be a power of 2 strictly greater than 8 and less than or equal to 512"));
 	  Set_PU_aligned_stack(Pu_Table [ST_pu (func_st)], val);
 	}
       }

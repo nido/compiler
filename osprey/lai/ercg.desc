@@ -90,6 +90,11 @@ ERROR_DESC EDESC_CG[] = {
     " on type '%s'. This might also result in very long compilation time. "
     "Use aligned_stack(%d) function attribute for more efficient memory access(es) and faster compilation.",
     3, ET_STRING, ET_STRING, ET_INT, 0, 0, 0 },
+
+  /*Warning for illegal option emitted by CG when use it*/
+    { EC_Warn_ITStackAlignOpt,  EM_User | ES_WARNING,   RAG_EN_NONE,
+    "-Mitstackalign=%d or -CG:it_stackalign_val=%d ignored - Argument must be a power of two in [4, 512]",
+    2, ET_INT, ET_INT, 0, 0, 0, 0 },
 #endif
 
   /* All error descriptor lists must end with a -1 error code: */

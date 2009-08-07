@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Aug  7 10:54:22 CEST 2009
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70509
+
+Description:
+------------
+	*  [trunk] Fix for bug #70509. Provide more control for stack
+                   alignment in Interruption Routines.
+
+           Deliver fixes/codex-70509 rev #23380 with authorization branch #71854
+
+
+Modified Files:
+---------------
+	M      osprey/driver/OPTIONS
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/cgemit_targ.h
+	M      osprey/lai/cg_flags.cxx
+	M      osprey/lai/cgemit.h
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cg_flags.h
+	M      osprey/lai/ercg.desc
+	M      osprey/lai/ercg.h
+	M      osprey/gccfe/gnu/config/stxp70/stxp70.c
+	M      osprey/gccfe/wfe_decl.cxx
+	M      osprey/g++fe/wfe_decl.cxx
+	M      osprey/targinfo/stxp70/cg/targ_cgemit.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Aug  6 14:39:16 CEST 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

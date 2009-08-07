@@ -1081,6 +1081,12 @@ static OPTION_DESC Options_CG[] = {
     "Emit with code size constraint (alignment constraint) "
   },
 #endif
+#ifdef TARG_STxP70
+  { OVK_INT32,   OV_INTERNAL, TRUE,"itstackalign_val", "",
+    0, 0, INT32_MAX, &CG_itstackalign_val, &CG_itstackalign_val_overridden,
+    "Stack alignment in interruptions in bytes [Default is 8 bytes]"
+  },
+#endif
   // Misc:
   { OVK_BOOL,	OV_INTERNAL, TRUE,  "gra_live_predicate_aware", "",
     0,0,0,      &GRA_LIVE_Predicate_Aware, NULL,
