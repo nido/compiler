@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Aug  7 15:47:55 CEST 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-73244
+
+Description:
+------------
+	* [trunk] Fix for bug #73244: [Pixel] 1024 bits vector failed test case
+	Deliver fixes/codex-73244 rev #23392 with authorization branch #73372
+
+	--> Fixed computation of offset between memory access when generation
+	    extension load/store sequences with pixel support
+
+Modified Files:
+---------------
+	M      osprey/targinfo/stxp70/expand/exp_extension.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Aug  7 10:54:22 CEST 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
