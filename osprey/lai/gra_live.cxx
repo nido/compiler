@@ -2244,6 +2244,43 @@ GRA_LIVE_Compute_Local_Info(
       }
       else {
 	// not a PHI-node
+
+	// [TTh] Call ops must be seen as definer of ABI return registers.
+	// Without this pass, liveness computation will be pessimistic for
+	// such registers, as no definer will be found during the backward
+	// analysis for uses of these return registers.
+	// Note: more generally, all caller-saved registers should be
+	//       considered as defined (or killed) by the call, but as
+	//       only return registers are likely to be used after the call,
+	//       we can skip other caller-saved registers.
+	if (OP_call(op)) {
+	  ISA_REGISTER_CLASS rc;
+	  REGISTER r;
+	  
+	  FOR_ALL_ISA_REGISTER_CLASS( rc ) {
+	    REGISTER_SET rset = REGISTER_CLASS_function_value(rc);
+	    if (!REGISTER_SET_EmptyP(rset)) {
+	      rset = REGISTER_SET_Intersection(rset,
+					       BB_call_clobbered(bb, rc));
+	      FOR_ALL_REGISTER_SET_members(rset, r) {
+		TN *result_tn = Build_Dedicated_TN(rc, r, 0);
+		tmp_live_def = 
+		  TN_SET_Union1D(tmp_live_def,result_tn,&gra_live_local_pool);
+		
+		// For conditional def ops, add the result TNs to live_use sets.
+		// [CG] If we are under SSA for the TN, it is defined only
+		// once and thus the conditional definition is a kill.
+		if (OP_cond_def(op) && (!SSA_Active() || TN_ssa_def(result_tn) != op)) {
+		  tmp_live_use = 
+		    TN_SET_Union1D(tmp_live_use,result_tn,&gra_live_local_pool);
+		} else {
+		  tmp_live_use = 
+		    TN_SET_Difference1D(tmp_live_use,result_tn);
+		}
+	      }
+	    }
+	  }
+	}
 #endif
       for ( i = OP_results(op) - 1; i >= 0; --i ) {
 	TN *result_tn = OP_result(op, i);

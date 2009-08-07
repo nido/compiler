@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Aug  7 16:15:12 CEST 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-improved-liveness
+
+Description:
+------------
+	* [trunk] liveness computation improvement
+	Deliver tt2/dev-improved-liveness rev #23396 with authorization branch #73610
+
+	--> In liveness computation, call instructions are now seen as writting return
+	    registers. Before this fix, liveness was pessimistic regarding those registers.
+
+Modified Files:
+---------------
+	M      osprey/lai/gra_live.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Aug  7 15:47:55 CEST 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
