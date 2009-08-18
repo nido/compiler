@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Aug 18 13:47:42 CEST 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-73172
+
+Description:
+------------
+	* [trunk] Fix for bug #73172: [FDx] Should generate copy instruction FDx_P2P instead of 2 x FDx_Q2Q
+	Deliver fixes/codex-73172 rev #23485 with authorization branch #73194
+
+	-> Extended MEXPAND phase to generate a single operation to copy
+	   composite registers, instead of 2 or 4 move operations operating
+   	   on smaller register sizes.
+
+   	   This generic development is relying on the following extension of
+   	   the target description:
+   	   - BOOL CGTARG_Is_Register_Pair(TN*,TN*)
+   	   - BOOL CGTARG_Is_Register_Quad(TN*,TN*,TN*,TN*)
+   	   - BOOL CGTARG_Exist_Single_OP_Copy(ISA_REGISTER_CLASS rc, INT nhardregs)
+
+
+Modified Files:
+---------------
+	M      osprey/lai/mexpand.cxx
+	M      osprey/lai/cgtarget.h
+	M      osprey/targinfo/arm/cg/targ_cg.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.cxx
+	M      osprey/targinfo/stxp70/expand/exp_extension.h
+	M      osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M      osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Aug 13 07:58:44 CEST 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

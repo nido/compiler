@@ -280,6 +280,8 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
       TN *tempo_reg_saved = NULL;
       while (to_do > 0) {
 	INT copies_done_this_pass = 0;
+	TN *ready_dest[ISA_OPERAND_max_operands];
+	TN *ready_source[ISA_OPERAND_max_operands];
 	for (i = 0; i < ncopies; i++) {
 	  if (dest[i]) {
 	    REGISTER rd = TN_register (dest[i]);
@@ -302,14 +304,58 @@ Convert_BB_Ops(TN_MAP multi_tn_map, BB *bb)
 		tempo_reg = source[i];
 		tempo_reg_saved = dest[i];
 	      }
-	      // Perform the actual copy
-	      Exp_COPY (dest[i], source[i], &new_ops);
+	      // Move copy from wait state to ready state
+	      ready_dest[copies_done_this_pass] = dest[i];
+	      ready_source[copies_done_this_pass] = source[i];
 	      dest[i] = NULL;
 	      source[i] = NULL;
 	      copies_done_this_pass++;
 	    }
 	  }
 	}
+
+	// Perform the actual copy generation, with an attempt to merge
+	// consecutive copy into bigger composite copies.
+	for (i = 0; i < copies_done_this_pass; i++) {
+
+	  if (i < (copies_done_this_pass-3) &&
+	      CGTARG_Exist_Single_OP_Copy(TN_register_class(ready_dest[i]), 4) &&
+	      CGTARG_Is_Register_Quad(ready_dest[i], ready_dest[i+1], ready_dest[i+2], ready_dest[i+3]) &&
+	      CGTARG_Is_Register_Quad(ready_source[i], ready_source[i+1], ready_source[i+2], ready_source[i+3])
+	      ) {
+	    // Expand a single 4x composite register copy
+	    TN *new_source = Build_Dedicated_TN ( TN_register_class(ready_source[i]),
+						  TN_register(ready_source[i]),
+						  TN_size(ready_source[i])*4 );
+	    TN *new_dest = Build_Dedicated_TN ( TN_register_class(ready_dest[i]),
+						TN_register(ready_dest[i]),
+						TN_size(ready_dest[i])*4 );
+	    rescan_new_ops = TRUE;
+	    Exp_COPY(new_dest, new_source, &new_ops);
+	    i+=3;  // 4 copies processed this pass
+	  }
+	  else if (i < (copies_done_this_pass-1) &&
+		   CGTARG_Exist_Single_OP_Copy(TN_register_class(ready_dest[i]), 2) &&
+		   CGTARG_Is_Register_Pair(ready_dest[i], ready_dest[i+1]) &&
+		   CGTARG_Is_Register_Pair(ready_source[i], ready_source[i+1])
+		   ) {
+	    // Expand a single 2x composite register copy
+	    TN *new_source = Build_Dedicated_TN ( TN_register_class(ready_source[i]),
+						  TN_register(ready_source[i]),
+						  TN_size(ready_source[i])*2 );
+	    TN *new_dest = Build_Dedicated_TN ( TN_register_class(ready_dest[i]),
+						TN_register(ready_dest[i]),
+						TN_size(ready_dest[i])*2 );
+	    rescan_new_ops = TRUE;
+	    Exp_COPY(new_dest, new_source, &new_ops);
+	    i++;  // 2 copies processed this pass
+	  }
+	  else {
+	    // Expand a standard copy
+	    Exp_COPY(ready_dest[i], ready_source[i], &new_ops);
+	  }
+	}
+	
 	if ((copies_done_this_pass == 0) && (tempo_reg != NULL)) {
 	  // No copy done this pass, meaning we are probably facing a
 	  // cycle dependency between remaining moves. We can use the

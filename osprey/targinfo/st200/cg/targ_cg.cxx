@@ -3621,3 +3621,55 @@ BOOL
 CGTARG_do_not_unroll_p(BB* bb) {
     return FALSE;
 }
+
+
+/**
+ * Return TRUE if it exists a single non-simulated instruction to copy
+ * a composite register of class <rc> made of <nhardregs> atomic regs.
+ */
+BOOL
+CGTARG_Exist_Single_OP_Copy(ISA_REGISTER_CLASS rc, INT nhardregs)
+{
+  return (nhardregs == 1);
+}
+
+
+/**
+ * Return TRUE if the 2 TNs compose a single composite register.
+ * All parameter TNs are expected to be allocated register TNs.
+ */
+BOOL
+CGTARG_Is_Register_Pair(TN *tn1, TN * tn2)
+{
+  FmtAssert((TN_is_register(tn1) && TN_register(tn1) != REGISTER_UNDEFINED &&
+	     TN_is_register(tn2) && TN_register(tn2) != REGISTER_UNDEFINED),
+	    ("CGTARG_Is_Register_Pair() arguments must be allocated registers"));
+
+  if (Enable_64_Bits_Ops &&
+      // Check register class
+      TN_register_class(tn1) == ISA_REGISTER_CLASS_integer &&
+      TN_register_class(tn1) == TN_register_class(tn2) &&
+      REGISTER_SET_MemberP(REGISTER_SUBCLASS_members(ISA_REGISTER_SUBCLASS_pairedfirst),
+			   TN_register(tn1)) &&
+      // Check alignment of first subpart
+      ((TN_register(tn1)-REGISTER_MIN) & 1) == 0 &&
+      // Check subpart sizes
+      TN_size(tn1) == 4 &&
+      TN_size(tn2) == 4 &&
+      // Check register ids
+      TN_register(tn2) == TN_register(tn1) + TN_nhardregs(tn1) ) {
+    return TRUE;
+  }
+  return FALSE;  
+}
+
+
+/*
+ * Return TRUE if the 4 TNs compose a single composite register.
+ * All parameter TNs are expected to be allocated register TNs.
+ */
+BOOL
+CGTARG_Is_Register_Quad(TN *tn1, TN *tn2, TN *tn3, TN *tn4)
+{
+  return FALSE;
+}

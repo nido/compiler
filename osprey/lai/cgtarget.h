@@ -548,6 +548,19 @@
  *      of the source, where the source is converted to
  *      boolean by executing source != 0.  This function should return
  *      false for such a copy.
+ *
+ *   BOOL CGTARG_Exist_Single_OP_Copy(ISA_REGISTER_CLASS rc, INT nhardregs)
+ *      Return TRUE if it exists a single non-simulated instruction to copy
+ *      a composite register of class <rc> made of <nhardregs> atomic regs.
+ *
+ *   BOOL CGTARG_Is_Register_Pair(TN *tn1, TN * tn2)
+ *      Return TRUE if the 2 TNs compose a single composite register.
+ *      All parameter TNs are expected to be allocated register TNs.
+ *
+ *   BOOL CGTARG_Is_Register_Quad(TN *tn1, TN *tn2, TN *tn3, TN *tn4)
+ *      Return TRUE if the 4 TNs compose a single composite register.
+ *      All parameter TNs are expected to be allocated register TNs.
+ *
 #endif
  * ====================================================================
  * ==================================================================== */
@@ -1023,6 +1036,10 @@ extern BOOL CGTARG_OP_Has_Loop_Sideeffects(BB* bb, OP* op);
 extern BOOL CGTARG_do_not_unroll_p(BB* bb);
 extern BOOL CGTARG_Detect_Bundle_Id(ISA_EXEC_MASK slot_mask, BOOL* order_changed);
 extern void CGTARG_FixBundle(ISA_EXEC_MASK slot_mask, OP *slot_op[], INT ibundle);
+
+extern BOOL CGTARG_Exist_Single_OP_Copy(ISA_REGISTER_CLASS rc, INT nhardregs);
+extern BOOL CGTARG_Is_Register_Pair(TN *tn1, TN * tn2);
+extern BOOL CGTARG_Is_Register_Quad(TN *tn1, TN *tn2, TN *tn3, TN *tn4);
                                                                                 
 #endif
 
