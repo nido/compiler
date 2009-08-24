@@ -1,6 +1,25 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Aug 24 08:59:53 CEST 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-73852
+
+Description:
+------------
+	* [trunk] Fix for bug #73852: 1249982271      .
+	Deliver fixes/codex-73852 rev #23510 with authorization branch #73966
+
+
+Modified Files:
+---------------
+	M      osprey/ipa/local/Makefile.gbase
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Aug 18 13:47:42 CEST 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

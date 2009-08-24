@@ -356,8 +356,12 @@ ifneq ($(build_OS), IRIX)
 	for h in $(TARGETS); do \
 	    $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(STD_MONGOOSE_OS_LOC) ; \
 	done
+ ifeq  ($(HOST_OS), MINGW)
+	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $(STD_MONGOOSE_OS_LOC)/be$(HEXE) $(STD_MONGOOSE_OS_LOC)/ipl$(HEXE)
+ else
 	if [ ! -h $(STD_MONGOOSE_OS_LOC)/ipl ]; then ln -sf be $(STD_MONGOOSE_OS_LOC)/ipl; fi
-else
+ endif
+else	
 	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) -F $(STD_MONGOOSE_LOC) ipl.so
 	$(STD_INSTALL) -lns be -F $(STD_MONGOOSE_LOC) ipl
  ifeq ($(BUILD_TYPE), SHARED)
