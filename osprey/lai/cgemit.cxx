@@ -3007,7 +3007,11 @@ Process_Bss_Data (
       if (bssp+1 != bss_list.end()) {
 	next_sym = *(bssp+1);
 	Base_Symbol_And_Offset(next_sym, &next_base, &next_ofst);
+#ifdef TARG_ST
+	if (size > 0 && next_base == base && next_ofst == ofst) {
+#else
 	if (next_base == base && next_ofst == ofst) {
+#endif
 	  // skip to next iteration
 	  // so label printed before space emitted.
 #ifdef TARG_ST
@@ -3029,26 +3033,24 @@ Process_Bss_Data (
       // are sorted so that largest size is last.
       // [SC] Care: we can have genuinely zero-sized symbols, and
       // there may be one at the end of a section.
-      if (size > 0 || last_in_section) {
 	// [CG]: Don't emit alignement, the padding was already inserted
 	// by the Change_Section_Origin()
-	std::list<ST*>::iterator esyms;
-	// Print the previously eqivalenced symbols
-	for (esyms = equivalenced_symbols.begin();
-	     esyms != equivalenced_symbols.end();
-	     esyms++) {
-	  Print_Label (Output_File, *esyms, TY_size(ST_type(*esyms)));
-	}
-	// Print the last/current one
-	Print_Label (Output_File, sym, size);
-
-	Check_Section_Alignment (base, align);
-
-	// clear the list
-	equivalenced_symbols.clear();
-	// reset align
-	align = 0;
+      std::list<ST*>::iterator esyms;
+      // Print the previously eqivalenced symbols
+      for (esyms = equivalenced_symbols.begin();
+	   esyms != equivalenced_symbols.end();
+	   esyms++) {
+	Print_Label (Output_File, *esyms, TY_size(ST_type(*esyms)));
       }
+      // Print the last/current one
+      Print_Label (Output_File, sym, size);
+      
+      Check_Section_Alignment (base, align);
+      
+      // clear the list
+      equivalenced_symbols.clear();
+      // reset align
+      align = 0;
 #endif
       // assume here that if multiple symbols with same offset,
       // are sorted so that largest size is last.

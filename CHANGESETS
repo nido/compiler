@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Aug 25 16:10:08 CEST 2009
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-74434
+
+Description:
+------------
+	*  Fix for bug #74434 Miscompilation of zero-sized struct in bss
+	Deliver fixes/codex-74434 with authorization art #74551.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cgemit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@23512 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-74434@23533 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@23512 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-74434@23533" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgemit.cxx?p2=branches/fixes/codex-74434/osprey/lai/cgemit.cxx&r1=23512&r2=23533&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Aug 24 08:59:53 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
