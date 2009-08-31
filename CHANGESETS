@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Aug 31 16:07:37 CEST 2009
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-71181
+
+Description:
+------------
+	* [trunk] Fix for bug #71181: Warning would be convenient when using FPx
+                  without the -fshort-double option.
+	Deliver fixes/codex-71181 rev #23625 with authorization branch #74557
+
+
+Modified Files:
+---------------
+	M      osprey/driver/stxp70_options.i
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Aug 31 15:50:01 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
