@@ -458,17 +458,16 @@ Update_Op_With_New_Base(OP *&op, TN *new_base_tn, INT64 base_offset, INT64 addr_
 		for (i = 1; i <= plc->num_ranges; ++i) {
 			if ( (offset_val & plc->range[i].scaling_mask) != 0) {
 				// Issue is on the scaling constraint 
-				ErrMsgSrcpos(EC_Bad_Align, OP_srcpos(op), (int)plc->range[i].scaling_mask+1);
+				return NULL;
 			}
 		}
     }
     FmtAssert(new_top != TOP_UNDEFINED,("Unable to get TOP immediate variant"));
+    if (Trace_SSA_CBPO) {
+      fprintf(TFile, ">>> Replacing OLD op by NEW op:\n    OLD ");
+      Print_OP_No_SrcLine (op);
+    }
     OP_Change_Opcode(op, new_top);
-  }
-    
-  if (Trace_SSA_CBPO) {
-    fprintf(TFile, ">>> Replacing OLD op by NEW op:\n    OLD ");
-    Print_OP_No_SrcLine (op);
   }
     
   if(base_idx < 0 || offset_idx < 0) {

@@ -1,6 +1,28 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Aug 31 15:12:05 CEST 2009
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70097
+
+Description:
+------------
+	* [trunk] Fix for bug #70097
+          (Some problems remains using -fshort-enums and -fpack-struct options - 
+           correction on-going)
+          Deliver fixes/codex-70097 rev #23603 with authorization branch #72501 
+
+
+Modified Files:
+---------------
+	M      osprey/be/com/wn_lower.cxx
+	M      osprey/lai/cg_ssaopt.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Aug 25 16:10:08 CEST 2009
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

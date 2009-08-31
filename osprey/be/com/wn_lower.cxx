@@ -5133,6 +5133,10 @@ static WN *lower_split_sym_addrs(WN *tree, INT64 offset, LOWER_ACTIONS actions)
     }
 
     if (ST_gprel(sym)
+#ifdef TARG_ST
+	|| (Is_Structure_Type(Ty_Table[ST_type (sym)]) &&
+	    TY_is_packed(Ty_Table[ST_type (sym)]))
+#endif
 #ifdef TARG_STxP70
         // we don't want to split base/offset for sda accesses on xp70.
         || Get_Memory_Space(sym) == ST_MEMORY_SDA
