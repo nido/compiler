@@ -435,7 +435,6 @@ CG_CXX_SRCS = 		\
   cg_automod.cxx	\
   cg_flags.cxx		\
   cg_flags_arch.cxx	\
-  cg_ir.cxx       	\
   cg_ivs.cxx		\
   cg_loop.cxx		\
   cg_loop_scc.cxx	\

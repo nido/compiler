@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep  1 15:04:49 CEST 2009
+	Author:    leguen
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-71044
+
+Description:
+------------
+	* [trunk] Fix for bug #71044: Empty files in LAI
+    Deliver fixes/codex-71044 rev #23643 with authorization branch #71051
+
+
+Modified Files:
+---------------
+	D      osprey/lai/cg_ir.h
+	D      osprey/lai/cg_ir.cxx
+	M      osprey/lai/Makefile.gbase
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep  1 08:44:51 CEST 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
