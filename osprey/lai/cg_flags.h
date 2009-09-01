@@ -314,6 +314,14 @@ extern BOOL CG_exclusive_prefetch;
 // FdF 20070206: Raise a warning when prefetch distance of user
 // prefetch cannot be checked against the Prefetch_Padding value.
 extern BOOL  CG_warn_prefetch_padding;
+
+// [TTh] Control the usage of preferred register sets
+// when choosing color for GRA/LRA.
+#define PREF_REGS_PRIORITY_LOW    0
+#define PREF_REGS_PRIORITY_MEDIUM 1
+#define PREF_REGS_PRIORITY_HIGH   2
+extern BOOL  CG_COLOR_use_pref_regs;
+extern INT32 CG_COLOR_pref_regs_priority;
 #endif
 
 extern INT32 CG_L1_ld_latency;

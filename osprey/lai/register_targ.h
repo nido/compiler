@@ -87,8 +87,8 @@ extern REGISTER_SET CGTARG_Forbidden_Prolog_Epilog_Registers(ISA_REGISTER_CLASS 
 // to multi load/store operations first.
 // This is NOT used for instance to select first caller or callee saved
 // register, this is handled specially in GRA or LRA.
-extern REGISTER_SET CGTARG_Prefered_GRA_Registers(ISA_REGISTER_CLASS rclass);
-extern REGISTER_SET CGTARG_Prefered_LRA_Registers(ISA_REGISTER_CLASS rclass);
+extern REGISTER_SET CGTARG_Preferred_GRA_Registers(ISA_REGISTER_CLASS rclass);
+extern REGISTER_SET CGTARG_Preferred_LRA_Registers(ISA_REGISTER_CLASS rclass);
 
 extern const char *CGTARG_DW_DEBUG_Get_Extension_Reloc_String(ISA_REGISTER_CLASS rclass);
 extern const char *CGTARG_DW_DEBUG_Get_Extension_Name(ISA_REGISTER_CLASS rclass);

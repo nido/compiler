@@ -49,7 +49,7 @@
  *
  *  The implementation for choosing the best register (actually the order
  *  of allocation when there are more than 1 query) accounts for:
- *  - prefered registers (they can be scpecified in the target dependent part)
+ *  - preferred registers (they can be specified in the target dependent part)
  *	that will be tried first,
  *  - preserved registers (callee saves and link register in some cases) that
  *	have a save/restore cost only for the first time use.
@@ -62,14 +62,15 @@
 #include "cg.h"			/* For PU_Has_Calls().  */
 #include "cg_color.h"
 #include <stdio.h>
+#include "cg_flags.h"
 
 /*
  * These regs_used list track the registers used for the function (approximately)
- * as this as an impact on the coloring choice.
+ * as this has an impact on the coloring choice.
  * In particular a must_preserve[] (see below) register that has already been used should
- * not have hidden cost an can be allocated with the same priority as a 
+ * not have hidden cost and can be allocated with the same priority as a 
  * non must-preserve register.
- * These sets are reset at the begining of the function by CGCOLOR_Initialize_For_PU(),
+ * These sets are reset at the beginning of the function by CGCOLOR_Initialize_For_PU(),
  * then the client must declare the registers it allocates with the 
  * CGCOLOR_Allocate_N_Registers() function.
  */
@@ -90,11 +91,11 @@ static REGISTER_SET must_preserve[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
 
 /*
  * Registers that must be when possible colored before the others.
- * This set is initialized by the CGTARG_Prefered_GRA_Registers() function.
- * Each time ther is the possibiity to do so, a register in this set will be
- * prefered v.s. another register not in this set.
+ * This set is initialized by the CGTARG_Preferred_GRA_Registers() function.
+ * Each time there is the possibility to do so, a register in this set will be
+ * preferred v.s. another register not in this set.
  */
-static REGISTER_SET prefered_regs[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
+static REGISTER_SET preferred_regs[ISA_REGISTER_CLASS_MAX_LIMIT + 1];
 
 
 /*
@@ -198,51 +199,75 @@ Choose_Best_N_Registers(ISA_REGISTER_CLASS rc, INT nregs,
   REGISTER_SET never_costly = REGISTER_SET_Difference(REGISTER_CLASS_allocatable(rc), 
 						      must_preserve[rc]);
 
+  // Registers are chosen based on the following priorities:
   //
   // 1. Prefer never costly first 
   //    (registers for which there is never additional hidden cost),
   // 2. then all non costly
-  //    (registers for which there may be an additional cost for the first time use only, 
+  //    (registers for which there may be an additional cost for the
+  //     first time use only, 
   //     but which have already been used, hence no additional cost)
   // 3. then all.
-  //    (all registers available, including those with an additional hidden cost for the first time use)
-  // At each step try prefered_regs[] first.
-  // These three steps will tend to favor reuse of never costly regs which may in turn avoid using
-  // a costly reg. In addition we favor non costly registers for which the cost is paid the first time use
+  //    (all registers available, including those with an additional
+  //     hidden cost for the first time use)
+  //
+  // These three steps will tend to favor reuse of never costly regs
+  // which may in turn avoid using a costly reg. In addition we favor
+  // non costly registers for which the cost is paid the first time use
   // only.
-  reg = Choose_N_Registers_Intersection
-    (nregs, subclass_allowed, allowed, REGISTER_SET_Intersection(never_costly, prefered_regs[rc]), reg_hint);
-  if (reg != REGISTER_UNDEFINED )
-    goto found;
+  //
+  // This initial priority ordering is refined by the preferred_regs[]
+  // and its associated priority setting:
+  // - PREF_REGS_PRIORITY_LOW :
+  //   ----> At each step of initial ordering, try preferred_regs[] first.
+  //
+  // - PREF_REGS_PRIORITY_MEDIUM :
+  //   ----> Same as low priority, except that {preferred, non costly}
+  //         will be tried before {!preferred, never_costly}
+  //
+  // - PREF_REGS_PRIORITY_HIGH :
+  //   ----> Try to have a preferred registers, even if it is a costly one.
+  //         If no preferred reg available, then try a non preferred one.
+  //
 
-  reg = Choose_N_Registers_Intersection
-    (nregs, subclass_allowed, allowed, never_costly, reg_hint);
-  if (reg != REGISTER_UNDEFINED )
-    goto found;
-  
-  reg = Choose_N_Registers_Intersection
-    (nregs, subclass_allowed, allowed, REGISTER_SET_Intersection(non_costly_regs, prefered_regs[rc]), reg_hint);
-  if (reg != REGISTER_UNDEFINED )
-    goto found;
+  // -------------------------------------------------------------
+  // Define a macro for a more readable code
+  // -------------------------------------------------------------
+#define TRY_SET(the_set)                                        \
+  reg = Choose_N_Registers_Intersection ( nregs,                \
+                                          subclass_allowed,     \
+                                          allowed,              \
+                                          the_set,              \
+                                          reg_hint );           \
+  if (reg != REGISTER_UNDEFINED) {                              \
+    return reg;                                                 \
+  }
+  // -------------------------------------------------------------
 
-  reg = Choose_N_Registers_Intersection
-    (nregs, subclass_allowed, allowed, non_costly_regs, reg_hint);
-  if (reg != REGISTER_UNDEFINED )
-    goto found;
-  
-  reg = Choose_N_Registers_Intersection
-    (nregs, subclass_allowed, allowed, prefered_regs[rc], reg_hint);
-  if (reg != REGISTER_UNDEFINED )
-    goto found;
-  
-  reg = Choose_N_Registers(nregs, subclass_allowed, allowed, reg_hint);
-  if (reg != REGISTER_UNDEFINED )
-    goto found;
+  TRY_SET ( REGISTER_SET_Intersection(never_costly, preferred_regs[rc]) );
+
+  if (CG_COLOR_pref_regs_priority == PREF_REGS_PRIORITY_LOW) {
+    TRY_SET ( never_costly );
+    TRY_SET ( REGISTER_SET_Intersection(non_costly_regs, preferred_regs[rc]) );
+    TRY_SET ( non_costly_regs );
+    TRY_SET ( preferred_regs[rc] );
+  }
+  else if (CG_COLOR_pref_regs_priority == PREF_REGS_PRIORITY_MEDIUM) {
+    TRY_SET ( REGISTER_SET_Intersection(non_costly_regs, preferred_regs[rc]) );
+    TRY_SET ( never_costly );
+    TRY_SET ( non_costly_regs );
+    TRY_SET ( preferred_regs[rc] );
+  }
+  else { // CG_COLOR_pref_regs_priority == PREF_REGS_PRIORITY_HIGH
+    TRY_SET ( REGISTER_SET_Intersection(non_costly_regs, preferred_regs[rc]) );
+    TRY_SET ( preferred_regs[rc] );
+    TRY_SET ( never_costly );
+    TRY_SET ( non_costly_regs );
+  }
+
+  TRY_SET ( allowed );
   
   return REGISTER_UNDEFINED;
-
- found:
-  return reg;  
 }
 
 /* ======================================================================
@@ -394,8 +419,16 @@ CGCOLOR_Initialize_For_PU(void)
       must_preserve[rc] = REGISTER_SET_Union1(must_preserve[rc], TN_register(RA_TN));
     }
     
+    // Initialize set of registers used in current PU.
+    regs_used[rc] = REGISTER_SET_EMPTY_SET;
+
     // Handle target dependent register preferences.
-    prefered_regs[rc] = CGTARG_Prefered_GRA_Registers(rc);
+    if (CG_COLOR_use_pref_regs) {
+      preferred_regs[rc] = CGTARG_Preferred_GRA_Registers(rc);
+    } else {
+      preferred_regs[rc] = REGISTER_SET_EMPTY_SET;
+    }
+
   }
 }
 

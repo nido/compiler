@@ -1,6 +1,64 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep  1 08:44:51 CEST 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-gra-minreg
+
+Description:
+------------
+	* Deliver tt2/dev-gra-minreg rev #23636 with authorization branch #63092 
+
+	--------------------------------------------------------------------
+	Goal: Minimize usage of high rank registers on STxP70 V4 to get more
+	      opportunities to map GP16 instructions
+	--------------------------------------------------------------------
+
+        This has been implemented by extending and tuning the GRA color
+	preferencing that was already in use for ST200.
+	On xp70, the preferencing for low rank registers has been enabled
+	only on V4 archicture and -O2, -Os mode.
+
+	The following options have been added to better control the preferencing:
+
+              -CG:use_preferred_regs=[true|false] [Default TRUE]
+	          -> Turn on/off the usage of the set of preferred registers
+		     during register selection in LRA/GRA
+
+	      -CG:preferred_priority=[0|1|2] [Default 1]
+	          -> Set priority to be used during the register selection
+		     between caller/callee saved regs and preferred regs.
+		     A higher value means a higher priority to registers
+		     defined in preferred sets.
+
+	See description in branch #63092 for more details.
+        
+	--------------------------------------------------------------------
+
+	This deliver also contains the following fix in cg_color:
+	- Added missing initialization/reseting of list of registers already in use
+	  for current PU. Without this fix, GRA will consider that callee saved
+	  registers used a previously compiled PU are also used in current PU.
+
+
+Modified Files:
+---------------
+	M      osprey/lai/register_targ.h
+	M      osprey/lai/cg_color.cxx
+	M      osprey/lai/cg_flags.cxx
+	M      osprey/lai/gra_mon/gra_color.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cg_flags.h
+	M      osprey/targinfo/arm/cg/targ_register.cxx
+	M      osprey/targinfo/stxp70/config/config_target.h
+	M      osprey/targinfo/stxp70/cg/targ_register.cxx
+	M      osprey/targinfo/st200/cg/targ_register.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep  1 08:31:15 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

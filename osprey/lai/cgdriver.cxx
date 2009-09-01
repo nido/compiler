@@ -192,6 +192,8 @@ static BOOL CG_ifc_space_overridden = FALSE;
 static BOOL CG_select_spec_stores_overridden = FALSE;
 static BOOL CG_enable_thr_overridden = FALSE;
 static BOOL IPFEC_Enable_LICM_passes_overridden = FALSE;
+static BOOL CG_COLOR_use_pref_regs_overridden = FALSE;
+static BOOL CG_COLOR_pref_regs_priority_overridden = FALSE;
 #endif
 
 static BOOL CG_enable_ssa_overridden = FALSE;
@@ -1328,6 +1330,25 @@ static OPTION_DESC Options_CG[] = {
   { OVK_INT32,	OV_INTERNAL,	TRUE, "dfg_debug_mask", "", 
     0, 0, INT32_MAX,	&CG_dfg_debug_mask, NULL,
     "Control Exportation to DfgGraphs, dumping to graphml for debug and code analysis(mask)" },
+
+  // [TTh] Control the usage of preferred register list when choosing color for GRA/LRA.
+
+  { OVK_BOOL,   OV_INTERNAL, TRUE,"use_preferred_regs", "",
+    0, 0, 0,    &CG_COLOR_use_pref_regs, &CG_COLOR_use_pref_regs_overridden,
+    "Turn on/off the usage of the set of preferred registers during register selection in LRA/GRA [Default TRUE]",
+  },
+  { OVK_INT32,  OV_INTERNAL, TRUE,"preferred_regs_priority", "",
+    PREF_REGS_PRIORITY_MEDIUM, PREF_REGS_PRIORITY_LOW, PREF_REGS_PRIORITY_HIGH,
+    &CG_COLOR_pref_regs_priority, &CG_COLOR_pref_regs_priority_overridden,
+    "Set priority to be used during the register selection between caller/callee saved regs and preferred regs. "
+    "A higher value means a higher priority given to registers defined in preferred sets. "
+    "Registers are tried in the following order, depending on properties, which are "
+    "SC=scratch(caller saved), PREF=preferred, USED=already used in current function: "
+    "Low priority (0): SC+PREF > SC > !SC+USED+PREF > !SC+USED > !SC+PREF > ANY, "
+    "Medium priority (1): SC+PREF > !SC+USED+PREF > SC > !SC+USED > !SC+PREF > ANY, "
+    "High priority (2): SC+PREF > !SC+USED+PREF > !SC+PREF > SC > !SC+USED > ANY, "
+    " [Default 1]",
+  },
 #endif
 
   { OVK_COUNT }
@@ -2173,7 +2194,13 @@ CG_Apply_Opt_Level(UINT32 level)
   }
   // TDR: Default to Optimized_Double_Post_Sched schedule for STxP70 in speed mode.
   if (!LOCS_POST_Scheduling_overriden) {
-	  LOCS_POST_Scheduling = Optimized_Double_Load_Sched;
+    LOCS_POST_Scheduling = Optimized_Double_Load_Sched;
+  }
+  // [TTh] Disable usage of preferred registers in -O3 on v4 archi
+  // (On v4, pref regs are used to prioritize regs available in GP16,
+  //  but it increases dependencies between instructions)
+  if (level >= 3 && Generate_Code_For_v4 && !CG_COLOR_use_pref_regs_overridden) {
+    CG_COLOR_use_pref_regs = FALSE;
   }
 #endif
 #ifdef TARG_ST
@@ -2264,11 +2291,14 @@ CG_Apply_Opt_Size(UINT32 level)
   if(!CG_simp_flow_in_tailmerge_overridden) {
     CG_simp_flow_in_tailmerge = DEFAULT_SIMP_FLOW_TAILMERGE(CG_opt_level, TRUE);
   }
-  //[dt] in V4 add lra_minregs=1
-  if ((Is_Target_stxp70_v4_single() || Is_Target_stxp70_v4_dual() ||
-       Is_Target_stxp70_v4_dual_arith())
-      && !LRA_minregs_overridden) {
-    LRA_minregs=TRUE;
+  //[TDR][TTh] in V4, enable both lra_minregs and preferred_regs usage
+  if (Generate_Code_For_v4) {
+    if (!LRA_minregs_overridden) {
+      LRA_minregs=TRUE;
+    }
+    if (!CG_COLOR_use_pref_regs_overridden) {
+      CG_COLOR_use_pref_regs = TRUE;
+    }
   }
   // TDR: Default to Optimized_Post_Sched schedule for STxP70 in size mode.
   if (!LOCS_POST_Scheduling_overriden) {

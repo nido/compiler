@@ -196,7 +196,15 @@ Update_Register_Info( LRANGE* lrange, REGISTER reg )
     regs_used[rc] = REGISTER_SET_Union(regs_used[rc],
                                        REGISTER_SET_Range(reg,reg+nregs-1));
     // Don't declare save regs as they are subject to disappear after copy elimination
+#ifdef TARG_ST
+    // [TTh] For local LR, this is not a real allocation, but a reservation for LRA.
+    // Effective allocation *might* happen in LRA
+    if (lrange->Type() != LRANGE_TYPE_LOCAL) {
+      CGCOLOR_Allocate_N_Registers(rc, reg, nregs);
+    }
+#else
     CGCOLOR_Allocate_N_Registers(rc, reg, nregs);
+#endif
   }
 }
 #else /* !TARG_ST */

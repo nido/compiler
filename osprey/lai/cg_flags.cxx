@@ -98,6 +98,9 @@ BOOL CG_enable_ssa = FALSE;	/* Enable SSA in cg */
 #ifdef TARG_ST
 // FdF 20070206
 BOOL  CG_warn_prefetch_padding = 0;
+// [TTh] Control of preferred register sets
+BOOL  CG_COLOR_use_pref_regs = TRUE;
+INT32 CG_COLOR_pref_regs_priority = PREF_REGS_PRIORITY_MEDIUM;
 #endif
 
 BOOL CG_enable_select = FALSE;
