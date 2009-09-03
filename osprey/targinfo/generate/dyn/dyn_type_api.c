@@ -77,7 +77,12 @@ static const extension_hooks_t static_interface = {
   dyn_get_builtins_base_count,
 
   /* Return base offset for extension intrinsics */
-  dyn_get_intrinsics_base_count
+  dyn_get_intrinsics_base_count,
+
+  dyn_get_recrules,
+
+  dyn_get_recrules_count
+
 };
 
 /* Exporting global pointer on static internal structure.             */

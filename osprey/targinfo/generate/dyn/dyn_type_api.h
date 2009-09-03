@@ -57,6 +57,9 @@ extern unsigned int   dyn_get_builtins_count        (void);
 extern machine_mode_t dyn_get_builtins_base_count   (void);
 extern INTRINSIC      dyn_get_intrinsics_base_count (void);
 
+extern const unsigned int dyn_get_recrules_count ( void );
+extern recog_rule** dyn_get_recrules ( void );
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

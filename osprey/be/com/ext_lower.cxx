@@ -69,6 +69,416 @@ static bool verbose_reg_placement = false;
 #define VERBOSE_REG_PLACEMENT(...) if (verbose_reg_placement) { fprintf(TFile, __VA_ARGS__); }
 
 /** 
+ * Test whether MTYPE <t> corresponds to an extension SFR register.
+ * 
+ * @param t 
+ * 
+ * @return 
+ */
+static bool
+is_EXTENSION_SFR_mtype(TYPE_ID t) {
+
+  if (!MTYPE_is_dynamic(t))
+    return false;
+  ISA_REGISTER_CLASS cl = EXTENSION_MTYPE_to_REGISTER_CLASS(t);
+  return !ABI_PROPERTY_Has_allocatable_Registers(cl);
+}
+
+
+/** 
+ * Create an ST for an SFR register.
+ * 
+ * @param t  mtype
+ * @param sfridx sfr rank in SFR regfile
+ * 
+ * @return new ST
+ */
+static ST*
+build_SFR_ST(TYPE_ID t, int sfridx) {
+  static int tmp_idx = 0;
+  const char * tmp_var = "_tmp_sfr_";
+
+  TYPE_ID ty = MTYPE_To_TY (t);
+  ISA_REGISTER_CLASS cl = EXTENSION_MTYPE_to_REGISTER_CLASS(t);
+  int regidx = CGTARG_Regclass_Preg_Min(cl) + sfridx;
+
+  STR_IDX stridx = Save_Stri(tmp_var, tmp_idx++);
+  Set_TY_is_volatile(ty);
+  
+  /* build dedicated register ST for SFR register rank sfridx */
+  ST* st = New_ST();
+  ST_Init(st, stridx, CLASS_VAR, SCLASS_FSTATIC, EXPORT_LOCAL, ty);
+  Set_ST_assigned_to_dedicated_preg(st);
+  ST_ATTR_IDX st_attr_idx;
+  ST_ATTR&    st_attr = New_ST_ATTR (CURRENT_SYMTAB, st_attr_idx);
+  ST_ATTR_Init (st_attr, ST_st_idx (st),
+                ST_ATTR_DEDICATED_REGISTER, regidx);
+
+  return st;
+}
+
+/* forward declaration */
+static WN*
+detect_pattern(WN* tree, pattern_desc* pattern);
+
+/** 
+ * check that the kids of <tree> correspond to <pattern>
+ * 
+ * @param nbkids 
+ * @param tree 
+ * @param pattern 
+ * @param commutative
+ *
+ * <commutative> param is only handled for nbkids==2
+ * 
+ * @return 
+ */
+static WN*
+check_kids(INT nbkids, WN* tree, pattern_desc* pattern, bool commutative) {
+  int i=0;
+  bool rec = true;
+  
+  for (i=0; i<nbkids; i++) {
+    if (  pattern->kids[i]!=NULL ) {
+      WN* wn = detect_pattern(WN_kid(tree, i), pattern->kids[i]);
+      if (wn==NULL) {
+        rec= false;
+        break;
+      }
+      if (wn!=WN_kid(tree, i)) {
+        WN_kid(tree, i) = wn;
+      }
+    }
+  }
+  
+  if (!rec) {
+    
+    if (commutative && nbkids==2) { // commute kids
+      WN* aux = WN_kid(tree, 0);
+      WN_kid(tree, 0) = WN_kid(tree, 1);
+      WN_kid(tree, 1) = aux;
+      return check_kids(nbkids, tree, pattern, false);
+    }
+    return NULL;
+  }
+
+  return tree;
+}
+
+/** 
+ * Try to recognize <pattern> in <tree>
+ * 
+ * @param tree 
+ * @param pattern 
+ * 
+ * @return a new tree if pattern was recognized on a slightly
+ * modified tree (or original tree or NULL if not recognized)
+ */
+static WN*
+detect_pattern(WN* tree, pattern_desc* pattern) {
+  OPCODE opc = WN_opcode(tree);
+  OPERATOR opr = WN_operator(tree);
+
+  switch (pattern->type) {
+  case pattern_desc_opc:
+    if (opc != pattern->u.opc ) {
+      /* Modifications of tree here are not reverted if full pattern is
+       * not found. so these modifications MUST not have any side-effects.
+       */
+      
+      /* extra equivalence between CVT and INTCONST depending on
+         intconst value.. could be generalized */
+      if (opc == OPC_I8INTCONST && pattern->u.opc == OPC_I8I4CVT &&
+          Mtype_Int_Value_In_Range(MTYPE_I4, WN_const_val(tree))) {
+        // Note that simplifier must be disabled to avoid CVT removal
+        // and that in case pattern is not fully recognized next
+        // simplifier phase will undo this modification.
+        bool tmp = Enable_WN_Simp;
+        Enable_WN_Simp = false;
+        INT64 value = WN_const_val(tree);
+        WN* newtree = WN_Cvt(MTYPE_I4, MTYPE_I8, WN_Intconst(MTYPE_I4, value));
+        Enable_WN_Simp = tmp;
+        WN_Delete(tree);
+        return newtree;
+      }
+      
+      /*  
+       *  Equivalence between OPC_I4I2LDID and OPC_I4CVTL(16, OPC_I4I4LDID)
+       *  todo: generalize equivalence to other signess/size combinations
+       */
+      if (opc == OPC_I4I2LDID && pattern->u.opc == OPC_I4CVTL &&
+          pattern->kids[1]->u.value == 16 ) {
+        bool tmp = Enable_WN_Simp;
+        Enable_WN_Simp = false;
+        
+        WN* newldid = WN_Ldid(MTYPE_I4, WN_offset(tree),
+                              WN_st(tree), MTYPE_To_TY(MTYPE_I4));
+        WN* newtree = WN_Int_Type_Conversion( newldid, MTYPE_I2);
+        
+        Enable_WN_Simp = tmp;
+        WN_Delete(tree);
+        return newtree;
+      }
+      return NULL;
+    }
+
+
+    switch (opr) {
+    case OPR_CVTL: // special case with extra parameter of cvtl
+      FmtAssert((pattern->kids[1]->type==pattern_desc_imm_value),
+                ("Sanity check: pattern must be an imm value"));
+      if (pattern->kids[1]->u.value == WN_cvtl_bits(tree))
+        return check_kids(1, tree, pattern, false);
+      break;
+    case OPR_INTCONST: {
+      INT64 value = WN_const_val(tree);
+      FmtAssert((pattern->kids[0]->type==pattern_desc_imm_value),
+                ("Sanity check: pattern must be an imm value"));
+      if (value == pattern->kids[0]->u.value) {
+        return tree;
+      }
+      return NULL;
+    }
+    case OPR_BLOCK:
+      /* block cannot be handled using wn_kid_count(). anyway, it si meaningless
+         to have an opr_block in a rec pattern */
+      break;
+    default:
+      /* default : checks all kids */
+      bool commutative = (OPCODE_commutative_op(opc)==opc);
+      return check_kids(WN_kid_count(tree), tree, pattern, commutative);
+    }
+    
+    break;
+    
+  case pattern_desc_imm_value:
+     // should not happen. pattern ignored
+    break;  
+  case pattern_desc_intrinsic_by_name:
+    pattern->type= pattern_desc_intrinsic;
+    pattern->u.intrn = EXTENSION_INTRINSIC_From_Name(pattern->u.builtin_name);
+  case pattern_desc_intrinsic:
+    {
+      INTRINSIC intrn = pattern->u.intrn;
+      if ( opr == OPR_INTRINSIC_OP) {
+        if (intrn == WN_intrinsic(tree)) {
+          return tree;
+        }
+      } else {
+        ListOfRules* rules = Get_rules_per_intrinsic(intrn);
+        if (rules != NULL) {
+          ListOfRulesCIt it;
+          /* parse all recognition rules to find a potential match */
+          for(it = rules->begin(); it != rules->end(); ++it) {
+            recog_rule* rule = *it;
+        // do a detect pattern on rule corresponding to intrinsic if any
+          // !
+            WN* wn = detect_pattern(tree, rule->pattern);
+            if (wn!=NULL) {
+              int n = WN_kid_count(tree);
+              int i;
+              for (i=0; i<n; i++) {
+                if ( pattern->kids[i] != NULL) {
+                  // NYI. intrinsic node is not terminal node.
+                  // recognition is not implemented.
+                  return NULL;
+                }
+              return wn;
+              }
+            }
+          }
+        }
+      }
+    }
+    break;
+  }
+  
+  return NULL;
+}
+
+
+/** 
+ * return <tree> kid pointed py path <p>
+ * 
+ * @param tree 
+ * @param p 
+ * 
+ * @return 
+ *
+ * @pre p->type==operand_desc_path
+ */
+static WN*
+apply_operand_desc(WN* tree, operand_desc* p) {
+  WN* tmp = tree;
+  int i;
+  FmtAssert((p->type==operand_desc_path),
+            ("sanity check apply_operand_desc only applies to type ext_path"));
+
+  for (i=0; i<p->u.length; i++) {
+    FmtAssert((WN_kid_count(tmp)>p->path[i]),
+              ("Accessing non-existent kid %d of wn", p->path[i]));
+    tmp = WN_kid(tmp, p->path[i]);
+  }
+  return tmp;
+}
+
+/** 
+ * apply recognized <rule> to <tree> 
+ * 
+ * @param tree 
+ * @param rule 
+ * @param intrnidx 
+ * @param nboperands 
+ * @param kids 
+ * @param nboutputs 
+ * @param outputs 
+ */
+static void
+apply_rule(WN* tree, recog_rule* rule, INTRINSIC intrnidx, INT* nboperands, 
+           WN *kids[], INT* nboutputs,  ST* outputs[]) { 
+  proto_intrn_info_t * proto = INTRN_proto_info(intrnidx);
+  int operands_rank = 0;
+  int outputs_rank =0;
+
+  int i;
+  for (i=0; i<proto->argument_count; i++) {
+    if (proto->arg_inout[i] == INTRN_IN ||
+        proto->arg_inout[i] == INTRN_INOUT) {
+      FmtAssert((rule->arg[i]!=NULL),
+                ("path cannot be NULL for input param %d", i));
+      switch (rule->arg[i]->type) {
+      case operand_desc_path:
+        FmtAssert((rule->arg[i]->u.length >0),("path must be non empty"));
+        kids[operands_rank++] = apply_operand_desc(tree, rule->arg[i]);
+        if (proto->arg_inout[i] == INTRN_INOUT) {
+          outputs[outputs_rank++] = NULL;
+        }
+        break;
+      case operand_desc_sfr:
+        {
+          FmtAssert((is_EXTENSION_SFR_mtype(proto->arg_type[i])),
+                    ("arg type must be an sfr type"));
+          /* extra sfr parameter */
+          ST* st = build_SFR_ST(proto->arg_type[i], 
+                                rule->arg[i]->u.sfr_rank);
+          /* build corresponding SFRLDID node */
+          TYPE_ID ty = MTYPE_To_TY (proto->arg_type[i]);
+          kids[operands_rank++] = WN_Ldid (proto->arg_type[i], 0, st, ty);
+          if (proto->arg_inout[i] == INTRN_INOUT) {
+            outputs[outputs_rank++] = st;
+          }
+        }
+        break;
+      case operand_desc_imm:
+        kids[operands_rank++] = WN_Intconst(proto->arg_type[i],
+                                            rule->arg[i]->u.imm_value);
+        break;
+      }
+    } else {
+      /*  INTRN_OUT */
+      /* extra sfr register */
+      if ( is_EXTENSION_SFR_mtype(proto->arg_type[i])) {
+        ST* st = build_SFR_ST(proto->arg_type[3], 0);
+        outputs[outputs_rank++] = st;
+      } else {
+        // main result of intrinsic
+        outputs[outputs_rank++] = NULL;
+      }
+    }
+  }
+  *nboperands = operands_rank;
+  *nboutputs = outputs_rank;
+}
+
+/** 
+ * Initialize pattern_rec
+ * 
+ */
+static void
+init_extension_pattern_rec(void) {
+  /* Enable or disable rules based on intrinsic id and current extgen status
+   * NOTE: This piece of code must be executed for each PU because the
+   *       the extgen status is PU dependent.
+   */
+  {
+    BETARG_Init_Pattern_Rec();
+
+    ListOfRules* rules = Get_Extension_pattern_rules();
+    ListOfRulesCIt it;
+    /* parse all recognition rules to find a potential match */
+    if (rules != NULL) {
+      for(it = rules->begin(); it != rules->end(); ++it) {
+        recog_rule* rule = *it;
+        if (rule->intrn != INTRINSIC_INVALID &&
+            EXTENSION_Is_ExtGen_Enabled_For_Intrinsic(rule->intrn) &&
+            (!Is_Rule_Flag_Set(rule, RULE_FLAG_FRAC) ||
+             ext_lower_get_local_ext_gen_mask() & EXTENSION_NATIVE_EXTENDED_CODEGEN)) {
+          Clear_Rule_Flag(rule, RULE_FLAG_DISABLED);
+        } else {
+          Set_Rule_Flag(rule, RULE_FLAG_DISABLED);
+        }
+      }
+    }
+  }
+}
+
+
+/** 
+ * Main function of pattern_rec. Check the set of target specific
+ * patterns in the WN tree. 
+ * 
+ * 
+ * @param tree 
+ * @param nboperands (result: size of kids array)
+ * @param kids (result: operand nodes to be used in intrinsic op/call)
+ * @param nboutputs  (result: size of outputs  array)
+ * @param outputs ( result: result ST to be used in intrinsic call)
+ *
+ * main ST output of intrinsic is NULL in outputs array (built later).
+ *
+ * 
+ * @return idx (intrinsic ID or INTRINSIC_INVALID)
+ */
+static INTRINSIC
+extension_pattern_rec(WN *tree, INT *nboperands,  WN *kids[],
+                      INT *nboutputs,  ST* outputs[])
+{
+  DevAssert((OPCODE_is_expression(WN_opcode(tree))),
+            ("only expression WN are handled here"));
+
+  OPCODE opc = WN_opcode(tree);
+
+  bool add= true;
+  INTRINSIC intrnidx = INTRINSIC_INVALID;
+  *nboutputs= 0;
+
+
+  WN* detected = NULL;
+
+  int k=0;
+  ListOfRules* rules = Get_rules_per_opcode(opc);
+  if (rules !=NULL) {
+    ListOfRulesCIt it;
+    /* parse all recognition rules to find a potential match */
+    for(it = rules->begin(); it != rules->end(); ++it) {
+      recog_rule* rule = *it;
+
+      if (!Is_Rule_Flag_Set(rule, RULE_FLAG_DISABLED))
+        {
+          detected = detect_pattern(tree, rule->pattern);
+          if (detected != NULL)  {
+            apply_rule(detected, rule, rule->intrn, nboperands, kids,
+                       nboutputs, outputs);
+            return rule->intrn;
+          }
+        }
+    }
+  }
+  return INTRINSIC_INVALID;
+}
+
+
+/** 
  * Auxiliary function used to replace a stmt by another
  * 
  * @param BB 
@@ -196,8 +606,7 @@ CandidateMap_Add_Valid_Preg(CandidateMap *cmap, PREG_NUM var, TYPE_ID src_type, 
     
     VERBOSE_REG_PLACEMENT("CandidateMap: Adding preg %d c_type = %s, equiv_type = %s\n",
 			   var, MTYPE_name(src_type), MTYPE_name(equiv_type));
-  }
-  else {
+  } else {
     if (corresp->equiv_ext_type != equiv_type) {
       VERBOSE_REG_PLACEMENT("CandidateMap: Preg %d was already added with another equiv type!! Mark it as invalid\n", var);
       corresp->valid = false;
@@ -298,8 +707,7 @@ EXT_LOWER_find_register_candidate_expr(WN* expr, CandidateMap* candidate_map)
 	// Register corresponding PREG as candidate
 	PREG_NUM preg_var = WN_offset(kid);
 	CandidateMap_Add_Valid_Preg(candidate_map, preg_var, desc_type, res_type);
-      }
-      else if (ST_class(WN_st(kid)) != CLASS_PREG) {
+      } else if (ST_class(WN_st(kid)) != CLASS_PREG) {
 	// Local placement optimization
 	OPCODE newopc;
 	VERBOSE_REG_PLACEMENT("Simplify exttyp_CVT(ctyp_LDID) by exttyp_LDID\n");
@@ -308,8 +716,7 @@ EXT_LOWER_find_register_candidate_expr(WN* expr, CandidateMap* candidate_map)
 	WN_Delete(expr); // Delete CVT node
 	expr = kid;
       }
-    }
-    else if (kid_opr == OPR_ILOAD) {
+    } else if (kid_opr == OPR_ILOAD) {
       // Local placement optimization
       OPCODE newopc;
       VERBOSE_REG_PLACEMENT("Simplify exttyp_CVT(ctyp_ILOAD) by exttyp_ILOAD\n");
@@ -354,8 +761,7 @@ EXT_LOWER_find_register_candidate(WN* tree, CandidateMap *candidate_map)
       if (WN_operator(WN_kid0(tree)) == OPR_CVT) {
 	tree = Simplify_IStore_Cvt(tree);
       }
-    }
-    else if (opr == OPR_STID) {
+    } else if (opr == OPR_STID) {
       WN *kid0 = WN_kid0(tree);
       if (WN_operator(kid0) == OPR_CVT && MTYPE_is_dynamic(WN_desc(kid0)) &&
 	  EXTENSION_Are_Equivalent_Mtype(WN_desc(kid0), WN_rtype(kid0))) {
@@ -366,8 +772,7 @@ EXT_LOWER_find_register_candidate(WN* tree, CandidateMap *candidate_map)
 	  TYPE_ID c_type    = WN_rtype(kid0);
 	  TYPE_ID ext_type  = WN_desc(kid0);
 	  CandidateMap_Add_Valid_Preg(candidate_map, preg_var, c_type, ext_type);
-	}
-	else if (ST_class(WN_st(tree)) != CLASS_PREG) {
+	} else if (ST_class(WN_st(tree)) != CLASS_PREG) {
 	  // Local placement optimization
 	  TYPE_ID c_type   = WN_rtype(kid0);
 	  TYPE_ID ext_type = WN_desc(kid0);
@@ -381,8 +786,7 @@ EXT_LOWER_find_register_candidate(WN* tree, CandidateMap *candidate_map)
 	}
       }
     }
-  }
-  else if (OPCODE_is_scf(WN_opcode(tree))) {
+  } else if (OPCODE_is_scf(WN_opcode(tree))) {
     // OPR_BLOCK type is the only one that required a special handling
     // for a complete tree traversal (because stmt are not in kids)
     if (opr == OPR_BLOCK) {
@@ -394,8 +798,7 @@ EXT_LOWER_find_register_candidate(WN* tree, CandidateMap *candidate_map)
 	}
       }
     }
-  }
-  else if (OPCODE_is_expression(WN_opcode(tree))) {
+  } else if (OPCODE_is_expression(WN_opcode(tree))) {
     tree = EXT_LOWER_find_register_candidate_expr(tree, candidate_map);
   }
 
@@ -438,8 +841,7 @@ EXT_LOWER_convert_valid_candidate_expr(WN* expr, CandidateMap *candidate_map)
 	WN_Delete(expr);
 	return new_expr;
       }
-    }
-    else if (kid_opr == OPR_LDID) {
+    } else if (kid_opr == OPR_LDID) {
       if (!(ST_class(WN_st(kid)) == CLASS_PREG && !Is_Dedicated(WN_offset(kid)))) {
 	// LDID from memory
 	VERBOSE_REG_PLACEMENT("Simplify exttyp_CVT(ctyp_LDID(<mem>)) by exttyp_LDID(<mem>)\n");
@@ -501,8 +903,7 @@ EXT_LOWER_convert_valid_candidate(WN* tree, CandidateMap* candidate_map)
       if (WN_operator(WN_kid0(tree)) == OPR_CVT) {
 	tree = Simplify_IStore_Cvt(tree);
       }
-    }
-    else if (opr == OPR_STID) {
+    } else if (opr == OPR_STID) {
       if (ST_class(WN_st(tree)) == CLASS_PREG && !Is_Dedicated(WN_offset(tree))) {
 	PREG_NUM cur_preg = WN_offset(tree);
 	if (CandidateMap_Is_Valid_Preg(candidate_map, cur_preg)) {
@@ -517,19 +918,16 @@ EXT_LOWER_convert_valid_candidate(WN* tree, CandidateMap* candidate_map)
 	    if (WN_desc(kid0) == new_preg_type) {
 	      WN_kid0(tree) = WN_kid0(kid0);
 	      WN_Delete(kid0); // Delete CVT node
-	    }
-	    else {
+	    } else {
 	      WN_kid0(tree) = WN_Cvt(WN_rtype(kid0), new_preg_type, kid0);
 	    }
-	  }
-	  else {
+	  } else {
 	    if (WN_operator(kid0) == OPR_LDID && ST_class(WN_st(kid0)) != CLASS_PREG) {
 	      // LDID from memory, conversion can be avoided
 	      OPCODE newopc;
 	      newopc = OPCODE_make_op(OPR_LDID, new_preg_type, new_preg_type);
 	      WN_set_opcode(kid0, newopc);
-	    }
-	    else {
+	    } else {
 	      WN_kid0(tree) = WN_Cvt(WN_rtype(kid0), new_preg_type, kid0);
 	    }
 	  }
@@ -546,8 +944,7 @@ EXT_LOWER_convert_valid_candidate(WN* tree, CandidateMap* candidate_map)
 	}
       }
     }
-  }
-  else if (OPCODE_is_scf(WN_opcode(tree))) {
+  } else if (OPCODE_is_scf(WN_opcode(tree))) {
     // OPR_BLOCK type is the only one that required a special handling
     // for a complete tree traversal (because stmt are not in kids)
     if (opr == OPR_BLOCK) {
@@ -559,8 +956,7 @@ EXT_LOWER_convert_valid_candidate(WN* tree, CandidateMap* candidate_map)
 	}
       }
     }
-  }
-  else if (OPCODE_is_expression(WN_opcode(tree))) {
+  } else if (OPCODE_is_expression(WN_opcode(tree))) {
     tree = EXT_LOWER_convert_valid_candidate_expr(tree, candidate_map);
   }
 
@@ -607,21 +1003,6 @@ Create_Convert_Node(TYPE_ID dst, WN* tree)
 
 
 
-/** 
- * Test whether MTYPE <t> corresponds to an extension SFR register.
- * 
- * @param t 
- * 
- * @return 
- */
-static bool
-is_EXTENSION_SFR_mtype(TYPE_ID t) {
-
-  if (!MTYPE_is_dynamic(t))
-    return false;
-  ISA_REGISTER_CLASS cl = EXTENSION_MTYPE_to_REGISTER_CLASS(t);
-  return !ABI_PROPERTY_Has_allocatable_Registers(cl);
-}
 
 /* forward declaration */
 static WN *EXT_LOWER_expr(WN *tree, WN** new_stmts, bool* modified);
@@ -720,9 +1101,8 @@ Create_Intrinsic_from_OP(INTRINSIC intrnidx, int nbkids, WN *kids[],
                                                       MTYPE_V),
                                        intrnidx, nbkids, newkids);
       return  Create_Convert_Node(dsttype, introp);
-    }
-  else  /* we need to generate an OPR_INTRINSIC_CALL wn as a separate stmt */
-    {
+    } else {
+    /* we need to generate an OPR_INTRINSIC_CALL wn as a separate stmt */
       /* marker specifying that a modification occured */
       *modified = true;
 
@@ -851,11 +1231,9 @@ Find_Best_Intrinsic(INTRINSIC_Vector_t* itrn_indexes) {
     if (new_itrnidx == OPCODE_MAPPED_ON_CORE) {
       /* operator mapped on core */
       return INTRINSIC_INVALID;
-    }
-    else if (! EXTENSION_Is_ExtGen_Enabled_For_Intrinsic(new_itrnidx)) {
+    } else if (! EXTENSION_Is_ExtGen_Enabled_For_Intrinsic(new_itrnidx)) {
       continue;
-    }
-    else if (! EXTENSION_Is_Meta_INTRINSIC(new_itrnidx)) {
+    } else if (! EXTENSION_Is_Meta_INTRINSIC(new_itrnidx)) {
       /* for non meta intrinsic, cost is set to 0 */
       if (cost > 0) {
 	itrnidx = new_itrnidx;
@@ -911,7 +1289,7 @@ EXT_LOWER_expr(WN *tree, WN** new_stmts, bool* modified)
 
   // target specific expression lowering
   if ( local_ext_gen_mask & EXTENSION_NATIVE_TARGET_CODEGEN) {
-    intrnidx = targ_pattern_rec(tree, &nb_kids, kids, &nb_outputs, outputs);
+    intrnidx = extension_pattern_rec(tree, &nb_kids, kids, &nb_outputs, outputs);
     if (intrnidx != INTRINSIC_INVALID) {
       dsttree = Create_Intrinsic_from_OP(intrnidx, nb_kids, kids,
                                          nb_outputs, outputs, WN_rtype(tree),
@@ -1007,10 +1385,9 @@ EXT_LOWER_CVT_expr(WN *tree, WN** new_stmts, bool *modified)
           return dsttree;
         }
           
-      }
-      else if (MTYPE_is_dynamic(WN_rtype(tree)) &&
-	       ((WN_desc(tree) == MTYPE_I8 && Mtype_Int_Value_In_Range(MTYPE_I4, value)) ||
-		(WN_desc(tree) == MTYPE_U8 && Mtype_Int_Value_In_Range(MTYPE_U4, value)))) {
+      } else if (MTYPE_is_dynamic(WN_rtype(tree)) &&
+                 ((WN_desc(tree) == MTYPE_I8 && Mtype_Int_Value_In_Range(MTYPE_I4, value)) ||
+                  (WN_desc(tree) == MTYPE_U8 && Mtype_Int_Value_In_Range(MTYPE_U4, value)))) {
 	/* Capture conversion from 32bits constants to 64bits extension types */
 	TYPE_ID dst_ty = WN_desc(tree);
 	TYPE_ID src_ty = (dst_ty == MTYPE_I8)?MTYPE_I4:MTYPE_U4;
@@ -1045,8 +1422,7 @@ EXT_LOWER_CVT_expr(WN *tree, WN** new_stmts, bool *modified)
 	  }
 	}
       }
-    }
-    else if (WN_operator(kid0) == OPR_CVT) {
+    } else if (WN_operator(kid0) == OPR_CVT) {
       if (MTYPE_is_dynamic(WN_rtype(tree))) {
 	/* Try to optimize conversion to extension type,
 	 * like: X8I8CVT(I8I4CVT) --> X8I4CVT */
@@ -1067,8 +1443,7 @@ EXT_LOWER_CVT_expr(WN *tree, WN** new_stmts, bool *modified)
 	    }
 	  }
 	}
-      }
-      else if (MTYPE_is_dynamic(WN_desc(kid0))) {
+      } else if (MTYPE_is_dynamic(WN_desc(kid0))) {
 	/* Try to optimize conversion from extension type,
 	 * like: I4I8CVT(I8X8CVT) --> I4X8CVT */
 	INTRINSIC_Vector_t* itrn_indexes =  Get_Intrinsic_from_OPCODE(WN_opcode(tree));
@@ -1217,7 +1592,7 @@ EXT_lower_wn(WN *tree, BOOL last_pass)
   WN_Lower_Checkdump("EXT Lowering", tree, 0);
 
   if ( local_ext_gen_mask & EXTENSION_NATIVE_CODEGEN) {
-    init_pattern_rec();
+    init_extension_pattern_rec();
     tree = EXT_LOWER_stmt_wn_gen(tree, EXT_LOWER_expr);
 
     WN_Lower_Checkdump("After EXT Codegen Lowering", tree, 0);

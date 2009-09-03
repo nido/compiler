@@ -34,9 +34,10 @@
  */
 
 
-
 #include "extension_include.h"
 #include "extension_intrinsic.h"
+
+
 #include "dll_loader.h"
 #include "loader.h"
 #include "erglob.h"
@@ -69,6 +70,7 @@ extern "C" { extern const ISA_EXT_Interface_t* get_ISA_extension_instance();};
 #include "ext_info.h"
 #include "config_TARG.h"
 
+
 #if defined(__MINGW32__) || defined(__CYGWIN__)
 #define SO_EXT ".dll"
 #else
@@ -100,6 +102,79 @@ Extension_dll_t * Get_Extension_dll_tab( ) { return extension_tab; }
 int Get_Extension_dll_count( ) { return extension_count; }
 
 #include <map>
+
+/**
+ * Variables containing the pattern recognition rules
+ * 
+ */
+static ListOfRules*  extension_pattern_rules = NULL;
+static std::map<OPCODE,ListOfRules*> rules_per_opcode;
+static std::map<INTRINSIC,ListOfRules*> rules_per_intrinsic;
+
+/** 
+ * api to access to the pattern rec rules by opcode
+ * 
+ * @param opc 
+ * 
+ * @return 
+ */
+ListOfRules*  Get_rules_per_opcode(OPCODE opc){
+  return rules_per_opcode[opc];
+}
+
+/** 
+ * api to access to the pattern rec rules by opcode
+ * 
+ * @param opc 
+ * 
+ * @return 
+ */
+ListOfRules*  Get_rules_per_intrinsic(INTRINSIC intrn){
+  return rules_per_intrinsic[intrn];
+}
+/** 
+ * api to access all pattern rec rules
+ * 
+ * 
+ * @return 
+ */
+ListOfRules*  Get_Extension_pattern_rules(){
+  return extension_pattern_rules;
+}
+
+/** 
+ * appends new rule to map.
+ * 
+ * @param opc 
+ * @param rule 
+ * 
+ * @return 
+ */
+static bool
+Add_Extension_PatternRule(recog_rule* rule) {
+  FmtAssert((rule!=NULL), ("cannot add a NULL rule\n"));
+  
+  if (extension_pattern_rules == NULL) {
+    extension_pattern_rules = new ListOfRules();
+  }
+
+  rule->intrn = EXTENSION_INTRINSIC_From_Name(rule->builtin_name);
+  extension_pattern_rules->push_back(rule);
+
+  if (rules_per_intrinsic[rule->intrn] == NULL) {
+    rules_per_intrinsic[rule->intrn] = new ListOfRules();
+  }
+  rules_per_intrinsic[rule->intrn]->push_back(rule);
+
+  OPCODE opc = rule->pattern->u.opc;  
+  if (rules_per_opcode[opc] == NULL) {
+    rules_per_opcode[opc] = new ListOfRules();
+  }
+  rules_per_opcode[opc]->push_back(rule);
+
+  return true;
+}
+
 typedef std::map<OPCODE, INTRINSIC_Vector_t*> INTRINSIC_OPCODE_MAP_t;
 static INTRINSIC_OPCODE_MAP_t Intrinsic_from_OPCODE;
 
@@ -124,12 +199,14 @@ extern INTRINSIC_Vector_t* Get_Intrinsic_from_OPCODE(OPCODE opc) {
  * @param intrn 
  * 
  */
+
 extern void Add_Intrinsic_for_OPCODE(OPCODE opc, INTRINSIC intrn) {
   if (! Intrinsic_from_OPCODE.count(opc)>0) {
     Intrinsic_from_OPCODE[opc] = new INTRINSIC_Vector_t();
   }
   Intrinsic_from_OPCODE[opc]->push_back(intrn);
 }
+
 
 mUINT8 pixel_size_per_type[MTYPE_MAX_LIMIT+1];
 
@@ -465,6 +542,31 @@ void Add_Intrinsics(const Extension_dll_t *dll_instance, BOOL verbose)
   }
 }
 
+/*
+ * Extend rules list with all instrinsics defined by the
+ * specified dll instance
+ */
+static void
+Add_RecRules(const Extension_dll_t *dll_instance, BOOL verbose)
+{
+  unsigned int i;
+
+  char *extname = dll_instance->handler->extname;;
+  
+  recog_rule** rules = dll_instance->hooks->get_recrules();
+  unsigned int rules_count = dll_instance->hooks->get_recrules_count();
+
+  if ( rules != NULL ) {
+    int k = 0;
+    for (k=0; k<rules_count; k++) {
+      recog_rule* rule = rules[k];
+      /* append rule to rules_per_opcode map */        
+      Add_Extension_PatternRule(rule);
+    }
+  }
+}
+
+
 //TB: Add a new pass to create new MTYPE for mutiple result intrinsics
 void Add_Composed_Mtype() {
   //Run thru added intrinsics to create new composed mtype
@@ -763,6 +865,9 @@ Initialize_Extension_Loader ()
     for (i=0; i<extension_count; i++) {
       Add_MTypes(&extension_tab[i], NULL, NULL, verbose);
       Add_Intrinsics(&extension_tab[i], verbose);
+
+      // add recog patterns
+      Add_RecRules(&extension_tab[i], verbose);
     }
     //TB: Add a new pass to create new MTYPE for mutiple result intrinsics
     Add_Composed_Mtype();

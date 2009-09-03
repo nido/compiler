@@ -14,31 +14,7 @@
  * 
  */
 void
-init_pattern_rec(void) {
-}
-
-
-/** 
- * main function of pattern_rec. Check the set of target specific
- * patterns in the WN tree. 
- * 
- * 
- * @param tree 
- * @param nboperands (result: size of kids array)
- * @param kids (result: operand nodes to be used in intrinsic op/call)
- * @param nbres  (result: size of outputs  array)
- * @param outputs ( result: result ST to be used in intrinsic call)
- *
- * main ST output of intrinsic is NULL in outputs array (built later).
- *
- * 
- * @return idx (intrinsic ID or INTRINSIC_INVALID)
- */
-INTRINSIC
-targ_pattern_rec(WN *tree, INT *nboperands,  WN *kids[],
-                 INT *nbres,  ST* outputs[])
-{
-  return INTRINSIC_INVALID;
+BETARG_Init_Pattern_Rec(void) {
 }
 
 
