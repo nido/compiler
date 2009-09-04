@@ -285,9 +285,9 @@ intm_t TOP_fold_select(opc_t opc, const opnd_t *opnds) {
   case V_CMP_GE: result = (op1 >= op2); break;
   case V_CMP_GEU: result = ((uintm_t)op1 >= op2); break;
   case V_CMP_ANDL: result = (op1 != 0) & (op2 != 0); break;
-  case V_CMP_NANDL: result = (op1 = 0) | (op2 = 0); break;
+  case V_CMP_NANDL: result = (op1 == 0) | (op2 == 0); break;
   case V_CMP_ORL: result = (op1 != 0) | (op2 != 0); break;
-  case V_CMP_NORL: result = (op1 = 0) & (op2 = 0); break;
+  case V_CMP_NORL: result = (op1 == 0) & (op2 == 0); break;
   }
   return result;
 }
