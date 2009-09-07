@@ -81,6 +81,7 @@
 #include "targ_isa_lits.h"
 #include "targ_isa_properties.h"
 #include "config_TARG.h"
+#include "config_asm.h"
 #include "exp_private.h"
 
 #include "cg_ssa.h"
@@ -3793,7 +3794,7 @@ Exp_GP_Init (
     // to be a symbol (not a label) because we need to
     // apply a reloc to it later.
     static INT Temp_Index = 0;
-    STR_IDX str_idx = Save_Str2i ("L?", ".gpinit_", Temp_Index++);
+    STR_IDX str_idx = Save_Str2i (Local_Label_Prefix, ".gpinit_", Temp_Index++);
 
     ST_Init (st, str_idx, CLASS_NAME, SCLASS_UNKNOWN, EXPORT_LOCAL,
 	     ST_pu (fn_st));

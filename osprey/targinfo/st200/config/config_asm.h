@@ -70,7 +70,7 @@ extern "C" {
 
 /* [CG] Prefix definition for all compiler generated local labels. 
    They should be discarded for example by a strip -X or the debugger. */
-#define Local_Label_Prefix "L?"
+#define Local_Label_Prefix ".L"
 
 /* [CG] The following sprintf format is used to create a label
  * from a (name, scope level, label index) tuple. Used by the code selector.

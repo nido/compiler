@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Sep 07 18:08:01 CEST 2009
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-75166
+
+Description:
+------------
+	*  Fix for bug #75166 Use .Lxxx for internal labels instead of	L?xxx
+	Deliver fixes/codex-75166 with authorization art #75374.
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/expand/exp_targ.cxx
+	M      osprey/targinfo/st200/config/config_asm.h
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@23726 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-75166@23728 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@23726 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-75166@23728" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/st200/expand/exp_targ.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/expand/exp_targ.cxx?p2=branches/fixes/codex-75166/osprey/targinfo/st200/expand/exp_targ.cxx&r1=23726&r2=23728&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/config/config_asm.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/config/config_asm.h?p2=branches/fixes/codex-75166/osprey/targinfo/st200/config/config_asm.h&r1=23726&r2=23728&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Sep 07 17:47:54 CEST 2009
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
