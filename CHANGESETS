@@ -1,6 +1,42 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Sep 07 17:47:54 CEST 2009
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-75307
+
+Description:
+------------
+	*  Fix for codex bug #75307 Open64 does not inline weak inline
+	functions, but gcc does.
+	Deliver fixes/codex-75307 with authorization art #75373.
+
+
+Modified Files:
+---------------
+	M      osprey/ipa/local/ipl_summarize_template.h
+	M      osprey/ipa/inline/inline_summarize.h
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@23705 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-75307@23724 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@23705 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-75307@23724" 
+
+Diff links to modified files:
+-----------------------------
+osprey/ipa/local/ipl_summarize_template.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/local/ipl_summarize_template.h?p2=branches/fixes/codex-75307/osprey/ipa/local/ipl_summarize_template.h&r1=23705&r2=23724&roottype=svn&root=open64&diff_format=h
+osprey/ipa/inline/inline_summarize.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/inline/inline_summarize.h?p2=branches/fixes/codex-75307/osprey/ipa/inline/inline_summarize.h&r1=23705&r2=23724&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Sep  4 15:52:13 CEST 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

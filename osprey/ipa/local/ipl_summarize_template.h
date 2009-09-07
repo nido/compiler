@@ -1193,12 +1193,18 @@ SUMMARIZE<program>::Process_procedure (WN* w)
       if ((PU_src_lang(pu) == PU_C_LANG) ||
 	  ((PU_src_lang(pu) == PU_CXX_LANG))) {
 	if (PU_is_inline_function (pu)) {
-	  // for 7.2 don't inline functions marked weak inline
+	  // [SC] Removed the following fix: 
+	  // I see no reason not to inline functions marked weak inline:
+	  // gcc does it, and I want to do it for C++ vague linkage functions.
+#ifndef TARG_ST
+ 	  // for 7.2 don't inline functions marked weak inline
 	  // [CL] include fix from 0.15
 	  if (ST_is_weak_symbol(st) && ST_export(st) != EXPORT_PROTECTED) {
 	    DevWarn("Inliner encountered a function marked weak inline; NOT inlining it");
 	    proc->Set_no_inline();
-	  } else {
+	  } else
+#endif
+	  {
 	    // CL: force inlining of 'inline' functions
 	    if (INLINE_All_Inline) {
 	      proc->Set_must_inline();
