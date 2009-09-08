@@ -1,4 +1,8 @@
 /*
+ * Copyright 2003, 2004, 2005, 2006 PathScale, Inc.  All Rights Reserved.
+ */
+
+/*
 
   Copyright (C) 2000, 2001 Silicon Graphics, Inc.  All Rights Reserved.
 
@@ -135,7 +139,7 @@ public:
     // Add an element to a set:
     void Add_element ( INT32 fcount, INT32 elmt ) {
 	if ( fcount > 32 ) {
-	    *(_fbv._fdata+elmt/64) |= 1 << (elmt&63);
+	    *(_fbv._fdata+elmt/64) |= (mINT64)1 << (elmt&63);
 	} else {
 	    _fbv._fbits |= 1 << elmt;
 	}
@@ -144,7 +148,7 @@ public:
     // Check for an element in a set:
     BOOL Is_element ( INT32 fcount, INT32 elmt ) {
 	if ( fcount > 32 ) {
-	    return ( *(_fbv._fdata+elmt/64) & ( 1 << (elmt&63) ) ) != 0;
+	    return ( *(_fbv._fdata+elmt/64) & ( (mINT64)1 << (elmt&63) ) ) != 0;
 	} else {
 	    return ( _fbv._fbits & ( 1 << elmt ) ) != 0;
 	}
