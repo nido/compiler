@@ -1,4 +1,16 @@
 /*
+ *  Copyright (C) 2007 PathScale, LLC.  All Rights Reserved.
+ */
+
+/*
+ *  Copyright (C) 2006. QLogic Corporation. All Rights Reserved.
+ */
+
+/*
+ * Copyright 2004, 2005, 2006 PathScale, Inc.  All Rights Reserved.
+ */
+
+/*
 
   Copyright (C) 2000, 2001 Silicon Graphics, Inc.  All Rights Reserved.
 
@@ -342,6 +354,13 @@ ERROR_DESC EDESC_Globals[] = {
   { EC_Not_Ansi_Setjmp,       EM_User | ES_WARNING,   RAG_EN_NONE,
      "Function %s (#%d) is optimized at -O%d because of non-ANSI setjmp",
      3, ET_STRING, ET_INT, ET_INT,0,0,0 },
+
+#ifdef KEY
+   /* Inconsistent types for same symbol */
+  { EC_Inc_Types,	EM_User | ES_ERRABORT,   RAG_EN_NONE,
+    "Symbol %s declared both as function and variable\n",
+    1, ET_STRING, 0, 0, 0, 0, 0 },
+#endif
 
   /* Tree (ND) support: */
   { EC_B_Access,	EM_Compiler | ES_ERRPHASE,	RAG_EN_NONE,

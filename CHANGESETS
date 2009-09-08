@@ -1,6 +1,27 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep  8 10:43:05 CEST 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-67493
+
+Description:
+------------
+	* [trunk] Fix for bug #67493: Fix for [ bug #67493 ] [IPA] Compiler aborts when a symbol is defined as both a function and a variable.
+	Deliver fixes/codex-67493 rev #23736 with authorization branch #73483
+
+
+Modified Files:
+---------------
+	M      osprey/common/com/erglob.h
+	M      osprey/common/com/erglob.desc
+	M      osprey/ipa/common/ipc_symtab_merge.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Sep 07 18:08:01 CEST 2009
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

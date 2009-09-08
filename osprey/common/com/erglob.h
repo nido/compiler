@@ -1,4 +1,12 @@
 /*
+ *  Copyright (C) 2006. QLogic Corporation. All Rights Reserved.
+ */
+
+/*
+ * Copyright 2002, 2003, 2004, 2005, 2006 PathScale, Inc.  All Rights Reserved.
+ */
+
+/*
 
   Copyright (C) 2000, 2001 Silicon Graphics, Inc.  All Rights Reserved.
 
@@ -195,6 +203,11 @@ extern "C" {
 
 /* Lower optimization for non-ANSI setjmp support */
 #define EC_Not_Ansi_Setjmp      EC_Undef_Code+106       /* str, int, int */
+
+#ifdef KEY
+/* Same symbol declared as function and variable error from IPA */
+#define EC_Inc_Types		EC_Undef_Code+109	/* str */
+#endif
 
 /* Tree (ND) support: */
 #define EC_B_Access	EC_Undef_Code+110	/* int, int */
