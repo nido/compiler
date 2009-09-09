@@ -1,6 +1,26 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Sep  9 15:05:46 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-75402
+
+Description:
+------------
+	* [trunk] Fix for bug #75402: Using -Mextension=EXT in application file configuration seg faults..
+	Deliver fixes/codex-75402 rev #23776 with authorization branch #75428
+
+
+Modified Files:
+---------------
+	M      osprey/driver/main.c
+	M      osprey/common/appliconfig/appli_config.yacc
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep  8 13:25:49 CEST 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

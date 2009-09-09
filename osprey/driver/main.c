@@ -599,14 +599,14 @@ main (int argc, char *argv[])
 	        if (active_configuration->options) {
 	            Pt_string_list my_list=active_configuration->options;
 	            int  i = 0;
-                char *newargv[] = { NULL };
+	            char *newargv[] = { argv[0], NULL };
 	            while (my_list) {
 	                if (Trace_Appli_Config_File) printf("Add Global option %s \n", my_list->name);
-	                newargv[0]=my_list->name;
-	                i = 0;
+	                newargv[1]=my_list->name;
+	                i = 1;
 	                treat_one_arg(&i,newargv);
 	                //Fix for bug #70574: If counter is not modified, option must be parsed again.
-	                if(i==0) treat_one_arg(&i,newargv);
+	                if(i==1) treat_one_arg(&i,newargv);
 	                my_list=my_list->next;
 	            }
 	        }
