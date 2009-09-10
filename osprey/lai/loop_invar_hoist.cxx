@@ -1837,7 +1837,7 @@ public:
     TN *Get_Addr(void) { return _addrTN; }
     void Set_Addr(TN *tn) { _addrTN = tn; }
     LI_MEMORY_INFO *Next(void) { return _next; }
-    void *Link(LI_MEMORY_INFO *next) { _next = next; }
+    void Link(LI_MEMORY_INFO *next) { _next = next; }
 };
 
 LI_MEMORY_INFO :: LI_MEMORY_INFO (MEM_POOL* mp, TN *baseTN, TN *offsetTN) :
@@ -2233,9 +2233,6 @@ Scalarize_OP(OP *memop, TN *scalar) {
 	/* generate a sign extension operation if needed. */
 	INT size = OP_Mem_Ref_Bytes(memop);
 	if (TN_size(scalar) > size) {
-	    TOP opcode;
-	    TN *arg2 = NULL;
-	    OP *scalar_op;
 	    TN *to_length_tn = Gen_Literal_TN (TN_size(scalar) * 8, 4);
 	    TYPE_ID from_mtype;
 	    BOOL is_signed = ! TOP_is_unsign(OP_code(memop));
@@ -2551,13 +2548,13 @@ Count_Loop_Interation (LOOP_DESCR* l) {
         return (float)TN_value(trip_count);
     }
 
-    BBLIST* p;
-    BB_SET* body = LOOP_DESCR_bbset(l);
     BB* head = LOOP_DESCR_loophead(l); 
     float f = 0.0f;
 #ifdef TARG_ST
     f = BB_freq(head);
 #else
+    BBLIST* p;
+    BB_SET* body = LOOP_DESCR_bbset(l);
     FOR_ALL_BB_PREDS (head, p) {
         BB* succ = BBLIST_item(p);
         if (!BB_SET_MemberP (body, succ)) {

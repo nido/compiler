@@ -1,6 +1,55 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep 10 17:10:38 CEST 2009
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-71058
+
+Description:
+------------
+	* [trunk] Fix for bug #71058: Warnings raised with -Wall should be cleaned.
+	Deliver fixes/codex-71058 rev #23810 with authorization branch #75510
+
+
+Modified Files:
+---------------
+	M      osprey/lai/cg_ssa.cxx
+	M      osprey/lai/cgemit.cxx
+	M      osprey/lai/cgdwarf.cxx
+	M      osprey/lai/cg_loop.cxx
+	M      osprey/lai/ebo_util.h
+	M      osprey/lai/cg_outssa.cxx
+	M      osprey/lai/ebo.cxx
+	M      osprey/lai/cg_loop.h
+	M      osprey/lai/igls.cxx
+	M      osprey/lai/lao/lao_stub.cxx
+	M      osprey/lai/calls.cxx
+	M      osprey/lai/cg_ivs.cxx
+	M      osprey/lai/lra.cxx
+	M      osprey/lai/loop_invar_hoist.cxx
+	M      osprey/lai/cg_loop_recur.cxx
+	M      osprey/lai/cg_tailmerge.cxx
+	M      osprey/lai/cg_dud.cxx
+	M      osprey/lai/cg_select.cxx
+	M      osprey/lai/cg_ssaopt.cxx
+	M      osprey/lai/whirl2ops.cxx
+	M      osprey/lai/cgdriver.cxx
+	M      osprey/lai/cflow.cxx
+	M      osprey/lai/cg_automod.cxx
+	M      osprey/lai/range_analysis.h
+	M      osprey/lai/hb_sched.cxx
+	M      osprey/lai/cg_dep_graph.cxx
+	M      osprey/lai/cg_affirm.cxx
+	M      osprey/lai/range_prop.cxx
+	M      osprey/lai/eh_region.cxx
+	M      osprey/lai/range_analysis.cxx
+	M      osprey/common/com/cmplr_segmented_array.h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Sep 10 14:36:16 CEST 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

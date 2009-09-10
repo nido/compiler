@@ -463,7 +463,6 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
 
 #ifdef TARG_ST
   Is_True(OP_iadd(addiu_op), ("OPSCH_addiu but not OP_iadd"));
-  INT add_opnd1_idx = OP_find_opnd_use(addiu_op, OU_opnd1);
   INT add_opnd2_idx = OP_find_opnd_use(addiu_op, OU_opnd2);
   Is_True(TN_has_value(OP_opnd(addiu_op, add_opnd2_idx)), ("OPSCH_addiu but second operand is not literal"));
   INT64 addiu_const = TN_value (OP_opnd(addiu_op, add_opnd2_idx));

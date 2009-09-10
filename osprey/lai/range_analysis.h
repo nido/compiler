@@ -178,7 +178,7 @@ class Opnd_Info {
   LRange_p Value () const { return value; }
   void Set_Value (LRange_p v) { value = v; }
   INT LoweredCount () const { return lowered_count; }
-  INT Set_LoweredCount (INT v) { lowered_count = v; }
+  void Set_LoweredCount (INT v) { lowered_count = v; }
   INT IncrementLoweredCount () { return ++lowered_count; }
   BB *Bb () const { return OP_bb(op); }
   OP *Op () const { return op; }

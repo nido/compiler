@@ -31,10 +31,9 @@ extern void Print_BB_Dominators(BB* bb);
 extern void Print_Dominators(void);
 extern BOOL CG_AutoMod_RelaxPdom;
 
-BOOL CGA_Trace = FALSE;
+static BOOL CGA_Trace = FALSE;
 
 static BOOL BaseOffset_Combine(OP *, OP *, OPS *);
-static BOOL BaseOffset_CheckCombine(OP *, OP *);
 static int baseOffset_Cost(DUD_REGION *, OP *, OP*);
 static BOOL check_OffsetIncrOffset(OP *, OP *);
 
@@ -67,7 +66,6 @@ BOOL Is_WellFormed_Loop(BB* loop_head)
   BB* loc_bb;
   BB* loc_head;
   int num_pred=0;
-  int i;
                                                                                                                  
   // Initially, the buggy case was exposed in two inner loops.
   // Though, we want this checking to be effective in any case, 
@@ -225,7 +223,6 @@ check_IncrOffset(OP *incrop, OP *memop, BOOL postIncr) {
 
   // Look for offset on memop
   INT offset_idx = OP_find_opnd_use(memop, OU_offset);
-  INT base_idx = OP_find_opnd_use(memop, OU_base);
 
   if(offset_idx < 0) return FALSE;
 
@@ -382,7 +379,6 @@ check_CanRepairUse(DUD_REGION *dud, OP *defop, OP *useop, INT useidx, INT64 repa
       int j;
       dud->Get_Def_Use(useop, 0, du_link_useop);
       for (int a = 0; a < du_link_useop.size(); a++) {
-	OP *use_useop = du_link_useop.op(a);
 	dud->Get_Use_Def(useop, du_link_useop.idx(a), ud_link);
 	for (j = 0; j < ud_link.size(); j++) {
 	  if (ud_link.op(j) == defop)
@@ -885,7 +881,6 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
   if (base_idx < 0 || offset_idx < 0) return;
 
   TN *tn_base = OP_opnd(op, base_idx);
-  TN *tn_offset = OP_opnd(op, offset_idx);
 
   // Look for use-def link. If unique and a ADD/SUB, this is a candidate
   DUD_LIST ud_link, du_link;
@@ -1117,7 +1112,7 @@ void Perform_AutoMod_Optimization() {
   MEM_POOL_Initialize(&bbregion_set_pool, "bbregion_set", TRUE);
   MEM_POOL_Push (&bbregion_set_pool);
 
-  BOOL trace_general = Get_Trace(TP_CGLOOP, 1);
+  CGA_Trace = Get_Trace(TP_CGLOOP, 1);
 
   Calculate_Dominators();	/* needed for loop recognition */
 
@@ -1207,7 +1202,6 @@ static BOOL BaseOffset_Combine(OP *mem_op, OP *inc_op, OPS *ops) {
   }
 
   TOP top_baseoffset = TOP_UNDEFINED;
-  BOOL mem_first = FALSE;
 
   TN *baseoffset_tn = NULL;
   if (TN_has_value(adjust_tn)) {
@@ -1286,7 +1280,6 @@ check_OffsetIncrOffset(OP *incrop, OP *memop){
 
   // base/offset tn
   TN *base_tn   = OP_opnd(memop, base_idx);
-  TN *offset_tn = OP_opnd(memop, offset_idx);
 
   // Look for offset on incrop
   INT opnd1_idx = OP_find_opnd_use(incrop, OU_opnd1);
@@ -1387,7 +1380,6 @@ baseOffset_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
 
   // base/offset tn
   TN *base_tn   = OP_opnd(memop, OP_find_opnd_use(memop, OU_base));
-  TN *offset_tn = OP_opnd(memop, OP_find_opnd_use(memop, OU_offset));
 
   // look for increment TN
   INT opnd1_idx = OP_find_opnd_use(incrop, OU_opnd1);

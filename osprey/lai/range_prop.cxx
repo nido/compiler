@@ -256,7 +256,6 @@ Literal_Value (const RangeAnalysis &range_analysis, TN *tn)
 {
   const LRange_p r = range_analysis.Get_Value (tn);
   if (r->hasValue ()) {
-    INT64 v = r->getValue ();
     TN *result = Gen_Literal_TN (r->getValue (), TN_size (tn),
 				 ! r->isNonNegative ());
     return result;
@@ -337,10 +336,8 @@ match_compare_sub_to_zero (const RangeAnalysis &range_analysis,
   OP *l2_op1, *l2_op2, *l2_op;
   TN *opnd1, *opnd2, *result;
   TN *l1_tn1, *l1_tn2;
-  INT shiftcount, result_width;
-  TYPE_ID mtype;
+  INT result_width;
   VARIANT variant;
-  BOOL is_signed;
 
   TOP opcode = OP_code(l1_op);
 
@@ -715,9 +712,6 @@ RangePropagatePass (RangeAnalysis &range_analysis, INT pass)
 
     BB *bb;
     for (bb = REGION_First_BB; bb != NULL; bb = BB_next(bb)) {
-      OP *op;
-      OP *next = NULL;
-
       if (Generate_Affirm(&range_analysis, bb))
 	SSA_update = TRUE;
     }
@@ -737,9 +731,7 @@ RangePropagatePass (RangeAnalysis &range_analysis, INT pass)
     OP *op;
     OP *next = NULL;
     for (op = BB_first_op (bb); op != NULL; op = next) {
-      OPS ops = OPS_EMPTY;
       next = OP_next (op);
-
       changed |= RangePropagateOp (range_analysis, op, next);
     }
   }
@@ -754,9 +746,7 @@ RangePropagatePass (RangeAnalysis &range_analysis, INT pass)
     OP *op;
     OP *next = NULL;
     for (op = BB_first_op (bb); op != NULL; op = next) {
-      OPS ops = OPS_EMPTY;
       next = OP_next (op);
-
       changed |= RangePropagateOp (range_analysis, op, next);
     }
   }

@@ -1181,7 +1181,6 @@ Collect_Op_Base_Offset(vec_base_ops& Base_Ops_List, OP* op)
 
     INT64 base_dist, addr_dist;
     TN *common_tn = NULL;
-    INT64 offset_init;
     
     if ((addr_exp.base_reg == NULL) && (TN_is_symbol(addr_exp.offset_tn))) {
         common_tn = Gen_Symbol_TN(TN_var(addr_exp.offset_tn), 0, TN_relocs(addr_exp.offset_tn));
@@ -1213,7 +1212,7 @@ Collect_Op_Base_Offset(vec_base_ops& Base_Ops_List, OP* op)
 static void
 Generate_Load_Imm_Common_Base(vec_base_ops& Base_Ops_List)
 {
-    int i, j;
+    int i;
     vec_base_ops Imm_Base_Ops_List;
 
     for (i = 0; i < Base_Ops_List.size(); i++)

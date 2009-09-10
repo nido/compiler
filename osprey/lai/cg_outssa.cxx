@@ -1686,7 +1686,7 @@ SSA_Mandatory_Coalescing() {
 }
 
 /* ================================================================
- *   Eliminate_Psi_Resource_Interference
+ *   SSA_Psi_Coalescing
  *
  *   This function look for interferences between variables connected
  *   through PSI operations and repair them.

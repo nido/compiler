@@ -2955,7 +2955,7 @@ Check_remainder_after(BB *body, BB *trip_count_bb, TN *trip_count_tn, INT *non_I
   if (!br_op || !OP_cond(br_op))
     return NULL;
 
-  VARIANT variant = CGTARG_Analyze_Compare(br_op, &tn1, &tn2, &cmp_op);
+  CGTARG_Analyze_Compare(br_op, &tn1, &tn2, &cmp_op);
   if (cmp_op == NULL)
     return NULL;
 
@@ -3847,7 +3847,6 @@ Unroll_Use_Primary_IV_Loop_Counter(CG_LOOP &cl) {
 
   ANNOTATION *annot = ANNOT_Get(BB_annotations(body), ANNOT_LOOPINFO);
   LOOPINFO *info = ANNOT_loopinfo(annot);
-  WN *wn = WN_COPY_Tree(LOOPINFO_wn(info));
   TN *trip_count_tn = LOOPINFO_primary_trip_count_tn(info);
 
   Is_True(trip_count_tn, ("trip_count_tn should not be NULL"));
@@ -4012,8 +4011,6 @@ CG_LOOP::Unroll_Peel_Loop() {
     if (OP_br(op))
       continue;
 
-    UINT8 opnd;
-    UINT8 res;
     OP *new_op = Dup_OP(op);
     Copy_WN_For_Memory_OP(new_op, op);
 
@@ -4220,7 +4217,6 @@ CG_LOOP::Unroll_Specialize_Loop() {
   ANNOTATION *annot = ANNOT_Get(BB_annotations(body), ANNOT_LOOPINFO);
   LOOPINFO *info = ANNOT_loopinfo(annot);
   WN *wn = LOOPINFO_wn(info);
-  TN *trip_count_tn = LOOPINFO_exact_trip_count_tn(info);
 
   /* Insert a BB for alignement check before the loop */
 
@@ -4291,7 +4287,6 @@ CG_LOOP::Unroll_Specialize_Loop() {
   OP *op;
   FOR_ALL_BB_OPs(body, op) {
     UINT8 opnd;
-    UINT8 res;
     OP *new_op = Dup_OP(op);
     CGPREP_Init_Op(new_op);
     CG_LOOP_Init_Op(new_op);
@@ -6404,7 +6399,6 @@ bool CG_LOOP::Determine_Unroll_Fully()
 static int
 LOOP_DESCR_Estimate_Factor_For_Unrolling(LOOP_DESCR *loop, int unroll_factor)
 {
-  BB *bb;
   BB *head = LOOP_DESCR_loophead(loop);
 
   if (BB_SET_Size(LOOP_DESCR_bbset(loop)) > 1)
@@ -8096,7 +8090,6 @@ BOOL CG_LOOP_Optimize(LOOP_DESCR *loop, vector<SWP_FIXUP>& fixup)
       CG_LOOP cg_loop(loop);
       if (action == MULTI_BB_WHILELOOP)
 	cg_loop.Set_is_while_loop();
-      ANNOTATION *pragma_unroll;
 
       // Prolog is needed for multi_bb loop.
       if (!cg_loop.Has_prolog()) return FALSE;

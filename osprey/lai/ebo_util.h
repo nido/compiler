@@ -157,7 +157,6 @@ EBO_hash_op (OP *op,
 {
   INT hash_value = 0;
   if (OP_memory(op)) {
-    TN * spill_tn = NULL;
     hash_value = EBO_DEFAULT_MEM_HASH;
     if (OP_no_alias(op)) hash_value = EBO_NO_ALIAS_MEM_HASH;
 #ifdef TARG_ST
@@ -165,6 +164,7 @@ EBO_hash_op (OP *op,
     // Getting the spill_tn is unsafe for stores
     if (OP_spill(op)) hash_value = EBO_SPILL_MEM_HASH;
 #else
+    TN * spill_tn = NULL;
     if (OP_load(op)) {
       spill_tn = OP_result(op,0);
     } else if (OP_store(op)) {

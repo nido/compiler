@@ -381,7 +381,6 @@ FinalizeTailmerge(PU& pu)
                     using namespace TAILMERGE_NAMESPACE;
                     OP* branchOp = BB_branch_op(bb);
                     BB *target = BBLIST_item(BB_succs(bb));
-                    int predicateIdx;
                     if(!branchOp)
                         {
                             if(target && target != BB_next(bb))

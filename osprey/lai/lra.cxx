@@ -7742,7 +7742,7 @@ LRA_examine_last_op_needs (BB *bb, INT needs[ISA_REGISTER_CLASS_MAX_LIMIT+1][ISA
 
   if (ptr_rc_needs == 0) {
     /* For targets that have restricted offsets from SP, 
-    /* we need to have at least 1 so that we can insert a spill, if needed. */
+     * we need to have at least 1 so that we can insert a spill, if needed. */
     needs[Register_Class_For_Mtype(MTYPE_A4)][ISA_REGISTER_SUBCLASS_UNDEFINED] = 1;
   }
 }

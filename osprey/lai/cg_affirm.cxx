@@ -253,11 +253,7 @@ OP_Insert_Affirm_for_modulo(OP *op_affirm, INT base, INT bias) {
 BOOL
 BB_Insert_Affirm_for_modulo(BB *bb, TN *tn, INT base, INT bias) {
 
-  WN *wn_affirm = NULL;
-  WN *wn_modulo = NULL;
   OP *op_affirm = NULL;
-  INT affirm_base = -1;
-  INT affirm_bias = -1;
 
 //   Is_True((base > 0) && ((base&(base-1)) == 0), ("Unsupported value for base (%d) in Insert_Affirm_for_modulo", base));
 
@@ -350,11 +346,7 @@ BB_Insert_Affirm_for_modulo(BB *bb, TN *tn, INT base, INT bias) {
 BOOL
 OPS_Insert_Affirm_for_modulo(OPS *ops, TN *tn, INT base, INT bias) {
 
-  WN *wn_affirm = NULL;
-  WN *wn_modulo = NULL;
   OP *op_affirm = NULL;
-  INT affirm_base = -1;
-  INT affirm_bias = -1;
 
 //   Is_True((base > 0) && ((base&(base-1)) == 0), ("Unsupported value for base (%d) in Insert_Affirm_for_modulo", base));
 

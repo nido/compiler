@@ -1137,8 +1137,8 @@ Target_Unique_Exit (
 #ifdef TARG_ST
     // Arthur: the same_res info is part of OPERAND_INFO now:
     BOOL same_res = FALSE;
-    for (i = 0; i < OP_results(op); i++) {
-      if (OP_same_res(op, i) >= 0) {
+    for (UINT j = 0; j < OP_results(op); j++) {
+      if (OP_same_res(op, j) >= 0) {
 	same_res = TRUE;
 	break;
       }

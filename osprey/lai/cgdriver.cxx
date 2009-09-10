@@ -2340,7 +2340,6 @@ CG_Process_Command_Line (
 #ifdef TARG_ST
   // [TTh] Append content of Disabled_Registers within Registers_Not_Allocatable,
   // to insure that Registers_Not_Allocatable is a superset of Disable_Registers
-  char *p;
   OPTION_LIST *pred_olist    = Registers_Not_Allocatable;
   OPTION_LIST *disabled_regs = Disabled_Registers;
   OPTION_LIST *dup;

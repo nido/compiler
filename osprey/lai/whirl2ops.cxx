@@ -2674,7 +2674,7 @@ Handle_MADD (
 	       kid0_tn, WN_rtype(WN_kid0(expr)), 
 	       kid1_tn, Get_mtype_for_mult(WN_kid1(expr), expr),
 	       kid2_tn, Get_mtype_for_mult(WN_kid2(expr), expr),
-	       opcode == OPR_NMADD,
+	       WN_operator(expr) == OPR_NMADD,
 	       &New_OPs);
 
   if (Trace_Exp) {
@@ -2738,7 +2738,7 @@ Handle_MSUB (
 	       kid0_tn, WN_rtype(WN_kid0(expr)), 
 	       kid1_tn, Get_mtype_for_mult(WN_kid1(expr), expr),
 	       kid2_tn, Get_mtype_for_mult(WN_kid2(expr), expr),
-	       opcode == OPR_NMSUB,
+	       WN_operator(expr) == OPR_NMSUB,
 	       &New_OPs);
 
   if (Trace_Exp) {
@@ -3865,7 +3865,6 @@ Is_Intrinsic_InOut_Param_Single_TN(WN *intrn_expr, INT result_idx, TN *source_tn
       WN *stid = next_expr;
       if (WN_operator(WN_kid0(stid)) == OPR_SUBPART) {
 	WN       *subpart     = WN_kid0(stid);
-	WN       *kid0        = WN_kid0(subpart);
 	WN_OFFSET subpart_idx = WN_subpart_index(subpart);
 	
 	if (subpart_idx == result_idx) {

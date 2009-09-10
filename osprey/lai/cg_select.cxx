@@ -776,7 +776,7 @@ BB_Alloc_Phi ()
   return phi_info;
 }
 
-static OP *
+static void
 BB_Create_And_Map_Phi (UINT8 nopnds, TN *result[], TN *opnd[],
                        OP *old_phi, phi_t *phi_info) 
 {
@@ -849,7 +849,6 @@ BB_Recomp_Phis (BB *bb, BB *bb1, TN *cond_tn1, BB *bb2, TN *cond_tn2, BOOL true_
       Create_PSI_or_Select (select_tn, cond_tn1, bb1, bb2, bb1, phi, &cmov_ops);
 
     if (npreds > 2) {
-      BBLIST* edge;
       UINT8 j = 0;
       TN *result[1];
       UINT8 nopnds = npreds - 1;
@@ -1122,9 +1121,6 @@ Are_Same_Location(OP* op1, OP* op2)
             if (op3 && op4 && (OP_opnds (op3) == OP_opnds (op4))) {
               {
                 for (int i = 0; i < OP_opnds(op3); i++) {
-                  TN *r1 = OP_opnd(op3, i);
-                  TN *r2 = OP_opnd(op4, i);
-
                   if (OP_opnd (op3, i) != OP_opnd (op4, i))
                     return FALSE;
 
@@ -1185,7 +1181,6 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
   //TDR In size, a logif transfomration is not profitable without bundles.
   if (!CG_ifc_cycles && !PROC_has_bundles())  return FALSE;
 
-  OP *op;
   TN *cond_tn;
   TN *dummy;
   OP *br_op = BB_branch_op(bb2);
@@ -1304,7 +1299,6 @@ Are_equivalent_defininition_negated_TNs(TN *tn1, TN *tn_ref, BOOL found_neg) {
 static BOOL
 Check_min_max_abs_candidate(BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg, BB *tail) {
 	BB *bb1,*bb2;
-	OP *op;
 	TN *cond_tn;
 	TN *dummy;
 	OP *br_op = BB_branch_op(head);
@@ -1459,8 +1453,6 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
     cycles2 = CG_SCHED_EST_Cycles(se2);
   }
   
-  INT exp_len = size_sehead + size_se1 + size_se2;
-  
   if (Trace_Select_Candidates) {
     fprintf (Select_TFile, "taken (%f cycles) = \n", cycles1);
     if (se1)
@@ -1475,7 +1467,8 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
 
 #if 0
   //If new block is bigger than CG_bblength_max, reject.
-  if (exp_len >= CG_split_BB_length) {
+  INT exp_len = size_sehead + size_se1 + size_se2;
+    if (exp_len >= CG_split_BB_length) {
     if (Trace_Select_Candidates) {
       fprintf (Select_TFile, "expected new block too big. reject\n");
     }
@@ -1541,10 +1534,6 @@ Check_Suitable_Chain (BB* ipdom, BB* bb, BB_SET* path, bool allow_dup)
 static BOOL 
 Is_Hammock_Legacy (BB *head, BB_SET *t_set, BB_SET *ft_set, BB **tail, bool allow_dup) 
 {
-  BBLIST *edge;
-  BOOL found_taken = FALSE;
-  BOOL found_not_taken = FALSE;
-
   BB *target;
   BB *fall_thru;
 
@@ -2451,7 +2440,6 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
     /* if cannot invert into one op, build a new cmp.
        move into Exp_Pred_Complement */
     OP* cond_op = TN_ssa_def (cond_tn);
-    TOP new_cmp = TOP_UNDEFINED;
     if (cond_op ) {
       OP* new_op = CGTARG_Negate_OP(cond_op);
       Set_OP_result(new_op, 0, tn2);
@@ -2544,9 +2532,6 @@ Promote_Mem_Based_On (int index, OP *psi_op)
 static void
 Optimize_Spec_Loads(BB *bb)
 {
-  TN *tn1=NULL;
-  TN *tn2=NULL;
-
   PredOp_Map_Iter i_iter;
   PredOp_Map_Iter i_end;
 
@@ -2791,9 +2776,6 @@ BB_Fix_Spec_Loads (BB *bb)
 static void
 Optimize_Spec_Stores(BB *bb)
 {
-  TN *tn1=NULL;
-  TN *tn2=NULL;
-
   PredOp_Map_Iter i_iter;
   PredOp_Map_Iter i_end;
 
@@ -2959,7 +2941,6 @@ static BOOL
 Negate_Cmp_BB (OP *br)
 {
   TN *btn = OP_opnd(br, 0);
-  int idx = OP_find_opnd_use(br, OU_condition);
   OPS new_ops = OPS_EMPTY;
 
   OP *cmp_op = TN_ssa_def(btn);
@@ -3193,10 +3174,6 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   VARIANT variant1 = CGTARG_Analyze_Branch(br1_op, &branch_tn1, &dummy);
   CGTARG_Analyze_Branch(br2_op, &branch_tn2, &dummy);
 
-  // Find the defining OPs for the tested values.
-  OP *cmp_op1 = TN_ssa_def(branch_tn1);
-  OP *cmp_op2 = TN_ssa_def(branch_tn2);
-
   LABEL_IDX targ_label = Gen_Label_For_BB(joint_block);
   TN *label_tn = Gen_Label_TN(targ_label, 0);
 
@@ -3262,8 +3239,6 @@ Simplify_Logifs(BB *bb1, BB *bb2)
   else
     Expand_Logical_Or (new_branch_tn, reg_tn1, reg_tn2, V_BR_P_TRUE, &ops);
 
-  OP *mop = OPS_last(&ops);
-    
   // Stats
   logif_count++;
 
@@ -3345,7 +3320,6 @@ Select_Fold_ft (BB *head, BB_SET *ft_set, BB *tail)
   TN *cond_tn1,*cond_tn2;
   OP *br_op = BB_branch_op(head);
   VARIANT variant = CGTARG_Analyze_Branch(br_op, &cond_tn1, &cond_tn2);
-  BOOL false_br = V_false_br(variant)?TRUE:FALSE;
 
   // can remove the branch op
   BB_Remove_Op(head, br_op);
@@ -3468,7 +3442,7 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
     }
   }
 
-if (target_bb != tail) {
+  if (target_bb != tail) {
     BB *pred = last_target;
 
     while (pred != head) {

@@ -496,7 +496,6 @@ INT DUD_REGION::Get_Def_Use(OP *op, INT res, DUD_LIST &DU_list) {
 void DUD_REGION::Trace_DUD() {
 
   INT op_idx;
-  BOOL is_result;
 
   fprintf(TFile, "\n%s %s\n%s", DBar,"                     Trace DUD", DBar);
 

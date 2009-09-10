@@ -632,14 +632,14 @@ public:
   INT32 Peel_base() const	  { return stream_base[0]; }
   INT32 Peel_offset() const	  { return stream_offset[0]; }
 
-  BOOL Set_specialize_loop()      { do_specialize = TRUE; }
-  BOOL Reset_specialize_loop()    { do_specialize = FALSE; stream_tn[0] = NULL; }
+  void Set_specialize_loop()      { do_specialize = TRUE; }
+  void Reset_specialize_loop()    { do_specialize = FALSE; stream_tn[0] = NULL; }
   BOOL Specialize_loop()          { return do_specialize; }
   TN * Specialize_tn(INT32 i)     { return stream_tn[i]; }
   INT32 Specialize_base(INT32 i)  { return stream_base[i]; }
   INT32 Specialize_offset(INT32 i){ return stream_offset[i]; }
 
-  INT Set_streams(int load, int store) { load_streams = load; store_streams = store; };
+  void Set_streams(int load, int store) { load_streams = load; store_streams = store; };
   INT Load_streams()              { return load_streams; };
   INT Store_streams()             { return store_streams; };
   

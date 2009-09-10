@@ -2022,7 +2022,6 @@ static BOOL
 type_with_emitted_refs (DST_INFO_IDX idx)
 {
   DST_INFO *info;
-  DST_INFO_IDX child_idx;
   Dwarf_P_Die die;
   DST_DW_tag tag;
   DST_ATTR_IDX attr;
@@ -2288,7 +2287,6 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
 #endif
 
   DST_SUBPROGRAM *PU_attr;
-  static BOOL processed_globals = FALSE;
   
   cur_text_index = scn_index;
   Trace_Dwarf = Get_Trace ( TP_EMIT, 8 );	// for each pu
@@ -2297,6 +2295,7 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
   if (Disable_DST) return;
 
 #ifndef TARG_ST
+  static BOOL processed_globals = FALSE;
   // [CL] No longer process globals first: In order to generate only
   // 'necessary' info, we generate all PUs first, then remaining
   // globals, and only needed types.  This is to avoid generating type

@@ -805,7 +805,6 @@ RangeAnalysis::Visit_Forward (OP *op, BOOL *succs_done)
       TN *operand = OP_opnd(op, opnd_idx);
       new_value = Value (OP_opnd(op, opnd_idx));
       UINT32 width = TOP_opnd_use_bits(opcode, opnd_idx);
-      BOOL is_signed = TOP_opnd_use_signed(opcode, opnd_idx);
       if (OP_sext(op)) {
 	new_value = SignExtend (new_value, width);
       } else {

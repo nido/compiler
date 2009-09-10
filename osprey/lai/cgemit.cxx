@@ -1825,8 +1825,6 @@ Write_Labdiff (
   Is_True (lab1, ("cgemit: Labdiff lab1 is null"));
   Is_True (lab2, ("cgemit: Labdiff lab2 is null"));
 
-  BB *labb1 = Get_Label_BB(lab1);
-  BB *labb2 = Get_Label_BB(lab2);
   basesym1 = BB_cold(Get_Label_BB(lab1)) ? cold_base : text_base;
   basesym2 = BB_cold(Get_Label_BB(lab2)) ? cold_base : text_base;
   base1_ofst = Get_Label_Offset(lab1);
@@ -2981,9 +2979,6 @@ Process_Bss_Data (
 #endif
 
 #ifdef TARG_ST
-    BOOL last_in_section = (bssp+1 == bss_list.end ()
-			    || Base_Symbol (*(bssp+1)) != base);
-
     // [CG]: Ensure section is initialized
     Init_Section(base); 
 #endif

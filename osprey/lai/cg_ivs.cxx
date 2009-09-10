@@ -469,15 +469,12 @@ void Perform_Induction_Variables_Optimizations() {
   MEM_POOL loop_descr_pool;
   MEM_POOL_Initialize(&loop_descr_pool, "loop_descriptors", TRUE);
   MEM_POOL_Push (&loop_descr_pool);
-  BOOL trace_general = Get_Trace(TP_CGLOOP, 1);
 
   Calculate_Dominators();		/* needed for loop recognition */
 
   for (LOOP_DESCR *loop = LOOP_DESCR_Detect_Loops(&loop_descr_pool);
        loop;
        loop = LOOP_DESCR_next(loop)) {
-    BB *head = LOOP_DESCR_loophead(loop);
-
     Optimize_Loop_Induction_Variables(loop);
   }
 
@@ -1929,7 +1926,6 @@ Initialize_Stream_Packing_Property(MemoryStream_t *cur_stream, INT pack_base) {
     SET_STREAM_TRANSFORM(cur_stream, LOOP_TRANSFORM_SPECIALIZE);
 
   if (Get_Trace(TP_CGLOOP, 0x10)) {
-    const char *align_kind = (cur_stream->align_base == 1) ? "select" : "static";
     fprintf(TFile, "<ivs packing> %s stream, %d memops, align base %d, alignment",
 	    cur_stream->memop_kind == MEMOP_LOAD ? "load" : "store",
 	    cur_stream->memop_count, 
@@ -2194,7 +2190,6 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes)
   }
 
   //  fprintf(TFile, "32 bit Packing = {");
-  INT stream_count;
   INT load_stream_count = 0, store_stream_count = 0;
   MemoryStream_t *cur_stream;
   for (cur_stream = first_stream; cur_stream != NULL; cur_stream = cur_stream->next) {

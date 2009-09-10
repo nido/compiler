@@ -5993,8 +5993,6 @@ BB *ops_same_loop(OP *op1, OP *op2)
 #ifdef Is_True_On
   // Check that unrolling factor attached to OP_unroll_bb matches
   if (head != NULL) {
-    INT32 unroll1_id =  OP_unroll_bb(op1) ? BB_id(OP_unroll_bb(op1)): BB_id(OP_bb(op1));
-    INT32 unroll2_id =  OP_unroll_bb(op2) ? BB_id(OP_unroll_bb(op2)): BB_id(OP_bb(op2));
     INT32 unroll1 = OP_unroll_bb(op1) ? BB_unrollings(OP_unroll_bb(op1)):0; 
     INT32 unroll2 = OP_unroll_bb(op2) ? BB_unrollings(OP_unroll_bb(op2)):0; 
     if (unroll1 != unroll2)

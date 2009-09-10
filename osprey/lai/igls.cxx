@@ -163,7 +163,6 @@ Schedule_Prefetch_Prepass () {
   Calculate_Dominators ();
   L_Save ();
   LOOP_DESCR *loop_list = LOOP_DESCR_Detect_Loops (&MEM_local_pool);
-  BB_SET *processed_bbs = BB_SET_Create_Empty (PU_BB_Count+2, &MEM_local_pool);
   for (LOOP_DESCR *cloop = loop_list;
        cloop != NULL;
        cloop = LOOP_DESCR_next(cloop)) {
@@ -240,7 +239,6 @@ Schedule_Prefetch_Prepass () {
     }
 
     if (is_inner_loop && nb_prefetch) {
-      int nb_prefetched = 0;
 
       if (Trace_PFT)
 	fprintf(TFile, "loop %d cycles, %d prefetchs\n", nb_cycles, nb_prefetch);
@@ -366,7 +364,6 @@ Schedule_Prefetch_Postpass () {
   Calculate_Dominators ();
   L_Save ();
   LOOP_DESCR *loop_list = LOOP_DESCR_Detect_Loops (&MEM_local_pool);
-  BB_SET *processed_bbs = BB_SET_Create_Empty (PU_BB_Count+2, &MEM_local_pool);
   for (LOOP_DESCR *cloop = loop_list;
        cloop != NULL;
        cloop = LOOP_DESCR_next(cloop)) {
@@ -587,7 +584,6 @@ Schedule_Prefetch_Postpass () {
 
     if ((Mhd.Prefetch_Padding >= 0) && (auto_prefetched < auto_prefetch)) {
       char str_line[64] = "";
-      const char *str_inner = is_inner_loop ? "" : "(non innermost) ";
       ANNOTATION *annot = ANNOT_Get(BB_annotations(LOOP_DESCR_loophead(cloop)), ANNOT_LOOPINFO);
       if (annot)
 	sprintf(str_line, "loop line %d, ", LOOPINFO_line(ANNOT_loopinfo(annot)));
@@ -630,7 +626,7 @@ Schedule_Prefetch_Postpass () {
 	if (BB_loop_head_bb(bb) != LOOP_DESCR_loophead(cloop))
 	  continue;
 
-	for (OP *op = BB_first_op(bb); op != NULL; op = op_next) {
+	for (op = BB_first_op(bb); op != NULL; op = op_next) {
 	  op_next = OP_next(op);
 
 	  if (OP_prefetch(op)) {

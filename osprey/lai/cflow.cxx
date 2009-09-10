@@ -3248,9 +3248,6 @@ Favor_Branches_Condition(void)
     changed = FALSE;
 
     for (bp = REGION_First_BB; bp; bp = BB_next(bp)) {
-      BB *old_tgt, *new_tgt;
-      ST *st;
-      INT i;
       RID *rid = BB_rid(bp);
 
      /* Avoid modifying any block in a region that has already
@@ -3263,7 +3260,6 @@ Favor_Branches_Condition(void)
 
 	BB* loop_head = BB_loop_head_bb(bp);
 
-	VARIANT br_variant = V_br_condition(BBINFO_variant(bp));
 	BOOL false_br = V_false_br(BBINFO_variant(bp)) != 0;
 
 	OP *br_op = BB_branch_op(bp);
@@ -6849,7 +6845,7 @@ Optimize_Cyclic_Chain(BBCHAIN *chain, BB_MAP chain_map)
    * the order of the chain does not affect performance, we choose
    * the current tail and don't perform a gratuitous rotation.
    */
-#ifdef TARG_ST
+#ifdef TARG_STxP70
   BB *outer_HWLoop = NULL;
 #endif
   best_gain = -FLT_MAX;
@@ -7423,8 +7419,9 @@ Estimate_Callee_Saves(void)
     GTN_SET *live_in;
     GTN_SET *live_out;
     GTN_SET *need_reg;
+#ifndef TARG_ST
     BOOL is_call = (BBINFO_kind(bb) == BBKIND_CALL) && BBINFO_nsuccs(bb);
-
+#endif
     /* Get the set of GTNs that will need a register in the block.
      */
     live_in = GTN_SET_Intersection(BB_live_in(bb),

@@ -532,7 +532,7 @@ CGIR_TN_to_Temporary(CGIR_TN cgir_tn)
 	temporary = O64_Interface_makeLabelTemporary(interface, cgir_tn, immediate, label);
 	Is_True(TN_offset(cgir_tn) == 0, ("LAO requires zero offset from label."));
       } else if (TN_is_enum(cgir_tn)) {
-        ISA_ENUM_CLASS_VALUE ecv = TN_enum(cgir_tn);
+        //ISA_ENUM_CLASS_VALUE ecv = TN_enum(cgir_tn);
         FmtAssert(0, ("CGIR_TN_to_Temporary: enum tn not implemented"));
         //O64_ModifierMember = CGIR_ECV_to_ModifierMember(ecv);
         //temporary = O64_Interface_makeModifierTemporary(interface, cgir_tn, FIXME);
