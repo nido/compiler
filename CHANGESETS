@@ -1,6 +1,24 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep 10 17:24:33 CEST 2009
+	Author:    giraudoa
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-75754
+
+Description:
+------------
+	* [fixes/codex-75754] [giraudoa] "Compiler driver always select novliw open64.so". Deliver rev #23815 with authorisation branch #75755
+
+
+Modified Files:
+---------------
+	M      osprey/driver/stxp70_options.i
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Sep 10 17:10:38 CEST 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
