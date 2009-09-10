@@ -6663,6 +6663,16 @@ Find_BB_TNs (BB *bb)
 	    EBO_TN_INFO *tninfo = EBO_last_opinfo->actual_rslt[0];
 	    tninfo->replacement_tn = replacement_tn;
 	    tninfo->replacement_tninfo = NULL;
+	    // FdF 20090827: Also, set the rematerialization flag if
+	    // not already.
+	    if (!TN_is_rematerializable(tnr)) {
+	      if (TN_register_class(tnr) == CGTARG_Register_Class_For_Mtype(MTYPE_I4))
+		CGSPILL_Attach_Intconst_Remat(tnr, MTYPE_I4, TN_value(replacement_tn));
+	      else if (TN_register_class(tnr) == CGTARG_Register_Class_For_Mtype(MTYPE_I8))
+		CGSPILL_Attach_Intconst_Remat(tnr, MTYPE_I8, TN_value(replacement_tn));
+	      else if (TN_register_class(tnr) == CGTARG_Register_Class_For_Mtype(MTYPE_B))
+		CGSPILL_Attach_Intconst_Remat(tnr, MTYPE_B, TN_value(replacement_tn));
+	    }
 	    if (EBO_Trace_Data_Flow) {
 		#pragma mips_frequency_hint NEVER
 	      fprintf(TFile,"%sPropagate Replacement TN ",EBO_trace_pfx);

@@ -910,6 +910,13 @@ CGSPILL_Load_From_Memory (TN *tn, ST *mem_loc, OPS *ops, CGSPILL_CLIENT client,
 	 * so it matches what we want register to look like */
 	const_tn = Gen_Literal_TN ((INT32) WN_const_val(home), 4);
 	break;
+#ifdef TARG_ST
+	// FdF 20090827: The EBO may have created rematerialization for
+	// boolean registers
+      case OPC_BINTCONST:
+	const_tn = Gen_Literal_TN (WN_const_val(home), 1);
+	break;
+#endif
       default:
 	ErrMsg (EC_Unimplemented,
 		"CGSPILL_Restore: cannot handle WHIRL node");
