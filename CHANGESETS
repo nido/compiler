@@ -387,7 +387,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #74546: 1251116233      .
+	* [trunk] Fix for bug #74546: [Long Long] Sequence of make/shlnu could be optimized into a shlu.
 	Deliver fixes/codex-74546 rev #23632 with authorization branch #74987
 
 
@@ -517,7 +517,7 @@ osprey/lai/cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg
 
 Description:
 ------------
-	* [trunk] Fix for bug #73852: 1249982271      .
+	* [trunk] Fix for bug #73852: [WINDOWS] ipl.exe is missing.
 	Deliver fixes/codex-73852 rev #23510 with authorization branch #73966
 
 
@@ -753,7 +753,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #72758: 1248346746      .
+	* [trunk] Fix for bug #72758: [CISCO] STx70 toolset 3.3 static function issue.
 	Deliver fixes/codex-72758 rev #23321 with authorization branch #73019
 
 
@@ -1017,7 +1017,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #71342: 1246281095      .
+	* [trunk] Fix for bug #71342: [v4][IFC] Assertion failure in LRA while compiling diags10.
 	Deliver fixes/codex-71342 rev #23033 with authorization branch #71381
 
 
@@ -1036,7 +1036,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #71184: 1246541589      .
+	* [trunk] Fix for bug #71184: [GCM] Invalid speculation in OS21 timer example (st200, -O2).
 	Deliver fixes/codex-71184 rev #23028 with authorization branch #71190
 
 
@@ -1108,7 +1108,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #70573: 1246022064      .
+	* [trunk] Fix for bug #70573: [AppliConfig] - Better implementation of the option in the driver.
 	Deliver fixes/codex-70573 rev #22991 with authorization branch #71045
 
 
@@ -1148,7 +1148,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #70575: 1246022025      .
+	* [trunk] Fix for bug #70575: [AppliConfig] - No warning when no configuration is selected.
 	Deliver fixes/codex-70575 rev #22964 with authorization branch #71017
 
 
@@ -1167,7 +1167,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #70572: 1245742606      .
+	* [trunk] Fix for bug #70572:  [AppliConfig] - Command line not dumped in .s file.
 	Deliver fixes/codex-70572 rev #22959 with authorization branch #70967
 
 
@@ -1255,7 +1255,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #70883: [dev-xp70-longlong] ebo generates wrong code on unsigned long long right shift      .
+	* [trunk] Fix for bug #70883: [dev-xp70-longlong] ebo generates wrong code on unsigned long long right shift.
 	Deliver fixes/codex-70883 rev #22886 with authorization branch #70919
 
 
@@ -1275,7 +1275,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #70574: [AppliConfig] - Illegal options are not rejected      .
+	* [trunk] Fix for bug #70574: [AppliConfig] - Illegal options are not rejected.
 	Deliver fixes/codex-70574 rev #22880 with authorization branch #70789
 
 
@@ -1350,7 +1350,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #69006: 1245072177      .
+	* [trunk] Fix for bug #69006: ifconversion incorrect transformation.
 	Deliver fixes/codex-69006 rev #22775 with authorization branch #69517
 
 
@@ -1373,7 +1373,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #70571: 1245671219      .
+	* [trunk] Fix for bug #70571: [AppliConfig] - Add support for C++ like comments.
 	Deliver fixes/codex-70571 rev #22769 with authorization branch #70788
 
 
@@ -1425,7 +1425,7 @@ osprey/lai/range_prop.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/la
 
 Description:
 ------------
-	* [trunk] Fix for bug #69917: 1244722799      .
+	* [trunk] Fix for bug #69917: [P2012][VECx][HQR] User should be warned early for misaligned spill code generation.
 	Deliver fixes/codex-69917 rev #22745 with authorization branch #69918
 
 
@@ -1478,7 +1478,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #70516: 1245167543      .
+	* [trunk] Fix for bug #70516: [IT] Make use of LoopENA in IT handler rather than SFR move/BSET sequence.
 	Deliver fixes/codex-70516 rev #22702 with authorization branch #70614
 
 
@@ -1516,7 +1516,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #70781: 1245327520      .
+	* [trunk] Fix for bug #70781: [AppliConfig] - Issue on Solaris compilation.
 	Deliver fixes/codex-70781 rev #22675 with authorization branch #70782
 
 
@@ -1535,7 +1535,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #70522: 1245137803      .
+	* [trunk] Fix for bug #70522: [IT] In IT, instructions which enables HW Loop should not be generated if -Mconfig=hwloop:no.
 	Deliver fixes/codex-70522 rev #22662 with authorization branch #70537
 
 
@@ -1554,7 +1554,7 @@ Modified Files:
 
 Description:
 ------------
-        * [trunk] Fix for bug #70607: 1245229204      .
+        * [trunk] Fix for bug #70607: Barrier does not behave like a barrier.
 	Deliver fixes/codex-70607 rev #22656 with authorization branch #70656
 
 
@@ -1575,7 +1575,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #70604: 1245160099      .
+	* [trunk] Fix for bug #70604: Assertion failure in HBS on register class 8 when using Loopena.
 	Deliver fixes/codex-70604 rev #22635 with authorization branch #70619
 
 
@@ -1691,7 +1691,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #69726      .
+	* [trunk] Fix for bug #69726 [DEV_RECONF_V4] assert on v4 extension load/store code generation.
 	Deliver fixes/codex-69726 rev #22584 with authorization branch #69727
 
 
@@ -1836,7 +1836,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #58284: 1242302119      .
+	* [trunk] Fix for bug #58284: Illegal operand access, access must be aligned on ...
 	Deliver fixes/codex-58284 rev #22270 with authorization branch #67650
 
 
@@ -1855,7 +1855,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #58284: 1242302119      .
+	* [trunk] Fix for bug #58284: Illegal operand access, access must be aligned on ...
 	Deliver fixes/codex-58284 rev #22263 with authorization branch #67650
 
 
@@ -1977,7 +1977,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #66364: 1241008974      .
+	* [trunk] Fix for bug #66364: Wrong generated code with ifconversion activated.
 	Deliver fixes/codex-66364 rev #22150 with authorization branch #66399
 
 
@@ -2264,7 +2264,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #66621: 1240996137      .
+	* [trunk] Fix for bug #66621: [stxp70v4][IFC] - H264 failure
 	Deliver fixes/codex-66621 rev #21953 with authorization branch #67014
 
 
@@ -2303,7 +2303,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #66334: 1240408090      .
+	* [trunk] Fix for bug #66334: compiler asserts with illegal register <G7> for register subclass <gr_false>
 	Deliver fixes/codex-66334 rev #21923 with authorization branch #66390
 
 
@@ -2465,7 +2465,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #66217: 1240408212      .
+	* [trunk] Fix for bug #66217: H264 fails in ipa
 	Deliver fixes/codex-66217 rev #21863 with authorization branch #66260
 
 
@@ -2484,7 +2484,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #64943: 1240311206      .
+	* [trunk] Fix for bug #64943: Addressing mode for extensions @(Rn+offs<<scaling) is not supported by STxP70 v4 assembler
 	Deliver fixes/codex-64943 rev #21858 with authorization branch #64953
 
 
@@ -2590,7 +2590,7 @@ Modified Files:
 
 Description:
 ------------
-	* [trunk] Fix for bug #61489: 1239114108      .
+	* [trunk] Fix for bug #61489: Assertion raised and segfault while compiling small source file -W32 and STxP70v4 only
 	Deliver fixes/codex-61489 rev #21798 with authorization branch #61772
 
 
