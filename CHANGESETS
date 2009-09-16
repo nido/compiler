@@ -1,6 +1,36 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Sep 16 08:29:35 CEST 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-75811
+
+Description:
+------------
+	* [trunk] Fix for bug #75811: [EXT-V4] 2048 bits registers seems to break some compiler internal limit.
+	Deliver fixes/codex-75811 rev #23881 with authorization branch #75848
+
+	Main changes:
+	============
+	- Updated compiler to support data types and registers types of 2048 bits wide.
+	- Compared to trunk, the sizeof(TN) has been reduced from 24 to 20 bytes by swapping two fields.
+
+Modified Files:
+---------------
+	M      osprey/lai/tn.h
+	M      osprey/lai/tnutil.cxx
+	M      osprey/gccfe/gnu/machmode.h
+	M      osprey/gccfe/gnu/rtl.c
+	M      osprey/gccfe/wfe_loader.cxx
+	M      osprey/common/com/dyn_dll_api.h
+	M      osprey/common/com/loader.cxx
+	M      osprey/common/com/dyn_dll_api_access.cxx
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Sep 10 17:24:33 CEST 2009
 	Author:    giraudoa
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

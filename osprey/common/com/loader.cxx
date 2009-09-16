@@ -276,7 +276,7 @@ static int EXTENSION_Get_ExtensionRank_From_ExtensionId(INT32 extid) {
 
 static void Add_Mtype(machine_mode_t mmode, const char *name, 
 		      enum mode_class mclass, unsigned short mbitsize, 
-		      unsigned char msize, unsigned char munitsize,
+		      unsigned short msize, unsigned short munitsize,
                       /* [vcdv] add pixel_size info to mtype */
                       unsigned char pixel_size,
 		      unsigned char mwidermode, machine_mode_t innermode, 

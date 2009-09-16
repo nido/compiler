@@ -384,9 +384,9 @@ Gen_Register_TN (
 #ifdef TARG_ST
     // [Reconfigurability] Removed initial useless limitation
     // NOTE: size is given in bytes. In reconfigurability context, we may have
-    // registers upto 512 bits, thus 64 bytes. Following assertion this is here
-    // to check that size does not exceed sizeof(mUINT8)
-    if ( size >= 256) ErrMsg ( EC_TN_Size, size );
+    // registers upto 2048 bits, thus 256 bytes. Following assertion this is here
+    // to check that size does not exceed sizeof(mUINT16)
+    if ( size >= 65536) ErrMsg ( EC_TN_Size, size );
 #else
     if ( size > 16 ) ErrMsg ( EC_TN_Size, size );
 #endif

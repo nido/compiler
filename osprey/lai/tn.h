@@ -259,9 +259,16 @@ struct tn {
   } u1;
   /* offset 8 */
   mUINT16	flags;		/* Attribute flags */
+#ifdef TARG_ST
+  /* <size> and <relocs> have been permuted in order
+   * to reduce memory consumption of the structure */
+  mUINT16	size;		/* Size of the TN in bytes */
+  ISA_RELOC	relocs;		/* Relocation flags (for symbol TNs) */
+#else
   ISA_RELOC	relocs;		/* Relocation flags (for symbol TNs) */
   mUINT8	size;		/* Size of the TN in bytes (must be <= 16) */
-  /* offset 12 */
+#endif
+  /* offset 16 for ST version */
   union {
     LABEL_IDX	label;		/* Label constant */
     ISA_ENUM_CLASS_VALUE ecv;	/* Enum constant */

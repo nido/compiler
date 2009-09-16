@@ -378,7 +378,7 @@ tree dynamic_tree_unsigned_type[MAX_LIMIT_MACHINE_MODE - STATIC_COUNT_MACHINE_MO
  */
 static void Add_New_Machine_Type(machine_mode_t mmode, const char *name, 
 				 enum mode_class mclass, unsigned short mbitsize, 
-				 unsigned char msize, unsigned char munitsize,
+				 unsigned short msize, unsigned short munitsize,
 				 unsigned char mwidermode, machine_mode_t innermode, 
 				 TYPE_ID mtype) 
 {

@@ -115,12 +115,22 @@ extern  enum mode_class mode_class[MAX_LIMIT_MACHINE_MODE];
 
 /* Get the size in bytes of an object of mode MODE.  */
 
+#ifdef TARG_ST
+// [TTh] Support types wider than 255 bytes
+extern  unsigned short mode_size[MAX_LIMIT_MACHINE_MODE];
+#else
 extern  unsigned char mode_size[MAX_LIMIT_MACHINE_MODE];
+#endif
 #define GET_MODE_SIZE(MODE)		(mode_size[(int) (MODE)])
 
 /* Get the size in bytes of the basic parts of an object of mode MODE.  */
 
+#ifdef TARG_ST
+// [TTh] Support types wider than 255 bytes
+extern  unsigned short mode_unit_size[MAX_LIMIT_MACHINE_MODE];
+#else
 extern  unsigned char mode_unit_size[MAX_LIMIT_MACHINE_MODE];
+#endif
 #define GET_MODE_UNIT_SIZE(MODE)	(mode_unit_size[(int) (MODE)])
 
 /* Get the number of units in the object.  */

@@ -105,7 +105,7 @@ const unsigned short mode_bitsize[NUM_MACHINE_MODES] = {
 #ifdef TARG_ST
 /* TB: readonly array becomes writable to support dynamic machine
    mode */
-unsigned char mode_size[MAX_LIMIT_MACHINE_MODE] = {
+unsigned short mode_size[MAX_LIMIT_MACHINE_MODE] = {
 #else
 const unsigned char mode_size[NUM_MACHINE_MODES] = {
 #endif
@@ -122,7 +122,7 @@ const unsigned char mode_size[NUM_MACHINE_MODES] = {
 #ifdef TARG_ST
 /* TB: readonly array becomes writable to support dynamic machine
    mode */
-unsigned char mode_unit_size[MAX_LIMIT_MACHINE_MODE] = {
+unsigned short mode_unit_size[MAX_LIMIT_MACHINE_MODE] = {
 #else
 const unsigned char mode_unit_size[NUM_MACHINE_MODES] = {
 #endif
