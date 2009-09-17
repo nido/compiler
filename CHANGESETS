@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep 17 14:14:42 CEST 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76584
+
+Description:
+------------
+	* [trunk] Fix for bug #76584: Enhance scheduling model for fpx div,sqrt,.. instructions.
+	Deliver fixes/codex-76584 rev #23935 with authorization branch #76691
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@23929 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76584@23935 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@23929 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76584@23935" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx?p2=branches/fixes/codex-76584/osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx&r1=23929&r2=23935&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/fixes/codex-76584/DEPENDENCIES&r1=23929&r2=23935&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Sep 16 08:29:35 CEST 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
