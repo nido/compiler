@@ -318,6 +318,62 @@ OP_Is_Expensive (OP *cur_op)
   return OP_Is_Long_Latency(OP_code(cur_op));
 }
 
+
+#ifdef TARG_ST
+// =======================================================================
+// Can_OP_Move_Across_Asm
+// Return True if asm statement does not interfer with current instruction
+// meaning we can move instruction before/after this ASM statement
+// =======================================================================
+static BOOL
+Can_OP_Move_Across_Asm(OP *cur_op, OP *asm_op,
+		       BOOL forw, BOOL Ignore_TN_Dep)
+{
+  REGISTER_SET *asm_clobbers = NULL;
+  if (! asm_op) return TRUE;
+  // Do not move anything across a volatile asm.
+  if (OP_volatile (asm_op)) return FALSE;
+  BB *asm_bb = OP_bb(asm_op);
+  Is_True (BB_asm(asm_bb), ("BB containing TOP_asm not marked BB_asm"));
+  ANNOTATION *ant = ANNOT_Get (BB_annotations(asm_bb), ANNOT_ASMINFO);
+  Is_True(ant, ("ASMINFO annotation info not present"));
+  ASMINFO *info = ANNOT_asminfo(ant);
+  ASM_OP_ANNOT *asm_op_info = (ASM_OP_ANNOT *)OP_MAP_Get(OP_Asm_Map, asm_op);
+  // Very pessimistic: do not move an OP across an Asm that
+  // clobbers memory.  We should at least allow movement of ops
+  // that do not access memory.
+  if (WN_Asm_Clobbers_Mem(ASM_OP_wn(asm_op_info))) return FALSE;
+  asm_clobbers = ASMINFO_kill(info);
+  INT i;
+  for (i = 0; i < OP_results(cur_op); i++) {
+    TN *result = OP_result(cur_op,i);
+    if (Ignore_TN_Dep) {
+      ISA_REGISTER_CLASS rclass = TN_register_class (result);
+      if (REGISTER_SET_IntersectsP(TN_registers (result),
+				   asm_clobbers[rclass]))
+	return FALSE;
+    } else {
+      if (TN_is_dedicated(result))
+	return FALSE;
+    }
+  }
+  for (i = 0; i < OP_opnds(cur_op); i++) {
+    TN *opnd_tn = OP_opnd(cur_op, i);
+    if (TN_is_constant(opnd_tn)) continue;
+    if (Ignore_TN_Dep) {
+      ISA_REGISTER_CLASS opnd_cl = TN_register_class (opnd_tn);
+      if (REGISTER_SET_IntersectsP(TN_registers (opnd_tn),
+				   asm_clobbers[opnd_cl]))
+	return FALSE;
+    } else {
+      if (TN_is_dedicated(opnd_tn))
+	return FALSE;
+    }
+  }
+  return TRUE;
+}
+#endif
+
 // =======================================================================
 // First_Inst_Of_BB
 // Return the first instruction of the basic block <bb>. Return NULL if
@@ -873,6 +929,13 @@ Eager_Ptr_Deref_Spec(OP *deref_op, BB *dest_bb, BOOL forw)
       valid_addrs_found = FALSE;
       break;
     }
+#ifdef TARG_ST
+    if (OP_code(cur_op) == TOP_asm &&
+	!Can_OP_Move_Across_Asm(deref_op, cur_op, forw, Ignore_TN_Dep)) {
+      valid_addrs_found = FALSE;
+      break;
+    }
+#endif
   }
 
   // If there exits a valid address, return TRUE.
@@ -1556,6 +1619,22 @@ Find_Limit_OP(OP *cur_op, BB *cur_bb, BB *src_bb, BB *tgt_bb)
   return limit_op;
 }
 
+#ifdef TARG_ST
+static BOOL
+gtn_set_contains_dedicated_tn (GTN_SET *gtn_set,
+			       ISA_REGISTER_CLASS cl,
+			       const REGISTER_SET &regs)
+{
+  REGISTER r;
+  FOR_ALL_REGISTER_SET_members(regs, r) {
+    if (GTN_SET_MemberP(gtn_set,
+			Build_Dedicated_TN(cl, r, 0)))
+      return TRUE;
+  }
+  return FALSE;
+}
+#endif
+
 // ======================================================================
 // Can_OP_Move
 // returns TRUE if <op> can be moved thru all blocks between <src_bb> and
@@ -1735,7 +1814,6 @@ Can_OP_Move(OP *cur_op, BB *src_bb, BB *tgt_bb, BB_SET **pred_bbs,
 	       ISA_REGISTER_CLASS result_cl = TN_register_class (result);
 	       REGISTER result_reg = TN_register (result);
 	       if (REG_LIVE_Into_BB (result_cl, result_reg, succ_bb) ||
-		   
 		   // #776729: Sometimes during circular-scheduling, we
 		   // insert new blocks. These blocks don't have their
 		   // REG_LIVE sets updated, because REG_LIVE can't cope
@@ -1814,6 +1892,23 @@ Can_OP_Move(OP *cur_op, BB *src_bb, BB *tgt_bb, BB_SET **pred_bbs,
 	   }
 	 }
        }
+
+#ifdef TARG_ST
+       if (Ignore_TN_Dep) {
+	 if (OP_code(op) == TOP_asm) {
+	   BB *asm_bb = OP_bb(op);
+	   ANNOTATION *ant = ANNOT_Get (BB_annotations(asm_bb), ANNOT_ASMINFO);
+	   Is_True(ant, ("ASMINFO annotation info not present"));
+	   ASMINFO *info = ANNOT_asminfo(ant);
+	   REGISTER_SET *asm_clobbers = ASMINFO_kill(info);
+	   ISA_REGISTER_CLASS cl;
+	   FOR_ALL_ISA_REGISTER_CLASS (cl) {
+	     mid_reg_defs[cl] = REGISTER_SET_Union(mid_reg_defs[cl],
+						   asm_clobbers[cl]);
+	   }
+	 }
+       }
+#endif
 
        // accumulate all the mid_uses
        for (i = 0; i < OP_opnds(op); ++i) {
@@ -2668,6 +2763,18 @@ OP_To_Move (BB *bb, BB *tgt_bb, BB_SET **pred_bbs, mINT32 motion_type, mUINT8 *s
   BOOL forw = motion_type & (GCM_EQUIV_FWD | GCM_SPEC_ABOVE | 
 			     GCM_DUP_ABOVE | GCM_CIRC_ABOVE);
   OP *call_op = BB_call(bb) ? BB_xfer_op(bb) : NULL;
+#ifdef TARG_ST
+  OP *asm_op = NULL;
+  if (forw && BB_asm(tgt_bb)) {
+    OP *op;
+    for (op = BB_last_op(tgt_bb); op; op = OP_prev(op)) {
+      if (OP_code(op) == TOP_asm) {
+	asm_op = op;
+	break;
+      }
+    }
+  }
+#endif
   for (cur_op = (forw) ? BB_first_op(bb) : BB_last_op(bb); cur_op; 
 		cur_op = (forw) ? OP_next(cur_op) : OP_prev(cur_op)) {
 
@@ -2786,6 +2893,9 @@ OP_To_Move (BB *bb, BB *tgt_bb, BB_SET **pred_bbs, mINT32 motion_type, mUINT8 *s
 	  // in the same bb.
 
 	  CG_DEP_Can_OP_Move_Across_Call(cur_op, call_op, forw, Ignore_TN_Dep) &&
+#ifdef TARG_ST
+	  Can_OP_Move_Across_Asm(cur_op, asm_op, forw, Ignore_TN_Dep) &&
+#endif
 
 	  // need to see if <cur_op> has any dependence conflicts between 
 	  // <bb> and <tgt_bb>
