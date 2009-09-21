@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Sep 21 16:32:29 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-71304
+
+Description:
+------------
+	* [trunk] Fix for bug #71304: [GCM] Invalid load speculation.
+	Deliver fixes/codex-71304 rev #23978 with authorization branch #76328
+
+
+Modified Files:
+---------------
+	M      osprey/lai/gcm.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@23975 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-71304@23978 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@23975 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-71304@23978" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/gcm.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/gcm.cxx?p2=branches/fixes/codex-71304/osprey/lai/gcm.cxx&r1=23975&r2=23978&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Sep 21 09:45:18 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

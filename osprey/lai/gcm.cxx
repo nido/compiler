@@ -1015,17 +1015,9 @@ Null_Ptr_Deref_Spec(OP *deref_op, BB *src, BB *dest)
 	    	 	if (!taken_path) return FALSE;
 	    	   }
 	    	   
-	    	   TN *base_tn = OP_Base(deref_op) ;
-	    	   TN *offset_tn = OP_Offset(deref_op);
-	    	   if (Ignore_TN_Dep) {
-	    	       REGISTER base_reg = TN_register(base_tn);
-	    	       if (base_reg == condition_reg && TN_value(offset_tn) >= 0)
-	    	    	   return TRUE;
-	    	   } else {
-	    	     if (TN_number(base_tn) == TN_number(condition_tn) && TN_value(offset_tn) >= 0)
-	    	       return TRUE;
-	    	   }
-	    	   return FALSE;
+	    	   // Otherwise we have no guarantee that condition we will not end up
+	    	   // with a null pointer
+	    	   return TRUE;
 	      }
 	  }
   }
