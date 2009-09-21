@@ -122,3 +122,6 @@ DECL_WFE_PRAGMA(WFE_PRAGMA_DISABLE_EXTGEN, "disable_extgen", 0, WN_PRAGMA_DISABL
 DECL_WFE_PRAGMA(WFE_PRAGMA_FORCE_SPECIFIC_EXTGEN, "force_specific_extgen", 0, WN_PRAGMA_FORCE_EXTGEN, 2, "(A*)", "pragma force_specific_extgen (extname,ident,...)")
 
 DECL_WFE_PRAGMA(WFE_PRAGMA_DISABLE_SPECIFIC_EXTGEN, "disable_specific_extgen", 0, WN_PRAGMA_DISABLE_EXTGEN, 2, "(A*)", "pragma disable_specific_extgen (extname,ident,...)")
+
+DECL_WFE_PRAGMA(WFE_PRAGMA_FORCE_EXTENSION_OPTION, "force_extension_option", 0, WN_PRAGMA_FORCE_EXTENSION_OPTION, 3, "(A*)", "pragma extension_option (extname,optionname,ident,...)")
+DECL_WFE_PRAGMA(WFE_PRAGMA_DISABLE_EXTENSION_OPTION, "disable_extension_option", 0, WN_PRAGMA_DISABLE_EXTENSION_OPTION, 3, "(A*)", "pragma extension_option (extname,optionname,ident,...)")

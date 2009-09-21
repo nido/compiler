@@ -372,6 +372,10 @@ typedef enum {
   WN_PRAGMA_HWLOOP,		/* hwloop pragmas. Scope: loop. */
   WN_PRAGMA_FORCE_EXTGEN,	/* Force extension code generation. Scope: function. */
   WN_PRAGMA_DISABLE_EXTGEN,	/* Disable extension code generation. Scope: function. */
+  WN_PRAGMA_FORCE_EXTENSION_OPTION,   /* Force an extension-specific
+                                         option. Scope: function. */
+  WN_PRAGMA_DISABLE_EXTENSION_OPTION,   /* Force an extension-specific
+                                         option. Scope: function. */
 #endif
 
   MAX_WN_PRAGMA			/* last one in enum			*/

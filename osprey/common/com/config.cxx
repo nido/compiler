@@ -473,6 +473,9 @@ BOOL Enable_Extension_Native_Support_Set = FALSE;
 char *Disabled_Native_Extensions = NULL;
 BOOL Disabled_Native_Extensions_Set = FALSE;
 
+char *Ext_Options = NULL;
+BOOL Ext_Options_Set = FALSE;
+
 // extra options enabling to activate/block the
 // Enable_Extension_Native_Support mask bit per bit.
 INT32 Activate_Extension_Native_Support_Bits = 0;
@@ -742,6 +745,10 @@ static OPTION_DESC Options_TENV[] = {
     &Enable_Extension_Native_Support_Set,
     "Enable support of automatic codegen for compatible extension" },
 
+  /* Internal option that enables deactivate/activate part of
+     extension native support for debug/work-around purpose.
+     This option cannot be used on a per-extension basis.
+   */
   { OVK_INT32,   OV_INTERNAL,    FALSE, "activate_extension_native_support_bits",
     NULL, 0, 0, 0xff, &Activate_Extension_Native_Support_Bits,
     &Activate_Extension_Native_Support_Bits_Set,
@@ -768,6 +775,10 @@ static OPTION_DESC Options_TENV[] = {
   { OVK_NAME,   OV_INTERNAL,    FALSE, "application_configuration_select", NULL,
     0, 0, 0,    &active_appli_config_file_name, NULL,
     "Active application configuration selection" },
+  { OVK_NAME,   OV_INTERNAL,    FALSE, "ext_options", NULL,
+    0, 0, 0,    &Ext_Options, &Ext_Options_Set,
+    "List of extension specific options" },
+
 #endif
 
   { OVK_COUNT }		/* List terminator -- must be last */

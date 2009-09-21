@@ -360,7 +360,8 @@ main (int argc, char *argv[])
     */
    {
        const char option_basename[] = "-TENV:disabled_native_extensions=";
-       char newoption[1024] = "";
+       char *newoption;
+       int newoption_len=strlen(option_basename)+1;
        extern int MnoextgenSeen;
        extern string MnoextgenTab[];
        extern int MnoextgenTabSize;
@@ -369,37 +370,118 @@ main (int argc, char *argv[])
        int i, j;
 
        if (MnoextgenSeen) {
-	   if (MnoextgenTabSize==0) {
-	       // No extension name was provided to -Mnoextgen, meaning that
-	       // native codegen support must be fully disabled
-	       strcpy(newoption, option_basename);
-	   }
-	   else {
-	       // For each extension name specified to -Mnoextgen, check if it
-	       // was also specified to -Mextension and if so, add it to 
-	       // internal compiler option
-	       for (i=0; i<MnoextgenTabSize; i++) {
-		   for (j=0; j<ExtensionNameTabSize; j++) {
-		       if (strcmp(MnoextgenTab[i], ExtensionNameTab[j])==0) {
-			   if (newoption[0] == 0) {
-			       strcpy(newoption, option_basename);
-			   } else {
-			       strcat(newoption, ",");
-			   }
-			   strcat(newoption, MnoextgenTab[i]);
-			   break;
-		       }
-		   }
-		   if (j==ExtensionNameTabSize) {
-		       warning("Unknown extension '%s' specified to option -Mnoextgen. Ignored.", MnoextgenTab[i]);
-		   }
-	       }
-	   }
-	   if (newoption[0] != 0) {
-	       char *newargv[] = { newoption };
-	       i = 0;
-	       treat_one_arg(&i, newargv);
-	   }
+         if (MnoextgenTabSize==0) {
+             // No extension name was provided to -Mnoextgen, meaning that
+             // native codegen support must be fully disabled
+             newoption = (char*)malloc(newoption_len);
+             strcpy(newoption, option_basename);
+         }
+         else {
+           // For each extension name specified to -Mnoextgen, check if it
+           // was also specified to -Mextension and if so, add it to 
+           // internal compiler option
+           // percompute buffer size
+           for (i=0; i<MnoextgenTabSize; i++) {
+             newoption_len+=strlen(MnoextgenTab[i])+1;
+           }
+           newoption = (char*)malloc(newoption_len);
+           
+           for (i=0; i<MnoextgenTabSize; i++) {
+             for (j=0; j<ExtensionNameTabSize; j++) {
+               if (strcmp(MnoextgenTab[i], ExtensionNameTab[j])==0) {
+                 if (newoption[0] == 0) {
+                   strcpy(newoption, option_basename);
+                 } else {
+                   strcat(newoption, ",");
+                 }
+                 strcat(newoption, MnoextgenTab[i]);
+                 break;
+               }
+             }
+             if (j==ExtensionNameTabSize) {
+               warning("Unknown extension '%s' specified to option -Mnoextgen. Ignored.", MnoextgenTab[i]);
+             }
+           }
+         }
+         if (newoption[0] != 0) {
+           char *newargv[] = { newoption };
+           i = 0;
+           treat_one_arg(&i, newargv);
+         }
+       }
+   }
+
+   /*
+    * Final handling of -Mnoextgen option: check that specified extensions (if any)
+    * are known and pass the internal option to the command line
+    */
+   {
+     typedef struct { string ext; string opt; } extopt;
+     const char option_basename[] = "-TENV:ext_options=";
+     // 50 takes into account length of build_option_flags() string below.
+     int newoption_len=strlen(option_basename)+50+2;
+     char *newoption = "";
+     extern extopt Mextoption[];
+     extern int MextoptionTabSize;
+     extern string ExtensionNameTab[];
+     extern int ExtensionNameTabSize;
+     int i, j;
+
+     if (MextoptionTabSize>0) {
+       // For each extension name specified to -Mnoextgen, check if it
+       // was also specified to -Mextension and if so, add it to 
+       // internal compiler option
+
+       // precomputes buffer size
+       for (i=0; i<MextoptionTabSize; i++) {
+         newoption_len+=strlen(Mextoption[i].ext)+strlen(Mextoption[i].opt)+2;
+       }
+       newoption = (char*)malloc(newoption_len);
+       
+       for (i=0; i<MextoptionTabSize; i++) {
+         for (j=0; j<ExtensionNameTabSize; j++) {
+           if (strcmp(Mextoption[i].ext, ExtensionNameTab[j])==0) {
+             if (newoption[0] == 0) {
+               strcpy(newoption, option_basename);
+             } else {
+               strcat(newoption, ",");
+             }
+             strcat(newoption, Mextoption[i].ext);
+             strcat(newoption, "#");
+               strcat(newoption, Mextoption[i].opt);
+               
+               break;
+           }
+         }
+         if (j==ExtensionNameTabSize) {
+           warning("Unknown extension '%s' specified to option -Mextop. Ignored.", Mextoption[i].ext);
+         }
+       }
+     }
+
+#ifdef TARG_STxP70
+     {
+       extern long long build_option_flags();
+       long long flags = build_option_flags();
+       
+       if (flags!=0) {
+         if (newoption[0] == 0) {
+           newoption=(char*)malloc(newoption_len);
+           strcpy(newoption, option_basename);
+         } else {
+           strcat(newoption, ",");
+         }
+         char buf[50];
+         sprintf(buf, "%lld", flags);
+         strcat(newoption, buf);
+       }
+     }
+#endif
+   
+       if (newoption[0] != 0) {
+         char *newargv[] = { newoption };
+         i = 0;
+         treat_one_arg(&i, newargv);
        }
    }
 

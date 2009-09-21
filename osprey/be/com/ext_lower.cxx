@@ -409,13 +409,15 @@ init_extension_pattern_rec(void) {
     if (rules != NULL) {
       for(it = rules->begin(); it != rules->end(); ++it) {
         recog_rule* rule = *it;
-        if (rule->intrn != INTRINSIC_INVALID &&
-            EXTENSION_Is_ExtGen_Enabled_For_Intrinsic(rule->intrn) &&
-            (!Is_Rule_Flag_Set(rule, RULE_FLAG_FRAC) ||
-             ext_lower_get_local_ext_gen_mask() & EXTENSION_NATIVE_EXTENDED_CODEGEN)) {
-          Clear_Rule_Flag(rule, RULE_FLAG_DISABLED);
-        } else {
-          Set_Rule_Flag(rule, RULE_FLAG_DISABLED);
+
+        if (rule->intrn == INTRINSIC_INVALID) {
+          continue;
+        }
+        Clear_Rule_Flag(rule, EXTOPT_disabled);
+        if (!(EXTENSION_Is_ExtGen_Enabled_For_Intrinsic(rule->intrn,
+                                                        rule->flags))) {
+          // disable rule
+          Set_Rule_Flag(rule, EXTOPT_disabled);
         }
       }
     }
@@ -463,7 +465,7 @@ extension_pattern_rec(WN *tree, INT *nboperands,  WN *kids[],
     for(it = rules->begin(); it != rules->end(); ++it) {
       recog_rule* rule = *it;
 
-      if (!Is_Rule_Flag_Set(rule, RULE_FLAG_DISABLED))
+      if (!Is_Rule_Flag_Set(rule, EXTOPT_disabled))
         {
           detected = detect_pattern(tree, rule->pattern);
           if (detected != NULL)  {
@@ -1231,7 +1233,7 @@ Find_Best_Intrinsic(INTRINSIC_Vector_t* itrn_indexes) {
     if (new_itrnidx == OPCODE_MAPPED_ON_CORE) {
       /* operator mapped on core */
       return INTRINSIC_INVALID;
-    } else if (! EXTENSION_Is_ExtGen_Enabled_For_Intrinsic(new_itrnidx)) {
+    } else if (! EXTENSION_Is_ExtGen_Enabled_For_Intrinsic(new_itrnidx, EXTENSION_Get_INTRINSIC_Flags(new_itrnidx))) {
       continue;
     } else if (! EXTENSION_Is_Meta_INTRINSIC(new_itrnidx)) {
       /* for non meta intrinsic, cost is set to 0 */
@@ -1562,12 +1564,6 @@ EXT_lower_wn(WN *tree, BOOL last_pass)
 
   local_last_pass = last_pass;
   local_ext_gen_mask = Enable_Extension_Native_Support;
-  if (Activate_Extension_Native_Support_Bits_Set) {
-    local_ext_gen_mask |= Activate_Extension_Native_Support_Bits;
-  }
-  if (Block_Extension_Native_Support_Bits_Set) {
-    local_ext_gen_mask &= ~Block_Extension_Native_Support_Bits;
-  }
 
   if (! local_ext_gen_mask) {
     // native support deactivated.

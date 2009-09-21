@@ -57,8 +57,11 @@ extern unsigned int   dyn_get_builtins_count        (void);
 extern machine_mode_t dyn_get_builtins_base_count   (void);
 extern INTRINSIC      dyn_get_intrinsics_base_count (void);
 
-extern const unsigned int dyn_get_recrules_count ( void );
+extern unsigned int dyn_get_recrules_count ( void );
 extern recog_rule** dyn_get_recrules ( void );
+
+extern unsigned int dyn_get_extoption_count ( void );
+extern const char** dyn_get_extoption_array ( void );
 
 #ifdef __cplusplus
 } /* extern "C" */

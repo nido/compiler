@@ -1,6 +1,84 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Sep 21 09:45:18 CEST 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-extension-option
+
+Description:
+------------
+	*  dev extension option generic support
+
+
+Modified Files:
+---------------
+	M       osprey/be/com/ext_lower.cxx
+	M       osprey/targinfo_ext/stxp70_ext/vx/config/vx_builtins.c
+	M       osprey/driver/OPTIONS
+	M       osprey/driver/main.c
+	M       osprey/driver/stxp70_options.i
+	M       osprey/gccfe/wfe_pragmas.def
+	M       osprey/gccfe/wfe_pragmas.cxx
+	M       osprey/common/com/wn_pragmas.h
+	M       osprey/common/com/lai_loader.cxx
+	M       osprey/common/com/dyn_dll_api.h
+	M       osprey/common/com/config.cxx
+	M       osprey/common/com/loader.cxx
+	M       osprey/common/com/dyn_dll_api_access.h
+	M       osprey/common/com/config.h
+	M       osprey/common/com/dyn_dll_api_access.cxx
+	M       osprey/common/com/ext_info.h
+	M       osprey/common/com/lai_loader_api.h
+	M       osprey/common/com/extension_pattern_rec.h
+	M       osprey/targinfo/stxp70/config/config_TARG.cxx
+	M       osprey/targinfo/stxp70/config/config_TARG.h
+	M       osprey/targinfo/stxp70/be/extension_compatibility.inc
+	M       osprey/targinfo/generate/dyn/dyn_type_api.c
+	M       osprey/targinfo/generate/dyn/dyn_type_api.h
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@23963 --new=https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-extension-option@23973 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@23963 https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-extension-option@23973" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/com/ext_lower.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/ext_lower.cxx?p2=branches/cv17/dev-extension-option/osprey/be/com/ext_lower.cxx&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/targinfo_ext/stxp70_ext/vx/config/vx_builtins.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo_ext/stxp70_ext/vx/config/vx_builtins.c?p2=branches/cv17/dev-extension-option/osprey/targinfo_ext/stxp70_ext/vx/config/vx_builtins.c&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/driver/OPTIONS	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/OPTIONS?p2=branches/cv17/dev-extension-option/osprey/driver/OPTIONS&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/driver/main.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/main.c?p2=branches/cv17/dev-extension-option/osprey/driver/main.c&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/driver/stxp70_options.i	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/stxp70_options.i?p2=branches/cv17/dev-extension-option/osprey/driver/stxp70_options.i&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_pragmas.def	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_pragmas.def?p2=branches/cv17/dev-extension-option/osprey/gccfe/wfe_pragmas.def&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_pragmas.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_pragmas.cxx?p2=branches/cv17/dev-extension-option/osprey/gccfe/wfe_pragmas.cxx&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/common/com/wn_pragmas.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/wn_pragmas.h?p2=branches/cv17/dev-extension-option/osprey/common/com/wn_pragmas.h&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/common/com/lai_loader.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/lai_loader.cxx?p2=branches/cv17/dev-extension-option/osprey/common/com/lai_loader.cxx&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/common/com/dyn_dll_api.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/dyn_dll_api.h?p2=branches/cv17/dev-extension-option/osprey/common/com/dyn_dll_api.h&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/common/com/config.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config.cxx?p2=branches/cv17/dev-extension-option/osprey/common/com/config.cxx&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/common/com/loader.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/loader.cxx?p2=branches/cv17/dev-extension-option/osprey/common/com/loader.cxx&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/common/com/dyn_dll_api_access.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/dyn_dll_api_access.h?p2=branches/cv17/dev-extension-option/osprey/common/com/dyn_dll_api_access.h&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/common/com/config.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config.h?p2=branches/cv17/dev-extension-option/osprey/common/com/config.h&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/common/com/dyn_dll_api_access.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/dyn_dll_api_access.cxx?p2=branches/cv17/dev-extension-option/osprey/common/com/dyn_dll_api_access.cxx&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/common/com/ext_info.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/ext_info.h?p2=branches/cv17/dev-extension-option/osprey/common/com/ext_info.h&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/common/com/lai_loader_api.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/lai_loader_api.h?p2=branches/cv17/dev-extension-option/osprey/common/com/lai_loader_api.h&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/common/com/extension_pattern_rec.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/extension_pattern_rec.h?p2=branches/cv17/dev-extension-option/osprey/common/com/extension_pattern_rec.h&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_TARG.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_TARG.cxx?p2=branches/cv17/dev-extension-option/osprey/targinfo/stxp70/config/config_TARG.cxx&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_TARG.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_TARG.h?p2=branches/cv17/dev-extension-option/osprey/targinfo/stxp70/config/config_TARG.h&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/be/extension_compatibility.inc	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/be/extension_compatibility.inc?p2=branches/cv17/dev-extension-option/osprey/targinfo/stxp70/be/extension_compatibility.inc&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/dyn/dyn_type_api.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/dyn/dyn_type_api.c?p2=branches/cv17/dev-extension-option/osprey/targinfo/generate/dyn/dyn_type_api.c&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/dyn/dyn_type_api.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/dyn/dyn_type_api.h?p2=branches/cv17/dev-extension-option/osprey/targinfo/generate/dyn/dyn_type_api.h&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/cv17/dev-extension-option/DEPENDENCIES&r1=23963&r2=23973&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Sep 18 10:02:19 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

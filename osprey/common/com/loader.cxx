@@ -28,11 +28,12 @@
 
   http: 
 */
-/*
+	/*
  * API used by both Front-end and Back-end to load extension dlls
  * and initialize common structures (mtypes, intrinsics)
  */
 
+#include <string>
 
 #include "extension_include.h"
 #include "extension_intrinsic.h"
@@ -226,9 +227,10 @@ typedef struct {
   BOOL default_extgen_enabled;  // default status
   BOOL extgen_enabled;          // status for current PU
   BOOL equiv_type_enabled;      // status for current PU
+  INT64 default_extoption_flags;    // option flags for extension
+  INT64 extoption_flags;    // option flags for extension
 } Extension_Extra_Info_t;
 static Extension_Extra_Info_t *extension_extra_info_tab = NULL;
-
 
 /*
  * Return TRUE if extension with name <extname> is known by the compiler.
@@ -732,9 +734,11 @@ bool Load_Extension_dlls( bool verbose ) {
     base_builtins   += nb_ext_intrinsics;
     base_intrinsics += nb_ext_intrinsics;
 
-    extension_extra_info_tab[i].default_extgen_enabled = TRUE;
-    extension_extra_info_tab[i].extgen_enabled         = TRUE;
-    extension_extra_info_tab[i].equiv_type_enabled     = TRUE;
+    extension_extra_info_tab[i].default_extgen_enabled  = TRUE;
+    extension_extra_info_tab[i].extgen_enabled          = TRUE;
+    extension_extra_info_tab[i].equiv_type_enabled      = TRUE;
+    extension_extra_info_tab[i].extoption_flags         = 0;
+    extension_extra_info_tab[i].default_extoption_flags = 0;
   }
   return true;
 }
@@ -754,39 +758,73 @@ void Initialize_Extension_Loader_PU(WN *pu) {
   for (ext=0; ext < extension_count; ext++) {
     extension_extra_info_tab[ext].extgen_enabled = extension_extra_info_tab[ext].default_extgen_enabled;
     extension_extra_info_tab[ext].equiv_type_enabled = extension_extra_info_tab[ext].default_extgen_enabled;
+    extension_extra_info_tab[ext].extoption_flags = extension_extra_info_tab[ext].default_extoption_flags;
   }
   if (WN_operator(pu) == OPR_FUNC_ENTRY && WN_func_pragmas(pu)) {
     WN *wn;
     for (wn = WN_first(WN_func_pragmas(pu)); wn; wn = WN_next(wn)) {
       if ((WN_opcode(wn) == OPC_PRAGMA) || (WN_opcode(wn) == OPC_XPRAGMA)) {
 
-	WN_PRAGMA_ID pid = (WN_PRAGMA_ID)WN_pragma(wn);
-	if (pid == WN_PRAGMA_DISABLE_EXTGEN || pid == WN_PRAGMA_FORCE_EXTGEN) {
-	  BOOL enable = (pid == WN_PRAGMA_FORCE_EXTGEN)?TRUE:FALSE;
+        WN_PRAGMA_ID pid = (WN_PRAGMA_ID)WN_pragma(wn);
+        if (pid == WN_PRAGMA_DISABLE_EXTGEN || pid == WN_PRAGMA_FORCE_EXTGEN) {
+          BOOL enable = (pid == WN_PRAGMA_FORCE_EXTGEN)?TRUE:FALSE;
 
-	  if (WN_pragma_arg1(wn) != 0) {
-	    // Extension codegen disabled for a single extension
-	    INT32 extid = WN_pragma_arg1(wn);
-	    int extrank = EXTENSION_Get_ExtensionRank_From_ExtensionId(extid);
-	    if (extrank == INVALID_EXTENSION_RANK) {
-	      DevWarn("WARNING: unknown extension id '%d' specified in pragma", extid);
-	    }
-	    else {
-	      extension_extra_info_tab[extrank].extgen_enabled = enable;
-	      extension_extra_info_tab[extrank].equiv_type_enabled = enable;
-	    }
-	  }
-	  else {
-	    for (ext=0; ext<extension_count; ext++) {
-	      extension_extra_info_tab[ext].extgen_enabled = enable;
-	      extension_extra_info_tab[ext].equiv_type_enabled = enable;
-	    }
-	  }
-	}
+          if (WN_pragma_arg1(wn) != 0) {
+            // Extension codegen disabled for a single extension
+            INT32 extid = WN_pragma_arg1(wn);
+            int extrank = EXTENSION_Get_ExtensionRank_From_ExtensionId(extid);
+            if (extrank == INVALID_EXTENSION_RANK) {
+              DevWarn("WARNING: unknown extension id '%d' specified in pragma", extid);
+            }
+            else {
+              extension_extra_info_tab[extrank].extgen_enabled = enable;
+              extension_extra_info_tab[extrank].equiv_type_enabled = enable;
+            }
+          }
+          else {
+            for (ext=0; ext<extension_count; ext++) {
+              extension_extra_info_tab[ext].extgen_enabled = enable;
+              extension_extra_info_tab[ext].equiv_type_enabled = enable;
+            }
+          }
+        } else if (pid == WN_PRAGMA_FORCE_EXTENSION_OPTION ||
+                   pid == WN_PRAGMA_DISABLE_EXTENSION_OPTION) {
+          
+          if (WN_pragma_arg1(wn) == 0) {
+            DevWarn("WARNING: unknown no extension id specified in pragma extension_option");
+          } else {
+            // Extension codegen disabled for a single extension
+            INT32 extid = WN_pragma_arg1(wn);
+            int extrank = EXTENSION_Get_ExtensionRank_From_ExtensionId(extid);
+            if (extrank == INVALID_EXTENSION_RANK) {
+              DevWarn("WARNING: unknown extension id '%d' specified in pragma", extid);
+            } else {
+              if (pid == WN_PRAGMA_FORCE_EXTENSION_OPTION) {
+                extension_extra_info_tab[extrank].extoption_flags|=WN_pragma_arg2(wn);
+              } else { // pid == WN_PRAGMA_DISABLE_EXTENSION_OPTION
+                extension_extra_info_tab[extrank].extoption_flags&=~WN_pragma_arg2(wn);
+              }
+            }
+          }
+        }
       }
     }
   }
 }
+
+static std::map<std::string, long long> optflags_map;
+
+long long
+EXTENSION_Get_ExtOption_Flag_By_Name(int extid, const char* optionname) {
+  if (strcmp(optionname, "noextlibs")==0) {
+    return EXTOPT_noextlibs;
+  }
+  int extrank = EXTENSION_Get_ExtensionRank_From_ExtensionId(extid);
+
+  long long flag = extension_tab[extrank].hooks->get_extoption_flag_by_name(optionname);
+  return flag;
+}
+
 
 /*
  * Extension specific Initialization
@@ -820,9 +858,52 @@ void Initialize_Extension_Support() {
       }
     }
   }
+
+  if ( Ext_Options_Set ) {
+    if (Ext_Options && Ext_Options[0]!=0) {
+      char *extoptions_list =
+        TYPE_MEM_POOL_ALLOC_N(char, Malloc_Mem_Pool, strlen(Ext_Options)+1);
+      
+      strcpy(extoptions_list, Ext_Options);
+      char *optname = strtok(extoptions_list, ",");
+      do {
+        // optname contains something like MP1x#fractsupport
+        char* ext = optname;
+        char* tmp = strstr(ext,"#");
+        if (tmp==NULL) {
+          int i;
+          long long mask;
+          sscanf(optname, "%lld", &mask);
+          for (i=0; i<extension_count; i++) {
+            extension_extra_info_tab[i].default_extoption_flags|= mask;
+          }
+        } else {
+          *tmp=0;
+          char* name= tmp+1;
+          
+          INT32 extid = EXTENSION_Get_ExtensionId_From_ExtensionName(ext);
+          FmtAssert((extid!=INVALID_EXTENSION_ID),
+                    ("Cannot compute extension id from extension name '%s'",
+                     ext));
+          int rank = EXTENSION_Get_ExtensionRank_From_ExtensionId(extid);
+          
+          int flag = EXTENSION_Get_ExtOption_Flag_By_Name(extid, name);
+          extension_extra_info_tab[rank].default_extoption_flags|= flag;
+        }
+
+        optname= strtok(NULL, ",");
+      } while (optname);
+
+    } else {
+      DevWarn("WARNING: No extension specified. option '%s' ignored\n",
+              Ext_Options);
+    }
+  }
+
 }
 
 #if defined(BACK_END) || defined(IR_TOOLS)
+
 /*
  * Main function responsible for loading the extension library and
  * initializing dynamic mtypes and intrinsics
@@ -835,7 +916,6 @@ Initialize_Extension_Loader ()
   int nb_ext_intrinsics;
 
   CGTARG_InitializeMetaInstructionMap();
-  
 
   for (i=0; i<=MTYPE_MAX_LIMIT; i++) {
     equiv_type_tab[i].ctype          = MTYPE_UNKNOWN;
@@ -1012,7 +1092,7 @@ machine_mode_t Mtype_To_MachineMode(TYPE_ID mtype) {
  * Return the rank of the extension that contains mtype <ty>.
  * Return INVALID_EXTENSION_RANK if not found.
  */
-static int EXTENSION_Get_ExtensionRank_From_Mtype(TYPE_ID ty) {
+int EXTENSION_Get_ExtensionRank_From_Mtype(TYPE_ID ty) {
   if (MTYPE_is_dynamic(ty)) {
     int ext=0;
     while (ext < extension_count-1 && ty >= extension_tab[ext+1].base_mtypes) {
@@ -1027,7 +1107,7 @@ static int EXTENSION_Get_ExtensionRank_From_Mtype(TYPE_ID ty) {
  * Return the rank of the extension that contains intrinsic <intrn>.
  * Return INVALID_EXTENSION_RANK if not found.
  */
-static int EXTENSION_Get_ExtensionRank_From_Intrinsic(INTRINSIC intrn) {
+int EXTENSION_Get_ExtensionRank_From_Intrinsic(INTRINSIC intrn) {
   int ext=0;
   if (EXTENSION_Is_Extension_INTRINSIC(intrn)) {
     while (ext < extension_count-1 && intrn >= extension_tab[ext+1].base_intrinsics) {
@@ -1061,8 +1141,15 @@ BOOL EXTENSION_Is_ExtGen_Enabled(INT32 extid) {
 /*
  * Return TRUE if native codegen is enabled for the extension that defines intrinsic <intrn>
  */
-BOOL EXTENSION_Is_ExtGen_Enabled_For_Intrinsic(INTRINSIC intrn) {
-  return (extension_extra_info_tab[EXTENSION_Get_ExtensionRank_From_Intrinsic(intrn)].extgen_enabled);
+BOOL EXTENSION_Is_ExtGen_Enabled_For_Intrinsic(INTRINSIC intrn,
+                                               long long flags) {
+
+  INT32 extrank = EXTENSION_Get_ExtensionRank_From_Intrinsic(intrn);
+  /* Get current extension flags mask */
+  INT64 extflags = extension_extra_info_tab[extrank].extoption_flags;
+  
+  return (extension_extra_info_tab[extrank].extgen_enabled &
+          ((flags&extflags)==flags));
 }
 
 /*

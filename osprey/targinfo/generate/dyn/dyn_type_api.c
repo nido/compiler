@@ -79,9 +79,17 @@ static const extension_hooks_t static_interface = {
   /* Return base offset for extension intrinsics */
   dyn_get_intrinsics_base_count,
 
+  /* Return Patterns Recognition Rules array */
   dyn_get_recrules,
 
-  dyn_get_recrules_count
+  /* Return number of rules */
+  dyn_get_recrules_count,
+
+  /* Return extension options array */
+  dyn_get_extoption_array,
+
+  /* Return extension options count */
+  dyn_get_extoption_count
 
 };
 

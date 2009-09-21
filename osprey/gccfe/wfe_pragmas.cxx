@@ -67,6 +67,7 @@ extern "C" {
 #include "ext_info.h"
 #endif
 
+
 // #define WFE_DEBUG
 
 //
@@ -670,6 +671,32 @@ void WFE_Expand_Pragma(tree stmt)
     return;
     break;
 
+
+  case WFE_PRAGMA_FORCE_EXTENSION_OPTION:
+  case WFE_PRAGMA_DISABLE_EXTENSION_OPTION:
+    {
+      const char *extname = IDENTIFIER_POINTER(TREE_VALUE(pragma_args));
+      if (!EXTENSION_Is_Defined(extname)) {
+	warning ("#pragma %s specifies an undefined extension %s. Ignore it.", pragma_name, extname);
+	return;
+      }
+      args[0] = EXTENSION_Get_ExtensionId_From_ExtensionName(extname);
+      pragma_args = TREE_CHAIN(pragma_args);
+      const char *optionname = IDENTIFIER_POINTER(TREE_VALUE(pragma_args));
+      
+      args[1]=EXTENSION_Get_ExtOption_Flag_By_Name(args[0], optionname);
+
+      pragma_args = TREE_CHAIN(pragma_args);
+      for(tree arg = pragma_args; arg; arg = TREE_CHAIN(arg)) {
+        const char *name = IDENTIFIER_POINTER(TREE_VALUE(arg));
+        pwn = WN_CreatePragma(wfe_pragma_wn_id(wfe_pragma),
+                              arg_st != NULL ? ST_st_idx(arg_st): (ST_IDX) NULL,
+                              args[0], args[1]);
+        Associate_Pragma_To_Function_Name(pwn, xstrdup(name));
+      }
+      return;
+      break;
+    }
   default:
     DevWarn ("unsupported Pragma");
     return;
