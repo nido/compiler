@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep 22 15:24:16 CEST 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72177
+
+Description:
+------------
+	* [trunk] Fix for bug #72177: [IPA] ipa link error on WIn32 (st200, srecord c++).
+	Deliver fixes/codex-72177 rev #23997 with authorization branch #73498
+
+
+Modified Files:
+---------------
+	M      osprey/libSYS/mmap.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@23989 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72177@23997 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@23989 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72177@23997" 
+
+Diff links to modified files:
+-----------------------------
+osprey/libSYS/mmap.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/libSYS/mmap.c?p2=branches/fixes/codex-72177/osprey/libSYS/mmap.c&r1=23989&r2=23997&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Sep 21 16:32:29 CEST 2009
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
