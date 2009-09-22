@@ -51,6 +51,10 @@ extern void add_ar_objects (string arg);
 
 /* add library to list */
 extern void add_library_dir (string path);
+#ifdef TARG_STxP70
+/* [OAG] paths to libraries compiled with an extension */
+extern void add_extension_library_dir (string path);
+#endif
 
 /* append objects to end of list */
 extern void append_objects_to_list (string_list_t *list);

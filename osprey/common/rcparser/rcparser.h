@@ -19,6 +19,7 @@ typedef struct {
    char * Defines;
    char * Includes;
    char * HelpMsg;
+   char * XLibs;
 } RCparser_ExtensionInfoT;
 
 typedef enum {
@@ -27,7 +28,7 @@ typedef enum {
 } RCparser_rctypeT;
 
 extern void RCparser_Init ( RCparser_rctypeT rctype );
-extern void RCparser_CreatePatch ( char *lib_path, char *incpath, 
+extern void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *xlib_path,
                                    char *ext_name, char *ext_long_name, 
                                    int remove, int Multiplier, 
                                    int CompilerDll, char * ext_arch, char * ext_hwtype );

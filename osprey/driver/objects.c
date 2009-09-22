@@ -67,6 +67,10 @@ string_list_t *lib_objects;
 static string_list_t *cxx_prelinker_objects;
 static string_list_t *ar_objects; 
 static string_list_t *library_dirs;
+#ifdef TARG_STxP70
+/* [OAG] paths to libraries compiled with an extension */
+static string_list_t *extension_library_dirs;
+#endif
 #ifdef TARG_ST
 /* [CG]: See comment above. */
 string_list_t *script_files;
@@ -90,6 +94,10 @@ init_objects (void)
  	cxx_prelinker_objects = init_string_list();
  	ar_objects = init_string_list();
 	library_dirs = init_string_list();
+#ifdef TARG_STxP70
+	/* [OAG] paths to libraries compiled with an extension */
+	extension_library_dirs = init_string_list();
+#endif
 #ifdef TARG_ST
 	/* [CG]: See comment above. */
  	script_files = init_string_list();
@@ -252,32 +260,45 @@ append_libraries_to_list (string_list_t *list)
 #ifdef TARG_STxP70
 #ifndef COSY_LIB /* [HC] Newlib tree support. Keep former code for CoSy lib support */
         string lib_path;
+        string lib_suffix;
+        string lib_suffix_found;
         extern int STxP70mult;
         string_item_t *p;
 
-        for (p = library_dirs->head; p != NULL; p = p->next) {
-		add_string(list, concat_strings("-L", p->name));
+        lib_suffix = string_copy("");
+        if (lib_short_double == TRUE) {
+          lib_suffix = concat_strings(lib_suffix,"/spieee754");
         }
+        if (fpx == TRUE) {
+          lib_suffix = concat_strings(lib_suffix,"/fpx");
+        } else if (STxP70mult == TRUE) {
+          lib_suffix = concat_strings(lib_suffix,"/mult");
+        } else {
+          lib_suffix = concat_strings(lib_suffix,"/nomult");
+        }
+        if (lib_kind == LIB_STXP70_16) {
+          lib_suffix = concat_strings(lib_suffix,"/reg16");
+        } else {
+          lib_suffix = concat_strings(lib_suffix,"/reg32");
+        }
+
+        for (p = extension_library_dirs->head; p != NULL; p = p->next) {
+          lib_path = string_copy(p->name);
+          lib_suffix_found = strstr( p->name, lib_suffix );
+          if ( ( lib_suffix_found == NULL ) || ( strcmp( lib_suffix_found, lib_suffix ) != 0 ) ) {
+            lib_path = concat_strings(lib_path,lib_suffix);
+            // DEBUG // lib_path = concat_strings(lib_path,"/extension_library_dirs");
+            add_string(list, lib_path);
+          }
+        }
+
         /*
          * get_phase_dir(P_library) is not in library_dirs because
          * library_dirs is also used as the search path for the crt file
          */
 	lib_path = string_copy(get_phase_dir(P_library));
-	if (lib_short_double == TRUE) {
-	  lib_path = concat_strings(lib_path,"/spieee754");
-	}
-	if (fpx == TRUE) {
-	  lib_path = concat_strings(lib_path,"/fpx");
-	} else if (STxP70mult == TRUE) {
-	  lib_path = concat_strings(lib_path,"/mult");
-	} else {
-	  lib_path = concat_strings(lib_path,"/nomult");
-	}
-	if (lib_kind == LIB_STXP70_16) {
-	  lib_path = concat_strings(lib_path,"/reg16");
-        } else {
-	  lib_path = concat_strings(lib_path,"/reg32");
-	}
+	lib_path = concat_strings(lib_path,lib_suffix);
+	// DEBUG // lib_path = concat_strings(lib_path,"/P_library");
         if (!option_was_seen(O_L)) {
                 add_string(list,
                            concat_strings("-L", lib_path));
@@ -285,7 +306,7 @@ append_libraries_to_list (string_list_t *list)
 	/* Add path for link scripts */
         add_string(list,
                    concat_strings("-L", concat_strings(get_phase_dir(P_library),"/ldscript")));
-#else
+#else // COSY_LIB is defined
         string_item_t *p;
         for (p = library_dirs->head; p != NULL; p = p->next) {
 		add_string(list, concat_strings("-L", p->name));
@@ -299,7 +320,7 @@ append_libraries_to_list (string_list_t *list)
                            concat_strings("-L", get_phase_dir(P_library)));
         }
 #endif
-#else
+#else // TARG_STxP70 is not defined
         string_item_t *p;
         for (p = library_dirs->head; p != NULL; p = p->next) {
 		add_string(list, concat_strings("-L", p->name));
@@ -349,6 +370,15 @@ add_library_dir (string path)
 {
 	add_string(library_dirs, path);
 }
+
+#ifdef TARG_STxP70
+/* [OAG] paths to libraries compiled with an extension */
+extern void
+add_extension_library_dir (string path)
+{
+	add_string(extension_library_dirs, path);
+}
+#endif
 
 extern void
 add_library_options (void)

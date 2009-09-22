@@ -908,6 +908,7 @@ static void Getextinfo_open64 ( char * buffer, RCparser_ExtensionInfoT * extinfo
    GET_EXTINFO(buffer,"O64TARG",extinfo->CmpTargOpt)
    GET_EXTINFO(buffer,"DEFINES",extinfo->Defines)
    GET_EXTINFO(buffer,"INCLUDES",extinfo->Includes)
+   GET_EXTINFO(buffer,"XLIBS",extinfo->XLibs)
    GET_EXTINFO(buffer,"HELP",extinfo->HelpMsg)
 }
 #undef GET_EXTINFO
@@ -970,7 +971,7 @@ void RCparser_Init ( RCparser_rctypeT rctype ) {
   patch.rctype = rctype;
 }
 
-void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name, 
+void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *xlib_path, char *ext_name, 
                              char *ext_long_name, int remove, int Multiplier, int CompilerDll,
 			     char *ext_arch, char * ext_hwtype ) {
   static char *body_with_default_port_format_open64_stxp70v3 = 
@@ -988,6 +989,7 @@ void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name,
     "              EXTLIBNAME=%sext\n"
     "              DEFINES=-D__%s -D__%s__ -D__%s -D__%s__\n"
     "              INCLUDES=%s\n"
+    "              XLIBS=%s\n"
     "              HELP=Activate %s - STxP70 v3 architecture\n"
     "           ";
   static char *body_with_default_port_format_open64_multiplier_stxp70v3 = 
@@ -1005,6 +1007,7 @@ void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name,
     "              EXTLIBNAME=%sext\n"
     "              DEFINES=-D__%s -D__%s__ -D__%s -D__%s__\n"
     "              INCLUDES=%s\n"
+    "              XLIBS=%s\n"
     "              HELP=Activate %s - STxP70 v3 architecture\n"
     "              O64TARG=-TARG:enable_mx=on\n"
     "           ";
@@ -1017,6 +1020,7 @@ void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name,
     "              EXTLIBNAME=%sext\n"
     "              DEFINES=-D__%s -D__%s__ -D__%s -D__%s__\n"
     "              INCLUDES=%s\n"
+    "              XLIBS=%s\n"
     "              HELP=Activate %s - STxP70 v4 architecture - %s extension\n"
     "           ";
   static char *body_with_default_port_format_open64_multiplier_stxp70v4 = 
@@ -1028,6 +1032,7 @@ void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name,
     "              EXTLIBNAME=%sext\n"
     "              DEFINES=-D__%s -D__%s__ -D__%s -D__%s__\n"
     "              INCLUDES=%s\n"
+    "              XLIBS=%s\n"
     "              HELP=Activate %s - STxP70 v4 architecture - %s extension\n"
     "              O64TARG=-TARG:enable_mx=on\n"
     "           ";
@@ -1035,6 +1040,7 @@ void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name,
   char *ext_exthwtype=NULL;
   char *body_with_default_port_format = NULL;
   char *inc_path1;
+  char *xlib_path1;
   int   body_size;
   int   Architecture;
   char *exthwtype_helpstr = "???";
@@ -1045,7 +1051,29 @@ void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name,
   if (CompilerDll != 1) {
   	utilsPrintInternalError(RCPARSER_INTERNAL_ERROR_NO_COMPILER_NO_MORE_SUPPORTED);
   }
-  
+
+  body_size=(strlen(inc_path)*2+strlen(ext_name)+8);
+  inc_path1=(char*) getmem_curarea(body_size);
+  if (inc_path1 == NULL) {
+    utilsPrintInternalError(RCPARSER_INTERNAL_ERROR_NOT_ENOUGH_MEMORY);
+  }
+  if (strlen(inc_path)) {
+    snprintf(inc_path1,body_size,"-I%s -I%s/%s",inc_path,inc_path,ext_name);
+  } else {
+    inc_path1[0]=0;
+  }
+
+  body_size=(strlen(xlib_path)*2+strlen(ext_name)+8);
+  xlib_path1=(char*) getmem_curarea(body_size);
+  if (xlib_path1 == NULL) {
+    utilsPrintInternalError(RCPARSER_INTERNAL_ERROR_NOT_ENOUGH_MEMORY);
+  }
+  if (strlen(xlib_path)) {
+    snprintf(xlib_path1,body_size,"-L%s/%s",xlib_path,ext_name);
+  } else {
+    xlib_path1[0]=0;
+  }
+
   if ((ext_arch==NULL) || (strcmp(ext_arch,"stxp70v3")==0)) {
      ext_architecture = "stxp70v3";
      ext_exthwtype = "novliw";
@@ -1060,7 +1088,8 @@ void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name,
                  strlen(ext_long_name) +                 /* long name size used one time */
                  9 * strlen(ext_name) +                  /* ext name size used 9 times */
                  5 * strlen(lib_path) +                  /* shared object path used 5 times */
-                 strlen(inc_path) + 2 +                  /* include path + -I */
+                 strlen(inc_path1) +                     /* include path */
+                 strlen(xlib_path1) +                    /* extension libraries include path */
                  1;                                      /* ending null char */
      Architecture = 3;
   } else {
@@ -1086,7 +1115,8 @@ void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name,
                  strlen(ext_long_name) +                 /* long name size used one time */
                  6 * strlen(ext_name) +                  /* ext name size used 6 times */
                  2 * strlen(lib_path) +                  /* shared object path used 2 times */
-                 strlen(inc_path) + 2 +                  /* include path + -I */
+                 strlen(inc_path1) +                     /* include path */
+                 strlen(xlib_path1) +                    /* extension libraries path */
                  strlen(exthwtype_helpstr) +             /* extension HW type */
                  1;                                      /* ending null char */
      Architecture = 4;
@@ -1100,16 +1130,6 @@ void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name,
   strcpy(patch.block_to_patch[0].header_start,ext_name);
   patch.block_to_patch[0].architecture = strdup(ext_architecture);
   patch.block_to_patch[0].exthwtype = strdup(ext_exthwtype);
-
-  inc_path1=(char*) getmem_curarea(strlen(inc_path)+5);
-  if (inc_path1 == NULL) {
-    utilsPrintInternalError(RCPARSER_INTERNAL_ERROR_NOT_ENOUGH_MEMORY);
-  }
-  if (strlen(inc_path)) {
-    sprintf(inc_path1,"-I%s",inc_path);
-  } else {
-    inc_path1[0]=0;
-  }
 
   patch.block_to_patch[0].body_start = getmem_curarea(body_size);
   if (patch.block_to_patch[0].body_start == NULL) {
@@ -1130,6 +1150,7 @@ void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name,
 	    ext_name,
 	    ext_name,
 	    inc_path1,
+	    xlib_path1,
   	    ext_long_name);
   } else {
     sprintf(patch.block_to_patch[0].body_start,
@@ -1143,6 +1164,7 @@ void RCparser_CreatePatch ( char *lib_path, char *inc_path, char *ext_name,
 	    ext_name,
 	    ext_name,
 	    inc_path1,
+	    xlib_path1,
   	    ext_long_name,exthwtype_helpstr);
   }
   
@@ -1235,5 +1257,6 @@ void RCparser_printextinfo ( RCparser_ExtensionInfoT * extinfo ) {
    PRINT_EXTINFO(stdout,"   EXTLIBNAME   ",extinfo->ToolsetLibName);
    PRINT_EXTINFO(stdout,"   DEFINES      ",extinfo->Defines);
    PRINT_EXTINFO(stdout,"   INCLUDES     ",extinfo->Includes);
+   PRINT_EXTINFO(stdout,"   XLIBS        ",extinfo->XLibs);
    PRINT_EXTINFO(stdout,"   HELP         ",extinfo->HelpMsg);
 }

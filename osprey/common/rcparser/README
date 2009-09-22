@@ -7,5 +7,5 @@ https://codex.cro.st.com/svnroot/stxp70cc repository on the components
 sxgenrc tool from STxP70-RTK uses the RC parser in order to update stxp70extrc
 add-on resource file of open64 driver.
 
-Content of this directory is currently up-to-date with 
-stxp70-binutils/branches/dev-giraudoa-V4 revision r3700.
+Content of this directory is currently up-to-date with:
+https://codex.cro.st.com/svnroot/stxp70cc/stxp70-binutils/branches/fixes/codex-75124 rev 4759
