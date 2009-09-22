@@ -341,13 +341,16 @@ EETARG_Fixup_Exit_Code (
   // we generate. In this case we must find the restore operation of FP
   // and generate a temporary copy.
   OP *op;
-  BOOL fp_used;
+  BOOL fp_used = false;
   FOR_ALL_OPS_OPs(&ops, op) {
     for (INT i = 0; i < OP_opnds(op); i++) {
       if (OP_opnd(op, i) == FP_TN) {
 	fp_used = true;
+	break ;
       }
     }
+    if (fp_used)
+      break ;
   }
   if (fp_used) {
     OP *def_op = NULL;

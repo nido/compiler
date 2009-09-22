@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep 22 15:33:25 CEST 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76146
+
+Description:
+------------
+	* [trunk] Fix for bug #76146: [CG] Uninitialized variable in targinfo/st200/cg/targ_entry_exit.cxx::EETARG_Fixup_Exit_Code.
+	Deliver fixes/codex-76146 rev #24001 with authorization branch #76182
+
+
+Modified Files:
+---------------
+	M      osprey/targinfo/st200/cg/targ_entry_exit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@23999 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76146@24001 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@23999 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76146@24001" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/st200/cg/targ_entry_exit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/cg/targ_entry_exit.cxx?p2=branches/fixes/codex-76146/osprey/targinfo/st200/cg/targ_entry_exit.cxx&r1=23999&r2=24001&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep 22 15:24:16 CEST 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
