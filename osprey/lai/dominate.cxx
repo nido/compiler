@@ -830,7 +830,7 @@ PU_Has_Dominator_Info(void)
 
 BOOL
 BB_Dominates(BB* bb1, BB* bb2) {
-    return ((BB_id(bb1) == BB_id(bb2)) || BB_SET_MemberP(BB_dom_set(bb1), bb2));
+    return ((BB_id(bb1) == BB_id(bb2)) || BB_SET_MemberP(BB_dom_set(bb2), bb1));
 }            
 
 BOOL

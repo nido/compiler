@@ -653,35 +653,54 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, BB *head, BB* true_bb, BB* fal
   int inv = -1;
 
   if (fcond_tn == (TN*)-1) {
+    TN *pred_tn = True_TN;
+    int p_i = -1;
     if (OP_has_predicate (opf)) {
-      int p_i = OP_find_opnd_use(opf, OU_predicate);
-      TN *pred_tn = OP_opnd(opf, p_i);
-
-      if (pred_tn == True_TN) {
-#ifdef EFFECT_PRED_FALSE
-        invert_fcond = true;
-        fcond_tn = test_tn;
-#else
-        fcond_tn = Dup_TN (test_tn);
-        Exp_Pred_Complement(fcond_tn, NULL, test_tn, cmov_ops);
-#endif
-      }
-      else {
-        fcond_tn = Generate_Merged_Predicates (pred_tn, test_tn, 
-                                               V_BR_NONE,
-                                               cmov_ops);
-        OP *mop = OPS_last(cmov_ops);
-        Set_OP_Pred_False(mop, 2);
-
-        if (OP_Pred_False (opf, p_i))
-          Set_OP_Pred_False(mop, 1);          
-
-      }
+      p_i = OP_find_opnd_use(opf, OU_predicate);
+      pred_tn = OP_opnd(opf, p_i);
     }
-    else if (OP_phi (opf)) {
+
+    if (pred_tn != True_TN) {
+      fcond_tn = Generate_Merged_Predicates (pred_tn, test_tn, 
+                                             V_BR_NONE,
+                                             cmov_ops);
+      OP *mop = OPS_last(cmov_ops);
+      Set_OP_Pred_False(mop, 2);
+
+      if (OP_Pred_False (opf, p_i))
+        Set_OP_Pred_False(mop, 1);          
+    }
+    else
       fcond_tn = True_TN;
+  }
+
+  if (cond_tn == (TN*)-1) {
+    TN *pred_tn = True_TN;
+    int p_i = -1;
+    if (OP_has_predicate (opt)) {
+      p_i = OP_find_opnd_use(opt, OU_predicate);
+      pred_tn = OP_opnd(opt, p_i);
     }
-    else {
+
+    if (pred_tn != True_TN) {
+      cond_tn = Generate_Merged_Predicates (pred_tn, test_tn, 
+                                            V_BR_NONE,
+                                            cmov_ops);
+      OP *mop = OPS_last(cmov_ops);
+
+      if (OP_Pred_False (opt, p_i))
+        Set_OP_Pred_False(mop, 1);
+    }
+    else
+      cond_tn = True_TN;
+  }
+
+  // FdF 20090904: Consider the case where both are True_TN, which
+  // means that none of opf and opt are already predicated. Just set
+  // predicate T on the op that dominates the other
+  
+  if ((cond_tn == True_TN) && (fcond_tn == True_TN)) {
+    if (OP_Dominates(opt, opf)) {
 #ifdef EFFECT_PRED_FALSE
       invert_fcond = true;
       fcond_tn = test_tn;
@@ -690,33 +709,10 @@ Create_PSI_or_Select (TN *target_tn, TN* test_tn, BB *head, BB* true_bb, BB* fal
       Exp_Pred_Complement(fcond_tn, NULL, test_tn, cmov_ops);
 #endif
     }
-  }
-
-  if (cond_tn == (TN*)-1) {
-    if (OP_has_predicate (opt)) {
-      int p_i = OP_find_opnd_use(opt, OU_predicate);
-      TN *pred_tn = OP_opnd(opt, p_i);
-
-      if (pred_tn == True_TN) {
-        cond_tn = test_tn;
-      }
-      else {
-        cond_tn = Generate_Merged_Predicates (pred_tn, test_tn, 
-                                               V_BR_NONE,
-                                               cmov_ops);
-        OP *mop = OPS_last(cmov_ops);
-
-        if (OP_Pred_False (opt, p_i))
-          Set_OP_Pred_False(mop, 1);
-        }
-    }
-    else if (OP_phi (opt)) {
-      cond_tn = True_TN;
-    }
     else {
       cond_tn = test_tn;
     }
-  }  
+  }
 
   // if each psi operand is true make sure the first one is defined before
   //  the second one
@@ -2285,8 +2281,8 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
 
             // find first use of cond_tn or pred_tn
             OP* opb = TN_ssa_def (pred_tn);
-            if (!BB_Dominates(OP_bb(opb), OP_bb(TN_ssa_def (cond_tn)))) {
-                opb = TN_ssa_def(cond_tn);
+            if (!BB_Dominates(OP_bb(TN_ssa_def(cond_tn)), OP_bb(opb))) {
+              opb = TN_ssa_def(cond_tn);
             }
             BB *bb = OP_bb (opb);
             OP *last_seen_op=NULL;
@@ -2371,8 +2367,8 @@ Associate_Mem_Predicates(TN *cond_tn, BOOL false_br,
 
             // find first use of cond_tn or pred_tn
             OP* opb = TN_ssa_def (pred_tn);
-            if (!BB_Dominates(OP_bb(opb), OP_bb (TN_ssa_def(cond_tn)))) {
-                    opb = TN_ssa_def(cond_tn);
+            if (!BB_Dominates(OP_bb(TN_ssa_def(cond_tn)), OP_bb(opb))) {
+              opb = TN_ssa_def(cond_tn);
             }            
             BB *bb = OP_bb (opb);
             OP *last_seen_op=NULL;
@@ -2753,7 +2749,7 @@ BB_Fix_Spec_Loads (BB *bb)
       TN *btn = PredOp_Map_Pred(i_iter).tn;
 
       CGTARG_Predicate_OP(bb, op, btn, PredOp_Map_Pred(i_iter).on_false);
-
+#if 0
       OP *psi;
       FOR_ALL_BB_OPs_FWD(bb, psi) {
         if (OP_psi (psi)) {
@@ -2766,6 +2762,7 @@ BB_Fix_Spec_Loads (BB *bb)
           }
         }
       }
+#endif
     }
 #endif
 

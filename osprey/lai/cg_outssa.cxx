@@ -1375,6 +1375,42 @@ insert_psi_operand_copy (
   return;
 }
 
+/* ================================================================
+ *   append_psi_operand_copy
+ * ================================================================
+ */
+static void
+append_psi_operand_copy (
+  OP   *psi_op,
+  INT8  opnd_idx,
+  OP *point)
+{
+  TN *tn = PSI_opnd(psi_op, opnd_idx);
+  bool on_false =  PSI_Pred_False(psi_op, opnd_idx);
+
+  TN *new_tn = Copy_TN(tn);
+
+  // replace old tn in the psi OP
+  Set_PSI_opnd(psi_op, opnd_idx, new_tn);
+
+  // Finally, append the copy op
+  OPS cmov_ops = OPS_EMPTY;
+  OP_Make_movc(PSI_guard(psi_op, opnd_idx), new_tn, tn, &cmov_ops, on_false);
+  if (point) {
+    // FdF 20050831: Be careful to insert after all PHI operations.
+    while (OP_next(point) && OP_phi(OP_next(point)))
+      point = OP_next(point);
+    // FdF 20061110: Be careful that the guard for opnd_idx may not be
+    // defined at the point of definition of opnd_idx.
+    BB_Insert_Ops_After(OP_bb(point), point, &cmov_ops);
+  }
+  else
+    BB_Insert_Ops_Before(OP_bb(psi_op), psi_op, &cmov_ops);
+  Set_OP_ssa_move(OPS_last(&cmov_ops));
+
+  return;
+}
+
 static void
 PSI_Live_Info_Init(OP *psi_op) {
 
@@ -1474,17 +1510,25 @@ Normalize_Psi_Operations()
 
 	if (tn_guardi != op_guardi) {
 	  // Insert the operation at the lowest point between def_opndi, def(tn_guardi) and def(opndi-1)
-	  OP *def_guardi = TN_ssa_def(tn_guardi);
-	  FmtAssert(def_guardi, ("Illegal PSI guard %d", opndi));
-	  OP *point = !OP_Dominates(def_opndi, def_guardi) ? def_opndi : def_guardi;
-	  if (opndi > 0) {
-	    OP *def_opndi_m1 = TN_ssa_def(PSI_opnd(op, opndi-1));
-	    if (OP_Dominates(point, def_opndi_m1))
-	      point = def_opndi_m1;
+	  if (tn_guardi != True_TN) {
+	    OP *def_guardi = TN_ssa_def(tn_guardi);
+	    FmtAssert(def_guardi, ("Illegal PSI guard %d", opndi));
+	    OP *point = !OP_Dominates(def_opndi, def_guardi) ? def_opndi : def_guardi;
+	    if (opndi > 0) {
+	      OP *def_opndi_m1 = TN_ssa_def(PSI_opnd(op, opndi-1));
+	      if (OP_Dominates(point, def_opndi_m1))
+		point = def_opndi_m1;
+	    }
+	    append_psi_operand_copy(op, opndi, point);
 	  }
-	  insert_psi_operand_copy(op, opndi, point);
+	  else {
+	    Set_PSI_guard(op, opndi, op_guardi);
+	    Set_PSI_Pred(op, opndi, OP_Pred_False(def_opndi, OP_find_opnd_use(def_opndi, OU_predicate)));
+	  }
 
 	  tn_opndi = PSI_opnd(op, opndi);
+	  tn_guardi = op_guardi;
+	  on_falsei = PSI_Pred_False(op, opndi);
 	  def_opndi = TN_ssa_def(tn_opndi);
         }
 

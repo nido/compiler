@@ -1,6 +1,45 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Sep 24 11:00:27 CEST 2009
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-75860
+
+Description:
+------------
+	* [trunk] Fix for bug #75860: Incorrect if-conversion after copy propagation.
+	Deliver fixes/codex-75860 rev #24047 with authorization branch #75863
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cg_outssa.cxx
+	M       osprey/lai/dominate.h
+	M       osprey/lai/cg_select.cxx
+	M       osprey/lai/dominate.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24045 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-75860@24047 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24045 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-75860@24047" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cg_outssa.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_outssa.cxx?p2=branches/fixes/codex-75860/osprey/lai/cg_outssa.cxx&r1=24045&r2=24047&roottype=svn&root=open64&diff_format=h
+osprey/lai/dominate.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/dominate.h?p2=branches/fixes/codex-75860/osprey/lai/dominate.h&r1=24045&r2=24047&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_select.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_select.cxx?p2=branches/fixes/codex-75860/osprey/lai/cg_select.cxx&r1=24045&r2=24047&roottype=svn&root=open64&diff_format=h
+osprey/lai/dominate.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/dominate.cxx?p2=branches/fixes/codex-75860/osprey/lai/dominate.cxx&r1=24045&r2=24047&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep 22 16:09:53 CEST 2009
 	Author:    giraudoa 
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

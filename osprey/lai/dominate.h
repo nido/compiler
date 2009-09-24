@@ -126,7 +126,9 @@ extern void BB_SET_Calculate_Dominators(BB_SET *bbset, BOOL compute_dom, BOOL co
 CG_EXPORTED extern void Free_Dominators_Memory(void);
 #ifdef TARG_ST
 CG_EXPORTED extern BOOL PU_Has_Dominator_Info(void);
+// Returns TRUE if bb1 dominates bb2, FALSE otherwise
 CG_EXPORTED extern BOOL BB_Dominates(BB* bb1, BB* bb2);
+// Returns TRUE if op1 dominates op2, FALSE otherwise
 CG_EXPORTED extern BOOL OP_Dominates(OP *op1, OP* op2);
 #endif
 #endif /* DOMINATE_INCLUDED */
