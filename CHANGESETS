@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Sep 25 16:00:54 CEST 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76528
+
+Description:
+------------
+	* [trunk] Fix for bug #76528: [RA] Range analysis assertion failure : alignement analysis (st200,-O3).
+	Deliver fixes/codex-76528 rev #24080 with authorization branch #76529
+
+
+Modified Files:
+---------------
+	M       osprey/lai/range_prop.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24065 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76528@24080 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24065 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76528@24080" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/range_prop.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/range_prop.cxx?p2=branches/fixes/codex-76528/osprey/lai/range_prop.cxx&r1=24065&r2=24080&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Sep 24 11:00:27 CEST 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
