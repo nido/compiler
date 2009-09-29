@@ -152,12 +152,18 @@ Get_Srcpos_From_Tree (tree node)
   SRCPOS s;
   SRCPOS_clear(s);
 
+  // [CL] We should not modify current_file here, but it is a side
+  // effect of WFE_Set_Line_And_File(), which we use to build the
+  // dir/file table. Keep a copy to restore it afterwards.
+  UINT current_file_cache = current_file;
+
   FmtAssert (node != NULL, 
 	     ("Get_Srcpos_From_Tree called with NULL node"));
 
   WFE_Set_Line_And_File (DECL_SOURCE_LINE(node), DECL_SOURCE_FILE(node));
   SRCPOS_filenum(s) = current_file;
   SRCPOS_linenum(s) = DECL_SOURCE_LINE(node);
+  current_file = current_file_cache;
   return s;
 }
 #endif

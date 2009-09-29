@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep 29 09:10:14 CEST 2009
+	Author:    
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-debug-line2
+
+Description:
+------------
+	* [trunk] Deliver lyon/dev-debug-line2 rev #24090 with authorization branch #76947
+	"Don't overwrite "current_file" global variable"
+
+
+Modified Files:
+---------------
+	M       osprey/gccfe/wfe_misc.h
+	M       osprey/g++fe/wfe_misc.h
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24082 --new=https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-debug-line2@24090 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24082 https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-debug-line2@24090" 
+
+Diff links to modified files:
+-----------------------------
+osprey/gccfe/wfe_misc.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_misc.h?p2=branches/lyon/dev-debug-line2/osprey/gccfe/wfe_misc.h&r1=24082&r2=24090&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_misc.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_misc.h?p2=branches/lyon/dev-debug-line2/osprey/g++fe/wfe_misc.h&r1=24082&r2=24090&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Sep 25 16:00:54 CEST 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
