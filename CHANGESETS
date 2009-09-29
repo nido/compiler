@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Sep 29 09:40:06 CEST 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-noextlibs
+
+Description:
+------------
+	*  handling of -Mextoption=noextlibs:EXT
+
+
+Modified Files:
+---------------
+	M       osprey/driver/stxp70_options.i
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24115 --new=https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-noextlibs@24118 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24115 https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-noextlibs@24118" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/stxp70_options.i	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/stxp70_options.i?p2=branches/cv17/dev-noextlibs/osprey/driver/stxp70_options.i&r1=24115&r2=24118&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep 29 09:10:14 CEST 2009
 	Author:    
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
