@@ -3113,7 +3113,7 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 --write-user-dependencies	;	ALL	NONE	"-MMD"
 	""
 #if defined(TARG_ST)
--mappli-config-decl%s  Process_Application_Config(optargs);  ALL be  ""
+-mappli-config-decl%s  Process_Application_Config(optargs);  ALL NONE  ""
     NA__"Process application configuration file"
 -mappli-config-active%s  { active_appli_config_file_name = optargs ; }  ALL NONE self "-TENV:application_configuration_select=%s"
     NA__"Select active configuration in the application configuration file"  

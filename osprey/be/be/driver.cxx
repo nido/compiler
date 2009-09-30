@@ -2290,7 +2290,10 @@ main (INT argc, char **argv)
 #ifdef Is_True_On
     Trace_Appli_Config_File = (getenv("TRACE_APPLI_CONFIG")!=NULL);
     Trace_Appli_Config_File_Detailed = (getenv("TRACE_APPLI_CONFIG_DETAILED")!=NULL);
-    if (Trace_Appli_Config_File_Detailed) dump_cfg();
+    if (Trace_Appli_Config_File_Detailed) {
+    	printf("=== BE driver Dump TRACE_APPLI_CONFIG ===\n");
+    	dump_cfg();
+    }
 #endif
     if(!active_configuration) appli_config_file_set=FALSE;
   }

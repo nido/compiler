@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Sep 30 10:58:46 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76880
+
+Description:
+------------
+	* [trunk] Fix for bug #76880: [AppliConfig] - Global option not properly passed in IPA.
+	Deliver fixes/codex-76880 rev #24149 with authorization branch #76881
+
+
+Modified Files:
+---------------
+	M       osprey/be/be/driver.cxx
+	M       osprey/driver/OPTIONS
+	M       osprey/driver/main.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24145 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76880@24149 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24145 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76880@24149" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/be/driver.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/be/driver.cxx?p2=branches/fixes/codex-76880/osprey/be/be/driver.cxx&r1=24145&r2=24149&roottype=svn&root=open64&diff_format=h
+osprey/driver/OPTIONS	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/OPTIONS?p2=branches/fixes/codex-76880/osprey/driver/OPTIONS&r1=24145&r2=24149&roottype=svn&root=open64&diff_format=h
+osprey/driver/main.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/main.c?p2=branches/fixes/codex-76880/osprey/driver/main.c&r1=24145&r2=24149&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Sep 29 09:40:06 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

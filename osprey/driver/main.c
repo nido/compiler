@@ -672,7 +672,10 @@ main (int argc, char *argv[])
 		appliconfig_parser(appli_config_file_name);
 		set_active_appli_config(active_appli_config_file_name);
 #ifdef Is_True_On
-	    if (Trace_Appli_Config_File_Detailed) dump_cfg();
+	    if (Trace_Appli_Config_File_Detailed) {
+	    	printf("=== Main driver Dump TRACE_APPLI_CONFIG ===\n");
+	    	dump_cfg();
+	    }
 #endif
 	    if(!active_configuration) {
 	    	warning("Configuration file specified without any active configuration defined\n application configuration file will be ignored.");
@@ -874,7 +877,7 @@ main (int argc, char *argv[])
             } else {
                 if (is_initial_state == FALSE) {
                     is_initial_state=TRUE;
-                    if (Trace_Appli_Config_File) printf("Restore option status\n", base_name);
+                    if (Trace_Appli_Config_File) printf("Restore option status\n");
                     restore_options_status(FALSE);
                 }
             }
