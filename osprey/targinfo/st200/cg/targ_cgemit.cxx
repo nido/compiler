@@ -262,18 +262,10 @@ CGEMIT_Prn_Line_Dir_In_Asm (
   USRCPOS usrcpos
 )
 {
-#ifdef TARG_ST200
   if (!List_Notes) return;
-#endif
 
-#ifndef TARG_ST200 /* CLYON: for ST200, comment .loc directives
-		     (unsupported by gas) */
-  if(!CG_emit_asm_dwarf) {
-#endif
-    fprintf (Asm_File, ASM_CMNT_LINE); //turn the rest into comment
-#ifndef TARG_ST200
-  }
-#endif
+  /* CLYON: for ST200, comment .loc directives (unsupported by gas) */
+  fprintf (Asm_File, ASM_CMNT_LINE); //turn the rest into comment
   fprintf (Asm_File, "\t.loc\t%d\t%d\t%d\n", 
 		USRCPOS_filenum(usrcpos)-1,
 		USRCPOS_linenum(usrcpos),
@@ -292,21 +284,20 @@ CGEMIT_Prn_File_Dir_In_Asm(
   const char *filename
 )
 {
-#ifdef TARG_ST200
   if (!List_Notes) return;
-#endif
 
   if(!CG_emit_asm_dwarf) {
     fprintf (Asm_File, ASM_CMNT_LINE); //turn the rest into comment
   }
-#ifndef TARG_ST200 /* CLYON gas supports .file "filename" only */
-  fprintf (Asm_File, "\t%s\t%d \"%s/%s\"\n", AS_FILE, 
-		USRCPOS_filenum(usrcpos)-1,
-		pathname,filename);
-#else
-  fprintf (Asm_File, "\t%s\t\"%s/%s\"\n", AS_FILE, 
-		pathname,filename);
-#endif
+
+  /* CLYON gas supports .file "filename" only */
+  if (pathname == NULL) {
+    fprintf (Asm_File, "\t%s\t\"%s\"\n", AS_FILE, 
+	     filename);
+  } else {
+    fprintf (Asm_File, "\t%s\t\"%s/%s\"\n", AS_FILE, 
+	     pathname,filename);
+  }
 }
 
 /* ====================================================================

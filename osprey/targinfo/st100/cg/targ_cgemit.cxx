@@ -227,9 +227,14 @@ CGEMIT_Prn_File_Dir_In_Asm(
   if(!CG_emit_asm_dwarf) {
     fprintf (Asm_File, "// "); //turn the rest into comment
   }
-  fprintf (Asm_File, "\t%s\t%d \"%s/%s\"\n", AS_FILE, 
-		USRCPOS_filenum(usrcpos)-1,
-		pathname,filename);
+  if (pathname == NULL) {
+    fprintf (Asm_File, "\t%s\t\"%s\"\n", AS_FILE, 
+	     filename);
+  } else {
+    fprintf (Asm_File, "\t%s\t%d \"%s/%s\"\n", AS_FILE, 
+	     USRCPOS_filenum(usrcpos)-1,
+	     pathname,filename);
+  }
 }
 
 /* ====================================================================

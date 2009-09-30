@@ -1,6 +1,45 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Sep 30 14:23:21 CEST 2009
+	Author:    
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-78082
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-78082 rev #24155 with authorization branch #78190
+	'Spurious "null" string in asm files'
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/arm/cg/targ_cgemit.cxx
+	M       osprey/targinfo/stxp70/cg/targ_cgemit.cxx
+	M       osprey/targinfo/st100/cg/targ_cgemit.cxx
+	M       osprey/targinfo/st200/cg/targ_cgemit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24151 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-78082@24155 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24151 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-78082@24155" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/arm/cg/targ_cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/cg/targ_cgemit.cxx?p2=branches/fixes/codex-78082/osprey/targinfo/arm/cg/targ_cgemit.cxx&r1=24151&r2=24155&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_cgemit.cxx?p2=branches/fixes/codex-78082/osprey/targinfo/stxp70/cg/targ_cgemit.cxx&r1=24151&r2=24155&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st100/cg/targ_cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st100/cg/targ_cgemit.cxx?p2=branches/fixes/codex-78082/osprey/targinfo/st100/cg/targ_cgemit.cxx&r1=24151&r2=24155&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/cg/targ_cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/cg/targ_cgemit.cxx?p2=branches/fixes/codex-78082/osprey/targinfo/st200/cg/targ_cgemit.cxx&r1=24151&r2=24155&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Sep 30 10:58:46 CEST 2009
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
