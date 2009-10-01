@@ -75,6 +75,10 @@ static int default_proc = UNDEFINED;
 int instrumentation_invoked = UNDEFINED;
 boolean ftz_crt = FALSE;
 
+#ifdef TARG_STxP70
+TYPE_GOT_MODEL got_model_opt = got_none;
+#endif
+
 #ifdef TARG_ST
  extern int ExtensionSeen;
 int c_std;
@@ -1177,6 +1181,21 @@ Check_Target ( void )
 	warning(" automatic memory placement in ipa mode overrides command-line options -Msda/-Mda\n");
       }
     }
+  }
+
+  /* [VL] Handles PIC code and GOT models: if -fpic is set, we propagate */
+  /* the got model option, or got_large if none is specified. If -fPIC   */
+  /* option is set, then we force got_large model                        */
+  /* If neither -fpic nor -fPIC is set, got model option has no effect   */
+
+  if (option_was_seen(O_fpic)) {
+    if (got_model_opt!=got_none) {
+      add_stxp70_int_option("-TARG:got_model=%d", got_model_opt, P_be);
+    } else {
+      add_stxp70_int_option("-TARG:got_model=%d", got_large, P_be);
+    }
+  } else if (option_was_seen(O_fPIC)) {
+      add_stxp70_int_option("-TARG:got_model=%d", got_large, P_be);
   }
 
   connect_extensions();

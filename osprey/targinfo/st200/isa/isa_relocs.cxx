@@ -81,200 +81,200 @@ main()
   ISA_VIRTUAL_RELOC_TYPE R_ST200_16  =
                    ISA_Create_Reloc(1,"R_ST200_16", "",
  		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 1, bf_0_16, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_NO_RLLIB, 1, bf_0_16, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_32  =
                    ISA_Create_Reloc(2,"R_ST200_32", "",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 2, bf_0_32, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_NO_RLLIB, 2, bf_0_32, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_32_PCREL  = 
                    ISA_Create_Reloc(3,"R_ST200_32_PCREL","",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a_pc, 3, bf_0_32, BITFIELD_END);
+		   rel_s_a_pc, ISA_RELOC_NO_RLLIB, 3, bf_0_32, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_23_PCREL  =
                    ISA_Create_Reloc(4,"R_ST200_23_PCREL","",
 		   ISA_RELOC_OVERFLOW_SIGNED, ISA_RELOC_UNDERFLOW, 2,
-		   rel_s_a_pc, 4, bf_0_23, BITFIELD_END);
+		   rel_s_a_pc, ISA_RELOC_RLLIB_DYNPLT, 4, bf_0_23, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_HI23  =
                    ISA_Create_Reloc(5,"R_ST200_HI23","",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 9,
-		   rel_s_a, 5, bf_0_23, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_NO_RLLIB, 5, bf_0_23, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_LO9  =
                    ISA_Create_Reloc(6,"R_ST200_LO9","",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 6, bf_12_9, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_NO_RLLIB, 6, bf_12_9, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_GPREL_HI23  =
                    ISA_Create_Reloc(7,"R_ST200_GPREL_HI23","@gprel",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 9,
-		   rel_s_a_gp, 7, bf_0_23, BITFIELD_END);
+		   rel_s_a_gp, ISA_RELOC_RLLIB_GPREL, 7, bf_0_23, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_GPREL_LO9  =
                    ISA_Create_Reloc(8,"R_ST200_GPREL_LO9","@gprel",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a_gp, 8, bf_12_9, BITFIELD_END);
+		   rel_s_a_gp, ISA_RELOC_RLLIB_GPREL, 8, bf_12_9, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_REL32  =
                    ISA_Create_Reloc(9,"R_ST200_REL32","",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_a, 9, bf_0_32, BITFIELD_END);
+		   rel_a, ISA_RELOC_NO_RLLIB, 9, bf_0_32, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_GOTOFF_HI23 =
                    ISA_Create_Reloc(10,"R_ST200_GOTOFF_HI23","@gotoff",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 9,
-		   rel_s_a_got, 10, bf_0_23, BITFIELD_END);
+		   rel_s_a_got, ISA_RELOC_RLLIB_GOTOFFS, 10, bf_0_23, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_GOTOFF_LO9 = 
                    ISA_Create_Reloc(11,"R_ST200_GOTOFF_LO9","@gotoff",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a_got, 11, bf_12_9, BITFIELD_END);
+		   rel_s_a_got, ISA_RELOC_RLLIB_GOTOFFS, 11, bf_12_9, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_GOTOFFX_HI23 = 
                    ISA_Create_Reloc(12,"R_ST200_GOTOFFX_HI23","@gotoffx",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 9,
-		   rel_s_a_got, 12, bf_0_23, BITFIELD_END);
+		   rel_s_a_got, ISA_RELOC_RLLIB_GOTOFFS, 12, bf_0_23, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_GOTOFFX_LO9 =
                    ISA_Create_Reloc(13,"R_ST200_GOTOFFX_LO9","@gotoffx",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a_got, 13, bf_12_9, BITFIELD_END);
+		   rel_s_a_got, ISA_RELOC_RLLIB_GOTOFFS, 13, bf_12_9, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_LTV32 =
                    ISA_Create_Reloc(14,"R_ST200_LTV32","@ltv",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 14, bf_0_32, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_NO_RLLIB, 14, bf_0_32, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_SEGREL32 = 
                    ISA_Create_Reloc(15,"R_ST200_SEGREL32","@segrel",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 15, bf_0_32, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 15, bf_0_32, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_FPTR32 = 
                    ISA_Create_Reloc(16,"R_ST200_FPTR32","@fptr",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 16, bf_0_32, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 16, bf_0_32, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_PLTOFF_HI23 =
                    ISA_Create_Reloc(17,"R_ST200_PLTOFF_HI23","@pltoff",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 9,
-		   rel_s_a, 17, bf_0_23, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 17, bf_0_23, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_PLTOFF_LO9 = 
                    ISA_Create_Reloc(18,"R_ST200_PLTOFF_LO9","@pltoff",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 18, bf_12_9, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 18, bf_12_9, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_GOTOFF_FPTR_HI23 =
                    ISA_Create_Reloc(19,"R_ST200_GOTOFF_FPTR_HI23",
                    "@gotoff(@fptr",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 9,
-		   rel_s_a, 17, bf_0_23, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 17, bf_0_23, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_GOTOFF_FPTR_LO9 = 
                    ISA_Create_Reloc(20,"R_ST200_GOTOFF_FPTR_LO9",
                    "@gotoff(@fptr",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 18, bf_12_9, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 18, bf_12_9, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_IPLT =
                    ISA_Create_Reloc(21,"R_ST200_IPLT","@iplt",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 19, bf_0_32, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 19, bf_0_32, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_NEGGPREL_HI23 =
                    ISA_Create_Reloc(22,"R_ST200_NEGGPREL_HI23","@neggprel",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 9,
-		   rel_s_a_gp, 20, bf_0_23, BITFIELD_END);
+		   rel_s_a_gp, ISA_RELOC_RLLIB_NEGGPREL, 20, bf_0_23, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_NEGGPREL_LO9 =
                    ISA_Create_Reloc(23,"R_ST200_NEGGPREL_LO9","@neggprel",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a_gp, 21, bf_12_9, BITFIELD_END);
+		   rel_s_a_gp, ISA_RELOC_RLLIB_NEGGPREL, 21, bf_12_9, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_COPY =
                    ISA_Create_Reloc(24,"R_ST200_COPY","",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_none, 22, bf_0_32, BITFIELD_END);
+		   rel_none, ISA_RELOC_RLLIB_UNKNOWN, 22, bf_0_32, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_JMP_SLOT =
                    ISA_Create_Reloc(25,"R_ST200_JMP_SLOT","",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s, 22, bf_0_32, BITFIELD_END);
+		   rel_s, ISA_RELOC_RLLIB_UNKNOWN, 22, bf_0_32, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_TPREL_HI23 =
                    ISA_Create_Reloc(26,"R_ST200_TPREL_HI23","@tprel",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 9,
-		   rel_s_a, 23, bf_0_23, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 23, bf_0_23, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_TPREL_LO9 =
                    ISA_Create_Reloc(27,"R_ST200_TPREL_LO9","@tprel",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 24, bf_12_9, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 24, bf_12_9, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_TPREL32 =
                    ISA_Create_Reloc(28,"R_ST200_TPREL32","@tprel",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 25, bf_0_32, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 25, bf_0_32, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_GOTOFF_TPREL_HI23 =
                    ISA_Create_Reloc(29,"R_ST200_GOTOFF_TPREL_HI23",
                    "@gotoff(@tprel",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 9,
-		   rel_s_a_got, 26, bf_0_23, BITFIELD_END);
+		   rel_s_a_got, ISA_RELOC_RLLIB_UNKNOWN, 26, bf_0_23, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_GOTOFF_TPREL_LO9 =
                    ISA_Create_Reloc(30,"R_ST200_GOTOFF_TPREL_LO9",
                    "@gotoff(@tprel",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 27, bf_12_9, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 27, bf_12_9, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_GOTOFF_DTPLDM_HI23 =
                    ISA_Create_Reloc(31,"R_ST200_GOTOFF_DTPLDM_HI23",
                    "@gotoff(@dtpldm",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 9,
-		   rel_s_a_got, 28, bf_0_23, BITFIELD_END);
+		   rel_s_a_got, ISA_RELOC_RLLIB_UNKNOWN, 28, bf_0_23, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_GOTOFF_DTPLDM_LO9 =
                    ISA_Create_Reloc(32,"R_ST200_GOTOFF_DTPLDM_LO9",
                    "@gotoff(@dtpldm",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a_got, 29, bf_12_9, BITFIELD_END);
+		   rel_s_a_got, ISA_RELOC_RLLIB_UNKNOWN, 29, bf_12_9, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_DTPREL_HI23 =
                    ISA_Create_Reloc(33,"R_ST200_DTPREL_HI23","@dtprel",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 9,
-		   rel_s_a, 30, bf_0_23, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 30, bf_0_23, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_DTPREL_LO9 =
                    ISA_Create_Reloc(34,"R_ST200_DTPREL_LO9","@dtprel",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 31, bf_12_9, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 31, bf_12_9, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_DTPMOD32 =
                    ISA_Create_Reloc(35,"R_ST200_DTPMOD32","@dtpmod",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 32, bf_0_32, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 32, bf_0_32, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_DTPREL32 =
                    ISA_Create_Reloc(36,"R_ST200_DTPREL32","@dtprel",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 33, bf_0_32, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 33, bf_0_32, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_GOTOFF_DTPNDX_HI23 =
                    ISA_Create_Reloc(37,"R_ST200_GOTOFF_DTPNDX_HI23",
                    "@gotoff(@dtpndx",
 		   ISA_RELOC_OVERFLOW_BITFIELD, ISA_RELOC_NO_UNDERFLOW, 9,
-		   rel_s_a, 30, bf_0_23, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 30, bf_0_23, BITFIELD_END);
 
   ISA_VIRTUAL_RELOC_TYPE R_ST200_GOTOFF_DTPNDX_LO9 = ISA_Create_Reloc(
                    38,"R_ST200_GOTOFF_DTPNDX_LO9",
                    "@gotoff(@dtpndx",
 		   ISA_RELOC_NO_OVERFLOW, ISA_RELOC_NO_UNDERFLOW, 0,
-		   rel_s_a, 31, bf_12_9, BITFIELD_END);
+		   rel_s_a, ISA_RELOC_RLLIB_UNKNOWN, 31, bf_12_9, BITFIELD_END);
 
   ///////////////////////////////////////////////////////
   // Defining subset relocations

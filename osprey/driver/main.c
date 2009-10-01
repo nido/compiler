@@ -258,7 +258,9 @@ main (int argc, char *argv[])
          char  *tmp;
 
          if ((NULL!=(suffix_ptr=get_suffix(argv[i]))) && 
-             !strcmp(suffix_ptr,"ld")) {
+             !strcmp(suffix_ptr,"ld")
+	     && !option_was_seen(O__rlib)
+	     && !option_was_seen(O__rmain)) {
 
             org_index=i;
             sav = argv[i];
@@ -459,7 +461,6 @@ main (int argc, char *argv[])
        }
      }
 
-#ifdef TARG_STxP70
      {
        extern long long build_option_flags();
        long long flags = build_option_flags();
@@ -476,7 +477,6 @@ main (int argc, char *argv[])
          strcat(newoption, buf);
        }
      }
-#endif
    
        if (newoption[0] != 0) {
          char *newargv[] = { newoption };
@@ -488,7 +488,9 @@ main (int argc, char *argv[])
    /* At this point, add -Wy,-T,<link_scripts>.reloc in case of
     * binopt activation
     */
-   if (!option_was_seen(O_S) && !option_was_seen(O_c)) {
+   if (!option_was_seen(O_S) && !option_was_seen(O_c) 
+       && !option_was_seen(O__rlib)
+       && !option_was_seen(O__rmain)) {
       extern string_list_t *script_files;
       string_item_t *p;
       int i;

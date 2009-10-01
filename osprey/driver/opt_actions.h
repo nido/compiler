@@ -159,6 +159,11 @@ extern void Process_Cray_Mp (void);
 
 extern void print_file_path (string);	/* print path to named file */
 
+#ifdef TARG_STxP70
+typedef enum { got_none, got_small, got_standard, got_large} TYPE_GOT_MODEL;
+extern TYPE_GOT_MODEL got_model_opt;
+#endif
+
 #ifdef TARG_ST200
 typedef enum { OS21_TRACE_WRAP, OS21_TRACE_UNDEFINED } OS21_TRACE ;
 extern int os21_trace_options_set() ;

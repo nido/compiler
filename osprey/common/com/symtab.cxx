@@ -1911,6 +1911,11 @@ ST::Print (FILE *f, BOOL verbose) const
 	case ST_MEMORY_SDA: fprintf (f, " sda"); break;
 	case ST_MEMORY_TDA: fprintf (f, " tda"); break;
 	case ST_MEMORY_NONE: fprintf (f, " none"); break;
+//VL
+	case ST_MEMORY_GOTSMALL:
+	case ST_MEMORY_GOTSTD:
+	case ST_MEMORY_GOTLARGE:
+		fprintf (f, " none"); break;
 	}
 #endif
 

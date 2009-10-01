@@ -3546,7 +3546,11 @@ Allocate_Object ( ST *st )
   // (cbr) memory space support. If placement is needed
   // allocate the symbol to the section here.
   ST_MEMORY_SPACE kind;
-  if ((kind = Get_Memory_Space(st)) != ST_MEMORY_NONE) {
+  if ((kind = Get_Memory_Space(st)) != ST_MEMORY_NONE &&
+      ((kind = Get_Memory_Space(st)) == ST_MEMORY_DA  ||
+       (kind = Get_Memory_Space(st)) == ST_MEMORY_SDA ||
+       (kind = Get_Memory_Space(st)) == ST_MEMORY_TDA ||
+       (kind = Get_Memory_Space(st)) == ST_MEMORY_DEFAULT)) {
     STR_IDX name = Find_Memory_Space_Name(st, kind);
     Assign_ST_To_Named_Section (st, name);
     return;

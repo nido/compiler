@@ -2673,6 +2673,13 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -fcpic-caller-sets-gp toggle(&abi,ABI_ST200_PIC); Cc      NONE "-TENV:GPREL -TENV:CPIC -TARG:abi=pic-abi -D__CPIC__ -D__cpic__"
 	NA__"Generate main program code for the PIC ABI"
 #elif defined( TARG_STxP70 )
+// VL dynamicloading
+-fpic   ;         Cc      self    ""
+        "Generate position independent code (data accesses only)"
+-fPIC   ;         Cc      self    ""
+        "Generate position independent code (data accesses only), assume large GOT"
+-Mgot*  ;         Cc      self     ""
+   "-Mgot[=small|standard|large] Select the GOT model for PID/PIC code generation."
 #else
 -fpic	;		Cc	NONE	""
 	NA__"Generate position independent code, if possible"
@@ -2767,14 +2774,14 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 %%% Relocatable library / main program macro options
 %%% These options are shortcuts for a combinaison of options
 --rlib		;			LINK	ld	"-shared -Bsymbolic --allow-shlib-undefined  -nodefaultlibs"
-	NA__STxP70__"Build a relocatable library loadable by the rl_lib loader"
+	"Build a relocatable library loadable by the rl_lib loader"
 %%% The --rmain option also triggers in phases.c the link flags "-lrl -lrl_s"
 --rmain			;			LINK	ld	"--export-dynamic --dynamic-linker=RL_LIB"
-	NA__STxP70__"Build a main program suitable for loading relocatable libraries"
+	"Build a main program suitable for loading relocatable libraries"
 --export-dynamic	toggle(&dynamic,TRUE);	LINK	ld	self
-	NA__STxP70__"Export dynamic symbols in a main program"
+	"Export dynamic symbols in a main program"
 --allow-shlib-undefined	;			LINK	ld	self
-	NA__STxP70__"Allow a shared library to have reference to undefined symbols"
+	"Allow a shared library to have reference to undefined symbols"
 --dynamic-linker=%s	toggle(&dynamic,TRUE);	LINK	ld	self
 	NA__STxP70__"Specify the dynamic linker name"
 #endif
