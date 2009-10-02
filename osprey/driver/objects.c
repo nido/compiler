@@ -755,7 +755,7 @@ add_library_options (void)
 	  if (stxp70_soc && is_directory (stxp70_soc)) {
 	    stxp70_soc = concat_path (stxp70_soc, 
 				      concat_path((proc == PROC_stxp70_v3) ? "stxp70v3" :
-						  (proc == PROC_stxp70_v4_single ||proc == PROC_stxp70_v4_dual ||proc == PROC_stxp70_v4_dual_arith) ? "stxp70v4" : "unknown",
+						  (proc == PROC_stxp70_v4_novliw ||proc == PROC_stxp70_v4_single ||proc == PROC_stxp70_v4_dual) ? "stxp70v4" : "unknown",
 						  concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 							      stxp70_runtime == RUNTIME_NONE ? "none" : "unknown")));
 	    flag = add_string_option(O_L__, stxp70_soc);
@@ -765,7 +765,7 @@ add_library_options (void)
 	  if (stxp70_board && is_directory (stxp70_board)) {
 	    stxp70_board = concat_path (stxp70_board, 
 					concat_path((proc == PROC_stxp70_v3) ? "stxp70v3" :
-						    (proc == PROC_stxp70_v4_single ||proc == PROC_stxp70_v4_dual ||proc == PROC_stxp70_v4_dual_arith) ? "stxp70v4" : "unknown",
+						    (proc == PROC_stxp70_v4_novliw ||proc == PROC_stxp70_v4_single ||proc == PROC_stxp70_v4_dual) ? "stxp70v4" : "unknown",
 						    concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 								stxp70_runtime == RUNTIME_NONE ? "none" : "unknown")));
 	    flag = add_string_option(O_L__, stxp70_board);
@@ -777,7 +777,7 @@ add_library_options (void)
 	if (stxp70_libdir) {
 	  stxp70_libdir = concat_path (stxp70_libdir, 
 				       concat_path((proc == PROC_stxp70_v3) ? "stxp70v3" :
-						    (proc == PROC_stxp70_v4_single ||proc == PROC_stxp70_v4_dual ||proc == PROC_stxp70_v4_dual_arith) ? "stxp70v4" : "unknown",
+						    (proc == PROC_stxp70_v4_novliw ||proc == PROC_stxp70_v4_single ||proc == PROC_stxp70_v4_dual) ? "stxp70v4" : "unknown",
 						   concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 							       stxp70_runtime == RUNTIME_NONE ? "none" : "unknown")));
 	  add_library_dir (stxp70_libdir);

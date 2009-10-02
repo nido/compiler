@@ -1718,8 +1718,8 @@ Configure_CG_Options(void)
   }
 
 #ifdef TARG_STxP70
-  if ((Is_Target_stxp70_v4_single() || Is_Target_stxp70_v4_dual() ||
-       Is_Target_stxp70_v4_dual_arith()) &&!CG_enable_select_overridden) {
+  if ((Is_Target_stxp70_v4_novliw() || Is_Target_stxp70_v4_single() ||
+       Is_Target_stxp70_v4_dual()) &&!CG_enable_select_overridden) {
     CG_enable_select=FALSE;
   }
 #endif

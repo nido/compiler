@@ -1370,11 +1370,11 @@ add_file_args (string_list_t *args, phases_t index)
                 switch (proc) {
                   char str[1024];
                   
-                case PROC_stxp70_v4_dual      :
-                case PROC_stxp70_v4_dual_arith:
+                case PROC_stxp70_v4_single      :
+                case PROC_stxp70_v4_dual:
                   add_string(args,"--bundle");
 		  /* Fall through standard STxP70 v4 */
-                case PROC_stxp70_v4_single:
+                case PROC_stxp70_v4_novliw:
                   add_string(args,"--defsym");
                   add_string(args,"STXP70_ARCH=4");
                   sprintf(str,"%s/__sxasv4.mac",SYS_adirname(absolute_program_name));

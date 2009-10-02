@@ -897,9 +897,9 @@ add_special_options (void)
 #ifdef TARG_STxP70
 	if (relax == UNDEFINED) {
 	  /* TB: in relocatable mode, desactivate --relax */
-	  relax = ((proc == PROC_stxp70_v4_single ||
-                    proc == PROC_stxp70_v4_dual ||
-                    proc == PROC_stxp70_v4_dual_arith )
+	  relax = ((proc == PROC_stxp70_v4_novliw ||
+                    proc == PROC_stxp70_v4_single ||
+                    proc == PROC_stxp70_v4_dual )
                    && (olevel >= 1) && (shared != RELOCATABLE)) ? TRUE : FALSE;
 	  if (relax == TRUE) {
             prepend_option_seen (O__relax);
@@ -1269,9 +1269,9 @@ add_special_options (void)
 
 	    }
 
-	    if (proc == PROC_stxp70_v4_single ||
-                proc == PROC_stxp70_v4_dual ||
-                proc == PROC_stxp70_v4_dual_arith ) {
+	    if (proc == PROC_stxp70_v4_novliw ||
+                proc == PROC_stxp70_v4_single ||
+                proc == PROC_stxp70_v4_dual ) {
  	      flag = add_string_option(O_D, "__STXP70__");
 	      prepend_option_seen (flag);
 	      flag = add_string_option(O_D, "__STxP70__");

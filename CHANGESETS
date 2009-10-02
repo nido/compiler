@@ -1,6 +1,74 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct 02 11:29:18 CEST 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-stxp70-resources
+
+Description:
+------------
+	*  resources naming and handling on stxp70v4 for vliw/novliw extension loading compatibility 
+
+
+Modified Files:
+---------------
+	M       osprey/driver/opt_actions.c
+	M       osprey/driver/phases.c
+	M       osprey/driver/objects.c
+	M       osprey/driver/special_options.c
+	M       osprey/driver/config_platform.h
+	M       osprey/driver/stxp70_options.i
+	M       osprey/lai/cgdriver.cxx
+	M       osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx
+	M       osprey/targinfo/stxp70/proc/proc_properties.cxx
+	M       osprey/targinfo/stxp70/proc/proc.cxx
+	D       osprey/targinfo/stxp70/proc/stxp70_v4_dual_arith_si.cxx
+	A  +    osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx
+	M       osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx
+	M       osprey/targinfo/stxp70/config/config_target.h
+	M       osprey/targinfo/stxp70/config/config_cache_targ.cxx
+	M       osprey/targinfo/stxp70/config/config_elf_targ.cxx
+	M       osprey/targinfo/stxp70/config/config_target.cxx
+	M       osprey/targinfo/stxp70/be/driver_targ.cxx
+	M       osprey/targinfo/Makefile.gbase
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24194 --new=https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-stxp70-resources@24202 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24194 https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-stxp70-resources@24202" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/opt_actions.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/opt_actions.c?p2=branches/cv17/dev-stxp70-resources/osprey/driver/opt_actions.c&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/driver/phases.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/phases.c?p2=branches/cv17/dev-stxp70-resources/osprey/driver/phases.c&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/driver/objects.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/objects.c?p2=branches/cv17/dev-stxp70-resources/osprey/driver/objects.c&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/driver/special_options.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/special_options.c?p2=branches/cv17/dev-stxp70-resources/osprey/driver/special_options.c&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/driver/config_platform.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/config_platform.h?p2=branches/cv17/dev-stxp70-resources/osprey/driver/config_platform.h&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/driver/stxp70_options.i	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/stxp70_options.i?p2=branches/cv17/dev-stxp70-resources/osprey/driver/stxp70_options.i&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgdriver.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgdriver.cxx?p2=branches/cv17/dev-stxp70-resources/osprey/lai/cgdriver.cxx&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx?p2=branches/cv17/dev-stxp70-resources/osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/proc_properties.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/proc_properties.cxx?p2=branches/cv17/dev-stxp70-resources/osprey/targinfo/stxp70/proc/proc_properties.cxx&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/proc.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/proc.cxx?p2=branches/cv17/dev-stxp70-resources/osprey/targinfo/stxp70/proc/proc.cxx&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx?p2=branches/cv17/dev-stxp70-resources/osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_target.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_target.h?p2=branches/cv17/dev-stxp70-resources/osprey/targinfo/stxp70/config/config_target.h&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_cache_targ.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_cache_targ.cxx?p2=branches/cv17/dev-stxp70-resources/osprey/targinfo/stxp70/config/config_cache_targ.cxx&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_elf_targ.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_elf_targ.cxx?p2=branches/cv17/dev-stxp70-resources/osprey/targinfo/stxp70/config/config_elf_targ.cxx&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_target.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_target.cxx?p2=branches/cv17/dev-stxp70-resources/osprey/targinfo/stxp70/config/config_target.cxx&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/be/driver_targ.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/be/driver_targ.cxx?p2=branches/cv17/dev-stxp70-resources/osprey/targinfo/stxp70/be/driver_targ.cxx&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/Makefile.gbase?p2=branches/cv17/dev-stxp70-resources/osprey/targinfo/Makefile.gbase&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/cv17/dev-stxp70-resources/DEPENDENCIES&r1=24194&r2=24202&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Oct 02 10:12:36 CEST 2009
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

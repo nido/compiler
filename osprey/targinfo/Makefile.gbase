@@ -202,9 +202,9 @@ endif # ST200
 ifeq ($(BUILD_TARGET), STxP70)
 LDIRT += stxp70_v3_si_gen$(BEXE)
 #LDIRT += stxp70_v3_ext_si_gen$(BEXE)
+LDIRT += stxp70_v4_novliw_si_gen$(BEXE)
 LDIRT += stxp70_v4_single_si_gen$(BEXE)
 LDIRT += stxp70_v4_dual_si_gen$(BEXE)
-LDIRT += stxp70_v4_dual_arith_si_gen$(BEXE)
 LDIRT += *.inc.cxx $(PARSER_INPUT_CFILES:.c=.pr)
 
 # building static library
@@ -213,11 +213,11 @@ SO_TARGETS = libstxp70.a
 endif
 # building windows dll
 ifeq ($(DSO_MODE),DLL)
-SO_TARGETS = stxp70_v3.dll  stxp70_v4_single.dll stxp70_v4_dual.dll stxp70_v4_dual_arith.dll libtarginfo.dll
+SO_TARGETS = stxp70_v3.dll  stxp70_v4_novliw.dll stxp70_v4_single.dll stxp70_v4_dual.dll libtarginfo.dll
 endif
 # building "unix" so library
 ifeq ($(DSO_MODE),SO)
-SO_TARGETS = stxp70_v3.so  stxp70_v4_single.so stxp70_v4_dual.so stxp70_v4_dual_arith.so
+SO_TARGETS = stxp70_v3.so  stxp70_v4_novliw.so stxp70_v4_single.so stxp70_v4_dual.so
 endif
 
 LDIRT += $(SO_TARGETS)
