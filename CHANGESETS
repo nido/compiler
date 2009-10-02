@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct 02 10:12:36 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-78038
+
+Description:
+------------
+	* [trunk] Fix for bug #78038: [EBO] Incorrect code elimination.
+	Deliver fixes/codex-78038 rev #24192 with authorization branch #78045
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/cg/targ_ebo.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24176 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-78038@24192 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24176 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-78038@24192" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/cg/targ_ebo.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_ebo.cxx?p2=branches/fixes/codex-78038/osprey/targinfo/stxp70/cg/targ_ebo.cxx&r1=24176&r2=24192&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Oct 01 15:50:42 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
