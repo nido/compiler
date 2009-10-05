@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct 05 13:25:40 CEST 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79211
+
+Description:
+------------
+	* [trunk] Fix for bug #79211: --bundle option wrongly added to as call in v4-novliw.
+	Deliver fixes/codex-79211 rev #24232 with authorization branch #79212
+
+
+Modified Files:
+---------------
+	M       osprey/driver/opt_actions.c
+	M       osprey/driver/special_options.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24204 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79211@24232 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24204 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79211@24232" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/opt_actions.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/opt_actions.c?p2=branches/fixes/codex-79211/osprey/driver/opt_actions.c&r1=24204&r2=24232&roottype=svn&root=open64&diff_format=h
+osprey/driver/special_options.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/special_options.c?p2=branches/fixes/codex-79211/osprey/driver/special_options.c&r1=24204&r2=24232&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Oct 02 11:29:18 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

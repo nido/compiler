@@ -1287,11 +1287,6 @@ add_special_options (void)
 	      flag = add_string_option(O_TARG_, "enable_x3=on");
 	      prepend_option_seen(flag);
 	    }
-            if (proc == PROC_stxp70_v4_single) {
-              //  [dt] Set single core by default
-              flag = add_string_option(O_CG_, "max_issue_width=1"); 
-              prepend_option_seen (flag); 
-            }
             
 	    flag = add_string_option(O_D, "__open64__");
 	    prepend_option_seen (flag);

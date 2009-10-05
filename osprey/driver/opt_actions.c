@@ -163,9 +163,9 @@ static struct {
   { "arm9",     PROC_armv5 },
   { "arm11",    PROC_armv6 },
   { "stxp70_v3",PROC_stxp70_v3 },
-  { "stxp70_v4",PROC_stxp70_v4_single},
+  { "stxp70_v4",PROC_stxp70_v4_novliw},
   { "stxp70v3", PROC_stxp70_v3 },
-  { "stxp70v4", PROC_stxp70_v4_single },
+  { "stxp70v4", PROC_stxp70_v4_novliw },
   { "stxp70v4novliw", PROC_stxp70_v4_novliw },
   { "stxp70v4singlecoreALU",PROC_stxp70_v4_single },
   { "stxp70v4dualcoreALU",PROC_stxp70_v4_dual},
@@ -922,7 +922,7 @@ Check_Target ( void )
   char *proc_env_name=NULL;
   if (proc == UNDEFINED && (proc_env_name = getenv("SXARCHITECTURE")) != NULL) {
     int i;
-    if (same_string(proc_env_name,"stxp70v4")) 	toggle (&proc, PROC_stxp70_v4_single);
+    if (same_string(proc_env_name,"stxp70v4")) 	toggle (&proc, PROC_stxp70_v4_novliw);
     else if (same_string(proc_env_name,"stxp70v3")) 	toggle (&proc, PROC_stxp70_v3);
     else {
       for (i = 0; Proc_Map[i].pname != NULL; i++) {
@@ -957,7 +957,7 @@ Check_Target ( void )
 	  break;
         case 0x0: /* v4 Single issue */
 	default:
-          toggle (&proc, PROC_stxp70_v4_single); break;
+          toggle (&proc, PROC_stxp70_v4_novliw); break;
       }
       change_phase_name(P_as,"stxp70v4-as");
       change_phase_name(P_gas,"stxp70v4-as");
