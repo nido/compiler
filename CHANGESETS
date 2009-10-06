@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Oct 06 09:15:31 CEST 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79266
+
+Description:
+------------
+	* [trunk] Fix for bug #79266: Valgrind reports invalid memory read in extension loader.
+	Deliver fixes/codex-79266 rev #24260 with authorization branch #79270
+
+	--> Fixed backward compatibility code:
+	    the array that associates an extension builtins with its
+	    equivalent OPCODEs was not fully copied, leading to incorrect memory accesses
+
+
+Modified Files:
+---------------
+	M       osprey/common/com/dyn_dll_api_access.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24234 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79266@24260 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24234 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79266@24260" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/com/dyn_dll_api_access.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/dyn_dll_api_access.cxx?p2=branches/fixes/codex-79266/osprey/common/com/dyn_dll_api_access.cxx&r1=24234&r2=24260&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct 05 13:25:40 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
