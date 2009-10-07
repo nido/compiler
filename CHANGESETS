@@ -1,6 +1,45 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Oct 07 10:36:24 CEST 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79373
+
+Description:
+------------
+	* [trunk] Fix for bug #79373: [MP1x] Segmentation fault under windows with MP1x dated of 29/05/2009.
+	Deliver fixes/codex-79373 rev #24292 with authorization branch #79377
+
+	--> Fixed backward compatibility broken on trunk at rev ##23975 (2009-09-21).
+	    Symptome: Segfault on xp70 under Windows when using a MP1x package built on 29/05/2009.
+	    -> Some datastructure located in extension were directly patched,
+	       leading to segfault under windows.
+	       The incriminated data structure is now copied prior to modification.
+	    -> Fix 2: a recent extension revision was also missing in compatibility list
+
+Modified Files:
+---------------
+	M       osprey/common/com/dyn_dll_api_access.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24263 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79373@24292 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24263 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79373@24292" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/com/dyn_dll_api_access.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/dyn_dll_api_access.cxx?p2=branches/fixes/codex-79373/osprey/common/com/dyn_dll_api_access.cxx&r1=24263&r2=24292&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Oct 06 09:15:31 CEST 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
