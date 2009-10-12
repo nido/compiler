@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct 12 10:39:03 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-77539
+
+Description:
+------------
+	* [trunk] Fix for bug #77539: -Mhwloop=* ignored when specified in an application config files.
+	Deliver fixes/codex-77539 rev #24392 with authorization branch #79320
+
+
+Modified Files:
+---------------
+	M       osprey/driver/main.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24384 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-77539@24392 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24384 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-77539@24392" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/main.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/main.c?p2=branches/fixes/codex-77539/osprey/driver/main.c&r1=24384&r2=24392&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct 12 10:19:53 CEST 2009
 	Author:    
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

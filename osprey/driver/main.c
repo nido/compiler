@@ -337,6 +337,40 @@ main (int argc, char *argv[])
 		}
 	}
 
+#ifdef TARG_ST
+	//TDR -  Parse configuration file
+	if (appli_config_file_set) {
+		appliconfig_parser(appli_config_file_name);
+		set_active_appli_config(active_appli_config_file_name);
+#ifdef Is_True_On
+	    if (Trace_Appli_Config_File_Detailed) {
+	    	printf("=== Main driver Dump TRACE_APPLI_CONFIG ===\n");
+	    	dump_cfg();
+	    }
+#endif
+	    if(!active_configuration) {
+	    	warning("Configuration file specified without any active configuration defined\n application configuration file will be ignored.");
+	    	appli_config_file_set=FALSE;
+	    } else {
+	        if (active_configuration->options) {
+	            Pt_string_list my_list=active_configuration->options;
+	            int  i = 0;
+	            char *newargv[] = { argv[0], NULL };
+	            while (my_list) {
+	                if (Trace_Appli_Config_File) printf("Add Global option %s \n", my_list->name);
+	                newargv[1]=my_list->name;
+	                i = 1;
+	                treat_one_arg(&i,newargv);
+	                //Fix for bug #70574: If counter is not modified, option must be parsed again.
+	                if(i==1) treat_one_arg(&i,newargv);
+	                my_list=my_list->next;
+	            }
+	        }
+	    }
+	}
+#endif
+
+	
 	/* Check target specifications for consistency: */
 	Check_Target ();
 
@@ -668,37 +702,9 @@ main (int argc, char *argv[])
 	check_makedepend_flags ();
 	add_library_options();
 #ifdef TARG_ST
-	//TDR -  Parse configuration file
-	// and save initial configuration file
-	if (appli_config_file_set) {
-		appliconfig_parser(appli_config_file_name);
-		set_active_appli_config(active_appli_config_file_name);
-#ifdef Is_True_On
-	    if (Trace_Appli_Config_File_Detailed) {
-	    	printf("=== Main driver Dump TRACE_APPLI_CONFIG ===\n");
-	    	dump_cfg();
-	    }
-#endif
-	    if(!active_configuration) {
-	    	warning("Configuration file specified without any active configuration defined\n application configuration file will be ignored.");
-	    	appli_config_file_set=FALSE;
-	    } else {
-	        if (active_configuration->options) {
-	            Pt_string_list my_list=active_configuration->options;
-	            int  i = 0;
-	            char *newargv[] = { argv[0], NULL };
-	            while (my_list) {
-	                if (Trace_Appli_Config_File) printf("Add Global option %s \n", my_list->name);
-	                newargv[1]=my_list->name;
-	                i = 1;
-	                treat_one_arg(&i,newargv);
-	                //Fix for bug #70574: If counter is not modified, option must be parsed again.
-	                if(i==1) treat_one_arg(&i,newargv);
-	                my_list=my_list->next;
-	            }
-	        }
-	        save_options_status(TRUE);
-	    }
+	//TDR -  Save initial configuration
+	if (appli_config_file_set && active_configuration) {
+        save_options_status(TRUE);
 	}
 #endif
 	add_special_options();
