@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct 12 10:19:53 CEST 2009
+	Author:    
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/robinec/dev-sp_adjust
+
+Description:
+------------
+	* Use of R6 instead of GP for sp_adjust sequence, when no other register is available.  
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24378 --new=https://codex.cro.st.com/svnroot/open64/branches/robinec/dev-sp_adjust@24382 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24378 https://codex.cro.st.com/svnroot/open64/branches/robinec/dev-sp_adjust@24382" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/cg/targ_entry_exit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx?p2=branches/robinec/dev-sp_adjust/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx&r1=24378&r2=24382&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct 12 08:26:26 CEST 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
