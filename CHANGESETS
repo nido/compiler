@@ -1,6 +1,80 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct 12 08:26:26 CEST 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-77711
+
+Description:
+------------
+	* Deliver fix for [ bug #77711 ] Wrong exception table generated (st200, C++, -O0)
+          Rev 24374 with Authorization art #77716
+
+Modified Files:
+---------------
+	M       osprey/lai/eh_region.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24375 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-77711@24376 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24375 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-77711@24376" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/eh_region.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/eh_region.cxx?p2=branches/fixes/codex-77711/osprey/lai/eh_region.cxx&r1=24375&r2=24376&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Tue Sep 22 16:09:53 CEST 2009
+	Author:    giraudoa
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-75124
+
+Description:
+------------
+	* Deliver branch fixes/codex-75124 "Add user libraries in XIE" with authorization branch #75234
+
+
+Modified Files:
+---------------
+	M      osprey/driver/objects.c
+	M      osprey/driver/objects.h
+	M      osprey/driver/stxp70_options.i
+	M      osprey/common/rcparser/rcparser.c
+	M      osprey/common/rcparser/rcparser.h
+	M      osprey/common/rcparser/README
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24004 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-75124@24011 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24004 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-75124@24011" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/objects.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/objects.c?p2=branches/fixes/codex-75124/osprey/driver/objects.c&r1=24004&r2=24011&roottype=svn&root=open64&diff_format=h
+osprey/driver/objects.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/objects.h?p2=branches/fixes/codex-75124/osprey/driver/objects.h&r1=24004&r2=24011&roottype=svn&root=open64&diff_format=h
+osprey/driver/stxp70_options.i	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/stxp70_options.i?p2=branches/fixes/codex-75124/osprey/driver/stxp70_options.i&r1=24004&r2=24011&roottype=svn&root=open64&diff_format=h
+osprey/common/rcparser/rcparser.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/rcparser/rcparser.c?p2=branches/fixes/codex-75124/osprey/common/rcparser/rcparser.c&r1=24004&r2=24011&roottype=svn&root=open64&diff_format=h
+osprey/common/rcparser/rcparser.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/rcparser/rcparser.h?p2=branches/fixes/codex-75124/osprey/common/rcparser/rcparser.h&r1=24004&r2=24011&roottype=svn&root=open64&diff_format=h
+osprey/common/rcparser/README	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/rcparser/README?p2=branches/fixes/codex-75124/osprey/common/rcparser/README&r1=24004&r2=24011&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct 07 10:36:24 CEST 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
