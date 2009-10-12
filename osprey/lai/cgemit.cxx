@@ -70,6 +70,7 @@
 #include "config_list.h"
 #include "vstring.h"
 #ifdef TARG_ST
+#include "libiberty/libiberty.h"
 #include "file_util.h" // [CL] for New_Extension
 #endif
 #include "glob.h"
@@ -6792,7 +6793,7 @@ EMT_Begin_File (
     // [CL] when generating .s file, do not
     // overwrite/remove existing .o file
     if ( ! Object_Code) {
-      Obj_File_Name = tempnam(NULL, "cctpo");
+      Obj_File_Name = make_temp_file("cctpo");
     }
 #endif
  
