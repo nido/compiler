@@ -93,6 +93,9 @@ static char *TFile_Name = "stdout";	/* TFile name */
 static UINT TI_Mask;			/* Info mask */
 static UINT TD_Mask;			/* Debug option mask */
 static UINT TI_Phase[TP_COUNT];		/* IR trace flags */
+#ifdef TARG_ST
+static UINT TG_Phase[TP_COUNT];		/* YED dump */
+#endif
 static UINT TS_Phase[TP_COUNT];		/* SYMTAB trace flags */
 static UINT TN_Phase[TP_COUNT];		/* TN trace flags */
 static UINT TA_Phase[TP_COUNT];		/* Memory Allocation Trace */
@@ -301,6 +304,7 @@ List_Phase_Numbers ( void )
  *  TKIND_INFO		flag mask	Enable masked traces
  *  TKIND_DEBUG		flag mask	Enable masked options
  *  TKIND_IR		phase number	Enable IR trace for phase
+ *  TKIND_GML		phase number	Enable graphml trace for phase
  *  TKIND_SYMTAB	phase number	Enable SYMTAB trace for phase
  *  TKIND_TN		phase number	Enable TN trace for phase
  *  TKIND_BB		BB number	Restrict tracing to BB
@@ -344,6 +348,17 @@ Set_Trace ( INT func, INT arg )
       }
       return;
 
+#ifdef TARG_ST  
+      /* YED phase: */
+      case TKIND_GML:
+        if ( arg != Check_Range (arg, TP_MIN, TP_LAST, 0) ) {
+  	ErrMsg ( EC_Trace_Phase, arg, TP_MIN, TP_LAST );
+        } else {
+  	TG_Phase[arg] = TRUE;
+        }
+        return;
+#endif 
+        
     /* SYMTAB phase: */
     case TKIND_SYMTAB:
       if ( arg != Check_Range (arg, TP_MIN, TP_LAST, 0) ) {
@@ -565,6 +580,12 @@ Get_Trace ( INT func, INT arg )
     case TKIND_IR:
       result = TI_Phase[arg];
       break;
+#ifdef TARG_ST
+    /* YED phase: */
+    case TKIND_GML:
+      result = TG_Phase[arg];
+      break;
+#endif
     /* SYMTAB phase: */
     case TKIND_SYMTAB:
       result = TS_Phase[arg];

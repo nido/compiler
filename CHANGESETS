@@ -1,6 +1,48 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct 12 11:19:28 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-cg-graph-dump
+
+Description:
+------------
+	* [trunk] Deliver dt25/dev-cg-graph-dump rev #24396 with authorization branch #77860
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cg.cxx
+	A  +    osprey/lai/graphml_dumper.cxx
+	A  +    osprey/lai/graphml_dumper.h
+	M       osprey/lai/Makefile.gbase
+	M       osprey/common/util/tracing.c
+	M       osprey/common/util/tracing.h
+	M       osprey/common/com/config.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24394 --new=https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-cg-graph-dump@24396 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24394 https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-cg-graph-dump@24396" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg.cxx?p2=branches/dt25/dev-cg-graph-dump/osprey/lai/cg.cxx&r1=24394&r2=24396&roottype=svn&root=open64&diff_format=h
+osprey/lai/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/Makefile.gbase?p2=branches/dt25/dev-cg-graph-dump/osprey/lai/Makefile.gbase&r1=24394&r2=24396&roottype=svn&root=open64&diff_format=h
+osprey/common/util/tracing.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/tracing.c?p2=branches/dt25/dev-cg-graph-dump/osprey/common/util/tracing.c&r1=24394&r2=24396&roottype=svn&root=open64&diff_format=h
+osprey/common/util/tracing.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/tracing.h?p2=branches/dt25/dev-cg-graph-dump/osprey/common/util/tracing.h&r1=24394&r2=24396&roottype=svn&root=open64&diff_format=h
+osprey/common/com/config.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config.cxx?p2=branches/dt25/dev-cg-graph-dump/osprey/common/com/config.cxx&r1=24394&r2=24396&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct 12 10:39:03 CEST 2009
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

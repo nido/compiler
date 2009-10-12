@@ -2369,7 +2369,12 @@ Process_Trace_Option ( char *option )
 	Set_Trace (TKIND_IR,
 		   Get_Trace_Phase_Number ( &cp, option ) );
 	break;
-
+#ifdef TARG_ST
+    case 'y':
+	Set_Trace (TKIND_GML,
+		   Get_Trace_Phase_Number ( &cp, option ) );
+	break;
+#endif
     case 's':
 	Set_Trace (TKIND_SYMTAB,
 		   Get_Trace_Phase_Number ( &cp, option ) );

@@ -1201,6 +1201,24 @@ CG_Generate_Code(
 /* ================================================================= */
 /* routines for dumping/tracing the program */
 
+#ifdef TARG_ST  
+/* =================================================================
+ *   Trace_graphML
+ * =================================================================
+ */
+extern void graphML_DumpCFG(BB* bb, const char* suffix);
+
+void
+Trace_GML(
+    INT phase,		/* Phase after which we're printing */
+    const char *pname)	/* Print name for phase	*/
+  {
+  	if (Get_Trace(TKIND_GML, phase) && Get_BB_Trace(BB_id(REGION_First_BB))) {
+  		graphML_DumpCFG(REGION_First_BB,pname);
+  	}
+  }
+#endif
+  
 /* =================================================================
  *   Trace_IR
  * =================================================================
@@ -1297,6 +1315,10 @@ Check_for_Dump ( INT32 pass, BB *bb )
      */
     Trace_Memory_Allocation ( pass, s );
 #ifdef TARG_ST
+    /* Check to see if we should dump graphML CFG.  
+     */
+    Trace_GML ( pass, s );
+
     /* [GS-DFGforISE]
      * Check to see if we should export the DFG. If yes, check each BB.
      */

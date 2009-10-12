@@ -142,8 +142,12 @@ BE_EXPORTED extern char *Sharps;	/* Sharps w/NL, full page width */
 #define TKIND_XPHASE	-7	/* Specify final execution phase */
 #define TKIND_CTRL	-8	/* Specify a control option */
 #define TKIND_ALLOC	-9	/* Trace memory allocation */
+#ifdef TARG_ST
+#define TKIND_GML	-10	/* Generate graphml IR dump */
+#define TKIND_MIN	-11	/* Smallest valid function number */
+#else
 #define TKIND_MIN	-10	/* Smallest valid function number */
-
+#endif
 /* Several predefined masks for TKIND_INFO cases: */
 #define TINFO_TIME	1	/* Timing/resource information */
 #define TINFO_CTIME	2	/* Compilation-only timing information */
@@ -302,6 +306,8 @@ BE_EXPORTED extern void List_Phase_Numbers ( void );
  *  TKIND_XPHASE	phase number	Stop execution after phase
  *  TKIND_CNTL		control number	Set control option identified
  *  TKIND_ALLOC		phase number	Enable mem allocation traces
+ *  TKIND_GML		phase number	 Generate graphml IR dump 
+ * 
  *  phase number	flag mask	Enable masked per-phase traces
  */
 BE_EXPORTED extern void Set_Trace ( INT func, INT arg );
