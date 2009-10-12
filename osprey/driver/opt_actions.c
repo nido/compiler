@@ -2700,7 +2700,7 @@ Process_Application_Config (string targ_args )
 	} else {
 		appli_config_file_name=SYS_makePath(SYS_getcwd(),targ_args);
 	}
-    sprintf(buf, "-TENV:application_configuration_decl=%s", appli_config_file_name);
+    sprintf(buf, "-TENV::application_configuration_decl=%s", appli_config_file_name);
     flag = add_new_option(buf);
     add_phase_for_option(flag, P_be);
     add_phase_for_option(flag, P_any_ipl);

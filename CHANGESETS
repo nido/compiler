@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct 12 12:51:21 CEST 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-77715
+
+Description:
+------------
+	* [trunk] Fix for bug #77715: [Appli.Config file] is not working  on Windows.
+	Deliver fixes/codex-77715 rev #24400 with authorization branch #79334
+
+
+Modified Files:
+---------------
+	M       osprey/driver/opt_actions.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24398 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-77715@24400 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24398 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-77715@24400" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/opt_actions.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/opt_actions.c?p2=branches/fixes/codex-77715/osprey/driver/opt_actions.c&r1=24398&r2=24400&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct 12 11:19:28 CEST 2009
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
