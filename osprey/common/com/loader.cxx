@@ -868,7 +868,7 @@ void Initialize_Extension_Support() {
       strcpy(extoptions_list, Ext_Options);
       char *optname = strtok(extoptions_list, ",");
       do {
-        // optname contains something like MP1x#fractsupport
+        // optname contains something like MP1x#enablefractgen
         char* ext = optname;
         char* tmp = strstr(ext,"#");
         if (tmp==NULL) {
