@@ -1022,7 +1022,15 @@ REGISTER_CLASS_OP_Update_Mapping(
   INT32 i;
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
 
-  for (i = OP_results(op) - 1; i >= 0; --i) {
+#ifdef TARG_ST
+  // The mapping update can only be done for results described in
+  // ISA_OPERAND_INFO structure, which are the fixed results.
+  // (mainly concerned operations with 'var_opnds' flags)
+  for (i = OP_fixed_results(op) - 1; i >= 0; --i)
+#else
+  for (i = OP_results(op) - 1; i >= 0; --i)
+#endif
+  {
     TN *tn = OP_result(op,i);
 
     if (    TN_is_register(tn)
@@ -1034,7 +1042,15 @@ REGISTER_CLASS_OP_Update_Mapping(
     }
   }
 
-  for ( i = OP_opnds(op) - 1; i >= 0; --i ) {
+#ifdef TARG_ST
+  // The mapping update can only be done for operands described in
+  // ISA_OPERAND_INFO structure, which are the fixed operands.
+  // (mainly concerned operations with 'var_opnds' flags)
+  for ( i = OP_fixed_opnds(op) - 1; i >= 0; --i )
+#else
+  for ( i = OP_opnds(op) - 1; i >= 0; --i )
+#endif
+  {
     TN *tn = OP_opnd(op,i);
 
     if (    TN_is_register(tn)

@@ -451,9 +451,8 @@ Update_Op_With_New_Base(OP *&op, TN *new_base_tn, INT64 base_offset, INT64 addr_
     new_top = TOP_opnd_immediate_variant(OP_code(op), offset_idx, offset_val);
 	//[dt] We should inform the user if the offset is not in the range or if it is a misaligned access 
     if ((new_top == TOP_UNDEFINED) &&  !TOP_opnd_value_in_range (OP_code(op), offset_idx, offset_val)) {
-		const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
-		const ISA_OPERAND_VALTYP *vtype = ISA_OPERAND_INFO_Operand(oinfo,offset_idx);
-		const ISA_LIT_CLASS_INFO *plc = ISA_LIT_CLASS_info + ISA_OPERAND_VALTYP_Literal_Class(vtype);
+		ISA_LIT_CLASS lc = OP_opnd_lit_class(op, offset_idx);
+		const ISA_LIT_CLASS_INFO *plc = &ISA_LIT_CLASS_info[lc];
 		INT i;
 		for (i = 1; i <= plc->num_ranges; ++i) {
 			if ( (offset_val & plc->range[i].scaling_mask) != 0) {
@@ -1308,9 +1307,8 @@ Generate_Common_Base(vec_base_ops& Base_Ops_List) {
       // needed by wide registers of STxP70 extensions
       INT offset_idx = OP_find_opnd_use(BO_op(op_offset[j]), OU_offset);
       if (offset_idx!=-1) {
-        const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(BO_op(op_offset[j])));
-        const ISA_OPERAND_VALTYP *vtype = ISA_OPERAND_INFO_Operand(oinfo,offset_idx);
-        const ISA_LIT_CLASS_INFO *plc = ISA_LIT_CLASS_info + ISA_OPERAND_VALTYP_Literal_Class(vtype);
+        ISA_LIT_CLASS lc = OP_opnd_lit_class(BO_op(op_offset[j]), offset_idx);
+        const ISA_LIT_CLASS_INFO *plc = &ISA_LIT_CLASS_info[lc];
         INT i;
         for (i = 1; i <= plc->num_ranges; ++i) {
           if ((int)plc->range[i].scaling_mask+1 > min_offset_alignment) 

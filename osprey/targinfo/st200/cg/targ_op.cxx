@@ -809,7 +809,7 @@ TOP_opnd_immediate_variant_default(TOP regform, int opnd, INT64 imm)
   TOP immform;
 
   // VCDV - bug #63273. avoid immediate variant for var-arg TOPs like top_asm
-  if (opnd>=ISA_OPERAND_INFO_Operands(ISA_OPERAND_Info(regform))) {
+  if (opnd >= TOP_fixed_opnds(regform)) {
     return TOP_UNDEFINED;
   }
 
@@ -1001,10 +1001,13 @@ OP_opnd_swapped_variant(OP *op, int opnd1, int opnd2)
     opnd2 = tmp;
   }
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(top);
+  if (opnd1 >= oinfo->opnds || opnd2 >= oinfo->opnds) {
+    return TOP_UNDEFINED;
+  }
   const ISA_OPERAND_VALTYP *otype1 = ISA_OPERAND_INFO_Operand(oinfo, opnd1);
   const ISA_OPERAND_VALTYP *otype2 = ISA_OPERAND_INFO_Operand(oinfo, opnd2);
   // Operands must both be registers, of the same class.
-  if (! ISA_OPERAND_VALTYP_Is_Register(otype1)
+  if (   ! ISA_OPERAND_VALTYP_Is_Register(otype1)
       || ! ISA_OPERAND_VALTYP_Is_Register(otype2)
       || (ISA_OPERAND_VALTYP_Register_Class(otype1)
 	  != ISA_OPERAND_VALTYP_Register_Class(otype2))) {
@@ -1171,6 +1174,11 @@ TOP_opnd_use_bits(TOP top, int opnd)
   const ISA_OPERAND_INFO *oinfo;
   const ISA_OPERAND_VALTYP *vtype;
   
+  // No info on extra arguments of 'var_opnds' TOP
+  if (opnd >= TOP_fixed_opnds(top)) {
+    return -1;
+  }
+
   // Default cases depend on register class.
   // ISA_REGISTER_CLASS_gr defaults to 32 bits, signed
   // ISA_REGISTER_CLASS_br default to 1 bit unsigned
@@ -1253,6 +1261,11 @@ TOP_opnd_use_signed(TOP top, int opnd)
   const ISA_OPERAND_VALTYP *vtype;
   ISA_REGISTER_CLASS rc;
   
+  // Undefined semantic for extra arguments of 'var_opnds' TOP
+  if (opnd >= TOP_fixed_opnds(top)) {
+    return -1;
+  }
+
   // Default cases depend on operand value type.
   oinfo = ISA_OPERAND_Info(top);
   vtype = ISA_OPERAND_INFO_Operand(oinfo, opnd);

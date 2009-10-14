@@ -4007,11 +4007,11 @@ r_apply_l_const (
 #ifdef TARG_ST
     /* [VCdV] implementation of NEGATIVE offset literal class. asm output
        for a negative offset is switch to its oppposite value */
-    const ISA_OPERAND_VALTYP *vtype =
-      ISA_OPERAND_INFO_Operand(ISA_OPERAND_Info(OP_code(op)), opidx);
-    ISA_LIT_CLASS lc = ISA_OPERAND_VALTYP_Literal_Class(vtype);
-    if (ISA_LC_Is_Negative(lc)  ) {
-      value=-value;
+    if (opidx < OP_fixed_opnds(op)) {
+      ISA_LIT_CLASS lc = OP_opnd_lit_class(op, opidx);
+      if (ISA_LC_Is_Negative(lc)  ) {
+        value=-value;
+      }
     }
 #endif
 

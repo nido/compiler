@@ -221,6 +221,11 @@
  *     Return a boolean that indicates whether <op> is a floating point
  *     memory operation, i.e. a floating point load or store.
  *
+#ifdef TARG_ST
+ *   INT OP_same_res(const OP *op, INT i)
+ *     Returns index of the operand that must be same register as result <i>
+ *     if any. Otherwise return -1.
+#else
  *   BOOL OP_same_res(OP *op)
  *     OPER_same_res(OP_code(op)) indicates that an OP *may* have an
  *     operand that needs to be the same register as the result. This
@@ -228,6 +233,7 @@
  *     load instruction in an unaligned load pair does NOT need to have
  *     its last operand be the same as the result.)
  *     OP_same_res is target-specific; it's defined in TARGET/op_targ.h
+#endif
  *
  *   BOOL OP_Defs_TN(const OP *op, const struct tn *res)
  *   BOOL OP_Refs_TN(const OP *op, const struct tn *opnd)
@@ -1904,8 +1910,7 @@ BOOL OP_Alloca_Barrier(OP *op);
 BOOL Is_Delay_Slot_Op (OP *xfer_op, OP *op);
 
 extern void OP_Base_Offset_TNs(OP *memop, struct tn **base_tn, struct tn **offset_tn);
-#ifdef TARG_STxP70
-#endif
+
 /***********************************************************************
  *
  *      Return a boolean to indicate if <tn> is both an operand and a

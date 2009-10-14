@@ -159,13 +159,14 @@ static char *efilename     = NULL;
 // an extension.
 static bool gen_static_code = false;
 
-// Currently we don't accept more than 256 class
-// of literals. In fact, this limit is too high
-// since we can't have more than 65 unsigned
-// ranges and 65 signed ranges (sub-ranges are
-// not managed yet).
+// Literals classes are now much more flexible
+// than before (multi ranges, scaling factor,
+// non power of 2 bounds, ...).
+// They are also heavily used by extension.
+// The limit has then been raised from 255
+// (fit on u8) to 65535 (fit on u16)
 static       int lc_count     = 0;
-static const int lc_max_limit = 255;
+static const int lc_max_limit = 65535;
 
 // C file generated when static code generation is done,
 // included in C ISA_LIT_info table when dynamic code
@@ -334,7 +335,7 @@ LIT_RANGE ISA_Create_Lit_Range(const char *name, long long min, long long max, l
   range->max = max;
   range->scaling_value = scaling;
   if(scaling > 31) {
-    fprintf(stderr, "### Error: invalid scaling %d (greater than 31)\n", scaling);
+    fprintf(stderr, "### Error: invalid scaling %ld (greater than 31)\n", scaling);
     exit(EXIT_FAILURE);
   }
   range->scaling_mask = (1<<scaling)-1;
@@ -344,7 +345,7 @@ LIT_RANGE ISA_Create_Lit_Range(const char *name, long long min, long long max, l
     range->right_rotate_mask = 0;
   } 
   else if((right_rotate_width + scaling) > 6) {
-    fprintf(stderr, "### Error: invalid right rotate width %d (greater than 6 bits)\n", right_rotate_width);
+    fprintf(stderr, "### Error: invalid right rotate width %ld (greater than 6 bits)\n", right_rotate_width);
     exit(EXIT_FAILURE);
   }
   /* Width on which the rotation can be applied
@@ -457,12 +458,12 @@ void ISA_Create_Lit_Class(const char* name, LIT_CLASS_TYPE type, ...)
 
   va_start(ap,type);
   while ((range = va_arg(ap,LIT_RANGE)) != LIT_RANGE_END) {
-    fprintf(cfile, ",\n      { " PRINTF_LONGLONG_HEXA ", " PRINTF_LONGLONG_HEXA ", %ld, " PRINTF_LONGLONG_HEXA ", %d, " PRINTF_LONGLONG_HEXA " }", 
+    fprintf(cfile, ",\n      { " PRINTF_LONGLONG_HEXA ", " PRINTF_LONGLONG_HEXA ", %ld, " PRINTF_LONGLONG_HEXA ", %ld, " PRINTF_LONGLONG_HEXA " }", 
 	    range->min, range->max, range->scaling_value, range->scaling_mask,
 	    range->max_right_rotate, range->right_rotate_mask);
     
     if(gen_static_code)
-    { fprintf(cincfile, ",\n      { " PRINTF_LONGLONG_HEXA ", " PRINTF_LONGLONG_HEXA ", %ld, " PRINTF_LONGLONG_HEXA ", %d, " PRINTF_LONGLONG_HEXA " }", 
+    { fprintf(cincfile, ",\n      { " PRINTF_LONGLONG_HEXA ", " PRINTF_LONGLONG_HEXA ", %ld, " PRINTF_LONGLONG_HEXA ", %ld, " PRINTF_LONGLONG_HEXA " }", 
 	      range->min, range->max, range->scaling_value, range->scaling_mask,
 	      range->max_right_rotate, range->right_rotate_mask);
     }

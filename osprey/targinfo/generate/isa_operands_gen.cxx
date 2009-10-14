@@ -1050,6 +1050,10 @@ void ISA_Operands_End(void)
      fprintf(cfile,"#include \"%s\"\n",tmpname);
      Gen_Free_Filename(tmpname);
    }
+
+  fprintf(hfile,
+          "#include <stddef.h>\n" // For NULL definition
+          "#include <assert.h>\n");
  
   // --------------------------------------------------------------------
   //
@@ -1084,9 +1088,9 @@ void ISA_Operands_End(void)
 	    "\ntypedef struct {\n"
 	    "  mUINT8  rclass;\n"
 	    "  mUINT8  rsubclass;\n"
-	    "  mUINT8  lclass;\n"
-	    "  mUINT8  eclass;\n"
 	    "  mUINT16 size;\n"
+	    "  mUINT16 lclass;\n"
+	    "  mUINT8  eclass;\n"
 	    "  mUINT8  flags;\n"
 	    "  mUINT8  default_reloc;\n"
 	    "  mUINT8  relocs;\n"
@@ -1180,10 +1184,10 @@ void ISA_Operands_End(void)
 	    ISA_REGISTER_SUBCLASS_INFO_Name(scinfo));
  
     fprintf(cfile,                       /* Write second part of structure */
-	    "    %3d, %s, %2d, 0x%02x, %3d, %3d,",
+	    "    %2d, %3d, %s, 0x%02x, %3d, %3d,",
+	    val_type->size,
 	    val_type->literal_class,
 	    ISA_EC_Name(val_type->enum_class),
-	    val_type->size,
 	    flags,
 	    val_type->default_reloc,
 	    val_type->relocs.size());
@@ -1241,6 +1245,12 @@ void ISA_Operands_End(void)
   max_operands++;
   max_results++;
 
+  const char *OPND_INFO_TYPE_NAME_opnd      = "mUINT16";
+  const char *OPND_INFO_TYPE_NAME_ouse      = "mUINT16";
+  const char *OPND_INFO_TYPE_NAME_result    = "mUINT16";
+  const char *OPND_INFO_TYPE_NAME_ruse      = "mUINT16";
+  const char *OPND_INFO_TYPE_NAME_same_res  = "mINT8  ";
+  const char *OPND_INFO_TYPE_NAME_conflicts = "mINT32 ";
   if(gen_static_code) {
    fprintf (hfile, "\n"
                    "#define %s (%d)\n"
@@ -1251,17 +1261,21 @@ void ISA_Operands_End(void)
 
    fprintf (hfile, "\ntypedef struct {\n"
 	    "  mUINT8  opnds;\n"
-	    "  mUINT8  opnd[%s];\n"
-	    "  mUINT16 ouse[%s];\n"
+	    "  %s     *opnd;\n"
+	    "  %s     *ouse;\n"
 	    "  mUINT8  results;\n"
-	    "  mUINT8  result[%s];\n"
-	    "  mUINT16 ruse[%s];\n"
-	    "  mINT8   same_res[%s];\n"
-	    "  mINT32  conflicts[%s];\n"
+	    "  %s     *result;\n"
+	    "  %s     *ruse;\n"
+	    "  %s     *same_res;\n"
+	    "  %s     *conflicts;\n"
 	    "} ISA_OPERAND_INFO;\n",
-	    max_operands_name, max_operands_name, 
-	    max_results_name, max_results_name, max_results_name,
-	    max_results_name);
+            OPND_INFO_TYPE_NAME_opnd,
+            OPND_INFO_TYPE_NAME_ouse,
+            OPND_INFO_TYPE_NAME_result,
+            OPND_INFO_TYPE_NAME_ruse,
+            OPND_INFO_TYPE_NAME_same_res,
+            OPND_INFO_TYPE_NAME_conflicts);
+
     fprintf(efile, "ISA_OPERAND_info\n");
 
     fprintf(hfile, 
@@ -1276,9 +1290,10 @@ void ISA_Operands_End(void)
   //
   // --------------------------------------------------------------------
 
-  tabname = gen_static_code ? "ISA_OPERAND_info_static" :
-                              "ISA_OPERAND_info_dynamic";
-  fprintf(cfile, "\nstatic ISA_OPERAND_INFO %s[] = {\n",tabname);
+  //
+  // First defines all sub tables
+  //
+  const char *sub_array_prefix = "ISA_OPERAND_CONTENT_";
   for (ogi = all_groups.begin(); ogi != all_groups.end(); ++ogi) {
     int i;
     int pos;
@@ -1290,34 +1305,7 @@ void ISA_Operands_End(void)
 
     OPERANDS_GROUP oper_group = *ogi;
 
-    pos = fprintf(cfile, "  { %d, {", oper_group->opnd_count);
-    for (i = 0, oper_iter = oper_group->operands.begin(); 
-	 i < max_operands;
-	 ++i
-    ) {
-      int val_type_index = -1;
-      if (oper_iter != oper_group->operands.end()) {
-        OPERAND_VALUE_TYPE val_type = *oper_iter;
-        if (val_type == NULL) {
-	  fprintf(stderr, "### Error: operand missing for %s\n", 
-                  oper_group->name);
-	  exit(EXIT_FAILURE);
-        }
-	val_type_index = val_type->index;
-	++oper_iter;
-
-	if (!val_type->is_register && 
-             val_type->literal_class != ISA_LC_UNDEFINED) {
-
-	  /* track the range of operands that can possibly be literal
-	   */
-	  if (i < first_literal) first_literal = i;
-	  if (i > last_literal) last_literal = i;
-	}
-      }
-      pos += fprintf(cfile, "%s%3d", i == 0 ? " " : ", ", val_type_index);
-    }
-    fprintf(cfile, " },\n");
+    fprintf(cfile, "\n/* Operand group '%s' */\n", oper_group->name);
 
     // Check of operand properties depending on TOP properties
     if ((oper_group->is_load == true || oper_group->is_store == true) &&
@@ -1365,112 +1353,219 @@ void ISA_Operands_End(void)
     }
     // End of check
 
-    pos = fprintf(cfile, "       {");
-    for (i = 0, use_iter = oper_group->opnd_use.begin(); 
-	 i < max_operands;
-	 ++i
-    ) {
-
-      OPERANDS_GROUP_OPERAND_USES use_type = 0;
-      if (use_iter != oper_group->opnd_use.end()) {
-	use_type = *use_iter;
-	if (use_type) {
-	  //	  use_type_index = use_type->index + 1; // +1 for OU_UNDEFINED
-	  //	  use_mask |= 1ULL << use_type_index;
-	  use_mask |= use_type;
-	} else {
-	  use_mask |= 1; // OU_UNDEFINED
-	}
-	++use_iter;
-      }
-
-      pos+=fprintf(cfile,"%s", i == 0 ? " " : ", ");
-      pos+=print_use_type(cfile,use_type);
+    // ----------------------
+    // Operand related tables
+    // ----------------------
+    if (oper_group->opnd_count == 0) {
+      fprintf(cfile, "/* --> No operand in this group */\n");
     }
-    fprintf(cfile, " },\n");
+    else {
+      //
+      // print out the operand index table (used to access the operand type)
+      //
+      pos = fprintf(cfile, "static %s %s_opnd_%s[%d]",
+                    OPND_INFO_TYPE_NAME_opnd,
+                    sub_array_prefix, oper_group->name, oper_group->opnd_count);
+      fprintf(cfile, " %*s= {", 55 - pos, "");
+      for (i = 0, oper_iter = oper_group->operands.begin(); 
+           i < oper_group->opnd_count;
+           ++i
+           ) {
+        int val_type_index = -1;
+        if (oper_iter != oper_group->operands.end()) {
+          OPERAND_VALUE_TYPE val_type = *oper_iter;
+          if (val_type == NULL) {
+            fprintf(stderr, "### Error: operand missing for %s\n", 
+                    oper_group->name);
+            exit(EXIT_FAILURE);
+          }
+          val_type_index = val_type->index;
+          ++oper_iter;
 
-    pos = fprintf(cfile, "    %d, {", oper_group->result_count);
-    for (i = 0, oper_iter = oper_group->results.begin(); 
-	 i < max_results;
-	 ++i
-    ) {
-      int val_type_index = -1;
-      if (oper_iter != oper_group->results.end()) {
-        OPERAND_VALUE_TYPE val_type = *oper_iter;
-        if (val_type == NULL) {
-	  fprintf(stderr, "### Error: result missing for %s\n", oper_group->name);
-	  error_nb++;
+          if (!val_type->is_register && 
+              val_type->literal_class != ISA_LC_UNDEFINED) {
+
+            /* track the range of operands that can possibly be literal
+             */
+            if (i < first_literal) first_literal = i;
+            if (i > last_literal) last_literal = i;
+          }
         }
-	val_type_index = val_type->index;
-	 ++oper_iter;
+        pos += fprintf(cfile, "%s%3d", i == 0 ? " " : ", ", val_type_index);
       }
-      pos += fprintf(cfile, "%s%3d", i == 0 ? " " : ", ", val_type_index);
-    }
-    fprintf(cfile, " },\n");
+      fprintf(cfile, " };\n");
 
-    //
-    // Arthur: print out the results use types
-    //
-    pos = fprintf(cfile, "       {");
-    for (i = 0, use_iter = oper_group->res_use.begin(); 
-	 i < max_results;
-	 ++i
-    ) {
-      OPERANDS_GROUP_OPERAND_USES def_type = 0;
-      if (use_iter != oper_group->res_use.end()) {
-	def_type = *use_iter;
-	if (def_type) {
-	  def_mask |= def_type;
-	} else {
-	  def_mask |= 1; // OU_UNDEFINED
-	}
-	++use_iter;
-      }
+      //
+      // print out the operand use types
+      //
+      pos = fprintf(cfile, "static %s %s_ouse_%s[%d]",
+                    OPND_INFO_TYPE_NAME_ouse,
+                    sub_array_prefix, oper_group->name, oper_group->opnd_count);
+      fprintf(cfile, " %*s= {", 55 - pos, "");
+      for (i = 0, use_iter = oper_group->opnd_use.begin(); 
+           i < oper_group->opnd_count;
+           ++i
+           ) {
 
-      pos+=fprintf(cfile,"%s", 0==i ? " " : ", ");/* Put a comma if necessary*/
-      pos+=print_use_type(cfile,def_type);
-    }
-    fprintf(cfile, " },\n");
+        OPERANDS_GROUP_OPERAND_USES use_type = 0;
+        if (use_iter != oper_group->opnd_use.end()) {
+          use_type = *use_iter;
+          if (use_type) {
+            //	  use_type_index = use_type->index + 1; // +1 for OU_UNDEFINED
+            //	  use_mask |= 1ULL << use_type_index;
+            use_mask |= use_type;
+          } else {
+            use_mask |= 1; // OU_UNDEFINED
+          }
+          ++use_iter;
+        }
 
-    //
-    // Arthur: print out the same_res table
-    //
-    pos = fprintf(cfile, "       {");
-    for (i = 0, idx_iter = oper_group->same_res.begin(); 
-	 i < max_results;
-	 ++i
-    ) {
-      int same_res_index = -1;
-      if (idx_iter != oper_group->same_res.end()) {
-	if (*idx_iter != 0) {
-	  same_res_index = *idx_iter - 1;
-	}
-	++idx_iter;
+        pos+=fprintf(cfile,"%s", i == 0 ? " " : ", ");
+        pos+=print_use_type(cfile,use_type);
       }
-      pos += fprintf(cfile, "%s%3d", i == 0 ? " " : ", ", same_res_index);
+      fprintf(cfile, " };\n");
     }
-    pos = fprintf(cfile, " },\n");
-    //
-    // Julien: print out the conflict table
-    //
-    pos = fprintf(cfile, "       {");
-    for (i = 0, idx2_iter = oper_group->conflicts.begin(); 
-	 i < max_results;
-	 ++i
-    ) {
-      int conflict_value = 0;
-      if (idx2_iter != oper_group->conflicts.end()) {
-	if (*idx2_iter != 0) {
-	  conflict_value = *idx2_iter;
-	}
-	++idx2_iter;
+
+    // ---------------------
+    // Result related tables
+    // ---------------------
+    if (oper_group->result_count == 0) {
+      fprintf(cfile, "/* --> No result in this group */\n");
+    }
+    else {
+      //
+      // print out the result index table (used to access the result type)
+      //
+      pos = fprintf(cfile, "static %s %s_result_%s[%d]",
+                    OPND_INFO_TYPE_NAME_result,
+                    sub_array_prefix, oper_group->name, oper_group->result_count);
+      fprintf(cfile, " %*s= {", 55 - pos, "");
+      for (i = 0, oper_iter = oper_group->results.begin(); 
+           i < oper_group->result_count;
+           ++i
+           ) {
+        int val_type_index = -1;
+        if (oper_iter != oper_group->results.end()) {
+          OPERAND_VALUE_TYPE val_type = *oper_iter;
+          if (val_type == NULL) {
+            fprintf(stderr, "### Error: result missing for %s\n", oper_group->name);
+            error_nb++;
+          }
+          val_type_index = val_type->index;
+          ++oper_iter;
+        }
+        pos += fprintf(cfile, "%s%3d", i == 0 ? " " : ", ", val_type_index);
       }
-      pos += fprintf(cfile, "%s%#x", i == 0 ? " " : ", ", conflict_value);
+      fprintf(cfile, " };\n");
+
+      //
+      // print out the results use types
+      //
+      pos = fprintf(cfile, "static %s %s_ruse_%s[%d]",
+                    OPND_INFO_TYPE_NAME_ruse,
+                    sub_array_prefix, oper_group->name, oper_group->result_count);
+      fprintf(cfile, " %*s= {", 55 - pos, "");
+      for (i = 0, use_iter = oper_group->res_use.begin(); 
+           i < oper_group->result_count;
+           ++i
+           ) {
+        OPERANDS_GROUP_OPERAND_USES def_type = 0;
+        if (use_iter != oper_group->res_use.end()) {
+          def_type = *use_iter;
+          if (def_type) {
+            def_mask |= def_type;
+          } else {
+            def_mask |= 1; // OU_UNDEFINED
+          }
+          ++use_iter;
+        }
+
+        pos+=fprintf(cfile,"%s", 0==i ? " " : ", ");/* Put a comma if necessary*/
+        pos+=print_use_type(cfile,def_type);
+      }
+      fprintf(cfile, " };\n");
+
+      //
+      // print out the same_res table
+      //
+      pos = fprintf(cfile, "static %s %s_same_res_%s[%d]",
+                    OPND_INFO_TYPE_NAME_same_res,
+                    sub_array_prefix, oper_group->name, oper_group->result_count);
+      fprintf(cfile, " %*s= {", 55 - pos, "");
+      for (i = 0, idx_iter = oper_group->same_res.begin(); 
+           i < oper_group->result_count;
+           ++i
+           ) {
+        int same_res_index = -1;
+        if (idx_iter != oper_group->same_res.end()) {
+          if (*idx_iter != 0) {
+            same_res_index = *idx_iter - 1;
+          }
+          ++idx_iter;
+        }
+        pos += fprintf(cfile, "%s%3d", i == 0 ? " " : ", ", same_res_index);
+      }
+      fprintf(cfile, " };\n");
+
+      //
+      // print out the conflict table
+      //
+      pos = fprintf(cfile, "static %s %s_conflicts_%s[%d]",
+                    OPND_INFO_TYPE_NAME_conflicts,
+                    sub_array_prefix, oper_group->name, oper_group->result_count);
+      fprintf(cfile, " %*s= {", 55 - pos, "");
+      for (i = 0, idx2_iter = oper_group->conflicts.begin(); 
+           i < oper_group->result_count;
+           ++i
+           ) {
+        int conflict_value = 0;
+        if (idx2_iter != oper_group->conflicts.end()) {
+          if (*idx2_iter != 0) {
+            conflict_value = *idx2_iter;
+          }
+          ++idx2_iter;
+        }
+        pos += fprintf(cfile, "%s%#x", i == 0 ? " " : ", ", conflict_value);
+      }
+      fprintf(cfile, " };\n");
     }
-    fprintf(cfile, " } },%*s/* %s */\n", 50 - (pos + 5), "", oper_group->name);
+  }
+  fprintf(cfile, "\n");
+
+
+  //
+  // Now defines the OPERAND_INFO table
+  //
+  tabname = gen_static_code ? "ISA_OPERAND_info_static" :
+                              "ISA_OPERAND_info_dynamic";
+  fprintf(cfile, "\nstatic ISA_OPERAND_INFO %s[] = {\n",tabname);
+  for (ogi = all_groups.begin(); ogi != all_groups.end(); ++ogi) {
+    int pos;
+
+    OPERANDS_GROUP oper_group = *ogi;
+
+    if (oper_group->opnd_count > 0) {
+      fprintf(cfile, "  { %d,\n", oper_group->opnd_count);
+      fprintf(cfile, "    %s_opnd_%s,\n", sub_array_prefix, oper_group->name);
+      fprintf(cfile, "    %s_ouse_%s,\n", sub_array_prefix, oper_group->name);
+    }
+    else {
+      fprintf(cfile, "  { 0, NULL, NULL,\n");
+    }
+    if (oper_group->result_count > 0) {
+      pos = fprintf(cfile, "    %d,\n", oper_group->result_count);
+      fprintf(cfile, "    %s_result_%s,\n", sub_array_prefix, oper_group->name);
+      fprintf(cfile, "    %s_ruse_%s,\n", sub_array_prefix, oper_group->name);
+      fprintf(cfile, "    %s_same_res_%s,\n", sub_array_prefix, oper_group->name);
+      pos = fprintf(cfile, "    %s_conflicts_%s", sub_array_prefix, oper_group->name);
+    }
+    else {
+      pos = fprintf(cfile, "    0, NULL, NULL, NULL, NULL");
+    }
+      fprintf(cfile, " },%*s/* %s */\n", 50 - (pos + 5), "", oper_group->name);
   }
 
-  fprintf(cfile, "};\n");
+  fprintf(cfile, " };\n");
 
   if(gen_static_code) {
     fprintf(cfile, 
@@ -1573,6 +1668,7 @@ void ISA_Operands_End(void)
 		 "  INT opnd)\n"
 		 "{\n"
 		 "  BE_EXPORTED extern ISA_OPERAND_VALTYP *ISA_OPERAND_operand_types;\n"
+		 "  assert((opnd >= 0) && (opnd < oinfo->opnds));\n"
 		 "  INT index = oinfo->opnd[opnd];\n"
 		 "  return &ISA_OPERAND_operand_types[index];\n"
 		 "}\n");
@@ -1588,6 +1684,7 @@ void ISA_Operands_End(void)
 		 "  INT result)\n"
 		 "{\n"
 		 "  BE_EXPORTED extern ISA_OPERAND_VALTYP *ISA_OPERAND_operand_types;\n"
+		 "  assert((result >= 0) && (result < oinfo->results));\n"
 		 "  INT index = oinfo->result[result];\n"
 		 "  return &ISA_OPERAND_operand_types[index];\n"
 		 "}\n");
@@ -1695,10 +1792,10 @@ void ISA_Operands_End(void)
   }
 
   fprintf(hfile, "\ninline INT ISA_OPERAND_VALTYP_Size("
-		   "const ISA_OPERAND_VALTYP *otype)\n"
+		 "const ISA_OPERAND_VALTYP *otype)\n"
 		 "{\n"
 	         "  if (otype->size == (mUINT16)-1 && ISA_OPERAND_VALTYP_Is_Register (otype))\n"
-                 "    return ISA_REGISTER_CLASS_INFO_Bit_Size (ISA_REGISTER_CLASS_Info (ISA_OPERAND_VALTYP_Register_Class (otype)));\n"
+		 "    return ISA_REGISTER_CLASS_INFO_Bit_Size (ISA_REGISTER_CLASS_Info (ISA_OPERAND_VALTYP_Register_Class (otype)));\n"
 		 "  return otype->size;\n"
 		 "}\n");
 
@@ -1713,6 +1810,7 @@ void ISA_Operands_End(void)
 		 "  const ISA_OPERAND_INFO *oinfo,\n"
 		 "  INT opnd)\n"
 		 "{\n"
+		 "  assert((opnd >= 0) && (opnd < oinfo->opnds));\n"
 		 "  return (ISA_OPERAND_USE)oinfo->ouse[opnd];\n"
 		 "}\n");
 
@@ -1720,6 +1818,7 @@ void ISA_Operands_End(void)
 		 "  const ISA_OPERAND_INFO *oinfo,\n"
 		 "  INT res)\n"
 		 "{\n"
+		 "  assert((res >= 0) && (res < oinfo->results));\n"
 		 "  return (ISA_OPERAND_USE)oinfo->ruse[res];\n"
 		 "}\n");
 
@@ -1727,6 +1826,7 @@ void ISA_Operands_End(void)
 		 "  const ISA_OPERAND_INFO *oinfo,\n"
 		 "  INT res)\n"
 		 "{\n"
+		 "  assert((res >= 0) && (res < oinfo->results));\n"
 		 "  return (ISA_OPERAND_USE)oinfo->same_res[res];\n"
 		 "}\n");
 
@@ -1734,6 +1834,7 @@ void ISA_Operands_End(void)
 		 "  const ISA_OPERAND_INFO *oinfo,\n"
 		 "  INT res)\n"
 		 "{\n"
+		 "  assert((res >= 0) && (res < oinfo->results));\n"
 		 "  return (ISA_OPERAND_USE)oinfo->conflicts[res];\n"
 		 "}\n");
 
@@ -1741,6 +1842,7 @@ void ISA_Operands_End(void)
 		 "  const ISA_OPERAND_INFO *oinfo,\n"
 		 "  INT res, INT opnd)\n"
 		 "{\n"
+		 "  assert((res >= 0) && (res < oinfo->results));\n"
 	         "  INT mask = 1 << opnd;\n"
 		 "  return ((ISA_OPERAND_USE)oinfo->conflicts[res]) & mask;\n"
 		 "}\n");

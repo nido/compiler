@@ -6137,21 +6137,31 @@ Find_BB_TNs (BB *bb)
             (TN_register_class(actual_tn) == TN_register_class(tn_replace)) &&
 #ifdef TARG_ST
 	    ! (EBO_in_peep && OP_opnd_is_multi(op, opndnum)) &&
-#endif
-#ifdef TARG_ST
 	    // Don't allow propagation of non dedicated into a dedicated single register subclass operand
 	    (!(!TN_is_dedicated(tn_replace) && TN_is_dedicated(OP_opnd(op, opndnum)) &&
-	       ISA_OPERAND_VALTYP_Register_Subclass(ISA_OPERAND_INFO_Operand(ISA_OPERAND_Info(OP_code(op)),opndnum)) != ISA_REGISTER_SUBCLASS_UNDEFINED &&
-	       ISA_REGISTER_SUBCLASS_INFO_Count (ISA_REGISTER_SUBCLASS_Info (ISA_OPERAND_VALTYP_Register_Subclass(ISA_OPERAND_INFO_Operand(ISA_OPERAND_Info(OP_code(op)),opndnum)))) == 1)) &&
-#endif
-#ifdef TARG_ST
+               opndnum < OP_fixed_opnds(op) &&
+               OP_opnd_reg_subclass(op, opndnum) != ISA_REGISTER_SUBCLASS_UNDEFINED &&
+	       ISA_REGISTER_SUBCLASS_INFO_Count (
+                 ISA_REGISTER_SUBCLASS_Info (
+                   OP_opnd_reg_subclass(op, opndnum))) == 1)) &&
 	    /* Do not replace pre-assigned registers in asm operands. */
 	    (!(has_assigned_reg(actual_tn) && OP_code(op) == TOP_asm)) &&
 #endif
             (!has_assigned_reg(actual_tn) ||
-             (ISA_OPERAND_VALTYP_Register_Subclass(ISA_OPERAND_INFO_Operand(ISA_OPERAND_Info(OP_code(op)),opndnum)) == ISA_REGISTER_SUBCLASS_UNDEFINED) ||
+#ifdef TARG_ST
+             // Make use of simplified API
+             opndnum >= OP_fixed_opnds(op) ||
+             OP_opnd_reg_subclass(op, opndnum) == ISA_REGISTER_SUBCLASS_UNDEFINED ||
+#else
+              ISA_OPERAND_VALTYP_Register_Subclass(ISA_OPERAND_INFO_Operand(ISA_OPERAND_Info(OP_code(op)),opndnum)) == ISA_REGISTER_SUBCLASS_UNDEFINED ||
+#endif
 	     (has_assigned_reg(tn_replace) &&
-		(REGISTER_SET_MemberP(REGISTER_SUBCLASS_members(ISA_OPERAND_VALTYP_Register_Subclass(ISA_OPERAND_INFO_Operand(ISA_OPERAND_Info(OP_code(op)),opndnum))), TN_register(tn_replace))))) &&
+#ifdef TARG_ST
+              (REGISTER_SET_MemberP(REGISTER_SUBCLASS_members(OP_opnd_reg_subclass(op,opndnum)), TN_register(tn_replace)))
+#else
+		(REGISTER_SET_MemberP(REGISTER_SUBCLASS_members(ISA_OPERAND_VALTYP_Register_Subclass(ISA_OPERAND_INFO_Operand(ISA_OPERAND_Info(OP_code(op)),opndnum))), TN_register(tn_replace)))
+#endif
+              )) &&
             (TN_size(actual_tn) <= TN_size(tn_replace)) &&
             (TN_is_float(actual_tn) == TN_is_float(tn_replace)) &&
             (TN_is_fpu_int(actual_tn) == TN_is_fpu_int(tn_replace)) &&

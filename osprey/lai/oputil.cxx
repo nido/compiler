@@ -928,18 +928,6 @@ Mk_OP(TOP opr, ...)
 OP *
 Mk_VarOP(TOP opr, INT results, INT opnds, TN **res_tn, TN **opnd_tn)
 {
-#ifdef TARG_ST
-  if (results != ISA_OPERAND_INFO_Results(ISA_OPERAND_Info(opr))) {
-    FmtAssert(TOP_is_var_opnds(opr) && results > ISA_OPERAND_INFO_Results(ISA_OPERAND_Info(opr)),
-	      ("%d is not enough results for %s", results, TOP_Name(opr)));
-  }
-  if (opnds != ISA_OPERAND_INFO_Operands(ISA_OPERAND_Info(opr))) {
-    FmtAssert(TOP_is_var_opnds(opr) && opnds > ISA_OPERAND_INFO_Operands(ISA_OPERAND_Info(opr)),
-	      ("%d is not enough operands for %s", opnds, TOP_Name(opr)));
-  }
-  FmtAssert(ISA_SUBSET_LIST_Member (ISA_SUBSET_List, opr),
-	    ("Mk_OP: op not supported on target (%s)", TOP_Name(opr)));
-#else
   if (results != TOP_fixed_results(opr)) {
     FmtAssert(TOP_is_var_opnds(opr) && results > TOP_fixed_results(opr),
 	      ("%d is not enough results for %s", results, TOP_Name(opr)));
@@ -948,6 +936,9 @@ Mk_VarOP(TOP opr, INT results, INT opnds, TN **res_tn, TN **opnd_tn)
     FmtAssert(TOP_is_var_opnds(opr) && opnds > TOP_fixed_opnds(opr),
 	      ("%d is not enough operands for %s", opnds, TOP_Name(opr)));
   }
+#ifdef TARG_ST
+  FmtAssert(ISA_SUBSET_LIST_Member (ISA_SUBSET_List, opr),
+	    ("Mk_OP: op not supported on target (%s)", TOP_Name(opr)));
 #endif
 
   INT i;
@@ -1581,10 +1572,15 @@ void OP_Base_Offset_TNs(OP *memop, TN **base_tn, TN **offset_tn)
 BOOL
 TOP_opnd_value_in_range (TOP top, int opnd, INT64 imm) {
 
-  const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(top);
-  const ISA_OPERAND_VALTYP *vtype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
-  ISA_LIT_CLASS lc = ISA_OPERAND_VALTYP_Literal_Class(vtype);
-  return ISA_LC_Value_In_Class(imm, lc);
+  if (opnd < TOP_fixed_opnds(top)) {
+    const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(top);
+    const ISA_OPERAND_VALTYP *vtype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
+    ISA_LIT_CLASS lc = ISA_OPERAND_VALTYP_Literal_Class(vtype);
+    return ISA_LC_Value_In_Class(imm, lc);
+  }
+  else {
+    return TRUE;
+  }
 } 
 
 /* ====================================================================
@@ -1600,11 +1596,15 @@ OP_same_res(OP *op, INT i) {
   INT opnd_idx = -1;
   TOP top = OP_code(op);
   const ISA_OPERAND_INFO *oinfo;
-  /* Check architectural description for same res. */
-  oinfo = OP_operand_info(op);
-  opnd_idx = ISA_OPERAND_INFO_Same_Res(oinfo, i); 
-  /* check for ASM statements with same res on operand constraint. */
-  if (top == TOP_asm) {
+  if (top != TOP_asm) {
+    /* Check architectural description for same res. */
+    oinfo = OP_operand_info(op);
+    if (i < oinfo->results) {
+      opnd_idx = ISA_OPERAND_INFO_Same_Res(oinfo, i); 
+    }
+  }
+  else {
+    /* check for ASM statements with same res on operand constraint. */
     ASM_OP_ANNOT* asm_info = (ASM_OP_ANNOT *)OP_MAP_Get(OP_Asm_Map, op);
     opnd_idx = ASM_OP_result_same_opnd(asm_info)[i];
   }

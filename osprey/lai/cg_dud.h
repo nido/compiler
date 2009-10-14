@@ -141,6 +141,8 @@ class DUD_SITE {
   static const int IDX_WIDTH = 5;
 #elif (OP_MAX_FIXED_RESULTS + OP_MAX_FIXED_OPNDS <= 64)
   static const int IDX_WIDTH = 6;
+#elif (OP_MAX_FIXED_RESULTS + OP_MAX_FIXED_OPNDS <= 128)
+  static const int IDX_WIDTH = 7;
 #else
 #error "Need to extend IDX_WIDTH value here"
 #endif

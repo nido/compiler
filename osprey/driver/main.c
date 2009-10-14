@@ -381,7 +381,7 @@ main (int argc, char *argv[])
     */
    {
       extern int UserDefinedExtensionSeen;
-      extern char TENVExtension_str[];
+      extern char *TENVExtension_str;
       if (UserDefinedExtensionSeen) {
          char *newargv[] = { TENVExtension_str };
          int  i = 0;
