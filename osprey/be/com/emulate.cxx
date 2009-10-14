@@ -4582,7 +4582,11 @@ extern WN *emulate(WN *block, WN *tree)
 
   if (OPCODE_is_intrinsic(WN_opcode(tree)))
   {
-    if (Inline_Intrinsics_Allowed)
+    if (Inline_Intrinsics_Allowed
+#ifdef TARG_ST
+        || !INTRN_runtime_exists(WN_intrinsic(tree))
+#endif
+        )
     {
       wn = emulate_intrinsic_op(block, tree);
     }

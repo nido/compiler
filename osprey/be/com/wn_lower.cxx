@@ -5723,8 +5723,7 @@ static WN *lower_return_ldid(WN *block, WN *tree, LOWER_ACTIONS actions)
      // For multi-results builtins, relation
      // WN_operator(WN_last(block)) == OPR_INTRINSIC_CALL is not always
      // true.
-     if( MTYPE_is_dynamic(mtype) &&
-         Inline_Intrinsics_Allowed) { 
+     if( MTYPE_is_dynamic(mtype) ) { 
 
          if(traceLdid) {
            fprintf(TFile,"-->Lowering dynamic mtype \"%s\" ldid return preg\n",
@@ -6838,7 +6837,9 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
     // Arthur: if we're not inlining intrinsics, do nothing - it will
     //         be converted into a function call at LOWER_TO_CG time.
     //
-    if (Inline_Intrinsics_Allowed && INTRN_cg_intrinsic(WN_intrinsic(tree))) {
+    if ((Inline_Intrinsics_Allowed  ||
+         !INTRN_runtime_exists(WN_intrinsic(tree))) &&
+        INTRN_cg_intrinsic(WN_intrinsic(tree))) {
       // Arthur: we may need to HILO lower parameters for cg_intrinsics
       //         When the cg-intrinsic returns not a HILO type, but may
       //         require HILO parameters, such intrinsic only returns 

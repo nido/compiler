@@ -427,10 +427,11 @@ Add_Intrinsic(const Extension_dll_t *dll_instance,
   intrn_info[intrn_id].is_cg_intrinsic     = btypes->is_cg_intrinsic;
   intrn_info[intrn_id].c_name              = (char*)btypes->c_name;
   intrn_info[intrn_id].specific_name       = (char*)NULL;
-  intrn_info[intrn_id].runtime_name        = (char*)btypes->runtime_name;
+  /* extension intrinsics cannot be called as runtimes */
+  intrn_info[intrn_id].runtime_name        = (char*)NULL;
 
 
-  EXTENSION_add_INTRINSIC_to_Map(intrn_info[intrn_id].runtime_name, intrn_id);
+  EXTENSION_add_INTRINSIC_to_Map(intrn_info[intrn_id].c_name, intrn_id);
 
   // Complete proto info for this intrinsic
   proto_intrn_info_t *proto_info =

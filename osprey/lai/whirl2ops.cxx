@@ -4144,8 +4144,9 @@ Handle_INTRINSIC_OP (WN *expr, TN *result)
 
 #ifdef TARG_ST
 
-  FmtAssert(Inline_Intrinsics_Allowed,("inlining intrinsics not allowed"));
-
+  FmtAssert(Inline_Intrinsics_Allowed || !INTRN_runtime_exists(id),
+            ("inlining intrinsics not allowed"));
+  
   if (Trace_Exp) {
     fprintf(TFile, "exp_intrinsic_op %s: ", INTRN_c_name(id));
     for (i = 0; i < numrests-1; i++) {

@@ -1,6 +1,63 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Oct 14 10:17:38 CEST 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79428
+
+Description:
+------------
+	* [trunk] Fix for bug #79428: -OPT:inline_intr=false non funtionnal.
+	Deliver fixes/codex-79428 rev #24448 with authorization branch #79430
+
+
+Modified Files:
+---------------
+	 M      .
+	M       osprey/be/com/wn_lower.cxx
+	M       osprey/be/com/emulate.cxx
+	M       osprey/be/com/data_layout.cxx
+	M       osprey/lai/whirl2ops.cxx
+	M       osprey/common/com/intrn_info.h
+	M       osprey/common/com/loader.cxx
+	M       osprey/common/com/intrn_info.cxx
+	M       osprey/targinfo/stxp70/config/targ_intrn_info.def
+	M       osprey/targinfo/stxp70/config/gen_intrinsics.inc
+	M       osprey/targinfo/stxp70/config/config_intrinsic.h
+	M       osprey/targinfo/st200/config/gen_intrinsics.inc
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24444 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79428@24448 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24444 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79428@24448" 
+
+Diff links to modified files:
+-----------------------------
+.	http://codex.cro.st.com/svn/viewvc.php/trunk/.?p2=branches/fixes/codex-79428/.&r1=24444&r2=24448&roottype=svn&root=open64&diff_format=h
+osprey/be/com/wn_lower.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/wn_lower.cxx?p2=branches/fixes/codex-79428/osprey/be/com/wn_lower.cxx&r1=24444&r2=24448&roottype=svn&root=open64&diff_format=h
+osprey/be/com/emulate.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/emulate.cxx?p2=branches/fixes/codex-79428/osprey/be/com/emulate.cxx&r1=24444&r2=24448&roottype=svn&root=open64&diff_format=h
+osprey/be/com/data_layout.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/data_layout.cxx?p2=branches/fixes/codex-79428/osprey/be/com/data_layout.cxx&r1=24444&r2=24448&roottype=svn&root=open64&diff_format=h
+osprey/lai/whirl2ops.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/whirl2ops.cxx?p2=branches/fixes/codex-79428/osprey/lai/whirl2ops.cxx&r1=24444&r2=24448&roottype=svn&root=open64&diff_format=h
+osprey/common/com/intrn_info.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/intrn_info.h?p2=branches/fixes/codex-79428/osprey/common/com/intrn_info.h&r1=24444&r2=24448&roottype=svn&root=open64&diff_format=h
+osprey/common/com/loader.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/loader.cxx?p2=branches/fixes/codex-79428/osprey/common/com/loader.cxx&r1=24444&r2=24448&roottype=svn&root=open64&diff_format=h
+osprey/common/com/intrn_info.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/intrn_info.cxx?p2=branches/fixes/codex-79428/osprey/common/com/intrn_info.cxx&r1=24444&r2=24448&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/targ_intrn_info.def	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/targ_intrn_info.def?p2=branches/fixes/codex-79428/osprey/targinfo/stxp70/config/targ_intrn_info.def&r1=24444&r2=24448&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/gen_intrinsics.inc	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/gen_intrinsics.inc?p2=branches/fixes/codex-79428/osprey/targinfo/stxp70/config/gen_intrinsics.inc&r1=24444&r2=24448&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_intrinsic.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_intrinsic.h?p2=branches/fixes/codex-79428/osprey/targinfo/stxp70/config/config_intrinsic.h&r1=24444&r2=24448&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/config/gen_intrinsics.inc	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/config/gen_intrinsics.inc?p2=branches/fixes/codex-79428/osprey/targinfo/st200/config/gen_intrinsics.inc&r1=24444&r2=24448&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/fixes/codex-79428/DEPENDENCIES&r1=24444&r2=24448&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct 14 08:30:29 CEST 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

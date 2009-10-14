@@ -2352,23 +2352,23 @@ const intrn_info_t intrn_info[INTRINSIC_LAST+1] = {
 
 #ifdef TARG_ST
   { /* [TTh] KILL */
-	BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-	IRETURN_DYNAMIC, "__builtin__KILL", NULL, "__builtin__KILL"},
+    BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
+    IRETURN_DYNAMIC, "__builtin__KILL", NULL, NULL},
   { /* BUILTIN_EH_RETURN */
 	BYVAL, NOT_PURE, SIDEEFFECTS, NEVER_RETURN, NOT_ACTUAL, CGINTRINSIC,
-	IRETURN_V, "__builtin_eh_return", NULL, "__builtin_eh_return"},
+	IRETURN_V, "__builtin_eh_return", NULL, NULL},
   { /* BUILTIN_UNWIND_INIT */
 	BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-	IRETURN_V, "__builtin_unwind_init", NULL, "__builtin_unwind_init"},
+	IRETURN_V, "__builtin_unwind_init", NULL, NULL},
   { /* BUILTIN_DWARF_CFA */
 	BYVAL, PURE,  NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-	IRETURN_U4, "__builtin_dwarf_cfa", NULL, "__builtin_dwarf_cfa"},
+	IRETURN_U4, "__builtin_dwarf_cfa", NULL, NULL},
   { /* BUILTIN_FRAME_ADDRESS */
 	BYVAL, PURE,  NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-	IRETURN_U4, "__builtin_frame_address", NULL, "__builtin_frame_address"},
+	IRETURN_U4, "__builtin_frame_address", NULL, NULL},
   { /* BUILTIN_CONSTANT_P */
 	BYVAL, PURE,  NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, NOT_CGINTRINSIC,
-	IRETURN_I4, "__builtin_constant_p", NULL, "__builtin_constant_p"},
+	IRETURN_I4, "__builtin_constant_p", NULL, NULL},
 
 #include "targ_intrn_info.def"
 #endif

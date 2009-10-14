@@ -2608,268 +2608,268 @@ INTRINSIC_TARG_LAST	=	INTRINSIC_GENERIC_LAST+88,
 
 { /* __st200abss_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200abss_ph", NULL, "__st200abss_ph"},
+  IRETURN_I4, "__st200abss_ph", NULL, NULL},
 { /* __st200absubu_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200absubu_pb", NULL, "__st200absubu_pb"},
+  IRETURN_I4, "__st200absubu_pb", NULL, NULL},
 { /* __st200addso */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200addso", NULL, "__st200addso"},
+  IRETURN_I4, "__st200addso", NULL, NULL},
 { /* __st200adds_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200adds_ph", NULL, "__st200adds_ph"},
+  IRETURN_I4, "__st200adds_ph", NULL, NULL},
 { /* __st200add_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200add_ph", NULL, "__st200add_ph"},
+  IRETURN_I4, "__st200add_ph", NULL, NULL},
 { /* __st200avg4u_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200avg4u_pb", NULL, "__st200avg4u_pb"},
+  IRETURN_I4, "__st200avg4u_pb", NULL, NULL},
 { /* __st200avgu_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200avgu_pb", NULL, "__st200avgu_pb"},
+  IRETURN_I4, "__st200avgu_pb", NULL, NULL},
 { /* __st200cmpeq_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200cmpeq_pb", NULL, "__st200cmpeq_pb"},
+  IRETURN_I4, "__st200cmpeq_pb", NULL, NULL},
 { /* __st200cmpeq_pb_bdest */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_U4, "__st200cmpeq_pb_bdest", NULL, "__st200cmpeq_pb_bdest"},
+  IRETURN_U4, "__st200cmpeq_pb_bdest", NULL, NULL},
 { /* __st200cmpeq_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200cmpeq_ph", NULL, "__st200cmpeq_ph"},
+  IRETURN_I4, "__st200cmpeq_ph", NULL, NULL},
 { /* __st200cmpeq_ph_bdest */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_U4, "__st200cmpeq_ph_bdest", NULL, "__st200cmpeq_ph_bdest"},
+  IRETURN_U4, "__st200cmpeq_ph_bdest", NULL, NULL},
 { /* __st200cmpgtu_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200cmpgtu_pb", NULL, "__st200cmpgtu_pb"},
+  IRETURN_I4, "__st200cmpgtu_pb", NULL, NULL},
 { /* __st200cmpgtu_pb_bdest */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_U4, "__st200cmpgtu_pb_bdest", NULL, "__st200cmpgtu_pb_bdest"},
+  IRETURN_U4, "__st200cmpgtu_pb_bdest", NULL, NULL},
 { /* __st200cmpgt_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200cmpgt_ph", NULL, "__st200cmpgt_ph"},
+  IRETURN_I4, "__st200cmpgt_ph", NULL, NULL},
 { /* __st200cmpgt_ph_bdest */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_U4, "__st200cmpgt_ph_bdest", NULL, "__st200cmpgt_ph_bdest"},
+  IRETURN_U4, "__st200cmpgt_ph_bdest", NULL, NULL},
 { /* __st200dib */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200dib", NULL, "__st200dib"},
+  IRETURN_V, "__st200dib", NULL, NULL},
 { /* __st200ext1_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200ext1_pb", NULL, "__st200ext1_pb"},
+  IRETURN_I4, "__st200ext1_pb", NULL, NULL},
 { /* __st200ext2_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200ext2_pb", NULL, "__st200ext2_pb"},
+  IRETURN_I4, "__st200ext2_pb", NULL, NULL},
 { /* __st200ext3_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200ext3_pb", NULL, "__st200ext3_pb"},
+  IRETURN_I4, "__st200ext3_pb", NULL, NULL},
 { /* __st200extl_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200extl_pb", NULL, "__st200extl_pb"},
+  IRETURN_I4, "__st200extl_pb", NULL, NULL},
 { /* __st200extr_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200extr_pb", NULL, "__st200extr_pb"},
+  IRETURN_I4, "__st200extr_pb", NULL, NULL},
 { /* __st200flushadd */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200flushadd", NULL, "__st200flushadd"},
+  IRETURN_V, "__st200flushadd", NULL, NULL},
 { /* __st200flushadd_l1 */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200flushadd_l1", NULL, "__st200flushadd_l1"},
+  IRETURN_V, "__st200flushadd_l1", NULL, NULL},
 { /* __st200invadd */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200invadd", NULL, "__st200invadd"},
+  IRETURN_V, "__st200invadd", NULL, NULL},
 { /* __st200invadd_l1 */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200invadd_l1", NULL, "__st200invadd_l1"},
+  IRETURN_V, "__st200invadd_l1", NULL, NULL},
 { /* __st200ldwl */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200ldwl", NULL, "__st200ldwl"},
+  IRETURN_I4, "__st200ldwl", NULL, NULL},
 { /* __maxuw */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_U4, "__maxuw", NULL, "__maxuw"},
+  IRETURN_U4, "__maxuw", NULL, NULL},
 { /* __maxw */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__maxw", NULL, "__maxw"},
+  IRETURN_I4, "__maxw", NULL, NULL},
 { /* __st200max_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200max_ph", NULL, "__st200max_ph"},
+  IRETURN_I4, "__st200max_ph", NULL, NULL},
 { /* __minuw */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_U4, "__minuw", NULL, "__minuw"},
+  IRETURN_U4, "__minuw", NULL, NULL},
 { /* __minw */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__minw", NULL, "__minw"},
+  IRETURN_I4, "__minw", NULL, NULL},
 { /* __st200min_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200min_ph", NULL, "__st200min_ph"},
+  IRETURN_I4, "__st200min_ph", NULL, NULL},
 { /* __st200muladdus_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200muladdus_pb", NULL, "__st200muladdus_pb"},
+  IRETURN_I4, "__st200muladdus_pb", NULL, NULL},
 { /* __st200muladd_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200muladd_ph", NULL, "__st200muladd_ph"},
+  IRETURN_I4, "__st200muladd_ph", NULL, NULL},
 { /* __st200mulfracadds_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200mulfracadds_ph", NULL, "__st200mulfracadds_ph"},
+  IRETURN_I4, "__st200mulfracadds_ph", NULL, NULL},
 { /* __st200mulfracrm_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200mulfracrm_ph", NULL, "__st200mulfracrm_ph"},
+  IRETURN_I4, "__st200mulfracrm_ph", NULL, NULL},
 { /* __st200mulfracrne_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200mulfracrne_ph", NULL, "__st200mulfracrne_ph"},
+  IRETURN_I4, "__st200mulfracrne_ph", NULL, NULL},
 { /* __st200mul_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200mul_ph", NULL, "__st200mul_ph"},
+  IRETURN_I4, "__st200mul_ph", NULL, NULL},
 { /* __st200packrnp_phh */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200packrnp_phh", NULL, "__st200packrnp_phh"},
+  IRETURN_I4, "__st200packrnp_phh", NULL, NULL},
 { /* __st200packsu_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200packsu_pb", NULL, "__st200packsu_pb"},
+  IRETURN_I4, "__st200packsu_pb", NULL, NULL},
 { /* __st200packs_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200packs_ph", NULL, "__st200packs_ph"},
+  IRETURN_I4, "__st200packs_ph", NULL, NULL},
 { /* __st200pack_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200pack_pb", NULL, "__st200pack_pb"},
+  IRETURN_I4, "__st200pack_pb", NULL, NULL},
 { /* __st200pack_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200pack_ph", NULL, "__st200pack_ph"},
+  IRETURN_I4, "__st200pack_ph", NULL, NULL},
 { /* __st200perm_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200perm_pb", NULL, "__st200perm_pb"},
+  IRETURN_I4, "__st200perm_pb", NULL, NULL},
 { /* __st220prgadd_l1 */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st220prgadd_l1", NULL, "__st220prgadd_l1"},
+  IRETURN_V, "__st220prgadd_l1", NULL, NULL},
 { /* __st200prgadd_l1 */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200prgadd_l1", NULL, "__st200prgadd_l1"},
+  IRETURN_V, "__st200prgadd_l1", NULL, NULL},
 { /* __st220prgins */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st220prgins", NULL, "__st220prgins"},
+  IRETURN_V, "__st220prgins", NULL, NULL},
 { /* __st200prgins */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200prgins", NULL, "__st200prgins"},
+  IRETURN_V, "__st200prgins", NULL, NULL},
 { /* __st200prginsadd */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200prginsadd", NULL, "__st200prginsadd"},
+  IRETURN_V, "__st200prginsadd", NULL, NULL},
 { /* __st200prginsadd_l1 */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200prginsadd_l1", NULL, "__st200prginsadd_l1"},
+  IRETURN_V, "__st200prginsadd_l1", NULL, NULL},
 { /* __st200prginsset */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200prginsset", NULL, "__st200prginsset"},
+  IRETURN_V, "__st200prginsset", NULL, NULL},
 { /* __st200prginsset_l1 */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200prginsset_l1", NULL, "__st200prginsset_l1"},
+  IRETURN_V, "__st200prginsset_l1", NULL, NULL},
 { /* __st200prgset_l1 */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200prgset_l1", NULL, "__st200prgset_l1"},
+  IRETURN_V, "__st200prgset_l1", NULL, NULL},
 { /* __st200pswclr */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200pswclr", NULL, "__st200pswclr"},
+  IRETURN_V, "__st200pswclr", NULL, NULL},
 { /* __st200pswmask */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200pswmask", NULL, "__st200pswmask"},
+  IRETURN_I4, "__st200pswmask", NULL, NULL},
 { /* __st200pswset */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200pswset", NULL, "__st200pswset"},
+  IRETURN_V, "__st200pswset", NULL, NULL},
 { /* __st200retention */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200retention", NULL, "__st200retention"},
+  IRETURN_V, "__st200retention", NULL, NULL},
 { /* __st200sadu_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200sadu_pb", NULL, "__st200sadu_pb"},
+  IRETURN_I4, "__st200sadu_pb", NULL, NULL},
 { /* __st200satso */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200satso", NULL, "__st200satso"},
+  IRETURN_I4, "__st200satso", NULL, NULL},
 { /* __st200sh1addso */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200sh1addso", NULL, "__st200sh1addso"},
+  IRETURN_I4, "__st200sh1addso", NULL, NULL},
 { /* __st200sh1subso */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200sh1subso", NULL, "__st200sh1subso"},
+  IRETURN_I4, "__st200sh1subso", NULL, NULL},
 { /* __st200shlso */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200shlso", NULL, "__st200shlso"},
+  IRETURN_I4, "__st200shlso", NULL, NULL},
 { /* __st200shls */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200shls", NULL, "__st200shls"},
+  IRETURN_I4, "__st200shls", NULL, NULL},
 { /* __st200shls_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200shls_ph", NULL, "__st200shls_ph"},
+  IRETURN_I4, "__st200shls_ph", NULL, NULL},
 { /* __st200shl_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200shl_ph", NULL, "__st200shl_ph"},
+  IRETURN_I4, "__st200shl_ph", NULL, NULL},
 { /* __st200shrrne_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200shrrne_ph", NULL, "__st200shrrne_ph"},
+  IRETURN_I4, "__st200shrrne_ph", NULL, NULL},
 { /* __st200shrrnp */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200shrrnp", NULL, "__st200shrrnp"},
+  IRETURN_I4, "__st200shrrnp", NULL, NULL},
 { /* __st200shrrnp_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200shrrnp_ph", NULL, "__st200shrrnp_ph"},
+  IRETURN_I4, "__st200shrrnp_ph", NULL, NULL},
 { /* __st200shr_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200shr_ph", NULL, "__st200shr_ph"},
+  IRETURN_I4, "__st200shr_ph", NULL, NULL},
 { /* __st200shuffeve_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200shuffeve_pb", NULL, "__st200shuffeve_pb"},
+  IRETURN_I4, "__st200shuffeve_pb", NULL, NULL},
 { /* __st200shuffodd_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200shuffodd_pb", NULL, "__st200shuffodd_pb"},
+  IRETURN_I4, "__st200shuffodd_pb", NULL, NULL},
 { /* __st200shuff_pbh */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200shuff_pbh", NULL, "__st200shuff_pbh"},
+  IRETURN_I4, "__st200shuff_pbh", NULL, NULL},
 { /* __st200shuff_pbl */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200shuff_pbl", NULL, "__st200shuff_pbl"},
+  IRETURN_I4, "__st200shuff_pbl", NULL, NULL},
 { /* __st200shuff_phh */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200shuff_phh", NULL, "__st200shuff_phh"},
+  IRETURN_I4, "__st200shuff_phh", NULL, NULL},
 { /* __st200shuff_phl */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200shuff_phl", NULL, "__st200shuff_phl"},
+  IRETURN_I4, "__st200shuff_phl", NULL, NULL},
 { /* __st200slct_pb */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200slct_pb", NULL, "__st200slct_pb"},
+  IRETURN_I4, "__st200slct_pb", NULL, NULL},
 { /* __st200stwl */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_U4, "__st200stwl", NULL, "__st200stwl"},
+  IRETURN_U4, "__st200stwl", NULL, NULL},
 { /* __st200subso */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200subso", NULL, "__st200subso"},
+  IRETURN_I4, "__st200subso", NULL, NULL},
 { /* __st200subs_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200subs_ph", NULL, "__st200subs_ph"},
+  IRETURN_I4, "__st200subs_ph", NULL, NULL},
 { /* __st200sub_ph */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200sub_ph", NULL, "__st200sub_ph"},
+  IRETURN_I4, "__st200sub_ph", NULL, NULL},
 { /* __st220sync */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st220sync", NULL, "__st220sync"},
+  IRETURN_V, "__st220sync", NULL, NULL},
 { /* __st200sync */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200sync", NULL, "__st200sync"},
+  IRETURN_V, "__st200sync", NULL, NULL},
 { /* __st220syncins */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st220syncins", NULL, "__st220syncins"},
+  IRETURN_V, "__st220syncins", NULL, NULL},
 { /* __st200syncins */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200syncins", NULL, "__st200syncins"},
+  IRETURN_V, "__st200syncins", NULL, NULL},
 { /* __st200unpacku_pbh */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200unpacku_pbh", NULL, "__st200unpacku_pbh"},
+  IRETURN_I4, "__st200unpacku_pbh", NULL, NULL},
 { /* __st200unpacku_pbl */
   BYVAL, PURE, NO_SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_I4, "__st200unpacku_pbl", NULL, "__st200unpacku_pbl"},
+  IRETURN_I4, "__st200unpacku_pbl", NULL, NULL},
 { /* __st200waitl */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200waitl", NULL, "__st200waitl"},
+  IRETURN_V, "__st200waitl", NULL, NULL},
 { /* __st200wmb */
   BYVAL, NOT_PURE, SIDEEFFECTS, DOES_RETURN, NOT_ACTUAL, CGINTRINSIC,
-  IRETURN_V, "__st200wmb", NULL, "__st200wmb"},
+  IRETURN_V, "__st200wmb", NULL, NULL},
 #endif /* INTRN_INFO */
 
 #ifdef INTRN_WUTIL

@@ -137,6 +137,9 @@ typedef struct intrn_info_t {
  INTRN_RETKIND	return_kind;
  char		*c_name;
  char		*specific_name;
+#ifdef TARG_ST
+  // runtime_name value is NULL if runtime function does not exists.
+#endif
  char		*runtime_name;
 } intrn_info_t;
 
@@ -216,6 +219,21 @@ inline char * INTRN_rt_name (const INTRINSIC i)
 
 #ifdef TARG_ST
 BE_EXPORTED BOOL is_intrinsic_rt_name(const char *) ;
+
+
+/** 
+ * Function returns whether intrinsic can be implemented via
+ * a runtime function call.
+ * 
+ * @param i 
+ * 
+ * @return 
+ */
+inline BOOL INTRN_runtime_exists(const INTRINSIC i)
+{
+  return (INTRN_rt_name(i)!=NULL);
+}
+
 #endif
 //TB: Multiple result builtin support.
 

@@ -1505,7 +1505,9 @@ Max_Arg_Area_Bytes(WN *node)
   case OPR_INTRINSIC_CALL:
 #ifdef TARG_ST
     //TB: dynamic intrinsics and dynamic MTYPE
-    if (!(Inline_Intrinsics_Allowed && INTRN_cg_intrinsic(WN_intrinsic(node)))) {
+    if (!(Inline_Intrinsics_Allowed||
+          !INTRN_runtime_exists(WN_intrinsic(node))) &&
+        INTRN_cg_intrinsic(WN_intrinsic(node))) {
 #endif
     maxsize = Calc_Actual_Area ( (TY_IDX) NULL, node );
     Frame_Has_Calls = TRUE;
