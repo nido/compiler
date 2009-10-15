@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Oct 15 15:03:17 CEST 2009
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79699
+
+Description:
+------------
+	* [trunk] Fix for bug #79699: [DL] String constants wrongly considered as public
+          (gotoffs) instead of private (gprel).
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/expand/exp_targ.h
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24496 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79699@24512 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24496 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79699@24512" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/expand/exp_targ.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/expand/exp_targ.h?p2=branches/fixes/codex-79699/osprey/targinfo/stxp70/expand/exp_targ.h&r1=24496&r2=24512&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct 14 12:35:28 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
