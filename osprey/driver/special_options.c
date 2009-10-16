@@ -1272,6 +1272,8 @@ add_special_options (void)
 	    if (proc == PROC_stxp70_v4_novliw ||
                 proc == PROC_stxp70_v4_single ||
                 proc == PROC_stxp70_v4_dual ) {
+              flag = add_string_option(O_D, "__stxp70__");
+	      prepend_option_seen (flag);
  	      flag = add_string_option(O_D, "__STXP70__");
 	      prepend_option_seen (flag);
 	      flag = add_string_option(O_D, "__STxP70__");

@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct 16 12:51:34 CEST 2009
+	Author:    janiny
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-73784
+
+Description:
+------------
+	* [trunk] Fix for bug #73784 (ipa bug on Marelli benchmark when option '-O1' is set). Delivered fixes/codex-73784 with authorization branch #79823
+
+
+Modified Files:
+---------------
+	M       osprey/driver/special_options.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24515 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-73784@24524 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24515 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-73784@24524" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/special_options.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/special_options.c?p2=branches/fixes/codex-73784/osprey/driver/special_options.c&r1=24515&r2=24524&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Oct 15 15:03:17 CEST 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
