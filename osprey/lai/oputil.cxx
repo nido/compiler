@@ -1345,9 +1345,9 @@ BOOL
 OP_opnd_is_multi(const OP *op, INT opnd)
 {
   const ISA_OPERAND_INFO *info = ISA_OPERAND_Info (OP_code(op));
-  return ((ISA_OPERAND_INFO_Use (info, opnd) & OU_multi)
-	  || ((opnd+1) < ISA_OPERAND_INFO_Operands (info)
-	      && ISA_OPERAND_INFO_Use (info, opnd+1) & OU_multi));
+  INT nb_opnd = ISA_OPERAND_INFO_Operands (info);
+  return (   ( opnd    < nb_opnd && ISA_OPERAND_INFO_Use (info, opnd  ) & OU_multi)
+          || ((opnd+1) < nb_opnd && ISA_OPERAND_INFO_Use (info, opnd+1) & OU_multi));
 }
 
 /* ====================================================================
@@ -1361,9 +1361,9 @@ BOOL
 OP_result_is_multi(const OP *op, INT result)
 {
   const ISA_OPERAND_INFO *info = ISA_OPERAND_Info (OP_code(op));
-  return ((ISA_OPERAND_INFO_Def (info, result) & OU_multi)
-	  || ((result+1) < ISA_OPERAND_INFO_Results (info)
-	      && ISA_OPERAND_INFO_Def (info, result+1) & OU_multi));
+  INT nb_res = ISA_OPERAND_INFO_Results (info);
+  return (   ( result    < nb_res && ISA_OPERAND_INFO_Def (info, result  ) & OU_multi)
+	  || ((result+1) < nb_res && ISA_OPERAND_INFO_Def (info, result+1) & OU_multi));
 }
 #endif
 
@@ -1599,7 +1599,7 @@ OP_same_res(OP *op, INT i) {
   if (top != TOP_asm) {
     /* Check architectural description for same res. */
     oinfo = OP_operand_info(op);
-    if (i < oinfo->results) {
+    if (i < ISA_OPERAND_INFO_Results(oinfo)) {
       opnd_idx = ISA_OPERAND_INFO_Same_Res(oinfo, i); 
     }
   }

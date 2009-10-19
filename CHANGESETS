@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct 19 12:47:50 CEST 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80255
+
+Description:
+------------
+	* [trunk] Fix for bug #80255: [MP1x] Assertion failure when compiling PStone/jpeg in MP1xfrac.
+	Deliver fixes/codex-80255 rev #24542 with authorization branch #80260
+
+	-> Fix in OP_opnd_is_multi() and OP_result_is_multi() to check that the specified
+	   operand/result is described within ISA_OPERAND_INFO before accessing to the latter one
+
+Modified Files:
+---------------
+	M       osprey/lai/oputil.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24530 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80255@24542 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24530 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80255@24542" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/oputil.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/oputil.cxx?p2=branches/fixes/codex-80255/osprey/lai/oputil.cxx&r1=24530&r2=24542&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Oct 16 12:51:34 CEST 2009
 	Author:    janiny
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
