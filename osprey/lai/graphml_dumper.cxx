@@ -75,12 +75,12 @@ void set_label(graphMLNode* n, char* label) {
  * dump an instruction node
  */
 
-void graphMLDumpInstNode(FILE* f, graphMLNode* n, int parent_index) {
+void graphMLDumpInstNode(FILE* f, graphMLNode* n, int parent_index, char* color_code) {
 	graphMLNode* n1=n;
 	int size=1;
 	fprintf(f, "\t\t<node id=\"n%d::n%d\">\n", parent_index, n->index_);
 	fprintf(f, "\t\t<data key=\"d0\"><y:ShapeNode >\n");
-	fprintf(f, "\t\t<y:Fill hasColor=\"false\" color=\"#000000\"  transparent=\"false\"/>\n");
+	fprintf(f, "\t\t<y:Fill hasColor=\"true\" color=\"#%s\"  transparent=\"false\"/>\n",color_code);
 	fprintf(f, "\t\t<y:BorderStyle hasColor=\"false\" type=\"line\" width=\"1.0\"  />\n");
 	fprintf(f, "\t\t<y:NodeLabel visible=\"true\" alignment=\"left\" fontFamily=\"Dialog\" fontSize=\"8\" fontStyle=\"plain\" textColor=\"#000000\" hasBackgroundColor=\"false\" hasLineColor=\"false\" modelName=\"internal\" modelPosition=\"c\" autoSizePolicy=\"content\">");
 	while (n1) {
@@ -99,11 +99,26 @@ void graphMLDumpInstNode(FILE* f, graphMLNode* n, int parent_index) {
  * dump a bb node
  */
 void graphMLDumpFolderNode(FILE* f, graphMLNode* graphML_node) {
-
+	char my_color_code[7];
+	// dump a colored node for according to type of bb
+	switch (graphML_node->type_) {
+		case graphML_BB_CALL : 
+			sprintf(my_color_code,"CC99FF");
+			break;
+		case graphML_BB_TAIL_CALL : 
+			sprintf(my_color_code,"00FF00");
+			break;
+		case graphML_BB_EXIT : 
+			sprintf(my_color_code,"FF0000");
+			break;
+		case graphML_BB :
+		default : 
+			sprintf(my_color_code,"FFFF00");
+	}
 	fprintf(f, "\t<node id=\"n%d\" yfiles.foldertype=\"folder\">\n", graphML_node->index_);
 	fprintf(f, "\t\t<data key=\"d0\" >\n\t\t<y:ProxyAutoBoundsNode >\n\t\t<y:Realizers active=\"1\">\n");
 	fprintf(f, "\t\t<y:GroupNode >\n");
-	fprintf(f, "\t\t<y:Fill color=\"#F2F0D8\"  transparent=\"false\"/>\n\t\t<y:BorderStyle type=\"line\" width=\"1.0\" color=\"#000000\" />\n");
+	fprintf(f, "\t\t<y:Fill color=\"#%s\"  transparent=\"false\"/>\n\t\t<y:BorderStyle type=\"line\" width=\"1.0\" color=\"#000000\" />\n",my_color_code);
 	fprintf(f, "\t\t<y:Shape type=\"rectangle\"/>\n");
 	if (graphML_node->label_ != NULL)
 		fprintf(f, "\t\t<y:NodeLabel visible=\"true\" alignment=\"right\" fontFamily=\"Dialog\" fontSize=\"12\" fontStyle=\"plain\" textColor=\"#000000\" hasBackgroundColor=\"false\" modelName=\"sandwich\" modelPosition=\"n\" autoSizePolicy=\"node_width\">%s</y:NodeLabel>\n", graphML_node->label_);
@@ -114,14 +129,13 @@ void graphMLDumpFolderNode(FILE* f, graphMLNode* graphML_node) {
 	fprintf(f, "\t\t<y:Geometry  x=\"%d\" y=\"0\"/>\n", graphML_node->x_coord_);
 	fprintf(f, "\t\t<y:BorderStyle type=\"line\" width=\"1.0\" color=\"#000000\" />\n");
 
-	// dump a yellow node
-	fprintf(f, "\t\t<y:Fill color=\"#FFFF00\" color2=\"#FFFF00\"  transparent=\"false\"/>\n");
+	fprintf(f, "\t\t<y:Fill color=\"#%s\" color2=\"#%s\"  transparent=\"false\"/>\n",my_color_code,my_color_code);
 	fprintf(f, "\t\t<y:Shape type=\"rectangle\"/>\n");
 
 	if (graphML_node->label_ != NULL) {
 		fprintf(f, "\t\t<y:NodeLabel alignment=\"center\" autoSizePolicy=\"node_width\" fontFamily=\"Dialog\" fontSize=\"16\" fontStyle=\"plain\" hasBackgroundColor=\"false\" hasLineColor=\"false\" modelName=\"internal\" modelPosition=\"c\" textColor=\"#000000\" visible=\"true\">%s</y:NodeLabel>\n", graphML_node->label_);
 	}
-	fprintf(f, "\t\t<y:DropShadow offsetX=\"4\" offsetY=\"4\" color=\"#FFFF00\" />\n");
+	fprintf(f, "\t\t<y:DropShadow offsetX=\"4\" offsetY=\"4\" color=\"#%s\" />\n",my_color_code);
 	fprintf(f, "\t\t<y:State closed=\"true\" innerGraphDisplayEnabled=\"false\"/>\n");
 	fprintf(f, "\t\t</y:GroupNode>\n\t\t</y:Realizers>\n\t\t</y:ProxyAutoBoundsNode>\n\t\t</data>\n");
 
@@ -131,11 +145,11 @@ void graphMLDumpFolderNode(FILE* f, graphMLNode* graphML_node) {
 	// first son is the graph with instructions
 	if (graphML_node->sons_) {
 		graphMLNode* n1=graphML_node->sons_->nodes_;
-		if(n1) graphMLDumpInstNode(f, n1, graphML_node->index_);
+		if(n1) graphMLDumpInstNode(f, n1, graphML_node->index_, my_color_code);
 	} else {
 		fprintf(f, "\t\t<node id=\"n%d::n0\">\n", graphML_node->index_);
 		fprintf(f, "\t\t<data key=\"d0\"><y:ShapeNode >\n");
-		fprintf(f, "\t\t<y:Fill color=\"#CCFFCC\"  transparent=\"false\"/>\n");
+		fprintf(f, "\t\t<y:Fill color=\"#%s\"  transparent=\"false\"/>\n",my_color_code);
 		fprintf(f, "\t\t<y:BorderStyle type=\"line\" width=\"1.0\" color=\"#000000\" />\n");
 		fprintf(f, "\t\t<y:Shape type=\"rectangle\"/>\n\t\t</y:ShapeNode>\n");
 		fprintf(f, "\t\t</data>\n\t\t</node>\n");
@@ -366,6 +380,7 @@ graphMLGraph* graphML_BuildFlowGraph(BB *bb) {
 	graphML_node->is_folder_ = 0;
 	saved_node[0] = graphML_node;
 	set_label(graphML_node, "EXIT BLOCK");
+ 	graphML_node->type_ = graphML_BB_EXIT;
 	inst_graph = new_graphML_graph();
 	inst_graph->parent_ = graphML_node;
 	add_node(graphML_graph, graphML_node);
@@ -378,9 +393,26 @@ graphMLGraph* graphML_BuildFlowGraph(BB *bb) {
 		graphML_node->is_folder_ = 1;
 
 		saved_node[BB_id(cur_bb)] = graphML_node;
-		sprintf(block_name, "BB%d", BB_id(cur_bb));
+		switch(BB_kind(cur_bb)) {
+		case  BBKIND_RETURN:
+			sprintf(block_name, "BB%d [exit]", BB_id(cur_bb));
+			break;
+		case  BBKIND_CALL:
+			sprintf(block_name, "BB%d [call]", BB_id(cur_bb));
+			break;
+		case  BBKIND_TAIL_CALL:
+			sprintf(block_name, "BB%d [tailcall]", BB_id(cur_bb));
+			break;
+		case  BBKIND_REGION_EXIT:
+		case  BBKIND_GOTO:
+		case  BBKIND_LOGIF:
+		case  BBKIND_VARGOTO:
+		case  BBKIND_INDGOTO:
+		case  BBKIND_UNKNOWN:
+		default:
+			sprintf(block_name, "BB%d ", BB_id(cur_bb));
+		}
 		set_label(graphML_node, block_name);
-
 		inst_graph = new_graphML_graph();
 		inst_graph->parent_ = graphML_node;
 		index1=0;
@@ -504,20 +536,21 @@ graphMLGraph* graphML_BuildFlowGraph(BB *bb) {
 	/* edges */
 	for (cur_bb = bb; cur_bb; cur_bb = BB_next(cur_bb)) {
 		source = saved_node[BB_id(cur_bb)];
-		
+		BBLIST *bl;
+	
 		switch(BB_kind(cur_bb)) {
 		case  BBKIND_GOTO:
 	      if (BB_succs(cur_bb)) {
 			target = saved_node[BB_id(BBLIST_item(BB_succs(cur_bb)))];
 			graphML_edge = new_graphML_edge();
-			strcpy(graphML_edge->label_,"GOTO");
+			strcpy(graphML_edge->label_," ");
 			graphML_edge->target_ = target;
 			graphML_edge->source_ = source;
 			add_edge(graphML_graph, graphML_edge);
 	      }
 	      break;
 		case  BBKIND_LOGIF:
-		{
+			{
 			BB *targ_bb;
 			BBLIST *target_edge;
 			BBLIST *fall_through_edge;
@@ -546,23 +579,41 @@ graphMLGraph* graphML_BuildFlowGraph(BB *bb) {
 			graphML_edge->target_ = saved_node[BB_id(BBLIST_item(fall_through_edge))];
 			graphML_edge->source_ = source;
 			add_edge(graphML_graph, graphML_edge);
-		}
+			}
 			break;
 		case  BBKIND_RETURN:
-			//Add a fake edge ?
+			source->type_ = graphML_BB_EXIT;
 			graphML_edge = new_graphML_edge();
 			strcpy(graphML_edge->label_,"EXIT");
 			graphML_edge->source_ = source;
 			graphML_edge->target_ = saved_node[0];
 			add_edge(graphML_graph, graphML_edge);
+			if (BB_succs(cur_bb)) {
+				graphML_edge = new_graphML_edge();
+				target = saved_node[BB_id(BBLIST_item(BB_succs(cur_bb)))];
+				strcpy(graphML_edge->label_," ");
+				graphML_edge->target_ = target;
+				graphML_edge->source_ = source;
+				add_edge(graphML_graph, graphML_edge);
+			}
+			break;
+		case  BBKIND_CALL:
+			source->type_ = graphML_BB_CALL;
+			target = saved_node[BB_id(BBLIST_item(BB_succs(cur_bb)))];
+			graphML_edge = new_graphML_edge();
+			strcpy(graphML_edge->label_," ");
+			graphML_edge->target_ = target;
+			graphML_edge->source_ = source;
+			add_edge(graphML_graph, graphML_edge);
+			break;
+		case  BBKIND_TAIL_CALL:
+			source->type_ = graphML_BB_TAIL_CALL;
+			break;
+		case  BBKIND_REGION_EXIT:
 		case  BBKIND_VARGOTO:
 		case  BBKIND_INDGOTO:
-		case  BBKIND_CALL:
-		case  BBKIND_REGION_EXIT:
-		case  BBKIND_TAIL_CALL:
 		case  BBKIND_UNKNOWN:
 		default:
-			BBLIST *bl;
 			FOR_ALL_BB_SUCCS (cur_bb, bl) {
 				target = saved_node[BB_id(BBLIST_item(bl))];
 				if(target==NULL||source==NULL) *((int*)0)=0;
@@ -585,7 +636,8 @@ graphMLGraph* graphML_BuildFlowGraph(BB *bb) {
 
 static char *pu_info_name=NULL;
 static PU_Info* pu_info=NULL;
-static int  pu_count=0;
+static int pu_count=1000;
+static int phase_count=100;
 
 void graphML_DumpCFG(BB* bb, const char* suffix) {
 	FILE *fp;
@@ -593,13 +645,14 @@ void graphML_DumpCFG(BB* bb, const char* suffix) {
 	char filename[500];
 	MEM_POOL_Initialize(&graphml_pool, "graphml temporary memory", FALSE);
 	MEM_POOL_Push(&graphml_pool);
-		
 	if (!pu_info_name || pu_info != Current_PU_Info) {
 		pu_info_name = ST_name(PU_Info_proc_sym(Current_PU_Info));
 		pu_info = Current_PU_Info;
 		pu_count++;
+		phase_count=100;
 	}
-	sprintf(filename, "%d_%s",pu_count,pu_info_name);
+	phase_count ++;	
+	sprintf(filename, "%d_%d_%s",pu_count,phase_count,pu_info_name);
 	if (suffix) {
 		strcat(filename, "_");
 		strcat(filename, suffix);

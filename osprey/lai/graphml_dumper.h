@@ -18,11 +18,9 @@ typedef struct graphMLEdge graphMLEdge;
 
 typedef enum graphMLNodeType {
 	graphML_BB = 0,				///< normal basic block
-	graphML_REGION_HEADER,		///< region header
-	graphML_IF_HEADER,			///< if header
-	graphML_LOOP_HEADER,		///< loop header
-	graphML_SWITCH_HEADER,		///< switch header
-	graphML_LOOP_EXIT,			///< loop exit block
+	graphML_BB_EXIT,			///< exit block
+	graphML_BB_CALL,			///< Call block
+	graphML_BB_TAIL_CALL,		///< Tail call block
 	graphML_LAST				///< illegal value 
 }graphMLNodeType;
 
