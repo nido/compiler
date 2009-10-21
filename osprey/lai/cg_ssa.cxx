@@ -1022,38 +1022,6 @@ Convert_PHI_to_PSI (
   return psi_op;
 }
 
-// [CG]: We use a temporary pseudo TOP_movc for repairs
-// as it has a predicate information and thus avoid
-// multiple repairs (see repair code below).
-// After the out of SSA all movc are replaced by select
-// operations or the corresponding target dependent conditional
-// move
-void
-OP_Make_movc (
-  TN *guard,
-  TN *dst,
-  TN *src,
-  OPS *cmov_ops,
-  bool on_false
-)
-{
-#ifdef TARG_ST200
-  if (guard && guard != True_TN && TN_register_class(guard) != ISA_REGISTER_CLASS_branch)
-    DevWarn("Conditional MOV should use a branch register");
-  Build_OP(TOP_movc, dst, guard, src, cmov_ops);
-#elif defined TARG_STxP70
-  Expand_Copy(dst, guard, src, cmov_ops);
-
-  if (on_false) {
-    OP *mop = OPS_last(cmov_ops);
-    Set_OP_Pred_False(mop, OP_find_opnd_use(mop, OU_predicate));
-  }
-
-#else
-  FmtAssert(0,("Not implemented"));
-#endif
-}
-
 
 //
 // dominance frontier blocks for each BB in the region

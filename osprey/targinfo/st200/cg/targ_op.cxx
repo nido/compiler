@@ -55,7 +55,7 @@
 #include "targ_cg_private.h"
 #include "targ_isa_variants.h"
 #include "config_TARG.h"
-#include "cgtarget.h"
+#include "cgexp.h"
 
 #include "stblock.h" // for ST_alignment
 
@@ -1536,4 +1536,47 @@ targ_cg_init_targ_op ()
   }
 #endif
 	    
+}
+
+/**
+ * CGTARG_OP_Make_movc
+ *
+ * Generate a conditional move with predicate information.
+ * If no real operation exists, generate a simulated one.
+ */
+void
+CGTARG_OP_Make_movc( TN *guard,
+                     TN *dst,
+                     TN *src,
+                     OPS *cmov_ops,
+                     bool on_false
+                     ) {
+  if (guard && guard != True_TN && TN_register_class(guard) != ISA_REGISTER_CLASS_branch)
+    DevWarn("Conditional MOV should use a branch register");
+  Build_OP(TOP_movc, dst, guard, src, cmov_ops);
+}
+
+/**
+ * CGTARG_OP_Lower_movc
+ *
+ * If argument <op> is a simulated operation representing a conditional move,
+ * generates the real target code to perform the move and return TRUE.
+ * Otherwise return FALSE.
+ */
+BOOL
+CGTARG_OP_Lower_movc( OP *op,
+                      OPS *lowered_ops
+                      ) {
+
+  if (OP_code(op) != TOP_movc) {
+    return FALSE;
+  }
+
+  if (OP_cond_def_kind(op) == OP_ALWAYS_UNC_DEF) {
+    Exp_COPY(OP_result(op, 0), OP_opnd(op, 1), lowered_ops);
+  }
+  else {
+    Expand_Copy(OP_result(op, 0), OP_opnd(op, 0), OP_opnd(op, 1), lowered_ops);
+  }
+  return TRUE;
 }

@@ -1442,9 +1442,7 @@ inline void OP_Change_To_Noop(OP *op)
 //
 extern TOP CGTARG_Which_OP_Select (UINT16 bit_size, BOOL is_float,
 				    BOOL is_fcc);
-#endif
 
-#ifdef TARG_ST
 /*
  * Handling of implicit architectural flags (or other resources) 
  * effects that are not described accurately with the architecture description.
@@ -2032,6 +2030,34 @@ extern INT OP_storeval_byte_offset (OP *op, INT opndno);
  * ====================================================================
  */
 extern INT OP_loadval_byte_offset (OP *op, INT resno);
+
+
+/**
+ * Generate a conditional move with predicate information.
+ * If no real operation exists, generate a simulated one.
+ * ([CG]: we might use a temporary pseudo OP for SSA repairs
+ *        as it has a predicate information and thus avoid
+ *        multiple repairs (see repair code in cg_ssa.cxx).
+ *        After the out of SSA all movc are replaced by select
+ *        operations or the corresponding target dependent
+ *        conditional)
+ */
+void
+CGTARG_OP_Make_movc( TN *guard,
+                     TN *dst,
+                     TN *src,
+                     OPS *cmov_ops,
+                     bool on_false );
+
+/**
+ * If argument <op> is a simulated operation representing a conditional move,
+ * generates the real target code to perform the move and return TRUE.
+ * Otherwise return FALSE.
+ */
+BOOL
+CGTARG_OP_Lower_movc( OP *op,
+                      OPS *lowered_ops );
+
 #endif
 
 #endif /* op_INCLUDED */

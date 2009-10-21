@@ -1359,7 +1359,7 @@ insert_psi_operand_copy (
 
   // Finally, append the copy op
   OPS cmov_ops = OPS_EMPTY;
-  OP_Make_movc(PSI_guard(psi_op, opnd_idx), new_tn, tn, &cmov_ops, on_false);
+  CGTARG_OP_Make_movc(PSI_guard(psi_op, opnd_idx), new_tn, tn, &cmov_ops, on_false);
   if (point) {
     // FdF 20050831: Be careful to insert after all PHI operations.
     while (OP_next(point) && (OP_code(OP_next(point)) == TOP_phi))
@@ -1395,7 +1395,7 @@ append_psi_operand_copy (
 
   // Finally, append the copy op
   OPS cmov_ops = OPS_EMPTY;
-  OP_Make_movc(PSI_guard(psi_op, opnd_idx), new_tn, tn, &cmov_ops, on_false);
+  CGTARG_OP_Make_movc(PSI_guard(psi_op, opnd_idx), new_tn, tn, &cmov_ops, on_false);
   if (point) {
     // FdF 20050831: Be careful to insert after all PHI operations.
     while (OP_next(point) && OP_phi(OP_next(point)))
@@ -1659,7 +1659,7 @@ Normalize_Psi_Operations()
 	      op_prev = op_defguardi;
 
             // (cbr) Support for guards on false
-	    OP_Make_movc(tn_guardi, tn_repair, tn_opndi, &cmov_ops, on_falsei);
+	    CGTARG_OP_Make_movc(tn_guardi, tn_repair, tn_opndi, &cmov_ops, on_falsei);
 	    Set_PSI_opnd(op, opndi, tn_repair);
 	    BB_Insert_Ops_After(OP_bb(op_prev), op_prev, &cmov_ops);
 	  }
@@ -2113,30 +2113,29 @@ SSA_Undo_Renaming_BB(BB *bb, BOOL *visited) {
       if ((dst == src) && !TN_is_dedicated(dst))
 	BB_Remove_Op(bb, op);
     }
-  
-#ifdef TARG_ST200
-    else if (OP_code(op) == TOP_movc) {
-      if (Trace_phi_removal) {
-	fprintf(TFile, "  replacing a conditional move \n\n");
-	//	  Print_OP_No_SrcLine(op);
-      }
+    else {
+      BOOL done;
       OPS ops = OPS_EMPTY;
-      // FdF 20080704: Do not lose the UNC_DEF property that may
-      // have been set when building the congruence classes.
-      if (OP_cond_def_kind(op) == OP_ALWAYS_UNC_DEF) {
-	Exp_COPY(OP_result(op, 0), OP_opnd(op, 1), &ops);
-	Set_OP_ssa_move(OPS_last(&ops));
+      done = CGTARG_OP_Lower_movc(op, &ops);
+      if (done) {
+        // FdF 20080704: Do not lose the UNC_DEF property that may
+        // have been set when building the congruence classes.
+        if (OP_cond_def_kind(op) == OP_ALWAYS_UNC_DEF) {
+          Set_OP_ssa_move(OPS_last(&ops));
+        }
+
+        if (Trace_phi_removal) {
+          fprintf(TFile, "  replacing a conditional move \n\n");
+          //	  Print_OP_No_SrcLine(op);
+        }
+        BB_Remove_Op(bb, op);
+        OP *prev_next = next_op;
+        if (prev_next != NULL)
+          BB_Insert_Ops_Before(bb, prev_next, &ops);
+        else
+          BB_Append_Ops(bb, &ops);
       }
-      else
-	Expand_Copy(OP_result(op, 0), OP_opnd(op, 0), OP_opnd(op, 1), &ops);
-      BB_Remove_Op(bb, op);
-      OP *prev_next = next_op;
-      if (prev_next != NULL)
-	BB_Insert_Ops_Before(bb, prev_next, &ops);
-      else
-	BB_Append_Ops(bb, &ops);
     }
-#endif
   }
 
   for (BB_LIST *elist = BB_children(bb); elist; elist = BB_LIST_rest(elist)) {
