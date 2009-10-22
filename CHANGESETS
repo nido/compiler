@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Oct 22 13:18:25 CEST 2009
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79213
+
+Description:
+------------
+	* [trunk] Fix for bug #79213: HP_valid cfe_028.c regression (st240, -O -ipa).
+	Deliver fixes/codex-79213 rev #24641 with authorization branch #79593
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cflow.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24639 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79213@24641 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24639 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79213@24641" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cflow.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cflow.cxx?p2=branches/fixes/codex-79213/osprey/lai/cflow.cxx&r1=24639&r2=24641&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Oct 22 12:56:39 CEST 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

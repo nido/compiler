@@ -4480,6 +4480,11 @@ OP_equiv(OP *op1, OP *op2) {
   return TRUE;
 }
 
+// FdF 20091020: call_result_set contains the set of registers that
+// may be used to get results from a call. Uses of these dedicated
+// registers will prevent merging of an operation.
+static TN_SET *call_result_set = NULL;
+
 static BOOL
 OP_equiv_for_merging(OP *op1, OP *op2, BS *TNs_to_be_unified) {
 
@@ -4500,15 +4505,32 @@ OP_equiv_for_merging(OP *op1, OP *op2, BS *TNs_to_be_unified) {
     return FALSE;
 
   for (i = 0; i < OP_opnds(op1); i ++) {
-    if ((!TN_equiv(OP_opnd(op1, i), OP_opnd(op2, i)) &&
-	 !TN_equiv_for_unification(OP_opnd(op1, i), OP_opnd(op2, i))) ||
+    // FdF 20091020: Before register allocation, do not move
+    // operations that use a dedicated register that may contain the
+    // result of a call.
+    TN *tn1 = OP_opnd(op1, i);
+    TN *tn2 = OP_opnd(op2, i);
+    if (before_regalloc) {
+      if (TN_is_register(tn1) && TN_is_dedicated(tn1) && TN_SET_MemberP(call_result_set, tn1)) {
+	BB *bb1 = OP_bb(op1);
+	if (BB_Fall_Thru_Predecessor(bb1) && BB_call(BB_Fall_Thru_Predecessor(bb1)))
+	  return FALSE;
+      }
+      if (TN_is_register(tn2) && TN_is_dedicated(tn2) && TN_SET_MemberP(call_result_set, tn2)) {
+	BB *bb2 = OP_bb(op2);
+	if (BB_Fall_Thru_Predecessor(bb2) && BB_call(BB_Fall_Thru_Predecessor(bb2)))
+	  return FALSE;
+      }
+    }
+    if ((!TN_equiv(tn1, tn2) &&
+	 !TN_equiv_for_unification(tn1, tn2)) ||
         (OP_Pred_False(op1, i) != OP_Pred_False(op2, i)) ||
-	(TN_equiv_for_unification(OP_opnd(op1, i), OP_opnd(op2, i)) &&
+	(TN_equiv_for_unification(tn1, tn2) &&
 	 (BBINFO_kind(BBLIST_item(BB_succs(OP_bb(op1)))) == BBKIND_RETURN) &&
 	 !CFLOW_Space))
       return FALSE;
     else {
-      if (TN_equiv_for_unification(OP_opnd(op1, i), OP_opnd(op2, i))) {
+      if (TN_equiv_for_unification(tn1, tn2)) {
 	TNs_to_be_unified_tmp = BS_Union1D(TNs_to_be_unified_tmp, i,
 					   &cflow_pool);
       }
@@ -4773,6 +4795,19 @@ Merge_Common_Ops ()
   BB *b;
   BOOL merged = FALSE;
 
+  // FdF 20091020: call_result_set contains the set of dedicated
+  // registers that may be used as results on calls.
+  call_result_set = TN_SET_Create_Empty (Last_Dedicated_TN+1, &cflow_pool);
+  ISA_REGISTER_CLASS rc;
+  FOR_ALL_ISA_REGISTER_CLASS(rc) {
+    REGISTER reg;
+    REGISTER_SET call_results = REGISTER_CLASS_function_value(rc);
+    FOR_ALL_REGISTER_SET_members(call_results, reg) {
+      TN *tn = Build_Dedicated_TN(rc, reg, 0);
+      TN_SET_Union1D(call_result_set, tn, NULL);
+    }
+  }
+
   for (b = REGION_First_BB; b; b = next_b) {
     next_b = BB_next(b);
     if (BB_preds_len(b) > 1) {
@@ -4811,6 +4846,11 @@ Merge_Common_Ops ()
  */
 /* bv11 */
 
+// FdF 20091020: call_opnd_set contains the set of registers that may
+// be used to pass parameters on a call. Uses of these dedicated
+// registers will prevent hoisting of an operation.
+static TN_SET *call_opnd_set = NULL;
+
 static BOOL
 OP_equiv_for_hoisting(OP *op1, OP *op2, BS *TNs_to_be_unified) {
 
@@ -4836,16 +4876,27 @@ OP_equiv_for_hoisting(OP *op1, OP *op2, BS *TNs_to_be_unified) {
       return FALSE;
   }
   for (i = 0; i < OP_results(op1); i ++) {
-    if ((!TN_equiv(OP_result(op1, i), OP_result(op2, i)) &&
-	 !TN_equiv_for_unification(OP_result(op1, i), OP_result(op2, i)))
-	|| (TN_equiv_for_unification(OP_result(op1, i), OP_result(op2, i)) &&
+    // FdF 20091020: Before register allocation, do not hoist
+    // operations that define a dedicated register that may be a
+    // parameter call
+    TN *tn1 = OP_result(op1, i);
+    TN *tn2 = OP_result(op2, i);
+    if (before_regalloc) {
+      if (TN_is_register(tn1) && TN_is_dedicated(tn1) && TN_SET_MemberP(call_opnd_set, tn1) && BB_call(OP_bb(op1)))
+	return FALSE;
+      if (TN_is_register(tn2) && TN_is_dedicated(tn2) && TN_SET_MemberP(call_opnd_set, tn2) && BB_call(OP_bb(op2)))
+	return FALSE;
+    }
+    if ((!TN_equiv(tn1, tn2) &&
+	 !TN_equiv_for_unification(tn1, tn2))
+	|| (TN_equiv_for_unification(tn1, tn2) &&
 	    OP_Is_Copy_Immediate_Into_Register(op1) &&
 	    (BBINFO_kind(OP_bb(op1)) == BBKIND_RETURN ||
 	    BBINFO_kind(OP_bb(op2)) == BBKIND_RETURN))
 	)
       return FALSE;
     else {
-      if (TN_equiv_for_unification(OP_result(op1, i), OP_result(op2, i))) {
+      if (TN_equiv_for_unification(tn1, tn2)) {
 	TNs_to_be_unified_tmp = BS_Union1D(TNs_to_be_unified_tmp, i,
 					   &cflow_pool);
       }
@@ -5169,6 +5220,21 @@ Hoist_Common_Ops (void)
   BB *b;
   BB *lastbb;
   BOOL hoisted = FALSE;
+
+  // FdF 20091020: call_opnd_set contains the set of dedicated
+  // registers that may be used as parameters on calls.
+  call_opnd_set = TN_SET_Create_Empty (Last_Dedicated_TN+1, &cflow_pool);
+  ISA_REGISTER_CLASS rc;
+  FOR_ALL_ISA_REGISTER_CLASS(rc) {
+    REGISTER reg;
+    REGISTER_SET call_opnds = REGISTER_CLASS_function_argument(rc);
+    FOR_ALL_REGISTER_SET_members(call_opnds, reg) {
+      TN *tn = Build_Dedicated_TN(rc, reg, 0);
+      TN_SET_Union1D(call_opnd_set, tn, NULL);
+    }
+    if (RS_TN != NULL)
+      TN_SET_Union1D(call_opnd_set, RS_TN, NULL);
+  }
 
   for (b = REGION_First_BB; b; b = BB_next(b)) {
     lastbb = b;
