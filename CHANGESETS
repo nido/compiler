@@ -1,6 +1,50 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct 23 09:27:26 CEST 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-69488
+
+Description:
+------------
+	*  Compiler does not emit a proper error when trying to use sx_addc/sx_subc builtins
+
+
+Modified Files:
+---------------
+	M       osprey/driver/OPTIONS
+	M       osprey/targinfo/stxp70/config/config_TARG.cxx
+	M       osprey/targinfo/stxp70/config/gen_intrinsics.inc
+	M       osprey/targinfo/stxp70/config/config_TARG.h
+	M       osprey/targinfo/stxp70/intrn/sx.h
+	M       osprey/targinfo/stxp70/intrn/builtins_sx.h
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24643 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-69488@24655 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24643 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-69488@24655" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/OPTIONS	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/OPTIONS?p2=branches/fixes/codex-69488/osprey/driver/OPTIONS&r1=24643&r2=24655&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_TARG.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_TARG.cxx?p2=branches/fixes/codex-69488/osprey/targinfo/stxp70/config/config_TARG.cxx&r1=24643&r2=24655&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/gen_intrinsics.inc	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/gen_intrinsics.inc?p2=branches/fixes/codex-69488/osprey/targinfo/stxp70/config/gen_intrinsics.inc&r1=24643&r2=24655&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_TARG.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_TARG.h?p2=branches/fixes/codex-69488/osprey/targinfo/stxp70/config/config_TARG.h&r1=24643&r2=24655&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/intrn/sx.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/intrn/sx.h?p2=branches/fixes/codex-69488/osprey/targinfo/stxp70/intrn/sx.h&r1=24643&r2=24655&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/intrn/builtins_sx.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/intrn/builtins_sx.h?p2=branches/fixes/codex-69488/osprey/targinfo/stxp70/intrn/builtins_sx.h&r1=24643&r2=24655&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/fixes/codex-69488/DEPENDENCIES&r1=24643&r2=24655&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Oct 22 13:18:25 CEST 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

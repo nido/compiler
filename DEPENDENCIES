@@ -14,7 +14,7 @@
 #       dependency source uniquely.
 #
 stxp70-binutils,svn,trunk@5159,https://codex.cro.st.com/svnroot/stxp70cc/stxp70-binutils
-mds,svn,trunk@1747,https://codex.cro.st.com/svnroot/mds
+mds,svn,trunk@1754,https://codex.cro.st.com/svnroot/mds
 ecc,svn,trunk@3799,https://codex.cro.st.com/svnroot/ecc
 binopt,svn,trunk@1656,https://codex.cro.st.com/svnroot/binopt
 st200-gdb,svn,20080922_ST200GDB_6.8-ST-2.0@328,http://codex.cro.st.com/svnroot/st200-gdb
