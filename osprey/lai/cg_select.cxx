@@ -965,6 +965,14 @@ Can_Speculate_BB(BB *bb)
       if (TN_is_register(res) && TN_is_global_reg(res) && TN_is_dedicated(res))
         return FALSE;
     }
+    
+	// [TDR] Fix for bug #78333
+	// If a operation has a predicate without being flagged as predicated op, 
+	// generated if-converted code may lead to incorect computation
+	// especially in case of guarded compare / guarded org/andg on STxP70
+	if (!OP_has_predicate (op) && OP_Predicate(op) && OP_Predicate(op)!=True_TN) {
+        return FALSE;
+	}
 
     /* check if we are trying to speculate predicated ops */
     if (OP_has_predicate (op)) {

@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Oct 26 13:18:41 CET 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-78333
+
+Description:
+------------
+	* [trunk] Fix for bug #78333: MP3 fails on stxp70v4 dual-issue ifconv.
+	Deliver fixes/codex-78333 rev #24691 with authorization branch #79435
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cg_select.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24689 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-78333@24691 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24689 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-78333@24691" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cg_select.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_select.cxx?p2=branches/fixes/codex-78333/osprey/lai/cg_select.cxx&r1=24689&r2=24691&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct 26 13:18:34 CET 2009
 	Author:    chauveth
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
