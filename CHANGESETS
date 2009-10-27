@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Oct 27 10:08:56 CET 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-78325
+
+Description:
+------------
+	* [trunk] Fix for bug #78325: [AppliConfig] Incorrect option name in <-mappli-config-decl> usage warning message.
+	Deliver fixes/codex-78325 rev #24716 with authorization branch #80186
+
+
+Modified Files:
+---------------
+	M       osprey/driver/OPTIONS
+	M       osprey/driver/opt_actions.c
+	M       osprey/common/appliconfig/appli_config.lex
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24693 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-78325@24716 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24693 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-78325@24716" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/OPTIONS	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/OPTIONS?p2=branches/fixes/codex-78325/osprey/driver/OPTIONS&r1=24693&r2=24716&roottype=svn&root=open64&diff_format=h
+osprey/driver/opt_actions.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/opt_actions.c?p2=branches/fixes/codex-78325/osprey/driver/opt_actions.c&r1=24693&r2=24716&roottype=svn&root=open64&diff_format=h
+osprey/common/appliconfig/appli_config.lex	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/appliconfig/appli_config.lex?p2=branches/fixes/codex-78325/osprey/common/appliconfig/appli_config.lex&r1=24693&r2=24716&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Oct 26 13:18:41 CET 2009
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

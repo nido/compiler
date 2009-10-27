@@ -2689,18 +2689,26 @@ Process_ST200_OS21_Profiler (string option)
 
 #ifdef TARG_ST
 void
-Process_Application_Config (string targ_args )
+Process_Application_Config (string targ_args, boolean conf_file)
 {
 	extern boolean appli_config_file_set;
+	extern string active_appli_config_file_name;
     int flag;
 	buffer_t buf;
-	appli_config_file_set=TRUE; 
-	if(SYS_isAbsolute(targ_args)) {
-		appli_config_file_name=targ_args;
+	// TDR Treat case where config file / config name is specified with '='
+	if (targ_args[0] == '=') targ_args ++;
+	if (conf_file) {
+		appli_config_file_set=TRUE;
+		if(SYS_isAbsolute(targ_args)) {
+			appli_config_file_name=targ_args;
+		} else {
+			appli_config_file_name=SYS_makePath(SYS_getcwd(),targ_args);
+		}
+    	sprintf(buf, "-TENV::application_configuration_decl=%s", appli_config_file_name);
 	} else {
-		appli_config_file_name=SYS_makePath(SYS_getcwd(),targ_args);
+		active_appli_config_file_name=targ_args;
+	    sprintf(buf, "-TENV:application_configuration_select=%s", targ_args);
 	}
-    sprintf(buf, "-TENV::application_configuration_decl=%s", appli_config_file_name);
     flag = add_new_option(buf);
     add_phase_for_option(flag, P_be);
     add_phase_for_option(flag, P_any_ipl);
