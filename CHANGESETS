@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Oct 28 13:31:33 CET 2009
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80677
+
+Description:
+------------
+	* [trunk] Fix for bug #80677: [IT] Regression in last engineering: all scratch saved in IT without call.
+	Deliver fixes/codex-80677 rev #24771 with authorization branch #80830
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24769 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80677@24771 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24769 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80677@24771" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/cg/targ_entry_exit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx?p2=branches/fixes/codex-80677/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx&r1=24769&r2=24771&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct 28 13:10:47 CET 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
