@@ -39,6 +39,18 @@ static int opc_ou_opnd_idx(opc_t opc, int ou) { return TOP_Find_Operand_Use(opc,
 static int opc_cond_variant(opc_t opc) { return TOP_cond_variant(opc); }
 static int op_cmp_variant(OP *op) { return OP_cmp_variant(op); }
 
+static int opc_opnd_negative(opc_t opc, int opnd) {
+  const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info (opc);
+  const ISA_OPERAND_VALTYP *otype = ISA_OPERAND_INFO_Operand(oinfo, opnd);
+  if (ISA_OPERAND_VALTYP_Is_Literal(otype)) {
+    ISA_LIT_CLASS lit_class = ISA_OPERAND_VALTYP_Literal_Class(otype);
+    if (ISA_LC_Is_Negative(lit_class)) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
 #define opc_is(opc, prop) TOP_is_##prop(opc)
 
 /*
@@ -64,11 +76,29 @@ static intm_t sext(intm_t value, int bits) {
   return (value << INTM_BITS-bits) >> INTM_BITS-bits;
 }
 
+/* Sign extension for NEGATIVE. 
+ * 0 <= bits <= INTM_BITS
+ * Return (+/- |value| mod 2^bits) where
+ * the sign is the same as initial sign.
+ */
+static intm_t nsext(intm_t value, int bits) {
+  intm_t sign, val;
+  if (bits == 0) return 0;
+  sign = (value >> INTM_BITS-1) << bits;
+  val = ((uintm_t)value << INTM_BITS-bits) >> INTM_BITS-bits;
+  return (sign | val);
+}
+
 /* Operand fetch. */
 static intm_t fetch(opc_t opc, const opnd_t *opnds, int opnd) {
   intm_t value = opnd_value(opnds[opnd]);
   if (opc_opnd_signed(opc, opnd)) {
-    value = sext(value, opc_opnd_bits(opc, opnd));
+    if (opc_opnd_negative(opc, opnd)) {
+      value = nsext(value, opc_opnd_bits(opc, opnd));
+    }
+    else {
+      value = sext(value, opc_opnd_bits(opc, opnd));
+    }
   }
   else {
     value = zext(value, opc_opnd_bits(opc, opnd));

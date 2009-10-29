@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Oct 29 10:32:08 CET 2009
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80774
+
+Description:
+------------
+	* [trunk] Fix for bug #80774: Functional error with -Mtda and Quest test cases.
+	Deliver fixes/codex-80774 rev #24788 with authorization branch #80925
+
+
+Modified Files:
+---------------
+	M       osprey/lai/ebo.cxx
+	M       osprey/lai/top_properties.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24787 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80774@24788 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24787 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80774@24788" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/ebo.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/ebo.cxx?p2=branches/fixes/codex-80774/osprey/lai/ebo.cxx&r1=24787&r2=24788&roottype=svn&root=open64&diff_format=h
+osprey/lai/top_properties.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/top_properties.cxx?p2=branches/fixes/codex-80774/osprey/lai/top_properties.cxx&r1=24787&r2=24788&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Oct 28 13:31:33 CET 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -2920,6 +2920,12 @@ EBO_Address_Sequence (
     new_sym = pred_sym;
     new_relocs = pred_relocs;
   }
+
+  // [VL] If the operand use is a OU_negoffset in memory access, then the 
+  // offset must be a negative one (case encountered in bug #80774).
+  if (OP_find_opnd_use(op, OU_negoffset)>=0) 
+    FmtAssert( offset_val<=0, ("Negoffset in memory access with positive offset"));
+  
   if (OP_iadd(pred_op)) 
     new_offset_val = offset_val + pred_val;
   else if (OP_isub(pred_op) && pred_sym == NULL)
