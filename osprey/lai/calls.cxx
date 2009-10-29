@@ -144,7 +144,10 @@ static TN *Neg_Frame_Len_TN;
 static BOOL Gen_Frame_Pointer;
 
 /* Trace flags: */
-static BOOL Trace_EE = FALSE;	/* Trace entry/exit processing */
+#ifndef TARG_ST
+static
+#endif
+ BOOL Trace_EE = FALSE;	/* Trace entry/exit processing */
 
 #if 1
 /* [JV] When set, use this register for spadjust. */

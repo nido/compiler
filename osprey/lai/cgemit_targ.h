@@ -98,9 +98,6 @@ extern void CGEMIT_Alias (ST *sym, ST *strongsym);
 #ifdef TARG_STxP70
 // Special registers fixup just before verify_instruction 
 extern void CGEMIT_Special_Register_Function_Fixup( OP *op );
-
-// Emit code which realign stack in STxP70 IT 
-extern void CGEMIT_Align_Stack(INT32 itstackalign_val, BOOL istackalign_val_set);
 #endif
 
 #ifdef TARG_ARM

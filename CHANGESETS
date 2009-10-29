@@ -1,6 +1,83 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Oct 29 12:56:47 CET 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-73851
+
+Description:
+------------
+	* [trunk] Fix for bug #73851: aligned_stack(512) produces code rejected by assembler.
+	Deliver fixes/codex-73851 rev #24796 with authorization branch #74386
+
+	MAIN CHANGE: Handling of stack alignment up to 512 bits.
+	-----------
+	For this purpose, the following changes have been made:
+	     --> Now the compiler directly emits the code for stack alignment
+	         in prolog and epilog (used to be asm macros),
+	     --> Those piece of code are now emitted in Adjust_Entry_Exit_Code()
+	         (after LRA and MExpand phase), which is more relevant than emitting
+		 them in cgemit, as they used to be. Adjust_Entry_Exit_Code() whose
+		 already emitting all others prolog/epilog related code.
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cgemit.cxx
+	M       osprey/lai/cgemit_targ.h
+	M       osprey/lai/calls.cxx
+	M       osprey/lai/calls.h
+	M       osprey/lai/cgemit.h
+	M       osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx
+	M       osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx
+	M       osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx
+	M       osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx
+	M       osprey/targinfo/stxp70/cg/targ_cgemit.cxx
+	M       osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+	M       osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+	M       osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M       osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M       osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M       osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M       osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24793 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-73851@24796 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24793 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-73851@24796" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgemit.cxx?p2=branches/fixes/codex-73851/osprey/lai/cgemit.cxx&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgemit_targ.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgemit_targ.h?p2=branches/fixes/codex-73851/osprey/lai/cgemit_targ.h&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/lai/calls.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/calls.cxx?p2=branches/fixes/codex-73851/osprey/lai/calls.cxx&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/lai/calls.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/calls.h?p2=branches/fixes/codex-73851/osprey/lai/calls.h&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgemit.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgemit.h?p2=branches/fixes/codex-73851/osprey/lai/cgemit.h&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx?p2=branches/fixes/codex-73851/osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx?p2=branches/fixes/codex-73851/osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx?p2=branches/fixes/codex-73851/osprey/targinfo/stxp70/proc/stxp70_v3_si.cxx&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx?p2=branches/fixes/codex-73851/osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_cgemit.cxx?p2=branches/fixes/codex-73851/osprey/targinfo/stxp70/cg/targ_cgemit.cxx&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx?p2=branches/fixes/codex-73851/osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_entry_exit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx?p2=branches/fixes/codex-73851/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_syntax.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_syntax.cxx?p2=branches/fixes/codex-73851/osprey/targinfo/stxp70/isa/isa_syntax.cxx&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_properties.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_properties.cxx?p2=branches/fixes/codex-73851/osprey/targinfo/stxp70/isa/isa_properties.cxx&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_operands.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_operands.cxx?p2=branches/fixes/codex-73851/osprey/targinfo/stxp70/isa/isa_operands.cxx&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_pack.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_pack.cxx?p2=branches/fixes/codex-73851/osprey/targinfo/stxp70/isa/isa_pack.cxx&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_selector.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_selector.cxx?p2=branches/fixes/codex-73851/osprey/targinfo/stxp70/isa/isa_selector.cxx&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/fixes/codex-73851/DEPENDENCIES&r1=24793&r2=24796&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Oct 29 10:32:08 CET 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

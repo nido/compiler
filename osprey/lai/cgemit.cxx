@@ -6915,10 +6915,6 @@ EMT_Emit_PU (
     Print_All_BBs ();
   }
 
-#ifdef TARG_STxP70
-  CGEMIT_Align_Stack(CG_itstackalign_val, CG_itstackalign_val_overridden);
-#endif
-
   Init_Unwind_Info (trace_unwind);
 
 #if 0

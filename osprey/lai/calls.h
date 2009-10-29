@@ -197,4 +197,9 @@ extern TN *CGTARG_Gen_Pfs_TN (void);
 extern TN *CGTARG_Get_SP_Incr (OP *sp_adj);
 extern TN *CGTARG_Get_FP_Incr (OP *fp_adj);
 
+#ifdef TARG_ST
+/* Give access to Entry/Exit trace flag from target specific file */
+extern BOOL Trace_EE;
+#endif
+
 #endif /* lai_calls_INCLUDED */

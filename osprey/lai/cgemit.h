@@ -70,11 +70,6 @@ extern BOOL CG_emit_asm_dwarf;
 extern BOOL CG_emit_unwind_info;
 extern BOOL CG_emit_unwind_directives;
 
-#ifdef TARG_STxP70
-extern INT32 CG_itstackalign_val;
-extern BOOL  CG_itstackalign_val_overridden;
-#endif
-
 /* Write a qualified name to a file. */
 extern void EMT_Write_Qualified_Name (FILE *f, ST *st);
 
