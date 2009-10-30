@@ -620,7 +620,17 @@ Create_TY_For_Tree (tree type_tree, TY_IDX idx)
     break;
 
   case ENUMERAL_TYPE:
-    mtype = (TREE_UNSIGNED(type_tree) ? MTYPE_U4 : MTYPE_I4);
+    switch (tsize) {
+    case 1:  mtype = MTYPE_I1; break;
+    case 2:  mtype = MTYPE_I2; break;
+    case 4:  mtype = MTYPE_I4; break;
+    case 5:  mtype = MTYPE_I5; break;
+    case 8:  mtype = MTYPE_I8; break;
+    default:  FmtAssert(FALSE, ("Get_TY unexpected size"));
+    }
+    if (TREE_UNSIGNED(type_tree)) {
+      mtype = MTYPE_complement(mtype);
+    }
     idx = MTYPE_To_TY (mtype);	// use predefined type
     break;
 

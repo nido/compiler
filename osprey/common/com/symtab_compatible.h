@@ -131,6 +131,12 @@ ST_type (const ST* s) {
                      ("Should use ST_pu_type instead"));
 	return PU_prototype (Pu_Table[s->u2.pu]);
     } else {
+#ifdef TARG_ST
+      if (s->sym_class == CLASS_BLOCK) { // for UpFormal_Arg_StkSeg used in va_start
+	return 0;
+      }
+      else
+#endif
        return s->u2.type;
     }
 #endif // Is_True_On

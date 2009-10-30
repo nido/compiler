@@ -223,6 +223,12 @@ BOOL UnrollLoops = TRUE;
 BOOL UnrollLoops_Set = FALSE;
 INT32	MinStructCopyParallel     =    0;	/* 0 or 1 = do not generate parallel moves for struct copies */
 BOOL    MinStructCopyParallel_Set =    FALSE;
+#ifdef TARG_ST200
+BOOL PackStruct_WarningsEnabled = FALSE;
+#else
+BOOL PackStruct_WarningsEnabled = TRUE;
+#endif
+BOOL PackStruct_WarningsEnabled_Set = FALSE;
 #endif
 
 INT32 iolist_reuse_limit = 100;
@@ -609,6 +615,8 @@ static OPTION_DESC Options_TENV[] = {
     4, 0, 4096,	&Scalar_Struct_Limit, NULL },
   { OVK_BOOL,	OV_INTERNAL,	FALSE, "unroll_loops", 	"",
     1, 0, 0,	&UnrollLoops, &UnrollLoops_Set },
+  { OVK_BOOL,	OV_INTERNAL,	FALSE, "pack-struct-warnings-enabled", 	NULL,
+    1, 0, 0,	&PackStruct_WarningsEnabled, &PackStruct_WarningsEnabled_Set },
 #endif
   { OVK_INT32,	OV_VISIBLE,	FALSE, "X",			NULL,
     1, 0, 4,	&Eager_Level,	&Eager_Level_Set,

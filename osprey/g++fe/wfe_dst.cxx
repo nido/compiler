@@ -1393,6 +1393,10 @@ DST_enter_enum(tree type_tree, TY_IDX ttidx  , TY_IDX idx,
 	   DST_CONST_VALUE_form(enumerator) =  DST_FORM_DATA8;
       } else if (tsize == 4) {
 	   DST_CONST_VALUE_form(enumerator) =  DST_FORM_DATA4;
+      } else if (tsize == 2) {
+	   DST_CONST_VALUE_form(enumerator) =  DST_FORM_DATA2;
+      } else if (tsize == 1) {
+	   DST_CONST_VALUE_form(enumerator) =  DST_FORM_DATA1;
       } else {
 	   // ???
 	   DST_CONST_VALUE_form(enumerator) =  DST_FORM_DATA4;

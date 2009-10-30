@@ -1,6 +1,56 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct 30 10:13:11 CET 2009
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70097
+
+Description:
+------------
+	* Activation of options -fshort-enums and -fpack-struct.  
+
+
+Modified Files:
+---------------
+	M       osprey/driver/OPTIONS
+	M       osprey/lai/whirl2ops.cxx
+	M       osprey/gccfe/tree_symtab.cxx
+	M       osprey/gccfe/gnu/flags.h
+	M       osprey/gccfe/gnu/c-typeck.c
+	M       osprey/gccfe/wfe_dst.cxx
+	M       osprey/g++fe/tree_symtab.cxx
+	M       osprey/g++fe/wfe_dst.cxx
+	M       osprey/common/com/symtab_compatible.h
+	M       osprey/common/com/config.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24798 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70097@24804 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24798 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70097@24804" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/OPTIONS	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/OPTIONS?p2=branches/fixes/codex-70097/osprey/driver/OPTIONS&r1=24798&r2=24804&roottype=svn&root=open64&diff_format=h
+osprey/lai/whirl2ops.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/whirl2ops.cxx?p2=branches/fixes/codex-70097/osprey/lai/whirl2ops.cxx&r1=24798&r2=24804&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/tree_symtab.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/tree_symtab.cxx?p2=branches/fixes/codex-70097/osprey/gccfe/tree_symtab.cxx&r1=24798&r2=24804&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/flags.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/flags.h?p2=branches/fixes/codex-70097/osprey/gccfe/gnu/flags.h&r1=24798&r2=24804&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/c-typeck.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/c-typeck.c?p2=branches/fixes/codex-70097/osprey/gccfe/gnu/c-typeck.c&r1=24798&r2=24804&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_dst.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_dst.cxx?p2=branches/fixes/codex-70097/osprey/gccfe/wfe_dst.cxx&r1=24798&r2=24804&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/tree_symtab.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/tree_symtab.cxx?p2=branches/fixes/codex-70097/osprey/g++fe/tree_symtab.cxx&r1=24798&r2=24804&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_dst.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_dst.cxx?p2=branches/fixes/codex-70097/osprey/g++fe/wfe_dst.cxx&r1=24798&r2=24804&roottype=svn&root=open64&diff_format=h
+osprey/common/com/symtab_compatible.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/symtab_compatible.h?p2=branches/fixes/codex-70097/osprey/common/com/symtab_compatible.h&r1=24798&r2=24804&roottype=svn&root=open64&diff_format=h
+osprey/common/com/config.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config.cxx?p2=branches/fixes/codex-70097/osprey/common/com/config.cxx&r1=24798&r2=24804&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Oct 29 12:56:47 CET 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

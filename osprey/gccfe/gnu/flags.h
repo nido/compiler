@@ -543,6 +543,11 @@ extern int flag_gnu_linker;
 /* Tag all structures with __attribute__(packed) */
 extern int flag_pack_struct;
 
+#ifdef TARG_ST
+/*enable or not emission of warnings/errors when option -fpack-struct is used */
+extern int PackStruct_WarningsEnabled; 
+#endif
+
 /* This flag is only tested if alias checking is enabled.
    0 if pointer arguments may alias each other.  True in C.
    1 if pointer arguments may not alias each other but may alias

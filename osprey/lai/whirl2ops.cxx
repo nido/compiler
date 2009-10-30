@@ -1623,6 +1623,36 @@ Handle_Call_Site (
 }
 
 /* ====================================================================
+ *   Address_Align
+ *
+ *   Determine the alignment of the symbol type when taking an address
+ *   through an OPR_ LDA.
+ * ====================================================================
+ */
+static INT 
+Address_Align(
+  WN *wn
+)
+{
+  OPCODE opcode = WN_opcode(wn);
+  if (OPCODE_operator(opcode) == OPR_LDA) {
+    return (TY_align(ST_type(WN_st(wn))));
+  }
+  INT i;
+  WN * wn2;
+  for (i = 0; i < WN_kid_count(wn); i++) {
+    wn2 = WN_kid(wn,i);
+    if (wn2) {
+      INT addr_align = Address_Align(wn2);
+      if (addr_align != -1) {
+	return (addr_align);
+      }
+    }
+  }
+  return -1;
+}
+
+/* ====================================================================
  *   Memop_Variant
  *
  *   Determine the Exp_OP variant for a memory operation.
@@ -1652,6 +1682,7 @@ Memop_Variant (
   if (required_alignment > 1) {
     WN_OFFSET offset;
     INT ty_align;
+    INT address_align;
     INT align;
 
     switch (WN_operator(memop)) {
@@ -1670,6 +1701,8 @@ Memop_Variant (
 	TY_IDX ty = WN_load_addr_ty(memop);
 	if (TY_kind(ty) == KIND_POINTER) ty = TY_pointed(ty);
 	ty_align = TY_align(ty);
+	address_align = Address_Align(WN_kid(memop,0));
+	if (address_align != -1) ty_align = MIN(ty_align, address_align);
 	offset = WN_load_offset(memop);
       }
       break;
@@ -1679,6 +1712,8 @@ Memop_Variant (
 	TY_IDX ty = WN_ty(memop);
 	if (TY_kind(ty) == KIND_POINTER) ty = TY_pointed(ty);
 	ty_align = TY_align(ty);
+	address_align = Address_Align(WN_kid(memop,1));
+	if (address_align != -1) ty_align = MIN(ty_align, address_align);
 	offset = WN_store_offset(memop);
       }
       break;

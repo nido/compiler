@@ -2714,6 +2714,77 @@ pointer_diff (op0, op1)
   return folded;
 }
 
+#ifdef TARG_ST
+/* [VB] */
+static int addr_depth = 0;
+
+bool 
+is_packed_ref(t)
+     tree t;
+{
+  if ((TREE_CODE (t) == VAR_DECL) && TYPE_PACKED (t)) {
+    return true;
+  }
+  if (TREE_CODE (t) == COMPONENT_REF) {
+    tree ref = TREE_OPERAND (t, 0);
+    tree field = TREE_OPERAND (t, 1);
+    if ((TREE_CODE (field) == FIELD_DECL) && (DECL_PACKED (field))) {
+      return true;
+    }
+    if (TYPE_PACKED (ref)) {
+      return true;
+    }
+    return (is_packed_ref(ref));
+  }
+
+  return false;
+}
+
+bool 
+address_of_packed_field(arg)
+     tree arg;
+{
+  tree ref = TREE_OPERAND (arg, 0);
+  tree field = TREE_OPERAND (arg, 1);
+
+  /* test if it concerns a field of a structure */
+  if (TREE_CODE (field) == FIELD_DECL) {
+    /* if the field has a type aligned on a byte, 
+       no problem to take its address */
+    if((TREE_CODE (TREE_TYPE (field)) == INTEGER_TYPE &&
+	TYPE_MODE (TREE_TYPE (field)) == QImode) ||
+       (TREE_CODE (TREE_TYPE (field)) == ARRAY_TYPE &&
+	TYPE_MODE (TREE_TYPE (TREE_TYPE (field))) == QImode) ||
+       ((TREE_CODE (TREE_TYPE (field)) == RECORD_TYPE ||
+	 TREE_CODE (TREE_TYPE (field)) == UNION_TYPE ||
+	 TREE_CODE (TREE_TYPE (field)) == QUAL_UNION_TYPE) &&
+	TYPE_PACKED (TREE_TYPE (field)))) {
+      return false;
+    }
+    /* if the field is packed, this may lead to a misaligned access 
+       -> return true */
+    if ((addr_depth == 0) && (DECL_PACKED (field))) {
+      return true;
+    }
+    /* do not consider field that are structure or union */
+    if ((addr_depth > 0) && 
+	((TREE_CODE (TREE_TYPE (field)) == RECORD_TYPE) ||
+	 (TREE_CODE (TREE_TYPE (field)) == UNION_TYPE) ||
+	 (TREE_CODE (TREE_TYPE (field)) == QUAL_UNION_TYPE))) {
+      return false;
+    }
+    /* search if the ref is packed, in case the attribute packed is 
+       not directly attached to the field */
+    if (addr_depth == 0) {
+      return (is_packed_ref(ref));
+    }
+    return false;
+  }
+
+  return false;
+}
+#endif
+
 /* Construct and perhaps optimize a tree representation
    for a unary operation.  CODE, a tree_code, specifies the operation
    and XARG is the operand.
@@ -3079,7 +3150,32 @@ build_unary_op (code, xarg, flag)
 	  {
 	    tree field = TREE_OPERAND (arg, 1);
 
+#ifdef TARG_ST
+	    /* [VB] Tests to emit a warning or return with an error 
+	       in case the address of a field (not of type char or 
+	       array of char) in a packed structure 
+	       or a packed field (not of type char or array of char) 
+	       in a structure is built,
+	       because this may lead to a misaligned access later 
+	       (error if the option -fpack-struct is set, 
+	       warning if the attribute packed is put by the user 
+	       in the C code) */
+	    if (PackStruct_WarningsEnabled) {
+	      if (address_of_packed_field(arg)){
+		if (flag_pack_struct) {
+		  error ("building address of a packed field in a (packed) structure - may lead to a misaligned access");
+		  return error_mark_node;
+		} else {
+		  warning ("building address of a packed field in a (packed) structure - may lead to a misaligned access");
+		}
+	      }
+	    }
+	    addr_depth ++;
+#endif	   
 	    addr = build_unary_op (ADDR_EXPR, TREE_OPERAND (arg, 0), flag);
+#ifdef TARG_ST
+	    addr_depth --;
+#endif
 
 	    if (DECL_C_BIT_FIELD (field))
 	      {
