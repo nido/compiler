@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Oct 30 14:35:16 CET 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76081
+
+Description:
+------------
+	* [trunk] Fix for bug #76081: Range analysis asserts on STxP70-v3 packed comparisons.
+	Deliver fixes/codex-76081 rev #24834 with authorization branch #80513
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/cg/targ_range_analysis.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24832 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76081@24834 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24832 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76081@24834" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/cg/targ_range_analysis.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_range_analysis.cxx?p2=branches/fixes/codex-76081/osprey/targinfo/stxp70/cg/targ_range_analysis.cxx&r1=24832&r2=24834&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Oct 30 12:51:09 CET 2009
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
