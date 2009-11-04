@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Nov 04 09:24:09 CET 2009
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-81392
+
+Description:
+------------
+	* [trunk] Fix for bug #81392: [RLLIB] static variable address is not correctly handle in global assignment in dynamic library.
+	Deliver fixes/codex-81392 rev #24896 with authorization branch #81542
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/isa/isa_relocs.cxx
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24893 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-81392@24896 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24893 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-81392@24896" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/isa/isa_relocs.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_relocs.cxx?p2=branches/fixes/codex-81392/osprey/targinfo/stxp70/isa/isa_relocs.cxx&r1=24893&r2=24896&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/fixes/codex-81392/DEPENDENCIES&r1=24893&r2=24896&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Nov 03 10:59:21 CET 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
