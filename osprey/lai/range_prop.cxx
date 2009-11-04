@@ -690,8 +690,8 @@ RangePropagatePass (RangeAnalysis &range_analysis, INT pass)
 
 // paired-lattice (value plus bit-value ranges) initialization 
 // for forward RA pass
-  VBLattice::MEMPOOL_Initialize(mempool);
-  range_analysis.Initialize (VBLattice::getInstance (), mempool);
+  VBALattice::MEMPOOL_Initialize(mempool);
+  range_analysis.Initialize (VBALattice::getInstance (), mempool);
 
   if (! range_analysis.Can_Analyze ()) {
     Trace_RangePropagate_Aborted ();

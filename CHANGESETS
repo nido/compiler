@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Nov 04 09:44:38 CET 2009
+	Author:    knochelh
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72153
+
+Description:
+------------
+	* [trunk] Fix for bug #72153: [RA] Range analysis assertion failure, remix (st200,-O3).
+	Deliver fixes/codex-72153 rev #24900 with authorization branch #80125
+
+
+Modified Files:
+---------------
+	M       osprey/lai/range_prop.cxx
+	M       osprey/common/util/lalign.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24898 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72153@24900 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24898 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72153@24900" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/range_prop.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/range_prop.cxx?p2=branches/fixes/codex-72153/osprey/lai/range_prop.cxx&r1=24898&r2=24900&roottype=svn&root=open64&diff_format=h
+osprey/common/util/lalign.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/lalign.cxx?p2=branches/fixes/codex-72153/osprey/common/util/lalign.cxx&r1=24898&r2=24900&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Nov 04 09:24:09 CET 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
