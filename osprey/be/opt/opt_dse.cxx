@@ -116,8 +116,13 @@ class DSE {
     void Set_Required_MU( MU_NODE *mu, BOOL real_use ) const;
     void Set_Required_CHI( CHI_NODE *chi ) const;
     void Set_Required_WN( WN *wn ) const;
+#ifdef TARG_ST
+    void Add_EH_exposed_use(WN *call, BOOL *dse_live_changed) const;
+    void Update_MU_list_for_call(BB_NODE *bb, BOOL *dse_live_changed) const;
+#else
     void Add_EH_exposed_use(WN *call) const;
     void Update_MU_list_for_call(BB_NODE *bb) const;
+#endif
     // some inlined functions
     BOOL Live_wn( WN *wn ) const
 		{ return WN_MAP32_Get( _live_wns, wn ); }
@@ -141,7 +146,11 @@ class DSE {
       }
 
     void Dead_store_elim( void ) const;
+#ifdef TARG_ST
+  void Add_MU_list_for_calls( BOOL *dse_live_changed ) const;
+#else
     void Add_MU_list_for_calls( void ) const;
+#endif
 
 }; // end of class DSE
 
@@ -751,7 +760,19 @@ DSE::Dead_store_elim( void ) const
   }
 
   if (Opt_stab()->Has_exc_handler()) {
+
+#ifdef TARG_ST
+    // FdF 20091002: Need to iterate until a fixed point is reached,
+    // since we may propagate live-variables from catch handlers to
+    // try sections. (See codex #67467)
+    while (1) {
+      BOOL need_dse_live_update = FALSE;
+      Add_MU_list_for_calls(&need_dse_live_update);
+      if (!need_dse_live_update)
+	break;
+#else
     Add_MU_list_for_calls();
+#endif
 
     // update liveness because Add_MU_list_for_calls
     // changed the real_use and any_use
@@ -773,6 +794,9 @@ DSE::Dead_store_elim( void ) const
         vse->Chi()->Set_dse_dead(! vse->Any_use());
       }
     }
+#ifdef TARG_ST
+    }
+#endif
   }
 
   FOR_ALL_NODE( ssa_id, ver_stab_iter, Init() ) {
@@ -879,8 +903,13 @@ MU_LIST::New_mu_node_w_cur_vse(AUX_ID    var,
 // aliasing to the mu-list
 // ====================================================================
 
+#ifdef TARG_ST
+void
+DSE::Add_EH_exposed_use(WN *call, BOOL *dse_live_changed) const
+#else
 void
 DSE::Add_EH_exposed_use(WN *call) const
+#endif
 {
   if (_exc == NULL || _exc->Get_es_link(call) == NULL)
     return;
@@ -926,6 +955,7 @@ DSE::Add_EH_exposed_use(WN *call) const
           mu = mu_list->New_mu_node_w_cur_vse(var, vse,
                                               _cfg->Mem_pool());
           if (mu) {
+	    *dse_live_changed = TRUE;
             Set_Required_MU( mu, FALSE );
             if ( Tracing() )
               fprintf( TFile, "<dse> Required EH_MU: var:%d\n", var );
@@ -943,7 +973,11 @@ DSE::Add_EH_exposed_use(WN *call) const
 // exception scope
 // ====================================================================
 
+#ifdef TARG_ST
+void DSE::Update_MU_list_for_call(BB_NODE *bb, BOOL *dse_live_changed) const
+#else
 void DSE::Update_MU_list_for_call(BB_NODE *bb) const
+#endif
 {
   PHI_LIST_ITER phi_iter;
   PHI_NODE *phi;
@@ -968,7 +1002,11 @@ void DSE::Update_MU_list_for_call(BB_NODE *bb) const
 
     // Process Calls
     if ( opr == OPR_CALL || opr == OPR_ICALL ) {
+#ifdef TARG_ST
+      Add_EH_exposed_use(wn, dse_live_changed);
+#else
       Add_EH_exposed_use(wn);
+#endif
     }
 
     // Process Lhs
@@ -992,7 +1030,11 @@ void DSE::Update_MU_list_for_call(BB_NODE *bb) const
   }
 
   FOR_ALL_ELEM (dom_bb, dom_bb_iter, Init(bb->Dom_bbs())) {
+#ifdef TARG_ST
+    Update_MU_list_for_call(dom_bb, dse_live_changed);  /* child */
+#else
     Update_MU_list_for_call(dom_bb);  /* child */
+#endif
   }
 
   //  The statements are processed in reverse order when poping vse
@@ -1032,8 +1074,13 @@ void DSE::Update_MU_list_for_call(BB_NODE *bb) const
 // Driver for the Add MU list for calls
 // ====================================================================
 
+#ifdef TARG_ST
+void
+DSE::Add_MU_list_for_calls( BOOL *dse_live_changed ) const
+#else
 void
 DSE::Add_MU_list_for_calls( void ) const
+#endif
 {
   AUX_ID var;
   MEM_POOL stack_pool;
@@ -1049,8 +1096,11 @@ DSE::Add_MU_list_for_calls( void ) const
       psym->Set_stack(CXX_NEW(STACK<AUX_ID>(&stack_pool), &stack_pool));
     }
   } 
-
+#ifdef TARG_ST
+  Update_MU_list_for_call(_cfg->Entry_bb(), dse_live_changed);
+#else
   Update_MU_list_for_call(_cfg->Entry_bb());
+#endif
 
   OPT_POOL_Pop(&stack_pool, DSE_DUMP_FLAG);
   OPT_POOL_Delete(&stack_pool, DSE_DUMP_FLAG);

@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Nov 05 15:26:18 CET 2009
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-67467
+
+Description:
+------------
+	* [trunk] Fix for bug #67467: Functional error  in Phall lib c++ test suite 21_strings (st200,-Os).
+	Deliver fixes/codex-67467 rev #24936 with authorization branch #79128
+
+
+Modified Files:
+---------------
+	M       osprey/be/opt/opt_dse.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24923 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-67467@24936 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24923 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-67467@24936" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/opt/opt_dse.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_dse.cxx?p2=branches/fixes/codex-67467/osprey/be/opt/opt_dse.cxx&r1=24923&r2=24936&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Nov 05 09:22:54 CET 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
