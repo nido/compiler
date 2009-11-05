@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Nov 05 09:22:54 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79344
+
+Description:
+------------
+	* [trunk] Fix for bug #79344: [IPA] ipa link error Win32 (st200cc, Video Firmware).
+	Deliver fixes/codex-79344 rev #24915 with authorization branch #79364
+
+
+Modified Files:
+---------------
+	M       osprey/libSYS/wrap_file.c
+	M       osprey/make/gcommondefs
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24912 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79344@24915 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24912 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-79344@24915" 
+
+Diff links to modified files:
+-----------------------------
+osprey/libSYS/wrap_file.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/libSYS/wrap_file.c?p2=branches/fixes/codex-79344/osprey/libSYS/wrap_file.c&r1=24912&r2=24915&roottype=svn&root=open64&diff_format=h
+osprey/make/gcommondefs	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/make/gcommondefs?p2=branches/fixes/codex-79344/osprey/make/gcommondefs&r1=24912&r2=24915&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Nov 04 09:44:38 CET 2009
 	Author:    knochelh
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

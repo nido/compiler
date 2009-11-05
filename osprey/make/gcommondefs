@@ -592,7 +592,8 @@ GLDDSOOPTS+= -Wl,--disable-auto-image-base
 # [CG] Support for wrap_printf functionality
 ifeq ($(HOST_OS), MINGW)
 GLDOPTS+= -Wl,-wrap,printf,-wrap,fprintf,-wrap,sprintf,-wrap,snprintf,-wrap,vprintf,-wrap,vfprintf,-wrap,vsprintf,-wrap,vsnprintf,-wrap,_vsnprintf,-wrap,_snprintf 
-GLDOPTS+= -Wl,-wrap,open,-wrap,creat,-wrap,fopen,-wrap,freopen,-wrap,remove,-wrap,rename,-wrap,unlink,-wrap,stat
+# Please keep in sync. and in order wrt libSYS/wrap_file.c
+GLDOPTS+= -Wl,-wrap,open,-wrap,creat,-wrap,fopen,-wrap,freopen,-wrap,remove,-wrap,rename,-wrap,unlink,-wrap,stat,-wrap,chdir,-wrap,rmdir,-wrap,opendir
 endif
 
 # Obsolete
