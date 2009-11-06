@@ -1,4 +1,12 @@
 /*
+ * Copyright (C) 2007. QLogic Corporation. All Rights Reserved.
+ */
+
+/*
+ * Copyright 2003, 2004, 2005, 2006 PathScale, Inc.  All Rights Reserved.
+ */
+
+/*
 
   Copyright (C) 2000, 2001 Silicon Graphics, Inc.  All Rights Reserved.
 
@@ -263,6 +271,7 @@ BOOL IPA_Enable_Keeplight = TRUE;  /* allow the user to ONLY keep the .I
 #ifdef KEY
 BOOL IPA_Enable_Icall_Opt = TRUE;   /* allow ipa change icall to call */
 BOOL IPA_Enable_Branch_Heuristic = TRUE; // use branch prob. for inlining
+BOOL IPA_Clone_List_Actions = FALSE; // report function cloner actions
 #endif
 #ifdef KEY
 BOOL IPA_Enable_EH_Region_Removal = FALSE; // remove useless exception regions
@@ -589,6 +598,9 @@ static OPTION_DESC Options_IPA[] = {
     { OVK_BOOL, OV_INTERNAL,	FALSE, "eh_opt",	"",
 	  0, 0, 0,		&IPA_Enable_EH_Region_Removal,	NULL,
 	  "Enable removal of exception regions"},
+    { OVK_BOOL,	OV_VISIBLE,	FALSE, "clone_list",	"",
+	  0, 0, 0,	&IPA_Clone_List_Actions,	NULL,
+	  "Report function cloner actions" },
 #endif
 #ifdef TARG_ST
     // FdF ipa-allign

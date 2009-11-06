@@ -1,4 +1,8 @@
 /*
+ * Copyright 2003, 2004, 2005 PathScale, Inc.  All Rights Reserved.
+ */
+
+/*
 
   Copyright (C) 2000, 2001 Silicon Graphics, Inc.  All Rights Reserved.
 
@@ -455,7 +459,7 @@ compute_hotness (IPA_EDGE *edge, IPA_NODE *callee, INT callee_size)
     return (result_float);
 }
 
-static UINT32
+UINT32 // KEY
 Effective_weight (const IPA_NODE* node)  {
 #if (!defined(_STANDALONE_INLINER) && !defined(_LIGHTWEIGHT_INLINER))
     if (IPA_Use_Effective_Size && node->Has_frequency ()) {

@@ -1,6 +1,46 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Nov 06 14:27:10 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/monat/dev-IPA-clone-list-import
+
+Description:
+------------
+	*  Deliver dev-IPA-clone-list-import rev #24961 with authorization art #76446
+
+
+Modified Files:
+---------------
+	M       osprey/common/com/config_ipa.cxx
+	M       osprey/common/com/config_ipa.h
+	M       osprey/ipa/main/analyze/ipa_inline.h
+	M       osprey/ipa/main/analyze/ipa_inline.cxx
+	M       osprey/ipa/main/analyze/ipa_cprop.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24954 --new=https://codex.cro.st.com/svnroot/open64/branches/monat/dev-IPA-clone-list-import@24961 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24954 https://codex.cro.st.com/svnroot/open64/branches/monat/dev-IPA-clone-list-import@24961" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/com/config_ipa.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config_ipa.cxx?p2=branches/monat/dev-IPA-clone-list-import/osprey/common/com/config_ipa.cxx&r1=24954&r2=24961&roottype=svn&root=open64&diff_format=h
+osprey/common/com/config_ipa.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config_ipa.h?p2=branches/monat/dev-IPA-clone-list-import/osprey/common/com/config_ipa.h&r1=24954&r2=24961&roottype=svn&root=open64&diff_format=h
+osprey/ipa/main/analyze/ipa_inline.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/main/analyze/ipa_inline.h?p2=branches/monat/dev-IPA-clone-list-import/osprey/ipa/main/analyze/ipa_inline.h&r1=24954&r2=24961&roottype=svn&root=open64&diff_format=h
+osprey/ipa/main/analyze/ipa_inline.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/main/analyze/ipa_inline.cxx?p2=branches/monat/dev-IPA-clone-list-import/osprey/ipa/main/analyze/ipa_inline.cxx&r1=24954&r2=24961&roottype=svn&root=open64&diff_format=h
+osprey/ipa/main/analyze/ipa_cprop.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/main/analyze/ipa_cprop.cxx?p2=branches/monat/dev-IPA-clone-list-import/osprey/ipa/main/analyze/ipa_cprop.cxx&r1=24954&r2=24961&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Nov 05 15:26:18 CET 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

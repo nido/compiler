@@ -1,4 +1,12 @@
 /*
+ * Copyright (C) 2007. QLogic Corporation. All Rights Reserved.
+ */
+
+/*
+ * Copyright 2003, 2004, 2005, 2006 PathScale, Inc.  All Rights Reserved.
+ */
+
+/*
 
   Copyright (C) 2000, 2001 Silicon Graphics, Inc.  All Rights Reserved.
 
@@ -131,6 +139,7 @@ BE_EXPORTED extern BOOL IPA_Enable_Preopt_Set;
 BE_EXPORTED extern BOOL IPA_Enable_Icall_Opt;	// allow ipa change icall to call
 BE_EXPORTED extern BOOL IPA_Enable_Branch_Heuristic; // use branch prob. for inlining
 BE_EXPORTED extern float IPA_Min_Branch_Prob;
+BE_EXPORTED extern BOOL IPA_Clone_List_Actions;	// report cloner actions
 #endif
 
 #ifdef KEY
