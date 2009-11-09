@@ -1,6 +1,103 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Nov 09 14:16:05 CET 2009
+	Author:    
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-78234
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-78234 rev #24985 with authorization branch #78238
+	top-level makefile lacks dependencies on 'default' target
+
+
+Modified Files:
+---------------
+	M       osprey/be/opt/Makefile.gbase
+	M       osprey/be/be/Makefile.gbase
+	M       osprey/be/lno/Makefile.gbase
+	M       osprey/be/whirl2c/Makefile.gbase
+	M       osprey/be/whirl2f/Makefile.gbase
+	M       osprey/libcmplrs/Makefile.gbase
+	M       osprey/ir_tools/Makefile.gbase
+	M       osprey/driver/Makefile.gbase
+	M       osprey/gnu_common/libiberty/Makefile.gbase
+	M       osprey/gnu_common/libelf/Makefile.gbase
+	M       osprey/libair/air/Makefile.gbase
+	M       osprey/instrumentation/libinstrC/Makefile.gbase
+	M       osprey/lai/Makefile.gbase
+	M       osprey/libSYS/Makefile.gbase
+	M       osprey/gccfe/gnu/Makefile.gbase
+	M       osprey/gccfe/Makefile.gbase
+	M       osprey/make/gcommonrules
+	M       osprey/make/template/Makefile.in
+	M       osprey/include/Makefile.gbase
+	M       osprey/g++fe/Makefile.gbase
+	M       osprey/common/rcparser/Makefile.gbase
+	M       osprey/common/rtkutils/Makefile.gbase
+	M       osprey/common/util/Makefile.gbase
+	M       osprey/libdwarf/Makefile.gbase
+	M       osprey/libelfutil/Makefile.gbase
+	M       osprey/parser/Makefile.gbase
+	M       osprey/ipa/lw_inline/Makefile.gbase
+	M       osprey/ipa/main/Makefile.gbase
+	M       osprey/ipa/local/Makefile.gbase
+	M       osprey/ipa/inline/Makefile.gbase
+	M       osprey/targinfo/parser/gensyn/Makefile.gbase
+	M       osprey/targinfo/parser/Makefile.gbase
+	M       osprey/targinfo/Makefile.gbase
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@24967 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-78234@24985 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@24967 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-78234@24985" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/opt/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/be/opt/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/be/be/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/be/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/be/be/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/be/lno/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/lno/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/be/lno/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/be/whirl2c/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/whirl2c/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/be/whirl2c/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/be/whirl2f/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/whirl2f/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/be/whirl2f/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/libcmplrs/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/libcmplrs/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/libcmplrs/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/ir_tools/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ir_tools/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/ir_tools/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/driver/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/driver/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/gnu_common/libiberty/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gnu_common/libiberty/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/gnu_common/libiberty/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/gnu_common/libelf/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gnu_common/libelf/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/gnu_common/libelf/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/libair/air/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/libair/air/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/libair/air/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/instrumentation/libinstrC/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/instrumentation/libinstrC/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/instrumentation/libinstrC/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/lai/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/lai/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/libSYS/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/libSYS/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/libSYS/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/gccfe/gnu/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/gccfe/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/make/gcommonrules	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/make/gcommonrules?p2=branches/fixes/codex-78234/osprey/make/gcommonrules&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/make/template/Makefile.in	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/make/template/Makefile.in?p2=branches/fixes/codex-78234/osprey/make/template/Makefile.in&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/include/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/include/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/include/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/g++fe/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/common/rcparser/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/rcparser/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/common/rcparser/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/common/rtkutils/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/rtkutils/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/common/rtkutils/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/common/util/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/common/util/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/libdwarf/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/libdwarf/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/libdwarf/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/libelfutil/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/libelfutil/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/libelfutil/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/parser/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/parser/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/parser/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/ipa/lw_inline/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/lw_inline/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/ipa/lw_inline/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/ipa/main/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/main/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/ipa/main/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/ipa/local/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/local/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/ipa/local/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/ipa/inline/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/inline/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/ipa/inline/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/parser/gensyn/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/parser/gensyn/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/targinfo/parser/gensyn/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/parser/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/parser/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/targinfo/parser/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/Makefile.gbase?p2=branches/fixes/codex-78234/osprey/targinfo/Makefile.gbase&r1=24967&r2=24985&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Nov 06 14:27:10 CET 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

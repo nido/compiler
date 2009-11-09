@@ -392,7 +392,7 @@ clobber: clobber_local
 #----------------------------------------------------------------------
 first:
 ifndef PARALLEL
-	cd $(BUILD_AREA)/include && $(MAKE)
+	cd $(BUILD_AREA)/include && $(MAKE) install
 	cd $(BUILD_AREA)/gensyn && $(MAKE)
 endif
 
@@ -402,15 +402,13 @@ endif
 #----------------------------------------------------------------------
 first_local:
 
-local: first_local
-	$(MAKE) $(TARGETS)
+local: $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is 
 #  built.
 #----------------------------------------------------------------------
-last: local
-	$(MAKE) make_deps
+last: make_deps
 
 #----------------------------------------------------------------------
 #  install target
@@ -826,15 +824,12 @@ abi_properties_gen.h: targ_isa_registers.h
 
 targ_isa_parse.o: targ_isa_parse.c air.h parser.h
 targ_isa_parse.c: targ_isa_parse.h
-	@echo # $@: force dependency
-%_subset_targ_isa_parse.pr: targ_isa_print.h
-	@echo # $@: force dependency
+# The rule for %_subset_targ_isa_parse.pr appears later, because it
+# needs $(PARSER_INPUT_CFILES) to be defined
 targ_isa_parse.h: targ_isa_print.h
-	@echo # $@: force dependency
 
 targ_isa_print.o: targ_isa_print.c
 targ_isa_print.c: targ_isa_print.h topcode.h
-	@echo # $@: force dependency
 targ_isa_print.h: isa_syntax_gen$(BEXE) targ_isa_registers.h	\
 		  targ_isa_lits.h targ_isa_enums.h
 	$(RUN) ./isa_syntax_gen$(BEXE)
@@ -1213,6 +1208,7 @@ PARSER_INPUT_CFILES = \
 	st220_subset_targ_isa_parse.c \
 	st231_subset_targ_isa_parse.c	\
 	st240_subset_targ_isa_parse.c
+
 endif # ST200
 
 #----------------------------------------------------------------------
@@ -1389,6 +1385,8 @@ endif # ARM
 #----------------------------------------------------------------------
 #  libtarginfo.a library
 #----------------------------------------------------------------------
+
+$(PARSER_INPUT_CFILES:.c=.pr): %_subset_targ_isa_parse.pr: targ_isa_print.h
 
 #libtarginfo.a: libtarginfo.a($(LIBTARGINFO_OBJS))
 libtarginfo.a : $(LIBTARGINFO_OBJS)

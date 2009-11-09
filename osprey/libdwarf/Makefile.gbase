@@ -209,17 +209,19 @@ default: first
 SI = $(STD_INSTALL) $(STD_INSTALL_READ_MASK) -u guest -g guest
 
 first:
+ifndef PARALLEL
 ifeq ($(BUILD_OS), LINUX)
-	cd $(BUILD_AREA)/include && $(MAKE)
+	cd $(BUILD_AREA)/include && $(MAKE) install
+endif
 endif
 
 first_local:
 
-local: first_local
-	$(MAKE) $(TARGETS)
+local: $(TARGETS)
 
-last: local
-	$(MAKE) make_libdeps
+make_libdeps: local
+
+last: make_libdeps
 
 exports: default
 	$(INSTALL) $(STD_INSTALL_READ_MASK) -F $(STD_LIBRARY_LOC) $(TARGETS)

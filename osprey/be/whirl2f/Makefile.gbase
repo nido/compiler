@@ -281,17 +281,19 @@ default: first
 #  built.
 #----------------------------------------------------------------------
 first:
+ifndef PARALLEL
 	cd $(TARGDIR)/be && $(MAKE)
 ifeq ($(BUILD_OS), LINUX)
-	cd $(BUILD_AREA)/include && $(MAKE)
+	cd $(BUILD_AREA)/include && $(MAKE) install
+endif
 endif
 
 first_local:
 	if ! test -a $(TARGET_SO); then ln -sf $(TARG_TARG_INFO_DIR)/$(TARGET_SO) .; fi
 
 
-local: first_local
-	$(MAKE) $(TARGETS)
+$(TARGETS): | first_local
+local: $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is

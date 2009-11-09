@@ -321,10 +321,12 @@ default: first
 #  built.
 #----------------------------------------------------------------------
 first:
+ifndef PARALLEL
 ifneq ($(DSO_MODE),STATIC)
 ## verify that be.so and wopt.so are up to date
 	cd $(TARG_BE_DIR) && $(MAKE)
 	cd $(TARG_OPT_DIR) && $(MAKE)
+endif
 endif
 
 #----------------------------------------------------------------------
@@ -337,15 +339,14 @@ ifneq ($(DSO_MODE),STATIC)
 	if [ ! -h $(WOPT_DSO) ]; then ln -sf $(TARG_OPT_DIR)/$(WOPT_DSO) .; fi
 endif
 
-local: first_local
-	$(MAKE) $(TARGETS)
+$(TARGETS): | first_local
+local: $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is
 #  built.
 #----------------------------------------------------------------------
-last: local
-	$(MAKE) make_deps
+last: make_deps
 
 #----------------------------------------------------------------------
 #  install target

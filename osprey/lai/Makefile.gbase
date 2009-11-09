@@ -712,6 +712,13 @@ ifneq ($(HOST_OS),CYGWIN_NT)
 LLDLIBS += -lm
 endif
 
+#----------------------------------------------------------------------
+#  Intermediate variable, to expose dependency of .o file towards
+#  derived_files. Would not work with a named dependency (such as
+#  'derived_files')
+#  ----------------------------------------------------------------------
+DERIVED_FILES = $(DERIVED_SRCS) $(DERIVED_INCS)
+
 default: first 
 	$(MAKE) local last
 
@@ -720,6 +727,7 @@ default: first
 #  built.
 #----------------------------------------------------------------------
 first:
+ifndef PARALLEL
 	cd $(TARG_LIBELF) && $(MAKE)
 	cd $(TARG_LIBELFUTIL) && $(MAKE)
 	cd $(TARG_LIBDWARF) && $(MAKE)
@@ -742,6 +750,7 @@ ifeq ($(BUILD_PCH), USE_PCH)
 	( $(MAKE) \
 	PCH_OPTS="-LANG:use_pch=cg_pch.pch" cg_pch_files )
 endif
+endif
 
 #----------------------------------------------------------------------
 # The commands in this section do not check the accuracy of
@@ -756,15 +765,14 @@ ifeq ($(DSO_MODE),DLL)
 endif
 endif
 
-local: first_local derived_files
-	$(MAKE) $(TARGETS)
+$(TARGETS): | first_local
+local: $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is
 #  built.
 #----------------------------------------------------------------------
-last: local 
-	$(MAKE) make_deps
+last: make_deps
 
 #----------------------------------------------------------------------
 #  Install target
@@ -847,9 +855,9 @@ ifeq ($(DSO_MODE), DLL)
 
 LDDSOOPTS+=  $(LLDLIBS)
 
-cg.dll cg_dll.a : $(CG_CXX_OBJS) $(CG_C_OBJS) $(CG_LIBS) $(LINK_DSOS)
+cg.dll cg_dll.a : $(CG_CXX_OBJS) $(CG_C_OBJS) $(CGDEPLIBS) $(TARG_BE)/$(BE_DSO)
 	$(CXX) --shared -o cg.dll -Wl,--out-implib,cg_dll.a \
-	$(CG_CXX_OBJS) $(CG_C_OBJS) $(CG_LIBS) $(LINK_DSOS) $(LDOPTS) $(LDDSOOPTS) -Wl,--image-base=0x68000000
+	$(CG_CXX_OBJS) $(CG_C_OBJS) $(LINK_DSOS) $(LDOPTS) $(LDDSOOPTS) -Wl,--image-base=0x68000000
 endif
 
 ##
@@ -957,10 +965,20 @@ gtn_set.td : $(SETGEN) $(BE_CG_DIR)/gen_gtn_set
 	$(SHELLNAME) -f $(BE_CG_DIR)/gen_gtn_set $(COMMON_UTIL_DIR) $(GEN_X_SET_OPTS)
 
 # here's the target that gets made recursively
-derived_files : $(DERIVED_SRCS) $(DERIVED_INCS)
+derived_files : $(DERIVED_FILES)
 ifeq ($(DSO_MODE),STATIC)
 	cd $(TARG_BE) && $(MAKE) derived_files
 endif
+
+#----------------------------------------------------------------------
+#  Intermediate variable, to expose dependency of .o file towards
+#  derived_files. Would not work with a named dependency (such as
+#  'derived_files')
+#  Use of a variable in a rule definition must appear after all
+#  possible updates of the variable.
+# ----------------------------------------------------------------------
+$(CG_CXX_OBJS) $(CG_C_OBJS): $(DERIVED_FILES)
+
 
 #----------------------------------------------------------------------
 #  Include the usual commonrules

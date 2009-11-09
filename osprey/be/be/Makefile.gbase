@@ -91,6 +91,7 @@ TARG_PROMPF_ANL_DIR = $(TARGDIR)/prompf_anl
 TARG_IPL_DIR = $(TARGDIR)/ipl
 TARG_LNO_DIR = $(TARGDIR)/lno
 TARG_GCCFE_DIR = $(TARGDIR)/gccfe
+TARG_LIBSYS_DIR = $(TARGDIR)/libSYS
 
 TARG_INFO_INC_DIR = $(TARG_TARG_INFO_DIR)
 TARG_INFO_LIB_DIR = $(TARG_TARG_INFO_DIR)
@@ -509,12 +510,7 @@ COMMON_APPLICONFIG_C_SRCS = \
 	appli_config_yacc.c \
 	appli_config_lex.c
 
-appli_config_yacc.h appli_config_yacc.c : $(COMMON_APPLICONFIG_DIR)/appli_config.yacc 
-	$(YACC_NO) -d $(COMMON_APPLICONFIG_DIR)/appli_config.yacc -o appli_config_yacc.c
-
-appli_config_lex.c : $(COMMON_APPLICONFIG_DIR)/appli_config.lex 
-	$(LEX) -oappli_config_lex.c  $(COMMON_APPLICONFIG_DIR)/appli_config.lex
-
+LDIRT += $(COMMON_APPLICONFIG_C_SRCS) appli_config_yacc.h
 
 COMMON_APPLICONFIG_C_OBJS= $(COMMON_APPLICONFIG_C_SRCS:.c=.o) 
 BE_DRIVER_CXX_OBJS = $(BE_DRIVER_CXX_SRCS:.cxx=.o) 
@@ -644,6 +640,9 @@ endif
 
 VPATH    =  $(SRC_DIRS)
 
+# here's the target that gets made recursively
+DERIVED_FILES = $(DERIVED_SRCS) $(DERIVED_INCS)
+
 default: first
 	$(MAKE) local last
 
@@ -652,26 +651,41 @@ default: first
 #  built.
 #----------------------------------------------------------------------
 first:
+ifndef PARALLEL
 ## verify that the necessary stuff is up to date.
-	cd $(BUILD_AREA)/include && $(MAKE)
+	cd $(BUILD_AREA)/include && $(MAKE) install
 	cd $(TARG_TARG_INFO_DIR) && $(MAKE)
 	cd $(TARG_LIBINSTR_DIR) && $(MAKE) $(INSTR_SO)
+	cd $(TARG_LIBSYS_DIR) && $(MAKE)
+	cd $(TARG_LIBIBERTY) && $(MAKE)
+	cd $(TARG_GCCFE_DIR) && $(MAKE)
+endif
 
 #----------------------------------------------------------------------
 # The commands in this section do not check the accuracy of
 # library/includes coming from other modules...
 #----------------------------------------------------------------------
 
-first_local :
-	if [ ! -h $(WOPT_SO) ]; then ln -sf $(TARG_WOPT_DIR)/$(WOPT_SO) .; fi
-	if [ ! -h $(CG_SO) ]; then ln -sf $(TARG_CG_DIR)/$(CG_SO) .; fi
-	if [ ! -h $(LNO_SO) ]; then ln -sf $(TARG_LNO_DIR)/$(LNO_SO) .; fi
-	if [ ! -h $(INSTR_SO) ]; then ln -sf $(TARG_LIBINSTR_DIR)/$(INSTR_SO) .; fi
-	if [ ! -h $(WHIRL2C_SO) ]; then ln -sf $(TARG_WHIRL2C_DIR)/$(WHIRL2C_SO) .; fi
-	if [ ! -h $(WHIRL2F_SO) ]; then ln -sf $(TARG_WHIRL2F_DIR)/$(WHIRL2F_SO) .; fi
-	if [ ! -h $(PURPLE2_SO) ]; then ln -sf $(TARG_PURPLE2_DIR)/$(PURPLE2_SO) .; fi
-	if [ ! -h $(PROMPF_ANL_SO) ]; then ln -sf $(TARG_PROMPF_ANL_DIR)/$(PROMPF_ANL_SO) .; fi
-	if [ ! -h $(IPL_SO) ]; then ln -sf $(TARG_IPL_DIR)/$(IPL_SO) .; fi
+FIRST_LOCAL = $(WOPT_SO) $(CG_SO) $(LNO_SO) $(INSTR_SO) $(WHIRL2C_SO) $(WHIRL2F_SO) $(PURPLE2_SO) $(PROMPF_ANL_SO) $(IPL_SO)
+
+$(WOPT_SO):
+	ln -sf $(TARG_WOPT_DIR)/$(WOPT_SO) .
+$(CG_SO):
+	ln -sf $(TARG_CG_DIR)/$(CG_SO) .
+$(LNO_SO):
+	ln -sf $(TARG_LNO_DIR)/$(LNO_SO) .
+$(INSTR_SO):
+	ln -sf $(TARG_LIBINSTR_DIR)/$(INSTR_SO) .
+$(WHIRL2C_SO):
+	ln -sf $(TARG_WHIRL2C_DIR)/$(WHIRL2C_SO) .
+$(WHIRL2F_SO):
+	ln -sf $(TARG_WHIRL2F_DIR)/$(WHIRL2F_SO) .
+$(PURPLE2_SO):
+	ln -sf $(TARG_PURPLE2_DIR)/$(PURPLE2_SO) .
+$(PROMPF_ANL_SO):
+	ln -sf $(TARG_PROMPF_ANL_DIR)/$(PROMPF_ANL_SO) .
+$(IPL_SO):
+	ln -sf $(TARG_IPL_DIR)/$(IPL_SO) .
 
 ifeq ($(BUILD_VARIANT),RELEASE)
 release.cxx :
@@ -680,15 +694,15 @@ release.cxx :
 	echo " const char *__Release_ID = RELEASE_ID;      " >> $@
 endif
 
-local: first_local derived_files $(GENERATED_FILES)
-	$(MAKE) $(TARGETS)
+$(BE_CXX_OBJS): $(DERIVED_FILES) $(GENERATED_FILES)
+$(TARGETS): | $(FIRST_LOCAL)
+local: $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is
 #  built.
 #----------------------------------------------------------------------
-last: local
-	$(MAKE) make_deps
+last: make_deps
 
 
 #----------------------------------------------------------------------
@@ -705,7 +719,7 @@ install:: last
 #----------------------------------------------------------------------
 
 BE_DRIVER_OBJS += \
-	$(TARGDIR)/libSYS/libSYS.a \
+	$(TARG_LIBSYS_DIR)/libSYS.a \
 	$(TARGDIR)/libiberty/libiberty.a
 BE_DRIVER_LDLIBS +=
 BE_DRIVER_LDOPTS +=
@@ -721,8 +735,6 @@ preg_list.h : $(COMMON_UTIL_DIR)/gen_x_list.csh                   \
 $(BE_COM_DIR)/gen_preg_list.csh
 	$(SHELLNAME) -f	$(BE_COM_DIR)/gen_preg_list.$(SHELLNAME) $(COMMON_UTIL_DIR)
 
-# here's the target that gets made recursively
-derived_files : $(DERIVED_SRCS) $(DERIVED_INCS)
 
 LDIRT+= $(TARGET_SO) $(TARGETS) $(WOPT_SO) $(CG_SO) $(LNO_SO) $(WHIRL2C_SO)
 LDIRT+= $(WHIRL2F_SO) $(PURPLE2_SO) $(PROMPF_ANL_SO) $(IPL_SO) $(INLINE_SO) $(INSTR_SO)
@@ -773,7 +785,7 @@ BE_DSO_OBJS = $(BE_C_OBJS) $(BE_CXX_OBJS) $(BE_AS_OBJS) \
 	$(TARGET_SO) \
 	$(INSTR_SO) \
 	$(TARG_INFO_LIB_DIR)/libtarginfo.a \
-	$(TARGDIR)/libSYS/libSYS.a \
+	$(TARG_LIBSYS_DIR)/libSYS.a \
 	$(TARGDIR)/libiberty/libiberty.a
 BE_DSO_LDOPTS += 
 BE_DSO_LDLIBS += 
@@ -865,4 +877,14 @@ s-iov: gcov-iov$(BEXE)
 wn_coverage.o: $(GENERATED_FILES)
 
 LDIRT+= s-iov *.s *.ii gcov-iov$(BEXE) *.bo *.i gcov-iov.h
+
+#----------------------------------------------------------------------
+# Appli_config rules
+#----------------------------------------------------------------------
+appli_config_yacc.h appli_config_yacc.c : $(COMMON_APPLICONFIG_DIR)/appli_config.yacc 
+	$(YACC_NO) -d $(COMMON_APPLICONFIG_DIR)/appli_config.yacc -o appli_config_yacc.c
+
+appli_config_lex.c : $(COMMON_APPLICONFIG_DIR)/appli_config.lex 
+	$(LEX) -oappli_config_lex.c  $(COMMON_APPLICONFIG_DIR)/appli_config.lex
+
 

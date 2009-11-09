@@ -498,6 +498,7 @@ ifeq ($(BUILD_PCH), USE_PCH)
 endif
 
 first:
+ifndef PARALLEL
 ## verify that wopt.so is up to date
 	cd $(TARG_OPT_DIR) && $(MAKE)
 ## verify that ipl.so is up to date
@@ -509,16 +510,16 @@ ifeq ($(BUILD_PCH), USE_PCH)
 	( $(MAKE) $(.MAKEFLAGS) BUILD_PCH=USE_PCH PCH_OPTS="-LANG:create_pch=lno_pch.pch" lno_pch.pch lno_pch.o )
 	( $(MAKE) $(.MAKEFLAGS) BUILD_PCH=USE_PCH PCH_OPTS="-LANG:use_pch=lno_pch.pch" lno_pch_files )
 endif
+endif
 
-local: first_local
-	$(MAKE) $(TARGETS)
+$(TARGETS): | first_local
+local: $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is
 #  built.
 #----------------------------------------------------------------------
-last: local
-	$(MAKE) make_deps
+last: make_deps
 
 #----------------------------------------------------------------------
 #  Build 'lnopt'

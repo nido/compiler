@@ -64,8 +64,8 @@ INCLUDE_SUBDIRS =   \
 	targ_info
 
 DEPS_FOR_include	=
-DEPS_FOR_librtkutils	= 
-DEPS_FOR_gensyn		= librtkutils
+DEPS_FOR_librtkutils	=
+DEPS_FOR_gensyn		= include librtkutils
 DEPS_FOR_targ_info	= include gensyn
 
 #
@@ -96,7 +96,7 @@ DEPS_FOR_libelfutil	= include
 DEPS_FOR_librcparser	=
 DEPS_FOR_libSYS		= include
 DEPS_FOR_libparse  	= targ_info
-DEPS_FOR_libair         = include targ_info
+DEPS_FOR_libair         = include targ_info gccfe
 DEPS_FOR_instrumentationC =
 
 #
@@ -129,7 +129,7 @@ ifneq (,$(CORE_EXTENSIONS))
 TOOL_SUBDIRS += targ_info_ext
 endif
 
-DEPS_FOR_gccfe		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
+DEPS_FOR_gccfe		:= $(INCLUDE_SUBDIRS) $(filter-out libair,$(LIBRARY_SUBDIRS))
 DEPS_FOR_g++fe		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) gccfe
 DEPS_FOR_be		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) gccfe
 DEPS_FOR_lai		:= be
@@ -177,23 +177,33 @@ endif
 #
 # Below are defined the top level Makefile targets.
 #
-# Note that dependencies between modules are checked only for the
-# targets: local last install
-# Indeed the target default checks itself the dependencies in each
-# module makefile by invoking the target first that recursively builds
-# dependent modules.
-# This means that parallel make (make -j 8 for instance) is only
-# supported for targets: local last install
-# make last is equivalent to make default with support for parallel make.
-# 
+# Dependencies between modules are enforced for the following
+# targets: default all local last install
+#
+# The 'default' target forces the dependencies in each module makefile
+# by invoking the 'first' target that recursively builds prerequisite
+# modules.  This has the side effect that parallel make (make -j 8 for
+# instance) is not supported for the 'default' target unless the
+# 'PARALLEL' make parameter is defined, as two recursive builds of the
+# same subdirectory can occur concurrently, leading to build errors.
+# The 'PARALLEL' make parameter is properly defined in this
+# Makefile.
+#
+# 'make last' is equivalent to 'make default' with support for
+# parallel make (no unnecessary recursion).
+#
+# 'make all' is an alias to 'make last' and is the actual default
+# target of this Makefile.
+#
 # Targets list:
 # default: builds the compiler w/o installing it
-# local: build only local module files
-# last: same as default (with support for parallel make)
+# local: build only local module files (with support for parallel make)
+# last: same result as default (with support for parallel make)
+# all: same as last (default Makefile target)
 # install: builds and install (with support for parallel make)
 # clean: clean intermediate files
 # clobber: clean all built files
-# 
+#
 # Note that SUBDIRS may be redefined on the command line to rebuild
 # only some modules, for instance:
 # > make SUBDIRS=be install
@@ -217,16 +227,26 @@ endif
 #
 .PHONY: default local install clean clobber last
 
+# Default Makefile target, enabling parallel build without installing
+all: last
+
+# Default way of building Open64, enforcing prerequisite builds in
+# each sub-directory; parallel build is not supported in this mode.
 default: $(addprefix default_,$(SUBDIRS))
 	$(MAKE) default-local
+
 local: $(addprefix local_,$(SUBDIRS))
 	$(MAKE) local-local
+
 install: $(addprefix install_,$(SUBDIRS))
 	$(MAKE) install-local
+
 clean: $(addprefix clean_,$(SUBDIRS))
 	$(MAKE) clean-local
+
 clobber: $(addprefix clobber_,$(SUBDIRS))
 	$(MAKE) clobber-local
+
 last: $(addprefix last_,$(SUBDIRS))
 	$(MAKE) last-local
 
@@ -235,7 +255,7 @@ clean_%:
 clobber_%:
 	$(MAKE) -C $* clobber
 default_%:
-	$(MAKE) -C $* default
+	$(MAKE) -C $* default PARALLEL=1
 local_%:
 	$(MAKE) -C $* local
 install_%:
@@ -264,7 +284,7 @@ last-local:
 # Handling of module dependencies
 #
 # Define NO_DEPS=1 on the make command to avoid dependency checking
-# 
+#
 ifndef NO_DEPS
 # Now transform dependencies written above into Make dependencies
 
@@ -272,6 +292,7 @@ ifndef NO_DEPS
 subst_local=$(strip local_$(targ)): $(addprefix local_,$(DEPS_FOR_$(targ)))-sep-
 subst_last=$(strip last_$(targ)): $(addprefix last_,$(DEPS_FOR_$(targ)))-sep-
 subst_install=$(strip install_$(targ)): $(addprefix install_,$(DEPS_FOR_$(targ)))-sep-
+subst_default=$(strip default_$(targ)): $(addprefix default_,$(DEPS_FOR_$(targ)))-sep-
 
 # Generate "local" rules
 # Transform each dependencies of the form
@@ -290,6 +311,9 @@ LAST_DEP := $(foreach targ,$(INCLUDE_SUBDIRS)  $(LIBRARY_SUBDIRS) $(TOOL_SUBDIRS
 # Same thing for "install" rules.
 INSTALL_DEP := $(foreach targ,$(INCLUDE_SUBDIRS)  $(LIBRARY_SUBDIRS) $(TOOL_SUBDIRS),$(subst_install))
 
+# Same thing for "default" rules.
+DEFAULT_DEP := $(foreach targ,$(INCLUDE_SUBDIRS)  $(LIBRARY_SUBDIRS) $(TOOL_SUBDIRS),$(subst_default))
+
 # No need for dependencies for "clean" and "clobber" rules
 
 # Generate the newly generated dependencies into an auxiliary Makefile fragment
@@ -300,5 +324,6 @@ deps.mk: Makefile
 	@echo $(LOCAL_DEP) | perl -p -e 's/-sep- */\n/g' > $@
 	@echo $(LAST_DEP) | perl -p -e 's/-sep- */\n/g' >> $@
 	@echo $(INSTALL_DEP) | perl -p -e 's/-sep- */\n/g' >> $@
+	@echo $(DEFAULT_DEP) | perl -p -e 's/-sep- */\n/g' >> $@
 
 endif

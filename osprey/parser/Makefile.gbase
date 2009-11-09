@@ -161,32 +161,30 @@ default: first
 #  built.
 #----------------------------------------------------------------------
 first:
+ifndef PARALLEL
+	cd $(BUILD_AREA)/include && $(MAKE) install
 	cd $(TARG_TARG_INFO_DIR) && $(MAKE)
 	cd $(TARG_RTKUTILS_DIR) && $(MAKE)
 	cd $(BUILD_AREA)/libSYS && $(MAKE)
 	cd $(BUILD_AREA)/libiberty && $(MAKE)
 	cd $(BUILD_AREA)/libair && $(MAKE)
+	cd $(BUILD_AREA)/libparse && $(MAKE)
+endif
 
 #----------------------------------------------------------------------
 # The commands in this section do not check the accuracy of
 # library/includes coming from other modules...
 #----------------------------------------------------------------------
 first_local:
-	cd $(TARG_RTKUTILS_DIR) && $(MAKE)
-	cd $(BUILD_AREA)/libSYS && $(MAKE)
-	cd $(BUILD_AREA)/libiberty && $(MAKE)
-	cd $(BUILD_AREA)/libair && $(MAKE)
 
-local: first_local
-	$(MAKE) $(TARGETS)
+local: $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is 
 #  built.
 #----------------------------------------------------------------------
 
-last: local
-	$(MAKE) make_deps
+last: make_deps
 
 #----------------------------------------------------------------------
 #  install target

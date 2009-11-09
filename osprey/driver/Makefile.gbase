@@ -37,10 +37,14 @@
 #
 
 include	$(COMMONDEFS)
- COMMON_DIR 		= $(BUILD_TOT)/common
- COMMON_APPLICONFIG_DIR 		= $(COMMON_DIR)/appliconfig
+COMMON_DIR 		= $(BUILD_TOT)/common
+COMMON_APPLICONFIG_DIR	= $(COMMON_DIR)/appliconfig
 
 GNU_COMMON_DIR          = $(BUILD_TOT)/gnu_common
+TARG_LIBSYS_DIR         = $(BUILD_AREA)/libSYS
+TARG_LIBIBERTY          = $(BUILD_AREA)/libiberty
+TARG_LIBRCPARSER        = $(BUILD_AREA)/librcparser
+TARG_LIBRTKUTILS        = $(BUILD_AREA)/librtkutils
 
 ifeq ($(HOST_OS),MINGW)
 # For GetProcessMemoryInfo function
@@ -168,7 +172,7 @@ GEN_CFILES = \
 APPCG_CFILES = \
 	appli_config_yacc.c \
 	appli_config_lex.c
-	
+
 SHARED_CFILES = \
 	errors.c \
 	lang_defs.c \
@@ -206,27 +210,25 @@ LDIRT = OPTIONS.P table$(BEXE) generated $(GEN_HFILES) $(GEN_CFILES) *.bo tmp.*
 
 LANGS = as cc c89 CC f77 fort77 f90
 
-appli_config_yacc.h appli_config_yacc.c : $(COMMON_APPLICONFIG_DIR)/appli_config.yacc 
-	$(YACC_NO) -d $(COMMON_APPLICONFIG_DIR)/appli_config.yacc -o appli_config_yacc.c
-
-appli_config_lex.c : $(COMMON_APPLICONFIG_DIR)/appli_config.lex appli_config_yacc.h
-	$(LEX) -oappli_config_lex.c  $(COMMON_APPLICONFIG_DIR)/appli_config.lex
-
 default: first
 	$(MAKE) local last
 
 first:
+ifndef PARALLEL
 ifeq ($(BUILD_OS), LINUX)
-	cd $(BUILD_AREA)/include && $(MAKE)
+	cd $(BUILD_AREA)/include && $(MAKE) install
+endif
+	cd $(TARG_LIBSYS_DIR) && $(MAKE)
+	cd $(TARG_LIBIBERTY) && $(MAKE)
+	cd $(TARG_LIBRCPARSER) && $(MAKE)
+	cd $(TARG_LIBRTKUTILS) && $(MAKE)
 endif
 
 first_local:
 
-local: first_local
-	$(MAKE) $(TARGETS)
+local: $(TARGETS)
 
-last: local
-	$(MAKE) make_deps
+last: make_deps
 
 install: last
 	if [ ! -d $(STD_MONGOOSE_OS_LOC) ]; then $(STD_INSTALL) -d $(STD_MONGOOSE_OS_LOC); fi
@@ -261,11 +263,17 @@ CPPCMD="$(BUILD_COMPILER_LOC)cpp -traditional -P"
 OPTIONS.P : $(OPTIONS_SRC)
 	$(BUILD_BASE)/sort_options.sh $(CPPCMD) $(BUILD_BASE) OPTIONS $(LCDEFS) > OPTIONS.P
 
-DRIVERDEPLIBS += $(BUILD_AREA)/libSYS/libSYS.a $(BUILD_AREA)/libiberty/libiberty.a $(BUILD_AREA)/librcparser/librcparser.a $(BUILD_AREA)/librtkutils/librtkutils.a 
+DRIVERDEPLIBS += $(TARG_LIBSYS_DIR)/libSYS.a $(TARG_LIBIBERTY)/libiberty.a $(TARG_LIBRCPARSER)/librcparser.a $(TARG_LIBRTKUTILS)/librtkutils.a
 
 driver$(HEXE): $(OBJECTS)  $(DRIVERDEPLIBS)
 	$(CCF) -o $@ $(OBJECTS) $(DRIVERDEPLIBS) $(LDFLAGS)
 
 # need to make generated headers before compiling src files
 $(SRC_OBJECTS) : $(GEN_HFILES)
+
+appli_config_yacc.h appli_config_yacc.c : $(COMMON_APPLICONFIG_DIR)/appli_config.yacc 
+	$(YACC_NO) -d $(COMMON_APPLICONFIG_DIR)/appli_config.yacc -o appli_config_yacc.c
+
+appli_config_lex.c : $(COMMON_APPLICONFIG_DIR)/appli_config.lex appli_config_yacc.h
+	$(LEX) -oappli_config_lex.c  $(COMMON_APPLICONFIG_DIR)/appli_config.lex
 

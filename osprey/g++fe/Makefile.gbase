@@ -177,7 +177,7 @@ TARG_GCCFE_DIR          = $(TARGDIR)/gccfe
 
 TARGINFO_PARSER_INC_DIR	  = $(BUILD_TOT)/targinfo/parser/inc
 LIBAIR_DIR                = $(BUILD_TOT)/libair/air
-
+TARG_LIBSYS_DIR           = $(TARGDIR)/libSYS
 # These are the directories in which to look for source files.
 
 SRC_DIRS =		\
@@ -355,7 +355,7 @@ TARGETS = gfecc$(HEXE)
 COMUTIL_OBJS = $(TARG_COMUTIL_DIR)/libcomutil.a
 CMPLRS_OBJS  = $(TARG_CMPLRS_DIR)/libcmplrs.a
 LIBIBERTY_OBJS = $(TARG_LIBIBERTY_DIR)/libiberty.a
-LIBSYS_OBJS = $(TARGDIR)/libSYS/libSYS.a
+LIBSYS_OBJS = $(TARG_LIBSYS_DIR)/libSYS.a
 GNU_CC_OBJS = $(TARG_GNU_DIR)/libgfecc.a 
 GNU_CPP_OBJS = $(TARG_GNU_DIR)/libcpp.a
 LIBTARGINFO = $(TARG_TARG_INFO_DIR)/libtarginfo.a
@@ -382,20 +382,23 @@ default: first
 #  built.
 #----------------------------------------------------------------------
 first:
+ifndef PARALLEL
 	cd $(TARG_GNU_DIR) && $(MAKE)
 	cd $(TARG_CMPLRS_DIR) && $(MAKE)
 	cd $(TARG_COMUTIL_DIR) && $(MAKE)
 	cd $(TARG_GNU_DIR) && $(MAKE) `basename $(GNU_CC_OBJS)` `basename $(GNU_CPP_OBJS)`
+	cd $(TARG_TARG_INFO_DIR) && $(MAKE)
+	cd $(TARG_LIBSYS_DIR) && $(MAKE)
+	cd $(TARG_GCCFE_DIR) && $(MAKE)
+endif
 
-local: 
-	$(MAKE) $(TARGETS)
+local: $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is 
 #  built.
 #----------------------------------------------------------------------
-last : local
-	$(MAKE) make_deps
+last : make_deps
 
 install: last
 	if [ ! -d $(STD_MONGOOSE_OS_LOC) ]; then $(STD_INSTALL) -d $(STD_MONGOOSE_OS_LOC); fi

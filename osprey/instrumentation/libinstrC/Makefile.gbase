@@ -195,33 +195,23 @@ endif
 #--------------------------------------------------------------------
 #  Variables describing additional sources, objects, and libraries
 #----------------------------------------------------------------------
-ifeq ($(BUILD_OS), IRIX)
-LLDLIBS += -none -lm
-else
 LLDLIBS += 
-endif
-
-first:
 
 default: first
 	$(MAKE) local last
 
+first:
 
-ifeq ($(BUILD_OS), IRIX)
-first_local: so_locations
-else
 first_local:
-endif
 
-local: first_local
-	$(MAKE) $(TARGETS)
+local: $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is
 #  built.
 #----------------------------------------------------------------------
-last : local
-	$(MAKE) make_libdeps
+make_libdeps: local
+last : make_libdeps
 
 #----------------------------------------------------------------------
 #  Build 'libinstr.so'
@@ -308,13 +298,6 @@ so_locations: $(SO_LOCATION_DIR)/so_locations
 	cp $(SO_LOCATION_DIR)/so_locations so_locations
 	chmod u+w so_locations
 
-ifeq ($(BUILD_OS), IRIX)
-libinstr.so: $(LIBINSTR_C_OBJS) $(SO_LOCATION_DIR)/Exported \
-	 $(SO_LOCATION_DIR)/so_locations
-	$(C++F) -o libinstr.so $(STD_DSO_LOADOPTS) $(EXPORT_LIST) \
-	 $(LIBINSTR_C_OBJS) \
-	 $(LLDLIBS) -show
-else
 .PRECIOUS : $(LIBRARY)
 
 entries=__profile_branch __profile_branch_init __profile_call_entry __profile_call_exit \
@@ -341,7 +324,6 @@ endif
 $(DSO): $(LIBRARY)
 	$(LD) $(STD_DSO_LOADOPTS) -exports_file $(BUILD_BASE)/common.exports $(EXTRA_EXPORTS) \
 	$(LIBRARY) -o $@ -lc
-endif
 
 ifdef STANDALONELIB
 $(INSTR_READER):instr_reader_main.o $(LIBINSTR_C_OBJS)

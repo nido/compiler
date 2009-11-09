@@ -252,18 +252,20 @@ default: first
 	$(MAKE) local last
 
 first:
+ifndef PARALLEL
 ifeq ($(BUILD_OS), LINUX)
-	cd $(BUILD_AREA)/include && $(MAKE)
+	cd $(BUILD_AREA)/include && $(MAKE) install
 endif
 	cd $(BUILD_AREA)/libcomutil && $(MAKE)
+	cd $(TARG_TARG_INFO_DIR) && $(MAKE)
+	cd $(TARG_GCCFE_DIR) && $(MAKE)
+endif
 
 first_local:
 
-local: first_local
-	$(MAKE) $(TARGETS)
+local: $(TARGETS)
 
-last: local
-	$(MAKE) make_deps
+last: make_deps
 
 ifneq ($(TARGET_FROM_ST),)
 INSTALL_DIR=$(ROOT)/sbin

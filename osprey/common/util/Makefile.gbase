@@ -166,14 +166,14 @@ HFILES	= \
 	lbitmask.h
 
 CXXFILES = \
-   	cxx_memory.cxx	\
-   	errors.cxx	\
-   	zint.cxx	\
-   	lvrange.cxx	\
-   	lbrange.cxx	\
-   	lbvalrange.cxx	\
+	cxx_memory.cxx	\
+	errors.cxx	\
+	zint.cxx	\
+	lvrange.cxx	\
+	lbrange.cxx	\
+	lbvalrange.cxx	\
 	larange.cxx \
-   	range.cxx	\
+	range.cxx	\
 	paired_lattice.cxx \
 	lbitvalue.cxx	\
 	lalign.cxx	\
@@ -198,18 +198,19 @@ endif
 endif
 
 first:
+ifndef PARALLEL
 ifeq ($(BUILD_OS), LINUX)
-	cd $(BUILD_AREA)/include && $(MAKE)
+	cd $(BUILD_AREA)/include && $(MAKE) install
 endif
-
+endif
 
 first_local:
 
-local: first_local
-	$(MAKE) $(TARGETS)
+local: $(TARGETS)
 
-last: local 
-	$(MAKE) make_libdeps
+make_libdeps: local
+
+last: make_libdeps
 
 exports: default
 #	$(INSTALL) -m 444 -F $(STD_LIBRARY_LOC) $(TARGETS)

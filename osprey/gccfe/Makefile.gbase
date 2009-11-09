@@ -169,6 +169,7 @@ TARG_COMUTIL_DIR	= $(TARGDIR)/libcomutil
 TARG_CMPLRS_DIR		= $(TARGDIR)/libcmplrs
 TARG_LIBIBERTY_DIR      = $(TARGDIR)/libiberty
 TARG_GNU_DIR		= $(TARGDIR)/gccfe/gnu
+TARG_LIBSYS_DIR	        = $(TARGDIR)/libSYS
 
 TARGINFO_PARSER_INC_DIR	  = $(BUILD_TOT)/targinfo/parser/inc
 LIBAIR_DIR                = $(BUILD_TOT)/libair/air
@@ -346,10 +347,12 @@ TARGETS = gfec$(HEXE) $(CPP)$(HEXE)
 COMUTIL_OBJS = $(TARG_COMUTIL_DIR)/libcomutil.a
 CMPLRS_OBJS  = $(TARG_CMPLRS_DIR)/libcmplrs.a
 LIBIBERTY_OBJS = $(TARG_LIBIBERTY_DIR)/libiberty.a
-LIBSYS_OBJS = $(TARGDIR)/libSYS/libSYS.a
+LIBSYS_OBJS = $(TARG_LIBSYS_DIR)/libSYS.a
 GNU_OBJS = $(TARG_GNU_DIR)/libgfec.a
 GNU_CPP_OBJS = $(TARG_GNU_DIR)/libcpp.a
 LIBTARGINFO = $(TARG_TARG_INFO_DIR)/libtarginfo.a
+
+GNU_LIBS = $(GNU_CPP_OBJS) $(GNU_OBJS)
 
 ifneq ($(HOST_OS),CYGWIN_NT)
 ifneq ($(HOST_OS),MINGW)
@@ -371,19 +374,26 @@ default: first
 #  built.
 #----------------------------------------------------------------------
 first:
+ifndef PARALLEL
+	cd $(INCLUDE_DIR) && $(MAKE) install
 	cd $(TARG_GNU_DIR) && $(MAKE)
 	cd $(TARG_CMPLRS_DIR) && $(MAKE)
 	cd $(TARG_COMUTIL_DIR) && $(MAKE)
+	cd $(TARG_LIBSYS_DIR) && $(MAKE)
+	cd $(TARG_TARG_INFO_DIR) && $(MAKE)
+endif
 
-local: gnu_libs $(GENERATED_FILES)
-	$(MAKE) $(TARGETS)
+FIRST_LOCAL = $(GNU_LIBS)
+
+$(TARGETS): $(FIRST_LOCAL)
+
+local: $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is 
 #  built.
 #----------------------------------------------------------------------
-last: local
-	$(MAKE) make_deps
+last: make_deps
 
 install: last
 	if [ ! -d $(STD_MONGOOSE_OS_LOC) ]; then $(STD_INSTALL) -d $(STD_MONGOOSE_OS_LOC); fi
@@ -391,11 +401,24 @@ install: last
 	    $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(STD_MONGOOSE_OS_LOC) ; \
 	done
 
-gnu_libs: $(GENERATED_FILES)
+# Artificial dependency, to avoid executing the build commands twice
+# at the same in the same dir (leading to temporary files conflicts)
+#
+# Indeed, the rule below "$(GNU_LIBS): $(GENERATED_FILES)" contains 2
+# targets, and without a dependency between them, the commands can be
+# executed twice in parallel (one instance for each target, each
+# instance building the same files as the other, independent one),
+# leading to race conditions.
+#
+# We could also split the command into two, and have two different
+# rules, but then nothing would ensure that libcpp.a and libgfec.a can
+# be built in parallel (it is currently the case, but may not be true
+# in the future, and it would be difficult to track)
+$(GNU_OBJS): $(GNU_CPP_OBJS)
+
+$(GNU_LIBS): $(GENERATED_FILES)
 	cd $(TARG_GNU_DIR) && $(MAKE) $(foreach obj, $(GNU_CPP_OBJS) $(GNU_OBJS), $(shell basename $(obj)))
 	cd $(TARG_GNU_DIR) && $(MAKE) make_deps
-
-$(GNU_CPP_OBJS) $(GNU_OBJS): gnu_libs
 
 GFEC_OBJS=$(OBJECTS) $(GNU_OBJS) $(GNU_CPP_OBJS) $(COMUTIL_OBJS)  $(CMPLRS_OBJS) $(LIBSYS_OBJS) $(LIBIBERTY_OBJS) $(LIBTARGINFO)
 
@@ -424,6 +447,12 @@ endif
 #  Needs to be compatible for both C (for extension) and
 #  C++ (for loader)
 #----------------------------------------------------------------------
+
+# Lazily pretend that all generated object files depend on the
+# generated .h file, while only a subset actually depends on them.
+# This is to avoid writing all the actual dependency rules by hand.
+$(OBJECTS): $(GENERATED_FILES)
+
 ifeq (1,1)
 extension_include.h: extension_include.hin
 	$(BUILD_TOT)/scripts/common/preprocess.pl $(LCINCS) -MD $< -o $@

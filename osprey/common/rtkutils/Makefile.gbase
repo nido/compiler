@@ -133,7 +133,7 @@ else
 CFLAGS += -DV_MAJ=$(RELEASE_MAJOR) -DV_MIN=$(RELEASE_MINOR) -DV_B=$(RELEASE_PATCHLEVEL)
 endif
 
-LDIRT += *.bo
+LDIRT += *.bo *.ba *.a
 
 default: first
 	$(MAKE) local last
@@ -146,11 +146,11 @@ first:
 
 first_local:
 
-local: first_local
-	$(MAKE) $(TARGETS)
+local: $(TARGETS)
 
-last: local 
-	$(MAKE) make_libdeps
+make_libdeps: local
+
+last: make_libdeps
 
 exports: default
 #	$(INSTALL) -m 444 -F $(STD_LIBRARY_LOC) $(TARGETS)

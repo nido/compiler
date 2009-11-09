@@ -314,8 +314,10 @@ default: first
 #  built.
 #----------------------------------------------------------------------
 first:
+ifndef PARALLEL
 ifneq ($(DSO_MODE),STATIC)
 	cd $(TARGDIR)/be && $(MAKE)
+endif
 endif
 
 #----------------------------------------------------------------------
@@ -327,15 +329,16 @@ ifneq ($(DSO_MODE),STATIC)
 	if [ ! -h $(BE_DSO) ]; then ln -sf $(TARG_BE_DIR)/$(BE_DSO) .; fi
 endif
 
-local: first_local
-	$(MAKE) $(TARGETS)
+$(TARGETS): | first_local
+local: $(TARGETS)
+
+$(BE_DSO): | first_local
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is
 #  built.
 #----------------------------------------------------------------------
-last : local
-	$(MAKE) make_deps
+last : make_deps
 
 #----------------------------------------------------------------------
 #  install target

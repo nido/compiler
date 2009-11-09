@@ -653,7 +653,7 @@ endif
 	done
 ifdef SYS_DIRS
 	@for h in  $(SYS_DIRS) ; do \
-	   if [ !  -d sys/$$h ]; then \
+	   if [ !  $(TEST_ARG) sys/$$h ]; then \
 	     ln -sf $(BUILD_TOT)/$(ONE_UP)/include/sys/$$h sys/$$h; \
 	   fi; \
 	done;

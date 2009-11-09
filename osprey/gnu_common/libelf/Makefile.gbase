@@ -116,18 +116,21 @@ CFILES = \
 
 HOSTDEFS += -DLONGLONG
 
-install: last
-
 default: first
 	$(MAKE) local last
 
-first : 
-	cd $(BUILD_AREA)/include && $(MAKE)
+install: last
+
+first:
+ifndef PARALLEL
+	cd $(BUILD_AREA)/include && $(MAKE) install
+endif
 
 local: $(TARGETS)
 
-last : local
-	$(MAKE) make_libdeps
+make_libdeps: local
+
+last: make_libdeps
 
 .PRECIOUS: $(LIBRARY)
 $(LIBRARY): $(OBJECTS)

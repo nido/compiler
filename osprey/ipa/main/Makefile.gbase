@@ -400,6 +400,7 @@ pure: $(TARGETS_PURE)
 #  built.
 #----------------------------------------------------------------------
 first:
+ifndef PARALLEL
 ifneq ($(DSO_MODE),STATIC)
 ## verify that be.so is up to date
 	cd $(TARG_BE_DIR) && $(MAKE)
@@ -407,6 +408,7 @@ ifneq ($(DSO_MODE),STATIC)
 	cd $(TARG_IPL_DIR) && $(MAKE)
 ## verify that wopt.so is up to date
 	cd $(TARG_WOPT_DIR) && $(MAKE)
+endif
 endif
 
 #----------------------------------------------------------------------
@@ -420,11 +422,10 @@ ifneq ($(DSO_MODE),STATIC)
 	if [ ! -h $(WOPT_DSO) ]; then ln -sf $(TARG_WOPT_DIR)/$(WOPT_DSO) .; fi
 endif
 
-local: first_local
-	$(MAKE) $(TARGETS)
+$(TARGETS): | first_local
+local: $(TARGETS)
 
-last: local
-	$(MAKE) make_deps
+last: make_deps
 
 #----------------------------------------------------------------------
 #  install target

@@ -103,7 +103,7 @@ MAKELIB: .USE .PRECIOUS
 
 make_deps: local
 ifneq ($(BUILD_COMPILER), EDG)
-	-@cat *.d > $(MKDEPFILE)
+	-@cat *.d > $(MKDEPFILE).tmp && mv $(MKDEPFILE).tmp $(MKDEPFILE)
 endif
 
 # make dependencies be for library(foo.o) not for foo.o,

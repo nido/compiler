@@ -120,11 +120,10 @@ first:
 
 first_local:
 
-local: first_local
-	$(MAKE) $(TARGETS)
+local: $(TARGETS)
 
-last: local 
-	$(MAKE) make_libdeps
+make_libdeps: local
+last: make_libdeps
 
 exports: default
 #	$(INSTALL) -m 444 -F $(STD_LIBRARY_LOC) $(TARGETS)

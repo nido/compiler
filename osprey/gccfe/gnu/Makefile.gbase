@@ -480,15 +480,18 @@ else
 TARGETS = $(CPPLIB) $(CLIBRARY) $(CCLIBRARY)
 endif
 
-default: first local last
+default: first
+	$(MAKE) local last
 
 #----------------------------------------------------------------------
 #  The commands in this section are done BEFORE any other target is 
 #  built.
 #----------------------------------------------------------------------
 first:
-	cd $(BUILD_AREA)/include && $(MAKE)
+ifndef PARALLEL
+	cd $(BUILD_AREA)/include && $(MAKE) install
 	cd $(TARG_LIBIBERTY_DIR) && $(MAKE)
+endif
 
 local: $(TARGETS)
 

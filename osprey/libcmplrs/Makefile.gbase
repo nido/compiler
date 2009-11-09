@@ -77,15 +77,17 @@ default: first
 	$(MAKE) local last
 
 first:
-	cd $(BUILD_AREA)/include && $(MAKE)
+ifndef PARALLEL
+	cd $(BUILD_AREA)/include && $(MAKE) install
+endif
 
 first_local:
 
-local: first_local
-	$(MAKE) $(TARGETS)
+local: $(TARGETS)
 
-last: local
-	$(MAKE) make_libdeps
+make_libdeps: local
+
+last: make_libdeps
 
 install: last
 

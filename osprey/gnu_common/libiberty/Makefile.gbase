@@ -119,9 +119,19 @@ ifeq ($(HOST_OS),MINGW)
 OBJS +=	cygpath.o	
 endif
 
+default: first
+	$(MAKE) local last
 install: last
-default: local
 local: all
+
+#----------------------------------------------------------------------
+#  The commands in this section are done BEFORE any other target is 
+#  built.
+#----------------------------------------------------------------------
+first:
+ifndef PARALLEL
+	cd $(BUILD_AREA)/include && $(MAKE) install
+endif
 
 all: $(TARGET)
 
@@ -129,7 +139,6 @@ $(TARGET): $(OBJS)
 	rm -f $(TARGET)
 	$(AR) $(AR_FLAGS) $(TARGET) $(OBJS)
 
-last: local
-	$(MAKE) make_deps
+last: make_deps
 
 include $(COMMONRULES)

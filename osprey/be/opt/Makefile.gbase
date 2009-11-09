@@ -421,9 +421,12 @@ default: first
 #  built.
 #----------------------------------------------------------------------
 first:
+ifndef PARALLEL
+	cd $(BUILD_AREA)/include && $(MAKE) install
 ## verify that be.so is up to date
 ifneq ($(DSO_MODE),STATIC)
 	cd $(TARG_BE_DIR) && $(MAKE)
+endif
 endif
 
 #----------------------------------------------------------------------
@@ -440,15 +443,14 @@ ifeq ($(BUILD_PCH), USE_PCH)
 	( $(MAKE) $(.MAKEFLAGS) BUILD_PCH=USE_PCH BUILD_OPTIMIZE="$(BUILD_OPTIMIZE)" PCH_OPTS="-LANG:use_pch=opt_pch.pch" opt_pch_files )
 endif
 
-local: first_local
-	$(MAKE) $(TARGETS)
+$(TARGETS): | first_local
+local: $(TARGETS)
 
 #----------------------------------------------------------------------
 #  The commands in this section are done AFTER every other target is
 #  built.
 #----------------------------------------------------------------------
-last: local
-	$(MAKE) make_deps
+last: make_deps
 
 #----------------------------------------------------------------------
 #  install target
@@ -473,6 +475,8 @@ endif
 #----------------------------------------------------------------------
 
 LINK_DSOS = $(BE_DSO)
+
+$(BE_DSO): | first_local
 
 ifeq ($(BUILD_HOST), IA64)
 ifeq ($(BUILD_COMPILER), SGI)
