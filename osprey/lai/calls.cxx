@@ -149,7 +149,7 @@ static
 #endif
  BOOL Trace_EE = FALSE;	/* Trace entry/exit processing */
 
-#if 1
+#ifdef TARG_ST
 /* [JV] When set, use this register for spadjust. */
 /* This is the case when there is no more scratch register ...*/
 /* It is possible to use callee save by using a push/pop like sequence
@@ -2015,59 +2015,69 @@ Adjust_Entry (
        */
       REG_LIVE_Prolog_Temps(bb, sp_adj, fp_adj, temps);
 
+#ifdef TARG_ST
       cl = TN_register_class(SP_TN);
 
       reg = REGISTER_SET_Choose(temps[cl]);
 
       if(reg == REGISTER_UNDEFINED) {
-	if(Callee_Saved_Regs_Count > 0) {
-	  Use_Callee_Save_TN_For_SpAdjust = CALLEE_tn(0);
-	}
 
-#ifdef TARG_ST
-	// [JV] Check that we do not use the same TN as the one used
-	// to save FP.
-	// Check also that we get a register of same reg class as SP.
-	INT callee_num = 1;
-	TN *fp_save = NULL;
-	while(callee_num < Callee_Saved_Regs_Count &&
-	      ( TN_register_class(SP_TN) != TN_register_class(Use_Callee_Save_TN_For_SpAdjust) ||
-		(fp_adj != sp_adj &&
-		 TN_is_save_reg(Use_Callee_Save_TN_For_SpAdjust) &&
-		 TN_save_rclass(Use_Callee_Save_TN_For_SpAdjust) == TN_register_class(FP_TN) &&
-		 TN_save_reg(Use_Callee_Save_TN_For_SpAdjust) == TN_register(FP_TN) )
-		)
-	      ) {
+        // Try to get a super scratch or callee saved register from target specific code
+        // (For instance, on xp70, the selection of a callee saved register is
+        //  done within EETARG_get_temp_for_spadjust(), in order to
+        //  get a register also compatible with dynamic stack alignment (if needed)).
+        // Potential conflict 
+        Use_Callee_Save_TN_For_SpAdjust = EETARG_get_temp_for_spadjust(bb);
 
-	  if(fp_adj != sp_adj &&
-	     TN_is_save_reg(Use_Callee_Save_TN_For_SpAdjust) &&
-	     TN_save_rclass(Use_Callee_Save_TN_For_SpAdjust) == TN_register_class(FP_TN) &&
-	     TN_save_reg(Use_Callee_Save_TN_For_SpAdjust) == TN_register(FP_TN) ) {
-	    fp_save = Use_Callee_Save_TN_For_SpAdjust;
-	  }
-
-	  Use_Callee_Save_TN_For_SpAdjust = CALLEE_tn(callee_num);
-	  callee_num++;
-	}
-
-	if(callee_num >= Callee_Saved_Regs_Count ||
-	   Use_Callee_Save_TN_For_SpAdjust == NULL) {
-	  // Let target give an available temp tn
-	  Use_Callee_Save_TN_For_SpAdjust = EETARG_get_temp_for_spadjust(bb);
-	  if(Use_Callee_Save_TN_For_SpAdjust != NULL &&
-	     fp_save != NULL &&
-	     TN_register_class(fp_save) == TN_register_class(Use_Callee_Save_TN_For_SpAdjust)) {
-	    FmtAssert(TN_register(fp_save) != TN_register(Use_Callee_Save_TN_For_SpAdjust),("Selected register is the same as the one used to save FP"));
-	  }
-	}
+        if (Use_Callee_Save_TN_For_SpAdjust == NULL) {
+          // Target specific code was unsuccessful to get a callee saved register.
+          // Now try the generic approach.
+          if(Callee_Saved_Regs_Count > 0) {
+            Use_Callee_Save_TN_For_SpAdjust = CALLEE_tn(0);
+          }
+          
+          // [JV] Check that we do not use the same TN as the one used
+          // to save FP.
+          // Check also that we get a register of same reg class as SP.
+          INT callee_num = 1;
+          while(callee_num < Callee_Saved_Regs_Count &&
+                ( TN_register_class(SP_TN) != TN_register_class(Use_Callee_Save_TN_For_SpAdjust) ||
+                  (fp_adj != sp_adj &&
+                   TN_is_save_reg(Use_Callee_Save_TN_For_SpAdjust) &&
+                   TN_save_rclass(Use_Callee_Save_TN_For_SpAdjust) == TN_register_class(FP_TN) &&
+                   TN_save_reg(Use_Callee_Save_TN_For_SpAdjust) == TN_register(FP_TN) )
+                  )
+                ) {
+            Use_Callee_Save_TN_For_SpAdjust = CALLEE_tn(callee_num);
+            callee_num++;
+          }
+        }
+        else {
+          // Sanity check: if FP is used in current PU, check that the temporary
+          // register selected for SP adjust is not the same as the one used to
+          // save initial FP value.
+          if (fp_adj != sp_adj) {
+            INT callee_num;
+            for (callee_num = 0; callee_num < Callee_Saved_Regs_Count; callee_num++) {
+              TN *callee_tn = CALLEE_tn(callee_num);
+              if (TN_is_save_reg(callee_tn) &&
+                  TN_save_rclass(callee_tn) == TN_register_class(FP_TN) &&
+                  TN_save_reg(callee_tn) == TN_register(FP_TN) ) {
+                // Found FP save register
+                FmtAssert(TN_register(callee_tn) != TN_register(Use_Callee_Save_TN_For_SpAdjust),
+                          ("Selected register is the same as the one used to save FP"));
+                break;
+              }
+            }
+          }
+        }
 	FmtAssert(Use_Callee_Save_TN_For_SpAdjust != NULL,("Cannot find callee saved reg"));
-#endif
+
 	if (Trace_EE) {
-	  fprintf(TFile, "No more scrashed registers, get: ");
+	  fprintf(TFile, "No more scratch registers, get: ");
 	  Print_TN(Use_Callee_Save_TN_For_SpAdjust,FALSE);
 	}
 
-	FmtAssert(Use_Callee_Save_TN_For_SpAdjust != NULL,("cannot find callee save"));
 	if(TN_is_dedicated(Use_Callee_Save_TN_For_SpAdjust)) {
 	  reg = TN_register(Use_Callee_Save_TN_For_SpAdjust);
 	}
@@ -2079,6 +2089,7 @@ Adjust_Entry (
 	}
 	temps[cl] = REGISTER_SET_Union1(temps[cl], reg);
       }
+#endif
 
       if (Trace_EE) {
 	ISA_REGISTER_CLASS cl;
@@ -2093,12 +2104,13 @@ Adjust_Entry (
 	}
       }
 
+#ifdef TARG_ST
       TN *src = Gen_Literal_TN(frame_len, Pointer_Size);
       incr = Build_TN_Of_Mtype (Pointer_Mtype);
       Exp_Immediate (incr, src, MTYPE_signed(Pointer_Mtype) ? TRUE : FALSE, &ops);
-      /*
+#else
       incr = Gen_Prolog_LDIMM64(frame_len, &ops);
-      */
+#endif
       Assign_Prolog_Temps(OPS_first(&ops), OPS_last(&ops), temps);
     } else {
 
@@ -2167,10 +2179,12 @@ Adjust_Entry (
       }
     }
   }
+#endif
   
   // possible do target-dependent fixups
   EETARG_Fixup_Entry_Code (bb);
 
+#ifdef TARG_ST
   if ( Trace_EE ) {
 #pragma mips_frequency_hint NEVER
     fprintf(TFile, "\nEntry sequence after EETARG_Fixup_Entry_Code:\n");
@@ -2493,9 +2507,8 @@ Adjust_Entry_Exit_Code (
 {
   BB_LIST *elist;
 
-  Use_Callee_Save_TN_For_SpAdjust = NULL;
-
 #ifdef TARG_ST
+  Use_Callee_Save_TN_For_SpAdjust = NULL;
 
   if (Trace_EE) {
     INT callee_num;

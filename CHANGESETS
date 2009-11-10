@@ -1,6 +1,56 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Nov 10 15:56:04 CET 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80882
+
+Description:
+------------
+	* [trunk] Fix for bug #80882: [STACK_LAYOUT] Large stack model broken.
+	              and bug #80884: [STACK_LAYOUT] stack alignment broken
+	Deliver fixes/codex-80882 rev #25042 with authorization branch #81133
+
+	--> Reworked the code that reserve a temporary register for SP adjust.
+	    It is now able to reserve a register prior to PUSH sequence, and
+	    it insure correct stack alignment.
+	--> The dynamic stack alignment code has been improved to
+	    [1] use a scratch register if available (to remove the need to
+	        save/restore a temporary register)
+	 or [2] use the same temporary register as the SP adjust one,
+	        in order to avoid duplicate save/restore.
+
+Modified Files:
+---------------
+	M       osprey/lai/calls.cxx
+	M       osprey/common/com/lai_loader.cxx
+	M       osprey/targinfo/stxp70/expand/exp_memrf.cxx
+	M       osprey/targinfo/stxp70/expand/exp_targ.cxx
+	M       osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25018 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80882@25042 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25018 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80882@25042" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/calls.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/calls.cxx?p2=branches/fixes/codex-80882/osprey/lai/calls.cxx&r1=25018&r2=25042&roottype=svn&root=open64&diff_format=h
+osprey/common/com/lai_loader.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/lai_loader.cxx?p2=branches/fixes/codex-80882/osprey/common/com/lai_loader.cxx&r1=25018&r2=25042&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/expand/exp_memrf.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/expand/exp_memrf.cxx?p2=branches/fixes/codex-80882/osprey/targinfo/stxp70/expand/exp_memrf.cxx&r1=25018&r2=25042&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/expand/exp_targ.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/expand/exp_targ.cxx?p2=branches/fixes/codex-80882/osprey/targinfo/stxp70/expand/exp_targ.cxx&r1=25018&r2=25042&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_entry_exit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx?p2=branches/fixes/codex-80882/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx&r1=25018&r2=25042&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Nov 09 14:16:05 CET 2009
 	Author:    
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
