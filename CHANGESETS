@@ -1,6 +1,42 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Nov 12 13:12:52 CET 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82096
+
+Description:
+------------
+	* [trunk] Fix for bug #82096: Unexpected warning emitted (compiler in debug mode only).
+	Deliver fixes/codex-82096 rev #25076 with authorization branch #82097
+
+	--> Slight change in unwind info building to avoid useless warning emissioni
+	    when processing PUSH/POP instructions.
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25073 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82096@25076 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25073 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82096@25076" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx?p2=branches/fixes/codex-82096/osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx&r1=25073&r2=25076&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Nov 12 11:22:41 CET 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
