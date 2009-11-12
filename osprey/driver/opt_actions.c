@@ -1194,8 +1194,10 @@ Check_Target ( void )
     } else {
       add_stxp70_int_option("-TARG:got_model=%d", got_large, P_be);
     }
+    add_stxp70_int_option("-CG:tail_call=%d", 0, P_be);
   } else if (option_was_seen(O_fPIC)) {
-      add_stxp70_int_option("-TARG:got_model=%d", got_large, P_be);
+    add_stxp70_int_option("-TARG:got_model=%d", got_large, P_be);
+    add_stxp70_int_option("-CG:tail_call=%d", 0, P_be);
   }
 
   connect_extensions();
