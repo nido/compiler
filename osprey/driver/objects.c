@@ -632,43 +632,43 @@ add_library_options (void)
 	  }
 	}
 
-	if (!option_was_seen(O_nostdlib)) {
-	  if (st200_core && is_directory (st200_core)) {
-	    st200_core = concat_path (st200_core, 
-				      concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
-						  (st200_runtime == RUNTIME_OS21 || 
-						   st200_runtime == RUNTIME_OS21_DEBUG) ? 
-						  "os21" : "bare"));
-	    flag = add_string_option(O_L__, st200_core);
-	    add_option_seen (flag);
-	  }
 
-	  if (st200_soc && is_directory (st200_soc)) {
-	    st200_soc = concat_path (st200_soc, 
+	if (st200_core && is_directory (st200_core)) {
+	  st200_core = concat_path (st200_core, 
+				    concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
+						(st200_runtime == RUNTIME_OS21 || 
+						 st200_runtime == RUNTIME_OS21_DEBUG) ? 
+						"os21" : "bare"));
+	  flag = add_string_option(O_L__, st200_core);
+	  add_option_seen (flag);
+	}
+
+	if (st200_soc && is_directory (st200_soc)) {
+	  st200_soc = concat_path (st200_soc, 
+				   concat_path(proc == PROC_ST220 ? "st220" :  
+					       proc == PROC_ST231 ? "st231" : 
+					       proc == PROC_ST240 ? "st240" : "st231" ,
+					       concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
+							   (st200_runtime == RUNTIME_OS21 || 
+							    st200_runtime == RUNTIME_OS21_DEBUG) ? 
+							   "os21" : "bare")));
+	  flag = add_string_option(O_L__, st200_soc);
+	  add_option_seen (flag);
+	}
+
+	if (st200_board && is_directory (st200_board)) {
+	  st200_board = concat_path (st200_board, 
 				     concat_path(proc == PROC_ST220 ? "st220" :  
 						 proc == PROC_ST231 ? "st231" : 
-						 proc == PROC_ST240 ? "st240" : "st231" ,
+						 proc == PROC_ST240 ? "st240" : "st231" ,						   
 						 concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 							     (st200_runtime == RUNTIME_OS21 || 
 							      st200_runtime == RUNTIME_OS21_DEBUG) ? 
 							     "os21" : "bare")));
-	    flag = add_string_option(O_L__, st200_soc);
-	    add_option_seen (flag);
-	  }
-
-	  if (st200_board && is_directory (st200_board)) {
-	    st200_board = concat_path (st200_board, 
-				       concat_path(proc == PROC_ST220 ? "st220" :  
-						   proc == PROC_ST231 ? "st231" : 
-						   proc == PROC_ST240 ? "st240" : "st231" ,						   
-						   concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
-							     (st200_runtime == RUNTIME_OS21 || 
-							      st200_runtime == RUNTIME_OS21_DEBUG) ? 
-							     "os21" : "bare")));
-	    flag = add_string_option(O_L__, st200_board);
-	    add_option_seen (flag);
-	  }
+	  flag = add_string_option(O_L__, st200_board);
+	  add_option_seen (flag);
 	}
+
 
 	if (st200_libdir) {
 	  st200_libdir = concat_path (st200_libdir, 
@@ -743,35 +743,34 @@ add_library_options (void)
 	  }
 	}
 
-	if (!option_was_seen(O_nostdlib)) {
-	  if (stxp70_core && is_directory (stxp70_core)) {
-	    stxp70_core = concat_path (stxp70_core, 
-				      concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
-						  stxp70_runtime == RUNTIME_NONE ? "none" : "unknown"));
-	    flag = add_string_option(O_L__, stxp70_core);
-	    add_option_seen (flag);
-	  }
+	if (stxp70_core && is_directory (stxp70_core)) {
+	  stxp70_core = concat_path (stxp70_core, 
+				     concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
+						 stxp70_runtime == RUNTIME_NONE ? "none" : "unknown"));
+	  flag = add_string_option(O_L__, stxp70_core);
+	  add_option_seen (flag);
+	}
 
-	  if (stxp70_soc && is_directory (stxp70_soc)) {
-	    stxp70_soc = concat_path (stxp70_soc, 
+	if (stxp70_soc && is_directory (stxp70_soc)) {
+	  stxp70_soc = concat_path (stxp70_soc, 
+				    concat_path((proc == PROC_stxp70_v3) ? "stxp70v3" :
+						(proc == PROC_stxp70_v4_novliw ||proc == PROC_stxp70_v4_single ||proc == PROC_stxp70_v4_dual) ? "stxp70v4" : "unknown",
+						concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
+							    stxp70_runtime == RUNTIME_NONE ? "none" : "unknown")));
+	  flag = add_string_option(O_L__, stxp70_soc);
+	  add_option_seen (flag);
+	}
+
+	if (stxp70_board && is_directory (stxp70_board)) {
+	  stxp70_board = concat_path (stxp70_board, 
 				      concat_path((proc == PROC_stxp70_v3) ? "stxp70v3" :
 						  (proc == PROC_stxp70_v4_novliw ||proc == PROC_stxp70_v4_single ||proc == PROC_stxp70_v4_dual) ? "stxp70v4" : "unknown",
 						  concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
 							      stxp70_runtime == RUNTIME_NONE ? "none" : "unknown")));
-	    flag = add_string_option(O_L__, stxp70_soc);
-	    add_option_seen (flag);
-	  }
-
-	  if (stxp70_board && is_directory (stxp70_board)) {
-	    stxp70_board = concat_path (stxp70_board, 
-					concat_path((proc == PROC_stxp70_v3) ? "stxp70v3" :
-						    (proc == PROC_stxp70_v4_novliw ||proc == PROC_stxp70_v4_single ||proc == PROC_stxp70_v4_dual) ? "stxp70v4" : "unknown",
-						    concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
-								stxp70_runtime == RUNTIME_NONE ? "none" : "unknown")));
-	    flag = add_string_option(O_L__, stxp70_board);
-	    add_option_seen (flag);
-	  }
+	  flag = add_string_option(O_L__, stxp70_board);
+	  add_option_seen (flag);
 	}
+
 #endif /* MUMBLE_STxP70_BSP */
 	
 	if (stxp70_libdir) {
@@ -843,35 +842,34 @@ add_library_options (void)
 	  }
 	}
 
-	if (!option_was_seen(O_nostdlib)) {
-	  if (arm_core && is_directory (arm_core)) {
-	    arm_core = concat_path (arm_core, 
-				      concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
-						  arm_runtime == RUNTIME_NONE ? "none" : "unknown"));
-	    flag = add_string_option(O_L__, arm_core);
-	    add_option_seen (flag);
-	  }
-
-	  if (arm_soc && is_directory (arm_soc)) {
-	    arm_soc = concat_path (arm_soc, 
-				   concat_path(proc == PROC_armv5 ? "armv5" : 
-					       proc == PROC_armv6 ? "armv6" :  "unknown",
-					       concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
-							   arm_runtime == RUNTIME_NONE ? "none" : "unknown")));
-	    flag = add_string_option(O_L__, arm_soc);
-	    add_option_seen (flag);
-	  }
-
-	  if (arm_board && is_directory (arm_board)) {
-	    arm_board = concat_path (arm_board, 
-				   concat_path(proc == PROC_armv5 ? "armv5" : 
-					       proc == PROC_armv6 ? "armv6" :  "unknown",
-					       concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
-							   arm_runtime == RUNTIME_NONE ? "none" : "unknown")));
-	    flag = add_string_option(O_L__, arm_board);
-	    add_option_seen (flag);
-	  }
+	if (arm_core && is_directory (arm_core)) {
+	  arm_core = concat_path (arm_core, 
+				  concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
+					      arm_runtime == RUNTIME_NONE ? "none" : "unknown"));
+	  flag = add_string_option(O_L__, arm_core);
+	  add_option_seen (flag);
 	}
+
+	if (arm_soc && is_directory (arm_soc)) {
+	  arm_soc = concat_path (arm_soc, 
+				 concat_path(proc == PROC_armv5 ? "armv5" : 
+					     proc == PROC_armv6 ? "armv6" :  "unknown",
+					     concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
+							 arm_runtime == RUNTIME_NONE ? "none" : "unknown")));
+	  flag = add_string_option(O_L__, arm_soc);
+	  add_option_seen (flag);
+	}
+
+	if (arm_board && is_directory (arm_board)) {
+	  arm_board = concat_path (arm_board, 
+				   concat_path(proc == PROC_armv5 ? "armv5" : 
+					       proc == PROC_armv6 ? "armv6" :  "unknown",
+					       concat_path(endian == ENDIAN_LITTLE ? "le" : "be", 
+							   arm_runtime == RUNTIME_NONE ? "none" : "unknown")));
+	  flag = add_string_option(O_L__, arm_board);
+	  add_option_seen (flag);
+	}
+
 #endif /* MUMBLE_ARM_BSP */
 	
 	if (arm_libdir) {

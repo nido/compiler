@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Nov 13 10:08:22 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80212
+
+Description:
+------------
+	* [trunk] Fix for bug #80212: [DRIVER] st200cc -nostdlib option does not pass standard libraries paths to the linker.
+	Deliver fixes/codex-80212 rev #25105 with authorization branch #81286
+
+
+Modified Files:
+---------------
+	M       osprey/driver/phases.c
+	M       osprey/driver/objects.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25080 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80212@25105 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25080 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80212@25105" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/phases.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/phases.c?p2=branches/fixes/codex-80212/osprey/driver/phases.c&r1=25080&r2=25105&roottype=svn&root=open64&diff_format=h
+osprey/driver/objects.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/objects.c?p2=branches/fixes/codex-80212/osprey/driver/objects.c&r1=25080&r2=25105&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Nov 12 13:12:52 CET 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

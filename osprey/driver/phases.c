@@ -97,10 +97,10 @@
  * Note that the -nostartfiles removes only startup related files.
  * Note that the -nodefaultlibs remove only library archive files.
  * Note that the -nostdlib options remove all standard files (startup files,
- * libraries, scripts) and standard library paths.
- * Note that the standard library paths are removed only when -nostdlib
+ * libraries, scripts) but not standard library paths.
+ * Note that the standard library paths are not removed when -nostdlib
  * is specified. Indeed startup files, libraries and scripts may need these
- * paths and only -nostdlib remove all of these.
+ * paths.
  *
  * Specific link types:
  * -shared	triggers shared == DSO_SHARED
@@ -1414,9 +1414,7 @@ add_file_args (string_list_t *args, phases_t index)
 		/* gcc invokes collect2 which invokes ld.
 		 * Because the path to collect2 varies, 
 		 * just invoke gcc to do the link. */
-#ifdef TARG_ST
-	  if (!option_was_seen(O_nostdlib))
-#endif
+
 		  /* add lib paths for standard libraries like libgcc.a */
 		  append_libraries_to_list (args);
 
@@ -1772,9 +1770,8 @@ add_file_args (string_list_t *args, phases_t index)
 	  add_string(args, input_source);
 	  break;
 	case P_ldsimple:
-	  if (!option_was_seen(O_nostdlib))
-	    /* add lib paths for standard libraries like libgcc.a */
-	    append_libraries_to_list (args);
+	  /* add lib paths for standard libraries like libgcc.a */
+	  append_libraries_to_list (args);
 	  if (outfile != NULL) {
 	    add_string(args, "-o");
 	    add_string(args, outfile);
