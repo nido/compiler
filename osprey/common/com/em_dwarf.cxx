@@ -749,9 +749,10 @@ void Em_Dwarf_Process_PU (Dwarf_Unsigned begin_label,
   extern BOOL PU_Has_Calls;
   if (eh_fde && CXX_Exceptions_On &&
       PU_Has_Calls) {
+    Dwarf_Unsigned cie_index = eh_CIE_index(Get_Current_PU());
     if (eh_offset == DW_DLX_NO_EH_OFFSET)	/* no exception handler */
       dwarf_add_ehframe_fde_b (dw_dbg, eh_fde, PU_die,
-                               eh_CIE_index(Get_Current_PU()),
+                               cie_index,
 			       begin_offset,
 			       0 /* dummy code length */,
 			       (Dwarf_Unsigned) begin_label,
@@ -760,7 +761,7 @@ void Em_Dwarf_Process_PU (Dwarf_Unsigned begin_label,
 			       &dw_error);
     else
       dwarf_add_ehframe_info_b (dw_dbg, eh_fde, PU_die,
-                               eh_CIE_index(Get_Current_PU()),
+				cie_index,
 				begin_offset,
 				0 /* dummy code length */,
 				(Dwarf_Unsigned) begin_label,
@@ -1210,17 +1211,25 @@ CreateEhCIE(PU& pu, const Dwarf_Small& retAddr, unsigned char* initialBytes,
     DST_COMPILE_UNIT *cu = DST_ATTR_IDX_TO_PTR(DST_INFO_attributes(cuInfo),
                                                DST_COMPILE_UNIT);
 #ifdef TARG_ST
-    char* personality_str;
+    BOOL pic = Gen_PIC_Shared || Gen_PIC_Call_Shared;
+    const char* personality_str = 0;
     char *augmenter;
     if (PU_has_exc_scopes(pu)) {
-      augmenter = DW_CIE_AUGMENTER_STRING_V0;
-      if (DST_COMPILE_UNIT_language(cu) == DW_LANG_C_plus_plus)
-	personality_str = "__gxx_personality_v0";
-      else
-	personality_str = "__gcc_personality_v0";
+      if (pic) {
+	augmenter = PIC_DW_CIE_AUGMENTER_STRING_V0;
+      } else {
+	augmenter = DW_CIE_AUGMENTER_STRING_V0;
+      }
+      if (PU_cxx_lang (pu))
+	personality_str = pic ? "DW.ref.__gxx_personality_v0" : "__gxx_personality_v0";
+      else if (PU_c_lang (pu))
+	personality_str = pic ? "DW.ref.__gcc_personality_v0" : "__gcc_personality_v0";
     } else {
-      augmenter = z_DW_CIE_AUGMENTER_STRING_V0;
-      personality_str = 0;
+      if (pic) {
+	augmenter = z_PIC_DW_CIE_AUGMENTER_STRING_V0;
+      } else {
+	augmenter = z_DW_CIE_AUGMENTER_STRING_V0;
+      }
     }
     personality = Save_Str (personality_str);
 #else
@@ -1238,6 +1247,9 @@ CreateEhCIE(PU& pu, const Dwarf_Small& retAddr, unsigned char* initialBytes,
                                  Dwarf_Small(CodeAlignmentFactor(pu)),
                                  Dwarf_Small(DataAlignmentFactor(pu)), retAddr,
                                  personality, initialBytes, size_of_init_bytes,
+#ifdef TARG_ST
+				 pic,
+#endif
                                  &dw_error);
 }
 

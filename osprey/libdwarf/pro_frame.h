@@ -75,6 +75,9 @@ struct Dwarf_P_Cie_s {
 #ifdef KEY
 	Dwarf_Unsigned		personality;	/* personality routine */
 #endif // KEY
+#ifdef TARG_ST
+        Dwarf_Bool              cie_pcrel;      /* PC-relative format */
+#endif
 	char			*cie_inst;	/* initial instruction */
 	long			cie_inst_bytes;
 						/* no of init_inst */

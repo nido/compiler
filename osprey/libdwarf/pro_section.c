@@ -1459,6 +1459,10 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 	    char *augmented_al;
 #ifdef TARG_ST
 	    char *augmentation_string = alloca(strlen(curcie->cie_aug)+1);
+	    Personality_Format =(curcie->cie_pcrel
+				 ? (DW_EH_PE_indirect | DW_EH_PE_pcrel |
+				    DW_EH_PE_sdata4)
+				 : DW_EH_PE_absptr);
 #endif
 	    long augmented_fields_length;
 	    int  a_bytes;
@@ -1647,21 +1651,26 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 		case 'L':
 		  {
 		    // lsda encoding
-		    Dwarf_Unsigned lsda_encoding = 0;
+		    Dwarf_Unsigned lsda_encoding = 
+		      (curcie->cie_pcrel
+		       ? (DW_EH_PE_pcrel | DW_EH_PE_sdata4)
+		       : DW_EH_PE_absptr);
 		    WRITE_UNALIGNED(dbg, (void *)data,
 				    (const void *)&lsda_encoding,
-				    sizeof(p), sizeof(Dwarf_Ubyte));
+				    sizeof(lsda_encoding), sizeof(Dwarf_Ubyte));
 		    data += sizeof(Dwarf_Ubyte);
 		  }
 		  break;
 		case 'R':
 		  {
 		    // FDE address pointer encoding
-		    // Currently we only support absolute encoding.
-		    Dwarf_Unsigned fde_pointer_encoding = 0;
+		    Dwarf_Unsigned fde_pointer_encoding =
+		      (curcie->cie_pcrel
+		       ? (DW_EH_PE_pcrel | DW_EH_PE_sdata4)
+		       : DW_EH_PE_absptr);
 		    WRITE_UNALIGNED(dbg, (void *)data,
 				    (const void *)&fde_pointer_encoding,
-				    sizeof(p), sizeof(Dwarf_Ubyte));
+				    sizeof(fde_pointer_encoding), sizeof(Dwarf_Ubyte));
 		    data += sizeof(Dwarf_Ubyte);
 		  }
 		  break;
@@ -1671,13 +1680,15 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 		    // personality pointer format
 		    WRITE_UNALIGNED(dbg, (void *)data,
 				    (const void *)&Personality_Format,
-				    sizeof(p), sizeof(Dwarf_Ubyte));
+				    sizeof(Personality_Format), sizeof(Dwarf_Ubyte));
 		    data += sizeof(Dwarf_Ubyte);
 		    // Relocation for personality routine
 		    res = dbg->de_reloc_name(dbg, EH_FRAME,
 					     cur_cie_offs+(data-data_start),
-					     personality, 
-					     dwarf_drt_data_reloc_by_str_id,
+					     personality,
+					     (curcie->cie_pcrel
+					      ? dwarf_drt_data_reloc_pcrel_by_str_id
+					      : dwarf_drt_data_reloc_by_str_id),
 					     upointer_size);
 		    if(res != DW_DLV_OK) {
 		      DWARF_P_DBG_ERROR(dbg,DW_DLE_CHUNK_ALLOC,-1);
@@ -1926,7 +1937,9 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
                         EH_FRAME,
 			cur_off+extension_size+2*uwordb_size, /* r_offset */
                         curfde->fde_r_symidx,
-                        dwarf_drt_data_reloc,
+			(cie_ptr->cie_pcrel
+			 ? dwarf_drt_data_reloc_pcrel
+			 : dwarf_drt_data_reloc),
 			upointer_size);
             if(res != DW_DLV_OK) {
                  DWARF_P_DBG_ERROR(dbg,DW_DLE_CHUNK_ALLOC,-1);
@@ -1959,7 +1972,9 @@ _dwarf_pro_generate_ehframe(Dwarf_P_Debug dbg, Dwarf_Error *error)
 				  extension_size+2*upointer_size + afl_length, 
 
 				 curfde->fde_exception_table_symbol,
-                                 dwarf_drt_segment_rel,
+					 (cie_ptr->cie_pcrel
+					  ? dwarf_drt_segment_rel_pcrel
+					  : dwarf_drt_segment_rel),
 				 upointer_size);
                 if(res != DW_DLV_OK) {
                         DWARF_P_DBG_ERROR(dbg,DW_DLE_CHUNK_ALLOC,-1);

@@ -163,7 +163,10 @@ enum Dwarf_Rel_Type {
 		     It is used for .debug_line section, when code offset
 		     cannot be statically computed. */
 		dwarf_drt_first_of_length_pair_inst_word, 
-		dwarf_drt_second_of_length_pair_inst_word
+		dwarf_drt_second_of_length_pair_inst_word,
+                dwarf_drt_data_reloc_pcrel,
+		dwarf_drt_data_reloc_pcrel_by_str_id,
+		dwarf_drt_segment_rel_pcrel,
 #endif
 };
 typedef struct Dwarf_Relocation_Data_s  * Dwarf_Relocation_Data;
@@ -251,6 +254,7 @@ typedef void  (*Dwarf_Handler)(Dwarf_Error /*error*/, Dwarf_Ptr /*errarg*/);
 #define z_DW_CIE_AUGMENTER_STRING_V0            "zL"
 #define PIC_DW_CIE_AUGMENTER_STRING_V0		"zPLR"
 #ifdef TARG_ST
+#define z_PIC_DW_CIE_AUGMENTER_STRING_V0        "zLR"
   /* (cbr) no lsda */
 #define zP_DW_CIE_AUGMENTER_STRING_V0		"zP"
 #endif
@@ -1426,6 +1430,9 @@ Dwarf_Unsigned dwarf_add_ehframe_cie(Dwarf_P_Debug /*dbg*/,
     Dwarf_Unsigned	/* personality routine */,
     Dwarf_Ptr 		/*initialization_bytes*/, 
     Dwarf_Unsigned 	/*init_byte_len*/, 
+#ifdef TARG_ST
+    Dwarf_Bool          /*pcrel*/,
+#endif
     Dwarf_Error* 	/*error*/);
 
 Dwarf_Unsigned dwarf_add_ehframe_fde( 

@@ -129,6 +129,8 @@ HashValue(PU& pu)
     if (PU_cxx_lang(pu)) personality_hash |= 2;
     if (PU_c_lang(pu)) personality_hash |= 1;
   }
+  if (Gen_PIC_Shared || Gen_PIC_Call_Shared)
+    personality_hash |= 4;
   return personality_hash;
 }
 

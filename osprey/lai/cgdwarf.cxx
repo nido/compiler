@@ -2079,6 +2079,28 @@ type_with_emitted_refs (DST_INFO_IDX idx)
 
   return FALSE;
 }
+
+struct is_named_symbol {
+private:
+  const char *name;
+public:
+  is_named_symbol(const char *nm) : name(nm) {}
+  BOOL operator()(UINT32, const ST *st) const {
+    return (ST_class (st) != CLASS_CONST
+	    && ! strcmp(name, ST_name (st)));
+  }
+};
+
+static ST *
+find_global_symbol_by_name (const char *name)
+{
+  ST_IDX st_idx = For_all_until (St_Table, GLOBAL_SYMTAB,
+				 is_named_symbol (name));
+  if (st_idx != 0)
+    return &St_Table[st_idx];
+  else
+    return NULL;
+}
 #endif
 
 /* traverse all DSTs and handle the non-pu info */
@@ -2405,7 +2427,7 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
     // [CL] need scn_index to connect debug_frame label to Dwarf symtab
 			    low_pc, high_pc, scn_index, true);
 #else
-			    low_pc, high_pc);
+                            low_pc, high_pc);
 
 #endif
 
@@ -2415,6 +2437,65 @@ Cg_Dwarf_Process_PU (Elf64_Word	scn_index,
 			    end_entry,
 			    end_offset,
 			    low_pc, high_pc, scn_index);
+  char *personality_str = NULL;
+  const PU& pu = Pu_Table[ST_pu(PU_st)];
+  if (PU_has_exc_scopes(pu)) {
+    if (PU_cxx_lang(pu))
+      personality_str = "__gxx_personality_v0";
+    else if (PU_c_lang(pu))
+      personality_str = "__gcc_personality_v0";
+  }
+  if (personality_str
+      && (Gen_PIC_Shared || Gen_PIC_Call_Shared)) {
+      // Problem: we want to put a pointer to the
+      // personality routine in the CIE.  However, this address is
+      // external and preemptible, so it will require a dynamic relocation
+      // even if we use PC-relative addressing.
+      // For efficiency at load time, we do not want to have a dynamic
+      // relocation in every CIE, so we use a standard trick:
+      // we make the encoding indirect, so that in the CIE we point
+      // to a data symbol, and that data symbol is initialized to the
+      // address of the personality routine.
+      // We make the symbol global+weak+hidden+linkonce, so that we should have
+      // just one occurrence of it in a shared object; thus it requires
+      // just one dynamic relocation per shared object.
+      // The data symbol should be named DW.ref.<personality_str>
+      // it should be hidden, weak, linkonce, and it should be placed
+      // in the section called .gnu.linkonce.d.rel.ro.DW.ref.<personality_str>
+      
+      ST *personality_st = find_global_symbol_by_name (personality_str);
+      if (personality_st == NULL) {
+	TY_IDX ret_ty_idx = MTYPE_To_TY (Def_Int_Mtype);
+	TY_IDX personality_ty_idx = Make_Function_Type (ret_ty_idx);
+	PU_IDX pu_idx;
+	PU& pu = New_PU (pu_idx);
+	PU_Init (pu, personality_ty_idx, GLOBAL_SYMTAB + 1);
+	personality_st = New_ST (GLOBAL_SYMTAB);
+	ST_Init (personality_st, Save_Str (personality_str),
+		 CLASS_FUNC, SCLASS_EXTERN, EXPORT_PREEMPTIBLE,
+		 TY_IDX (pu_idx));
+      }
+      STR_IDX personality = Save_Str2 ("DW.ref.", personality_str);
+      ST *ptr_personality_st = find_global_symbol_by_name (Index_To_Str (personality));
+      if (ptr_personality_st == NULL) {
+	ptr_personality_st = New_ST (GLOBAL_SYMTAB);
+	ST_Init (ptr_personality_st, personality,
+		 CLASS_VAR, SCLASS_DGLOBAL, EXPORT_HIDDEN,
+		 Make_Pointer_Type (ST_pu_type(personality_st)));
+	Set_ST_is_weak_symbol (ptr_personality_st);
+	Set_ST_is_comdat (ptr_personality_st);
+	ST_ATTR_IDX st_attr_idx;
+	ST_ATTR& st_attr = New_ST_ATTR (GLOBAL_SYMTAB, st_attr_idx);
+	ST_ATTR_Init (st_attr, ST_st_idx (ptr_personality_st), ST_ATTR_SECTION_NAME,
+		      Save_Str2 (".gnu.linkonce.d.rel.ro.DW.ref.", personality_str));
+	Set_ST_has_named_section (ptr_personality_st);
+	INITV_IDX st_iv = New_INITV ();
+	INITV_Init_Symoff (st_iv, personality_st, 0);
+	INITO_IDX inito = New_INITO (ptr_personality_st, st_iv);
+	Set_ST_is_initialized (ptr_personality_st);
+	Allocate_Object (ptr_personality_st);
+      }
+  }
 #endif
 
   Dwarf_Unsigned eh_handle;
@@ -5096,6 +5177,7 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 	break;
       case dwarf_drt_data_reloc:
 #ifdef TARG_ST
+      case dwarf_drt_data_reloc_pcrel:
 #ifdef AS_DWARF_THREAD_DATA_RELOC
 	if (Cg_Dwarf_Type_From_Handle(reloc_buffer[k].drd_symbol_index)
 	    == STT_TLS)
@@ -5107,14 +5189,24 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 #endif
 	  fprintf(asm_file, "\t%s\t%s", reloc_name,
 		  Cg_Dwarf_Name_From_Handle(reloc_buffer[k].drd_symbol_index));
+#ifdef TARG_ST
+	if (reloc_buffer[k].drd_type == dwarf_drt_data_reloc_pcrel)
+	  fprintf(asm_file, " - .");
+#endif
 	break;
 
       case dwarf_drt_segment_rel:
+#ifdef TARG_ST
+      case dwarf_drt_segment_rel_pcrel:
+#endif
 	{
 	  // need unaligned AS_ADDRESS for dwarf, so add .ua
-	  char *n = Cg_Dwarf_Name_From_Handle(reloc_buffer[k].drd_symbol_index);
 	  fprintf(asm_file, "\t%s\t%s", reloc_name,
 	          Cg_Dwarf_Name_From_Handle(reloc_buffer[k].drd_symbol_index));
+#ifdef TARG_ST
+	if (reloc_buffer[k].drd_type == dwarf_drt_segment_rel_pcrel)
+	  fprintf(asm_file, " - .");
+#endif
 	  break;
 	}
 #ifdef KEY
@@ -5123,6 +5215,9 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 	++k; // skip the DEBUG_FRAME label that is there just as a place-holder
 	break;
       case dwarf_drt_data_reloc_by_str_id:
+#ifdef TARG_ST
+      case dwarf_drt_data_reloc_pcrel_by_str_id:
+#endif
 	// it should be __gxx_personality_v0
 #ifndef TARG_ST
         // (cbr) on st200 we use PCabs
@@ -5134,6 +5229,10 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 #endif
 	fprintf(asm_file, "\t%s\t%s", reloc_name,
 		&Str_Table[reloc_buffer[k].drd_symbol_index]);
+#ifdef TARG_ST
+	if (reloc_buffer[k].drd_type == dwarf_drt_data_reloc_pcrel_by_str_id)
+	  fprintf(asm_file, " - .");
+#endif
 	break;
       case dwarf_drt_first_of_length_pair_create_second:
 	{
