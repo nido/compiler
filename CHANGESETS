@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Nov 13 12:42:39 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80571
+
+Description:
+------------
+	* [trunk] Fix for bug #80571: [OPT] IVR improvement when trip count is one (st200, -O).
+	Deliver fixes/codex-80571 rev #25109 with authorization branch #80593
+
+
+Modified Files:
+---------------
+	M       osprey/be/opt/opt_ivr.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25107 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80571@25109 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25107 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80571@25109" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/opt/opt_ivr.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_ivr.cxx?p2=branches/fixes/codex-80571/osprey/be/opt/opt_ivr.cxx&r1=25107&r2=25109&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Nov 13 10:08:22 CET 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

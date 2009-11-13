@@ -1,4 +1,9 @@
 //-*-c++-*-
+
+/*
+ * Copyright 2003, 2004, 2005, 2006 PathScale, Inc.  All Rights Reserved.
+ */
+
 // ====================================================================
 // ====================================================================
 //
@@ -1836,6 +1841,12 @@ IVR::Compute_trip_count(const OPCODE cmp_opc,
       apply_cxx_pointer_rule = TRUE;
       break;
     case OPR_EQ:
+#ifdef KEY // bug 10986: special case where trip count is 1
+      if (init == bound &&
+	  step->Kind() == CK_CONST && step->Const_val() != 0)
+        return Htable()->Add_const(MTYPE_I4, 1);
+      // fall thru
+#endif
     default:
       return NO_TRIP_COUNT;
     }
