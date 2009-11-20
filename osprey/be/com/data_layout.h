@@ -135,6 +135,8 @@ BE_EXPORTED extern ST* Get_Altentry_UpFormal_Symbol (ST *formal, PLOC ploc);
 
 #ifdef TARG_ST
 BE_EXPORTED extern ST*Get_UpFormal_Base_Symbol ();
+
+BE_EXPORTED extern void Add_Offset_To_UpFormal(INT offs);
 #endif
 
 /* reset the upformal segment when start an alternate entry */

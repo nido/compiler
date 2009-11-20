@@ -3498,6 +3498,19 @@ Allocate_Object_Initializer (ST* parent, INITV_IDX invidx)
 }
 
 
+#ifdef TARG_ST
+/**
+ * Add an offset to upformal access
+ */
+extern void
+Add_Offset_To_UpFormal(INT offs) {
+  ST *upformal = SF_Block(SFSEG_UPFORMAL);
+  if (upformal && !ST_is_not_used(upformal)) {
+    Set_ST_ofst (upformal, ST_ofst(upformal)+offs) ;
+  }
+}
+#endif
+
 extern void
 Allocate_Object ( ST *st )
 {

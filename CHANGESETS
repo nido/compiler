@@ -1,6 +1,52 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Nov 20 10:11:30 CET 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-81650
+
+Description:
+------------
+	* [trunk] Fix for bug #81650: Suboptimal PUSH sequence when tmp register required.
+	Deliver fixes/codex-81650 rev #25188 with authorization branch #81653
+
+	Main changes:
+	============
+	- Optimize entry/exit code by avoiding redundancies between reservation
+	  of SPadjust temporary register and PUSH input parameters
+	- Optimize entry/exit code by merging successive SP adjustments when possible
+	- Simplify the update of stack variable accesses, when an extra register
+	  is saved on stack at function entry, by patching the base symbol instead
+	  of each individual stack parameters.
+	  This approach also solves the problem of unhandled stack var args (bug #82187).
+
+Modified Files:
+---------------
+	M       osprey/be/com/data_layout.cxx
+	M       osprey/be/com/data_layout.h
+	M       osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25168 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-81650@25188 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25168 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-81650@25188" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/com/data_layout.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/data_layout.cxx?p2=branches/fixes/codex-81650/osprey/be/com/data_layout.cxx&r1=25168&r2=25188&roottype=svn&root=open64&diff_format=h
+osprey/be/com/data_layout.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/data_layout.h?p2=branches/fixes/codex-81650/osprey/be/com/data_layout.h&r1=25168&r2=25188&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_entry_exit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx?p2=branches/fixes/codex-81650/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx&r1=25168&r2=25188&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Nov 13 14:38:32 CET 2009
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
