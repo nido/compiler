@@ -1,4 +1,13 @@
 /*
+ * Copyright (C) 2006, 2007. QLogic Corporation. All Rights Reserved.
+ */
+
+/* -*- c++ -*-
+ *
+ * Copyright 2003, 2004, 2005, 2006 PathScale, Inc.  All Rights Reserved.
+ */
+
+/*
 
   Copyright (C) 2000, 2001 Silicon Graphics, Inc.  All Rights Reserved.
 
@@ -99,6 +108,10 @@ extern INT Trace_IPA;
 extern INT Trace_Perf;
 extern WN_MAP Summary_Map;
 extern WN_MAP Stmt_Map;
+
+#ifdef KEY
+static BOOL proc_has_pstatics = FALSE;
+#endif
 
 // helper functions
 static inline BOOL
@@ -336,6 +349,10 @@ struct update_symtab
 		fprintf (TFile, "Clearing addr_passed for %s\n", ST_name (st));
 #endif
 	}
+#ifdef KEY // bug 11801
+	if (ST_sclass(st) == SCLASS_PSTATIC)
+	  proc_has_pstatics = TRUE;
+#endif
     }
 	    
 }; // update_symtab
@@ -396,6 +413,11 @@ Recompute_Addr_Taken (const WN *proc_entry, SUMMARIZE<program>* sum)
 
     // update(override) the symtab addr_taken attributes based on our own
     // analysis 
+    //
+    // KEY bug 11801: Also while we are traversing the local symbol
+    // table, check for any pstatic symbol that may need to be
+    // promoted in IPA. This step is required if that symbol is not
+    // referenced in whirl.
     For_all (St_Table, CURRENT_SYMTAB, update_symtab ());
 } // Recompute_Addr_Taken
 
@@ -417,6 +439,10 @@ SUMMARIZE<program>::Summarize (WN *w)
 
   Init_Aux_Symbol_Info (CURRENT_SYMTAB);
     
+#ifdef KEY
+  proc_has_pstatics = FALSE;
+#endif
+
   Recompute_Addr_Taken (w, this);
 
   if (!Has_alt_entry ()) {
@@ -1101,6 +1127,12 @@ SUMMARIZE<program>::Process_procedure (WN* w)
     INT icall_cnt = 0;
 #endif // KEY
 
+#ifdef KEY
+    // bug 11801
+    if (proc_has_pstatics)
+      proc->Set_has_pstatic ();
+#endif
+
     Trace_Modref = Get_Trace ( TP_IPL, TT_IPL_MODREF );
     
     BOOL Direct_Mod_Ref = FALSE;
@@ -1639,8 +1671,12 @@ SUMMARIZE<program>::Process_procedure (WN* w)
 	    ST* st2 = ST_st_idx (st) == ST_base_idx (st) ? st : ST_base (st);
 	    if (ST_level (st2) == CURRENT_SYMTAB) {
 		// local symtab
-		if (ST_sclass (st2) == SCLASS_PSTATIC)
+		if (ST_sclass (st2) == SCLASS_PSTATIC) {
+		    // KEY
+		    Is_True (proc->Has_pstatic(),
+		             ("Has_pstatic should already be set"));
 		    proc->Set_has_pstatic ();
+		}
 	    } else if (ST_sclass (st2) == SCLASS_FSTATIC &&
 		       !ST_class (st2) == CLASS_CONST)
 		proc->Set_has_fstatic ();

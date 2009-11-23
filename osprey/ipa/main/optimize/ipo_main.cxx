@@ -1,4 +1,12 @@
 /*
+ * Copyright (C) 2006, 2007. QLogic Corporation. All Rights Reserved.
+ */
+
+/*
+ * Copyright 2003, 2004, 2005, 2006 PathScale, Inc.  All Rights Reserved.
+ */
+
+/*
 
   Copyright (C) 2000, 2001 Silicon Graphics, Inc.  All Rights Reserved.
 
@@ -270,7 +278,59 @@ Rename_Call_To_Cloned_PU (IPA_NODE *caller,
 
 } // Rename_Call_To_Cloned_PU
 
+#if defined(KEY) && !defined(_STANDALONE_INLINER) && !defined(_LIGHTWEIGHT_INLINER)
+static void Fixup_EHinfo_In_PU (IPA_NODE* node, WN * w = NULL)
+{
+  if (w && WN_operator(w) == OPR_REGION && WN_region_is_EH (w) &&
+      WN_block_empty (WN_region_pragmas (w)))
+  {
+    int sym_size;
+    SUMMARY_SYMBOL * sym_array = IPA_get_symbol_file_array (node->File_Header(), sym_size);
+    Is_True (sym_array != NULL, ("Missing SUMMARY_SYMBOL section"));
+    INITV_IDX blk = INITO_val (WN_ereg_supp (w));
+    // ipl may create multiple copies of the same region, so keep track if
+    // a region has been updated
+    if (INITV_flags (Initv_Table[blk]) != INITVFLAGS_UPDATED)
+    {
+      Set_INITV_flags (blk, INITVFLAGS_UPDATED);
+      INITV_IDX types = INITV_next (INITV_blk (blk));
+      for (; types; types = INITV_next (types))
+      {
+        if (INITV_kind (types) == INITVKIND_ZERO)
+          continue;
+        int index = TCON_uval (INITV_tc_val (types));
+        if (index <= 0) continue;
+        ST_IDX new_idx = sym_array[index].St_idx();
+        INITV_IDX next = INITV_next (types);        // for backup
+        INITV_Set_VAL (Initv_Table[types], Enter_tcon (
+                       Host_To_Targ (MTYPE_U4, new_idx)), 1);
+        Set_INITV_next (types, next);
+      }
+    }
+  }
 
+  if (w == NULL)
+    w = node->Whirl_Tree (FALSE);
+
+  if (!OPCODE_is_leaf (WN_opcode (w)))
+  {
+    if (WN_operator (w) == OPR_BLOCK)
+    {
+      WN * kid = WN_first (w);
+      while (kid)
+      {
+        Fixup_EHinfo_In_PU (node, kid);
+	kid = WN_next (kid);
+      }
+    }
+    else
+    {
+      for (INT kidno=0; kidno<WN_kid_count(w); ++kidno)
+        Fixup_EHinfo_In_PU (node, WN_kid(w, kidno));
+    }
+  }
+}
+#endif
 
 static BOOL
 Inline_Call (IPA_NODE *caller, IPA_NODE *callee, IPA_EDGE *edge,
@@ -285,6 +345,31 @@ Inline_Call (IPA_NODE *caller, IPA_NODE *callee, IPA_EDGE *edge,
     if (!Can_Inline_Call (caller, callee, edge))
 	return FALSE;
 
+#ifdef KEY
+    Get_enclosing_region (caller, edge);
+#if !defined(_STANDALONE_INLINER) && !defined(_LIGHTWEIGHT_INLINER)
+    // For C++, fix-up the summarized information in EH regions now, because
+    // after inlining we won't know from which file each symbol came, making
+    // it impossible to replace summary.
+    if (!caller->EHinfo_Updated())
+    {
+      PU p = caller->Get_PU();
+      if ((PU_src_lang (p) & PU_CXX_LANG) && PU_has_region (p))
+        Fixup_EHinfo_In_PU (caller);
+      caller->Set_EHinfo_Updated();
+    }
+    if (!callee->EHinfo_Updated())
+    {
+      PU p = callee->Get_PU();
+      if ((PU_src_lang (p) & PU_CXX_LANG) && PU_has_region (p))
+      {
+        IPA_NODE_CONTEXT temp_context (callee);
+        Fixup_EHinfo_In_PU (callee);
+      }
+      callee->Set_EHinfo_Updated();
+    }
+#endif // !_STANDALONE_INLINER && !_LIGHTWEIGHT_INLINER
+#endif // KEY
 
 #if Is_True_On
     if ( Get_Trace ( TKIND_ALLOC, TP_IPA) ) {
@@ -329,6 +414,9 @@ Inline_Call (IPA_NODE *caller, IPA_NODE *callee, IPA_EDGE *edge,
 
 } // Inline_Call
 
+#ifdef KEY
+extern void IPA_update_ehinfo_in_pu (IPA_NODE *);
+#endif
 
 static IPA_NODE *
 IPO_Process_node (IPA_NODE* node, IPA_CALL_GRAPH* cg)
@@ -346,6 +434,11 @@ IPO_Process_node (IPA_NODE* node, IPA_CALL_GRAPH* cg)
   IP_READ_pu_infos (node->File_Header());
 
   IPA_NODE_CONTEXT context (node);	// switch to this node's context
+
+#ifdef KEY
+  if (PU_src_lang (node->Get_PU()) & PU_CXX_LANG)
+    IPA_update_ehinfo_in_pu (node);
+#endif
 
   if (IPA_Enable_Padding) {
     IPO_Pad_Whirl (node);

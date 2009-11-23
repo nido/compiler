@@ -141,7 +141,8 @@ BOOL IPA_Enable_Memtrace = FALSE;	/* Memory trace */
 BOOL IPA_Enable_DST = TRUE;		/* Generate DST */
 BOOL IPA_Enable_DCE = TRUE;		/* Enable Dead Call Elimination */
 #ifdef TARG_ST
-// [CL] can't inline functions that have exceptions regions
+// [CM] inline functions that have exceptions is functional
+// but triggers massive inlining problems when compiling qt-embedded
 BOOL IPA_Enable_Exc = FALSE;		/* Enable exception handling */
 #else
 BOOL IPA_Enable_Exc = TRUE;		/* Enable exception handling */
@@ -632,7 +633,8 @@ BOOL	INLINE_Enable_Subst_Copy_Prop = FALSE; /* Aggressive substitution of actual
 BOOL    INLINE_F90 = TRUE;  /* Enable recognition of F90 in parameter type compatibility */
 BOOL	INLINE_None = FALSE;	/* Inline nothing? */
 #ifdef TARG_ST
-/* (cbr)  /* (cbr) can't inline functions that have exceptions regions */
+// [CM] inline functions that have exceptions is functional
+// but triggers massive inlining problems when compiling qt-embedded
 BOOL	INLINE_Exceptions = FALSE;	/* Inline exception code? */
 #else
 BOOL	INLINE_Exceptions = TRUE;	/* Inline exception code? */

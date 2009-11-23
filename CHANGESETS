@@ -1,6 +1,46 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Nov 23 10:14:30 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/monat/dev-inline-exceptions
+
+Description:
+------------
+	*  Deliver monat/dev-inline-exceptions at rev #25201 with authorization art #81338
+
+
+Modified Files:
+---------------
+	M       osprey/lai/eh_region.cxx
+	M       osprey/common/com/config_ipa.cxx
+	M       osprey/ipa/main/optimize/ipo_main.cxx
+	M       osprey/ipa/main/analyze/ipa_cg.cxx
+	M       osprey/ipa/local/ipl_summarize_template.h
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25190 --new=https://codex.cro.st.com/svnroot/open64/branches/monat/dev-inline-exceptions@25201 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25190 https://codex.cro.st.com/svnroot/open64/branches/monat/dev-inline-exceptions@25201" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/eh_region.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/eh_region.cxx?p2=branches/monat/dev-inline-exceptions/osprey/lai/eh_region.cxx&r1=25190&r2=25201&roottype=svn&root=open64&diff_format=h
+osprey/common/com/config_ipa.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config_ipa.cxx?p2=branches/monat/dev-inline-exceptions/osprey/common/com/config_ipa.cxx&r1=25190&r2=25201&roottype=svn&root=open64&diff_format=h
+osprey/ipa/main/optimize/ipo_main.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/main/optimize/ipo_main.cxx?p2=branches/monat/dev-inline-exceptions/osprey/ipa/main/optimize/ipo_main.cxx&r1=25190&r2=25201&roottype=svn&root=open64&diff_format=h
+osprey/ipa/main/analyze/ipa_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/main/analyze/ipa_cg.cxx?p2=branches/monat/dev-inline-exceptions/osprey/ipa/main/analyze/ipa_cg.cxx&r1=25190&r2=25201&roottype=svn&root=open64&diff_format=h
+osprey/ipa/local/ipl_summarize_template.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/local/ipl_summarize_template.h?p2=branches/monat/dev-inline-exceptions/osprey/ipa/local/ipl_summarize_template.h&r1=25190&r2=25201&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Nov 20 10:11:30 CET 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
