@@ -2325,8 +2325,8 @@ Identical_Return_Blocks(BB *bb1, BB *bb2)
 {
   OP *op1, *op2;
   if (BB_length(bb1) != BB_length(bb2)) return FALSE;
-  if (BBINFO_kind(bb1) != BBKIND_RETURN) return FALSE;
-  if (BBINFO_kind(bb2) != BBKIND_RETURN) return FALSE;
+  if ((BBINFO_kind(bb1) != BBKIND_RETURN) || BB_succs(bb1)) return FALSE;
+  if ((BBINFO_kind(bb2) != BBKIND_RETURN) || BB_succs(bb2)) return FALSE;
 
   for (op1 = BB_first_op(bb1), op2 = BB_first_op(bb2);
        op1;
@@ -5389,6 +5389,7 @@ Delete_Redundant_Return_Blocks ()
   for (b = REGION_First_BB; b; b = next_b) {
     next_b = BB_next(b);
     if (BBINFO_kind(b) == BBKIND_RETURN &&
+	!BB_succs(b) &&
 	BB_length(b)==1) {
       BB *prev = BB_prev(b);
       BOOL appended_list1 = FALSE;
