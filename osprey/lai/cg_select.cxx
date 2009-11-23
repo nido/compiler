@@ -1346,7 +1346,9 @@ Check_min_max_abs_candidate(BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg, B
 			}
 			
 			//abs search
-			BOOL Abs_Pattern = TN_is_zero(OP_Opnd2(cond_op)) || (OP_fcmp(cond_op) && CGTARG_OP_is_float_cst_load(TN_ssa_def(OP_Opnd2(cond_op)),0));
+			BOOL Abs_Pattern = (OP_Opnd2(cond_op) && TN_is_zero(OP_Opnd2(cond_op))) || 
+					(OP_fcmp(cond_op) && OP_Opnd2(cond_op) && TN_ssa_def(OP_Opnd2(cond_op)) && 
+					CGTARG_OP_is_float_cst_load(TN_ssa_def(OP_Opnd2(cond_op)),0));
 			if (Abs_Pattern) {
 				if (Are_equivalent_defininition_TNs(tn1,OP_Opnd1(cond_op)) && Are_equivalent_defininition_negated_TNs(tn2,OP_Opnd1(cond_op),FALSE)) {
 					if(CGTARG_apply_abs_transformation(cond_op,phi,BB_SET_MemberP(fallthru_reg, bb2))) modification_applied = TRUE;
