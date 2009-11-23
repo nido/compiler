@@ -847,6 +847,8 @@ Create_TY_For_Tree (tree type_tree, TY_IDX idx)
 		break;
 	case ENUMERAL_TYPE:
 	        switch (tsize) {
+		case 0:  mtype = MTYPE_I4; break;  // for incomplete enumeral type
+                                       // (forward references to enumeral type)
 		case 1:  mtype = MTYPE_I1; break;
 		case 2:  mtype = MTYPE_I2; break;
 		case 4:  mtype = MTYPE_I4; break;
