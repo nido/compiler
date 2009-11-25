@@ -6002,6 +6002,11 @@ Find_BB_TNs (BB *bb)
 #ifdef TARG_ST
       TN *tn_copy = NULL;
       EBO_TN_INFO *tninfo_copy = NULL;
+      // [TTh] On ST side, an operation can have several same_res operands.
+      // It is then required to reset the description of associated result
+      // for each operand.
+      rslt_tn  = NULL;
+      rslt_num = 0;
 #endif
 
       actual_tn = OP_opnd(op, opndnum);

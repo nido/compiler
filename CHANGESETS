@@ -1,6 +1,44 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Nov 25 15:03:38 CET 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82919
+
+Description:
+------------
+	* [trunk] Fix for bug #82919: [EBO] Bad transfo. on OP with multiple "same_res".
+	Deliver fixes/codex-82919 rev #25240 with authorization branch #82932
+
+	-> In Find_BB_TNs(), at each iteration of the loop through operands,
+	   it is required to reset the variables used to reference the result
+	   potentially associated with the current operand to avoid wrong
+	   transformation.
+
+
+Modified Files:
+---------------
+	M       osprey/lai/ebo.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25226 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82919@25240 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25226 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82919@25240" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/ebo.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/ebo.cxx?p2=branches/fixes/codex-82919/osprey/lai/ebo.cxx&r1=25226&r2=25240&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Nov 23 14:00:43 CET 2009
 	Author:    bv11
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
