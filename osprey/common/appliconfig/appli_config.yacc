@@ -113,6 +113,8 @@ active_configuration:
 configuration:
 	FL_CONF FL_STRING FL_OPEN_C  one_configuration  FL_CLOSE_C 		
 		{ $$ = generate_full_conf($2,$4); DBG_printf("END Parse configuration %s\n",$2);}
+	| FL_CONF FL_STRING FL_OPEN_C FL_CLOSE_C 		
+		{ $$ = generate_full_conf($2,generate_one_full_conf(NULL,NULL,NULL)); DBG_printf("END Parse configuration %s\n",$2);}
 ;
 
 one_configuration:
@@ -130,6 +132,8 @@ global_option:
 file_conf:
 	FL_FILE FL_STRING FL_OPEN_C one_file_conf  FL_CLOSE_C 		
 		{ $$ = generate_file_conf($2,$4); DBG_printf("END Parse file conf %s\n",$2);}
+	| FL_FILE FL_STRING FL_OPEN_C  FL_CLOSE_C 		
+		{ $$ = generate_file_conf($2,generate_one_file_conf(NULL,NULL,NULL)); DBG_printf("END Parse file conf %s\n",$2);}
 ;
 
 one_file_conf:
@@ -141,7 +145,6 @@ one_file_conf:
 
 file_option:
 	FL_OPTION 				{ $$ = add_string_to_list(NULL,$1); DBG_printf("Found File Option %s\n",$1);}
-
 ;
 
 func_conf:
