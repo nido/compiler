@@ -2695,8 +2695,6 @@ Process_Application_Config (string targ_args, boolean conf_file)
 {
 	extern boolean appli_config_file_set;
 	extern string active_appli_config_file_name;
-    int flag;
-	buffer_t buf;
 	// TDR Treat case where config file / config name is specified with '='
 	if (targ_args[0] == '=') targ_args ++;
 	if (conf_file) {
@@ -2706,25 +2704,9 @@ Process_Application_Config (string targ_args, boolean conf_file)
 		} else {
 			appli_config_file_name=SYS_makePath(SYS_getcwd(),targ_args);
 		}
-    	sprintf(buf, "-TENV::application_configuration_decl=%s", appli_config_file_name);
 	} else {
 		active_appli_config_file_name=targ_args;
-	    sprintf(buf, "-TENV:application_configuration_select=%s", targ_args);
 	}
-    flag = add_new_option(buf);
-    add_phase_for_option(flag, P_be);
-    add_phase_for_option(flag, P_any_ipl);
-    add_phase_for_option(flag, P_any_fe);
-#if (GNU_FRONT_END==33)
-    /* (cbr) -TARG now passed to cpp */
-    add_phase_for_option(flag, P_gcpp);
-    add_phase_for_option(flag, P_gcpp_plus);
-#endif
-    if (!already_provided(flag)) {
-      /* [CL] Only prepend this option if
-         not already provided by the user */
-      prepend_option_seen (flag);
-    }
 }
 #endif
 
