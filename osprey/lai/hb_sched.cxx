@@ -47,7 +47,7 @@
 // =======================================================================
 
 #include "W_alloca.h"
-#include "W_math.h"
+#include <cmath>
 #include "defs.h"
 #include "config.h"
 #include "config_TARG.h"

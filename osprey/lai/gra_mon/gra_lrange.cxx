@@ -51,7 +51,7 @@
 #endif
 
 #if defined(__GNUC__)
-#include "W_math.h"	// FLT_MAX
+#include <cmath>	// FLT_MAX
 #include <float.h>
 #else
 #include "W_limits.h"

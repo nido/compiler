@@ -37,7 +37,7 @@
 static const char source_file[] = __FILE__;
 
 #include <stdio.h>
-#include "W_math.h"	/* for ceil */
+#include <math.h>	/* for ceil */
 
 #include "defs.h"
 #include "erglob.h"

@@ -324,7 +324,7 @@ static char *source_file = __FILE__;
 
 #include <sys/types.h>
 #include "W_alloca.h"
-#include "W_math.h"
+#include <cmath>
 
 #include "model.h"
 #include "cxx_memory.h"

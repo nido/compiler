@@ -42,7 +42,7 @@
 
 #include <sys/types.h> 
 #include "W_limits.h"
-#include "W_math.h"
+#include <cmath>
 #include "pu_info.h"
 #include "lnopt_main.h"
 #ifdef TARG_ST 

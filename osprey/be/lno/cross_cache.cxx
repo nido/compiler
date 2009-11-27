@@ -40,7 +40,7 @@
 #endif // USE_PCH
 #pragma hdrstop
 
-#include "W_math.h"
+#include <cmath>
 #include <sys/types.h>
 #include "W_limits.h"
 #include "pu_info.h"

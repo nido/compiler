@@ -88,7 +88,7 @@
 #include "DaVinci.h"      // for DaVinci viewer (for FB CFG).
 #include "wb_util.h"      // more: move this to another file (gwe).
 #ifdef TARG_ST
-#include "W_math.h" // For fabs
+#include <cmath> // For fabs
 #endif
 // ====================================================================
 

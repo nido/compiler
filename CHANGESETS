@@ -1,6 +1,123 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Nov 27 15:12:07 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-69906
+
+Description:
+------------
+	* [trunk] Fix for bug #69906: [BUILD] Investigate switch to x-mingw32-gcc-4.1.2 as a cross-compiler.
+	Deliver fixes/codex-69906 rev #25281 with authorization branch #69908
+
+
+Modified Files:
+---------------
+	M       osprey/be/opt/opt_fb.cxx
+	M       osprey/be/opt/opt_htable.cxx
+	M       osprey/be/be/driver_util.h
+	M       osprey/be/lno/lno_pch.h
+	M       osprey/be/lno/cross_cache.cxx
+	M       osprey/be/lno/cross_parallel.cxx
+	M       osprey/be/lno/shackle_mem.cxx
+	M       osprey/be/lno/doacross.cxx
+	M       osprey/be/lno/cache_model.cxx
+	M       osprey/be/lno/model.cxx
+	M       osprey/be/lno/cross_snl.cxx
+	M       osprey/be/lno/ara_loop.cxx
+	M       osprey/be/lno/parallel.cxx
+	M       osprey/be/com/fb_whirl.cxx
+	M       osprey/be/com/emulate.cxx
+	D       osprey/linux-cygwin/include/host/H_math.h
+	D       osprey/sunos-cygwin/include/host/H_math.h
+	M       osprey/lai/cg_loop.cxx
+	M       osprey/lai/igls.cxx
+	M       osprey/lai/cg_swp_sched.cxx
+	M       osprey/lai/cg_thr.cxx
+	M       osprey/lai/freq.cxx
+	M       osprey/lai/gra_mon/gra_split.cxx
+	M       osprey/lai/gra_mon/gra_lrange.cxx
+	M       osprey/lai/gra_mon/gra.cxx
+	M       osprey/lai/hb_hazards.cxx
+	M       osprey/lai/cflow.cxx
+	M       osprey/lai/hb_sched.cxx
+	M       osprey/lai/hb_block_select.cxx
+	M       osprey/make/tooldefs/gnu_compil/Makefile.tooldefs
+	D       osprey/linux-mingw/include/host/H_math.h
+	D       osprey/include/wrap/W_math.h
+	M       osprey/common/util/c_q_sqrt.c
+	M       osprey/common/util/id_map.h
+	M       osprey/common/util/c_a_to_q.c
+	M       osprey/common/com/const.cxx
+	M       osprey/common/com/config_cache.cxx
+	M       osprey/common/com/wn.cxx
+	M       osprey/common/com/symtab_utils.h
+	D       osprey/cygwin/include/host/H_math.h
+	D       osprey/sunos/include/host/H_math.h
+	M       osprey/ipa/local/Makefile.gbase
+	M       osprey/targinfo/arm/config/targ_const.cxx
+	M       osprey/targinfo/access/ti_res_count.c
+	M       osprey/targinfo/stxp70/config/targ_const.cxx
+	M       osprey/targinfo/st200/config/targ_const.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25263 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-69906@25281 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25263 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-69906@25281" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/opt/opt_fb.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_fb.cxx?p2=branches/fixes/codex-69906/osprey/be/opt/opt_fb.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/be/opt/opt_htable.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_htable.cxx?p2=branches/fixes/codex-69906/osprey/be/opt/opt_htable.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/be/be/driver_util.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/be/driver_util.h?p2=branches/fixes/codex-69906/osprey/be/be/driver_util.h&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/be/lno/lno_pch.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/lno/lno_pch.h?p2=branches/fixes/codex-69906/osprey/be/lno/lno_pch.h&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/be/lno/cross_cache.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/lno/cross_cache.cxx?p2=branches/fixes/codex-69906/osprey/be/lno/cross_cache.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/be/lno/cross_parallel.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/lno/cross_parallel.cxx?p2=branches/fixes/codex-69906/osprey/be/lno/cross_parallel.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/be/lno/shackle_mem.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/lno/shackle_mem.cxx?p2=branches/fixes/codex-69906/osprey/be/lno/shackle_mem.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/be/lno/doacross.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/lno/doacross.cxx?p2=branches/fixes/codex-69906/osprey/be/lno/doacross.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/be/lno/cache_model.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/lno/cache_model.cxx?p2=branches/fixes/codex-69906/osprey/be/lno/cache_model.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/be/lno/model.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/lno/model.cxx?p2=branches/fixes/codex-69906/osprey/be/lno/model.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/be/lno/cross_snl.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/lno/cross_snl.cxx?p2=branches/fixes/codex-69906/osprey/be/lno/cross_snl.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/be/lno/ara_loop.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/lno/ara_loop.cxx?p2=branches/fixes/codex-69906/osprey/be/lno/ara_loop.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/be/lno/parallel.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/lno/parallel.cxx?p2=branches/fixes/codex-69906/osprey/be/lno/parallel.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/be/com/fb_whirl.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/fb_whirl.cxx?p2=branches/fixes/codex-69906/osprey/be/com/fb_whirl.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/be/com/emulate.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/emulate.cxx?p2=branches/fixes/codex-69906/osprey/be/com/emulate.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_loop.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_loop.cxx?p2=branches/fixes/codex-69906/osprey/lai/cg_loop.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/lai/igls.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/igls.cxx?p2=branches/fixes/codex-69906/osprey/lai/igls.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_swp_sched.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_swp_sched.cxx?p2=branches/fixes/codex-69906/osprey/lai/cg_swp_sched.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_thr.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_thr.cxx?p2=branches/fixes/codex-69906/osprey/lai/cg_thr.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/lai/freq.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/freq.cxx?p2=branches/fixes/codex-69906/osprey/lai/freq.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/lai/gra_mon/gra_split.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/gra_mon/gra_split.cxx?p2=branches/fixes/codex-69906/osprey/lai/gra_mon/gra_split.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/lai/gra_mon/gra_lrange.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/gra_mon/gra_lrange.cxx?p2=branches/fixes/codex-69906/osprey/lai/gra_mon/gra_lrange.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/lai/gra_mon/gra.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/gra_mon/gra.cxx?p2=branches/fixes/codex-69906/osprey/lai/gra_mon/gra.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/lai/hb_hazards.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/hb_hazards.cxx?p2=branches/fixes/codex-69906/osprey/lai/hb_hazards.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/lai/cflow.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cflow.cxx?p2=branches/fixes/codex-69906/osprey/lai/cflow.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/lai/hb_sched.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/hb_sched.cxx?p2=branches/fixes/codex-69906/osprey/lai/hb_sched.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/lai/hb_block_select.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/hb_block_select.cxx?p2=branches/fixes/codex-69906/osprey/lai/hb_block_select.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/make/tooldefs/gnu_compil/Makefile.tooldefs	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/make/tooldefs/gnu_compil/Makefile.tooldefs?p2=branches/fixes/codex-69906/osprey/make/tooldefs/gnu_compil/Makefile.tooldefs&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/common/util/c_q_sqrt.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/c_q_sqrt.c?p2=branches/fixes/codex-69906/osprey/common/util/c_q_sqrt.c&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/common/util/id_map.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/id_map.h?p2=branches/fixes/codex-69906/osprey/common/util/id_map.h&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/common/util/c_a_to_q.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/c_a_to_q.c?p2=branches/fixes/codex-69906/osprey/common/util/c_a_to_q.c&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/common/com/const.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/const.cxx?p2=branches/fixes/codex-69906/osprey/common/com/const.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/common/com/config_cache.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config_cache.cxx?p2=branches/fixes/codex-69906/osprey/common/com/config_cache.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/common/com/wn.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/wn.cxx?p2=branches/fixes/codex-69906/osprey/common/com/wn.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/common/com/symtab_utils.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/symtab_utils.h?p2=branches/fixes/codex-69906/osprey/common/com/symtab_utils.h&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/ipa/local/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/local/Makefile.gbase?p2=branches/fixes/codex-69906/osprey/ipa/local/Makefile.gbase&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/arm/config/targ_const.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/config/targ_const.cxx?p2=branches/fixes/codex-69906/osprey/targinfo/arm/config/targ_const.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/access/ti_res_count.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/access/ti_res_count.c?p2=branches/fixes/codex-69906/osprey/targinfo/access/ti_res_count.c&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/targ_const.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/targ_const.cxx?p2=branches/fixes/codex-69906/osprey/targinfo/stxp70/config/targ_const.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/config/targ_const.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/config/targ_const.cxx?p2=branches/fixes/codex-69906/osprey/targinfo/st200/config/targ_const.cxx&r1=25263&r2=25281&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Nov 26 16:56:18 CET 2009
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

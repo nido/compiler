@@ -35,8 +35,6 @@
 #include <cmath>
 #endif
 
-#include "W_math.h"
-
 #include "defs.h"
 #include "config.h"
 #include "mempool.h"

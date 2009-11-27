@@ -112,7 +112,7 @@
    
 */
 
-#include "W_math.h"
+#include <cmath>
 #include <stdarg.h>
 // [HK]
 #if __GNUC__ >= 3

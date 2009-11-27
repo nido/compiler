@@ -146,7 +146,7 @@
 
 #ifdef TARG_ST
 // Fixes codex bug #18108. Avoid issues with contradicting `floor' an `ceil' prototypes
-#include "W_math.h"
+#include <cmath>
 #else
 // Bring in declaration of floor and ceil from /usr/include/math.h
 // Can't include math.h directly because of defs.h!

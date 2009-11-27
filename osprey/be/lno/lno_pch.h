@@ -41,7 +41,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include "W_limits.h"
-#include "W_math.h"
+#include <cmath>
 #include <stdarg.h>
 #include <sys/elf_whirl.h>
 #include <elf.h>

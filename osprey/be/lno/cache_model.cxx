@@ -1392,7 +1392,7 @@
 #endif /* _KEEP_RCS_ID */
 
 #include <sys/types.h>
-#include "W_math.h"
+#include <cmath>
 
 #include "access_vector.h"
 #include "model.h"

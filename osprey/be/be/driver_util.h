@@ -69,7 +69,7 @@ extern void Prepare_Listing_File (void);
 
 extern void Lowering_Initialize (void);
 
-extern void Lower_Init(void);
+BE_EXPORTED extern void Lower_Init(void);
 
 #ifdef TARG_ST
 extern BOOL warnings_are_errors;

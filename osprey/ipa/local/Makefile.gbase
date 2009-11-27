@@ -399,7 +399,6 @@ ipl.so: $(IPA_OBJS) $(IPA_CXX_OBJS) $(LINK_DSOS) \
 	if [ ! -h ipl$(HEXE) ]; then ln -sf ../be_driver/be ipl$(HEXE); fi
 endif
 
-
 #
 # Windows DLL
 #
@@ -408,10 +407,17 @@ ifeq ($(DSO_MODE),DLL)
 # workaround a syntax error that occurs in dlltool with symbols whose name
 # are defined with the "const.cxx" string.
 LDIRT+= ipl_outlinecxx ipl_maincxx
+
 ipl_outlinecxx : ipl_outline.cxx
 	if [ ! -h $@ ]; then ln -sf $< $@; fi
 
-ifeq ($(GNU_VERSION), 3)
+ipl_maincxx : ipl_main.cxx
+	if [ ! -h $@ ]; then ln -sf $< $@; fi
+
+# We want the work-around to be active for gcc 3 or gcc 4 major
+IPL_DSO_MODE_WA = $(strip $(subst 4, yes, $(subst 3, yes, $(GNU_VERSION))))
+
+ifeq ($(IPL_DSO_MODE_WA),yes)
 
 ipl_outline.o : ipl_outlinecxx
 	$(C++F) $(C++OPTS) -MF $<.d -x c++ $< -c -o $@
@@ -437,12 +443,7 @@ ipl_main.o : ipl_maincxx
 
 endif
 
-ipl_maincxx : ipl_main.cxx
-	if [ ! -h $@ ]; then ln -sf $< $@; fi
-
-
 LDDSOOPTS+=$(LINK_DSOS) $(LLDLIBS)
-
 
 ipl.dll ipl_dll.a : $(IPA_OBJS) $(IPA_CXX_OBJS)
 	$(CXX) --shared -o ipl.dll -Wl,--out-implib,ipl_dll.a \

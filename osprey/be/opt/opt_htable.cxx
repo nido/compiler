@@ -50,7 +50,7 @@
 #pragma hdrstop
 
 
-#include "W_math.h"			// for sqrt() used in htable stats
+#include <cmath>			// for sqrt() used in htable stats
 
 #include "defs.h"
 #include "erglob.h"

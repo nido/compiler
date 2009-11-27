@@ -36,7 +36,7 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <assert.h>
-#include "W_math.h"
+#include <cmath>
 #include "lnopt_main.h"
 #include "access_main.h"
 #include "access_vector.h"

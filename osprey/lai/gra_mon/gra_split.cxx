@@ -91,7 +91,7 @@
 #endif // USE_PCH
 #pragma hdrstop
 
-#include "W_math.h"
+#include <cmath>
 #if __GNUC__
 #include <float.h>
 #endif

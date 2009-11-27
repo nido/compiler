@@ -38,7 +38,7 @@
 #include "be_com_pch.h"
 #endif /* USE_PCH */
 #pragma hdrstop
-#include "W_math.h"
+#include <cmath>
 #include "W_values.h"
 #include "W_alloca.h"
 

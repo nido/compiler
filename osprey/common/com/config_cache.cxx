@@ -58,7 +58,7 @@ static const char source_file[] = __FILE__;
 #endif /* _KEEP_RCS_ID */
 
 #include <sys/types.h>
-#include "W_math.h"
+#include <cmath>
 
 #include "defs.h"
 #include "errors.h"

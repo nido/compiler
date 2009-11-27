@@ -154,7 +154,7 @@ Make_Align_Type (TY_IDX ty_idx, INT32 align)
     return ty_idx;
 }
 
-TY_IDX
+BE_EXPORTED TY_IDX
 Make_Array_Type (TYPE_ID element, INT32 ndim, INT64 len);
 
 /* Given a variable, find the type to which it is promoted for

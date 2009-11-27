@@ -96,7 +96,7 @@ typedef  union {
 #define	MAXCOUNT	34
 
 
-#include "W_math.h"
+#include <math.h>
 #include "defs.h"
 #include "quad.h"
 

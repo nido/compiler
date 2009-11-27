@@ -80,7 +80,11 @@ BINUTILS_LOC=$(BINUTILS_GNU_LOC)
 endif
 
 ifeq ($(HOST_OS),MINGW)
+ifeq ($(BUILD_TARGET),STxP70)
 COMPILER_LOC=$(GNU_LOC)/gcc/x-mingw32-gcc-3.4.2/bin/
+else
+COMPILER_LOC=$(GNU_LOC)/gcc/x-mingw32-gcc-4.1.2/bin/
+endif
 BINUTILS_LOC=$(COMPILER_LOC)
 PREFIX=i386-mingw32-
 endif

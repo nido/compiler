@@ -92,7 +92,7 @@
 #endif // __GNUC__ >= 3
 #include "namespace_trans.h"
 #include <fp_class.h>
-#include "W_math.h"
+#include <cmath>
 
 /* the only file that should include this */
 #include "targ_const_private.h"
