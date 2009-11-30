@@ -2198,6 +2198,38 @@ DEP_RESULT DEPV_COMPUTE::Base_Test(const WN *ref1,  ARA_REF *ara_ref1,
   OPERATOR ob1 = WN_operator(base1);
   OPERATOR ob2 = WN_operator(base2);
 
+#ifdef TARG_ST
+  // FdF 20091112: Consider that an LDID or an LDA are equivalent to
+  // an ADD with constant 0.
+  INT offset1 = 0, offset2 = 0;
+  if (ob1 == OPR_ADD) {
+    if (WN_operator(WN_kid0(base1)) == OPR_INTCONST) { 
+      offset1 = WN_const_val(WN_kid0(base1));
+      base1 = WN_kid1(base1);
+      ob1 = WN_operator(base1);
+    } else if (WN_operator(WN_kid1(base1)) == OPR_INTCONST) { 
+      offset1 = WN_const_val(WN_kid1(base1));
+      base1 = WN_kid0(base1);
+      ob1 = WN_operator(base1);
+    } else {
+      return(DEP_DEPENDENT);
+    }
+  }
+  if (ob2 == OPR_ADD) {
+    if (WN_operator(WN_kid0(base2)) == OPR_INTCONST) { 
+      offset2 = WN_const_val(WN_kid0(base2));
+      base2 = WN_kid1(base2);
+      ob2 = WN_operator(base2);
+    } else if (WN_operator(WN_kid1(base2)) == OPR_INTCONST) { 
+      offset2 = WN_const_val(WN_kid1(base2));
+      base2 = WN_kid0(base2);
+      ob2 = WN_operator(base2);
+    } else {
+      return(DEP_DEPENDENT);
+    }
+  }
+  BOOL different_structure_offsets = (offset1 != offset2);
+#else
   if (ob1 != ob2) return (DEP_DEPENDENT);
 
   BOOL different_structure_offsets = FALSE;
@@ -2227,6 +2259,7 @@ DEP_RESULT DEPV_COMPUTE::Base_Test(const WN *ref1,  ARA_REF *ara_ref1,
     }
     different_structure_offsets = (offset1 != offset2);
   }
+#endif
   if (ob1 != ob2) {
     return (DEP_DEPENDENT);
   }
