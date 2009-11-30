@@ -489,7 +489,6 @@ SYS_HFILES = \
 
 WRAP_HFILES =      \
 	W_limits.h \
-	W_math.h   \
 	W_errno.h  \
 	W_endian.h \
 	W_stdint.h \
