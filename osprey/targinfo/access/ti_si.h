@@ -919,6 +919,10 @@ SI_ID_II_Cycle_Resource_Ids_Used( SI_ID id, INT ii )
 
 #ifdef TARG_ST
 BE_EXPORTED extern void SI_RESOURCE_ID_Set_Max_Avail(SI_RESOURCE_ID id, INT max);
+
+/* functions used to backup/retore SI_RRW_initial_reservations value */
+BE_EXPORTED extern void backup_resource_tables(void);
+BE_EXPORTED extern void restore_resource_tables(void);
 #endif
 
 #ifdef __cplusplus

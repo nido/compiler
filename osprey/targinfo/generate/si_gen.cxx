@@ -477,6 +477,7 @@ public:
 
   static void Output_All( FILE* fd );
   // Write out all the resource info to <fd>.
+  static void Output_Include(FILE* fd);
 
 private:
   const int count;          // Available per cycle
@@ -517,6 +518,23 @@ RES* RES::Get(int i)
   assert(total > 0 && i >= 0 && i < total);
   return resources[i];
 }
+
+// output an enumeration of resources.
+void RES::Output_Include( FILE *fd ) {
+
+  if (fd!=NULL) {
+    
+    fprintf(fd,"enum  {\n");
+    int i;
+    
+    for ( i = 0; i < total; ++i ) {
+      fprintf(fd, "  %s,\n", resources[i]->Name());
+    }
+    
+    fprintf(fd,"};\n");
+  }
+}
+
 
 void RES::Output_All( FILE* fd )
 {
@@ -1820,25 +1838,25 @@ void Machine_Done( char* filename )
 	    "/* It defines static resources.\n"
 	    " */\n\n");
   }
-  else {
-    // Include file generated only in dynamic mode,
-    // contaning the access interface for the dll.
-    hfilename = Gen_Build_Filename(filename_noext,
-				   NULL, /* Build at static code gen. time*/
-				   gen_util_file_type_hfile);
-    hfile = Gen_Open_File_Handle(hfilename, "w");
 
-    const char *interface[] = {
-      "\n\n"
-      "/* This file has been created automatically\n"
-      " *  Do not modify it.\n"
+  // Include file generated in both static/dynamic modes
+  // Resources enumeration info generated in both modes and
+  // the access interface for the dll only in dynamic mode
+  hfilename = Gen_Build_Filename(filename_noext,
+                                 NULL, /* Build at static code gen. time*/
+                                 gen_util_file_type_hfile);
+  hfile = Gen_Open_File_Handle(hfilename, "w");
+
+  const char *interface[] = {
+    "\n\n"
+    "/* This file has been created automatically\n"
+    " *  Do not modify it.\n"
       " */\n\n"
-      "/* It defines extension access interface for scheduling info.\n"
-      " */\n\n",
-      NULL };
-
-    Emit_Header(hfile, filename_noext, interface, extname);
-  }
+    "/* It defines extension access interface for scheduling info.\n"
+    " */\n\n",
+    NULL };
+  
+  Emit_Header(hfile, filename_noext, interface, extname);
 
   if ( fd == NULL ) {
     fprintf(stderr,"### Error: couldn't write %s\n",filename);
@@ -1847,6 +1865,7 @@ void Machine_Done( char* filename )
 
   fprintf(fd,"#include \"ti_si.h\"\n");
   RES::Output_All(fd);
+  RES::Output_Include(hfile);
   RES_WORD::Output_All(fd);
   ISLOT::Output_All(fd);
   INSTRUCTION_GROUP::Output_All(fd);
@@ -1873,12 +1892,13 @@ void Machine_Done( char* filename )
     fprintf(hfile,"\n"
 	    "extern const char *%s (void);\n\n",
 	    routine_name);
-
-    Emit_Footer(hfile);
-    /* Closing file handlers */
-    Gen_Close_File_Handle(hfile,hfilename);
-    Gen_Free_Filename(hfilename);
   }
+
+  Emit_Footer(hfile);
+  /* Closing file handlers */
+  Gen_Close_File_Handle(hfile,hfilename);
+  Gen_Free_Filename(hfilename);
+
 
   fclose(fd);
 

@@ -1050,6 +1050,14 @@ I-cpp_nonansi_f77	;		f77	cpp	KRDEFS NONANSI_svr4
         "use libraries suitable for -fshort-double code generation"
 -mlib-nofloat	toggle(&lib_nofloat,TRUE);	ALL	ld	""
         "use libraries without float support"
+
+-MgenSingleIssue       ;	Cc     NONE	"-CG:max_issue_width=1"
+		       "Generates single issue code for all instructions (STxP70v4 only)"
+-MgenSingleCoreIssue   ;        Cc     NONE	"-TARG:max_core_issue_width=1"
+		       "Generates single issue code for core instructions (STxP70v4 only)"
+-MgenSingleExtIssue    ;	Cc     NONE	"-TARG:max_ext_issue_width=1"
+		       "Generates single issue code for extension instructions (STxP70v4 only)"
+
 #endif
 
 %
