@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Dec 02 14:02:28 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83626
+
+Description:
+------------
+	* [trunk] Fix for bug #83626: W_math.h removal breaks Solaris build.
+	Deliver fixes/codex-83626 rev #25360 with authorization branch #83627
+
+
+Modified Files:
+---------------
+	M       osprey/common/com/const.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25354 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83626@25360 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25354 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83626@25360" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/com/const.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/const.cxx?p2=branches/fixes/codex-83626/osprey/common/com/const.cxx&r1=25354&r2=25360&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Dec 02 10:00:03 CET 2009
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

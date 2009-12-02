@@ -106,7 +106,6 @@
 #include "wn.h"
 #include "config_targ.h"
 #include <hash_map>
-#include "W_math.h"
 
 #endif /* TARG_ST */
 
@@ -1143,13 +1142,13 @@ static TCON complex_sqrt(TCON c0)
     case MTYPE_C4:
       fr = TCON_R4(c0);
       fi = TCON_IR4(c0);
-      if( (fmag = hypotf(fr, fi)) == 0.)
+      if( (fmag = hypot(fr, fi)) == 0.)
 	TCON_R4(r) = TCON_IR4(r) = 0.;
       else if (fr > 0) {
-	 TCON_R4(r) = sqrtf(0.5 * (fmag + fr) );
+	 TCON_R4(r) = sqrt(0.5 * (fmag + fr) );
 	 TCON_IR4(r) = fi / TCON_R4(r) / 2;
       } else {
-	 TCON_IR4(r) = sqrtf(0.5 * (fmag - fr) );
+	 TCON_IR4(r) = sqrt(0.5 * (fmag - fr) );
 	 if (fi < 0) TCON_IR4(r) = -TCON_IR4(r);
 	 TCON_R4(r) = fi / TCON_IR4(r) /2;
       }
@@ -2530,7 +2529,7 @@ Targ_WhirlOp (
       break;
     case OPC_F4SQRT:
       if (TCON_R4(c0) >= 0) {
-	TCON_R4(c0) = sqrtf(TCON_R4(c0));
+	TCON_R4(c0) = sqrt(TCON_R4(c0));
       } else {
 	*folded = FALSE;
       }
@@ -6212,63 +6211,63 @@ TCON Targ_IntrinsicOp ( UINT32 intrinsic, TCON c[], BOOL *folded)
       break;
 
     case INTRN_F4EXP:
-      TCON_R4(c0) = expf(TCON_R4(c0));
+      TCON_R4(c0) = exp(TCON_R4(c0));
       break;
     case INTRN_F8EXP:
       TCON_R8(c0) = exp(TCON_R8(c0));
       break;
       
     case INTRN_F4LOG:
-      TCON_R4(c0) = logf(TCON_R4(c0));
+      TCON_R4(c0) = log(TCON_R4(c0));
       break;
     case INTRN_F8LOG:
       TCON_R8(c0) = log(TCON_R8(c0));
       break;
       
     case INTRN_F4LOG10:
-      TCON_R4(c0) = log10f(TCON_R4(c0));
+      TCON_R4(c0) = log10(TCON_R4(c0));
       break;
     case INTRN_F8LOG10:
       TCON_R8(c0) = log10(TCON_R8(c0));
       break;
 
     case INTRN_F4COS:
-      TCON_R4(c0) = cosf(TCON_R4(c0));
+      TCON_R4(c0) = cos(TCON_R4(c0));
       break;
     case INTRN_F8COS:
       TCON_R8(c0) = cos(TCON_R8(c0));
       break;
 
     case INTRN_F4SIN:
-      TCON_R4(c0) = sinf(TCON_R4(c0));
+      TCON_R4(c0) = sin(TCON_R4(c0));
       break;
     case INTRN_F8SIN:
       TCON_R8(c0) = sin(TCON_R8(c0));
       break;
 
     case INTRN_F4TAN:
-      TCON_R4(c0) = tanf(TCON_R4(c0));
+      TCON_R4(c0) = tan(TCON_R4(c0));
       break;
     case INTRN_F8TAN:
       TCON_R8(c0) = tan(TCON_R8(c0));
       break;
 
     case INTRN_F4COSD:
-      TCON_R4(c0) = cosf(DEG_TO_RAD*TCON_R4(c0));
+      TCON_R4(c0) = cos(DEG_TO_RAD*TCON_R4(c0));
       break;
     case INTRN_F8COSD:
       TCON_R8(c0) = cos(DEG_TO_RAD*TCON_R8(c0));
       break;
 
     case INTRN_F4SIND:
-      TCON_R4(c0) = sinf(DEG_TO_RAD*TCON_R4(c0));
+      TCON_R4(c0) = sin(DEG_TO_RAD*TCON_R4(c0));
       break;
     case INTRN_F8SIND:
       TCON_R8(c0) = sin(DEG_TO_RAD*TCON_R8(c0));
       break;
 
     case INTRN_F4TAND:
-      TCON_R4(c0) = tanf(DEG_TO_RAD*TCON_R4(c0));
+      TCON_R4(c0) = tan(DEG_TO_RAD*TCON_R4(c0));
       break;
     case INTRN_F8TAND:
       TCON_R8(c0) = tan(DEG_TO_RAD*TCON_R8(c0));
@@ -6276,77 +6275,77 @@ TCON Targ_IntrinsicOp ( UINT32 intrinsic, TCON c[], BOOL *folded)
 
 
     case INTRN_F4ACOS:
-      TCON_R4(c0) = acosf(TCON_R4(c0));
+      TCON_R4(c0) = acos(TCON_R4(c0));
       break;
     case INTRN_F8ACOS:
       TCON_R8(c0) = acos(TCON_R8(c0));
       break;
 
     case INTRN_F4ASIN:
-      TCON_R4(c0) = asinf(TCON_R4(c0));
+      TCON_R4(c0) = asin(TCON_R4(c0));
       break;
     case INTRN_F8ASIN:
       TCON_R8(c0) = asin(TCON_R8(c0));
       break;
 
     case INTRN_F4ATAN:
-      TCON_R4(c0) = atanf(TCON_R4(c0));
+      TCON_R4(c0) = atan(TCON_R4(c0));
       break;
     case INTRN_F8ATAN:
       TCON_R8(c0) = atan(TCON_R8(c0));
       break;
 
     case INTRN_F4ACOSD:
-      TCON_R4(c0) = RAD_TO_DEG*acosf(TCON_R4(c0));
+      TCON_R4(c0) = RAD_TO_DEG*acos(TCON_R4(c0));
       break;
     case INTRN_F8ACOSD:
       TCON_R8(c0) = RAD_TO_DEG*acos(TCON_R8(c0));
       break;
 
     case INTRN_F4ASIND:
-      TCON_R4(c0) = RAD_TO_DEG*asinf(TCON_R4(c0));
+      TCON_R4(c0) = RAD_TO_DEG*asin(TCON_R4(c0));
       break;
     case INTRN_F8ASIND:
       TCON_R8(c0) = RAD_TO_DEG*asin(TCON_R8(c0));
       break;
 
     case INTRN_F4ATAND:
-      TCON_R4(c0) = RAD_TO_DEG*atanf(TCON_R4(c0));
+      TCON_R4(c0) = RAD_TO_DEG*atan(TCON_R4(c0));
       break;
     case INTRN_F8ATAND:
       TCON_R8(c0) = RAD_TO_DEG*atan(TCON_R8(c0));
       break;
 
     case INTRN_F4COSH:
-      TCON_R4(c0) = coshf(TCON_R4(c0));
+      TCON_R4(c0) = cosh(TCON_R4(c0));
       break;
     case INTRN_F8COSH:
       TCON_R8(c0) = cosh(TCON_R8(c0));
       break;
 
     case INTRN_F4SINH:
-      TCON_R4(c0) = sinhf(TCON_R4(c0));
+      TCON_R4(c0) = sinh(TCON_R4(c0));
       break;
     case INTRN_F8SINH:
       TCON_R8(c0) = sinh(TCON_R8(c0));
       break;
 
     case INTRN_F4TANH:
-      TCON_R4(c0) = tanhf(TCON_R4(c0));
+      TCON_R4(c0) = tanh(TCON_R4(c0));
       break;
     case INTRN_F8TANH:
       TCON_R8(c0) = tanh(TCON_R8(c0));
       break;
 
     case INTRN_F4ATAN2:
-      TCON_R4(c0) = atan2f(TCON_R4(c0),TCON_R4(c[1]));
+      TCON_R4(c0) = atan2(TCON_R4(c0),TCON_R4(c[1]));
       break;
     case INTRN_F8ATAN2:
       TCON_R8(c0) = atan2(TCON_R8(c0),TCON_R8(c[1]));
       break;
 
     case INTRN_F4ATAN2D:
-      TCON_R4(c0) = RAD_TO_DEG*atan2f(TCON_R4(c0),TCON_R4(c[1]));
+      TCON_R4(c0) = RAD_TO_DEG*atan2(TCON_R4(c0),TCON_R4(c[1]));
       break;
     case INTRN_F8ATAN2D:
       TCON_R8(c0) = RAD_TO_DEG*atan2(TCON_R8(c0),TCON_R8(c[1]));
@@ -6354,8 +6353,8 @@ TCON Targ_IntrinsicOp ( UINT32 intrinsic, TCON c[], BOOL *folded)
 
     case INTRN_F4CIS:
       TCON_ty(c0) = MTYPE_C4;
-      TCON_R4(c0) = cosf(TCON_R4(c[0]));
-      TCON_IR4(c0) = sinf(TCON_R4(c[0]));
+      TCON_R4(c0) = cos(TCON_R4(c[0]));
+      TCON_IR4(c0) = sin(TCON_R4(c[0]));
       break;
 
     case INTRN_F8CIS:
