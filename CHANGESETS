@@ -1,6 +1,72 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Dec 03 09:33:08 CET 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72181
+
+Description:
+------------
+	* [trunk] Fix for bug #72181: [AppliConfig] missing  compilation option info  in asm file.
+	Deliver fixes/codex-72181 rev #25367 with authorization branch #82433
+
+
+Modified Files:
+---------------
+	M       osprey/common/com/config.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25362 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72181@25367 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25362 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72181@25367" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/com/config.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config.cxx?p2=branches/fixes/codex-72181/osprey/common/com/config.cxx&r1=25362&r2=25367&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Wed Dec 02 13:47:45 CET 2009
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72181
+
+Description:
+------------
+	* [trunk] Fix for bug #72181: [AppliConfig] missing  compilation option info  in asm file.
+	Deliver fixes/codex-72181 rev #25359 with authorization branch #82433
+
+
+Modified Files:
+---------------
+	M       osprey/common/com/config.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25354 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72181@25359 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25354 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72181@25359" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/com/config.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config.cxx?p2=branches/fixes/codex-72181/osprey/common/com/config.cxx&r1=25354&r2=25359&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Dec 02 14:02:28 CET 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

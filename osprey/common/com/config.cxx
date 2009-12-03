@@ -2479,7 +2479,25 @@ List_Compile_Options (
       }
   }
 #endif
-
+#ifdef BACK_END
+  //TDR - Dump application configuration file info in .s
+  if (appli_config_file_set) 
+    {
+      FILE* fappli_config = fopen(appli_config_file_name, "r");
+      const int bufsize = 256;
+      char buf[bufsize];
+      fprintf(f , "\n%s%s%s Application Configuration file used: \n", pfx, 
+    		  bar, pfx);
+      if (fappli_config!=NULL)
+        {
+    	  while (fgets(buf, sizeof(buf), fappli_config))
+    	    fprintf(f , "%s%s", pfx,buf); 
+          fclose(fappli_config);
+        }
+      fprintf(f , "%s%s\n", pfx,  bar);
+    }
+#endif
+  
   fprintf ( f, "\n%s%s%s Compiling %s (%s)\n%s%s",
 	    pfx, bar, pfx, Src_File_Name, Irb_File_Name, pfx, bar ); 
   fprintf ( f, "\n%s%s%s Options:\n%s%s", pfx, bar, pfx, pfx, bar );
