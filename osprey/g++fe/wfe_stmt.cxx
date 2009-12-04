@@ -3915,7 +3915,8 @@ Generate_unwind_resume (void)
 
 #ifdef TARG_ST
   /* (cbr) end of eh_region. never return */
-  //  WN_Set_Call_Never_Return(call_wn);
+  // FdF 20090929: Mark this function Never_Return
+  WN_Set_Call_Never_Return(call_wn);
 #endif  
 
 // Before calling _Unwind_Resume(), if we have eh-spec, compare filter with

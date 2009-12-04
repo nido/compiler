@@ -5240,15 +5240,19 @@ static void Build_CFG(void)
             if (LABEL_kind(Label_Table[lab]) == 
                 LKIND_END_EH_RANGE) {
               BB *pred = BB_prev(bb);
-              if (BB_call(pred) && WN_Call_Never_Return(CALLINFO_call_wn(ANNOT_callinfo(ANNOT_Get (BB_annotations(pred), ANNOT_CALLINFO)))))
-                {
-                  if (BB_Is_Unique_Predecessor (bb, pred)) {
-                    EXITINFO *exit_info = TYPE_PU_ALLOC (EXITINFO);
-                    EXITINFO_srcpos(exit_info) = current_srcpos;
-                    BB_Add_Annotation (bb, ANNOT_EXITINFO, exit_info);
-                    Set_BB_exit(bb);
-                  } 
-                }
+              if (BB_call(pred) &&
+		  WN_Call_Never_Return(CALLINFO_call_wn(ANNOT_callinfo(ANNOT_Get(BB_annotations(pred), ANNOT_CALLINFO))))) {
+		// FdF 2009: Link the call to _Unwind_Return with the
+		// next basic block which ends an EH handler. Mark
+		// this block as Exit.
+		if (BB_preds_len(bb) == 0) {
+		  Link_Pred_Succ (pred, bb);
+		  EXITINFO *exit_info = TYPE_PU_ALLOC (EXITINFO);
+		  EXITINFO_srcpos(exit_info) = current_srcpos;
+		  BB_Add_Annotation (bb, ANNOT_EXITINFO, exit_info);
+		  Set_BB_exit(bb);
+		}
+	      }
             }
           }
         }
