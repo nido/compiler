@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Dec 04 11:27:28 CET 2009
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-lra-overlap-coalescing
+
+Description:
+------------
+	* Deliver branch #82243: LRA coalescing improvement: handling of GTNs with exposed uses
+
+	-> Improve LRA coalescing by allowing GTN with exposed use to be inserted in a
+	   coalescing tree for its first real definition.
+
+
+Modified Files:
+---------------
+	M       osprey/lai/lra.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25385 --new=https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-lra-overlap-coalescing@25390 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25385 https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-lra-overlap-coalescing@25390" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/lra.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lra.cxx?p2=branches/tt2/dev-lra-overlap-coalescing/osprey/lai/lra.cxx&r1=25385&r2=25390&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Dec 04 10:13:02 CET 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

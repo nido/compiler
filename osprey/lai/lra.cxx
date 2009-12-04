@@ -2005,7 +2005,14 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 	  }
 	  Detach_LR_ovcoal(clr);
 	}
-	else if (LR_def_cnt(clr) == 1 && (TN_is_local_reg(tn) || LR_exposed_use(clr)==0)) {
+	else if (LR_def_cnt(clr) == 1 &&
+		 (TN_is_local_reg(tn) ||
+		  LR_exposed_use(clr)==0 ||
+		  (LR_ovcoal_parent(clr) == NULL && LR_ovcoal_child(clr) == NULL))) {
+	  // The following TN usages are accepted:
+	  // (1) first def of a local TN,
+	  // (2) first def of a global TN without exposed use,
+	  // (3) first real def of a global TN with exposed use but not belonging to a coalescing tree
 	  LIVE_RANGE *src_lr = NULL;
 	  if (OP_extract(op)) {
 	    src_lr = LR_For_TN(OP_opnd(op, OP_is_predicated(op)?1:0));
@@ -2013,7 +2020,10 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 	  else if (OP_Is_Preference_Copy(op)) {
 	    src_lr = LR_For_TN(OP_opnd(op, OP_Copy_Operand(op)));
 	  }
-	  if (src_lr && !LR_early_clobber(src_lr)) {
+	  if (src_lr && !LR_early_clobber(src_lr) &&
+	      src_lr != clr && // case of copy of a reg in itself (typically ABI related)
+	      (LR_exposed_use(clr) == 0 ||
+	       LR_first_def(LR_ovcoal_root(src_lr)) >= LR_exposed_use(clr)) ) {
 	    // This result is defined by an extract or copy,
 	    // Update overlap coalescing info.
 	    Set_LR_special_def_op (clr, op);
@@ -2058,6 +2068,10 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 		}
 		Add_LR_ovcoal_child(src_lr, clr, local_rank);
 		Set_LR_ovcoal_init_ver(clr, LR_ovcoal_last_ver(src_lr));
+		if (LR_exposed_use(clr) != 0) {
+		  // Update version number if dealing with a GTN with an exposed used
+		  Set_LR_ovcoal_last_ver(clr, LR_ovcoal_last_ver(src_lr));
+		}
 	      }
 	    }
 	  }
