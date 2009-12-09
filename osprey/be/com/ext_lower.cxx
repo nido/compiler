@@ -24,6 +24,9 @@ Temple Place - Suite 330, Boston MA 02111-1307, USA.
 Contact information:  
 
 */
+#if __GNUC__ >=3 || defined(_MSC_VER)
+#include <climits>	// For *MAX 
+#endif
 
 #include <map>
 #include <stack>

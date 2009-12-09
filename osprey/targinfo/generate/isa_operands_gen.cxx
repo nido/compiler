@@ -56,6 +56,7 @@ typedef struct operand_value_type *OPERAND_VALUE_TYPE;
 #include <list>
 #include <vector>
 #include <algorithm>
+#include <cstring>	// For mem* and str*
 using std::list;
 using std::vector;
 #else

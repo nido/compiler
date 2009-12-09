@@ -1,6 +1,94 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Dec 09 12:40:21 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/monat/dev-compile-gcc-4-3
+
+Description:
+------------
+	*  Deliver branches/monat/dev-compile-gcc-4-3 at rev #25433
+	"Investigate compiling Open64 with gcc-4.3.x "
+        With authorization art #77521
+
+
+Modified Files:
+---------------
+	M       osprey/be/opt/opt_tailmerge.cxx
+	M       osprey/be/opt/opt_sym.cxx
+	M       osprey/be/opt/opt_cse.cxx
+	M       osprey/be/com/ext_lower.cxx
+	M       osprey/be/com/wn_coverage.cxx
+	M       osprey/driver/phases.c
+	M       osprey/lai/cg_tailmerge.cxx
+	M       osprey/lai/tnutil.cxx
+	M       osprey/lai/cg_dud.h
+	M       osprey/make/tooldefs/gnu_compil/Makefile.tooldefs
+	M       osprey/make/gcommondefs
+	M       osprey/common/util/mempool_allocator.h
+	M       osprey/common/com/config.cxx
+	M       osprey/common/com/tailmerge.h
+	M       osprey/common/com/config_debug.cxx
+	M       osprey/common/com/em_dwarf.cxx
+	M       osprey/ipa/main/analyze/ipa_solver.h
+	M       osprey/ipa/common/ipc_bwrite.cxx
+	M       osprey/targinfo/arm/cg/targ_grouping.h
+	M       osprey/targinfo/st200/cg/targ_grouping.h
+	M       osprey/targinfo/generate/abi_properties_gen.cxx
+	M       osprey/targinfo/generate/isa_relocs_gen.cxx
+	M       osprey/targinfo/generate/isa_binutils_gen.cxx
+	M       osprey/targinfo/generate/isa_properties_gen.cxx
+	M       osprey/targinfo/generate/isa_pseudo_gen.cxx
+	M       osprey/targinfo/generate/isa_bundle_gen.cxx
+	M       osprey/targinfo/generate/isa_operands_gen.cxx
+	M       osprey/targinfo/generate/isa_pack_gen.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25429 --new=https://codex.cro.st.com/svnroot/open64/branches/monat/dev-compile-gcc-4-3@25433 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25429 https://codex.cro.st.com/svnroot/open64/branches/monat/dev-compile-gcc-4-3@25433" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/opt/opt_tailmerge.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_tailmerge.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/be/opt/opt_tailmerge.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/be/opt/opt_sym.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_sym.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/be/opt/opt_sym.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/be/opt/opt_cse.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_cse.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/be/opt/opt_cse.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/be/com/ext_lower.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/ext_lower.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/be/com/ext_lower.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/be/com/wn_coverage.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/wn_coverage.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/be/com/wn_coverage.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/driver/phases.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/phases.c?p2=branches/monat/dev-compile-gcc-4-3/osprey/driver/phases.c&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_tailmerge.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_tailmerge.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/lai/cg_tailmerge.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/lai/tnutil.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/tnutil.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/lai/tnutil.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_dud.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_dud.h?p2=branches/monat/dev-compile-gcc-4-3/osprey/lai/cg_dud.h&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/make/tooldefs/gnu_compil/Makefile.tooldefs	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/make/tooldefs/gnu_compil/Makefile.tooldefs?p2=branches/monat/dev-compile-gcc-4-3/osprey/make/tooldefs/gnu_compil/Makefile.tooldefs&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/make/gcommondefs	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/make/gcommondefs?p2=branches/monat/dev-compile-gcc-4-3/osprey/make/gcommondefs&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/common/util/mempool_allocator.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/mempool_allocator.h?p2=branches/monat/dev-compile-gcc-4-3/osprey/common/util/mempool_allocator.h&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/common/com/config.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/common/com/config.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/common/com/tailmerge.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/tailmerge.h?p2=branches/monat/dev-compile-gcc-4-3/osprey/common/com/tailmerge.h&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/common/com/config_debug.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config_debug.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/common/com/config_debug.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/common/com/em_dwarf.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/em_dwarf.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/common/com/em_dwarf.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/ipa/main/analyze/ipa_solver.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/main/analyze/ipa_solver.h?p2=branches/monat/dev-compile-gcc-4-3/osprey/ipa/main/analyze/ipa_solver.h&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/ipa/common/ipc_bwrite.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/common/ipc_bwrite.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/ipa/common/ipc_bwrite.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/arm/cg/targ_grouping.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/cg/targ_grouping.h?p2=branches/monat/dev-compile-gcc-4-3/osprey/targinfo/arm/cg/targ_grouping.h&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/cg/targ_grouping.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/cg/targ_grouping.h?p2=branches/monat/dev-compile-gcc-4-3/osprey/targinfo/st200/cg/targ_grouping.h&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/abi_properties_gen.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/abi_properties_gen.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/targinfo/generate/abi_properties_gen.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/isa_relocs_gen.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/isa_relocs_gen.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/targinfo/generate/isa_relocs_gen.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/isa_binutils_gen.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/isa_binutils_gen.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/targinfo/generate/isa_binutils_gen.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/isa_properties_gen.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/isa_properties_gen.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/targinfo/generate/isa_properties_gen.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/isa_pseudo_gen.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/isa_pseudo_gen.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/targinfo/generate/isa_pseudo_gen.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/isa_bundle_gen.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/isa_bundle_gen.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/targinfo/generate/isa_bundle_gen.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/isa_operands_gen.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/isa_operands_gen.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/targinfo/generate/isa_operands_gen.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/isa_pack_gen.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/isa_pack_gen.cxx?p2=branches/monat/dev-compile-gcc-4-3/osprey/targinfo/generate/isa_pack_gen.cxx&r1=25429&r2=25433&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Dec 04 11:27:28 CET 2009
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

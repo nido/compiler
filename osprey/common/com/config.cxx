@@ -59,6 +59,11 @@
 /*REFERENCED*/
 #endif /* _KEEP_RCS_ID */
 
+#if __GNUC__ >=3 || defined(_MSC_VER)
+#include <cstring>	// For mem* and str*
+#include <climits>	// For *MAX 
+#endif
+
 #ifdef FRONT_END	/* For setting fullwarn, woff in front end */
 #ifndef FRONT_F90
 #ifdef EDGSRC

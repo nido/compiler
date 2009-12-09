@@ -849,6 +849,7 @@ endif
 # 
 ifeq ($(BUILD_COMPILER), GNU)
 GNU_VERSION:=$(shell echo | $(COMPILER_LOC)$(CCPREFIX)$(CCNAME)$(SUFFIX)  -dM -E -  | grep "define __GNUC__" | awk '{print $$3;}')
+GNU_VERSION_MINOR:=$(shell echo | $(COMPILER_LOC)$(CCPREFIX)$(CCNAME)$(SUFFIX)  -dM -E -  | grep "define __GNUC_MINOR__" | awk '{print $$3;}')
 
 ifeq ($(GNU_VERSION), 1)
 $(error GCC build compiler version 1.x no longer supported)
@@ -872,5 +873,18 @@ GCOPTS += -fno-gcse
 GC++OPTS += -fno-gcse
 endif
 
+# Switching to gcc-4.3 is done under restrictive conditions
+ifeq ($(GNU_VERSION), 4)
+ifeq ($(GNU_VERSION_MINOR), 3)
+STD_COMPILE_OPTS += -Wno-write-strings
+BUILD_GCXXFLAGS += -Wno-write-strings
+GC++OPTS += -Wno-deprecated -Wno-write-strings
+endif
+ifeq ($(GNU_VERSION_MINOR), 4)
+STD_COMPILE_OPTS += -Wno-write-strings
+BUILD_GCXXFLAGS += -Wno-write-strings
+GC++OPTS += -Wno-deprecated -Wno-write-strings
+endif
+endif
 
 endif

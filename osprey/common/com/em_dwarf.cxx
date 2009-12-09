@@ -39,6 +39,10 @@ static const char source_file[] = __FILE__;
 
 #include <stdio.h>
 
+#if __GNUC__ >=3 || defined(_MSC_VER)
+#include <climits>	// For *MAX 
+#endif
+
 #include <elf.h>
 #include <libelf.h>
 

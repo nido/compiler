@@ -52,6 +52,11 @@
 /*REFERENCED*/
 #endif /* _KEEP_RCS_ID */
 
+#if __GNUC__ >=3 || defined(_MSC_VER)
+#include <cstring>	// For mem* and str*
+#include <climits>	// For *MAX 
+#endif
+
 /* This file is included in config.c, so it doesn't need its own set of
  * standard includes -- only the following:
  */

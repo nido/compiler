@@ -56,6 +56,7 @@
 // [HK]
 #if __GNUC__ >=3 || defined(_MSC_VER)
 #include <list>
+#include <cstring>	// For mem* and str*
 using std::list;
 #else
 #include <list.h>

@@ -52,6 +52,9 @@
 #endif // USE_PCH
 #pragma hdrstop
 
+#if __GNUC__ >=3 || defined(_MSC_VER)
+#include <climits>	// For *MAX 
+#endif
 
 #define opt_cse_CXX	"opt_cse.cxx"
 

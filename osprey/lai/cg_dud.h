@@ -115,6 +115,11 @@
 // ======================================================================= */
 
 #ifdef TARG_ST
+
+#if __GNUC__ >=3 || defined(_MSC_VER)
+#include <climits>	// For *MAX 
+#endif
+
 #include "bb.h"
 #include "cg_loop.h"
 #include "findloops.h"

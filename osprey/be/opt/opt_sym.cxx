@@ -3705,37 +3705,19 @@ struct transfer_attributes_as_needed {
 	Expand_ST_into_base_and_ofst(st, 0, &base, &offset);
 	if (base != st) {
 	  // See if anyone local to our PU cares about this base...
-// [HK]
-#if __GNUC__ >=3
-	  __gnu_cxx::__normal_iterator<const ST**, std::vector<const ST*, 
-   std::allocator<const ST*> > >  var_base_pos = find(nested_ref_bases.begin(),
-#else
-	  const ST **var_base_pos = find(nested_ref_bases.begin(),
-#endif // __GNUC__ >=3
-				 nested_ref_bases.end(), 
-					 base);
-	  if (var_base_pos != nested_ref_bases.end()) {
+	  const ST **var_base_pos = &(*find(nested_ref_bases.begin(),
+					 nested_ref_bases.end(), 
+					 base));
+	  if (var_base_pos != &(*nested_ref_bases.end())) {
 	    // Someone in the PU referred to this base and might need a
 	    // status update. See if any of the references to this base
 	    // from the PU overlap with the current symbol.
 	    INT var_base_index = (var_base_pos -
-				  nested_ref_bases.begin());
-// [HK]
-#if __GNUC__ >=3
-	  __gnu_cxx::__normal_iterator<NEST_REF_CAND *, std::vector<NEST_REF_CAND, 
-   std::allocator<NEST_REF_CAND> > >  first_nrc =
-#else
+				  &(*nested_ref_bases.begin()));
 	    const NEST_REF_CAND *first_nrc =
-#endif // __GNUC__ >=3
-	      nest_ref_cands[var_base_index].begin();
-// [HK]
-#if __GNUC__ >=3
-	  __gnu_cxx::__normal_iterator<NEST_REF_CAND *, std::vector<NEST_REF_CAND, 
-   std::allocator<NEST_REF_CAND> > >  last_nrc =
-#else
+	      &(*nest_ref_cands[var_base_index].begin());
 	    const NEST_REF_CAND *last_nrc =
-#endif // __GNUC__ >=3
-	      nest_ref_cands[var_base_index].end();
+	      &(*nest_ref_cands[var_base_index].end());
 	    while (first_nrc != last_nrc) {
 	      if (Overlap(offset, TY_size(ST_type(st)),
 			  first_nrc->offset, first_nrc->size)) {
@@ -3800,19 +3782,13 @@ OPT_STAB::Collect_nested_ref_info(void)
 
       /* Not const */ ST_TAB *my_symtab = Find_symtab_of(var_base);
 
-// [HK]
-#if __GNUC__ >=3
-      __gnu_cxx::__normal_iterator<const ST**, std::vector<const ST*, 
-   std::allocator<const ST*> > > var_base_pos = find(nested_ref_bases.begin(),
-#else
-      const ST **var_base_pos = find(nested_ref_bases.begin(),
-#endif // 	__GNUC__ >=3
-			     nested_ref_bases.end(),
-				     var_base);
-      INT var_base_index = var_base_pos - nested_ref_bases.begin();
+      const ST **var_base_pos = &(*find(nested_ref_bases.begin(),
+				     nested_ref_bases.end(),
+				     var_base));
+      INT var_base_index = var_base_pos - &(*nested_ref_bases.begin());
 
       if (var_base_pos ==
-	  nested_ref_bases.end()) {
+	  &(*nested_ref_bases.end())) {
 	Is_True(nested_ref_bases.end() - nested_ref_bases.begin() ==
 		var_base_index,
 		("Robert misunderstood STL vector: %d vs. %d",
@@ -3843,16 +3819,10 @@ OPT_STAB::Collect_nested_ref_info(void)
     }
   }
 
-// [HK]
-#if __GNUC__ >=3
-  /* Not const */ __gnu_cxx::__normal_iterator<ST_TAB**, std::vector<ST_TAB*, 
-   std::allocator<ST_TAB*> > > symtab;
-#else
   /* Not const */ ST_TAB **symtab;
-#endif // __GNUC__ >=3
 
-  for (symtab = symtabs.begin();
-       symtab != symtabs.end();
+  for (symtab = &(*symtabs.begin());
+       symtab != &(*symtabs.end());
        symtab++) {
     For_all_entries(**symtab,
 		    transfer_attributes_as_needed(tracing, this,

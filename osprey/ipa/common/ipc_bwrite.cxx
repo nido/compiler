@@ -31,6 +31,9 @@
   http://oss.sgi.com/projects/GenInfo/NoticeExplan
 
 */
+#if __GNUC__ >=3 || defined(_MSC_VER)
+#include <climits>	// For *MAX 
+#endif
 
 
 #include <elf.h>

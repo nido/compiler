@@ -57,6 +57,7 @@
 #include <list>
 #include <vector>
 #include <map>
+#include <cstring>	// For mem* and str*
 using std::list;
 using std::vector;
 using std::map;

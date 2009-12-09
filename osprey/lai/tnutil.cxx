@@ -52,6 +52,10 @@
 #endif // USE_PCH
 #pragma hdrstop
 
+#if __GNUC__ >=3 || defined(_MSC_VER)
+#include <climits>	// For *MAX 
+#endif
+
 #include "defs.h"
 #include "config.h"
 #include "erglob.h"

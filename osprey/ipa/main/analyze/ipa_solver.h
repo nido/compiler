@@ -399,8 +399,14 @@ Iterative_Dataflow_Solver (
   }
 
   if ( dataflow->Get_iter() == NULL ) {
+#ifdef TARG_ST
+    dataflow->Set_iter ( get_iter ( graph,
+				    dataflow->Get_mempool(),
+				    false) );
+#else
     dataflow->Set_iter ( get_iter ( graph,
 				    dataflow->Get_mempool() ) );
+#endif
   }
 
   // Initialize callgraph vertex, in, and out annotations:

@@ -349,10 +349,7 @@ static char* get_libc_option(char* libbasename)
 enum {nocrt, crt0, crt1} crt_mode;
 
 static const char * get_boot_fname ( void ) {
-  string boot_path;
-  extern int STxP70mult;
-  
-  return concat_strings(boot_path,"/arm32");
+  return string_copy("/arm32");
   /* cannot be reached */
 }
 static int find_crt_mode(void)

@@ -119,7 +119,7 @@ static const bool g_checkInvariant = true;
  * @todo   Targetting to be done
  */
 template<typename BasicBlock>
-extern bool
+static bool
 IsEmpty(const BasicBlock& a_bb);
 
 /**
@@ -136,7 +136,7 @@ IsEmpty(const BasicBlock& a_bb);
  * @todo   Targetting to be done.
  */
 template<typename Basiblock>
-extern Basiblock*
+static Basiblock*
 InvalidBasicBlock();
 
 /**
@@ -158,7 +158,7 @@ InvalidBasicBlock();
  * @todo   Targetting to be done
  */
 template<typename Operation>
-extern bool
+static bool
 AreEquivalent(Operation* op1, Operation* op2);
 
 /**
@@ -181,7 +181,7 @@ AreEquivalent(Operation* op1, Operation* op2);
  * @todo   Targetting to be done
  */
 template<typename Cfg, typename Basiblock, typename Operation>
-extern bool
+static bool
 IsJump(const Operation* op, const Cfg* a_cfg = NULL,
        const Basiblock* tgt = NULL);
 
@@ -204,7 +204,7 @@ IsJump(const Operation* op, const Cfg* a_cfg = NULL,
  * @todo Targetting must be done
  */
 template<typename Cfg, typename BasicBlock>
-extern void
+static void
 AddGoto(Cfg& a_cfg, BasicBlock& a_src, BasicBlock& a_tgt,
          bool forExplicit = false);
 
@@ -238,7 +238,7 @@ AddGoto(Cfg& a_cfg, BasicBlock& a_src, BasicBlock& a_tgt,
  * @todo   Targetting to be done
  */
 template<typename Cfg, typename BasicBlock>
-extern void
+static void
 ReplaceJump(Cfg& a_cfg, BasicBlock& src, BasicBlock& tgt, BasicBlock& origBb,
             bool jumpHere);
 
@@ -263,7 +263,7 @@ ReplaceJump(Cfg& a_cfg, BasicBlock& src, BasicBlock& tgt, BasicBlock& origBb,
  * @todo   Targetting to be done
  */
 template<typename Cfg, typename BasicBlock>
-extern int
+static int
 BasicBlockId(const Cfg& a_cfg, const BasicBlock& bb);
 
 /**
@@ -282,7 +282,7 @@ BasicBlockId(const Cfg& a_cfg, const BasicBlock& bb);
  * @todo   Targetting to be done
  */
 template<typename Operation>
-extern void
+static void
 DumpOperation(FILE* a_file, Operation* op);
 
 /**
@@ -298,7 +298,7 @@ DumpOperation(FILE* a_file, Operation* op);
  * @todo   Targetting to be done
  */
 template<typename BasicBlock, typename Operation>
-extern Operation*
+static Operation*
 GetLastOp(BasicBlock& bb);
 
 /**
@@ -324,7 +324,7 @@ GetLastOp(BasicBlock& bb);
  * @todo   Targetting to be done
  */
 template<typename Cfg, typename BasicBlocks>
-extern void
+static void
 RemoveBBs(Cfg& a_cfg, BasicBlocks& a_toRemove, bool isEasy = false);
 
 /**
@@ -347,7 +347,7 @@ RemoveBBs(Cfg& a_cfg, BasicBlocks& a_toRemove, bool isEasy = false);
  *          should traverse the operations in reverse order to be more effecient
  */
 template<typename Cfg, typename BasicBlock, typename Operation>
-extern void
+static void
 RemoveOp(Cfg& a_cfg, BasicBlock& a_bb, Operation* op);
 
 /**
@@ -367,7 +367,7 @@ RemoveOp(Cfg& a_cfg, BasicBlock& a_bb, Operation* op);
  * @todo   Targetting to be done
  */
 template<typename Cfg, typename BasicBlock, typename Operation>
-extern void
+static void
 AppendOp(Cfg& a_cfg, BasicBlock& a_bb, Operation* op);
 
 /**
@@ -384,7 +384,7 @@ AppendOp(Cfg& a_cfg, BasicBlock& a_bb, Operation* op);
  * @todo   Targetting to be done
  */
 template<typename Cfg, typename BasicBlock>
-extern void
+static void
 GetBasicBlocksList(std::list<BasicBlock*>& listOfBBs, Cfg& a_cfg);
 
 /**
@@ -403,7 +403,7 @@ GetBasicBlocksList(std::list<BasicBlock*>& listOfBBs, Cfg& a_cfg);
  * @todo   Targetting to be done
  */
 template<typename Cfg, typename BasicBlock>
-extern void
+static void
 GetPredecessorsList(std::list<BasicBlock*>& listOfPreds, Cfg& a_cfg,
                     const BasicBlock& a_bb);
 
@@ -425,7 +425,7 @@ GetPredecessorsList(std::list<BasicBlock*>& listOfPreds, Cfg& a_cfg,
  * @todo   Targetting to be done
  */
 template<typename Cfg, typename BasicBlock>
-extern BasicBlock*
+static BasicBlock*
 GenAndInsertBB(Cfg& a_cfg, BasicBlock& a_bb, bool bBefore);
 
 /**
@@ -440,7 +440,7 @@ GenAndInsertBB(Cfg& a_cfg, BasicBlock& a_bb, bool bBefore);
  * @todo   Targetting to be done
  */
 template<typename Cfg, typename BasicBlock>
-extern void
+static void
 GetExitBasicBlocks(std::list<BasicBlock*>& exitBBs, Cfg& a_cfg);
 
 /**
@@ -463,7 +463,7 @@ GetExitBasicBlocks(std::list<BasicBlock*>& exitBBs, Cfg& a_cfg);
  * @todo   Targetting to be done
  */
 template<typename Cfg, typename BasicBlock>
-extern bool
+static bool
 IsSimpleBB(const Cfg& a_cfg, BasicBlock& bb);
 
 /**
@@ -484,7 +484,7 @@ IsSimpleBB(const Cfg& a_cfg, BasicBlock& bb);
  */
 
 template<typename Cfg, typename BasicBlock>
-extern bool
+static bool
 IsEntryBB(const Cfg& a_cfg, BasicBlock& bb);
 
 /**
@@ -512,7 +512,7 @@ IsEntryBB(const Cfg& a_cfg, BasicBlock& bb);
  * @todo   Targetting to be done
  */
 template<typename Cfg, typename BasicBlock>
-extern bool
+static bool
 ReplaceSimpleJump(Cfg& a_cfg, BasicBlock& src, BasicBlock& tgt,
                   BasicBlock& origBb);
 

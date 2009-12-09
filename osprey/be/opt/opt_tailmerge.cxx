@@ -117,49 +117,49 @@ namespace TAILMERGE_NAMESPACE
  * @see tailmerge.h
  */
 template<>
-static bool
+bool
 IsEmpty<BB_NODE>(const BB_NODE& a_bb);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static BB_NODE*
+BB_NODE*
 InvalidBasicBlock<BB_NODE>();
 
 /**
  * @see tailmerge.h
  */
 template<>
-static bool
+bool
 AreEquivalent<WN>(WN* op1, WN* op2);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static WN*
+WN*
 GetLastOp<BB_NODE, WN>(BB_NODE& bb);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static void
+void
 DumpOperation<WN>(FILE* a_file, WN* op);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static int
+int
 BasicBlockId<CFG, BB_NODE>(const CFG& cfg, const BB_NODE& bb);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static void
+void
 ReplaceJump<CFG, BB_NODE>(CFG& cfg, BB_NODE& src, BB_NODE& tgt, BB_NODE& origBb,
                           bool jumpHere);
 
@@ -167,21 +167,21 @@ ReplaceJump<CFG, BB_NODE>(CFG& cfg, BB_NODE& src, BB_NODE& tgt, BB_NODE& origBb,
  * @see tailmerge.h
  */
 template<>
-static void
+void
 AddGoto<CFG, BB_NODE>(CFG& cfg, BB_NODE& src, BB_NODE& tgt, bool forExplicit);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static bool
+bool
 IsJump<CFG, BB_NODE, WN>(const WN* op, const CFG* a_cfg, const BB_NODE* tgt);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static void
+void
 RemoveBBs<CFG, CNode<BB_NODE, WN>::BasicBlocks>(CFG& a_cfg, CNode<BB_NODE, WN>::
                                                 BasicBlocks& a_toRemove,
                                                 bool isEasy);
@@ -190,28 +190,28 @@ RemoveBBs<CFG, CNode<BB_NODE, WN>::BasicBlocks>(CFG& a_cfg, CNode<BB_NODE, WN>::
  * @see tailmerge.h
  */
 template<>
-static void
+void
 RemoveOp<CFG, BB_NODE, WN>(CFG& a_cfg, BB_NODE& a_bb, WN* op);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static void
+void
 AppendOp<CFG, BB_NODE, WN>(CFG& a_cfg, BB_NODE& a_bb, WN* op);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static void
+void
 GetBasicBlocksList<CFG, BB_NODE>(std::list<BB_NODE*>& listOfBBs, CFG& a_cfg);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static void
+void
 GetPredecessorsList<CFG, BB_NODE>(std::list<BB_NODE*>& listOfPreds, CFG& a_cfg,
                               const BB_NODE& a_bb);
 
@@ -219,35 +219,35 @@ GetPredecessorsList<CFG, BB_NODE>(std::list<BB_NODE*>& listOfPreds, CFG& a_cfg,
  * @see tailmerge.h
  */
 template<>
-static BB_NODE*
+BB_NODE*
 GenAndInsertBB<CFG, BB_NODE>(CFG& a_cfg, BB_NODE& a_bb, bool bBefore);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static void
+void
 GetExitBasicBlocks<CFG, BB_NODE>(std::list<BB_NODE*>& exitBBs, CFG& a_cfg);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static bool
+bool
 IsSimpleBB<CFG, BB_NODE>(const CFG& cfg, BB_NODE& bb);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static bool
+bool
 IsEntryBB<CFG, BB_NODE>(const CFG& cfg, BB_NODE& bb);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static bool
+bool
 ReplaceSimpleJump<CFG, BB_NODE>(CFG& cfg, BB_NODE& src, BB_NODE& tgt,
                                 BB_NODE& origBb);
 
@@ -979,21 +979,21 @@ IsFallThrough(CFG& a_cfg, BB_NODE* bb)
 namespace TAILMERGE_NAMESPACE
 {
 template<>
-static bool
+bool
 IsEmpty<BB_NODE>(const BB_NODE& a_bb)
 {
     return a_bb.Firststmt() == NULL;
 }
 
 template<>
-static BB_NODE*
+BB_NODE*
 InvalidBasicBlock<BB_NODE>()
 {
     return (BB_NODE*)NULL;
 }
 
 template<>
-static bool
+bool
 AreEquivalent<WN>(WN* wn1, WN* wn2)
 {
     bool result = wn1 == wn2;
@@ -1124,14 +1124,14 @@ AreEquivalent<WN>(WN* wn1, WN* wn2)
 }
 
 template<>
-static WN*
+WN*
 GetLastOp<BB_NODE, WN>(BB_NODE& bb)
 {
     return bb.Laststmt();
 }
 
 template<>
-static void
+void
 DumpOperation<WN>(FILE* a_file, WN* op)
 {
     fdump_tree_no_st(a_file, op);
@@ -1139,14 +1139,14 @@ DumpOperation<WN>(FILE* a_file, WN* op)
 }
 
 template<>
-static int
+int
 BasicBlockId<CFG, BB_NODE>(const CFG& cfg, const BB_NODE& bb)
 {
     return (int)bb.Id();
 }
 
 template<>
-static void
+void
 ReplaceJump<CFG, BB_NODE>(CFG& cfg, BB_NODE& src, BB_NODE& tgt, BB_NODE& origBb,
                           bool jumpHere)
 {
@@ -1175,14 +1175,14 @@ ReplaceJump<CFG, BB_NODE>(CFG& cfg, BB_NODE& src, BB_NODE& tgt, BB_NODE& origBb,
 }
 
 template<>
-static void
+void
 AddGoto<CFG, BB_NODE>(CFG& a_cfg, BB_NODE& src, BB_NODE& tgt, bool forExplicit)
 {
     InternalAddGoto(a_cfg, src, tgt, false);
 }
 
 template<>
-static bool
+bool
 IsJump<CFG, BB_NODE, WN>(const WN* op, const CFG* a_cfg, const BB_NODE* tgt)
 {
     OPCODE opc = WN_opcode(op);
@@ -1195,7 +1195,7 @@ IsJump<CFG, BB_NODE, WN>(const WN* op, const CFG* a_cfg, const BB_NODE* tgt)
 }
 
 template<>
-static void
+void
  RemoveBBs<CFG, CNode<BB_NODE, WN>::BasicBlocks>(CFG& a_cfg, CNode<BB_NODE, WN>::BasicBlocks& a_toRemove,
                                                  bool isEasy)
 {
@@ -1229,7 +1229,7 @@ static void
 }
 
 template<>
-static void
+void
 RemoveOp<CFG, BB_NODE, WN>(CFG& a_cfg, BB_NODE& a_bb, WN* op)
 {
     WN* it;
@@ -1278,7 +1278,7 @@ RemoveOp<CFG, BB_NODE, WN>(CFG& a_cfg, BB_NODE& a_bb, WN* op)
 }
 
 template<>
-static void
+void
 AppendOp<CFG, BB_NODE, WN>(CFG& a_cfg, BB_NODE& a_bb, WN* op)
 {
     a_cfg.Append_wn_in(&a_bb, op);
@@ -1297,7 +1297,7 @@ AppendOp<CFG, BB_NODE, WN>(CFG& a_cfg, BB_NODE& a_bb, WN* op)
 }
 
 template<>
-static void
+void
 GetBasicBlocksList<CFG, BB_NODE>(std::list<BB_NODE*>& listOfBBs, CFG& a_cfg)
 {
     for(BB_NODE* tmp = a_cfg.First_bb(); tmp; tmp = tmp->Next())
@@ -1310,7 +1310,7 @@ GetBasicBlocksList<CFG, BB_NODE>(std::list<BB_NODE*>& listOfBBs, CFG& a_cfg)
 }
 
 template<>
-static void
+void
 GetPredecessorsList<CFG, BB_NODE>(std::list<BB_NODE*>& listOfPreds, CFG& a_cfg,
                                const BB_NODE& a_bb)
 {
@@ -1324,7 +1324,7 @@ GetPredecessorsList<CFG, BB_NODE>(std::list<BB_NODE*>& listOfPreds, CFG& a_cfg,
 }
 
 template<>
-static BB_NODE*
+BB_NODE*
 GenAndInsertBB<CFG, BB_NODE>(CFG& a_cfg, BB_NODE& a_bb, bool bBefore)
 {
     // Do not know the kind!!!
@@ -1334,7 +1334,7 @@ GenAndInsertBB<CFG, BB_NODE>(CFG& a_cfg, BB_NODE& a_bb, bool bBefore)
 }
 
 template<>
-static void
+void
 GetExitBasicBlocks<CFG, BB_NODE>(std::list<BB_NODE*>& exitBBs, CFG& a_cfg)
 {
     if(a_cfg.Exit_bb())
@@ -1372,7 +1372,7 @@ GetExitBasicBlocks<CFG, BB_NODE>(std::list<BB_NODE*>& exitBBs, CFG& a_cfg)
 }
 
 template<>
-static bool
+bool
 IsSimpleBB<CFG, BB_NODE>(const CFG& cfg, BB_NODE& bb)
 {
     bool result = bb.Kind() == BB_GOTO;
@@ -1390,7 +1390,7 @@ IsSimpleBB<CFG, BB_NODE>(const CFG& cfg, BB_NODE& bb)
 }
 
 template<>
-static bool
+bool
 IsEntryBB<CFG, BB_NODE>(const CFG& a_cfg, BB_NODE& bb)
 {
     bool result = false;
@@ -1399,7 +1399,7 @@ IsEntryBB<CFG, BB_NODE>(const CFG& a_cfg, BB_NODE& bb)
 }
 
 template<>
-static bool
+bool
 ReplaceSimpleJump<CFG, BB_NODE>(CFG& cfg, BB_NODE& src, BB_NODE& tgt,
                                 BB_NODE& origBb)
 {

@@ -86,49 +86,49 @@ namespace TAILMERGE_NAMESPACE
  * @see tailmerge.h
  */
 template<>
-static bool
+bool
 IsEmpty<BB>(const BB& a_bb);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static BB*
+BB*
 InvalidBasicBlock<BB>();
 
 /**
  * @see tailmerge.h
  */
 template<>
-static bool
+bool
 AreEquivalent<OP>(OP* op1, OP* op2);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static OP*
+OP*
 GetLastOp<BB, OP>(BB& bb);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static void
+void
 DumpOperation<OP>(FILE* a_file, OP* op);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static int
+int
 BasicBlockId<PU, BB>(const PU& pu, const BB& bb);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static void
+void
 ReplaceJump<PU, BB>(PU& pu, BB& src, BB& tgt, BB& origBb,
                       bool jumpHere);
 
@@ -136,49 +136,49 @@ ReplaceJump<PU, BB>(PU& pu, BB& src, BB& tgt, BB& origBb,
  * @see tailmerge.h
  */
 template<>
-static void
+void
 AddGoto<PU, BB>(PU& pu, BB& src, BB& tgt, bool forExplicit);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static bool
+bool
 IsJump<PU, BB, OP>(const OP* op, const PU*, const BB*);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static void
+void
 RemoveBBs<PU, CNode<BB, OP>::BasicBlocks>(PU& a_pu, CNode<BB, OP>::BasicBlocks& a_toRemove, bool isEasy);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static void
+void
 RemoveOp<PU, BB, OP>(PU& a_pu, BB& a_bb, OP* op);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static void
+void
 AppendOp<PU, BB, OP>(PU& a_pu, BB& a_bb, OP* op);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static void
+void
 GetBasicBlocksList<PU, BB>(std::list<BB*>& listOfBBs, PU& a_pu);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static void
+void
 GetPredecessorsList<PU, BB>(std::list<BB*>& listOfPreds, PU& a_cfg,
                               const BB& a_bb);
 
@@ -186,35 +186,35 @@ GetPredecessorsList<PU, BB>(std::list<BB*>& listOfPreds, PU& a_cfg,
  * @see tailmerge.h
  */
 template<>
-static BB*
+BB*
 GenAndInsertBB<PU, BB>(PU& a_cfg, BB& a_bb, bool bBefore);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static void
+void
 GetExitBasicBlocks<PU, BB>(std::list<BB*>& exitBBs, PU& a_cfg);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static bool
+bool
 IsSimpleBB<PU, BB>(const PU& a_cfg, BB& bb);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static bool
+bool
 IsEntryBB<PU, BB>(const PU& a_cfg, BB& bb);
 
 /**
  * @see tailmerge.h
  */
 template<>
-static bool
+bool
 ReplaceSimpleJump<PU, BB>(PU& a_cfg, BB& src, BB& tgt, BB& origBb);
 } // End TAILMERGE_NAMESPACE
 
@@ -435,21 +435,21 @@ namespace TAILMERGE_NAMESPACE
 {
 
 template<>
-static bool
+bool
 IsEmpty<BB>(const BB& a_bb)
 {
     return BB_length(&a_bb) == 0;
 }
 
 template<>
-static BB*
+BB*
 InvalidBasicBlock<BB>()
 {
     return (BB*)NULL;
 }
 
 template<>
-static bool
+bool
 AreEquivalent<OP>(OP* op1, OP* op2)
 {
     bool result = op1 == op2;
@@ -515,7 +515,7 @@ AreEquivalent<OP>(OP* op1, OP* op2)
 }
 
 template<>
-static void
+void
 RemoveBBs<PU, CNode<BB, OP>::BasicBlocks>
  (PU& a_pu, CNode<BB, OP>::BasicBlocks& a_toRemove, bool isEasy)
 {
@@ -542,7 +542,7 @@ RemoveBBs<PU, CNode<BB, OP>::BasicBlocks>
 }
 
 template<>
-static bool
+bool
 IsJump<PU, BB, OP>(const OP* op, const PU* a_pu, const BB* tgt)
 {
     // Warning, not the same meaning as OP_xfer && OP_cond
@@ -551,7 +551,7 @@ IsJump<PU, BB, OP>(const OP* op, const PU* a_pu, const BB* tgt)
 }
 
 template<>
-static void
+void
 AddGoto<PU, BB>(PU& pu, BB& src, BB& tgt, bool forExplicit)
 {
     Add_Goto(&src, &tgt);
@@ -581,7 +581,7 @@ AddGoto<PU, BB>(PU& pu, BB& src, BB& tgt, bool forExplicit)
 }
 
 template<>
-static void
+void
 ReplaceJump<PU, BB>(PU& pu, BB& src, BB& tgt, BB& origBb,
                       bool jumpHere)
 {
@@ -602,28 +602,28 @@ ReplaceJump<PU, BB>(PU& pu, BB& src, BB& tgt, BB& origBb,
 }
 
 template<>
-static int
+int
 BasicBlockId<PU, BB>(const PU& pu, const BB& bb)
 {
     return BB_id(&bb);
 }
 
 template<>
-static void
+void
 DumpOperation<OP>(FILE* a_file, OP* op)
 {
     Print_OP_No_SrcLine(op);
 }
 
 template<>
-static OP*
+OP*
 GetLastOp<BB, OP>(BB& bb)
 {
     return BB_last_op(&bb);
 }
 
 template<>
-static void
+void
 RemoveOp<PU, BB, OP>(PU& a_pu, BB& a_bb, OP* op)
 {
     BB_Remove_Op(&a_bb, op);
@@ -632,7 +632,7 @@ RemoveOp<PU, BB, OP>(PU& a_pu, BB& a_bb, OP* op)
 }
 
 template<>
-static void
+void
 AppendOp<PU, BB, OP>(PU& a_pu, BB& a_bb, OP* op)
 {
     // Here OP_bb(op) contains the original basic block of op
@@ -665,7 +665,7 @@ AppendOp<PU, BB, OP>(PU& a_pu, BB& a_bb, OP* op)
 }
 
 template<>
-static void
+void
 GetBasicBlocksList<PU, BB>(std::list<BB*>& listOfBBs, PU& a_pu)
 {
     BB* bb;
@@ -676,7 +676,7 @@ GetBasicBlocksList<PU, BB>(std::list<BB*>& listOfBBs, PU& a_pu)
 }
 
 template<>
-static void
+void
 GetPredecessorsList<PU, BB>(std::list<BB*>& listOfPreds, PU& a_cfg,
                               const BB& a_bb)
 {
@@ -688,7 +688,7 @@ GetPredecessorsList<PU, BB>(std::list<BB*>& listOfPreds, PU& a_cfg,
 }
 
 template<>
-static BB*
+BB*
 GenAndInsertBB<PU, BB>(PU& a_cfg, BB& a_bb, bool bBefore)
 {
     BB* fixedBb = &a_bb;
@@ -719,7 +719,7 @@ GenAndInsertBB<PU, BB>(PU& a_cfg, BB& a_bb, bool bBefore)
 
 
 template<>
-static void
+void
 GetExitBasicBlocks<PU, BB>(std::list<BB*>& exitBBs, PU& a_cfg)
 {
     BB_LIST* bbList;
@@ -730,7 +730,7 @@ GetExitBasicBlocks<PU, BB>(std::list<BB*>& exitBBs, PU& a_cfg)
 }
 
 template<>
-static bool
+bool
 IsSimpleBB<PU, BB>(const PU& a_cfg, BB& bb)
 {
     // bb must not be part of a hwloop or something else
@@ -749,7 +749,7 @@ IsSimpleBB<PU, BB>(const PU& a_cfg, BB& bb)
 }
 
 template<>
-static bool
+bool
 IsEntryBB<PU, BB>(const PU& a_cfg, BB& bb)
 {
     bool result = BB_entry(&bb);
@@ -757,7 +757,7 @@ IsEntryBB<PU, BB>(const PU& a_cfg, BB& bb)
 }
 
 template<>
-static bool
+bool
 ReplaceSimpleJump<PU, BB>(PU& a_cfg, BB& src, BB& tgt, BB& origBb)
 {
     bool result = true;

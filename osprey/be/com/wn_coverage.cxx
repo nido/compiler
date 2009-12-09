@@ -6,6 +6,9 @@
 // and finding a minimun edge profiling come from gcc 3.4.4 source
 // distribution (see profile.c and coverage.c in the gcc 3.4.4 source
 // distrib). For more details contact thierry.bidault@st.com
+#if __GNUC__ >=3 || defined(_MSC_VER)
+#include <climits>	// For *MAX 
+#endif
 #include "W_alloca.h"
 #include "wn.h"
 #include "wn_coverage.h"
