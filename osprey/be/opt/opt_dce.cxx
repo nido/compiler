@@ -2096,6 +2096,17 @@ DCE::Required_stmt( const STMTREP *stmt ) const
     if (stmt->Bb()->Kind() == BB_WHILEEND &&
 	(stmt->Bb()->Loop()->Flags() & LOOP_PREOPT))
       return TRUE;
+    // FdF 20091127: Check if the condition to exit the loop is
+    // invariant in the loop, in which case the loop maybe an infinite
+    // loop. Infinite loops must not be removed.
+    if (((opr == OPR_TRUEBR) || (opr == OPR_FALSEBR)) &&
+	(stmt->Bb()->Kind() == BB_REPEATEND)) {
+      if (!_cfg->Loops_valid())
+	_cfg->Analyze_loops();
+      if ((stmt->Bb()->Loop() != NULL) &&
+	  (stmt->Bb()->Loop()->Invariant_cr(stmt->Rhs())))
+	return TRUE;
+    }
 #endif
     return ( !Enable_aggressive_dce() );
 

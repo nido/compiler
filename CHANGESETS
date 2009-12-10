@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Dec 10 16:28:20 CET 2009
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83629
+
+Description:
+------------
+	* [trunk] Fix for bug #83629: Infinite loop removed by the compiler.
+	Deliver fixes/codex-83629 rev #25469 with authorization branch #83636
+
+
+Modified Files:
+---------------
+	M       osprey/be/opt/opt_dce.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25465 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83629@25469 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25465 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83629@25469" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/opt/opt_dce.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_dce.cxx?p2=branches/fixes/codex-83629/osprey/be/opt/opt_dce.cxx&r1=25465&r2=25469&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Dec 10 14:54:30 CET 2009
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
