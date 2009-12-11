@@ -75,6 +75,7 @@ void Configure_CG_Target() {
   LOCS_Enable_Bundle_Formation = TRUE;
 
   // GCM settings: ON by default => See cgdriver for specification
+  GCM_Eager_Ptr_Deref = FALSE;
 
   // Reorder while LRA
   LRA_do_reorder = FALSE;
