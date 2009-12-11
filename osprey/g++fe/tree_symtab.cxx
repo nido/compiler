@@ -35,7 +35,6 @@
 
 /* translate gnu decl trees to symtab references */
 
-
 #include "namespace_trans.h"
 #include "W_values.h"
 #include "defs.h"
@@ -2153,7 +2152,17 @@ Create_ST_For_Tree (tree decl_node)
         WEAK_WORKAROUND(st) != WEAK_WORKAROUND_dont_make_weak &&
         // Don't make builtin functions weak.  Bug 9534.
         !(TREE_CODE(decl_node) == FUNCTION_DECL &&
+#ifdef TARG_ST
+          (DECL_BUILT_IN(decl_node)
+	   // Don't make C++ runtime support functions weak (Codex bug #83532)
+	   // These function are seen as the only compiler generated function 
+	   // with external linkage and "C" linkage
+	   // Example : all __cxa_ functions in libsupc++/libstdc++
+	   // Refer to gnu/cp/decl.c::build_library_fn_1
+	   || (DECL_ARTIFICIAL(decl_node) && DECL_EXTERNAL(decl_node) && (DECL_LANGUAGE(decl_node)==lang_c))))) {
+#else
           DECL_BUILT_IN(decl_node))) {
+#endif
       Set_ST_is_weak_symbol (st);
       WEAK_WORKAROUND(st) = WEAK_WORKAROUND_made_weak;
     }

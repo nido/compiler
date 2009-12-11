@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Dec 11 16:09:56 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83532
+
+Description:
+------------
+	* [trunk] Fix for bug #83532: C++ compiler run time support is wrongly given the .weak attribute.
+	Deliver fixes/codex-83532 rev #25501 with authorization branch #83534
+
+
+Modified Files:
+---------------
+	M       osprey/g++fe/tree_symtab.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25499 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83532@25501 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25499 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83532@25501" 
+
+Diff links to modified files:
+-----------------------------
+osprey/g++fe/tree_symtab.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/tree_symtab.cxx?p2=branches/fixes/codex-83532/osprey/g++fe/tree_symtab.cxx&r1=25499&r2=25501&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Dec 11 15:44:48 CET 2009
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
