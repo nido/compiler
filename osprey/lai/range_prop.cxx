@@ -295,8 +295,20 @@ unneeded_extension (RangeAnalysis &range_analysis,
   
   Range::RangeSign sign = is_signed ? Range::Signed : Range::Unsigned;
   LRange_p ropnd;
-  INT shiftcount = abs ((INT32)leftshift - (INT32)rightshift);
+  const UINT shiftcount = abs ((INT32)leftshift - (INT32)rightshift);
   UINT opnd_width = TN_bitwidth (opnd);
+
+  // We do not change the implementation-defined behaviour of shifts
+  // This may happen if the value of the right operand is negative
+  // Or is greater than or equal to the width of the left operand,
+  // For instance such shift may arise from intrinsics 
+  // For which the user may expect instruction semantic
+  // This could be refined on a target specific basis
+  // With detailed knowledge of the instructions semantic
+  if ((leftshift >= opnd_width) ||
+      (rightshift >= opnd_width))
+    return FALSE ;
+
   if (range_analysis.Forward_Valid ())
     ropnd = range_analysis.getLattice()->makeRangeWidth (sign, opnd_width - leftshift);
   else if (range_analysis.Backward_Valid ())

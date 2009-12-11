@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Dec 11 15:02:57 CET 2009
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83465
+
+Description:
+------------
+	* [trunk] Fix for bug #83465: [CG,Range Analysis] Assertion 'Attempt to create an invalid range' (DVD/ACC) (st200, -O3, -ipa, st240).
+	Deliver fixes/codex-83465 rev #25486 with authorization branch #83513
+
+
+Modified Files:
+---------------
+	M       osprey/lai/range_prop.cxx
+	M       osprey/common/util/range.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25471 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83465@25486 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25471 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83465@25486" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/range_prop.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/range_prop.cxx?p2=branches/fixes/codex-83465/osprey/lai/range_prop.cxx&r1=25471&r2=25486&roottype=svn&root=open64&diff_format=h
+osprey/common/util/range.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/range.cxx?p2=branches/fixes/codex-83465/osprey/common/util/range.cxx&r1=25471&r2=25486&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Dec 10 16:28:20 CET 2009
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
