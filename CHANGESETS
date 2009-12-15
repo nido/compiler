@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Dec 15 16:52:01 CET 2009
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-84129
+
+Description:
+------------
+	* [trunk] fix for bug #84129: Bug in STxP70 V3 Functional Verification Pattern: hwloop config. Deliver fixes/codex-84129 rev #25533 with authorization branch #84131
+
+
+Modified Files:
+---------------
+	M       osprey/driver/stxp70_options.i
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25519 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-84129@25533 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25519 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-84129@25533" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/stxp70_options.i	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/stxp70_options.i?p2=branches/fixes/codex-84129/osprey/driver/stxp70_options.i&r1=25519&r2=25533&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Dec 11 16:09:56 CET 2009
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
