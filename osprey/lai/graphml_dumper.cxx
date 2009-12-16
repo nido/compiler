@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "graphml_dumper.h"
 #include "mempool.h"
@@ -643,6 +644,8 @@ void graphML_DumpCFG(BB* bb, const char* suffix) {
 	FILE *fp;
 	graphMLGraph* graphML_graph= NULL;
 	char filename[500];
+	char *tmp_suffix;
+	char *tmp_counter;
 	MEM_POOL_Initialize(&graphml_pool, "graphml temporary memory", FALSE);
 	MEM_POOL_Push(&graphml_pool);
 	if (!pu_info_name || pu_info != Current_PU_Info) {
@@ -655,7 +658,14 @@ void graphML_DumpCFG(BB* bb, const char* suffix) {
 	sprintf(filename, "%d_%d_%s",pu_count,phase_count,pu_info_name);
 	if (suffix) {
 		strcat(filename, "_");
-		strcat(filename, suffix);
+		tmp_suffix=strdup(suffix);
+		tmp_counter=tmp_suffix;
+		while(*tmp_counter != '\0') {
+			if (! isalnum(*tmp_counter)) *tmp_counter='_';
+			tmp_counter++;
+		}
+		strcat(filename, tmp_suffix);
+		free(tmp_suffix);
 	}
 	strcat(filename, ".graphml");
 	fp = fopen(filename, "w");
