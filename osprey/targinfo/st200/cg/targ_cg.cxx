@@ -2151,6 +2151,12 @@ find_matching_template (ISA_EXEC_UNIT_PROPERTY bundle_props[ISA_BUNDLE_MAX_SLOTS
       INT bundle_i = 0;
       INT template_i = 0;
       while (bundle_i < n_bundle_props) {
+        // [vcdv] loop early exits added to avoid accessing 
+        // t_props[template_i] with template_i>=n_t_props
+        if (template_i == n_t_props) {
+          bundle_i = n_bundle_props+1;
+          break;
+        }
 	while (bundle_props[bundle_i] < t_props[template_i]) {
 	  template_i++;
 	  if (template_i == n_t_props) {
@@ -2167,7 +2173,7 @@ find_matching_template (ISA_EXEC_UNIT_PROPERTY bundle_props[ISA_BUNDLE_MAX_SLOTS
 	}
 	bundle_i++;
 	template_i++;
-      }
+     }
       if (bundle_i == n_bundle_props) {
 	// Match found.
 	return t;

@@ -148,7 +148,8 @@ extern void ISA_Bundle_Type_Create ( const char* name,
 				     const char* asm_name,
 				     int slot_count,
                                      ISA_BUNDLE_PACK_INFO bundle_pack_info,
-                                     unsigned long long pattern);
+                                     unsigned long long pattern,
+                                     int valid_bundle_archi_mask);
 extern void Slot (int slot_index, ISA_EXEC_UNIT_TYPE type);
 extern void Stop (int slot_index);
 

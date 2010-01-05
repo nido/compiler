@@ -198,6 +198,9 @@ struct isa_bundle_type {
   int pack_index;
   unsigned long long pack_code;
   ISA_BUNDLE_PACK_INFO bundle_pack_info;
+  // this mask can be used to check whether this bundle definition
+  // is available for a given architecture.
+  int valid_bundle_archi_mask;
 };
 
 #ifdef TARG_ST
@@ -462,7 +465,7 @@ void ISA_BUNDLE_Dyn_Set_Slot_Count ( int slot_count )
 /////////////////////////////////////
 void ISA_Bundle_Type_Create (const char* name, const char* asm_name, 
 			     int no_slots, ISA_BUNDLE_PACK_INFO bundle_pack_info,
-                             unsigned long long pattern
+                             unsigned long long pattern, int bundle_archi_mask
  )
 /////////////////////////////////////
 //  See interface description.
@@ -475,6 +478,7 @@ void ISA_Bundle_Type_Create (const char* name, const char* asm_name,
 #ifdef TARG_ST
   cur_type->bias = 0;
   cur_type->base = 8;
+  cur_type->valid_bundle_archi_mask = bundle_archi_mask;
 #endif
   cur_type->slot_count = no_slots;
   cur_type->pack_code = pattern;
@@ -867,6 +871,7 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
                    "  mUINT64 pack_code;\n"
 #ifdef TARG_ST
                    "  ISA_EXEC_MASK slot_mask;\n"
+                   "  mUINT32 valid_bundle_archi_mask;\n"
 #else
                    "  mUINT64 slot_mask;\n"
 #endif
@@ -955,7 +960,8 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
     for (i = 1; i < slot_mask_words; i++) {
       fprintf(cfile, ", " PRINTF_LONGLONG_HEXA "", slot_mask.val[i]);
     }
-    fprintf(cfile, " }\n /* slot_mask */ },\n");
+    fprintf(cfile, " }\n /* slot_mask */     , %d /* valid_bundle_archi_mask */},\n", curr_exec_type->valid_bundle_archi_mask);
+
 #else
     fprintf(cfile, " " PRINTF_LONGLONG_FORMAT( "0x", "0*", "xULL" ) "\n  },\n", slot_mask_digits, slot_mask);
 #endif
@@ -1146,6 +1152,14 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
                  "}\n");
 
 #ifdef TARG_ST
+  fprintf (hfile, "\ninline INT "
+                   "ISA_EXEC_BUNDLE_activated(INT bundle, PROCESSOR proc)\n"
+                 "{\n"
+		 "  BE_EXPORTED extern const ISA_BUNDLE_INFO ISA_BUNDLE_info[];\n"
+		 "  const ISA_BUNDLE_INFO *info = ISA_BUNDLE_info + bundle;\n"
+                 "  return (info->valid_bundle_archi_mask & (1<<proc));\n"
+                 "}\n");
+
   fprintf (hfile, "\ninline INT "
                    "ISA_EXEC_Slot_Count(INT bundle)\n"
                  "{\n"
@@ -1919,6 +1933,8 @@ void ISA_Bundle_End(void)
   if(gen_static_code) {
     fprintf(cfile,"#include \"targ_isa_subset.h\"\n\n");
   }
+  fprintf(hfile,"#include \"targ_proc.h\"\n\n");
+    
 
   Emit_Header  (hfile, FNAME_TARG_ISA_BUNDLE, interface,extname);
   Emit_C_Header(cfile);           // emit "C" directive
