@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jan 06 11:02:28 CET 2010
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85222
+
+Description:
+------------
+	* [trunk] Fix for bug #85222: [BE] Segmentation fault in Assembly phase. (st200, libstdc++).
+	Deliver fixes/codex-85222 rev #25646 with authorization branch #85227
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cgemit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25644 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85222@25646 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25644 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85222@25646" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgemit.cxx?p2=branches/fixes/codex-85222/osprey/lai/cgemit.cxx&r1=25644&r2=25646&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jan 06 10:48:28 CET 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

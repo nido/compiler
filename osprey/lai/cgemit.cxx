@@ -122,7 +122,7 @@
 
 #ifdef TARG_ST
 /* (cbr) demangler interface */
-#include "../gnu_common/include/demangle.h"
+#include <cxxabi.h>
 
 /* [SC] For ST_has_inito */
 #include "be_symtab.h"
@@ -3773,10 +3773,15 @@ put_TN_comment (
     }
     else {
 #ifdef TARG_ST
-      /* (cbr) demangle name */
-      char *cp_name = cplus_demangle(ST_name(TN_var(t)), DMGL_NO_OPTS);
-      if (cp_name)
-        *comment = vstr_concat(*comment, cp_name);
+      if (PU_src_lang(Get_Current_PU()) == PU_CXX_LANG) {
+	/* (cbr) demangle name */
+	int status_cp_name ;
+	char *cp_name =  abi::__cxa_demangle(ST_name(TN_var(t)), NULL, NULL, &status_cp_name) ;
+	if (!status_cp_name && cp_name) {
+	  *comment = vstr_concat(*comment, cp_name);
+	  ::free(cp_name) ;
+	}
+      }
       else
 #endif
       *comment = vstr_concat (*comment, ST_name(TN_var(t)));
@@ -4417,11 +4422,15 @@ extern BOOL Hack_For_Printing_Push_Pop (OP *op, FILE *file);
 	ST *call_sym = CALLINFO_call_st(ANNOT_callinfo(ant));
 	if (call_sym != NULL) {
 #ifdef TARG_ST
-          /* (cbr) demangle name */
-          char *cp_name = cplus_demangle(ST_name(call_sym), DMGL_NO_OPTS);
-          if (cp_name)
-            comment = vstr_concat(comment, cp_name);
-          else
+      if (PU_src_lang(Get_Current_PU()) == PU_CXX_LANG) {
+	/* (cbr) demangle name */
+	int status_cp_name ;
+	char *cp_name =  abi::__cxa_demangle(ST_name(call_sym), NULL, NULL, &status_cp_name) ;
+	if (!status_cp_name && cp_name) {
+	  comment = vstr_concat(comment, cp_name);
+	  ::free(cp_name) ;
+	}
+      }
 #endif
             comment = vstr_concat(comment, ST_name(call_sym));
 	}
@@ -6987,9 +6996,14 @@ EMT_Emit_PU (
 #endif
 #ifdef TARG_ST
       /* (cbr) demangle name */
-      char *cp_name = cplus_demangle(ST_name(pu), DMGL_NO_OPTS);
-      if (cp_name)
-        fprintf ( Asm_File, "\n\t%s Program Unit: %s\n", ASM_CMNT_LINE, cp_name );
+      if (PU_src_lang(Get_Current_PU()) == PU_CXX_LANG) {
+	int status_cp_name ;
+	char *cp_name =  abi::__cxa_demangle(ST_name(pu), NULL, NULL, &status_cp_name) ;
+	if (!status_cp_name && cp_name) {
+	  fprintf ( Asm_File, "\n\t%s Program Unit: %s\n", ASM_CMNT_LINE, cp_name );
+	  ::free(cp_name) ;
+	}
+      }
       else
 #endif
         fprintf ( Asm_File, "\n\t%s Program Unit: %s\n", ASM_CMNT_LINE, ST_name(pu) );
