@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jan 06 10:48:28 CET 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85026
+
+Description:
+------------
+	* [trunk] Fix for bug #85026: Incorrect assumption on loop trip count when using LOOPMOD.
+	Deliver fixes/codex-85026 rev #25641 with authorization branch #85027
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cg_loop.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25632 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85026@25641 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25632 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85026@25641" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cg_loop.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_loop.cxx?p2=branches/fixes/codex-85026/osprey/lai/cg_loop.cxx&r1=25632&r2=25641&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jan 05 15:51:37 CET 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

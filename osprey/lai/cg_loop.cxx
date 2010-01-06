@@ -5808,7 +5808,10 @@ void Unroll_Do_Loop(CG_LOOP& cl, UINT32 ntimes)
 	// needed. A LOOPMOD says a loop runs a multiple of modulus
 	// times, so a do-loop will run at least modulus times. When
 	// ntimes<=modulus, the unrolled loop will run at least once.
-	gen_unrolled_loop_guard = FALSE;
+
+	// FdF 20091215: loop min trip count for LOOPMOD(n,m) is m,
+	// not n+m. This is already captured in LOOPINFO_trip_min
+	// gen_unrolled_loop_guard = FALSE;
       }
 
       else /* ntimes > modulus */ {
