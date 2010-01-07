@@ -909,7 +909,7 @@ build_isa_binutils.o: targ_isa_binutils.c
 
 targ_isa_bundle.o: targ_isa_bundle.c
 targ_isa_bundle.c: targ_isa_bundle.h targ_isa_subset.h
-targ_isa_bundle.h: isa_bundle_gen$(BEXE) topcode.h targ_isa_pack.h
+targ_isa_bundle.h: isa_bundle_gen$(BEXE) topcode.h targ_isa_pack.h targ_proc.h
 	$(RUN) ./isa_bundle_gen$(BEXE)
 
 isa_bundle_gen$(BEXE): gen_util.o isa_bundle_gen.o gen_util.o isa_bundle.o \

@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jan 07 09:49:29 CET 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85783
+
+Description:
+------------
+	* [trunk] Fix for bug #85783: compiler does not compile under solaris.
+	Deliver fixes/codex-85783 rev #25664 with authorization branch #85799
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/Makefile.gbase
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25648 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85783@25664 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25648 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85783@25664" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/Makefile.gbase?p2=branches/fixes/codex-85783/osprey/targinfo/Makefile.gbase&r1=25648&r2=25664&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jan 06 11:02:28 CET 2010
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
