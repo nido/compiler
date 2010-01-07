@@ -694,10 +694,9 @@ main (int argc, char *argv[])
 	      fprintf(output, "STMicroelectronics Compilers: Version %s\n", compiler_version);
 	      fprintf(output, "Pro64 OpenSource 0.01.0-13\n");
 	      fprintf(output, "Thread model: %s\n", thread_model) ;
-	      if (invoked_lang == L_CC)
-		  fprintf(output, "using g++ version 3.3.3 front end\n");
-	      else
-		  fprintf(output, "using gcc version 3.3.3 front end\n");
+	      fprintf(output, "%s front end version 3.3.3 %s\n",
+ 		      (invoked_lang == L_CC ? "g++" : "gcc"),
+		      compiler_version);
 	  } else {
 	      if (invoked_lang == L_CC) 
 		  fprintf(output, "3.3.3\n");
@@ -838,7 +837,11 @@ main (int argc, char *argv[])
 	    source_lang = get_source_lang(source_kind);
 	  } else if (show_version) {	/* just exit */
 	    exit(RC_OKAY);
+#ifdef TARG_ST
+	  } else if (! option_was_seen(O_l) && ! linker_W_option_was_seen) {
+#else
 	  } else {
+#endif
 	    error("no source or object file given");
 	  }
 	}

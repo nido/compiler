@@ -66,4 +66,7 @@ extern void add_script_file (string file);
    -Wz,XXX options */
 extern string_list_t *objects_ld_r;
 extern string_list_t *objects_ld_final;
+/* [SC]: Specific flag to say -Wl,* was seen */
+extern boolean linker_W_option_was_seen;
+
 #endif

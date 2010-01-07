@@ -69,6 +69,10 @@ string optargs = NULL;		/* argument to option, visible externally */
 int optargd = 0;		/* argument to option, visible externally */
 static int optindex = 1;	/* current index into option */
 
+#ifdef TARG_ST
+boolean linker_W_option_was_seen = FALSE;
+#endif
+
 /* are we at last character of arg string? */
 #define is_last_char(argv,argi)	(argv[*argi][optindex+1] == '\0')
 
@@ -420,6 +424,7 @@ parse_W_option (char **argv, int *argi)
 	    static boolean previous_was_map = FALSE;
 	    static boolean previous_was_T = FALSE;
 	    string optionname = get_option_name(flag);
+	    linker_W_option_was_seen = TRUE;
 	    /* TB: Parse different -Wl,* options*/
 	    if ( (strcmp(optionname,"-shared") == 0) ||
 		 (strcmp(optionname,"--shared") == 0))
