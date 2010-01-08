@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jan 08 14:18:37 CET 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85881
+
+Description:
+------------
+	* [trunk] Fix for bug #85881: __lzcnth (16 bit lzc) is completly wrong.
+	Deliver fixes/codex-85881 rev #25693 with authorization branch #85936
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25684 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85881@25693 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25684 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85881@25693" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/expand/exp_intrinsic.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/expand/exp_intrinsic.cxx?p2=branches/fixes/codex-85881/osprey/targinfo/stxp70/expand/exp_intrinsic.cxx&r1=25684&r2=25693&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jan 07 11:43:53 CET 2010
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
