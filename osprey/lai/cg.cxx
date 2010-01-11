@@ -551,6 +551,13 @@ CG_Generate_Code(
     Check_for_Dump ( TP_FIND_GLOB, NULL );
   }
 
+#ifdef TARG_ST
+  // FdF 20090826: At this point, we can analyze the calls to look for
+  // the input and output parameters.
+  if (PU_Has_Calls && CG_enable_ssa)
+    SSA_init_call_parms(region ? REGION_get_rid(rwn) : NULL, region);
+#endif
+
   if (CG_enable_peephole) {
     Set_Error_Phase("Extended Block Optimizer");
     Start_Timer(T_EBO_CU);
@@ -705,7 +712,7 @@ CG_Generate_Code(
       // Precondition: code in PSI-SSA, live-analysis ok, dominator freed.
       Set_Error_Phase("Out of SSA Translation");
       Start_Timer(T_OutSSA_CU);
-      SSA_Deconstruct(region ? REGION_get_rid(rwn) : NULL, region);
+      SSA_Exit(region ? REGION_get_rid(rwn) : NULL, region);
       Stop_Timer(T_OutSSA_CU);
       GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid(rwn) : NULL);
       Check_for_Dump(TP_SSA, NULL);

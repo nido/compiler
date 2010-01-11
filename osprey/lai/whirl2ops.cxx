@@ -1579,6 +1579,12 @@ Handle_Call_Site (
   call_info = TYPE_PU_ALLOC (CALLINFO);
   CALLINFO_call_st(call_info) = call_st;
   CALLINFO_call_wn(call_info) = call;
+#ifdef TARG_ST
+  CALLINFO_call_opnds(call_info) = 0;
+  CALLINFO_call_results(call_info) = 0;
+  CALLINFO_call_opnd(call_info) = NULL;
+  CALLINFO_call_result(call_info) = NULL;
+#endif
   BB_Add_Annotation (Cur_BB, ANNOT_CALLINFO, call_info);
 
   region_stack_eh_set_has_call();

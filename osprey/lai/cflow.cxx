@@ -4504,6 +4504,12 @@ OP_equiv_for_merging(OP *op1, OP *op2, BS *TNs_to_be_unified) {
       (OP_results(op1) != OP_results(op2)))
     return FALSE;
 
+  // FdF 20090824: Merge operations only if none or both belong to the
+  // prologue
+  if ((OP_prologue(op1) && !OP_prologue(op2)) ||
+      (!OP_prologue(op1) && OP_prologue(op2)))
+    return FALSE;
+
   for (i = 0; i < OP_opnds(op1); i ++) {
     // FdF 20091020: Before register allocation, do not move
     // operations that use a dedicated register that may contain the

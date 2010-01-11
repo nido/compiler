@@ -3679,3 +3679,10 @@ CGTARG_Is_Register_Quad(TN *tn1, TN *tn2, TN *tn3, TN *tn4)
 {
   return FALSE;
 }
+
+#ifdef TARG_ST
+BOOL
+CGTARG_SSA_dedicated_candidate_tn(TN *tn) {
+  return TRUE;
+}
+#endif

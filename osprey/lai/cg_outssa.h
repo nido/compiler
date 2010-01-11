@@ -35,7 +35,7 @@
  */
 
 
-extern void SSA_Deconstruct (RID *rid, BOOL region);
+extern void SSA_Exit (RID *rid, BOOL region);
 extern void SSA_Collect_Info (RID *rid, BOOL region, INT phase);
-extern INT32 CG_ssa_coalescing;
 
+OP *PCOPY_add_copy(OP* par_copy, TN *dst, TN *src);

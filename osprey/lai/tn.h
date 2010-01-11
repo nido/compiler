@@ -504,7 +504,9 @@ CG_EXPORTED extern  TN *Build_Dedicated_TN ( ISA_REGISTER_CLASS rclass, REGISTER
 #define TN_is_true_pred(r) (TN_register_and_class(r) == CLASS_AND_REG_true)
 #define TN_is_fzero_reg(r) (TN_register_and_class(r) == CLASS_AND_REG_fzero)
 #define TN_is_fone_reg(r)  (TN_register_and_class(r) == CLASS_AND_REG_fone)
-
+#ifdef TARG_ST /* [SC] TLS support */
+#define TN_is_tp_reg(r)  (TN_register_and_class(r) == CLASS_AND_REG_tp)
+#endif
 
 #ifdef TARG_ST
 // (cbr) if-conversion psi-ssa. True_TN used only while in psi-ssa.

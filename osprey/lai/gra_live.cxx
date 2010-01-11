@@ -1219,7 +1219,11 @@ Live_Init(
   /* account for the implicit uses at a call site. Add $sp, $gp to the 
    * set of liveout TNs for the block.
    */
+#ifdef TARG_ST
+  if (BB_call(bb) && !SSA_Active()) {
+#else
   if (BB_call(bb)) {
+#endif
     GTN_UNIVERSE_Add_TN(SP_TN);
     GTN_SET_Union1D (BB_live_out(bb), SP_TN, &liveness_pool);
     // [VCdV] on xp70, GP is always activated.

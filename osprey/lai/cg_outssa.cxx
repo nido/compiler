@@ -57,8 +57,6 @@ static MEM_POOL outssa_pool;
 static BOOL Trace_SSA_Out;                    /* -Wb,-tt60:0x002 */
 static BOOL Trace_phi_removal;                /* -Wb,-tt60:0x008 */
 
-INT32 CG_ssa_coalescing = 1;
-
 /* ================================================================
  * ================================================================
  *                     TN SSA Info
@@ -168,7 +166,7 @@ SSA_Info_TN_get(const TN *tn) {
 static SSA_Info_t *
 SSA_Info_TN_add(TN *tn) {
   SSA_Info_t *ssa_info;
-  Is_True(TN_is_ssa_var(tn), ("Cannot consider non SSA registers in out-of-SSA algorithm"));
+  // tn may be a non-ssa variable
   if ((ssa_info = SSA_Info_TN_get(tn)) == NULL)
     ssa_info = TN_SSA_Info_new(tn);
   return ssa_info;
@@ -194,68 +192,6 @@ SSA_Info_idx_get(INT idx) {
   return &(*ARRAY_CHUNK_iter)[idx-chunk_idx];
 }
 
-static SSA_Info_t *
-SSA_Info_Find_Root(SSA_Info_t *ssa_info) {
-
-  if (ssa_info->RootInfo == NULL)
-    return ssa_info;
-
-  SSA_Info_t *root_info = ssa_info;
-  do {
-    root_info = root_info->RootInfo;
-  } while (root_info->RootInfo != NULL);
-
-  if (ssa_info->RootInfo != root_info) {
-    SSA_Info_t *cur_info = ssa_info;
-    do {
-      SSA_Info_t *next = cur_info->RootInfo;
-      cur_info->RootInfo = root_info;
-      cur_info = next;      
-    } while (cur_info->RootInfo != NULL);
-  }
-
-  return root_info;
-}
-
-static SSA_Info_t *
-SSA_Info_Union_Root(SSA_Info_t *info1, SSA_Info_t *info2) {
-  Is_True(info1 != info2, ("SSA_Info_Union_TN_Root must be called with disjoint equivalence classes"));
-  //  Is_True(SSA_Info_idx(info1) < Igraph_Size, ("Cannot coalesce a variable with no entry in IGraph"));
-  //  Is_True(SSA_Info_idx(info2) < Igraph_Size, ("Cannot coalesce a variable with no entry in IGraph"));
-
-  // TBD: Consider the case where one of the root is a dedicated
-  // register
-
-  SSA_Info_t *root_info;
-
-  if (info1->Rank < info2->Rank) {
-    info1->RootInfo = root_info = info2;
-  }
-  else {
-    info2->RootInfo = root_info = info1;
-    if (info1->Rank == info2->Rank)
-      info1->Rank ++;
-  }
-  return root_info;
-}
-
-static TN *
-SSA_Info_Find_TN_Root(TN *tn) {
-  Is_True(SSA_Info_TN_get(tn) != NULL, ("SSA_Info_Find_TN_Root: Must only be called on SSA TNs"));
-
-  return SSA_Info_Find_Root(SSA_Info_TN_get(tn))->tn;
-}
-
-static TN *
-SSA_Info_Union_TN_Root(TN *root1, TN *root2) {
-  Is_True(root1 != root2, ("SSA_Info_Union_TN_Root must be called with disjoint equivalence classes"));
-
-  SSA_Info_t *info1 = SSA_Info_TN_get(root1);
-  SSA_Info_t *info2 = SSA_Info_TN_get(root2);
-
-  return SSA_Info_Union_Root(info1, info2)->tn;
-}
-
 #define PCopy_isDef(tn) (SSA_Info_TN_get(tn)->PCopy_isDef)
 #define PCopy_isUse(tn) (SSA_Info_TN_get(tn)->PCopy_isUse)
 
@@ -263,7 +199,6 @@ SSA_Info_Union_TN_Root(TN *root1, TN *root2) {
 #define PCopy_resetUse(tn) SSA_Info_TN_get(tn)->PCopy_isUse = 0
 #define PCopy_setDef(tn) SSA_Info_TN_get(tn)->PCopy_isDef = 1
 #define PCopy_setUse(tn) SSA_Info_TN_get(tn)->PCopy_isUse = 1
-
 
 /* ================================================================
  * ================================================================
@@ -291,100 +226,59 @@ Copy_TN (
   // Is supposed to return a different TN_number but else
   // identical
   //
-  // TODO: TN_GLOBAL_REG flag and any spill location associated 
-  //       with this TN is cleared in the new TN. Does it matter ?
-  //
-  TN *new_tn = Dup_TN(tn);
-
-  // FdF: If tn was gra_homeable, new_tn must not be. Otherwise they
-  // would share the same home location, and when code motion make the
-  // two interfere, spilling one would break the other. (bug dec_amr
-  // with LAO).
-  //
-  // TODO: Fixing it in SSA_Make_Conventional would be better. Global
-  // registers marked gra_homeable to the same home location should
-  // be renamed into the same global TN, or if there is an
-  // interference, the gra_homeable property must be removed.
-  return new_tn;
+  return Dup_TN(tn);
 }
 
-static void
-BB_Replace_Op(OP *old_op, OP *new_op) {
-
-  OP *point = OP_prev(old_op);
-  BOOL before = (point == NULL);
-  BB *bb = OP_bb(old_op);
-
-  BB_Remove_Op(bb, old_op);
-  BB_Insert_Op(bb, point, new_op, before);
-}
-
-static void
+OP *
 PCOPY_add_copy(OP* par_copy, TN *dst, TN *src) {
   Is_True(OP_results(par_copy) == OP_opnds(par_copy), ("Inconsistent parallel copy op"));
 
   // TBD: Can be optimized by allocating more space, and let NULL
   // arguments at the end that will be filled later
   INT new_results = OP_results(par_copy)+1;
-  TN *opnd[new_results];
-  TN *result[new_results];
-  memcpy(result, par_copy->res_opnd+OP_result_offset(par_copy), sizeof(struct tn *)*OP_results(par_copy));
-  memcpy(opnd, par_copy->res_opnd+OP_opnd_offset(par_copy), sizeof(struct tn *)*OP_opnds(par_copy));
-  result[new_results-1] = dst;
-  opnd[new_results-1] = src;
-  
-  OP *new_par_copy = Mk_VarOP (TOP_PCOPY, new_results, new_results, result, opnd);
-  Set_OP_ssa_move(new_par_copy);
+  OP *new_par_copy = Resize_OP(par_copy, new_results, new_results);
+  Set_OP_opnd(new_par_copy, new_results-1, src);
+  Set_OP_result(new_par_copy, new_results-1, dst);
 
   // Replace the old pcopy by the new pcopy, this also updates the SSA
   // def links
-  BB_Replace_Op(par_copy, new_par_copy);
+  if (OP_bb(par_copy) != NULL)
+    BB_Replace_Op(par_copy, new_par_copy);
+  return new_par_copy;
 }
 
 static inline BOOL
 BB_has_PHI(BB *bb) {
   OP *first_op = BB_first_op(bb);
-  return (first_op != NULL) && (OP_code(first_op) == TOP_phi);
-}
-
-// Return the PCOPY ate the end of a BB
-static OP *
-BB_last_PCOPY(BB *bb) {
-
-  OP *op_last = BB_last_op(bb);
-  if ((op_last != NULL) && OP_xfer(op_last))
-    op_last = OP_prev(op_last);
-
-  if ((op_last != NULL) && (OP_code(op_last) == TOP_PCOPY))
-    return op_last;
-
-  return NULL;
-}
-
-// Check if a BB has a PCOPY. If a BB has a PCOPY, it for sure has one
-// at the end of the BB. It will also have one at the entry of the BB
-// if there are PHI instructions in the BB.
-static inline BOOL
-BB_has_PCOPY(BB *bb) {
-  return BB_last_PCOPY(bb) != NULL;
+  return (first_op != NULL) && (OP_phi(first_op));
 }
 
 // Return the PCOPY at the beginning of a BB
 static OP *
-BB_first_PCOPY(BB *bb) {
+BB_phi_res_PCOPY(BB *bb) {
 
-  // When PHI operations have been removed, pcopies are at the beginning of the basic block
-  OP *op = BB_first_op(bb);
-  if ((op != NULL) && (OP_code(op) == TOP_PCOPY))
+  OP *op;
+  for (op = BB_first_op(bb); (op != NULL) && (OP_phi(op)); op = OP_next(op));
+
+  if ((op != NULL) && OP_PCOPY(op))
     return op;
 
-  // Otherwise, they are after the last PHI operation
-  if (!BB_has_PCOPY(bb) || !BB_has_PHI(bb))
-    return NULL;
+  return NULL;
+}
 
-  for (op = BB_first_op(bb); OP_code(op) == TOP_phi; op = OP_next(op));
-  Is_True((op != NULL) && (OP_code(op) == TOP_PCOPY), ("No PCOPY found in a BB with has_PCOPY and has_PHI"));
-  return op;
+// Return the PCOPY at the end of a BB
+static OP *
+BB_phi_args_PCOPY(BB *bb) {
+
+  OP *op = BB_last_op(bb);
+  // In case of a call, the PCOPY is placed after the call
+  if ((op != NULL) && OP_br(op))
+    op = OP_prev(op);
+
+  if ((op != NULL) && OP_PCOPY(op))
+    return op;
+
+  return NULL;
 }
 
 // Insert parallel copies in a BB. Because we need to distinguish
@@ -396,17 +290,15 @@ BB_first_PCOPY(BB *bb) {
 static void
 BB_insert_pcopies(BB *bb) {
 
-  Is_True(!BB_has_PCOPY(bb), ("BB_insert_pcopies must not be called on a BB with PCOPY operations"));
-
   // If the basic block contains PHI operations, insert a PCOPY after
   // the last PHI.
   if (BB_has_PHI(bb)) {
     // Find the last PHI OP
     OP *op = BB_first_op(bb);
-    Is_True(op && (OP_code(op) == TOP_phi), ("Found a BB with a PHI that is not the first operation"));
+    Is_True(op && (OP_phi(op)), ("Found a BB with a PHI that is not the first operation"));
 
     for (OP *next_op = OP_next(op);
-	 (next_op != NULL) && (OP_code(next_op) == TOP_phi);
+	 (next_op != NULL) && (OP_phi(next_op));
 	 next_op = OP_next(op))
       op = next_op;
 
@@ -417,21 +309,24 @@ BB_insert_pcopies(BB *bb) {
 
   // Also always insert a PCOPY at the end of the BB, for PHIs in
   // successors.
-  OP *point = BB_last_op(bb);
-  BOOL before = (point != NULL) && OP_xfer(point);
-  OP *pcopy_last = Mk_VarOP(TOP_PCOPY, 0, 0, NULL, NULL);
-  Set_OP_ssa_move(pcopy_last);
-  BB_Insert_Op(bb, point, pcopy_last, before);
+  if (BB_succs_len(bb) > 0) {
+    OP *point = BB_last_op(bb);
+    // Insert the pcoy before a branch but after a call
+    BOOL before = (point != NULL) && OP_br(point);
+    OP *pcopy_last = Mk_VarOP(TOP_PCOPY, 0, 0, NULL, NULL);
+    Set_OP_ssa_move(pcopy_last);
+    BB_Insert_Op(bb, point, pcopy_last, before);
+  }
 }
 
 /* ================================================================
- *   insert_operand_copy
+ *   insert_operand_pcopy
  *
  *   Insert a copy of given TN in the PCOPY at the end of given BB.
- *   ================================================================
+ * ================================================================
  */
 static TN *
-insert_operand_copy (
+insert_PHI_operand_pcopy (
   OP   *phi_op,
   INT8  opnd_idx,
   BB   *in_bb
@@ -448,22 +343,25 @@ insert_operand_copy (
   // replace old tn in the phi OP
   Set_OP_opnd(phi_op, opnd_idx, new_tn);
 
-  OP *pcopy_op = BB_last_PCOPY(in_bb);
+  OP *pcopy_op = BB_phi_args_PCOPY(in_bb);
   Is_True(pcopy_op, ("No PCOPY in BB %d", BB_id(in_bb)));
 
   PCOPY_add_copy(pcopy_op, new_tn, tn);
+  SSA_Info_TN_add(tn);
+  SSA_Info_TN_add(new_tn);
+
   return new_tn;
 }
 
 /* ================================================================
- *   insert_result_copy
+ *   insert_result_pcopy
  *
  *   Insert a copy of PHI result TN at the beginning of given BB
  *   (right after the PHI-nodes).
  * ================================================================
  */
 static TN *
-insert_result_copy (
+insert_PHI_result_pcopy (
   OP   *phi_op,
   BB   *in_bb
 )
@@ -483,17 +381,60 @@ insert_result_copy (
   Set_TN_ssa_def(tn , NULL);
   Set_TN_ssa_def(new_tn, phi_op);
 
-  OP *pcopy_op = BB_first_PCOPY(in_bb);
+  OP *pcopy_op = BB_phi_res_PCOPY(in_bb);
   Is_True(pcopy_op, ("No PCOPY in BB %d", BB_id(in_bb)));
 
   PCOPY_add_copy(pcopy_op, tn, new_tn);
+  SSA_Info_TN_add(tn);
+  SSA_Info_TN_add(new_tn);
   return new_tn;
 }
 
+/* ================================================================
+ *   PCOPY_sequentialize
+ *
+ *   Replace a parallele COPY by a sequence of copies, breaking cycles
+ *   when needed. The algorithm is the following:
+ *   for each copy (dst <- src) {
+ *     if ((there is already a copy (src <- ...)) &&
+ *         (there is already a copy (... <- dst))) { // break cycle
+ *        insert (tmp <- src) before first copy
+ *        append (dst <- tmp) after last copy
+ *     }
+ *     else if (there is already a copy (src <- ...)) {
+ *         // there is no copy (... <- dst))
+ *        insert (dst <- src) before first copy
+ *     }
+ *     else {
+ *        // there is no copy (src <- ...)
+ *        // there may be a copy (... <- dst)
+ *       append (dst <- src) after last copy
+ *     }
+ *  }
+ *
+ *   Also, ignore multiple copies with the same dst, we assume that
+ *   the PCOPY is consistent and thus they all have the same src.
+ *   Finally, do not generate copies when src and dst are the same
+ * ================================================================
+ */
+
 static void
-PCOPY_sequentialize(OP *par_copy, OPS *seq_ops) {
+PCOPY_insert_copy(TN *dst, TN *src, OP *par_copy, OPS *seq_copies, BOOL before) {
+  OPS tmp_ops = OPS_EMPTY;
+  Exp_COPY(dst, src, &tmp_ops);
+  Set_OP_ssa_move(OPS_last(&tmp_ops));
+  if (OP_prologue(par_copy)) Set_OP_prologue(OPS_last(&tmp_ops));
+  if (OP_epilogue(par_copy)) Set_OP_epilogue(OPS_last(&tmp_ops));
+  OPS_Insert_Ops(seq_copies, NULL, &tmp_ops, before);
+}
+
+static void
+PCOPY_sequentialize(OP *par_copy) {
 
   Is_True(OP_results(par_copy) == OP_opnds(par_copy), ("Inconsistent parallel copy op"));
+
+  OPS seq_copies = OPS_EMPTY;
+  SSA_unset(par_copy);
 
   for (int i = 0; i < OP_results(par_copy); i++) {
 
@@ -506,68 +447,46 @@ PCOPY_sequentialize(OP *par_copy, OPS *seq_ops) {
     PCopy_resetUse(src);
   }
     
-  OPS_Init(seq_ops);
   for (int i = 0; i < OP_results(par_copy); i++) {
     TN *dst = OP_result(par_copy, i);
     TN *src = OP_opnd(par_copy, i);
-    if ((dst != src) && !PCopy_isDef(dst)) {
-      if (PCopy_isDef(src) && PCopy_isUse(dst)) {
-	// break cycle
-	TN *tmp = Copy_TN(dst);
+    // A TN can occur several times as a dst with each time the same
+    // src
+    if (PCopy_isDef(dst) || (src == dst))
+      continue;
 
-	fprintf(stdout, "PCOPY_sequentialize: Break cycle\n");
-
-	OPS tmp_ops = OPS_EMPTY;
-	Exp_COPY(tmp, src, &tmp_ops);
-	Set_OP_ssa_move(OPS_last(&tmp_ops));
-	OPS_Prepend_Ops(seq_ops, &tmp_ops);
-	
-	OPS_Init(&tmp_ops);
-	Exp_COPY(dst, tmp, &tmp_ops);
-	Set_OP_ssa_move(OPS_last(&tmp_ops));
-	OPS_Append_Ops(seq_ops, &tmp_ops);
-      }
-      else if (PCopy_isDef(src)) {
-        // Insert copy before all
-	OPS tmp_ops = OPS_EMPTY;
-	Exp_COPY(dst, src, &tmp_ops);
-	Set_OP_ssa_move(OPS_last(&tmp_ops));
-	OPS_Prepend_Ops(seq_ops, &tmp_ops);
-      }
-      else {
-        // Insert copy after all
-	OPS tmp_ops = OPS_EMPTY;
-	Exp_COPY(dst, src, &tmp_ops);
-	Set_OP_ssa_move(OPS_last(&tmp_ops));
-	OPS_Append_Ops(seq_ops, &tmp_ops);
-      }
-      PCopy_setDef(dst);
-      PCopy_setUse(src);
+    if (PCopy_isDef(src) && PCopy_isUse(dst)) {
+      // break cycle
+      TN *tmp = Dup_TN_Even_If_Dedicated(dst);
+      PCOPY_insert_copy(tmp, src, par_copy, &seq_copies, TRUE);
+      PCOPY_insert_copy(dst, tmp, par_copy, &seq_copies, FALSE);
     }
+    else if (PCopy_isDef(src))
+      // Insert copy before all
+      PCOPY_insert_copy(dst, src, par_copy, &seq_copies, TRUE);
+    else
+      // Insert copy after all
+      PCOPY_insert_copy(dst, src, par_copy, &seq_copies, FALSE);
+
+    PCopy_setDef(dst);
+    PCopy_setUse(src);
   }
+
+  BB_Insert_Ops_Before(OP_bb(par_copy), par_copy, &seq_copies);
+  BB_Remove_Op(OP_bb(par_copy), par_copy);
 }
 
 static void
-SSA_sequentialize_pcopies() {
+SSA_Sequentialize_PCopies() {
   BB *bb;
+  OP *pcopy;
 
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-    OP *pcopy = BB_first_PCOPY(bb);
-    if (pcopy != NULL) {
-      OPS seq_copies = OPS_EMPTY;
-      SSA_unset(pcopy);
-      PCOPY_sequentialize(pcopy, &seq_copies);
-      BB_Insert_Ops_Before(OP_bb(pcopy), pcopy, &seq_copies);
-      BB_Remove_Op(OP_bb(pcopy), pcopy);
-    }
-
-    pcopy = BB_last_PCOPY(bb);
-    if (pcopy != NULL) {
-      OPS seq_copies = OPS_EMPTY;
-      SSA_unset(pcopy);
-      PCOPY_sequentialize(pcopy, &seq_copies);
-      BB_Insert_Ops_Before(OP_bb(pcopy), pcopy, &seq_copies);
-      BB_Remove_Op(OP_bb(pcopy), pcopy);
+    OP *op, *op_next;
+    for (op = BB_first_op(bb); op != NULL; op = op_next) {
+      op_next = OP_next(op);
+      if (OP_PCOPY(op))
+	PCOPY_sequentialize(op);
     }
   }
 }
@@ -604,7 +523,7 @@ SSA_EquiValues_BB(BB *bb, BOOL *visited) {
       SSA_EquiValues_Copy(dst, src);
     }
 
-    else if (OP_code(op) == TOP_PCOPY) {
+    else if (OP_PCOPY(op)) {
       for (INT i = 0; i < OP_results(op); i++) {
 	TN *dst = OP_result(op, i);
 	TN *src = OP_opnd(op, i);
@@ -821,6 +740,36 @@ IGRAPH_Add_Interference (
 }
 
 /* ================================================================
+ *   SSA_Build_IGraph_tn
+ * ================================================================
+ */
+static void
+SSA_Build_IGraph_tn (
+  TN *def_tn,
+  TN_SET *live_tns
+)
+{
+  // Get the SSA_info
+  SSA_Info_t *tn_ssa_info = SSA_Info_TN_get(def_tn);
+  Is_True(tn_ssa_info, ("SSA_Build_IGraph_tn must be called with tn with SSA_Info"));
+
+  // interference with 'live_tns' TNs
+  for (TN *live_tn = TN_SET_Choose(live_tns);
+       live_tn != TN_SET_CHOOSE_FAILURE;
+       live_tn = TN_SET_Choose_Next(live_tns, live_tn)) {
+
+    // do not count interference with itself
+    if (live_tn == def_tn) continue;
+
+    SSA_Info_t *cur_tn_ssa_info = SSA_Info_TN_get(live_tn);
+
+    // Do not add interferences when values are the same
+    if ((cur_tn_ssa_info != NULL) && (tn_ssa_info->EquiValue != cur_tn_ssa_info->EquiValue))
+      IGRAPH_Add_Interference(def_tn, live_tn);
+  }
+}
+
+/* ================================================================
  *   SSA_Build_IGraph_bb
  * ================================================================
  */
@@ -875,7 +824,7 @@ SSA_Build_IGraph_bb (
       fprintf(TFile, "\n");
     }
 
-    if (OP_code(op) == TOP_phi) {
+    if (OP_phi(op)) {
       res = OP_result(op,0);
       Is_True(SSA_Info_TN_get(res), ("PHI result must be a ssa var"));
 
@@ -907,26 +856,10 @@ SSA_Build_IGraph_bb (
       for (INT res_idx = 0; res_idx < OP_results(op); res_idx++) {
 	res = OP_result(op, res_idx);
 
-	// Get the SSA_info
-	SSA_Info_t *res_ssa_info = SSA_Info_TN_get(res);
-
-	if (res_ssa_info == NULL)
+	if (SSA_Info_TN_get(res) == NULL)
 	  continue;
 
-	// interference with 'current' TNs
-	for (TN *tn = TN_SET_Choose(current);
-	     tn != TN_SET_CHOOSE_FAILURE;
-	     tn = TN_SET_Choose_Next(current, tn)) {
-
-	  // do not count interference with itself
-	  if (tn == res) continue;
-
-	  SSA_Info_t *tn_ssa_info = SSA_Info_TN_get(tn);
-
-	  // Do not add interferences when values are the same
-	  if ((tn_ssa_info != NULL) && (res_ssa_info->EquiValue != tn_ssa_info->EquiValue))
-	    IGRAPH_Add_Interference(res, tn);
-	}
+	SSA_Build_IGraph_tn(res, current);
 
 	// In case of a Conflict constraint on a result, add
 	// interferences with the operands on which there is a
@@ -949,9 +882,24 @@ SSA_Build_IGraph_bb (
       }
     }
 
+    // FdF 20090901: For call operations, also consider interferences
+    // with clobbered registers.
+    if (OP_call(op)) {
+      ISA_REGISTER_CLASS rc;
+      FOR_ALL_ISA_REGISTER_CLASS(rc) {
+	REGISTER_SET clobber_set = BB_call_clobbered(bb, rc);
+	REGISTER reg;
+	FOR_ALL_REGISTER_SET_members(clobber_set, reg) {
+	  TN *clobber_tn = Build_Dedicated_TN(rc, reg, 0);
+	  if (SSA_Info_TN_get(clobber_tn) != NULL)
+	    SSA_Build_IGraph_tn(clobber_tn, current);
+	}
+      }
+    }
+
     // Do not analyze the operand of PHI and PSI operantions, only
     // implicit uses on predicated operations must be considered.
-    if ((OP_code(op) != TOP_phi) && (OP_code(op) != TOP_psi)) {
+    if (!OP_phi(op) && !OP_psi(op)) {
 
       // operands
 
@@ -1037,10 +985,6 @@ SSA_Build_IGraph ()
       SSA_Build_IGraph_bb(bb, visited);
   }
 
-#if 0
-  // TBD: Activate this code when dedicated registers are converted
-  // into SSA variables.
-
   // Add the click for all dedicated registers in the representation
   TN *tni;
   TN_NUM tni_num;
@@ -1056,7 +1000,6 @@ SSA_Build_IGraph ()
       }
     }
   }
-#endif
 
   if (Trace_SSA_Out) {
     IGRAPH_Print(TFile);
@@ -1109,6 +1052,15 @@ IGRAPH_TNs_Coalesce (
   INT32 idx1 = SSA_Info_TN_idx(root1);
   INT32 idx2 = SSA_Info_TN_idx(root2);
 
+  if (Trace_Igraph) {
+    fprintf(TFile, "    IGRAPH_TNs_Coalesce: ");
+    Print_TN(root1, FALSE);
+    fprintf(TFile, " [%d] <- ", idx1);
+    Print_TN(root2, FALSE);
+    fprintf(TFile, " [%d] \n", idx2);
+    fflush(TFile);
+  }
+
   // No interference to coalesce
   if (tn_imap[idx2] == NULL)
     return;
@@ -1136,115 +1088,296 @@ IGRAPH_TNs_Coalesce (
  * ================================================================
  */
 
-// TBD: Handle dedicated registers
+// Insert copies for PHis as in Sreedhar I
 static void
-SSA_insert_dedicated_copies() {
-}
+SSA_insert_PHI_pcopies(BB *bb, BOOL *has_pcopy) {
 
-static void
-SSA_insert_PHI_pcopies() {
-  INT i;
-  OP *op;
-  BB *bb;
+  if (!BB_has_PHI(bb))
+    return;
 
-  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-
-    if (!BB_has_PHI(bb))
-      continue;
-
-    if (!BB_has_PCOPY(bb))
-      BB_insert_pcopies(bb);
+  if (!has_pcopy[BB_id(bb)]) {
+    BB_insert_pcopies(bb);
+    has_pcopy[BB_id(bb)] = TRUE;
+  }
       
-    BBLIST *edge;
-    FOR_ALL_BB_PREDS(bb, edge) {
-      BB *pred = BBLIST_item(edge);
-      if (!BB_has_PCOPY(pred))
-	BB_insert_pcopies(pred);
+  BBLIST *edge;
+  FOR_ALL_BB_PREDS(bb, edge) {
+    BB *pred = BBLIST_item(edge);
+    if (!has_pcopy[BB_id(pred)]) {
+      BB_insert_pcopies(pred);
+      has_pcopy[BB_id(pred)] = TRUE;
+    }
+  }
+
+  OP *phi;
+  FOR_ALL_BB_PHI_OPs(bb, phi) {
+
+    // Add an SSA_Info only for TNs that will or may be coalesced, so
+    // as to reduce the size of the interference graph.
+
+    // insert copies for operands
+    for (INT i = 0; i < OP_opnds(phi); i++) {
+      TN *old_opnd = OP_opnd(phi, i);
+      TN *new_opnd = insert_PHI_operand_pcopy(phi, i, Get_PHI_Predecessor(phi,i));
     }
 
-    FOR_ALL_BB_OPs_FWD(bb, op) {
-
-      if (OP_code(op) != TOP_phi)
-	break;
-
-      // Add an SSA_Info only for TNs that will or may be coalesced,
-      // so as to reduce the size of the interference graph.
-
-      // insert copies for operands
-      for (i = 0; i < OP_opnds(op); i++) {
-	TN *new_opnd = insert_operand_copy(op, i, Get_PHI_Predecessor(op,i));
-	SSA_Info_TN_add(new_opnd);
-      }
-
-      // insert copies for result
-      TN *new_res = insert_result_copy(op, bb);
-      SSA_Info_TN_add(new_res);
-    }
+    // insert copies for result
+    TN *old_res = OP_result(phi, 0);
+    TN *new_res = insert_PHI_result_pcopy(phi, bb);
   }
 
   return;
 }
 
+// Take into account operations properties:
+// - Insert copies for same_res property: automod
+// - Create entries for the IGraph on conflict property
 static void
-SSA_Operation_Properties() {
-  OP *op;
-  BB *bb;
+SSA_operation_properties(OP *op) {
 
-  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+  if (OP_phi(op) || OP_psi(op) || OP_PCOPY(op))
+    return;
 
-    FOR_ALL_BB_OPs_FWD(bb, op) {
+  INT res_idx, opnd_idx;
+  for (res_idx = 0; res_idx < OP_results(op); res_idx++) {
 
-      if ((OP_code(op) == TOP_phi) || (OP_code(op) == TOP_psi) || (OP_code(op) == TOP_PCOPY))
-	continue;
+    if (!TN_is_ssa_var(OP_result(op, res_idx)))
+      continue;
 
-      INT res_idx, opnd_idx;
-      for (res_idx = 0; res_idx < OP_results(op); res_idx++) {
+    // Check if res and opnd are not already the same, otherwise this
+    // means that at least one of them has not been renamed under SSA.
+    if (((opnd_idx = OP_same_res(op, res_idx)) != -1) &&
+	(OP_result(op, res_idx) != OP_opnd(op, opnd_idx))) {
 
-	if (!TN_is_ssa_var(OP_result(op, res_idx)))
-	  continue;
+      TN *tn_opnd =  OP_opnd(op, opnd_idx);
+      TN *new_tn = Copy_TN(tn_opnd);
 
-	// Check if res and opnd are not already the same, otherwise
-	// this means that at least one of them has not been renamed
-	// under SSA.
-	if (((opnd_idx = OP_same_res(op, res_idx)) != -1) &&
-	    (OP_result(op, res_idx) != OP_opnd(op, opnd_idx))) {
+      OPS copy_ops = OPS_EMPTY;
+      Exp_COPY(new_tn, tn_opnd, &copy_ops);
+      Set_OP_ssa_move(OPS_last(&copy_ops));
+      BB_Insert_Ops_Before(OP_bb(op), op, &copy_ops);
+      Set_OP_opnd(op, opnd_idx, new_tn);
 
-	  TN *tn_opnd =  OP_opnd(op, opnd_idx);
-	  TN *new_tn = Copy_TN(tn_opnd);
+      Set_OP_sameres(op);
 
-	  OPS copy_ops = OPS_EMPTY;
-	  Exp_COPY(new_tn, tn_opnd, &copy_ops);
-	  Set_OP_ssa_move(OPS_last(&copy_ops));
-	  BB_Insert_Ops_Before(bb, op, &copy_ops);
-	  Set_OP_opnd(op, opnd_idx, new_tn);
+      // Add an SSA_Info only for TNs that will or may be coalesced,
+      // so as to reduce the size of the interference graph.
 
-	  Set_OP_sameres(op);
+      SSA_Info_TN_add(new_tn);
+      SSA_Info_TN_add(OP_result(op, res_idx));
+    }
 
-	  // Add an SSA_Info only for TNs that will or may be
-	  // coalesced, so as to reduce the size of the interference
-	  // graph.
+    // Check if res is in conflict with one or more operands, which
+    // means they cannot use the same register
+    if (OP_uniq_res(op, res_idx)) {
+      for (INT opnd_idx = 0; opnd_idx < OP_opnds(op); opnd_idx++) {
+	if (OP_conflict(op, res_idx, opnd_idx) && 
+	    TN_is_ssa_var(OP_opnd(op, opnd_idx))) {
 
-	  SSA_Info_TN_add(new_tn);
+	  // Add an SSA_Info for these TNs so as to force an
+	  // interference between these two registers
+	  SSA_Info_TN_add(OP_opnd(op, opnd_idx));
 	  SSA_Info_TN_add(OP_result(op, res_idx));
 	}
-
-	// Check if res is in conflict with one or more operands,
-	// which means they cannot use the same register
-	if (OP_uniq_res(op, res_idx)) {
-	  for (INT opnd_idx = 0; opnd_idx < OP_opnds(op); opnd_idx++) {
-	    if (OP_conflict(op, res_idx, opnd_idx) && 
-		TN_is_ssa_var(OP_opnd(op, opnd_idx))) {
-
-	      // Add an SSA_Info for these TNs so as to force an
-	      // interference between these two registers
-	      SSA_Info_TN_add(OP_opnd(op, opnd_idx));
-	      SSA_Info_TN_add(OP_result(op, res_idx));
-	    }
-	  }
-	}
-
       }
     }
+
+  }
+}
+
+static void
+SSA_Rename_TN_opnds(OP *first_op, OP *last_op, TN *old_tn, TN *new_tn) {
+
+  OP *op;
+  for (op = first_op; op != last_op; op = OP_next(op)) {
+    for (INT i = 0; i < OP_opnds(op); i++) {
+      if (OP_opnd(op, i) == old_tn)
+	Set_OP_opnd(op, i, new_tn);
+    }
+  }
+}
+
+// Create SSA variables for dedicated registers used on Entry, Exit, Call
+// Replace copies Rn=Vn by V'n=Vn; add Rn=V'n; before the call or return
+// Replace copies Vn=Rn by Vn=V'n; add V'n=Rn; after a call or entry
+static void
+SSA_insert_dedicated_copies(OP *op) {
+
+  // For the PCOPY in the prologue and in the epilogue of the
+  // function, coalesing is mandatory. A new PCOPY is added in the
+  // prologue after the last 'no_move op' and in the epilogue before
+  // the first 'no_move' op so as to handle renaming constraints.
+
+  // Now, entry and exit BBs are split such that the new PCOPY can be
+  // added as the last/first operation of a entry/exit block.
+
+  BB *bb = OP_bb(op);
+
+  if (OP_PCOPY(op) && (OP_prologue(op) || OP_epilogue(op))) {
+    // First, add TN_info for operands and results
+    for (INT i = 0; i < OP_results(op); i++) {
+      SSA_Info_TN_add(OP_result(op, i));
+      SSA_Info_TN_add(OP_opnd(op, i));
+    }
+    
+    if (OP_prologue(op)) {
+      // Perform the following transformation
+      // X <- Rx (PCOPY)         X' <- Rx (PCOPY) Coalesce (Rx,X')
+      //   <- X  (no_move)          <- X' (no_move)
+      //                         X  <- X' (PCOPY)
+      OP *new_pcopy = NULL;
+      for (INT i = 0; i < OP_results(op); i++) {
+	TN *tn = OP_result(op, i);
+	if (new_pcopy == NULL)
+	  new_pcopy = Mk_VarOP(TOP_PCOPY, 0, 0, NULL, NULL);
+	TN *new_tn = Copy_TN(tn);
+	SSA_Info_TN_add(new_tn);
+	Set_TN_ssa_def(tn, NULL);
+	Set_OP_result(op, i, new_tn);
+	Set_TN_ssa_def(new_tn, op);
+	new_pcopy = PCOPY_add_copy(new_pcopy, tn, new_tn);
+	// Replace uses of tn by new_tn in the operation between the
+	// two PCOPY operations
+	SSA_Rename_TN_opnds(OP_next(op), NULL, tn, new_tn);
+      }
+      if (new_pcopy) {
+	Reset_OP_prologue(new_pcopy);
+	Set_OP_ssa_move(new_pcopy);
+	OP *point = BB_last_op(bb);
+	BOOL before = (point != NULL) && OP_xfer(point);
+	BB_Insert_Op(bb, point, new_pcopy, before);
+      }
+    }
+    else if (OP_epilogue(op)) {
+      // Perform the following transformation
+      //                         X' <- X (PCOPY)
+      //    <- X                    <- X'
+      // Rx <- X (PCOPY)         Rx <- X' (PCOPY) Coalesce (Rx,X')
+      OP *new_pcopy = NULL;
+      for (INT i = 0; i < OP_opnds(op); i++) {
+	TN *tn = OP_opnd(op, i);
+	if (!TN_ssa_def(tn))
+	  continue;
+	if (OP_bb(TN_ssa_def(tn)) == bb) {
+	  // If this opnd appears more than once in the PCOPY, make it
+	  // unique
+	  for (INT j = 0; j < i; j++) {
+	    if (OP_opnd(op, j) == tn) {
+	      TN *new_tn = Copy_TN(tn);
+	      SSA_Info_TN_add(new_tn);
+	      Set_OP_opnd(op, i, new_tn);
+	      OPS tmp_ops = OPS_EMPTY;
+	      Exp_COPY(new_tn, tn, &tmp_ops);
+	      BB_Insert_Ops(bb, op, &tmp_ops, TRUE);
+	      break;
+	    }
+	  }
+	  continue;
+	}
+	if (new_pcopy == NULL)
+	  new_pcopy = Mk_VarOP(TOP_PCOPY, 0, 0, NULL, NULL);
+	TN *new_tn = Copy_TN(tn);
+	SSA_Info_TN_add(new_tn);
+	Set_OP_opnd(op, i, new_tn);
+	new_pcopy = PCOPY_add_copy(new_pcopy, new_tn, tn);
+	SSA_Rename_TN_opnds(BB_first_op(bb), op, tn, new_tn);
+      }
+      if (new_pcopy) {
+	Reset_OP_epilogue(new_pcopy);
+	Set_OP_ssa_move(new_pcopy);
+	BB_Prepend_Op(bb, new_pcopy);
+      }
+    }
+  }
+
+
+  if (!OP_Has_ssa_pinning(op))
+    return;
+
+  // There is a special case for the SP and the FP registers. The uses
+  // of these registers that are pinned must refer directly to the
+  // pinned definition so as to preserve the whole live-range. The
+  // traversal in dominance order ensure that definitions have already
+  // been processed.
+
+  OP *pcopy_opnd = Mk_VarOP(TOP_PCOPY, 0, 0, NULL, NULL);
+  for (INT opnd_idx = 0; opnd_idx < OP_opnds(op); opnd_idx ++) {
+    TN *pinned = OP_Get_opnd_pinning(op, opnd_idx);
+    if (pinned != NULL) {
+      TN *tn_opnd =  OP_opnd(op, opnd_idx);
+      TN *new_tn = Copy_TN(tn_opnd);
+      pcopy_opnd = PCOPY_add_copy(pcopy_opnd, new_tn, tn_opnd);
+      Set_OP_opnd(op, opnd_idx, new_tn);
+      SSA_Info_TN_add(new_tn);
+      SSA_Info_TN_add(tn_opnd);
+      SSA_Info_TN_add(pinned);
+    }
+  }
+  if (OP_results(pcopy_opnd) > 0) {
+    Set_OP_ssa_move(pcopy_opnd);
+    BB_Insert_Op_Before(bb, op, pcopy_opnd);
+  }
+
+  OP *pcopy_result = Mk_VarOP(TOP_PCOPY, 0, 0, NULL, NULL);
+  for (INT res_idx = 0; res_idx < OP_results(op); res_idx++) {
+    TN *pinned = OP_Get_result_pinning(op, res_idx);
+    if (pinned != NULL) {
+      TN *tn_res =  OP_result(op, res_idx);
+      TN *new_tn = Copy_TN(tn_res);
+      Set_OP_result(op, res_idx, new_tn);
+      Set_TN_ssa_def(tn_res, NULL);
+      Set_TN_ssa_def(new_tn, op);
+      pcopy_result = PCOPY_add_copy(pcopy_result, tn_res, new_tn);
+      SSA_Info_TN_add(tn_res);
+      SSA_Info_TN_add(new_tn);
+      SSA_Info_TN_add(pinned);
+    }
+  }
+  if (OP_results(pcopy_result) > 0) {
+    Set_OP_ssa_move(pcopy_result);
+    BB_Insert_Op_After(bb, op, pcopy_result);
+  }
+}
+
+static void
+SSA_expose_copies_BB(BB *bb, BOOL *has_pcopy, BOOL *visited) {
+
+  if (visited[BB_id(bb)]) return;
+
+  SSA_insert_PHI_pcopies(bb, has_pcopy);
+
+  OP *op_next;
+  for (OP *op = BB_first_op(bb); op; op = op_next) {
+    op_next = OP_next(op);
+
+    SSA_operation_properties(op);
+    SSA_insert_dedicated_copies(op);
+  }
+
+  for (BB_LIST *elist = BB_children(bb); elist; elist = BB_LIST_rest(elist)) {
+    BB *kid = BB_LIST_first(elist);
+    SSA_expose_copies_BB (kid, has_pcopy, visited);
+  }
+
+  visited[BB_id(bb)] = TRUE;
+}
+
+static void
+SSA_expose_copies() {
+
+  BOOL visited[PU_BB_Count+2];
+  BZERO(visited, sizeof(BOOL)*(PU_BB_Count+2));
+
+  BOOL has_pcopy[PU_BB_Count+2];
+  BZERO(has_pcopy, sizeof(BOOL)*(PU_BB_Count+2));
+
+  //
+  // visit nodes in the dominator tree order
+  //
+  const BB_SET *region_entry_set = SSA_region_entries();
+  BB *bb;
+  FOR_ALL_BB_SET_members(region_entry_set, bb) {
+    SSA_expose_copies_BB (bb, has_pcopy, visited);
   }
 }
 
@@ -1360,16 +1493,8 @@ insert_psi_operand_copy (
   // Finally, append the copy op
   OPS cmov_ops = OPS_EMPTY;
   CGTARG_OP_Make_movc(PSI_guard(psi_op, opnd_idx), new_tn, tn, &cmov_ops, on_false);
-  if (point) {
-    // FdF 20050831: Be careful to insert after all PHI operations.
-    while (OP_next(point) && (OP_code(OP_next(point)) == TOP_phi))
-      point = OP_next(point);
-    // FdF 20061110: Be careful that the guard for opnd_idx may not be
-    // defined at the point of definition of opnd_idx.
-    BB_Insert_Ops_After(OP_bb(point), point, &cmov_ops);
-  }
-  else
-    BB_Insert_Ops_Before(OP_bb(psi_op), psi_op, &cmov_ops);
+  Is_True(point && !OP_phi(point), ("Internal Error"));
+  BB_Insert_Ops_Before(OP_bb(point), point, &cmov_ops);
   Set_OP_ssa_move(OPS_last(&cmov_ops));
 
   return;
@@ -1471,7 +1596,7 @@ Normalize_Psi_Operations()
 	}
       }
 
-      if (OP_code(op) != TOP_psi)
+      if (!OP_psi(op))
 	continue;
 
       // Remove arguments that are later overriden by other arguments
@@ -1604,7 +1729,7 @@ Normalize_Psi_Operations()
 	// FdF 20070528: Cannot duplicate an operation for repair if
 	// the op has multiple or implicit results.
 	else if (!OP_volatile(def_opndi) /*[CG]*/&& !OP_memory(def_opndi) &&
-		 /*FdF*/ (OP_code(def_opndi) != TOP_phi) &&
+		 /*FdF*/ !OP_phi(def_opndi) &&
 		 (OP_results(def_opndi) == 1) && !OP_has_implicit_interactions(def_opndi)) {
 	  /* 1/ Move duplicate of defi below defi-1. */
 
@@ -1685,6 +1810,83 @@ Normalize_Psi_Operations()
  * ================================================================
  */
 
+static SSA_Info_t *
+SSA_Info_Find_Root(SSA_Info_t *ssa_info) {
+
+  if (ssa_info->RootInfo == NULL)
+    return ssa_info;
+
+  SSA_Info_t *root_info = ssa_info;
+  do {
+    root_info = root_info->RootInfo;
+  } while (root_info->RootInfo != NULL);
+
+  if (ssa_info->RootInfo != root_info) {
+    SSA_Info_t *cur_info = ssa_info;
+    do {
+      SSA_Info_t *next = cur_info->RootInfo;
+      cur_info->RootInfo = root_info;
+      cur_info = next;      
+    } while (cur_info->RootInfo != NULL);
+  }
+
+  return root_info;
+}
+
+static TN *
+SSA_Info_Find_TN_Root(TN *tn) {
+  Is_True(SSA_Info_TN_get(tn) != NULL, ("SSA_Info_Find_TN_Root: Must only be called on SSA TNs"));
+
+  return SSA_Info_Find_Root(SSA_Info_TN_get(tn))->tn;
+}
+
+static SSA_Info_t *
+SSA_Info_Union_Root(SSA_Info_t *info1, SSA_Info_t *info2) {
+  Is_True(info1 != info2, ("SSA_Info_Union_Root must be called with disjoint equivalence classes"));
+  Is_True(SSA_Info_idx(info1) < Igraph_Size, ("Cannot coalesce a variable with no entry in IGraph"));
+  Is_True(SSA_Info_idx(info2) < Igraph_Size, ("Cannot coalesce a variable with no entry in IGraph"));
+
+  SSA_Info_t *root_info;
+
+  // Consider the case where one of the root is a dedicated register
+  if (TN_is_dedicated(info1->tn)) {
+    Is_True(!TN_is_dedicated(info2->tn), ("Cannot coalesce two different dedicated registers"));
+    info2->RootInfo = root_info = info1;
+  }
+  else if (TN_is_dedicated(info2->tn)) {
+    Is_True(!TN_is_dedicated(info1->tn), ("Cannot coalesce two different dedicated registers"));
+    info1->RootInfo = root_info = info2;
+  }
+  else if (info1->Rank < info2->Rank) {
+    info1->RootInfo = root_info = info2;
+  }
+  else {
+    info2->RootInfo = root_info = info1;
+    if (info1->Rank == info2->Rank)
+      info1->Rank ++;
+  }
+
+  return root_info;
+}
+
+static void
+SSA_Info_Union_TN_Root(TN *root1, TN *root2) {
+  Is_True(root1 != root2, ("SSA_Info_Union_TN_Root must be called with disjoint equivalence classes"));
+
+  SSA_Info_t *info1 = SSA_Info_TN_get(root1);
+  SSA_Info_t *info2 = SSA_Info_TN_get(root2);
+
+  TN *root = SSA_Info_Union_Root(info1, info2)->tn;
+  if (root == root1)
+    IGRAPH_TNs_Coalesce(root1, root2);  
+  else
+    IGRAPH_TNs_Coalesce(root2, root1);  
+
+  // The root TN must be marked global if it represents a global TN
+  if (TN_is_global_reg(root1) || TN_is_global_reg(root2))
+    Set_TN_is_global_reg(root);
+}
+
 static void
 SSA_TN_Coalesce(TN *tn1, TN *tn2) {
 
@@ -1692,12 +1894,11 @@ SSA_TN_Coalesce(TN *tn1, TN *tn2) {
   TN *root_tn2 = SSA_Info_Find_TN_Root(tn2);
   TN *root;
 
-  Is_True(!IGRAPH_TNs_Interfere (root_tn1, root_tn2), ("Cannot UNION interfering nodes"));
-  root = SSA_Info_Union_TN_Root(root_tn1, root_tn2);
-  if (root == root_tn1)
-    IGRAPH_TNs_Coalesce(root_tn1, root_tn2);  
-  else
-    IGRAPH_TNs_Coalesce(root_tn2, root_tn1);  
+  if (root_tn1 == root_tn2)
+    return;
+
+  FmtAssert(!IGRAPH_TNs_Interfere (root_tn1, root_tn2), ("Cannot UNION interfering nodes"));
+  SSA_Info_Union_TN_Root(root_tn1, root_tn2);
 }
 
 static void
@@ -1709,19 +1910,46 @@ SSA_Mandatory_Coalescing() {
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     FOR_ALL_BB_OPs(bb, op) {
 
-      if (OP_code(op) == TOP_phi) {
+      // All PHI results and operands must be coalesced into a single
+      // variable
+      if (OP_phi(op)) {
 	TN *res = OP_result(op, 0);
 	for (int opnd_idx = 0; opnd_idx < OP_opnds(op); opnd_idx++) {
 	  SSA_TN_Coalesce(res, OP_opnd(op, opnd_idx));
 	}
       }
 
+      // A result and an operand that must be allocated into the same
+      // variable must be coalesced
       if (OP_sameres(op)) {
 	INT res_idx, opnd_idx;
 	for (res_idx = 0; res_idx < OP_results(op); res_idx++) {
 	  if (((opnd_idx = OP_same_res(op, res_idx)) != -1) &&
 	      (OP_result(op, res_idx) != OP_opnd(op, opnd_idx)))
 	    SSA_TN_Coalesce(OP_result(op, res_idx), OP_opnd(op, opnd_idx));
+	}
+      }
+
+      // When pinning is required, coalescing must be done with the
+      // dedicated register.
+      if (OP_Has_ssa_pinning(op)) {
+	for (INT opnd_idx = 0; opnd_idx < OP_opnds(op); opnd_idx++) {
+	  TN *pinned = OP_Get_opnd_pinning(op, opnd_idx);
+	  if (pinned != NULL)
+	    SSA_TN_Coalesce(pinned, OP_opnd(op, opnd_idx));
+	}
+	for (INT res_idx = 0; res_idx < OP_results(op); res_idx++) {
+	  TN *pinned = OP_Get_result_pinning(op, res_idx);
+	  if (pinned != NULL)
+	    SSA_TN_Coalesce(pinned, OP_result(op, res_idx));
+	}
+      }
+
+      // Also, there is a mandatory coalescing for prologue and
+      // epilogue PCOPY
+      if (OP_PCOPY(op) && (OP_prologue(op) || OP_epilogue(op))) {
+	for (INT opnd_idx = 0; opnd_idx < OP_opnds(op); opnd_idx++) {
+	  SSA_TN_Coalesce(OP_result(op, opnd_idx), OP_opnd(op, opnd_idx));
 	}
       }
 
@@ -1745,7 +1973,7 @@ SSA_Psi_Coalescing ()
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     FOR_ALL_BB_OPs_FWD(bb, op) {
 
-      if (OP_code(op) != TOP_psi)
+      if (!OP_psi(op))
 	continue;
 
       TN *res_root = SSA_Info_Find_TN_Root(OP_result(op,0));
@@ -1754,7 +1982,11 @@ SSA_Psi_Coalescing ()
 
 	// if (phi_resources_interfere(ccPsi, ccOpnd)) {
 	if (IGRAPH_TNs_Interfere (res_root, opnd_root)) {
-	  insert_psi_operand_copy(op, i, TN_ssa_def(PSI_opnd(op,i)));
+	  // FdF 20090907: Put the copy just before the definition of
+	  // the argument on the right, or just before the PSI
+	  // operation in case of the last PSI operand
+	  OP *point = (i == (PSI_opnds(op)-1)) ? op : TN_ssa_def(PSI_opnd(op, i+1));
+	  insert_psi_operand_copy(op, i, point);
 
 	  // Set the root info so as to force renaming into a common
 	  // name, and update the interference graph. Cannot do it the
@@ -1776,32 +2008,6 @@ SSA_Psi_Coalescing ()
   return;
 }
 
-static BOOL
-Compare_BB_freq(const void *p1, const void *p2) {
-  const BB *bb1 = *(BB **)p1;
-  const BB *bb2 = *(BB **)p2;
-  return (BB_freq(bb1) < BB_freq(bb2)) - (BB_freq(bb1) > BB_freq(bb2));
-}
-
-static INT Aggr_Coalesce = 0;
-
-static void
-SSA_Aggressive_Coalescing_Copy(TN *dst, TN *src) {
-  TN *dst_root = SSA_Info_Find_TN_Root(dst);
-  TN *src_root = SSA_Info_Find_TN_Root(src);
-
-  if ((dst_root != src_root) && !IGRAPH_TNs_Interfere (dst_root, src_root)) {
-    if (!getenv("AGGR_COALESCE") || (atoi(getenv("AGGR_COALESCE")) > Aggr_Coalesce)) {
-      TN *root = SSA_Info_Union_TN_Root(dst_root, src_root);
-      if (root == dst_root)
-	IGRAPH_TNs_Coalesce(dst_root, src_root);  
-      else
-	IGRAPH_TNs_Coalesce(src_root, dst_root);  
-      Aggr_Coalesce ++;
-    }
-  }
-}
-
 // Perform coalescing on SSA and non-SSA copies, depending on the
 // CG_ssa_coalescing option:
 // 0: No coalescing, already checked before calling this function
@@ -1810,17 +2016,44 @@ SSA_Aggressive_Coalescing_Copy(TN *dst, TN *src) {
 // 3: All SSA and non-SSA copies can be coalesced
 
 static void
+SSA_Aggressive_Coalescing_Copy(TN *tn1, TN *tn2) {
+
+  if (TN_register_class(tn1) != TN_register_class(tn2))
+    return;
+
+  TN *root_tn1 = SSA_Info_Find_TN_Root(tn1);
+  TN *root_tn2 = SSA_Info_Find_TN_Root(tn2);
+  TN *root;
+
+  if (root_tn1 == root_tn2)
+    return;
+
+  if (IGRAPH_TNs_Interfere (root_tn1, root_tn2))
+    return;
+
+  // Do not coalesce a dedicated register with a global TNs, uses of
+  // dedicated TNs must remain local after the out-of-SSA phase
+  if ((TN_is_dedicated(root_tn1) && TN_is_global_reg(root_tn2)) ||
+      (TN_is_dedicated(root_tn2) && TN_is_global_reg(root_tn1)))
+    return;
+
+  SSA_Info_Union_TN_Root(root_tn1, root_tn2);
+}
+
+static void
 SSA_Aggressive_Coalescing_BB(BB *bb) {
 
-  Is_True(CG_ssa_coalescing > 0, ("SSA_Aggressive_Coalescing_BB must not be called when no coalescing is required"));
+  Is_True(CG_ssa_coalescing & SSA_OUT_COALESCING,
+	  ("SSA_Aggressive_Coalescing_BB must not be called when no coalescing is required"));
+
+  BOOL after_call = FALSE;
 
   OP *op;
   FOR_ALL_BB_OPs(bb, op) {
 
-    if (!OP_ssa_move(op) && (CG_ssa_coalescing < 3))
-      continue;
-
-    if (OP_copy(op)) {
+    if (OP_copy(op) &&
+	((CG_ssa_coalescing & SSA_OUT_ON_COPY) ||
+	 (OP_ssa_move(op) && (CG_ssa_coalescing & SSA_OUT_ON_SSA_MOVE)))) {
       TN *dst = OP_result(op, OP_Copy_Result(op));
       TN *src = OP_opnd(op, OP_Copy_Operand(op));
       if (SSA_Info_TN_get(dst) && SSA_Info_TN_get(src)) {
@@ -1830,7 +2063,7 @@ SSA_Aggressive_Coalescing_BB(BB *bb) {
 	// where this coalescing contraints too much the register
 	// allocator (STxP70 QMX mixer)
 	BOOL coalesce_copy = TRUE;
-	if ((CG_ssa_coalescing == 1) && OP_next(op) && OP_sameres(OP_next(op))) {
+	if (!(CG_ssa_coalescing & SSA_OUT_ON_ALL_SAMERES) && OP_next(op) && OP_sameres(OP_next(op))) {
 	  OP *defop;
 	  TN *tn_opnd;
 	  for (tn_opnd = src, defop = TN_ssa_def(tn_opnd);
@@ -1843,7 +2076,29 @@ SSA_Aggressive_Coalescing_BB(BB *bb) {
       }
     }
 
-    else if (OP_code(op) == TOP_PCOPY) {
+    else if (OP_PCOPY(op) &&
+	     ((CG_ssa_coalescing & SSA_OUT_ON_COPY) ||
+	      (OP_ssa_move(op) && (CG_ssa_coalescing & SSA_OUT_ON_SSA_MOVE)))) {
+
+      if (after_call) {
+	// Reset the global TN property on defs, if the PCOPY can be
+	// moved in the fall-thru successor and these defs are only
+	// locally used in this successor. This will allow more
+	// coalescing to be performed. The PCOPY cannot be moved in
+	// the fallthru block if the fallthru block may require the
+	// definition of a dedicated registers. This is the case if
+	// the fallthru block is a call or an exit.
+	BB *fallthru = BB_Fall_Thru_Successor(bb);
+	if (fallthru && (BB_preds_len(fallthru) == 1) &&
+	    !BB_call(fallthru) && !BB_exit(fallthru)) {
+	  for (INT i = 0; i < OP_results(op); i++) {
+	    TN *dst = OP_result(op, i);
+	    if (!GTN_SET_MemberP(BB_live_out(fallthru), dst))
+	      Reset_TN_is_global_reg(dst);
+	  }
+	}
+      }
+
       for (INT i = 0; i < OP_results(op); i++) {
 	TN *dst = OP_result(op, i);
 	TN *src = OP_opnd(op, i);
@@ -1852,13 +2107,23 @@ SSA_Aggressive_Coalescing_BB(BB *bb) {
       }
     }
 
+    if (OP_call(op))
+      after_call = TRUE;
+
   }
+}
+
+static BOOL
+Compare_BB_freq(const void *p1, const void *p2) {
+  const BB *bb1 = *(BB **)p1;
+  const BB *bb2 = *(BB **)p2;
+  return (BB_freq(bb1) < BB_freq(bb2)) - (BB_freq(bb1) > BB_freq(bb2));
 }
 
 static void
 SSA_Aggressive_Coalescing() {
 
-  if (CG_ssa_coalescing == 0)
+  if (!(CG_ssa_coalescing & SSA_OUT_COALESCING))
     return;
 
   // First, sort BBs into decreasing frequency order
@@ -1980,35 +2245,37 @@ SSA_CongruenceClasses_properties() {
 
     // FdF 20070515: Insert KILL, or set the property UNC_DEF, on
     // conditional definitions that are not dominated by another one
-    // in the same comgruence class
-    TN_LIST *p;
-    for (p = congruenceClass; p != NULL; p = TN_LIST_rest(p)) {
-      TN *tn = TN_LIST_first(p);
-      OP *op = TN_ssa_def(tn);
+    // in the same congruence class
+    if (!TN_is_dedicated(root_tn)) {
+      TN_LIST *p;
+      for (p = congruenceClass; p != NULL; p = TN_LIST_rest(p)) {
+	TN *tn = TN_LIST_first(p);
+	OP *op = TN_ssa_def(tn);
       
-      if (OP_cond_def(op)) {
-	BOOL dominated = FALSE;
-	TN_LIST *q;
-	for (q = congruenceClass; q != NULL; q = TN_LIST_rest(q)) {
-	  OP *tn_def = TN_ssa_def(TN_LIST_first(q));
-	  if ((tn_def != op) && OP_Dominates(tn_def, op)) {
-	    dominated = TRUE;
-	    break;
+	if (OP_cond_def(op)) {
+	  BOOL dominated = FALSE;
+	  TN_LIST *q;
+	  for (q = congruenceClass; q != NULL; q = TN_LIST_rest(q)) {
+	    OP *tn_def = TN_ssa_def(TN_LIST_first(q));
+	    if ((tn_def != op) && OP_Dominates(tn_def, op)) {
+	      dominated = TRUE;
+	      break;
+	    }
 	  }
-	}
-	// FdF 20090206: For an OP with multiple results the UNC_DEF
-	// property could be set only if all definitions have the
-	// property !dominated. This is not checked, and KILL
-	// definitions are just added for individual definitions when
-	// required.
-	if (!dominated) {
-	  if (OP_results(op) == 1)
-	    Set_OP_cond_def_kind(op, OP_ALWAYS_UNC_DEF);
-	  else {
-	    SSA_Disable();
-	    OP* kill_op = Mk_VarOP(TOP_KILL, 1, 0, &root_tn, NULL);
-	    BB_Insert_Op_Before(OP_bb(op), op, kill_op);
-	    SSA_Enable();
+	  // FdF 20090206: For an OP with multiple results the UNC_DEF
+	  // property could be set only if all definitions have the
+	  // property !dominated. This is not checked, and KILL
+	  // definitions are just added for individual definitions when
+	  // required.
+	  if (!dominated) {
+	    if (OP_results(op) == 1)
+	      Set_OP_cond_def_kind(op, OP_ALWAYS_UNC_DEF);
+	    else {
+	      SSA_Disable();
+	      OP* kill_op = Mk_VarOP(TOP_KILL, 1, 0, &root_tn, NULL);
+	      BB_Insert_Op_Before(OP_bb(op), op, kill_op);
+	      SSA_Enable();
+	    }
 	  }
 	}
       }
@@ -2072,8 +2339,7 @@ SSA_Undo_Renaming_BB(BB *bb, BOOL *visited) {
   for (op = BB_first_op(bb); op != NULL; op = next_op) {
     next_op = OP_next(op);
 
-    if ((OP_code(op) == TOP_phi) ||
-	(OP_code(op) == TOP_psi)) {
+    if (OP_phi(op) || OP_psi(op)) {
       BB_Remove_Op(bb, op);
       continue;
     }
@@ -2108,9 +2374,8 @@ SSA_Undo_Renaming_BB(BB *bb, BOOL *visited) {
     if (OP_copy(op)) {
       TN *dst = OP_result(op, OP_Copy_Result(op));
       TN *src = OP_opnd(op, OP_Copy_Operand(op));
-      // TBD: Until dedicated are not fully supported, do not remove a
-      // copy on dedicated TNs
-      if ((dst == src) && !TN_is_dedicated(dst))
+      // Do not remove a copy on dedicated TNs, unless it is marked ssa_move
+      if ((dst == src) && (!TN_is_dedicated(dst) || OP_ssa_move(op)))
 	BB_Remove_Op(bb, op);
     }
     else {
@@ -2162,6 +2427,10 @@ SSA_Undo_Renaming() {
 
   TN_MAP_Delete(tn_ssa_map);
   tn_ssa_map = NULL;         /* so we knew we're out of the SSA */
+
+  OP_MAP_Delete(op_ssa_pinning_map);
+  op_ssa_pinning_map = NULL;
+
   OP_MAP_Delete(phi_op_map);
   phi_op_map = NULL;
 
@@ -2180,12 +2449,110 @@ SSA_Undo_Renaming() {
   SSA_CongruenceClasses_fini();
 }
 
+static void
+SSA_split_call_bb(BB *bb) {
+  // The copies after the call have not all been coalesced. We have to
+  // move the copies in the next basic block, or insert a new basic
+  // block if the successor has several predecessors.
+  BB *bb_next = BB_Fall_Thru_Successor(bb);
+  Is_True(bb_next != NULL, ("No successor after a call."));
+  if (BB_preds_len(bb_next) != 1) {
+    BB *new_bb = Gen_And_Insert_BB_After(bb);
+    Change_Succ(bb, bb_next, new_bb);
+    Add_Goto(new_bb, bb_next);
+    bb_next = new_bb;
+  }
+  // Now, move all operations after the call in this BB. 
+  for (OP *op_copy = BB_last_op(bb); !OP_call(op_copy); op_copy = BB_last_op(bb))
+    BB_Move_Op_To_Start(bb_next, bb, op_copy);
+}
+
+static void
+SSA_Clean_Calls() {
+
+  BB *bb;
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+
+    if (!BB_call(bb) || BB_exit(bb))
+      continue;
+
+    if (!OP_call(BB_last_op(bb)))
+      SSA_split_call_bb(bb);
+
+    // Remove the extra arguments on a CALL
+    OP *op_call = BB_last_op(bb);
+    Is_True(OP_call(op_call), ("Unexpected op at the end of a call BB"));
+    INT ISA_results = OP_fixed_results(op_call);
+    INT ISA_opnds = OP_fixed_opnds(op_call);
+
+    if ((ISA_results < OP_results(op_call)) || (ISA_opnds < OP_opnds(op_call))) {
+      OP *new_op_call = Resize_OP(op_call, ISA_results, ISA_opnds);
+      BB_Replace_Op(op_call, new_op_call);
+    }
+  }
+}
+
 /* ================================================================
  * ================================================================
- *                     SSA Deconstruction
+ *                     Out Of SSA 
  * ================================================================
  * ================================================================
  */
+
+static void
+Split_Entry(BB *entry) {
+
+  Is_True((BB_entry(entry) || BB_handler(entry)), ("Split_Entry called with a non Entry bb"));
+
+  if (!BB_call(entry) && !BB_exit(entry))
+    return;
+
+  BB *split_entry = Gen_And_Insert_BB_After(entry);
+  BB_freq(split_entry) = BB_freq(entry);
+  // If there are incomming edges to a handler bb, then move them to
+  // split_entry.
+  BBLIST *preds = BB_preds(entry);
+  while (preds) {
+    BB *pred = BBLIST_item(preds);
+    preds = BBLIST_next(preds);
+    if (!BB_Retarget_Branch(pred, entry, split_entry)) {
+      Add_Goto(pred, split_entry);
+      Change_Succ(pred, entry, split_entry);
+    }
+  }
+  // outgoing edges from entry becomes outgoing edges from split_entry
+  BBLIST* nxt;
+  BBLIST* succ;
+  for (succ = BB_succs(entry); succ; succ = nxt) {
+    BB* bb_succ = BBLIST_item(succ);
+    nxt = BBLIST_next(succ);
+    float prob = BBLIST_prob(succ);
+    Unlink_Pred_Succ(entry, bb_succ);
+    Link_Pred_Succ_with_Prob(split_entry, bb_succ, prob);
+    // Also, change the PHI predecessor for all PHIs in bb_succ
+    OP *phi;
+    FOR_ALL_BB_PHI_OPs(bb_succ, phi) {
+      Change_PHI_Predecessor (phi, entry, split_entry);
+    }
+  }
+  Link_Pred_Succ_with_Prob (entry, split_entry, 1.0F);
+  // Move all non-prolog operations to split_entry
+  OP *op;
+  while (((op = BB_last_op(entry)) != NULL) &&
+	 (OP_epilogue(op) || OP_call(op) ||
+	  !(OP_prologue(op) || OP_no_move_before_gra(op) || (OP_code(op) == TOP_spadjust)))) {
+    BB_Move_Op_To_Start(split_entry, entry, op);
+  }
+  if (BB_exit(entry)) {
+    BB_Transfer_Exitinfo(entry, split_entry);
+    Exit_BB_Head = BB_LIST_Delete(entry, Exit_BB_Head);
+    Exit_BB_Head = BB_LIST_Push(split_entry, Exit_BB_Head, &MEM_pu_pool);
+  }
+  if (BB_call(entry))
+    BB_Transfer_Callinfo (entry, split_entry);
+  if (BB_asm(entry))
+    BB_Transfer_Asminfo (entry, split_entry);
+}
 
 static void
 Initialize(RID *rid) {
@@ -2201,6 +2568,17 @@ Initialize(RID *rid) {
 
   tn_ssa_info_map = NULL;
   Trace_phi_removal = Get_Trace(TP_SSA, SSA_REMOVE_PHI);
+  Trace_Igraph = Get_Trace(TP_SSA, SSA_IGRAPH);
+  Trace_SSA_Out = Get_Trace(TP_SSA, SSA_MAKE_CONST);
+
+  // Split entry BBs such that they contain only prolog code. This is
+  // needed to correctly rename the SSA when dedicated registers are
+  // used:
+  // - For calls in entry BBs
+  // - For secondary entries that have control-flow predecessors
+
+  for (BB_LIST *entries = Entry_BB_Head; entries; entries = BB_LIST_rest(entries))
+    Split_Entry(BB_LIST_first(entries));
 
   SSA_Dominance_init(rid);
 }
@@ -2210,9 +2588,10 @@ Finalize() {
   SSA_Dominance_fini();
   Free_Dominators_Memory();
   MEM_POOL_Pop(&outssa_pool);
+  MEM_POOL_Pop(&ssa_pool);
 }
 
-void SSA_Deconstruct (
+void SSA_Exit (
   RID *rid, 
   BOOL region 
 )
@@ -2222,18 +2601,9 @@ void SSA_Deconstruct (
   // Create a map to associate SSA_Info_t * to TNs
   TN_SSA_Info_init();
 
-  // Create SSA variables for dedicated registers used on Entry, Exit, Call
-  // Replace copies Rn=Vn by V'n=Vn; add Rn=V'n; before the call or return
-  // Replace copies Vn=Rn by Vn=V'n; add V'n=Rn; after a call or entry
-  SSA_insert_dedicated_copies();
-
-  // Insert copies for PHis as in Sreedhar I
-  SSA_insert_PHI_pcopies();
-
-  // Take into account operations properties:
-  // - Insert copies for same_res property: automod
-  // - Create entries for the IGraph on conflict property
-  SSA_Operation_Properties();
+  // Insert copies around PHI, automod, conflict operands, pinning,
+  // ..., such that mandatory coalescing is always possible.
+  SSA_expose_copies();
 
   // Prepass on PSI operations. Repair incorrect order in PSI
   // arguments. Add conditional MOV operations for speculated
@@ -2271,7 +2641,12 @@ void SSA_Deconstruct (
 
   // Sequentialize parallel copies for PHI operation at beginning and
   // end of basic blocks.
-  SSA_sequentialize_pcopies();
+  SSA_Sequentialize_PCopies();
+
+  // Remove the extra arguments on call operations. Also, move copy
+  // operations after a call in the next basic block, maybe inserting
+  // a new one
+  SSA_Clean_Calls();
 
   // Delete the map for SSA_Info_t
   TN_SSA_Info_fini();

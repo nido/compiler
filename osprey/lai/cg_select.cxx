@@ -1061,8 +1061,15 @@ Same_Reg_Or_Value (TN* tn1, TN *tn2)
     OP *op1 = TN_ssa_def(tn1);
     OP *op2 = TN_ssa_def(tn2);
 
-    if (op1 && op2 && OPs_Are_Equivalent (op1, op2))
-      return true;
+    if (op1 && op2 && OPs_Are_Equivalent (op1, op2)) {
+      // FdF 20090722: Must also check that tn1 in op1 and tn2 in op2
+      // are defined at the same result index
+      for (int i = 0; i < OP_results(op1); i++) {
+	if (OP_result(op1, i) == tn1)
+	  return (OP_result(op2, i) == tn2);
+      }
+      Is_True(0, ("tn1 not found in results for TN_ssa_def(op1)"));
+    }
   }
 
   return false;
@@ -1108,6 +1115,10 @@ Are_Same_Location(OP* op1, OP* op2)
         if (alias == SAME_LOCATION)
           return TRUE;
       
+      if (WN_desc (wn1) != WN_desc (wn2) || 
+	  WN_field_id (wn1) != WN_field_id (wn2))
+	return FALSE;
+
       // alias analyser doesn't seem to be able to detect obvious cases like
       // if (a) pt = tab1 else pt = tab2;
       // remove this code when Aliased code is fixed
@@ -1118,25 +1129,8 @@ Are_Same_Location(OP* op1, OP* op2)
         TN *baseTN2   = OP_opnd(op2, OP_find_opnd_use(op2, OU_base));
 
         if (offsetTN1 == offsetTN2) {
-          if (TN_is_register (baseTN1) && TN_is_register (baseTN2)) {
-            OP *op3 = TN_ssa_def(baseTN1);
-            OP *op4 = TN_ssa_def(baseTN2);
-
-            if (op3 && op4 && (OP_opnds (op3) == OP_opnds (op4))) {
-              {
-                for (int i = 0; i < OP_opnds(op3); i++) {
-                  if (OP_opnd (op3, i) != OP_opnd (op4, i))
-                    return FALSE;
-
-                  if (WN_desc (wn1) != WN_desc (wn2) || 
-                      WN_field_id (wn1) != WN_field_id (wn2))
-                    return FALSE;
-                }
-
-                return TRUE;
-              }
-            }
-          }
+	  if (Same_Reg_Or_Value(baseTN1, baseTN2))
+	    return true;
         }
       }
     }
@@ -1662,7 +1656,7 @@ Rename_TNs(BB* bp, hTN_MAP dup_tn_map)
     if (!OP_phi (op)) {
       for (INT opndnum = 0; opndnum < OP_opnds(op); opndnum++) {
         TN *res = OP_opnd(op, opndnum);
-        if (TN_is_register(res) && !TN_is_dedicated(res)) {
+        if (TN_is_SSA_candidate(res)) {
           new_tn = (TN*) hTN_MAP_Get(dup_tn_map, res);
           if (new_tn != NULL) {
             Set_OP_opnd(op, opndnum, new_tn);
@@ -1751,8 +1745,7 @@ Force_End_Tns (BB* bb, BB *tail)
       TN *old_tn;
 
       // if the GTN is alive after the hammock, need to give it a phi.
-      if (TN_is_register(res) && TN_is_global_reg(res) &&
-          !TN_is_dedicated(res) && GTN_SET_MemberP(BB_live_out(tail), res)) {
+      if (TN_is_SSA_candidate(res) && GTN_SET_MemberP(BB_live_out(tail), res)) {
         OP *phi;
         bool founddef = false;
 
@@ -2031,7 +2024,7 @@ Copy_BB_For_Duplication(BB* bp, BB* pred, BB* to_bb, BB *tail, BB_SET **bset)
         // uses will be updated in Rename_TNs. 
         for (INT opndnum = 0; opndnum < OP_results(new_op); opndnum++) {
           TN *res = OP_result(new_op, opndnum);
-          if (TN_is_register(res) && !TN_is_dedicated(res)) {
+          if (TN_is_SSA_candidate(res)) {
             TN *new_tn = Dup_TN(res);
             if (TN_is_global_reg(res)) Set_TN_is_global_reg (new_tn);
             hTN_MAP_Set(dup_tn_map, res, new_tn);
@@ -3556,7 +3549,7 @@ Select_Fold (BB *head, BB_SET *t_set, BB_SET *ft_set, BB *tail)
       BB_Lst *bbs = &phi_info->bbs;
 
       select_tn = Dup_TN(select_tn);
-      
+
       BB* tpred = Get_BB_Pos_in_PHI (phi, true_bb);
       BB* fpred = Get_BB_Pos_in_PHI (phi, false_bb);
 

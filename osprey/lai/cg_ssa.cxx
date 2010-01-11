@@ -41,15 +41,20 @@
 #include "cgexp.h"
 #include "cg_spill.h"	// for Attach_IntConst_Remat()
 #include "cg_ssa.h"
+#include "cg_outssa.h"
+#include "cg_affirm.h"
 #include "wn_map.h"
 
-BOOL CG_ssa_rematerialization = TRUE;
+BOOL  CG_ssa_rematerialization = TRUE;
+INT32 CG_ssa_variables  = SSA_VAR_NON_DEDICATED | SSA_VAR_DEDICATED_LOCAL;
+INT32 PU_ssa_variables = 0; // Per PU value of CG_ssa_variables
+INT32 CG_ssa_coalescing = SSA_OUT_ON_SSA_MOVE;
 
 //
 // Memory pool for allocating things during SSA construction.
 // Memory allocated from this pool is initialized to zero.
 //
-static MEM_POOL ssa_pool;
+MEM_POOL ssa_pool;
 
 static BOOL Trace_SSA_Build;                  /* -Wb,-tt60:0x001 */
 static BOOL Trace_dom_frontier;               /* -Wb,-tt60:0x010 */
@@ -154,6 +159,14 @@ static STACK_ITEM **tn_stack; // each TN has a corresponding list
 #define TN_STACK_tn(t)        ((tn_stack[TN_number(t)])->tn)
 #define TN_STACK_next(t)      ((tn_stack[TN_number(t)])->next)
 
+// Record the number of base TN before starting adding new TNs
+static  INT TN_STACK_size;
+
+// For each BB, a set of pushed TNs is used, so as to:
+// - Allocate a new entry in the stack for a base TN only once per basic block
+// - Pop easily at the end of the basic block
+static TN_SET *TN_STACK_cur_stacked_set;
+
 /* ================================================================
  *  initialize_tn_stack
  * ================================================================
@@ -164,10 +177,8 @@ initialize_tn_stack (void)
   //
   // Initialize this for all TNs to NULL
   //
-  tn_stack = (STACK_ITEM**)TYPE_MEM_POOL_ALLOC_N(STACK_ITEM*, 
-						&MEM_local_pool,
-						Last_TN+1);
-  return;
+  TN_STACK_size = Last_TN+1;
+  tn_stack = (STACK_ITEM**)TYPE_MEM_POOL_ALLOC_N(STACK_ITEM*, &MEM_local_pool, TN_STACK_size);
 }
 
 /* ================================================================
@@ -176,23 +187,13 @@ initialize_tn_stack (void)
  *   pop an element from the tn stack.
  * ================================================================
  */
-static TN *
+static void
 tn_stack_pop (
   TN *base
 )
 {
-  TN *tn;
-
-  if (TN_STACK_empty(base))
-    tn = base;
-  else {
-    // get the top of list
-    tn = TN_STACK_tn(base);
-    // remove the top of list
-    TN_STACK_ptr(base) = TN_STACK_next(base);
-  }
-
-  return tn;
+  Is_True(!TN_STACK_empty(base), ("Cannot POP on an empty stack"));
+  TN_STACK_ptr(base) = TN_STACK_next(base);
 }
 
 /* ================================================================
@@ -200,6 +201,9 @@ tn_stack_pop (
  *
  *  push an element on the region stack; 
  *  grow the stack if necessary
+ *
+ *  FdF 20090721: Push only once for each basic block, otherwise
+ *  simply reuse the top of stack
  * ================================================================
  */
 static void 
@@ -209,10 +213,17 @@ tn_stack_push (
 )
 {
   // add an item to the top of the list for 'base'
-  STACK_ITEM *st = TYPE_MEM_POOL_ALLOC(STACK_ITEM, &MEM_local_pool);
-  st->tn = tn;
-  st->next = TN_STACK_ptr(base);
-  TN_STACK_ptr(base) = st;
+  if (!TN_SET_MemberP(TN_STACK_cur_stacked_set, base)) {
+    STACK_ITEM *st = TYPE_MEM_POOL_ALLOC(STACK_ITEM, &MEM_local_pool);
+    st->tn = tn;
+    st->next = TN_STACK_ptr(base);
+    TN_STACK_ptr(base) = st;
+    TN_SET_Union1D(TN_STACK_cur_stacked_set, base, NULL);    
+  }
+  else {
+    Is_True(!TN_STACK_empty(base), ("Cannot replace top of empty stack"));
+    TN_STACK_ptr(base)->tn = tn;
+  }
 }
 
 /* ================================================================
@@ -227,7 +238,7 @@ tn_stack_top (
 )
 {
   if (TN_STACK_empty(base)) {
-    if (!TN_is_dedicated(base) && !TN_is_save_reg(base))
+    if (TN_is_SSA_candidate(base))
       DevWarn("Uninitialized PHI arg");
     return base;
   }
@@ -251,16 +262,18 @@ Insert_Kill_op (
   TN *tn
 )
 {
+  // In case this a dedicated register, the register MUST have been
+  // defined, either in the prolog or on a call.
+  FmtAssert(!TN_is_dedicated(tn), ("Missing definition for dedicated register in prolog or call."));
+
   // FdF: Create a pseudo-def for uninitialized uses.
-  OP* kill_op = Mk_VarOP(TOP_KILL, 1, 0, &tn, NULL);
+  TN *new_tn = Copy_TN(tn);
+  tn_stack_push(tn, new_tn);
+  OP* kill_op = Mk_VarOP(TOP_KILL, 1, 0, &new_tn, NULL);
   if (point)
     BB_Insert_Op_Before(bb, point, kill_op);
   else
     BB_Append_Op(bb, kill_op);
-  // ssa_map is set, but kill_op has not been renamed yet
-  SSA_unset(kill_op);
-  TN *new_tn = Copy_TN(tn);
-  tn_stack_push(tn, new_tn);
 }
 
 /* ================================================================
@@ -552,16 +565,85 @@ SSA_Dominance_fini() {
 // C <- B
 // C <- ASM C
 //
+
 static BOOL
-TN_can_be_renamed(TN *tn) {
-  ISA_REGISTER_CLASS cl;
-  if (!TN_is_register(tn)) return FALSE;
-  if (TN_is_dedicated(tn) || TN_is_save_reg(tn)) return FALSE;
-  cl = TN_register_class(tn);
-  if (REGISTER_CLASS_register_count(cl) < 4) return FALSE;
-  return TRUE;
+TN_need_global_pinning(TN *tn) {
+  return (TN_is_sp_reg(tn) || TN_is_gp_reg(tn) || TN_is_fp_reg(tn));
 }
-  
+
+BOOL
+TN_need_operand_pinning(OP *op, TN *tn) {
+  return (OP_call(op) && TN_is_dedicated(tn));
+}
+
+static TN_SET *dedicated_candidate_set = NULL;
+static void
+SSA_init_dedicated_TN_candidates() {
+
+  if (!(PU_ssa_variables & SSA_VAR_DEDICATED))
+    return;
+
+  dedicated_candidate_set = TN_SET_Create_Empty (Last_Dedicated_TN+1, &ssa_pool);
+
+  TN *tn;
+  TN_NUM tn_num;
+  for (tn_num = 0; tn_num <= Last_Dedicated_TN; tn_num++) {
+    if ((tn = TNvec(tn_num)) == NULL)
+      continue;
+    
+    // These registers can never be renamed as SSA variables.
+    if (   TN_is_const_reg(tn)
+	|| TN_is_static_link_reg(tn)
+        || TN_is_link_reg(tn)
+        || TN_is_pfs_reg(tn)
+        || TN_is_ra_reg(tn)
+        || TN_is_tp_reg(tn)
+	|| TN_is_save_reg(tn))
+      continue;
+
+    // Depending on the target, some dedicated registers cannot be
+    // renamed as SSA variables.
+    if (!CGTARG_SSA_dedicated_candidate_tn(tn))
+      continue;
+
+    if (TN_need_global_pinning(tn)) {
+      if (PU_ssa_variables & SSA_VAR_DEDICATED_GLOBAL)
+	TN_SET_Union1D(dedicated_candidate_set, tn, NULL);
+      
+    }
+    else {
+      if (PU_ssa_variables & SSA_VAR_DEDICATED_LOCAL)
+	TN_SET_Union1D(dedicated_candidate_set, tn, NULL);
+    }
+  }
+}
+
+BOOL
+TN_is_SSA_candidate(TN *tn) {
+  static ISA_REGISTER_CLASS Integer_Register_Class = CGTARG_Register_Class_For_Mtype(MTYPE_I4);
+  static ISA_REGISTER_CLASS Float_Register_Class = CGTARG_Register_Class_For_Mtype(MTYPE_F4);
+  static ISA_REGISTER_CLASS Predicate_Register_Class = CGTARG_Register_Class_For_Mtype(MTYPE_B);
+
+  if (!TN_is_register(tn)) return FALSE;
+
+  ISA_REGISTER_CLASS cl = TN_register_class(tn);
+  if ((cl != Integer_Register_Class) &&
+      (cl != Float_Register_Class) &&
+      (cl != Predicate_Register_Class))
+    return FALSE;
+
+  if (!TN_is_dedicated(tn)) {
+    if (PU_ssa_variables & SSA_VAR_NON_DEDICATED)
+      return TRUE;
+  }
+
+  else if ((PU_ssa_variables & SSA_VAR_DEDICATED) &&
+	   TN_SET_MemberP(dedicated_candidate_set, tn))
+    return TRUE;
+
+  return FALSE;
+}
+
 //
 // 1. We need some mapping between PHI-function opnds
 //    and BB predecessors of the BB where the PHI-function lives.
@@ -579,10 +661,11 @@ OP_MAP phi_op_map = NULL;
 TN_MAP tn_ssa_map = NULL;
 
 //
-// Mapping between phi-resource TNs and their representative name
-// TNs
-static MEM_POOL tn_map_pool;
+// When dedicated TNs are renamed, the original dedicated must be kept
+// so as to create a 'pinning' for the out-of-ssa algorithm.
+OP_MAP op_ssa_pinning_map = NULL;
 
+//
 /* ================================================================
  *   Initialize_PHI_map
  * ================================================================
@@ -592,7 +675,7 @@ Initialize_PHI_map(
   OP   *phi
 )
 {
-  Is_True(OP_code(phi) == TOP_phi,("not a PHI function"));
+  Is_True(OP_phi(phi),("not a PHI function"));
   PHI_MAP_ENTRY *entry = TYPE_MEM_POOL_ALLOC(PHI_MAP_ENTRY, 
 					     &ssa_pool);
 
@@ -615,7 +698,7 @@ Get_PHI_Predecessor (
   UINT8 i
 )
 {
-  Is_True(OP_code(phi) == TOP_phi,("not a PHI function"));
+  Is_True(OP_phi(phi),("not a PHI function"));
   PHI_MAP_ENTRY *entry = (PHI_MAP_ENTRY *)OP_MAP_Get(phi_op_map, phi);
   if (!entry) {
     DevWarn("Uninitialized PHI predecessors");
@@ -635,7 +718,7 @@ Get_PHI_Predecessor_Idx (
   BB *bb
 )
 {
-  Is_True(OP_code(phi) == TOP_phi,("not a PHI function"));
+  Is_True(OP_phi(phi),("not a PHI function"));
   PHI_MAP_ENTRY *entry = (PHI_MAP_ENTRY *)OP_MAP_Get(phi_op_map, phi);
   for (INT i = 0; i < OP_opnds(phi); i++) {
     if (entry->opnd_src[i] == bb)
@@ -714,6 +797,76 @@ static void SSA_Prepend_Phi_To_BB (
 
 /* ================================================================
  * ================================================================
+ * 		Interface for SSA pinning
+ * ================================================================
+ * ================================================================
+ */
+
+static void
+OP_Set_ssa_pinning(OP *op) {
+
+  // Allocate an array the size of the results+opnds. For each uses
+  // and definitions of the operation, set either NULL is there is no
+  // pinning, or a dedicated TN on which the operand must be pinned.
+
+  if ((OP_results(op) + OP_opnds(op)) == 0)
+    return;
+
+  TN **pinning = NULL;
+
+  INT idx = 0;
+  for (INT opnd_idx = 0; opnd_idx < OP_opnds(op); opnd_idx++, idx++) {
+    TN *tn = OP_opnd(op, opnd_idx);
+    if (TN_is_SSA_candidate(tn) && TN_need_operand_pinning(op, tn)) {
+      if (pinning == NULL)
+	pinning = TYPE_MEM_POOL_ALLOC_N(TN *, &ssa_pool, OP_results(op) + OP_opnds(op));
+      pinning[idx] = tn;
+    }
+  }
+
+  for (INT res_idx = 0; res_idx < OP_results(op); res_idx++, idx++) {
+    TN *tn = OP_result(op, res_idx);
+    if (TN_is_SSA_candidate(tn) && TN_need_operand_pinning(op, tn)) {
+      if (pinning == NULL)
+	pinning = TYPE_MEM_POOL_ALLOC_N(TN *, &ssa_pool, OP_results(op) + OP_opnds(op));
+      pinning[idx] = tn;
+    }
+  }
+
+  if (pinning != NULL)
+    OP_MAP_Set(op_ssa_pinning_map, op, pinning);
+}
+
+BOOL
+OP_Has_ssa_pinning(const OP *op) {
+  return (OP_MAP_Get(op_ssa_pinning_map, op) != NULL);
+}
+
+static TN **
+OP_Get_ssa_pinning(const OP *op) {
+  return (TN **)OP_MAP_Get(op_ssa_pinning_map, op);
+}
+
+TN *
+OP_Get_opnd_pinning(const OP *op, INT opnd_idx) {
+  TN **pinning = OP_Get_ssa_pinning(op);
+  TN *pinned = NULL;
+  if (pinning != NULL)
+    pinned = pinning[opnd_idx];
+  return pinned;
+}
+
+TN *
+OP_Get_result_pinning(const OP *op, INT res_idx) {
+  TN **pinning = OP_Get_ssa_pinning(op);
+  TN *pinned = NULL;
+  if (pinning != NULL)
+    pinned = pinning[OP_opnds(op)+res_idx];
+  return pinned;
+}
+
+/* ================================================================
+ * ================================================================
  * 		Interface for PSI operations
  * ================================================================
  * ================================================================
@@ -748,7 +901,7 @@ PSI_guard (
   UINT8 pos
 )
 {
-  Is_True(OP_code(psi) == TOP_psi,("not a PSI function"));
+  Is_True(OP_psi(psi),("not a PSI function"));
   return OP_opnd(psi, pos<<1);
 }
 
@@ -822,6 +975,16 @@ Sort_PHI_opnds (
   }
 }
 
+static OP *
+PSI_Create(TN *res, TN *guard1, TN *tn1, TN *guard2, TN *tn2) {
+  TN *opnd[4];
+  opnd[0] = guard1;
+  opnd[1] = tn1;
+  opnd[2] = guard2;
+  opnd[3] = tn2;
+  return Mk_VarOP(TOP_psi, 1, 4, &res, opnd);
+}
+
 /* ================================================================
  *   PSI_inline
  * ================================================================
@@ -839,7 +1002,7 @@ PSI_inline (
   for (opndx = 0; opndx < PSI_opnds(psi_op); opndx++) {
     TN *opnd_tn = PSI_opnd(psi_op, opndx);
     OP *def_op = TN_ssa_def(opnd_tn);
-    if (def_op && OP_code(def_op) == TOP_psi)
+    if (def_op && OP_psi(def_op))
       // Count the additional arguments after inlining
       extra_opnds += PSI_opnds(def_op) - 1;
   }
@@ -861,7 +1024,7 @@ PSI_inline (
     for (opndx = 0, inlined_opndx = 0; opndx < PSI_opnds(psi_op); opndx++) {
       TN *opnd_tn = PSI_opnd(psi_op, opndx);
       OP *def_op = TN_ssa_def(opnd_tn);
-      if (def_op && OP_code(def_op) == TOP_psi) {
+      if (def_op && OP_psi(def_op)) {
 	for (int psi_opndx = 0; psi_opndx < PSI_opnds(def_op); psi_opndx++) {
 	  opnd[inlined_opndx*2+1] = PSI_opnd(def_op, psi_opndx);
 	  opnd[inlined_opndx*2] = PSI_guard(def_op, psi_opndx);
@@ -1021,7 +1184,6 @@ Convert_PHI_to_PSI (
 
   return psi_op;
 }
-
 
 //
 // dominance frontier blocks for each BB in the region
@@ -1209,6 +1371,223 @@ SSA_Place_Phi_In_BB (
   return;
 }
 
+// Renaming of dedicated registers requires some work to be done:
+// - Uses and definitions on call operations are made explicit
+// - A PCOPY operation is inserted at the entries and exits of the
+//   function for dedicated TNs
+// - For operations with dedicated register constraints, the
+//   information on the pinning of uses and results is associaed to
+//   the operation. This will be needed during the out-of-SSA
+//   algorithm.
+
+static void
+SSA_PCOPY_Prologue(BB *bb_prolog) {
+
+  TN_SET *dedicated_set = TN_SET_Create_Empty (Last_Dedicated_TN+1,&MEM_local_pool);
+  OP *pcopy_entry = Mk_VarOP(TOP_PCOPY, 0, 0, NULL, NULL);
+  OP *op;
+  OP *pcopy_point = NULL;
+  // Look for the first use of each dedicated register
+  FOR_ALL_BB_OPs_FWD(bb_prolog, op) {
+    // This function has one single basic block, prologue and epilogue
+    // code should not mix.
+    if (OP_epilogue(op) || OP_call(op))
+      break;
+    for (INT i = 0; i < OP_opnds(op); i++) {
+      TN *tn = OP_opnd(op,i);
+      if (TN_is_SSA_candidate(tn) && TN_is_dedicated(tn) && !TN_SET_MemberP(dedicated_set, tn)) {
+	if (pcopy_point == NULL)
+	  pcopy_point = op;
+	pcopy_entry = PCOPY_add_copy(pcopy_entry, tn, tn);
+	TN_SET_Union1D(dedicated_set, tn, NULL);
+      }
+    }
+    // When a dedicated register is defined, mark is a seen so that
+    // later uses are not considered live-in
+    for (INT i = 0; i < OP_results(op); i++) {
+      TN *tn = OP_result(op,i);
+      if (TN_is_SSA_candidate(tn) && TN_is_dedicated(tn))
+	TN_SET_Union1D(dedicated_set, tn, NULL);
+    }
+  }
+  // There is a non-empty pcopy operation, insert it just before the
+  // first use of a dedicated register
+  if (pcopy_point != NULL) {
+    Set_OP_ssa_move(pcopy_entry);
+    Set_OP_prologue(pcopy_entry);
+    BB_Insert_Op_Before(bb_prolog, pcopy_point, pcopy_entry);
+  }
+}
+
+static void
+SSA_PCOPY_Epilogue(BB *bb_epilog) {
+
+  TN_SET *dedicated_set = TN_SET_Create_Empty (Last_Dedicated_TN+1,&MEM_local_pool);
+  OP *pcopy_exit = Mk_VarOP(TOP_PCOPY, 0, 0, NULL, NULL);
+  OP *op;
+  OP *pcopy_point = NULL;
+  // Look for the last definition of each dedicate register
+  FOR_ALL_BB_OPs_REV(bb_epilog, op) {
+    // This function has one single basic block, prologue and epilogue
+    // code should not mix.
+    if (OP_prologue(op))
+      break;
+    for (INT i = 0; i < OP_results(op); i++) {
+      TN *tn = OP_result(op,i);
+      if (TN_is_SSA_candidate(tn) && TN_is_dedicated(tn) && !TN_SET_MemberP(dedicated_set, tn)) {
+	if (pcopy_point == NULL)
+	  pcopy_point = op;
+	pcopy_exit = PCOPY_add_copy(pcopy_exit, tn, tn);
+	TN_SET_Union1D(dedicated_set, tn, NULL);
+      }
+    }
+    // When a dedicated register is used, set the pcopy point
+    for (INT i = 0; i < OP_opnds(op); i++) {
+      TN *tn = OP_opnd(op,i);
+      if ((pcopy_point == NULL) && TN_is_SSA_candidate(tn) && TN_is_dedicated(tn))
+	pcopy_point = op;
+    }
+  }
+  // There is a non-empty pcopy operation, insert it just after the
+  // last definition of a dedicated register
+  if (pcopy_point != NULL) {
+    Set_OP_ssa_move(pcopy_exit);
+    Set_OP_epilogue(pcopy_exit);
+    BB_Insert_Op_After(bb_epilog, pcopy_point, pcopy_exit);
+  }
+}
+
+/* ================================================================
+ *  SSA_Explicit_Call
+ * ================================================================
+ */
+
+static void
+SSA_Explicit_Call(BB *bb_call) {
+
+  OP *op_call = BB_xfer_op(bb_call);
+  Is_True(OP_call(op_call), ("Unexpected op at the end of a call BB"));
+
+  // The implicit arguments of the call have been registered in the
+  // CALLINFO annotation.
+  CALLINFO *callinfo = ANNOT_callinfo(ANNOT_Get(BB_annotations(bb_call), ANNOT_CALLINFO));
+  INT call_results = CALLINFO_call_results(callinfo);
+  INT call_opnds = CALLINFO_call_opnds(callinfo);
+
+  // Now, count only the dedicated registers that will be renamed
+  // during SSA.
+
+  INT SSA_results = 0, SSA_opnds = 0;
+
+  for (INT idx = 0; idx < call_opnds; idx ++) {
+    TN *tn = CALLINFO_call_opnd(callinfo)[idx];
+    if (TN_is_SSA_candidate(tn))
+      SSA_opnds ++;
+  }
+
+  for (INT idx = 0; idx < call_results; idx ++) {
+    TN *tn = CALLINFO_call_result(callinfo)[idx];
+    if (TN_is_SSA_candidate(tn))
+      SSA_results ++;
+  }
+
+  if ((SSA_results == 0) && (SSA_opnds == 0))
+    return;
+
+  // Rewrite the call with explicit operands
+  INT new_results = OP_results(op_call) + SSA_results;
+  INT new_opnds = OP_opnds(op_call) + SSA_opnds;
+  OP *new_op_call = Resize_OP(op_call, new_results, new_opnds);
+
+  INT opnd_idx = OP_opnds(op_call);
+  for (INT idx = 0; idx < call_opnds; idx ++) {
+    TN *tn = CALLINFO_call_opnd(callinfo)[idx];
+    if (TN_is_SSA_candidate(tn)) {
+      Set_OP_opnd(new_op_call, opnd_idx, tn);
+      opnd_idx ++;
+    }
+  }
+
+  INT result_idx = OP_results(op_call);
+  for (INT idx = 0; idx < call_results; idx ++) {
+    TN *tn = CALLINFO_call_result(callinfo)[idx];
+    if (TN_is_SSA_candidate(tn)) {
+      Set_OP_result(new_op_call, result_idx, tn);
+      result_idx ++;
+    }
+  }
+
+  BB_Replace_Op(op_call, new_op_call);
+}
+
+static void
+SSA_init_dedicated_renaming()
+{
+  BB *bb;
+
+  dedicated_candidate_set = NULL;
+
+  if (!(PU_ssa_variables & SSA_VAR_DEDICATED))
+    return;
+
+  // Check if dedicated registers can be renamed, currently this is
+  // not possible if asm statements are used or there exist et least
+  // one Entry Handler with incoming control-flow edge.
+  if (PU_Has_Asm) {
+    PU_ssa_variables &= ~SSA_VAR_DEDICATED;
+    return;
+  }
+
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+    if ((BB_entry(bb) || BB_handler(bb)) && (BB_preds_len(bb) > 0)) {
+      //      FmtAssert(0, ("Handler with incoming flow edge"));
+      PU_ssa_variables &= ~SSA_VAR_DEDICATED;
+      return;
+    }
+  }
+
+  SSA_init_dedicated_TN_candidates();
+
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+
+    // Create a parallel copy operation that defines all the dedicated
+    // registers in the prolog
+    if (BB_entry(bb))
+      SSA_PCOPY_Prologue(bb);
+
+    // Create a parallel copy operation that uses all the dedicated
+    // registers in the epilog
+    if (BB_exit(bb))
+      SSA_PCOPY_Epilogue(bb);
+
+    // Insert explicit arguments and results on CALL instructions for
+    // uses and definitions of dedicated registers. Tail calls are not
+    // really calls.
+    if (BB_call(bb) && !BB_exit(bb))
+      SSA_Explicit_Call(bb);
+#if 0
+    if (BB_asm(bb)) {
+      ASM_OP_ANNOT* asm_info = (OP_code(BB_last_op(bb)) == TOP_asm) ?
+	(ASM_OP_ANNOT*) OP_MAP_Get(OP_Asm_Map, BB_last_op(bb)) : NULL;
+      ANNOTATION *ant = ANNOT_Get (BB_annotations(bb), ANNOT_ASMINFO);
+      ASMINFO *info = ANNOT_asminfo(ant);
+    }
+#endif
+    // Finally, traverse all operations and add pinning where required.
+    OP *op;
+    FOR_ALL_BB_OPs_FWD(bb, op) {
+
+      if (OP_call(op))
+	OP_Set_ssa_pinning(op);
+
+      // TBD: Also handle ASM OPs
+
+      else if (!OP_PCOPY(op) || (!OP_prologue(op) && !OP_epilogue(op)))
+	OP_Set_ssa_pinning(op);
+    }
+  }
+}
+
 /* ================================================================
  *  initialize_tn_def_map
  * ================================================================
@@ -1236,7 +1615,7 @@ initialize_tn_def_map (BOOL incremental)
 	TN *tn = OP_result(op,i);
 	// Already an SSA variable (for incremental renaming), or
 	// cannot be an SSA variable
-	if (!(TN_is_global_reg(tn) && TN_can_be_renamed(tn)))
+	if (!(TN_is_global_reg(tn) && TN_is_SSA_candidate(tn)))
 	  continue;
 	if (incremental && TN_is_ssa_var(tn))
 	  continue;
@@ -1293,14 +1672,12 @@ static BB_SET *Phi_Functions_has_already;
 
 static BOOL
 Lookup_Phi_Function_For_TN(BB *bb, TN *tn) {
-  OP *op;
+  OP *phi;
   TN *opnd;
 
-  FOR_ALL_BB_OPs_FWD(bb, op) {
-    if (OP_code(op) != TOP_phi)
-      break;
-    for (INT i = 0; i < OP_opnds(op); i++) {
-      opnd = OP_opnd(op,i);
+  FOR_ALL_BB_PHI_OPs(bb, phi) {
+    for (INT i = 0; i < OP_opnds(phi); i++) {
+      opnd = OP_opnd(phi,i);
       if (opnd == tn)
 	return TRUE;
     }
@@ -1407,34 +1784,11 @@ Copy_TN (
 )
 {
   Is_True(TN_is_register(tn),("not a register tn"));
-
   //
   // Is supposed to return a different TN_number but else
   // identical
   //
-  // TODO: TN_GLOBAL_REG flag and any spill location associated 
-  //       with this TN is cleared in the new TN. Does it matter ?
-  //
-  TN *new_tn = Dup_TN(tn);
-
-  // FdF: If tn was gra_homeable, new_tn must not be. Otherwise they
-  // would share the same home location, and when code motion make the
-  // two interfere, spilling one would break the other. (bug dec_amr
-  // with LAO).
-  //
-  // TODO: Fixing it in SSA_Make_Conventional would be better. Global
-  // registers marked gra_homeable to the same home location should
-  // be renamed into the same global TN, or if there is an
-  // interference, the gra_homeable property must be removed.
-#if 0
-  // FdF 20061206: Now performed in SSA_UNIVERSE_Finalize in order to
-  // reset the property only when the TN is merged with other TNs.
-  if (TN_is_gra_homeable(tn)) {
-    Reset_TN_is_gra_homeable(new_tn);
-    Set_TN_spill(new_tn, NULL);
-  }
-#endif
-  return new_tn;
+  return Dup_TN_Even_If_Dedicated(tn);
 }
 
 /* ================================================================
@@ -1448,16 +1802,16 @@ Rename_Phi_Operands (
 )
 {
   INT i;
-  OP *op;
+  OP *phi;
 
-  FOR_ALL_BB_PHI_OPs(sc,op) {
-    for (i = 0; i < OP_opnds(op); i++) {
-      TN *tn = OP_opnd(op,i);
-      if (Get_PHI_Predecessor(op,i) == bb) {
+  FOR_ALL_BB_PHI_OPs(sc,phi) {
+    for (i = 0; i < OP_opnds(phi); i++) {
+      TN *tn = OP_opnd(phi,i);
+      if (Get_PHI_Predecessor(phi,i) == bb) {
 	if (TN_STACK_empty(tn))
 	  Insert_Kill_op(bb, BB_branch_op(bb), tn);
 	TN *new_tn = tn_stack_top(tn);
-	Set_OP_opnd(op,i,new_tn);
+	Set_OP_opnd(phi,i,new_tn);
 	break;
       }
     }
@@ -1502,6 +1856,10 @@ SSA_Rename_BB (
   }
 #endif
 
+  TN_SET *tn_stacked_set = TN_SET_Create_Empty (TN_STACK_size, &MEM_local_pool);
+  // All push function for this BB will use and update this set
+  TN_STACK_cur_stacked_set = tn_stacked_set;
+
   // We also need to rename LOOPINFO_trip_count_tn
   {
     ANNOTATION *annot = ANNOT_Get(BB_annotations(bb), ANNOT_LOOPINFO);
@@ -1514,13 +1872,55 @@ SSA_Rename_BB (
     }
   }
 
-  FOR_ALL_BB_OPs_FWD(bb, op) {
+  OP *op_next;
+  for (OP *op = BB_first_op(bb); op != NULL; op = op_next) {
+    op_next = OP_next(op);
+
+    // Perform copy propagation if required
+    if (OP_Is_Copy(op) && (CG_ssa_coalescing & SSA_IN_DO_COPY_PROP) &&
+	!OP_Is_Affirm(op) && !OP_Has_ssa_pinning(op)) {
+      TN *src_copy = OP_Copy_Operand_TN(op);
+      TN *dst_copy = OP_Copy_Result_TN(op);
+      if (TN_is_SSA_candidate(src_copy) &&
+	  TN_is_SSA_candidate(dst_copy)) {
+	BOOL do_copy = (TN_register_class(src_copy) == TN_register_class(dst_copy));
+#if Is_True_On
+	if (getenv("SSA_COPY") != NULL) {
+	  static int count = atoi(getenv("SSA_COPY"));
+	  do_copy = (count > 0);
+	  if (count > 0)
+	    count--;
+	}
+#endif
+	// Do not perform copy propagation when this would transfer a
+	// TN_home to another TN.
+	if (do_copy &&
+	    TN_is_gra_homeable(src_copy) &&
+	    (!TN_is_gra_homeable(dst_copy) ||
+	     (TN_home(src_copy) != TN_home(dst_copy))))
+	  do_copy = FALSE;
+	if (do_copy) {
+	  if (src_copy != dst_copy) {
+	    if (TN_STACK_empty(src_copy))
+	      Insert_Kill_op(bb, op, src_copy);
+	    tn_stack_push(dst_copy, tn_stack_top(src_copy));
+	  }
+	  // Copy_TN (src_copy); // Just for debug
+	  op_next = OP_next(op);
+	  BB_Remove_Op(bb, op);
+	  continue;
+	}
+      }
+    }
 
     //
     // if this happens to be a phi-function, operands are renamed
     // when processing corresponding CFG predecessors
+    // Psi arguments are renamed at their creation
+    // Also, do not rename the operands of the PCOPY operation in the
+    // prologue
     //
-    if (OP_code(op) != TOP_phi) {
+    if (!OP_phi(op) && !OP_psi(op) && !(OP_PCOPY(op) && OP_prologue(op))) {
       //
       // rename operands
       //
@@ -1529,7 +1929,7 @@ SSA_Rename_BB (
 	//
 	// don't rename not allocatable TNs
 	//
-	if (!TN_is_register(tn) || !TN_can_be_renamed(tn)) continue;
+	if (!TN_is_register(tn) || !TN_is_SSA_candidate(tn)) continue;
 
 	if (TN_STACK_empty(tn))
 	  Insert_Kill_op(bb, op, tn);
@@ -1541,53 +1941,46 @@ SSA_Rename_BB (
     //
     // push results on stack
     //
-    for (i = 0; i < OP_results(op); i++) {
-      TN *tn = OP_result(op,i);
-      //
-      // result TN must be a register ??
-      // but do not touch dedicated TNs
-      if (TN_can_be_renamed(tn)) {
+    // Do not rename the results of the PCOPY operation in the
+    // epilogue
+    if (!OP_PCOPY(op) || !OP_epilogue(op)) {
+      for (i = 0; i < OP_results(op); i++) {
+	TN *tn = OP_result(op,i);
+	//
+	// result TN must be a register
+	if (!TN_is_SSA_candidate(tn))
+	  continue;
+
 	if (incremental && TN_is_ssa_var(tn)) {
 	  tn_stack_push(tn, tn);
 	}
-	//
-	else if (OP_cond_def(op)) {
-	  /* Create a PSI to merge the previous value with the new
-	     one. */
-	  if (TN_STACK_empty(tn))
-	    Insert_Kill_op(bb, op, tn);
-	  TN *old_tn = tn_stack_top(tn);
 
-	  new_tn = Copy_TN (tn);
-	  tn_stack_push(tn, new_tn);
-
-	  TN *opnd[4];
-	  opnd[0] = True_TN;
-	  opnd[1] = old_tn;
-	  opnd[2] = OP_guard(op);
-	  opnd[3] = new_tn;
-	  OP* psi_op = Mk_VarOP(TOP_psi, 1, 4, &tn, opnd);
-	  BB_Insert_Op_After(bb, op, psi_op);
-	  // tn_ssa_map is set, but psi_op has not been renamed yet
-	  SSA_unset(psi_op);
-
-	  TN *psi_tn = Copy_TN (tn);
-	  tn_stack_push(tn, psi_tn);
-	  op = psi_op;
-	}
 	else {
 	  new_tn = Copy_TN (tn);
+	  if (OP_cond_def(op)) {
+	    if (TN_STACK_empty(tn))
+	      Insert_Kill_op(bb, op, tn);
+	    /* Create a PSI to merge the previous value with the new one. */
+	    OP *psi_op = PSI_Create(tn, True_TN, tn_stack_top(tn), OP_guard(op), new_tn);
+	    BB_Insert_Op_After(bb, op, psi_op);
+	    // tn_ssa_map is set, but psi_op has not been renamed yet,
+	    // psi_op will be renamed in the next iteration
+	    SSA_unset(psi_op);
+	    op_next = psi_op;
+	  }
 	  tn_stack_push(tn, new_tn);
+	  Set_OP_result(op, i, new_tn);
+	  Set_TN_ssa_def(new_tn, op);  // this should also include PHIs
 	}
+
 #if 0
-	fprintf(TFile, "  top of stack for ");
-	Print_TN(tn, FALSE);
-	fprintf(TFile, " is ");
+	fprintf(TFile, "  setting TN_ssa_def for ");
 	Print_TN(new_tn, FALSE);
-	fprintf(TFile, "\n");
+	fprintf(TFile, " to ");
+	Print_OP(op);
 #endif
-      }
-    }  /* while rslts */
+      }  /* while rslts */
+    }
   } /* for all BB ops */
 
   //
@@ -1609,43 +2002,11 @@ SSA_Rename_BB (
 
   //
   // pop the tn_stack for those TNs that have been pushed
-  // as many times as it's been pushed ... Must do it in the reverse
-  // order of pushing since it's here where I really rename all the
-  // destination TNs.
   //
-  OP *op_prev;
-  for (op = BB_last_op(bb); op; op = op_prev) {
-    op_prev = OP_prev(op);
-    //  FOR_ALL_BB_OPs_REV(bb,op) {
-    //
-    // rename result TNs
-    //
-    for (i = OP_results(op)-1; i >= 0; i--) {
-      TN *tn = OP_result(op,i);
-      //
-      // must be a register TN, but do not rename dedicated or
-      // save TNs
-      //
-      if (TN_can_be_renamed(tn)) {
-	new_tn = tn_stack_pop(tn);
-	if (OP_Is_Copy(op) && Get_Trace(TP_TEMP, 0x4)) {
-	  TN *src_copy = OP_Copy_Operand_TN(op);
-	  if (new_tn == src_copy) { // Copy propagation was performed on this op
-	    BB_Remove_Op(bb, op);
-	    continue;
-	  }
-	}
-	Set_OP_result(op,i,new_tn);
-	Set_TN_ssa_def(tn, NULL);
-	Set_TN_ssa_def(new_tn, op);  // this should also include PHIs
-#if 0
-	fprintf(TFile, "  setting TN_ssa_def for ");
-	Print_TN(new_tn, FALSE);
-	fprintf(TFile, " to ");
-	Print_OP(op);
-#endif
-      }
-    }
+  for (TN *tn = TN_SET_Choose(tn_stacked_set);
+       tn != TN_SET_CHOOSE_FAILURE;
+       tn = TN_SET_Choose_Next(tn_stacked_set, tn)) {
+    tn_stack_pop(tn);
   }
 
   // mark as visited
@@ -1663,13 +2024,36 @@ SSA_Rename (BOOL incremental)
 {
   BB  *bb;
 
+  PU_ssa_variables = CG_ssa_variables;
+
+#if Is_True_On
+  if ((PU_ssa_variables & SSA_VAR_DEDICATED) &&
+      !incremental && (getenv("SSA_DEDIC") != NULL)) {
+    static int count = atoi(getenv("SSA_DEDIC"));
+    static int SSA_on_dedicated;
+    if (count == 0)
+      PU_ssa_variables &= ~SSA_VAR_DEDICATED;
+    else
+      count --;
+  }
+#endif
+
   //
   // First, calculate the dominance frontiers
   //
   SSA_Compute_Dominance_Frontier ();
 
-  TN_LIST *global_tns;
+  // Make definition/uses of dedicated registers explicit on ENTRY/EXIT/CALL/ASM operations.
 
+  if (!incremental) {
+    op_ssa_pinning_map = OP_MAP_Create();
+    // TBD: Add support for new call instructions in incremental mode
+    SSA_init_dedicated_renaming();
+    // Build live-analysis
+    GRA_LIVE_Init (NULL);
+  }
+
+  TN_LIST *global_tns;
   global_tns = initialize_tn_def_map(incremental);
 
   if (Trace_SSA_Build) {
@@ -1739,7 +2123,6 @@ ssa_init () {
 
   if (!initialized) {
     MEM_POOL_Initialize (&ssa_pool, "ssa pool", TRUE);
-    MEM_POOL_Initialize (&tn_map_pool, "tn map pool", TRUE);
     initialized = TRUE;
   }
 
@@ -1778,12 +2161,6 @@ SSA_Enter (
   //
   MEM_POOL_Push (&ssa_pool);
 
-  // [FdF, CM 20030926] Moved from ssa_init to this point
-  // so that the pushes/popes are well-balanced
-  // So that SSA_Make_Conventional() can Pop it in order to
-  // clean up memory
-  MEM_POOL_Push(&tn_map_pool);
-
   //
   // initialize phi_op_map, deleted by the SSA_Remove_Pseudo_OPs()
   //
@@ -1802,12 +2179,10 @@ SSA_Enter (
 #if 0
   if (Get_Trace(TP_TEMP, 0x8)) {
     BB *bb;
-    OP *op;
+    OP *phi;
     for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
-      FOR_ALL_BB_OPs_FWD(bb,op) {
-	if (OP_code(op) != TOP_phi)
-	  break;
-	Sort_PHI_opnds(op); // PSI experimentation
+      FOR_ALL_BB_PHI_OPs(bb,phi) {
+	Sort_PHI_opnds(phi); // PSI experimentation
       }
     }
   }
@@ -1865,6 +2240,12 @@ SSA_Check (
   BOOL region 
 )
 {
+#if Is_True_On
+  if (getenv("SSA") != NULL) {
+    static int count = atoi(getenv("SSA"));
+    return (count > 0) ? (count--,1) : 0;
+  }
+#endif
 #if 0
   BB *bb;
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
@@ -1900,12 +2281,6 @@ SSA_Verify_TN(BB *bb, OP *op, TN *tn)
   BOOL ok = TRUE;
   
   def_op = TN_ssa_def(tn);
-
-#if 1
-  // temporary workaround to catch valid case where tn is not defined.
-  if (def_op == NULL && BB_exit(bb)) 
-    return ok;
-#endif
 
   if (def_op == NULL) {
     DevWarn("Missing SSA def for TN. TN opnd: PU:%s BB:%d OP:%d TN:%d", 
@@ -1955,7 +2330,7 @@ SSA_Verify (
 
     FOR_ALL_BB_OPs(bb, op) {
 
-      if (OP_code(op) == TOP_phi) {
+      if (OP_phi(op)) {
 	/* Get phi map entry. */
 	if (OP_opnds(op) != BB_preds_len(bb)) {
 	  DevWarn("Invalid phi for bb BB%d\n\n", BB_id(bb));
@@ -2013,25 +2388,30 @@ SSA_Verify (
       }
 
       /* For all operations, including PHIs. */
-      int i;
-      for (i = 0; i < OP_opnds(op); i++) {
-	TN *tn = OP_opnd(op, i);
-	if (TN_is_register(tn) && TN_can_be_renamed(tn)) {
-	  /* Verify tn links. */
-	  ok &= SSA_Verify_TN(bb, op, tn);
+      // Ignore uses of PCOPY prologue
+      if (!OP_PCOPY(op) || !OP_prologue(op)) {
+	for (INT i = 0; i < OP_opnds(op); i++) {
+	  TN *tn = OP_opnd(op, i);
+	  if (TN_is_register(tn) && TN_is_SSA_candidate(tn)) {
+	    /* Verify tn links. */
+	    ok &= SSA_Verify_TN(bb, op, tn);
+	  }
 	}
       }
-      for (i = 0; i < OP_results(op); i++) {
-	TN *tn = OP_result(op, i);
-	if (TN_is_register(tn) && TN_can_be_renamed(tn)) {
-	  /* Verify tn links. */
-	  ok &= SSA_Verify_TN(bb, op, tn);
-	  /* Verify unicity of def. */
-	  OP *def_op = TN_ssa_def(tn);
-	  if (def_op != NULL && def_op != op) {
-	    DevWarn("OP don't match the TN ssa OP:%d. TN result: PU:%s BB:%d OP:%d TN:%d",
-		    OP_map_idx(def_op), Cur_PU_Name, BB_id(bb), OP_map_idx(op), TN_number(tn));
-	    ok = FALSE;
+      // Ignore definition of PCOPY epilogue
+      if (!OP_PCOPY(op) || !OP_epilogue(op)) {
+	for (INT i = 0; i < OP_results(op); i++) {
+	  TN *tn = OP_result(op, i);
+	  if (TN_is_register(tn) && TN_is_SSA_candidate(tn)) {
+	    /* Verify tn links. */
+	    ok &= SSA_Verify_TN(bb, op, tn);
+	    /* Verify unicity of def. */
+	    OP *def_op = TN_ssa_def(tn);
+	    if (def_op != NULL && def_op != op) {
+	      DevWarn("OP don't match the TN ssa OP:%d. TN result: PU:%s BB:%d OP:%d TN:%d",
+		      OP_map_idx(def_op), Cur_PU_Name, BB_id(bb), OP_map_idx(op), TN_number(tn));
+	      ok = FALSE;
+	    }
 	  }
 	}
       }
@@ -2040,6 +2420,141 @@ SSA_Verify (
 
 
   if (!ok) DevWarn("*** SSA_Verify FAILED");
+  Is_True(ok, ("*** SSA_Verify FAILED"));
 #endif
   return ok;
+}
+
+static TN_SET *dedicated_call_set = NULL;
+static TN_SET *call_opnd_set = NULL;
+static TN_SET *call_result_set = NULL;
+
+static void
+Set_Call_Dedicated_Opnds(BB *bb, CALLINFO *call_info) {
+
+  TN_SET_ClearD(dedicated_call_set);
+  INT call_opnds = 0;
+  for (OP *op = OP_prev(BB_last_op(bb)), *prev_op; op != NULL; op = prev_op) {
+    prev_op = OP_prev(op);
+    for (INT i = 0; i < OP_results(op); i++) {
+      TN *tn = OP_result(op,i);
+      if (!TN_is_dedicated(tn) || !TN_SET_MemberP(call_opnd_set, tn))
+	continue;
+      if (!TN_SET_MemberP(dedicated_call_set, tn)) {
+	TN_SET_Union1D(dedicated_call_set, tn, NULL);
+	call_opnds++;
+      }
+    }
+  }
+
+  TN **opnds = NULL;
+  if (call_opnds > 0) {
+    opnds = TYPE_MEM_POOL_ALLOC_N(TN *, &MEM_pu_pool, call_opnds);
+    INT i;
+    TN *call_opnd;
+    for ( call_opnd = TN_SET_Choose(dedicated_call_set), i = 0;
+	  call_opnd != TN_SET_CHOOSE_FAILURE;
+	  call_opnd = TN_SET_Choose_Next(dedicated_call_set, call_opnd), i++ )
+      opnds[i] = call_opnd;
+  }
+  CALLINFO_call_opnds(call_info) = call_opnds;
+  CALLINFO_call_opnd(call_info) = opnds;
+}
+
+/* ======================================================================
+ *   Set_Call_Dedicated_Results
+ *
+ *   Implement a small forward pass in order to determine
+ *   the CALL results .
+ *   Resemble routine Get_Intrinsic_Call_Dedicated_Tn
+ * ======================================================================
+ */
+static BOOL
+Set_Call_Dedicated_Results(BB *bb, CALLINFO *call_info) {
+
+  TN_SET_ClearD(dedicated_call_set);
+  INT call_results = 0;
+  // Continue to search for uses of dedicated registers for call
+  // results until a duplicated use or a def of a dedicated register
+  // is found.
+  for (OP *op = BB_first_op(bb), *succ_op; op != NULL; op = succ_op) {
+    succ_op = OP_next(op);
+    for (INT i = 0; i < OP_opnds(op); i++) {
+      TN *tn = OP_opnd(op,i);
+      if (!TN_is_dedicated(tn) || !TN_SET_MemberP(call_result_set, tn))
+	continue;
+      if (!TN_SET_MemberP(dedicated_call_set, tn)) {
+	TN_SET_Union1D(dedicated_call_set, tn, NULL);
+	call_results++;
+      }
+      else {
+	// Found a dedicated already used, stop now
+	succ_op = NULL;
+	break;
+      }
+    }
+    // Check if no dedicated register is defined.
+    for (INT i = 0; i < OP_results(op); i++) {
+      TN *tn = OP_result(op,i);
+      if (TN_is_dedicated(tn)) {
+	succ_op = NULL;
+	break;
+      }
+    }
+  }
+
+  if (call_results > 0) {
+    INT new_results = CALLINFO_call_results(call_info) + call_results;
+    TN **results = TYPE_MEM_POOL_ALLOC_N(TN *, &MEM_pu_pool, new_results);
+    INT i;
+    TN *call_result;
+    Is_True(new_results == TN_SET_Size(dedicated_call_set), ("Internal error"));
+    for ( call_result = TN_SET_Choose(dedicated_call_set), i = 0;
+	  call_result != TN_SET_CHOOSE_FAILURE;
+	  call_result = TN_SET_Choose_Next(dedicated_call_set, call_result), i++ )
+      results[i] = call_result;
+    if (CALLINFO_call_result(call_info) != NULL)
+      MEM_POOL_FREE(&MEM_pu_pool, CALLINFO_call_result(call_info));
+    CALLINFO_call_results(call_info) = new_results;
+    CALLINFO_call_result(call_info) = results;
+  }
+}
+
+void
+SSA_init_call_parms(RID *rid, BOOL region) {
+
+  // First, init the set of possible input and output paramters for a
+  // call.
+  dedicated_call_set = TN_SET_Create_Empty (Last_Dedicated_TN+1, &MEM_local_pool);
+  call_opnd_set = TN_SET_Create_Empty (Last_Dedicated_TN+1, &MEM_local_pool);
+  call_result_set = TN_SET_Create_Empty (Last_Dedicated_TN+1, &MEM_local_pool);
+
+  ISA_REGISTER_CLASS rc;
+  FOR_ALL_ISA_REGISTER_CLASS(rc) {
+    REGISTER reg;
+    REGISTER_SET call_opnds = REGISTER_CLASS_function_argument(rc);
+    FOR_ALL_REGISTER_SET_members(call_opnds, reg) {
+      TN *tn = Build_Dedicated_TN(rc, reg, 0);
+      TN_SET_Union1D(call_opnd_set, tn, NULL);
+    }
+    REGISTER_SET call_results = REGISTER_CLASS_function_value(rc);
+    FOR_ALL_REGISTER_SET_members(call_results, reg) {
+      TN *tn = Build_Dedicated_TN(rc, reg, 0);
+      TN_SET_Union1D(call_result_set, tn, NULL);
+    }
+    if (RS_TN != NULL)
+      TN_SET_Union1D(call_opnd_set, RS_TN, NULL);
+  }
+
+  // Then, look for call blocks and init the input and output
+  // parameters
+  BB *bb, *bb_next;
+  for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
+    if (!BB_call(bb))
+      continue;
+    CALLINFO *call_info = ANNOT_callinfo(ANNOT_Get(BB_annotations(bb), ANNOT_CALLINFO));
+    Set_Call_Dedicated_Opnds(bb, call_info);
+    if ((bb_next = BB_Fall_Thru_Successor(bb)) != NULL) 
+      Set_Call_Dedicated_Results(bb_next, call_info);
+  }
 }

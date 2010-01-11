@@ -4679,7 +4679,7 @@ Verify_Instruction_Simple (
 
   INT results = OP_results(op);
   if (results != OP_fixed_results(op)) {
-    FmtAssert(TOP_is_var_opnds(top) && results > OP_fixed_results(op),
+    FmtAssert((TOP_is_var_opnds(top) || OP_call(op)) && results > OP_fixed_results(op),
 	      ("wrong number of results (%d) for %s",
 	       results,
 	       TOP_Name(top)));
@@ -4691,7 +4691,7 @@ Verify_Instruction_Simple (
 
   INT opnds = OP_opnds(op);
   if (opnds != OP_fixed_opnds(op)) {
-    FmtAssert(TOP_is_var_opnds(top) && opnds > OP_fixed_opnds(op),
+    FmtAssert((TOP_is_var_opnds(top) || OP_call(op)) && opnds > OP_fixed_opnds(op),
 	      ("wrong number of operands (%d) for %s",
 	       opnds,
 	       TOP_Name(top)));
@@ -4730,7 +4730,7 @@ Verify_Instruction (
 
   INT results = OP_results(op);
   if (results != OP_fixed_results(op)) {
-    FmtAssert(TOP_is_var_opnds(top) && results > OP_fixed_results(op),
+    FmtAssert((TOP_is_var_opnds(top) || OP_call(op)) && results > OP_fixed_results(op),
 	      ("wrong number of results (%d) for %s",
 	       results,
 	       TOP_Name(top)));
@@ -4742,7 +4742,7 @@ Verify_Instruction (
 
   INT opnds = OP_opnds(op);
   if (opnds != OP_fixed_opnds(op)) {
-    FmtAssert(TOP_is_var_opnds(top) && opnds > OP_fixed_opnds(op),
+    FmtAssert((TOP_is_var_opnds(top) || OP_call(op)) && opnds > OP_fixed_opnds(op),
 	      ("wrong number of operands (%d) for %s",
 	       opnds,
 	       TOP_Name(top)));

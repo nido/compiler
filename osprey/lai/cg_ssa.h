@@ -79,7 +79,11 @@ extern BOOL CG_ssa_rematerialization;
  * ========================================================================
  */
 
+extern MEM_POOL ssa_pool;
 extern TN_MAP tn_ssa_map;
+extern OP_MAP op_ssa_pinning_map;
+
+BOOL TN_is_SSA_candidate(TN *tn);
 
 /*
  * TN_ssa_def()
@@ -117,7 +121,7 @@ TN_is_ssa_var (const TN *tn)
    result of an operation is changed, in case of renaming for
    example. */
 inline void Set_TN_ssa_def(TN *t, OP *o) {
-  if (tn_ssa_map != NULL && !TN_is_dedicated(t) && !TN_is_save_reg(t)) {
+  if (tn_ssa_map != NULL && TN_is_SSA_candidate(t)) {
 #ifdef Is_True_On
     if (o && TN_ssa_def(t))
       Is_True(!o || !TN_ssa_def(t), ("Set_TN_ssa_def cannot be called on a TN with an SSA def."));
@@ -139,12 +143,13 @@ extern void SSA_unset(OP *o);
 // Iterate over PHI-nodes in BB
 //
 #define FOR_ALL_BB_PHI_OPs(bb,op)    \
-  for (op = BB_first_op(bb); op != NULL && OP_code(op) == TOP_phi; op = OP_next(op))
+  for (op = BB_first_op(bb); op != NULL && OP_phi(op); op = OP_next(op))
 
 inline BOOL SSA_Active (void) {
   return tn_ssa_map != NULL;
 }
 
+extern void SSA_init_call_parms(RID *rid, BOOL region);
 extern BOOL SSA_Check (RID *rid, BOOL region);
 extern BOOL SSA_Verify (RID *rid, BOOL region);
 extern void SSA_Enter (RID *rid, BOOL region);
@@ -158,6 +163,10 @@ extern void Change_PHI_Predecessor (const OP *phi, BB *pred, BB *new_pred);
 // which opnd_idx corresponds to PHI-node predecessor BB  ?
 extern UINT8 Get_PHI_Predecessor_Idx (const OP *phi, BB *);
 
+extern BOOL OP_Has_ssa_pinning(const OP *op);
+extern TN * OP_Get_opnd_pinning(const OP *op, INT opnd_idx);
+extern TN * OP_Get_result_pinning(const OP *op, INT res_idx);
+
 // which guard TN is associated to PSI-node operand 'opnd_idx' ?
 #define PSI_opnds(psi)    (OP_opnds(psi)>>1)
 #define PSI_opnd(psi, i)  (OP_opnd(psi, ((i)<<1)+1))
@@ -168,7 +177,6 @@ extern void Set_PSI_Pred(OP *, UINT8, BOOL);
 
 #ifdef EFFECT_PRED_FALSE
 // (cbr) Support for guards on false
-extern void Set_PSI_Pred (OP *, UINT8, BOOL);
 #define PSI_Pred_False(psi, i) OP_Pred_False(psi, (i)<<1)
 #define Set_PSI_Pred_True(psi, i) Set_PSI_Pred(psi, i, FALSE)
 #define Set_PSI_Pred_False(psi, i) Set_PSI_Pred(psi, i, TRUE)
@@ -254,5 +262,23 @@ extern const BB_SET *SSA_region_exits ();
 
 extern void SSA_Dominance_init(RID *rid);
 extern void SSA_Dominance_fini();
+
+extern INT32 CG_ssa_variables;
+extern INT32 PU_ssa_variables;
+#define SSA_VAR_NON_DEDICATED    0x1
+#define SSA_VAR_DEDICATED_LOCAL  0x2
+#define SSA_VAR_DEDICATED_GLOBAL 0x4
+#define SSA_VAR_DEDICATED (SSA_VAR_DEDICATED_LOCAL | SSA_VAR_DEDICATED_GLOBAL)
+
+extern INT32 CG_ssa_coalescing;
+#define SSA_IN_DO_COPY_PROP    0x1
+#define SSA_OUT_ON_SSA_MOVE    0x2
+#define SSA_OUT_ON_ALL_SAMERES 0x4
+#define SSA_OUT_ON_COPY        0x8
+#define SSA_OUT_COALESCING    (SSA_OUT_ON_SSA_MOVE | SSA_OUT_ON_ALL_SAMERES | SSA_OUT_ON_COPY)
+
+// Target specific function to check for dedicated registers that can
+// be renamed under SSA
+BOOL CGTARG_SSA_dedicated_candidate_tn(TN *tn);
 
 #endif /* cg_ssa_INCLUDED */

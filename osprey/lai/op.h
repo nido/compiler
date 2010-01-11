@@ -811,6 +811,7 @@ extern BOOL OP_has_implicit_interactions(OP*);
 #define OP_zext(o)		(TOP_is_zext(OP_code(o)))
 #define OP_phi(o)               (OP_code(o) == TOP_phi)
 #define OP_psi(o)               (OP_code(o) == TOP_psi)
+#define OP_PCOPY(o)		(OP_code(o) == TOP_PCOPY)
 
 //[SC]: Added multi-op queries
 #define OP_multi(o)             (TOP_is_multi(OP_code(o)))
@@ -1214,7 +1215,7 @@ inline ISA_REGISTER_CLASS OP_opnd_reg_class(OP *op, INT opnd)
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
 #ifdef TARG_ST
   if (opnd >= ISA_OPERAND_INFO_Operands(oinfo)) {
-    FmtAssert (OP_var_opnds (op), ("Invalid operand number (%d) in OP_opnd_reg_class for top: %s", opnd, TOP_Name(OP_code(op))));
+    FmtAssert (OP_var_opnds (op) || OP_call(op), ("Invalid operand number (%d) in OP_opnd_reg_class for top: %s", opnd, TOP_Name(OP_code(op))));
     return ISA_REGISTER_CLASS_UNDEFINED;
   }
 #endif
@@ -1227,7 +1228,7 @@ inline ISA_REGISTER_CLASS OP_result_reg_class(OP *op, INT opnd)
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
 #ifdef TARG_ST
   if (opnd >= ISA_OPERAND_INFO_Results(oinfo)) {
-    FmtAssert (OP_var_opnds (op), ("Invalid result number (%d) in OP_result_reg_class for top: %s", opnd, TOP_Name(OP_code(op))));
+    FmtAssert (OP_var_opnds (op) || OP_call(op), ("Invalid result number (%d) in OP_result_reg_class for top: %s", opnd, TOP_Name(OP_code(op))));
     return ISA_REGISTER_CLASS_UNDEFINED;
   }
 #endif
@@ -1240,7 +1241,7 @@ inline ISA_REGISTER_SUBCLASS OP_opnd_reg_subclass(OP *op, INT opnd)
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
 #ifdef TARG_ST
   if (opnd >= ISA_OPERAND_INFO_Operands(oinfo)) {
-    FmtAssert (OP_var_opnds (op), ("Invalid operand number (%d) in OP_opnd_reg_subclass", opnd));
+    FmtAssert (OP_var_opnds (op) || OP_call(op), ("Invalid operand number (%d) in OP_opnd_reg_subclass", opnd));
     return ISA_REGISTER_SUBCLASS_UNDEFINED;
   }
 #endif
@@ -1258,7 +1259,7 @@ inline ISA_REGISTER_SUBCLASS OP_result_reg_subclass(OP *op, INT opnd)
   const ISA_OPERAND_INFO *oinfo = ISA_OPERAND_Info(OP_code(op));
 #ifdef TARG_ST
   if (opnd >= ISA_OPERAND_INFO_Results(oinfo)) {
-    FmtAssert (OP_var_opnds (op), ("Invalid operand number (%d) in OP_result_reg_subclass", opnd));
+    FmtAssert (OP_var_opnds (op) || OP_call(op), ("Invalid operand number (%d) in OP_result_reg_subclass", opnd));
     return ISA_REGISTER_SUBCLASS_UNDEFINED;
   }
 #endif
@@ -1585,8 +1586,8 @@ void OPS_Insert_Ops(OPS *ops, OP *point, OPS *insert_ops, BOOL before);
 
 /* Basic OP generators: */
 extern OP *Dup_OP ( OP *op );
-
 #ifdef TARG_ST
+extern OP *Resize_OP(OP *op, int results, int opnds);
 extern void OP_Copy_Properties(OP *op, OP *src_op);
 #endif
 

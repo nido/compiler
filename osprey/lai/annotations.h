@@ -287,11 +287,23 @@ typedef struct exitinfo {
 typedef struct callinfo {
   ST *call_st;
   WN *call_wn;
+#ifdef TARG_ST
+  UINT16 call_opnds;
+  UINT16 call_results;
+  struct tn **call_opnd;
+  struct tn **call_result;
+#endif
 } CALLINFO;
 
 #define CALLINFO_call_st(x)	((x)->call_st)
 #define CALLINFO_call_wn(x)	((x)->call_wn)
 
+#ifdef TARG_ST
+#define CALLINFO_call_opnds(x)	((x)->call_opnds)
+#define CALLINFO_call_results(x) ((x)->call_results)
+#define CALLINFO_call_opnd(x)	((x)->call_opnd)
+#define CALLINFO_call_result(x)	((x)->call_result)
+#endif
 
 struct ROTATING_KERNEL_INFO {
   BOOL succeeded;

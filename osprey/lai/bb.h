@@ -1125,6 +1125,11 @@ void BB_Move_Op_After(BB *to_bb, OP *point, BB *from_bb, OP *op);
 void BB_Move_Op_To_Start(BB *to_bb, BB *from_bb, OP *op);
 void BB_Move_Op_To_End(BB *to_bb, BB *from_bb, OP *op);
 
+#ifdef TARG_ST
+// Removes old_op and insert new_op at the same place
+void BB_Replace_Op(OP *old_op, OP *new_op);
+#endif
+
 void BB_Sink_Op_Before(BB *bb, OP *op, OP *point);
 void BB_Update_OP_Order(BB *bb);
 void BB_Verify_OP_Order(BB *bb);

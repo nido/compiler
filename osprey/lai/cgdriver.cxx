@@ -1234,9 +1234,13 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE, "ssa_opt", "",
     0, 0, 0,	&CG_enable_ssa, &CG_enable_ssa_overridden },
 
+  { OVK_INT32,  OV_INTERNAL,	TRUE,	"ssa_variables", "",
+    1, 0, 0x7, &CG_ssa_variables, NULL,
+    "Specify the categories of variables that can be renamed in SSA" },
+
   { OVK_INT32,  OV_INTERNAL,	TRUE,	"ssa_coalescing", "",
-    1, 0, 3, &CG_ssa_coalescing, NULL,
-    "Specify the level of colaescing to perform during out of SSA" },
+    0xF, 0, 0xF, &CG_ssa_coalescing, NULL,
+    "Specify the level of colaescing to perform during the SSA construction or destruction" },
 
   { OVK_BOOL,  OV_INTERNAL,	TRUE,	"ssa_remat", "",
     0, 0, 0, &CG_ssa_rematerialization, NULL,
@@ -1709,6 +1713,21 @@ Configure_CG_Options(void)
   if (CG_enable_ssa && (CG_opt_level < 2)) {
     DevWarn("CG: Ignoring ssa=ON, need optimization level -O2 or higher");
     CG_enable_ssa = FALSE;
+  }
+
+  if (CG_enable_ssa) {
+    if (CG_ssa_variables & SSA_VAR_DEDICATED_GLOBAL) {
+      if (!(CG_ssa_variables & SSA_VAR_NON_DEDICATED)) { 
+	DevWarn("CG: SSA on dedicated global variables needs SSA on local dedicated variables. Added.");
+	CG_ssa_variables |= SSA_VAR_DEDICATED_LOCAL;
+      }
+    }
+    if (CG_ssa_variables & SSA_VAR_DEDICATED_LOCAL) {
+      if (!(CG_ssa_variables & SSA_VAR_NON_DEDICATED)) {
+	DevWarn("CG: SSA on dedicated local variables needs SSA on non dedicated variables. Added.");
+	CG_ssa_variables |= SSA_VAR_NON_DEDICATED;
+      }
+    }
   }
 
   // still off by default

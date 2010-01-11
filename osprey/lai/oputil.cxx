@@ -234,6 +234,43 @@ Dup_OP ( OP *op )
 
 /* ====================================================================
  *
+ * Resize_OP
+ *
+ * Create a new OP structure as a duplicate of another, with extended number of results and opnds.
+ *
+ * ====================================================================
+ */
+
+OP *
+  Resize_OP ( OP *op, INT results, INT opnds )
+{
+  OP *new_op = New_OP ( results, opnds );
+
+  memcpy(new_op, op, OP_sizeof(0,0));
+  new_op->results = results;
+  new_op->opnds = opnds;
+  INT min_results = MIN(OP_results(op), results);
+  INT min_opnds = MIN(OP_opnds(op), opnds);
+  memcpy(new_op->res_opnd+OP_result_offset(new_op), op->res_opnd+OP_result_offset(op), sizeof(TN *)*min_results);
+  memcpy(new_op->res_opnd+OP_opnd_offset(new_op), op->res_opnd+OP_opnd_offset(op), sizeof(TN *)*min_opnds);
+  new_op->next = new_op->prev = NULL;
+  new_op->bb = NULL;
+
+  Copy_OP_Annot ( new_op, op );
+  WN *wn;
+  if (wn = Get_WN_From_Memory_OP(op))
+    OP_MAP_Set(OP_to_WN_map, new_op, wn);
+  LABEL_IDX tag = Get_OP_Tag(op);
+  new_op->g_map_idx=PU_OP_Cnt;
+  if (tag) {
+    Set_OP_Tag (new_op, Gen_Tag());
+  }
+  
+  return new_op;
+}
+
+/* ====================================================================
+ *
  * OP_Copy_Properties()
  *
  * See interface description
@@ -808,6 +845,20 @@ void BB_Move_Op_To_End(BB *to_bb, BB *from_bb, OP *op)
   setup_ops(to_bb, op, op, 1);
 }
 
+#ifdef TARG_ST
+void BB_Replace_Op(OP *old_op, OP *new_op) {
+
+  Is_True(OP_bb(old_op) != NULL, ("old_op not in a BB"));
+  Is_True(OP_bb(new_op) == NULL, ("new_op already in a BB"));
+  OP *point = OP_prev(old_op);
+  BOOL before = (point == NULL);
+  BB *bb = OP_bb(old_op);
+
+  BB_Remove_Op(bb, old_op);
+  BB_Insert_Op(bb, point, new_op, before);
+}
+#endif
+
 
 void BB_Append_All(BB *to_bb, BB *from_bb)
 {
@@ -985,6 +1036,13 @@ void Print_OP_No_SrcLine(const OP *op)
   }
   for (i = 0; i < OP_results(op); i++) {
     Print_TN(OP_result(op,i),FALSE);
+#ifdef TARG_ST
+    TN *pinned;
+    if (op_ssa_pinning_map && ((pinned = OP_Get_result_pinning(op, i)) != NULL)) {
+      fprintf(TFile, "^");
+      Print_TN(pinned, FALSE);
+    }
+#endif
     fprintf(TFile, " ");
   }
   fprintf(TFile, ":- ");
@@ -1024,6 +1082,13 @@ else
       fprintf(TFile, "!");
 #endif
     Print_TN(tn,FALSE);
+#ifdef TARG_ST
+    TN *pinned;
+    if (op_ssa_pinning_map && ((pinned = OP_Get_opnd_pinning(op, i)) != NULL)) {
+      fprintf(TFile, "^");
+      Print_TN(pinned, FALSE);
+    }
+#endif
     if (OP_Defs_TN(op, tn)) fprintf(TFile, "<defopnd>");
     fprintf(TFile, " ");
   }

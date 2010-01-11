@@ -1,6 +1,77 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jan 11 09:39:28 CET 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/ferriere/dev-ssa-dedicated
+
+Description:
+------------
+	* [trunk] Support for dedicated registers renaming in the SSA representation
+	  Deliver ferriere/dev-ssa-dedicated rev #25728 with authorization branch #83085
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cg_ssa.cxx
+	M       osprey/lai/cgemit.cxx
+	M       osprey/lai/annotations.h
+	M       osprey/lai/cg_outssa.cxx
+	M       osprey/lai/tn.h
+	M       osprey/lai/bb.h
+	M       osprey/lai/gra_live.cxx
+	M       osprey/lai/cg_select.cxx
+	M       osprey/lai/cg.cxx
+	M       osprey/lai/whirl2ops.cxx
+	M       osprey/lai/cgdriver.cxx
+	M       osprey/lai/cflow.cxx
+	M       osprey/lai/op.h
+	M       osprey/lai/cg_ssa.h
+	M       osprey/lai/cg_outssa.h
+	M       osprey/lai/oputil.cxx
+	M       osprey/targinfo/arm/cg/targ_op.cxx
+	M       osprey/targinfo/arm/cg/targ_cg.cxx
+	M       osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M       osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25720 --new=https://codex.cro.st.com/svnroot/open64/branches/ferriere/dev-ssa-dedicated@25728 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25720 https://codex.cro.st.com/svnroot/open64/branches/ferriere/dev-ssa-dedicated@25728" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cg_ssa.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_ssa.cxx?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/cg_ssa.cxx&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgemit.cxx?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/cgemit.cxx&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/lai/annotations.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/annotations.h?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/annotations.h&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_outssa.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_outssa.cxx?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/cg_outssa.cxx&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/lai/tn.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/tn.h?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/tn.h&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/lai/bb.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/bb.h?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/bb.h&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/lai/gra_live.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/gra_live.cxx?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/gra_live.cxx&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_select.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_select.cxx?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/cg_select.cxx&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg.cxx?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/cg.cxx&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/lai/whirl2ops.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/whirl2ops.cxx?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/whirl2ops.cxx&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgdriver.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgdriver.cxx?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/cgdriver.cxx&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/lai/cflow.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cflow.cxx?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/cflow.cxx&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/lai/op.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/op.h?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/op.h&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_ssa.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_ssa.h?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/cg_ssa.h&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_outssa.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_outssa.h?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/cg_outssa.h&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/lai/oputil.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/oputil.cxx?p2=branches/ferriere/dev-ssa-dedicated/osprey/lai/oputil.cxx&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/arm/cg/targ_op.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/cg/targ_op.cxx?p2=branches/ferriere/dev-ssa-dedicated/osprey/targinfo/arm/cg/targ_op.cxx&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/arm/cg/targ_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/cg/targ_cg.cxx?p2=branches/ferriere/dev-ssa-dedicated/osprey/targinfo/arm/cg/targ_cg.cxx&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_cg.cxx?p2=branches/ferriere/dev-ssa-dedicated/osprey/targinfo/stxp70/cg/targ_cg.cxx&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/cg/targ_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/cg/targ_cg.cxx?p2=branches/ferriere/dev-ssa-dedicated/osprey/targinfo/st200/cg/targ_cg.cxx&r1=25720&r2=25728&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jan 08 14:18:37 CET 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
