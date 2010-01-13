@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jan 13 15:17:54 CET 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76526
+
+Description:
+------------
+	* [trunk] Fix for bug #76526: [BE] Infinite compilation time spent in IVR (st200,-O3).
+	Deliver fixes/codex-76526 rev #25794 with authorization branch #85946
+
+
+Modified Files:
+---------------
+	M       osprey/be/opt/opt_htable.cxx
+	M       osprey/be/opt/opt_ivr.cxx
+	M       osprey/be/opt/opt_htable.h
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25792 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76526@25794 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25792 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-76526@25794" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/opt/opt_htable.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_htable.cxx?p2=branches/fixes/codex-76526/osprey/be/opt/opt_htable.cxx&r1=25792&r2=25794&roottype=svn&root=open64&diff_format=h
+osprey/be/opt/opt_ivr.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_ivr.cxx?p2=branches/fixes/codex-76526/osprey/be/opt/opt_ivr.cxx&r1=25792&r2=25794&roottype=svn&root=open64&diff_format=h
+osprey/be/opt/opt_htable.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_htable.h?p2=branches/fixes/codex-76526/osprey/be/opt/opt_htable.h&r1=25792&r2=25794&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jan 13 14:46:30 CET 2010
 	Author:    chauveth
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -707,6 +707,42 @@ CODEREP::Contains( const CODEREP *cr ) const
   // returns TRUE if this tree contains the node 'cr'
   if (this == cr) return TRUE;
   INT i;
+#ifdef TARG_ST
+  if (HTABLE_contains_cr_map != NULL) {
+    INT result = HTABLE_contains_cr_map->Lookup(Coderep_id());
+    if (result != -1)
+      return result;
+  }
+  BOOL contains = FALSE;
+  switch (kind) {
+  case CK_OP:
+    for (i = 0; i < Kid_count(); i++)
+      if (Get_opnd(i)->Contains(cr)) {
+	contains = TRUE;
+	break;
+      }
+    break;
+  case CK_IVAR:
+    Is_True(Ilod_base() != NULL,
+	    ("CODEREP::Contains: CK_IVAR must be rvalue"));
+    if (Ilod_base()->Contains(cr))
+      contains = TRUE;
+    else if (Opr() == OPR_MLOAD) {
+      CODEREP *num_byte = Mload_size();
+      if (num_byte->Contains(cr))
+	contains = TRUE;
+    }
+    break;
+  case CK_LDA:
+  case CK_VAR:
+  case CK_CONST:
+  case CK_RCONST:
+    break;
+  }
+  if (HTABLE_contains_cr_map != NULL)
+    HTABLE_contains_cr_map->Insert(Coderep_id(), contains ? 1 : 0);
+  return contains;
+#else
   switch (kind) {
   case CK_OP:
     for (i = 0; i < Kid_count(); i++)
@@ -728,6 +764,7 @@ CODEREP::Contains( const CODEREP *cr ) const
     return FALSE;
   }
   return FALSE;
+#endif
 }
 
 BOOL

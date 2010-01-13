@@ -2122,5 +2122,8 @@ void traverseSR(STMTREP *stmt, traverseCR &traverse_cr)
       traverse_cr(lhs, stmt, 1);
 }
 
+#ifdef TARG_ST
+extern ID_MAP<INT32, INT32> *HTABLE_contains_cr_map;
+#endif
 
 #endif  /* // opt_htable_INCLUDED */

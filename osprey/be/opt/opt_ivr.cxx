@@ -590,6 +590,13 @@ IVR::Reset_dont_prop(CODEREP *cr, const BB_LOOP *loop)
 // to avoid too much propagation through variables, which occurs less
 // often with this new implementation.
 ID_MAP<CODEREP *, INT32> *expand_cr_map = NULL;
+
+// FdF 20100111: Use a map so as to collect the fact that a CR does
+// not contain a given CR, when recursisevly traversing a CR
+// tree. This is needed to reduce compilation time on very large
+// expressions
+static ID_MAP<INT32, INT32> *contains_cr_map = NULL;
+ID_MAP<INT32, INT32> *HTABLE_contains_cr_map = NULL;
 #endif
 
 // Expand an expression (try to expand it into a vars
@@ -1021,9 +1028,23 @@ IVR::Generate_step(CODEREP *nv, CODEREP *iv) const
   
   // The step expression contains the induction variable, either the
   // simplifier is not good enough, or it is not a valid candidate.
+#ifdef TARG_ST
+  if (contains_cr_map) {
+    // This call to Contains will use HTABLE_contains_cr_map to store
+    // results of recursive calls to Contains, so as to reduce
+    // compilation time on large expressions.
+    contains_cr_map->Init();
+    HTABLE_contains_cr_map = contains_cr_map;
+  }
+  if (delta && delta->Contains(iv))
+    delta = NULL;
+  // HTABLE_contains_cr_map *must* be set to NULL here so that later
+  // calls to Contains do not use results from this call.
+  HTABLE_contains_cr_map = NULL;
+#else
   if (delta && delta->Contains(iv))
     return NULL;
-  
+#endif
   return delta;
 }
 
@@ -3572,6 +3593,14 @@ COMP_UNIT::Do_iv_recognition(void)
 					    Mem_pool(),
 					    FALSE),
 			      Mem_pool());
+
+      typedef ID_MAP<INT32, INT32> CONTAINS_CR_MAP;
+      contains_cr_map = CXX_NEW(CONTAINS_CR_MAP(256,
+						-1,
+						Mem_pool(),
+						FALSE),
+				Mem_pool());
+      HTABLE_contains_cr_map = NULL;
     }
 #endif
 
@@ -3595,6 +3624,10 @@ COMP_UNIT::Do_iv_recognition(void)
     if (expand_cr_map) {
       CXX_DELETE(expand_cr_map, Mem_pool());
       expand_cr_map = NULL;
+    }
+    if (contains_cr_map) {
+      CXX_DELETE(contains_cr_map, Mem_pool());
+      contains_cr_map = NULL;
     }
 #endif
     if (iv_recog.Rebuild_loops()) {
