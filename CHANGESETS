@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jan 13 14:46:30 CET 2010
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86395
+
+Description:
+------------
+	* [HOTFIX] Deliver fixes/codex-86395 rev #25786 with authorization branch #86396
+
+
+Modified Files:
+---------------
+	M       osprey/include/Makefile.gbase
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25775 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86395@25786 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25775 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86395@25786" 
+
+Diff links to modified files:
+-----------------------------
+osprey/include/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/include/Makefile.gbase?p2=branches/fixes/codex-86395/osprey/include/Makefile.gbase&r1=25775&r2=25786&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jan 11 09:39:28 CET 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

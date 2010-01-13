@@ -264,7 +264,6 @@ else
 	H_wait.h
   HOST_HOST_HFILES = \
 	H_limits.h   \
-	H_math.h     \
 	H_errno.h    \
 	H_endian.h   \
 	H_stdint.h   \
@@ -300,7 +299,6 @@ else
   HOST_HOST_SYS_HFILES =
   HOST_HOST_HFILES = \
 	H_limits.h   \
-	H_math.h     \
 	H_bstring.h  \
 	H_alloca.h   \
 	H_values.h  
@@ -318,7 +316,6 @@ else
 	H_wait.h
   HOST_HOST_HFILES = \
 	H_limits.h   \
-	H_math.h     \
 	H_errno.h    \
 	H_endian.h   \
 	H_stdint.h   \
@@ -347,7 +344,6 @@ else
 	H_wait.h
   HOST_HOST_HFILES = \
 	H_limits.h   \
-	H_math.h     \
 	H_errno.h    \
 	H_endian.h   \
 	H_stdint.h   \
@@ -409,7 +405,6 @@ else
 	H_stdint.h   \
 	H_endian.h   \
 	H_limits.h   \
-	H_math.h     \
 	H_bstring.h  \
 	H_alloca.h   \
 	H_values.h   \
@@ -435,7 +430,6 @@ else
 	H_wait.h
   HOST_HOST_HFILES = \
 	H_limits.h   \
-	H_math.h     \
 	H_errno.h    \
 	H_endian.h   \
 	H_stdint.h   \
