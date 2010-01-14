@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jan 14 17:17:05 CET 2010
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85761
+
+Description:
+------------
+	*  Fix for codex bug #85761 Comparison (~e) < 0  and (~e) >= 0
+	Deliver fixes/codex-85761 with authorization art #86308.
+
+
+Modified Files:
+---------------
+	M       osprey/lai/range_prop.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25821 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85761@25825 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25821 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85761@25825" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/range_prop.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/range_prop.cxx?p2=branches/fixes/codex-85761/osprey/lai/range_prop.cxx&r1=25821&r2=25825&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jan 14 15:39:58 CET 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -421,6 +421,70 @@ match_compare_sub_to_zero (const RangeAnalysis &range_analysis,
     return FALSE;
 }
 
+static TN *
+inverts_sign_bit (const RangeAnalysis &range_analysis,
+		  OP *op)
+{
+  // If OP inverts the sign bit of one of its operands
+  // return that operand, otherwise return NULL.
+  if (OP_ixor(op)) {
+    TN *opnd1 = OP_Opnd1 (op);
+    TN *opnd2 = OP_Opnd2 (op);
+    if (TN_Has_Value (opnd2) && TN_Value(opnd2) < 0)
+      return opnd1;
+  }
+  return NULL;
+}
+
+static BOOL
+match_compare_invert_to_zero (const RangeAnalysis &range_analysis,
+			      OP *l1_op,
+			      OPS *ops)
+
+{
+  TOP opcode = OP_code(l1_op);
+
+  if (!OP_icmp(l1_op))
+    return FALSE;
+
+  VARIANT variant = OP_cmp_variant(l1_op);
+
+  if (variant != V_CMP_GE && variant != V_CMP_LT)
+    // We are interested in comparisons that test only the sign bit.
+    return FALSE;
+
+  TN *l1_tn1 = OP_Opnd1 (l1_op);
+  TN *l1_tn2 = OP_Opnd2 (l1_op);
+
+  if (! TN_Has_Value (l1_tn2)
+      || TN_Value(l1_tn2) != 0)
+    return FALSE;
+
+  if (! TN_is_register(l1_tn1))
+    return FALSE;
+  
+  OP *l2_op1 = TN_ssa_def (l1_tn1);
+  if (! l2_op1)
+    return FALSE;
+  
+  TN *l2_tn1 = inverts_sign_bit (range_analysis, l2_op1);
+
+  if (! l2_tn1)
+    return FALSE;
+
+  TN *result = OP_result (l1_op, 0);
+  switch (variant) {
+  case V_CMP_GE:
+    Expand_Int_Less(result, l2_tn1, l1_tn2, MTYPE_I4, ops);
+    break;
+  case V_CMP_LT:
+    Expand_Int_Greater_Equal(result, l2_tn1, l1_tn2, MTYPE_I4, ops);
+    break;
+  };
+  return validate_replacement (range_analysis, l1_op, ops);
+}
+
+
 
 static BOOL
 RangePropagateOp (RangeAnalysis &range_analysis,
@@ -629,6 +693,9 @@ RangePropagateOp (RangeAnalysis &range_analysis,
     if (match_compare_sub_to_zero (range_analysis, op, &ops)) {
       if (validate_replacement (range_analysis, op, &ops)) 
 	return TRUE;
+    }
+    if (match_compare_invert_to_zero (range_analysis, op, &ops)) {
+      return TRUE;
     }
 
   } else if (range_analysis.Backward_Valid ()) {
