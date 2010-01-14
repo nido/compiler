@@ -2696,9 +2696,10 @@ REGISTER_SET BB_call_clobbered(BB *bb, ISA_REGISTER_CLASS rc)
       ST *st = CALLINFO_call_st(ANNOT_callinfo(annot));
 
       if (st &&
-	  (! ST_is_preemptible(st)
-           // (cbr) linkonce can be compiled with other regs
-	   || (! ST_is_comdat (st) && ! Gen_PIC_Shared && ! ST_is_weak_symbol (st)))) {
+	  ! (ST_is_preemptible(st) && Gen_PIC_Shared)
+	  // (cbr) linkonce can be compiled with other regs
+	  && ! ST_is_comdat (st)
+	  && ! ST_is_weak_symbol (st)) {
 	IPRA_INFO info = cg_ipra.Get_Info (st);
 	if (info) {
 	  return info->used_regs[rc];

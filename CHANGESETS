@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jan 14 17:24:44 CET 2010
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72338
+
+Description:
+------------
+	*  Fix for codex bug #72338 [IPRA] Using weak, hidden definition for
+	callee
+	Deliver	fixes/codex-72338 with authorization art #86196.
+
+
+Modified Files:
+---------------
+	M       osprey/lai/bbutil.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25827 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72338@25829 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25827 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72338@25829" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/bbutil.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/bbutil.cxx?p2=branches/fixes/codex-72338/osprey/lai/bbutil.cxx&r1=25827&r2=25829&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jan 14 17:17:05 CET 2010
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
