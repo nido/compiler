@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jan 18 16:24:21 CET 2010
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83188
+
+Description:
+------------
+	* [trunk] Fix for bug #83188: [RL] Wrong memory access generation.
+	Deliver fixes/codex-83188 rev #25885 with authorization branch #83205
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/expand/exp_memrf.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25880 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83188@25885 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25880 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83188@25885" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/expand/exp_memrf.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/expand/exp_memrf.cxx?p2=branches/fixes/codex-83188/osprey/targinfo/stxp70/expand/exp_memrf.cxx&r1=25880&r2=25885&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jan 18 11:14:21 CET 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
