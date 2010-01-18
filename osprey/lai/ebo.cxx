@@ -5093,6 +5093,17 @@ find_duplicate_mem_op (BB *bb,
       }
     }
 
+#ifdef TARG_ST
+    /*  op_is_subset is set to TRUE  when op and op_pred are load operations
+	with a different sign extension */
+    if (hash_op_matches &&
+	pred_offset_tn == succ_offset_tn &&
+        OP_load(op) && OP_load(pred_op) &&
+	TOP_is_unsign (OP_code(op)) != TOP_is_unsign (OP_code(pred_op))) {
+          op_is_subset = TRUE;
+    }
+#endif
+
     if (hash_op_matches && !offsets_may_overlap ) {
       if (EBO_Trace_Hash_Search) {
         #pragma mips_frequency_hint NEVER

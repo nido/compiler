@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jan 18 08:55:09 CET 2010
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82509
+
+Description:
+------------
+	* Fix for codex bug #82509 - Incorrect result for bench hp_valid/c/ctestlib/cfe/cfe_091.c (bit fields)
+        * Deliver fixes/codex-82509 with authorization art #82510.
+
+ 
+
+
+Modified Files:
+---------------
+	M       osprey/be/opt/opt_rviwn.cxx
+	M       osprey/lai/ebo.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25831 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82509@25834 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25831 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82509@25834" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/opt/opt_rviwn.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_rviwn.cxx?p2=branches/fixes/codex-82509/osprey/be/opt/opt_rviwn.cxx&r1=25831&r2=25834&roottype=svn&root=open64&diff_format=h
+osprey/lai/ebo.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/ebo.cxx?p2=branches/fixes/codex-82509/osprey/lai/ebo.cxx&r1=25831&r2=25834&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jan 14 17:24:44 CET 2010
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

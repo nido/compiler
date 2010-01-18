@@ -567,6 +567,10 @@ RVI::Is_lda_candidate( const WN *parent, const WN *lda, INT whichkid ) const
       // if kid0 is a small lda, do not RVI it
       if ( whichkid == 0 ) {
 	return !(Uses_Small_Offset( lda_st, lda_offset )
+#ifdef TARG_ST
+		 || (Is_Structure_Type(Ty_Table[ST_type (lda_st)]) &&
+		     TY_is_packed(Ty_Table[ST_type (lda_st)]))
+#endif
 #ifdef TARG_STxP70
 		 // we don't want to split base/offset for sda accesses on stxp70.
 		 || Get_Memory_Space(lda_st) == ST_MEMORY_SDA
@@ -582,6 +586,10 @@ RVI::Is_lda_candidate( const WN *parent, const WN *lda, INT whichkid ) const
       if ( whichkid == 1 ) {
 	WN *rhs = WN_kid0(parent);
 	return (!(Uses_Small_Offset( lda_st, lda_offset )
+#ifdef TARG_ST
+		 || (Is_Structure_Type(Ty_Table[ST_type (lda_st)]) &&
+		     TY_is_packed(Ty_Table[ST_type (lda_st)]))
+#endif
 #ifdef TARG_STxP70
 		 // we don't want to split base/offset for sda accesses on stxp70.
 		 || Get_Memory_Space(lda_st) == ST_MEMORY_SDA
