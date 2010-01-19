@@ -625,6 +625,9 @@ TN_is_SSA_candidate(TN *tn) {
   static ISA_REGISTER_CLASS Predicate_Register_Class = CGTARG_Register_Class_For_Mtype(MTYPE_B);
 
   if (!TN_is_register(tn)) return FALSE;
+  // FdF 20100118: Save registers cannot be renamed, they are needed
+  // for register allocation in exception handlers.
+  if (TN_is_save_reg(tn)) return FALSE;
 
   ISA_REGISTER_CLASS cl = TN_register_class(tn);
   if ((cl != Integer_Register_Class) &&

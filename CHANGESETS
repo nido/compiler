@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jan 19 14:52:30 CET 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86758
+
+Description:
+------------
+	* [trunk] Fix for bug #86758: Inifinite execution time in some C++ tests since delivery of branch dev-ssa-dedicated.
+	Deliver fixes/codex-86758 rev #25939 with authorization branch #86766
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cg_ssa.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25937 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86758@25939 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25937 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86758@25939" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cg_ssa.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_ssa.cxx?p2=branches/fixes/codex-86758/osprey/lai/cg_ssa.cxx&r1=25937&r2=25939&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jan 19 14:25:24 CET 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
