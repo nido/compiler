@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jan 19 14:25:24 CET 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86377
+
+Description:
+------------
+	* [trunk] Fix for bug #86377: Assertion with dedicated SSA.
+	Deliver fixes/codex-86377 rev #25935 with authorization branch #86382
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cflow.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25926 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86377@25935 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25926 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86377@25935" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cflow.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cflow.cxx?p2=branches/fixes/codex-86377/osprey/lai/cflow.cxx&r1=25926&r2=25935&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jan 19 10:19:55 CET 2010
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

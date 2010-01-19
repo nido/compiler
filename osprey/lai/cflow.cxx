@@ -4462,6 +4462,12 @@ OP_equiv(OP *op1, OP *op2) {
       (OP_results(op1) != OP_results(op2)))
     return FALSE;
 
+  // FdF 20100113: Merge operations only if none or both belong to the
+  // prologue or epilogue
+  if ((OP_prologue(op1) != OP_prologue(op2)) ||
+      (OP_epilogue(op1) != OP_epilogue(op2)))
+    return FALSE;
+
   for (i = 0; i < OP_opnds(op1); i ++) {
 #ifdef TARG_ST
     // (cbr) Support for guards on false
@@ -4506,8 +4512,7 @@ OP_equiv_for_merging(OP *op1, OP *op2, BS *TNs_to_be_unified) {
 
   // FdF 20090824: Merge operations only if none or both belong to the
   // prologue
-  if ((OP_prologue(op1) && !OP_prologue(op2)) ||
-      (!OP_prologue(op1) && OP_prologue(op2)))
+  if (OP_prologue(op1) != OP_prologue(op2))
     return FALSE;
 
   for (i = 0; i < OP_opnds(op1); i ++) {
@@ -4795,7 +4800,7 @@ Merge_Ops_in_Preds(BB *b) {
  * ====================================================================
  */
 static BOOL
-Merge_Common_Ops ()
+Merge_Common_Ops (BOOL in_cgprep)
 {
   BB *next_b;
   BB *b;
@@ -4828,7 +4833,8 @@ Merge_Common_Ops ()
 	if (    BBINFO_kind(pbb) != BBKIND_GOTO
 	     || BBINFO_kind(pbb) != kind
 	     || BBINFO_nsuccs(pbb) != 1
-	     || BBINFO_succ_offset(pbb, 0) != 0) {
+	     || BBINFO_succ_offset(pbb, 0) != 0
+	     || (in_cgprep && BB_entry(pbb))) {
 	  kind = BBKIND_UNKNOWN;
 	  break;
 	}
@@ -4874,6 +4880,11 @@ OP_equiv_for_hoisting(OP *op1, OP *op2, BS *TNs_to_be_unified) {
   if ((OP_code(op1) != OP_code(op2)) ||
       (OP_opnds(op1) != OP_opnds(op2)) ||
       (OP_results(op1) != OP_results(op2)))
+    return FALSE;
+
+  // FdF 20100113: Hoist operations only if none or both belong to the
+  // epilogue
+  if (OP_epilogue(op1) != OP_epilogue(op2))
     return FALSE;
 
   for (i = 0; i < OP_opnds(op1); i ++) {
@@ -5221,7 +5232,7 @@ Hoist_Ops_in_Succs(BB *b) {
  * ====================================================================
  */
 static BOOL
-Hoist_Common_Ops (void)
+Hoist_Common_Ops (BOOL in_cgprep)
 {
   BB *b;
   BB *lastbb;
@@ -5257,7 +5268,8 @@ Hoist_Common_Ops (void)
       
 	if (((BB_preds_len(pbb))>1) ||
 	    (BBINFO_kind(pbb) == BBKIND_CALL) ||
-	    (BBINFO_kind(pbb) == BBKIND_TAIL_CALL)) {
+	    (BBINFO_kind(pbb) == BBKIND_TAIL_CALL) ||
+	    (in_cgprep && BB_exit(pbb))) {
 	  stop = TRUE;
 	  break;
 	}
@@ -8321,7 +8333,7 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
       fprintf(TFile, "\n%s CFLOW_Optimize: merge common operations\n%s",
 		     DBar, DBar);
     }
-    change = Merge_Common_Ops();
+    change = Merge_Common_Ops(current_flags & CFLOW_IN_CGPREP);
     if (change) {
       GRA_LIVE_Recalc_Liveness(NULL);
     }
@@ -8343,7 +8355,7 @@ CFLOW_Optimize(INT32 flags, const char *phase_name)
       fprintf(TFile, "\n%s CFLOW_Optimize: hoist common operations\n%s",
 		     DBar, DBar);
     }
-    change = Hoist_Common_Ops();
+    change = Hoist_Common_Ops(current_flags & CFLOW_IN_CGPREP);
     if (change) {
       GRA_LIVE_Recalc_Liveness(NULL);
     }
