@@ -10563,10 +10563,19 @@ extern INT32 compute_copy_alignment(TY_IDX src, TY_IDX dst, INT32 offset)
   align= MIN(srcAlign, dstAlign);
   align= MIN(align, max);
 
+#ifndef KEY // bug 1990
   Is_True((compute_offset_alignment(offset, align) == align),
 	  ("compute_copy_alignment: alignment not consistent with offset"));
+#endif
 
 #ifdef TARG_ST
+  // FdF 20100108: A MLOAD or a MSTORE may be converted into a
+  // sequence of load/store. When -TENV:align_aggregates is used, it
+  // may be the case that offset is not a multiple of the
+  // alignment. In that case, the alignment must be reduced to be
+  // compatible with offset.
+  if (compute_offset_alignment(offset, align) < align)
+    align = compute_offset_alignment(offset, align);
   return align;
 #else
   return MIN(align, max);

@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jan 19 15:56:29 CET 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70850
+
+Description:
+------------
+	* [trunk] Fix for bug #70850: [PACKING] Functional error (misaligned access) on  Perennial C++ P25092 (st231,-O3,-mpacking=2).
+	Deliver fixes/codex-70850 rev #25947 with authorization branch #86105
+
+
+Modified Files:
+---------------
+	M       osprey/be/com/wn_lower.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25942 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70850@25947 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25942 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-70850@25947" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/com/wn_lower.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/wn_lower.cxx?p2=branches/fixes/codex-70850/osprey/be/com/wn_lower.cxx&r1=25942&r2=25947&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jan 19 14:52:30 CET 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
