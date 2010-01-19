@@ -5580,7 +5580,18 @@ Analyze_Spilling_Live_Range (
   if (lr_spans_spill_opnum &&
       benefit > 0 &&
       (best->spill_kind == SPILL_NONE ||
-       (float)(benefit - best->benefit) > 16.0 * (cost - best->cost)))
+       (float)(benefit - best->benefit) > 16.0 * (cost - best->cost)
+#ifdef TARG_ST
+       // [TTh] Additional criterion to select LR to spill:
+       // In case of identical benefit/cost balances, prefer spilling the LR
+       // with the earliest definition: it is likely to span more spill points
+       // and spilling it might reduce register pressure on more locations.
+       || (best->spill_kind == SPILL_LIVE_RANGE &&
+           KnuthCompareEQ((float)(benefit - best->benefit), 16.0 * (cost - best->cost)) &&
+           first_def < LR_first_def(best->u1.spill_lr)
+           )
+#endif
+       ))
   {
     best->spill_kind = SPILL_LIVE_RANGE;
     best->u1.spill_lr = spill_lr;

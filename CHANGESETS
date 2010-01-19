@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jan 19 10:15:12 CET 2010
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86055
+
+Description:
+------------
+	* [trunk] Fix for bug #86055: [GRA] LRA request might be under-estimated when GRA insert spill code.
+	Deliver fixes/codex-86055 rev #25920 with authorization branch #86287
+
+	Change in LRA: when selecting a spill candidate, use the first definition location
+	               as a discriminent between 2 TNs with identical cost and benefit.
+		       The earlier the better, as it will lower the register request on a
+		       longer region.
+
+Modified Files:
+---------------
+	M       osprey/lai/lra.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25908 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86055@25920 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25908 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86055@25920" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/lra.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lra.cxx?p2=branches/fixes/codex-86055/osprey/lai/lra.cxx&r1=25908&r2=25920&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jan 18 16:24:21 CET 2010
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
