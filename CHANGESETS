@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jan 19 16:14:57 CET 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-65117
+
+Description:
+------------
+	* [trunk] Fix for bug #65117: [BE] Compiler Segmentation fault in  Global Optimization -- New PRE: Expr phi placement (st200, -O3, perl, spec2006).
+	Deliver fixes/codex-65117 rev #25952 with authorization branch #86015
+
+
+Modified Files:
+---------------
+	M       osprey/be/opt/opt_eocc.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25950 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-65117@25952 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25950 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-65117@25952" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/opt/opt_eocc.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_eocc.cxx?p2=branches/fixes/codex-65117/osprey/be/opt/opt_eocc.cxx&r1=25950&r2=25952&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jan 19 15:56:29 CET 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

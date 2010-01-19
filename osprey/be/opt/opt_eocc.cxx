@@ -474,6 +474,13 @@ EXP_WORKLST::Generate_ivariable_phi_list_addr(BB_NODE_SET &var_phi_list,
   FOR_ALL_NODE (exp_occ, exp_occ_iter, Init(Real_occurs().Head())) {
     cr = exp_occ->Occurrence();
     Is_True(cr,("EXP_WORKLST::Generate_variable_phi_list: indirect occurrence with null CODEREP"));
+#ifdef TARG_ST
+    // FdF 20100108: There may be a CVTL operation
+    if (cr->Kind() != CK_IVAR) {
+      Is_True(cr->Opr() == OPR_CVTL, ("EXP_WORKLST::Generate_ivariable_phi_list_addr: Unexpected operator"));
+      cr = cr->Opnd(0);
+    }
+#endif
     cr = cr->Ilod_base() ? cr->Ilod_base() : cr->Istr_base();
     Is_True(cr,("EXP_WORKLST::Generate_variable_phi_list: indirect occurrence with null CODEREP as Ilod_base() and Istr_base()"));
     if (cr->Is_flag_set(CF_DEF_BY_PHI) && ( (phi_node=cr->Defphi()) != NULL )) 
@@ -503,6 +510,13 @@ EXP_WORKLST::Generate_ivariable_phi_list_vsym(BB_NODE_SET &var_phi_list,
   FOR_ALL_NODE (exp_occ, exp_occ_iter, Init(Real_occurs().Head())) {
     if (!exp_occ->Occurs_as_lvalue()) {
       cr = exp_occ->Occurrence();
+#ifdef TARG_ST
+      // FdF 20100108: There may be a CVTL operation
+      if (cr->Kind() != CK_IVAR) {
+	Is_True(cr->Opr() == OPR_CVTL, ("EXP_WORKLST::Generate_ivariable_phi_list_vsym: Unexpected operator"));
+	cr = cr->Opnd(0);
+      }
+#endif
       if (cr->Ivar_mu_node()) {
 	vsym = cr->Ivar_mu_node()->OPND();
 	if (vsym) Set_indirect_defphi_recursive(vsym, var_phi_list, tracing, cr);
