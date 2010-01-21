@@ -2,9 +2,17 @@
 # Define DMUCS server
 #
 ifeq ($(BUILD_OS),LINUX)
-DMUCS=pcx0003
+  DMUCS=pcx0003
+  ifneq ($(BUILD_TARGET),STxP70)
+  # As we use GCC-4.4.1 on ST200, ARM, and we need a different GCC
+  # copy under RH3/32 and RH4/64, we have to currently disable
+  # DMUCS/DISTCC under RH4/64 for lack of pool
+    ifeq (linux-rh-ws-4-x86_64,$(shell /sw/st/gnu_compil/gnu/scripts/guess-os))
+      DMUCS=
+    endif
+  endif
 else
-ifeq ($(BUILD_OS),SUNOS5)
-DMUCS=gnx1634
-endif
+  ifeq ($(BUILD_OS),SUNOS5)
+    DMUCS=gnx1634
+  endif
 endif

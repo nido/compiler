@@ -67,7 +67,13 @@ BINUTILS_GNU_LOC=$(GNU_LOC)/bin/
 ifeq ($(BUILD_TARGET),STxP70)
 COMP_GNU_LOC=$(GNU_LOC)/gcc/gcc-3.2.3/bin/
 else
+# Because of GCC's fix-include we can't use the same compiler under
+# RH3 and RH4
+ifeq (linux-rh-ws-4-x86_64,$(shell $(GNU_PREFIX)/scripts/guess-os))
+COMP_GNU_LOC=$(GNU_PREFIX)/linux-rh-ws-4-x86_64/gcc/gcc-4.4.1/bin/
+else
 COMP_GNU_LOC=$(GNU_LOC)/gcc/gcc-4.4.1/bin/
+endif
 endif
 BINUTILS_GNU_LOC=$(COMP_GNU_LOC)
 YACC_LOC=$(GNU_LOC)/.package/bison-1.35/bin/

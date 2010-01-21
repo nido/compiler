@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Jan 21 17:10:18 CET 2010
+	Author:    lyon
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-BuildWithGCC441
+
+Description:
+------------
+	* [trunk] Deliver lyon/dev-BuildWithGCC441 rev #26011 with authorization branch #86229
+	Allow building on RedHat 4/64 with GCC-4.4.1, but need to disable distcc/dmucs
+
+
+Modified Files:
+---------------
+	M       osprey/make/tooldefs/gnu_compil/Makefile.tooldefs
+	M       osprey/make/sitedefs/grenoble/Makefile.sitedefs
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@25993 --new=https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-BuildWithGCC441@26011 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@25993 https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-BuildWithGCC441@26011" 
+
+Diff links to modified files:
+-----------------------------
+osprey/make/tooldefs/gnu_compil/Makefile.tooldefs	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/make/tooldefs/gnu_compil/Makefile.tooldefs?p2=branches/lyon/dev-BuildWithGCC441/osprey/make/tooldefs/gnu_compil/Makefile.tooldefs&r1=25993&r2=26011&roottype=svn&root=open64&diff_format=h
+osprey/make/sitedefs/grenoble/Makefile.sitedefs	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/make/sitedefs/grenoble/Makefile.sitedefs?p2=branches/lyon/dev-BuildWithGCC441/osprey/make/sitedefs/grenoble/Makefile.sitedefs&r1=25993&r2=26011&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jan 19 16:14:57 CET 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
