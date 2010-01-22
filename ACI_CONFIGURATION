@@ -11,7 +11,7 @@ definitions:
        crolles  : /sw/gnu_compil/stxp70work/hudson/aci-cec-home/aci-dependencies/toolset-stxp70
        grenoble : /home/compwork/cruisecontrol/CC/persistent_inputs/aci-dependencies/toolset-stxp70
       name      : STxP70-410_release-rhel3.tar.gz
-      pkg1    : binutils-RHE-4.3-20100115.tar.gz
+      pkg1    : binutils_trunk_v5691_gbu_intstxp70_v2012-RHE-4.3-20100122.tar.gz
       rtk       : 
         branch   : trunk
         revision : HEAD
@@ -110,7 +110,7 @@ definitions:
        crolles  : /sw/gnu_compil/stxp70work/hudson/aci-cec-home/aci-dependencies/toolset-stxp70
        grenoble : /home/compwork/cruisecontrol/CC/persistent_inputs/aci-dependencies/toolset-stxp70
       name      : STxP70-410_release-rhel3.tar.gz
-      pkg1    : binutils-RHE-4.3-20100115.tar.gz
+      pkg1    : binutils_trunk_v5691_gbu_intstxp70_v2012-RHE-4.3-20100122.tar.gz
       rtk       : 
         branch   : trunk
         revision : HEAD
@@ -268,13 +268,13 @@ definitions:
                  O0_g_st240_le, O1_g_st240_le, O2_g_st240_le, Os_g_st240_le, O3_g_nolao_st240_le ]
     configuration :
       tiny   :
-        lao  : [ ITU, FP_Exposure, lao, bdti, iti, stltest-1.00 ]
+        lao  : [ itu, fp_exposure, lao, bdti, iti, stltest-1.00 ]
       short  :
-        lao  : [ PStone, cpp_regexp, ITU, lao, bdti, iti, visibility, FP_Exposure, FPU_Zoom ]
+        lao  : [ pstone, cpp_regexp, itu, lao, bdti, iti, visibility, fp_exposure, fpu_zoom ]
         unit : [ open64_test, open64_perf, st200gdb ]
       long   :
-        lao  : [ ticpp, stltest-1.00, libstdcpp, HP_valid, jasper, plumhall, srecord, quest, estl, chess, AST_PDX, PStone, cpp_regexp, 
-               ITU, lao, bdti, iti, visibility, FP_Exposure, FPU_Zoom ]
+        lao  : [ ticpp, stltest-1.00, libstdcpp, hp_valid, jasper, plumhall, srecord, quest, estl, chess, ast_pdx, pstone, cpp_regexp, 
+               itu, lao, bdti, iti, visibility, fp_exposure, fpu_zoom ]
         lao_iss : [ efr_st200 ]
         unit : [ open64_test, open64_perf, st200gdb ]
       st200gdb :
@@ -337,8 +337,9 @@ definitions:
 
 queues:
   short : [ basestation, bdti, dhrystone, diags, fp_aec, fp_exposure, fpu_zoom, iti, lao, pstone, seaprobe, 
-          servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, ti_codebook, aec16b, nlms16, 
+          servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, ti_codebook, aec16b, nlms16, itu, stltest-1.00,
           eembc_telecom_autcor00data_1, eembc_telecom_autcor00data_2, eembc_telecom_autcor00data_3, eembc_telecom_conven00data_1, eembc_telecom_conven00data_2, 
           eembc_telecom_conven00data_3, eembc_telecom_empty, eembc_telecom_fbital00data_2, eembc_telecom_fbital00data_3, eembc_telecom_fbital00data_6, 
           eembc_telecom_fft00data_1, eembc_telecom_fft00data_2, eembc_telecom_fft00data_3, eembc_telecom_viterb00data_1, eembc_telecom_viterb00data_2, 
           eembc_telecom_viterb00data_3, eembc_telecom_viterb00data_4 ]
+  long : [ jasper, plumhall, ticpp, mp3_32, mp3_64, wb_amr ]
