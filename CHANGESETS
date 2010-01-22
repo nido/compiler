@@ -1,6 +1,44 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jan 22 12:43:44 CET 2010
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-77873
+
+Description:
+------------
+	* [trunk] Fix for bug #77873: [EXT-V4] Internal error in driver when using 7 extensions.
+	Deliver fixes/codex-77873 rev #26035 with authorization branch #85210
+
+	-> Extension loader: added detection of resource requirement overflow to output
+	                     a clean error message instead of reaching an assertion
+			     failure or silently generate incorrect code
+
+Modified Files:
+---------------
+	M       osprey/common/com/isa_loader.cxx
+	M       osprey/targinfo/generate/si_gen.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26025 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-77873@26035 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26025 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-77873@26035" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/com/isa_loader.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/isa_loader.cxx?p2=branches/fixes/codex-77873/osprey/common/com/isa_loader.cxx&r1=26025&r2=26035&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/si_gen.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/si_gen.cxx?p2=branches/fixes/codex-77873/osprey/targinfo/generate/si_gen.cxx&r1=26025&r2=26035&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jan 22 08:12:12 CET 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

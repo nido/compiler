@@ -392,6 +392,7 @@ void RES_WORD::Output_All(FILE* fd)
     fprintf(stderr,"ERROR: cannot handle %d > 1 long long worth of "
                    "resource info.\n",
                    count);
+    exit(EXIT_FAILURE);
   }
   else {
     // Important special case.  We don't need a vector of resource words at all
