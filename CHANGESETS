@@ -1,6 +1,44 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Jan 22 08:12:12 CET 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-81649
+
+Description:
+------------
+	* [trunk] Fix for bug #81649: assembler does not check the validity of bundles with selected architecture.
+	Deliver fixes/codex-81649 rev #26023 with authorization branch #82197
+
+
+Modified Files:
+---------------
+	M       osprey/driver/opt_actions.c
+	M       osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx
+	A  +    ACI_CONFIGURATION
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26014 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-81649@26023 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26014 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-81649@26023" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/opt_actions.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/opt_actions.c?p2=branches/fixes/codex-81649/osprey/driver/opt_actions.c&r1=26014&r2=26023&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx?p2=branches/fixes/codex-81649/osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx&r1=26014&r2=26023&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/fixes/codex-81649/DEPENDENCIES&r1=26014&r2=26023&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jan 21 17:10:18 CET 2010
 	Author:    lyon
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

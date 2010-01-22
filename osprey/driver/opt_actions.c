@@ -1055,6 +1055,14 @@ Check_Target ( void )
 
   if (proc != PROC_NONE) {
     add_stxp70_phase_for_option(flag);
+    if (proc == PROC_stxp70_v4_novliw) {
+      /* bug #81649 : in novliw mode, we must add this option to avoid
+       * ext/ext bundles when connecting a dual pipe extension
+       */
+      flag = add_new_option("-TARG:max_ext_issue_width=1");
+      add_stxp70_phase_for_option(flag);
+    }
+
   }
 
   extern
