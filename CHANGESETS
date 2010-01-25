@@ -1,6 +1,42 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jan 25 14:29:20 CET 2010
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-89484
+
+Description:
+------------
+	* [trunk] Fix for bug #89484: [DEBUG] Failures in gdb testsuite on 'miscexprs.exp'.
+	Deliver fixes/codex-89484 rev #26080 with authorization branch #89485
+
+	-> STxP70: Do not generate debug information for newly added 'mpur' register file
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+	M       osprey/targinfo/stxp70/emit/targ_em_dwarf.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26078 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-89484@26080 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26078 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-89484@26080" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/cg/targ_entry_exit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx?p2=branches/fixes/codex-89484/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx&r1=26078&r2=26080&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/emit/targ_em_dwarf.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/emit/targ_em_dwarf.cxx?p2=branches/fixes/codex-89484/osprey/targinfo/stxp70/emit/targ_em_dwarf.cxx&r1=26078&r2=26080&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Jan 22 15:52:50 CET 2010
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
