@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jan 26 08:52:30 CET 2010
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86568
+
+Description:
+------------
+	* [trunk] Fix for bug #86568: [EXT-V4] XGMI instruction raises "Assertion failure at line 4547 of ../../lai/cgemit.cxx".
+	Deliver fixes/codex-86568 rev #26122 with authorization branch #86655
+
+	-> STxP70 Extensions: Fix to support expansion of extension intrinsics
+	                      that write a guard register (XGMI instruction group).
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26094 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86568@26122 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26094 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86568@26122" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/expand/exp_intrinsic.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/expand/exp_intrinsic.cxx?p2=branches/fixes/codex-86568/osprey/targinfo/stxp70/expand/exp_intrinsic.cxx&r1=26094&r2=26122&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jan 25 14:29:20 CET 2010
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
