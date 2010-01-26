@@ -1,6 +1,42 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jan 26 09:06:29 CET 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-hwloop-rules
+
+Description:
+------------
+	*  implement dev hwloop prog rules for v4
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/config/config_TARG.cxx
+	M       osprey/targinfo/stxp70/config/config_TARG.h
+	M       osprey/targinfo/stxp70/cg/targ_cg.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26124 --new=https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-hwloop-rules@26126 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26124 https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-hwloop-rules@26126" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/config/config_TARG.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_TARG.cxx?p2=branches/cv17/dev-hwloop-rules/osprey/targinfo/stxp70/config/config_TARG.cxx&r1=26124&r2=26126&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_TARG.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_TARG.h?p2=branches/cv17/dev-hwloop-rules/osprey/targinfo/stxp70/config/config_TARG.h&r1=26124&r2=26126&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_cg.cxx?p2=branches/cv17/dev-hwloop-rules/osprey/targinfo/stxp70/cg/targ_cg.cxx&r1=26124&r2=26126&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jan 26 08:52:30 CET 2010
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
