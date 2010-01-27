@@ -55,7 +55,8 @@ definitions:
       debug    : [ O0_nog, O0Fpx_nog ]
       small    : [ OsMultCAS, O3MultCAS ]
       small_ipa  : [ OsMultCAS, OsMultCASIPA, O3MultCAS, O3MultCASIPA ]
-      medium   : [ O0, O2, OsMode16, OsFpxShortDouble, O3FpxShortDouble, OsMultCAS, OsMultCASIPA, O3MultCAS, O3MultCASIPA ]
+      medium   : [ O0, O2, OsMode16, O3FpxShortDouble, OsMultCAS, O3MultCAS ]
+      medium_ipa : [ O0, O2, OsMode16, O3FpxShortDouble, OsMultCAS, OsMultCASIPA, O3MultCAS, O3MultCASIPA ]
       full     : [ O0, O1, O2, OsMode16, OsFpxShortDouble, O3FpxShortDouble, OsMultCAS, O3MultCAS ]
       full_ipa   : [ O0, O1, O2, OsMode16, OsFpxShortDouble, O3FpxShortDouble, OsMultCAS, OsMultCASIPA, O3MultCAS, O3MultCASIPA ]
     configuration :
@@ -64,11 +65,7 @@ definitions:
       short  :
         unit : [ open64_test ]
         debug : [debug_info ]
-        medium : [ kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford, 
-          eembc_telecom_empty, eembc_telecom_autcor00data_1, eembc_telecom_autcor00data_2, eembc_telecom_autcor00data_3,
-          eembc_telecom_conven00data_1, eembc_telecom_conven00data_2, eembc_telecom_conven00data_3, eembc_telecom_fbital00data_2, 
-          eembc_telecom_fbital00data_3, eembc_telecom_fbital00data_6, eembc_telecom_fft00data_1, eembc_telecom_fft00data_2, 
-          eembc_telecom_fft00data_3, eembc_telecom_viterb00data_1, eembc_telecom_viterb00data_2, eembc_telecom_viterb00data_3, eembc_telecom_viterb00data_4
+        medium : [ kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford, eembc_telecom
         ] 
         small_ipa : [ fp_aec, fp_exposure, fpu_zoom, h264, iti, jpeg_csd, lao, dijkstra_ospf, edn, hr_4_2, 
           ti_codebook, wdservo, fp_algonum, marelli, nokia, notch, aec16b, nlms16, audio_speech, bdti
@@ -89,20 +86,18 @@ definitions:
           eembc_networking_ip_pktcheckb512k, eembc_networking_ip_reassembly, eembc_networking_nat, eembc_networking_ospfv2, eembc_networking_qos, 
           eembc_networking_routelookup, eembc_networking_tcpbulk, eembc_networking_tcpjumbo, eembc_networking_tcpmixed
         ]
-        full : [stvid]
-        full_ipa : [ basestation, bdti, dhrystone, diags, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, mp3_32, mp3_64, pstone, seaprobe, 
-          servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, wb_amr, aec16b, nlms16, 
-          eembc_automotive_tblook01, eembc_automotive_rspeed01, eembc_automotive_puwmod01, eembc_automotive_pntrch01, eembc_automotive_idctrn01, 
-          eembc_automotive_empty, eembc_automotive_canrdr01, eembc_automotive_cacheb01, eembc_automotive_bitmnp01, eembc_automotive_a2time01, 
-          eembc_telecom_autcor00data_1, eembc_telecom_autcor00data_2, eembc_telecom_autcor00data_3, eembc_telecom_conven00data_1, eembc_telecom_conven00data_2, 
-          eembc_telecom_conven00data_3, eembc_telecom_empty, eembc_telecom_fbital00data_2, eembc_telecom_fbital00data_3, eembc_telecom_fbital00data_6, 
-          eembc_telecom_fft00data_1, eembc_telecom_fft00data_2, eembc_telecom_fft00data_3, eembc_telecom_viterb00data_1, eembc_telecom_viterb00data_2, 
-          eembc_telecom_viterb00data_3, eembc_telecom_viterb00data_4, 
-          eembc_consumer_empty, eembc_consumer_cjpeg, eembc_consumer_djpeg, eembc_consumer_rgbcmy01, eembc_consumer_rgbhpg01, eembc_consumer_rgbyiq01, 
+        medium_ipa : [ mp3_32, mp3_64, wb_amr, 
           valid_extension_admx, valid_extension_ax2, valid_extension_fdx, valid_extension_fx, valid_extension_impl, valid_extension_macr, valid_extension_mini, 
           valid_extension_mp1x, valid_extension_mp1x_export, valid_extension_pix, valid_extension_ts2x, valid_extension_ts3x, 
           valid_extension_ts4x, valid_extension_tstx, valid_extension_tx, valid_extension_tx_export, valid_extension_vx2, valid_extension_x008, valid_extension_x016, 
           valid_extension_x032, valid_extension_x064, valid_extension_x128, valid_extension_x256, valid_extension_x512, valid_extension_x1k
+          eembc_automotive_tblook01, eembc_automotive_rspeed01, eembc_automotive_puwmod01, eembc_automotive_pntrch01, eembc_automotive_idctrn01, 
+          eembc_automotive_empty, eembc_automotive_canrdr01, eembc_automotive_cacheb01, eembc_automotive_bitmnp01, eembc_automotive_a2time01, 
+        ]
+        full : [stvid]
+        full_ipa : [ basestation, bdti, dhrystone, diags, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe, 
+          servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom,
+          eembc_consumer_empty, eembc_consumer_cjpeg, eembc_consumer_djpeg, eembc_consumer_rgbcmy01, eembc_consumer_rgbhpg01, eembc_consumer_rgbyiq01, 
         ] 
   stxp70v4 :
     reference : 
@@ -151,7 +146,8 @@ definitions:
       debug    : [ O0_nog ]
       small    : [ OsMultCAS, O3MultCAS ]
       small_ipa  : [ OsMultCAS, OsMultCASIPA, O3MultCAS, O3MultCASIPA ]
-      medium   : [ O0, O2, OsMode16, OsMultCAS, OsMultCASIPA, O3MultCAS, O3MultCASIPA ]
+      medium   : [ O0, O2, OsMode16, OsMultCAS, O3MultCAS ]
+      medium_ipa : [ O0, O2, OsMode16, OsMultCAS, OsMultCASIPA, O3MultCAS, O3MultCASIPA ]
       full     : [ O0, O1, O2, OsMode16, OsMultCAS, O3MultCAS ]
       full_ipa   : [ O0, O1, O2, OsMode16, OsMultCAS, OsMultCASIPA, O3MultCAS, O3MultCASIPA ]
 
@@ -161,11 +157,7 @@ definitions:
       short  :
         unit : [ open64_test ]
         debug : [debug_info]
-        medium : [ kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford, 
-          eembc_telecom_empty, eembc_telecom_autcor00data_1, eembc_telecom_autcor00data_2, eembc_telecom_autcor00data_3,
-          eembc_telecom_conven00data_1, eembc_telecom_conven00data_2, eembc_telecom_conven00data_3, eembc_telecom_fbital00data_2, 
-          eembc_telecom_fbital00data_3, eembc_telecom_fbital00data_6, eembc_telecom_fft00data_1, eembc_telecom_fft00data_2, 
-          eembc_telecom_fft00data_3, eembc_telecom_viterb00data_1, eembc_telecom_viterb00data_2, eembc_telecom_viterb00data_3, eembc_telecom_viterb00data_4
+        medium : [ kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford, eembc_telecom
         ] 
         small_ipa : [ fp_aec, fp_exposure, fpu_zoom, h264, iti, jpeg_csd, lao, dijkstra_ospf, edn, hr_4_2, 
           ti_codebook, wdservo, fp_algonum, marelli, nokia, notch, aec16b, nlms16, audio_speech, bdti
@@ -182,15 +174,13 @@ definitions:
           eembc_networking_ip_pktcheckb512k, eembc_networking_ip_reassembly, eembc_networking_nat, eembc_networking_ospfv2, eembc_networking_qos, 
           eembc_networking_routelookup, eembc_networking_tcpbulk, eembc_networking_tcpjumbo, eembc_networking_tcpmixed
         ]
+        medium_ipa : [ mp3_32, mp3_64, wb_amr, 
+        ]
         full : [stvid]
-        full_ipa : [ basestation, bdti, dhrystone, diags, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, mp3_32, mp3_64, pstone, seaprobe, 
-          servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, wb_amr, aec16b, nlms16, 
+        full_ipa : [ basestation, bdti, dhrystone, diags, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe, 
+          servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom, 
           eembc_automotive_tblook01, eembc_automotive_rspeed01, eembc_automotive_puwmod01, eembc_automotive_pntrch01, eembc_automotive_idctrn01, 
           eembc_automotive_empty, eembc_automotive_canrdr01, eembc_automotive_cacheb01, eembc_automotive_bitmnp01, eembc_automotive_a2time01, 
-          eembc_telecom_autcor00data_1, eembc_telecom_autcor00data_2, eembc_telecom_autcor00data_3, eembc_telecom_conven00data_1, eembc_telecom_conven00data_2, 
-          eembc_telecom_conven00data_3, eembc_telecom_empty, eembc_telecom_fbital00data_2, eembc_telecom_fbital00data_3, eembc_telecom_fbital00data_6, 
-          eembc_telecom_fft00data_1, eembc_telecom_fft00data_2, eembc_telecom_fft00data_3, eembc_telecom_viterb00data_1, eembc_telecom_viterb00data_2, 
-          eembc_telecom_viterb00data_3, eembc_telecom_viterb00data_4, 
           eembc_consumer_empty, eembc_consumer_cjpeg, eembc_consumer_djpeg, eembc_consumer_rgbcmy01, eembc_consumer_rgbhpg01, eembc_consumer_rgbyiq01 
         ] 
   st200 :
@@ -264,6 +254,8 @@ definitions:
                  O0_g_st240_le, O1_g_st240_le, O2_g_st240_le, Os_g_st240_le, O3_g_st240_le ]
       lao_iss: [ O0_g_st231_le, O1_g_st231_le, O2_g_st231_le_iss, Os_g_st231_le_iss, O3_g_st231_le_iss,
                  O0_g_st240_le, O1_g_st240_le, O2_g_st240_le_iss, Os_g_st240_le_iss, O3_g_st240_le_iss ]
+      mlao   : [ O0_g_st231_le, O2_g_st231_le, Os_g_st231_le, O3_g_st231_le,
+                 O1_g_st240_le, O2_g_st240_le, Os_g_st240_le, O3_g_st240_le ]
       nolao  : [ O0_g_st231_le, O1_g_st231_le, O2_g_st231_le, Os_g_st231_le, O3_g_nolao_st231_le 
                  O0_g_st240_le, O1_g_st240_le, O2_g_st240_le, Os_g_st240_le, O3_g_nolao_st240_le ]
     configuration :
@@ -273,7 +265,8 @@ definitions:
         lao  : [ pstone, cpp_regexp, itu, lao, bdti, iti, visibility, fp_exposure, fpu_zoom ]
         unit : [ open64_test, open64_perf, st200gdb ]
       long   :
-        lao  : [ ticpp, stltest-1.00, libstdcpp, hp_valid, jasper, plumhall, srecord, quest, estl, chess, ast_pdx, pstone, cpp_regexp, 
+        mlao : [ ticpp, libstdcpp, jasper, plumhall, quest ]
+        lao  : [ stltest-1.00, hp_valid, srecord, estl, chess, ast_pdx, pstone, cpp_regexp, 
                itu, lao, bdti, iti, visibility, fp_exposure, fpu_zoom ]
         lao_iss : [ efr_st200 ]
         unit : [ open64_test, open64_perf, st200gdb ]
