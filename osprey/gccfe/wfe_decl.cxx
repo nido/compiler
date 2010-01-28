@@ -1485,6 +1485,14 @@ Add_Initv_For_Tree (tree val, UINT size)
 #endif
                 WFE_Stmt_Pop (wfe_stmk_func_body);
 
+#ifdef TARG_ST
+                // [TTh] Ignore allowed extension type conversion
+		if (WN_operator (init_wn) == OPR_CVT &&
+		    EXTENSION_Get_Equivalent_Mtype(WN_rtype(init_wn)) == WN_desc(init_wn)) {
+			init_wn = WN_kid0(init_wn);
+		}
+#endif
+
 		if ((WN_opcode (init_wn) == OPC_I4U4CVT &&
 		     WN_opcode (WN_kid0 (init_wn)) == OPC_U4LDA) ||
 		    (WN_opcode (init_wn) == OPC_I8U8CVT &&

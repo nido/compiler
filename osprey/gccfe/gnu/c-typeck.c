@@ -5094,6 +5094,14 @@ digest_init (type, init, require_constant)
       return inside_init;
     }
 
+#ifdef TARG_ST
+  /* [TTh] Handle extension types with equivalent machine mode */
+
+  if (code == VECTOR_TYPE && Is_Dynamic_MachineMode_With_Equiv (TYPE_MODE (type))) {
+    return convert(type, init);
+  }
+#endif
+
   /* Come here only for records and arrays.  */
 
   if (COMPLETE_TYPE_P (type) && TREE_CODE (TYPE_SIZE (type)) != INTEGER_CST)
