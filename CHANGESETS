@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Feb 02 08:22:35 CET 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82089
+
+Description:
+------------
+	* [trunk] Fix for bug #82089: Warning with -Menablefractgen is not explicit in case MPx is not present.
+	Deliver fixes/codex-82089 rev #26249 with authorization branch #89794
+
+
+Modified Files:
+---------------
+	M       osprey/driver/stxp70_options.i
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26204 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82089@26249 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26204 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82089@26249" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/stxp70_options.i	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/stxp70_options.i?p2=branches/fixes/codex-82089/osprey/driver/stxp70_options.i&r1=26204&r2=26249&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Jan 28 12:20:43 CET 2010
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
