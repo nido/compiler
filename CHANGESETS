@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Feb 02 15:00:14 CET 2010
+	Author:    janiny
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-stxp70v3-makehp
+
+Description:
+------------
+	* Deliver janiny/dev-stxp70v3-makehp rev #26278 with authorization branch #90141
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/cg/targ_cg.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26274 --new=https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-stxp70v3-makehp@26278 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26274 https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-stxp70v3-makehp@26278" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/cg/targ_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_cg.cxx?p2=branches/janiny/dev-stxp70v3-makehp/osprey/targinfo/stxp70/cg/targ_cg.cxx&r1=26274&r2=26278&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Feb 02 13:58:38 CET 2010
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
