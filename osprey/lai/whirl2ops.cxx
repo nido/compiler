@@ -965,6 +965,13 @@ Preg_Is_Rematerializable (
     ST *basesym = Base_Symbol(sym);
     TYPE_ID rtype = OPCODE_rtype(opc);
 
+#ifdef KEY
+    if (ST_sclass(sym) == SCLASS_FORMAL_REF)
+      return NULL; // the dereferenced value has no home location
+    if (ST_is_uplevelTemp(sym))
+      return NULL; // homing to the uplevel stack location is expensive
+#endif
+
     /* can't handle quad's without lowerer support.  defer for now.
      * shouldn't see complex as they're expanded when the optimizer
      * sees them, but what the heck.
