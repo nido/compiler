@@ -207,15 +207,43 @@ definitions:
       O2_g_st231_le : 
         CCOPT  : "-O2 -g -mcore=st231 -EL"
         RUNOPT : -cas
+      O2_g_st231_le_iss : 
+        CCOPT  : "-O2 -g -mcore=st231 -EL"
+      O2_ipa_st231_le : 
+        CCOPT  : "-O2 -ipa -mcore=st231 -EL"
+        RUNOPT : -cas
+      O2_ipa_st231_le_iss : 
+        CCOPT  : "-O2 -ipa -mcore=st231 -EL"
       Os_g_st231_le : 
         CCOPT  : "-Os -g -mcore=st231 -EL"
         RUNOPT : -cas
+      Os_g_st231_le_iss : 
+        CCOPT  : "-Os -g -mcore=st231 -EL"
+      Os_ipa_st231_le : 
+        CCOPT  : "-Os -ipa -mcore=st231 -EL"
+        RUNOPT : -cas
+      Os_ipa_st231_le_iss : 
+        CCOPT  : "-Os -ipa -mcore=st231 -EL"
       O3_g_st231_le : 
         CCOPT  : "-O3 -g -mcore=st231 -EL"
         RUNOPT : -cas
+      O3_g_st231_le_iss : 
+        CCOPT  : "-O3 -g -mcore=st231 -EL"
+      O3_ipa_st231_le : 
+        CCOPT  : "-O3 -ipa -mcore=st231 -EL"
+        RUNOPT : -cas
+      O3_ipa_st231_le_iss : 
+        CCOPT  : "-O3 -ipa -mcore=st231 -EL"
       O3_g_nolao_st231_le : 
         CCOPT  : "-O3 -g -CG:lao_opt=0 -mcore=st231 -EL"
         RUNOPT : -cas
+      O3_g_nolao_st231_le_iss : 
+        CCOPT  : "-O3 -g -CG:lao_opt=0 -mcore=st231 -EL"
+      O3_ipa_nolao_st231_le : 
+        CCOPT  : "-O3 -ipa -CG:lao_opt=0 -mcore=st231 -EL"
+        RUNOPT : -cas
+      O3_ipa_nolao_st231_le_iss : 
+        CCOPT  : "-O3 -ipa -CG:lao_opt=0 -mcore=st231 -EL"
       O0_g_st240_le : 
         CCOPT  : "-O0 -g -mcore=st240 -EL"
       O1_g_st240_le : 
@@ -223,52 +251,68 @@ definitions:
       O2_g_st240_le : 
         CCOPT  : "-O2 -g -mcore=st240 -EL"
         RUNOPT : -cas
+      O2_g_st240_le_iss : 
+        CCOPT  : "-O2 -g -mcore=st240 -EL"
+      O2_ipa_st240_le : 
+        CCOPT  : "-O2 -ipa -mcore=st240 -EL"
+        RUNOPT : -cas
+      O2_ipa_st240_le_iss : 
+        CCOPT  : "-O2 -ipa -mcore=st240 -EL"
       Os_g_st240_le : 
         CCOPT  : "-Os -g -mcore=st240 -EL"
         RUNOPT : -cas
+      Os_g_st240_le_iss  : 
+        CCOPT  : "-Os -g -mcore=st240 -EL"
+      Os_ipa_st240_le : 
+        CCOPT  : "-Os -ipa -mcore=st240 -EL"
+        RUNOPT : -cas
+      Os_ipa_st240_le_iss  : 
+        CCOPT  : "-Os -ipa -mcore=st240 -EL"
       O3_g_st240_le : 
         CCOPT  : "-O3 -g -mcore=st240 -EL"
         RUNOPT : -cas
+      O3_g_st240_le_iss  : 
+        CCOPT  : "-O3 -g -mcore=st240 -EL"
+      O3_ipa_st240_le : 
+        CCOPT  : "-O3 -ipa -mcore=st240 -EL"
+        RUNOPT : -cas
+      O3_ipa_st240_le_iss  : 
+        CCOPT  : "-O3 -ipa -mcore=st240 -EL"
       O3_g_nolao_st240_le : 
         CCOPT  : "-O3 -g -CG:lao_opt=0 -mcore=st240 -EL"
         RUNOPT : -cas
-      O2_g_st231_le_iss : 
-        CCOPT  : "-O2 -g -mcore=st231 -EL"
-      Os_g_st231_le_iss : 
-        CCOPT  : "-Os -g -mcore=st231 -EL"
-      O3_g_st231_le_iss : 
-        CCOPT  : "-O3 -g -mcore=st231 -EL"
-      O3_g_nolao_st231_le_iss : 
-        CCOPT  : "-O3 -g -CG:lao_opt=0 -mcore=st231 -EL"
-      O2_g_st240_le_iss : 
-        CCOPT  : "-O2 -g -mcore=st240 -EL"
-      Os_g_st240_le_iss  : 
-        CCOPT  : "-Os -g -mcore=st240 -EL"
-      O3_g_st240_le_iss  : 
-        CCOPT  : "-O3 -g -mcore=st240 -EL"
       O3_g_nolao_st240_le_iss  : 
         CCOPT  : "-O3 -g -CG:lao_opt=0 -mcore=st240 -EL"
+      O3_ipa_nolao_st240_le : 
+        CCOPT  : "-O3 -ipa -CG:lao_opt=0 -mcore=st240 -EL"
+        RUNOPT : -cas
+      O3_ipa_nolao_st240_le_iss  : 
+        CCOPT  : "-O3 -ipa -CG:lao_opt=0 -mcore=st240 -EL"
     option_sets :
-      unit   : [ O0_g_st231_le ]
-      lao    : [ O0_g_st231_le, O1_g_st231_le, O2_g_st231_le, Os_g_st231_le, O3_g_st231_le,
-                 O0_g_st240_le, O1_g_st240_le, O2_g_st240_le, Os_g_st240_le, O3_g_st240_le ]
-      lao_iss: [ O0_g_st231_le, O1_g_st231_le, O2_g_st231_le_iss, Os_g_st231_le_iss, O3_g_st231_le_iss,
-                 O0_g_st240_le, O1_g_st240_le, O2_g_st240_le_iss, Os_g_st240_le_iss, O3_g_st240_le_iss ]
-      mlao   : [ O0_g_st231_le, O2_g_st231_le, Os_g_st231_le, O3_g_st231_le,
-                 O1_g_st240_le, O2_g_st240_le, Os_g_st240_le, O3_g_st240_le ]
-      nolao  : [ O0_g_st231_le, O1_g_st231_le, O2_g_st231_le, Os_g_st231_le, O3_g_nolao_st231_le 
-                 O0_g_st240_le, O1_g_st240_le, O2_g_st240_le, Os_g_st240_le, O3_g_nolao_st240_le ]
+      unit    : [ O0_g_st231_le ]
+      full    : [ O0_g_st231_le, O1_g_st231_le, O2_g_st231_le, O2_ipa_st231_le, Os_g_st231_le, Os_ipa_st231_le, 
+                  O3_g_st231_le, O3_ipa_st231_le, O3_g_nolao_st231_le,  O3_ipa_nolao_st231_le,
+                  O0_g_st240_le, O1_g_st240_le, O2_g_st240_le, O2_ipa_st240_le, Os_g_st240_le, Os_ipa_st240_le,
+                  O3_g_st240_le, O3_ipa_st240_le, O3_g_nolao_st240_le, O3_ipa_nolao_st240_le ]
+      full_iss: [ O0_g_st231_le, O1_g_st231_le, O2_g_st231_le_iss, O2_ipa_st231_le_iss, Os_g_st231_le_iss, Os_ipa_st231_le_iss, 
+                  O3_g_st231_le_iss, O3_ipa_st231_le_iss, O3_g_nolao_st231_le_iss, O3_ipa_nolao_st231_le_iss,
+                  O0_g_st240_le, O1_g_st240_le, O2_g_st240_le_iss, O2_ipa_st240_le_iss, Os_g_st240_le_iss, Os_ipa_st240_le_iss,
+                  O3_g_st240_le_iss, O3_ipa_st240_le_iss, O3_g_nolao_st240_le_iss, O3_ipa_nolao_st240_le_iss ]
+      med     : [ O0_g_st231_le, O1_g_st231_le, O2_g_st231_le, Os_g_st231_le, Os_ipa_st231_le, 
+                  O3_g_st231_le, O3_ipa_st231_le, O3_g_nolao_st231_le,
+                  O1_g_st240_le, O2_ipa_st240_le, Os_ipa_st240_le,
+                  O3_g_st240_le, O3_ipa_st240_le, O3_ipa_nolao_st240_le ]
     configuration :
       tiny   :
-        lao  : [ itu, fp_exposure, lao, bdti, iti, stltest-1.00 ]
+        full : [ itu, fp_exposure, lao, bdti, iti, stltest-1.00 ]
       short  :
-        lao  : [ pstone, cpp_regexp, itu, lao, bdti, iti, visibility, fp_exposure, fpu_zoom ]
+        full : [ pstone, cpp_regexp, itu, lao, bdti, iti, visibility, fp_exposure, fpu_zoom ]
         unit : [ open64_test, open64_perf, st200gdb ]
       long   :
-        mlao : [ ticpp, libstdcpp, jasper, plumhall, quest ]
-        lao  : [ stltest-1.00, hp_valid, srecord, estl, chess, ast_pdx, pstone, cpp_regexp, 
-               itu, lao, bdti, iti, visibility, fp_exposure, fpu_zoom ]
-        lao_iss : [ efr_st200 ]
+        med  : [ ticpp, libstdcpp, jasper, plumhall, quest ]
+        full : [ stltest-1.00, hp_valid, srecord, estl, chess, ast_pdx, pstone, cpp_regexp, 
+                 itu, lao, bdti, iti, visibility, fp_exposure, fpu_zoom ]
+        full_iss : [ efr_st200 ]
         unit : [ open64_test, open64_perf, st200gdb ]
       st200gdb :
         unit : [ st200gdb ]
