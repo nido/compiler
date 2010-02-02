@@ -290,11 +290,11 @@ static const char * const interface[] = {
   " *       Return a boolean to specify if the operand specifed",
   " *       by 'otype' is an relocatable.",
   " *",
-  " *   UINT8 ISA_OPERAND_VALTYP_Default_Reloc(const ISA_OPERAND_VALTYP *otype)",
+  " *   UINT16 ISA_OPERAND_VALTYP_Default_Reloc(const ISA_OPERAND_VALTYP *otype)",
   " *       Returns the default reloc associated with operand specified",
   " *       by 'otype'. It can be syntaxically implicit or not.",
   " *",
-  " *   UINT8 ISA_OPERAND_VALTYP_Relocs(const ISA_OPERAND_VALTYP *otype)",
+  " *   UINT16 ISA_OPERAND_VALTYP_Relocs(const ISA_OPERAND_VALTYP *otype)",
   " *       Returns the total relocations number (default relocation included)",
   " *       associated with operand specified by 'otype'.",
   " *",
@@ -1093,9 +1093,9 @@ void ISA_Operands_End(void)
 	    "  mUINT16 lclass;\n"
 	    "  mUINT8  eclass;\n"
 	    "  mUINT8  flags;\n"
-	    "  mUINT8  default_reloc;\n"
-	    "  mUINT8  relocs;\n"
-	    "  mINT8   reloc[ISA_RELOC_STATIC_MAX];\n"
+	    "  mUINT16 default_reloc;\n"
+	    "  mUINT16 relocs;\n"
+	    "  mINT16  reloc[ISA_RELOC_STATIC_MAX];\n"
 	    "} ISA_OPERAND_VALTYP;\n");
     
     fprintf(hfile,
@@ -1714,16 +1714,16 @@ void ISA_Operands_End(void)
 		 "  return (ISA_ENUM_CLASS)otype->eclass;\n"
 		 "}\n");
 
-  fprintf(hfile, "\ninline UINT8 ISA_OPERAND_VALTYP_Default_Reloc(\n"
+  fprintf(hfile, "\ninline UINT16 ISA_OPERAND_VALTYP_Default_Reloc(\n"
 		 "  const ISA_OPERAND_VALTYP *otype)\n"
 		 "{\n"
-		 "  return (UINT8)otype->default_reloc;\n"
+		 "  return (UINT16)otype->default_reloc;\n"
 		 "}\n");
 
-  fprintf(hfile, "\ninline UINT8 ISA_OPERAND_VALTYP_Relocs(\n"
+  fprintf(hfile, "\ninline UINT16 ISA_OPERAND_VALTYP_Relocs(\n"
 		 "  const ISA_OPERAND_VALTYP *otype)\n"
 		 "{\n"
-		 "  return (UINT8)otype->relocs;\n"
+		 "  return (UINT16)otype->relocs;\n"
 		 "}\n");
 
   fprintf(hfile, "\ninline ISA_RELOC ISA_OPERAND_VALTYP_Next(\n"

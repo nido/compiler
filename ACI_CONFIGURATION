@@ -11,7 +11,7 @@ definitions:
        crolles  : /sw/gnu_compil/stxp70work/hudson/aci-cec-home/aci-dependencies/toolset-stxp70
        grenoble : /home/compwork/cruisecontrol/CC/persistent_inputs/aci-dependencies/toolset-stxp70
       name      : STxP70-410_release-rhel3.tar.gz
-      pkg1    : binutils_trunk_v5691_gbu_intstxp70_v2012-RHE-4.3-20100122.tar.gz
+      pkg1    : dev-relocations-STxP70-v3v4-RHE-STXP70CC-4.3.tar.gz
       rtk       : 
         branch   : trunk
         revision : HEAD

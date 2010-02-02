@@ -1,6 +1,60 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Feb 02 09:26:36 CET 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/chauveth/dev-relocations
+
+Description:
+------------
+	*   Introduce relocation required for STxP70 v4 dynamic loading support + stuff around variants of relocations
+
+
+Modified Files:
+---------------
+	M       osprey/common/com/dyn_isa_api.h
+	M       osprey/common/com/dyn_isa_api_access.h
+	M       osprey/common/com/isa_loader.cxx
+	M       osprey/common/com/dyn_isa_api_access.cxx
+	M       osprey/targinfo/stxp70/isa/isa_relocs.cxx
+	M       osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M       osprey/targinfo/generate/isa_relocs_gen.cxx
+	M       osprey/targinfo/generate/dyn/dyn_isa_api.c
+	M       osprey/targinfo/generate/isa_operands_gen.cxx
+	M       osprey/targinfo/generate/isa_relocs_gen.h
+	M       ACI_CONFIGURATION
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26251 --new=https://codex.cro.st.com/svnroot/open64/branches/chauveth/dev-relocations@26255 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26251 https://codex.cro.st.com/svnroot/open64/branches/chauveth/dev-relocations@26255" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/com/dyn_isa_api.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/dyn_isa_api.h?p2=branches/chauveth/dev-relocations/osprey/common/com/dyn_isa_api.h&r1=26251&r2=26255&roottype=svn&root=open64&diff_format=h
+osprey/common/com/dyn_isa_api_access.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/dyn_isa_api_access.h?p2=branches/chauveth/dev-relocations/osprey/common/com/dyn_isa_api_access.h&r1=26251&r2=26255&roottype=svn&root=open64&diff_format=h
+osprey/common/com/isa_loader.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/isa_loader.cxx?p2=branches/chauveth/dev-relocations/osprey/common/com/isa_loader.cxx&r1=26251&r2=26255&roottype=svn&root=open64&diff_format=h
+osprey/common/com/dyn_isa_api_access.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/dyn_isa_api_access.cxx?p2=branches/chauveth/dev-relocations/osprey/common/com/dyn_isa_api_access.cxx&r1=26251&r2=26255&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_relocs.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_relocs.cxx?p2=branches/chauveth/dev-relocations/osprey/targinfo/stxp70/isa/isa_relocs.cxx&r1=26251&r2=26255&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_operands.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_operands.cxx?p2=branches/chauveth/dev-relocations/osprey/targinfo/stxp70/isa/isa_operands.cxx&r1=26251&r2=26255&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/isa_relocs_gen.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/isa_relocs_gen.cxx?p2=branches/chauveth/dev-relocations/osprey/targinfo/generate/isa_relocs_gen.cxx&r1=26251&r2=26255&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/dyn/dyn_isa_api.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/dyn/dyn_isa_api.c?p2=branches/chauveth/dev-relocations/osprey/targinfo/generate/dyn/dyn_isa_api.c&r1=26251&r2=26255&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/isa_operands_gen.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/isa_operands_gen.cxx?p2=branches/chauveth/dev-relocations/osprey/targinfo/generate/isa_operands_gen.cxx&r1=26251&r2=26255&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/isa_relocs_gen.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/isa_relocs_gen.h?p2=branches/chauveth/dev-relocations/osprey/targinfo/generate/isa_relocs_gen.h&r1=26251&r2=26255&roottype=svn&root=open64&diff_format=h
+ACI_CONFIGURATION	http://codex.cro.st.com/svn/viewvc.php/trunk/ACI_CONFIGURATION?p2=branches/chauveth/dev-relocations/ACI_CONFIGURATION&r1=26251&r2=26255&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/chauveth/dev-relocations/DEPENDENCIES&r1=26251&r2=26255&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Feb 02 08:22:35 CET 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

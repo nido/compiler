@@ -206,6 +206,9 @@ static ISA_EXT_Interface_t static_interface = {
    dyn_set_ISA_REGISTER_SUBCLASS_offset,     /* xxx_targ_isa_registers.c  */
 
    dyn_set_ISA_LIT_CLASS_offset,             /* xxx_targ_isa_lits.c       */
+
+   dyn_get_ISA_RELOC_variant_info_tab,       /* xxx_targ_isa_relocs.c     */
+   dyn_get_ISA_RELOC_variant_info_tab_sz,    /* xxx_targ_isa_relocs.c     */
 };
 
 /* Exporting global pointer on static internal structure.             */
