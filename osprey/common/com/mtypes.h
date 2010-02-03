@@ -292,6 +292,7 @@ BE_EXPORTED extern TYPE_ID Mtype_prev_alignment( TYPE_ID );
 
 #ifdef TARG_ST
 BE_EXPORTED extern BOOL Mtype_Int_Value_In_Range( TYPE_ID, INT64 );
+BE_EXPORTED extern TYPE_ID Mtype_From_Name(const char *name);
 #endif
 
 #ifdef __cplusplus 

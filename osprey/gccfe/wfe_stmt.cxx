@@ -67,8 +67,9 @@ extern "C" {
 #include <ctype.h>
 #include "wfe_pragmas.h"
 #ifdef TARG_ST
-//TB: for EXTENSION_Get_Mtype_For_Preg
-#include "wfe_loader.h"
+#include "wfe_loader.h" // For EXTENSION_Get_Mtype_For_Preg()
+#include "ext_info.h"   // For EXTENSION_Are_Equivalent_Mtype()
+#include "config_target.h"
 #endif
 extern "C" int decode_reg_name (char*);
 
@@ -1638,9 +1639,16 @@ Wfe_Expand_Asm_Operands (tree  string,
       ++opnd_num;
     }
 
+#ifdef TARG_ST
+  UINT32 input_num = 0;
+#endif
   for (tail = inputs;
        tail;
-       tail = TREE_CHAIN (tail))
+       tail = TREE_CHAIN (tail)
+#ifdef TARG_ST
+         , ++input_num
+#endif
+       )
     {
       if (TREE_PURPOSE (tail) == NULL_TREE)
 	{
@@ -1670,11 +1678,24 @@ Wfe_Expand_Asm_Operands (tree  string,
 
       WN *input_rvalue = WFE_Expand_Expr (TREE_VALUE (tail));
 #ifdef TARG_ST
+      // [TTh] Add missing conversion in case of equivalent types
+      TYPE_ID constraint_type = Get_Extension_MTYPE_From_Asm_Constraints(constraint_string);
+      if (constraint_type != MTYPE_UNKNOWN &&
+	  constraint_type != WN_rtype(input_rvalue)) {
+	if (EXTENSION_Are_Equivalent_Mtype(constraint_type, WN_rtype(input_rvalue))) {
+	  input_rvalue = WN_Cvt (WN_rtype(input_rvalue), constraint_type, input_rvalue);
+	}
+	else {
+	  error ("Mismatch between the asm statement constraint '%s' and the argument type for operand %d",
+		 constraint_string, input_num+1);
+	  return;
+	}
+      }
+
       //[TB]: Add dynamic mtype checking
       if (!Check_Asm_Constraints(constraint_string, WN_rtype(input_rvalue))) {
-	error ("Unrecognized constraint %s; "
-		 "asm statement at line %d discarded",
-		 constraint_string, lineno);
+	error ("Unrecognized asm statement constraint '%s' for operand %d",
+	       constraint_string, input_num+1);
 	return;
       }
 #endif
@@ -1751,10 +1772,40 @@ Wfe_Expand_Asm_Operands (tree  string,
 	    sprintf(input_opnd_constraint, "%d", opnd_num);
 	  }
 
+#ifdef TARG_ST
+	// [TTh] (Code moved from few lines below)
+	// Compute the ST used as the base for the negative PREG
+	// reference in the output operand. This duplicates work done in
+	// WFE_Lhs_Of_Modify_Expr.
+	TYPE_ID desc = TY_mtype (Get_TY (TREE_TYPE (TREE_VALUE (tail))));
+
+	// [TTh] Add missing conversion in case of equivalent types
+	TY_IDX component_type = (TY_IDX)0;
+	{
+	  TYPE_ID constraint_type = Get_Extension_MTYPE_From_Asm_Constraints(constraint_string);
+	  if (constraint_type != MTYPE_UNKNOWN &&
+	      constraint_type != desc) {
+	    if (EXTENSION_Are_Equivalent_Mtype(constraint_type, desc)) {
+	      component_type = MTYPE_To_TY(constraint_type);
+	      desc = constraint_type;
+	    }
+	    else {
+	      error ("Mismatch between the asm statement constraint '%s' and the argument type for result %d",
+		     constraint_string, opnd_num+1);
+	      return;
+	    }
+	  }
+	}
+#endif
+
 	WN *output_rvalue_wn = WFE_Lhs_Of_Modify_Expr (MODIFY_EXPR,
 						       TREE_VALUE (tail),
 						       plus_modifier,
+#ifdef TARG_ST
+						       (TY_IDX) component_type, // component type
+#else
 						       (TY_IDX) 0, // component type
+#endif
 						       (INT64) 0,  // component offset
 						       (UINT32) 0, // field ID
 						       FALSE,      // is bit field?
@@ -1777,18 +1828,18 @@ Wfe_Expand_Asm_Operands (tree  string,
 	    ++i;
 	  }
 
+#ifdef TARG_ST
+	//[TB]: Add dynamic mtype checking
+	if (!Check_Asm_Constraints(constraint_string, desc)) {
+	  error ("Unrecognized asm statement constraint '%s' for result %d",
+		 constraint_string,  opnd_num+1);
+	  return;
+	}
+#else
 	// Compute the ST used as the base for the negative PREG
 	// reference in the output operand. This duplicates work done in
 	// WFE_Lhs_Of_Modify_Expr.
 	TYPE_ID desc = TY_mtype (Get_TY (TREE_TYPE (TREE_VALUE (tail))));
-#ifdef TARG_ST
-      //[TB]: Add dynamic mtype checking
-      if (!Check_Asm_Constraints(constraint_string, desc)) {
-	error ("Unrecognized constraint %s; "
-		 "asm statement at line %d discarded",
-		 constraint_string, lineno);
-	return;
-      }
 #endif
 	ST *preg_st = MTYPE_To_PREG(desc);
 

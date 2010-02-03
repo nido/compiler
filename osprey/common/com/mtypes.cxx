@@ -484,4 +484,24 @@ BOOL Mtype_Int_Value_In_Range(TYPE_ID type, INT64 val)
     return (tmp == 0LL);
   }
 }
+
+/* ==================================================================== 
+ * 
+ * Mtype_From_Name() 
+ * 
+ * Return the MTYPE id associated with name <name>.
+ * Return MTYPE_UNKNOWN if not found.
+ * 
+ * ==================================================================== 
+ */
+TYPE_ID Mtype_From_Name(const char *name)
+{
+  int i;
+  for (i=MTYPE_FIRST; i<MTYPE_LAST; i++) {
+    if (strcmp(name, MTYPE_name(i)) == 0) {
+      return (TYPE_ID)i;
+    }
+  }
+  return MTYPE_UNKNOWN;
+}
 #endif

@@ -645,7 +645,7 @@ CandidateMap_Get_Associated_Extension_Preg(CandidateMap *cmap, PREG_NUM var) {
  */
 static bool
 Is_Dedicated(PREG_NUM num) {
-  return ((int)num<= Last_Dedicated_Preg_Offset);
+  return ((int)num > 0 && (int)num<= Last_Dedicated_Preg_Offset);
 }
 
 

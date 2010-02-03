@@ -1395,6 +1395,19 @@ WFE_Lhs_Of_Modify_Expr(tree_code assign_code,
       rhs_wn = WN_CreateLdid (OPR_LDID, rtype,
 			      desc, rhs_preg_num, rhs_st,
 			      desc_ty_idx, 0);
+#ifdef TARG_ST
+      // [TTh] If required, add extension type conversion in case of equivalent types
+      if (component_ty_idx != 0) {
+        TYPE_ID new_rtype = TY_mtype (Get_TY (TREE_TYPE (lhs)));
+        if (rtype != new_rtype &&
+            (MTYPE_is_dynamic(rtype) || MTYPE_is_dynamic(new_rtype)) &&
+            EXTENSION_Are_Equivalent_Mtype(rtype, new_rtype)) {
+          rhs_wn = WN_Cvt (rtype, new_rtype, rhs_wn);
+          desc = new_rtype;
+          rtype = new_rtype;
+        }
+      }
+#endif
     }
     else {
       WN *result_wn;	// the result wn to be returned

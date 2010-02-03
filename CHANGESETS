@@ -1,6 +1,61 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Feb 03 08:48:03 CET 2010
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83974
+
+Description:
+------------
+	* [trunk] Fix for bug #83974: [EXT][MP1x] Allow implicit long long/MP1x conversion in assembly statement constraints.
+	Deliver fixes/codex-83974 rev #26300 with authorization branch #86984
+
+	-> Reconf: Updated front-end to allow implicit long long to MP1x conversion on assembly statement constraints. 
+
+
+Modified Files:
+---------------
+	M       osprey/be/com/ext_lower.cxx
+	M       osprey/gccfe/wfe_expr.cxx
+	M       osprey/gccfe/wfe_stmt.cxx
+	M       osprey/common/com/mtypes.cxx
+	M       osprey/common/com/mtypes.h
+	M       osprey/targinfo/arm/config/config_target.h
+	M       osprey/targinfo/arm/config/config_target.cxx
+	M       osprey/targinfo/stxp70/config/config_target.h
+	M       osprey/targinfo/stxp70/config/config_target.cxx
+	M       osprey/targinfo/st200/config/config_target.h
+	M       osprey/targinfo/st200/config/config_target.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26297 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83974@26300 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26297 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-83974@26300" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/com/ext_lower.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/ext_lower.cxx?p2=branches/fixes/codex-83974/osprey/be/com/ext_lower.cxx&r1=26297&r2=26300&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_expr.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_expr.cxx?p2=branches/fixes/codex-83974/osprey/gccfe/wfe_expr.cxx&r1=26297&r2=26300&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_stmt.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_stmt.cxx?p2=branches/fixes/codex-83974/osprey/gccfe/wfe_stmt.cxx&r1=26297&r2=26300&roottype=svn&root=open64&diff_format=h
+osprey/common/com/mtypes.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/mtypes.cxx?p2=branches/fixes/codex-83974/osprey/common/com/mtypes.cxx&r1=26297&r2=26300&roottype=svn&root=open64&diff_format=h
+osprey/common/com/mtypes.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/mtypes.h?p2=branches/fixes/codex-83974/osprey/common/com/mtypes.h&r1=26297&r2=26300&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/arm/config/config_target.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/config/config_target.h?p2=branches/fixes/codex-83974/osprey/targinfo/arm/config/config_target.h&r1=26297&r2=26300&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/arm/config/config_target.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/config/config_target.cxx?p2=branches/fixes/codex-83974/osprey/targinfo/arm/config/config_target.cxx&r1=26297&r2=26300&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_target.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_target.h?p2=branches/fixes/codex-83974/osprey/targinfo/stxp70/config/config_target.h&r1=26297&r2=26300&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_target.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_target.cxx?p2=branches/fixes/codex-83974/osprey/targinfo/stxp70/config/config_target.cxx&r1=26297&r2=26300&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/config/config_target.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/config/config_target.h?p2=branches/fixes/codex-83974/osprey/targinfo/st200/config/config_target.h&r1=26297&r2=26300&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/config/config_target.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/config/config_target.cxx?p2=branches/fixes/codex-83974/osprey/targinfo/st200/config/config_target.cxx&r1=26297&r2=26300&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Feb 03 08:21:58 CET 2010
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
