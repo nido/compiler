@@ -109,6 +109,15 @@ CANON_CR::Trim_to_16bits(WN *wn, CODEMAP *htable)
   MTYPE typ;
   INT64 multiple32K;
 
+#ifdef TARG_ST
+  // [VL] Although its possible impact can be repaired by 
+  // EBO in *** most *** cases, the interest of the split 
+  // depends on the target encoding. It should not be 
+  // performed blindly in this generic part of the code. 
+  // We just skip this function for ST targets (#61658).
+  return;
+#endif
+
   if (Scale() >= (- 0x8000) && Scale() <= 0x7fff)
     return;
 

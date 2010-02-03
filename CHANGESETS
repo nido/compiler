@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Feb 03 08:21:58 CET 2010
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-61658
+
+Description:
+------------
+	* [trunk] Fix for bug #61658: load/store offset larger than 32768 splitted by wopt..
+	Deliver fixes/codex-61658 rev #26295 with authorization branch #74641
+
+
+Modified Files:
+---------------
+	M       osprey/be/opt/opt_canon.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26280 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-61658@26295 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26280 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-61658@26295" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/opt/opt_canon.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_canon.cxx?p2=branches/fixes/codex-61658/osprey/be/opt/opt_canon.cxx&r1=26280&r2=26295&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Feb 02 15:00:14 CET 2010
 	Author:    janiny
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
