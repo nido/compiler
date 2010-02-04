@@ -2751,9 +2751,11 @@ Process_STxP70_Targ (string option,  string targ_args )
 	toggle (&proc, Proc_Map[i].pid);
       }
     }
-    if ( proc == UNDEFINED ) {
-      warning("unsupported processor %s\n", targ_args);
-      proc = PROC_NONE;
+
+    // [VL, #84853] If processor is unknown at this point, we just abort
+    if ( proc == UNDEFINED || proc == PROC_NONE ) {
+      error("illegal -mcore syntax or unsupported processor: <%s>\n", targ_args);
+      exit(-1);
     }
   }
 
