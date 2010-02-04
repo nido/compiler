@@ -2032,6 +2032,17 @@ extern INT OP_storeval_byte_offset (OP *op, INT opndno);
  */
 extern INT OP_loadval_byte_offset (OP *op, INT resno);
 
+/* ====================================================================
+ *
+ * OP_load_result
+ *
+ * OP is a memory load.
+ * Returns the index of the result that will contains the loaded value.
+ * -1 is returned if it cannot be determined (load with several 
+ * candidate results).
+ * ====================================================================
+ */
+extern INT OP_load_result (OP *op);
 
 /**
  * Generate a conditional move with predicate information.

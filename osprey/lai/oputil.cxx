@@ -1824,4 +1824,42 @@ OP_loadval_byte_offset (OP *op, INT resno)
   return byte_offset;
 }
 
+/* ====================================================================
+ *
+ * OP_load_result
+ *
+ * See interface description
+ * ====================================================================
+ */
+INT
+OP_load_result (OP *op)
+{
+  TOP opcode = OP_code(op);
+  Is_True (TOP_is_load (opcode), ("OP_loadval (%s)", TOP_Name(opcode)));
+  if (OP_results(op) == 1) {
+    // Common case
+    return 0;
+  }
+  const ISA_OPERAND_INFO *info = ISA_OPERAND_Info (opcode);
+  if (OP_results (op) > ISA_OPERAND_INFO_Results (info)) {
+    // No way to disambiguate
+    return -1;
+  }
+
+  INT candidate = -1;
+  INT i;
+  for (i=0; i<OP_results(op); i++) {
+    if ( ! ( ( ISA_OPERAND_INFO_Def (info, i) & ( OU_multi | OU_postincr | OU_preincr ) )
+             || ( ISA_OPERAND_INFO_Same_Res (info, i) != -1 ) ) ) {
+      if (candidate != -1) {
+        // Found more than one result candidate
+        // Unable to disambiguate results
+        return -1;
+      }
+      candidate = i;
+    }
+  }
+  return candidate;
+}
+
 #endif

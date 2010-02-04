@@ -2251,6 +2251,40 @@ CIO_RWTRAN::Append_TN_Copy( TN *tn_dest, TN *tn_from, OP *point, UINT8 omega )
   return op_copy;
 }
 
+#ifdef TARG_ST
+// ======================================================================
+//
+// Check if CICSE can be used on <pred_op> to <op> sequence.
+// <op> is a load and <pred_op> can be either a load or a store.
+// 
+// [1] LOAD R1, @(addr1)    or   [1] STORE @(addr1), R1        
+// [2] LOAD X1, @(addr1)         [2] LOAD  X1, @(addr1)
+//
+// Replacing instruction [2] by a register copy is allowed only
+// if X1 and R1 are using the same register class.
+//
+// ======================================================================
+static BOOL
+Is_CICSE_Allowed_Between_OP(OP *op, OP *pred_op) {
+  INT op_res = OP_load_result(op);
+  if (op_res == -1) {
+    return FALSE;
+  }
+  ISA_REGISTER_CLASS opnd_rc = TN_register_class( OP_result( op, op_res ) );
+
+  if (OP_load(pred_op)) {
+    INT pred_op_res =  OP_load_result(pred_op);
+    return (pred_op_res != -1 &&
+            opnd_rc == TN_register_class( OP_result( pred_op, pred_op_res ) ) );
+  }
+  else if (OP_store(pred_op)) {
+    return (opnd_rc == TN_register_class( OP_Storeval( pred_op ) ) );
+  }
+
+  Is_True(0, ("Is_CICSE_Allowed_Between_OP(): Unexpected operation type for pred_op"));
+  return FALSE;
+}
+#endif
 
 // ======================================================================
 //
@@ -2377,6 +2411,7 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
 
 #ifdef TARG_ST
       BOOL same_size = TRUE;
+      BOOL incompatible_regclass = FALSE;
       if (!INT_candidates) {
 	// FdF 20070523: Add support for char and short types
 	int mem_size = OP_Mem_Ref_Bytes(entry.op);
@@ -2396,9 +2431,13 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
 	      same_size = FALSE;
 	      break;
 	    }
+	    if (!Is_CICSE_Allowed_Between_OP(entry.op, ARC_pred (arc) ) ) {
+	      incompatible_regclass = TRUE;
+	      break;
+	    }
 	  }
 	}
-	if (!same_size && (mem_size != INT_size)) {
+	if ((!same_size && (mem_size != INT_size)) || incompatible_regclass) {
 	  Reset_OP_flag1( entry.op );
 	  entry.source = 0;
 	  entry.basis = FALSE;
@@ -2418,6 +2457,12 @@ CIO_RWTRAN::CICSE_Transform( BB *body )
 	  Is_True( index_pred > 0,
 		   ( "CIO_RWTRAN::CICSE_Transform didn't find op_pred" ) );
 #ifdef TARG_ST
+	  if (!Is_CICSE_Allowed_Between_OP(entry.op, ARC_pred (arc) ) ) {
+	    Reset_OP_flag1( ARC_pred( arc ) );
+	    cicse_table[index_pred].source = 0;
+	    cicse_table[index_pred].basis = FALSE;
+	    continue;
+	  }
 	  // FdF 20070523
 	  if (!same_size) {
 	    int pred_mem_size = OP_Mem_Ref_Bytes(ARC_pred( arc ));
