@@ -9,6 +9,14 @@ ifeq ($(BUILD_OS),LINUX)
   # DMUCS/DISTCC under RH4/64 for lack of pool
     ifeq (linux-rh-ws-4-x86_64,$(shell /sw/st/gnu_compil/gnu/scripts/guess-os))
       DMUCS=
+    else
+      ifeq (linux-rh-ws-3-x86_64,$(shell /sw/st/gnu_compil/gnu/scripts/guess-os))
+        DMUCS=
+      else
+        ifeq (linux-rh-ws-4,$(shell /sw/st/gnu_compil/gnu/scripts/guess-os))
+          DMUCS=
+        endif
+      endif
     endif
   endif
 else

@@ -674,6 +674,13 @@ else
 endif
 
 #
+# CL: add 64/32 bits compatibility flags
+#
+ifneq ($(TARGET_FROM_ST),)
+  STD_COMPILE_OPTS += $(COMPAT_FLAGS)
+endif
+
+#
 #  Assign STD_C++_OPTS here
 #
 
@@ -741,6 +748,13 @@ ifeq ($(BUILD_ABI), I64BIT)
  else
    STD_LOAD_OPTS +=
  endif
+endif
+
+#
+# CL: add 64/32 bits compatibility flags
+#
+ifneq ($(TARGET_FROM_ST),)
+  STD_LOAD_OPTS += $(COMPAT_FLAGS)
 endif
 
 #

@@ -1,6 +1,47 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Feb 08 17:03:49 CET 2010
+	Author:    
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-BuildRH34
+
+Description:
+------------
+	* [trunk] Improve build on various Red Hat releases: 3 and 4, 32 and 64 bits.
+	branch tracker: https://codex.cro.st.com/tracker/?func=detail&aid=89803&atid=1036&group_id=440
+
+
+Modified Files:
+---------------
+	M       osprey/Makefile.gsetup
+	M       osprey/make/tooldefs/gnu_compil/Makefile.tooldefs
+	M       osprey/make/gcommondefs
+	M       osprey/make/sitedefs/grenoble/Makefile.sitedefs
+	M       osprey/targinfo/Makefile.gbase
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26394 --new=https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-BuildRH34@26404 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26394 https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-BuildRH34@26404" 
+
+Diff links to modified files:
+-----------------------------
+osprey/Makefile.gsetup	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/Makefile.gsetup?p2=branches/lyon/dev-BuildRH34/osprey/Makefile.gsetup&r1=26394&r2=26404&roottype=svn&root=open64&diff_format=h
+osprey/make/tooldefs/gnu_compil/Makefile.tooldefs	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/make/tooldefs/gnu_compil/Makefile.tooldefs?p2=branches/lyon/dev-BuildRH34/osprey/make/tooldefs/gnu_compil/Makefile.tooldefs&r1=26394&r2=26404&roottype=svn&root=open64&diff_format=h
+osprey/make/gcommondefs	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/make/gcommondefs?p2=branches/lyon/dev-BuildRH34/osprey/make/gcommondefs&r1=26394&r2=26404&roottype=svn&root=open64&diff_format=h
+osprey/make/sitedefs/grenoble/Makefile.sitedefs	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/make/sitedefs/grenoble/Makefile.sitedefs?p2=branches/lyon/dev-BuildRH34/osprey/make/sitedefs/grenoble/Makefile.sitedefs&r1=26394&r2=26404&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/Makefile.gbase?p2=branches/lyon/dev-BuildRH34/osprey/targinfo/Makefile.gbase&r1=26394&r2=26404&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Feb 04 17:05:36 CET 2010
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
