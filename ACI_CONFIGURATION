@@ -355,9 +355,9 @@ queues:
           eembc_telecom_autcor00data_1, eembc_telecom_autcor00data_2, eembc_telecom_autcor00data_3, eembc_telecom_conven00data_1, eembc_telecom_conven00data_2, 
           eembc_telecom_conven00data_3, eembc_telecom_empty, eembc_telecom_fbital00data_2, eembc_telecom_fbital00data_3, eembc_telecom_fbital00data_6, 
           eembc_telecom_fft00data_1, eembc_telecom_fft00data_2, eembc_telecom_fft00data_3, eembc_telecom_viterb00data_1, eembc_telecom_viterb00data_2, 
-          eembc_telecom_viterb00data_3, eembc_telecom_viterb00data_4 ]
+          eembc_telecom_viterb00data_3, eembc_telecom_viterb00data_4, valid_extension_fx, valid_extension_impl, valid_extension_macr, valid_extension_mini,
+          valid_extension_mp1x, valid_extension_mp1x_export, valid_extension_pix, valid_extension_ts2x, valid_extension_ts3x, valid_extension_ts4x, valid_extension_tstx, 
+          valid_extension_x032, valid_extension_x064, valid_extension_x128, valid_extension_x256, valid_extension_x512, valid_extension_x1k  ]
   long : [ eembc_networking, eembc_automotive, eembc_consumer, jasper, plumhall, ticpp, mp3_32, mp3_64, wb_amr,
-          valid_extension_admx, valid_extension_ax2, valid_extension_fdx, valid_extension_fx, valid_extension_impl, valid_extension_macr, valid_extension_mini,
-          valid_extension_mp1x, valid_extension_mp1x_export, valid_extension_pix, valid_extension_ts2x, valid_extension_ts3x, 
-          valid_extension_ts4x, valid_extension_tstx, valid_extension_tx, valid_extension_tx_export, valid_extension_vx2, valid_extension_x008, valid_extension_x016, 
-          valid_extension_x032, valid_extension_x064, valid_extension_x128, valid_extension_x256, valid_extension_x512, valid_extension_x1k ]
+          valid_extension_admx, valid_extension_ax2, valid_extension_fdx, 
+          valid_extension_tx, valid_extension_tx_export, valid_extension_vx2, valid_extension_x008, valid_extension_x016 ]
