@@ -1,6 +1,68 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Feb 09 16:06:40 CET 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mds-stxp70v4
+
+Description:
+------------
+	*  split stxp70 at mad and mds levels
+
+
+Modified Files:
+---------------
+	M       osprey/libair/air/air_stxp70.c
+	M       osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx
+	M       osprey/targinfo/stxp70/proc/proc.cxx
+	M       osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx
+	M       osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx
+	M       osprey/targinfo/stxp70/isa/isa_decode.cxx
+	M       osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M       osprey/targinfo/stxp70/isa/isa_variants.cxx
+	M       osprey/targinfo/stxp70/isa/isa_properties.cxx
+	M       osprey/targinfo/stxp70/isa/isa_subset.cxx
+	M       osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M       osprey/targinfo/stxp70/isa/isa_operands.cxx
+	M       osprey/targinfo/stxp70/isa/isa_pack.cxx
+	M       osprey/targinfo/stxp70/isa/isa_selector.cxx
+	M       osprey/targinfo/stxp70/isa/isa.cxx
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26413 --new=https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mds-stxp70v4@26419 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26413 https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mds-stxp70v4@26419" 
+
+Diff links to modified files:
+-----------------------------
+osprey/libair/air/air_stxp70.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/libair/air/air_stxp70.c?p2=branches/cv17/dev-mds-stxp70v4/osprey/libair/air/air_stxp70.c&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx?p2=branches/cv17/dev-mds-stxp70v4/osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/proc.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/proc.cxx?p2=branches/cv17/dev-mds-stxp70v4/osprey/targinfo/stxp70/proc/proc.cxx&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx?p2=branches/cv17/dev-mds-stxp70v4/osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx?p2=branches/cv17/dev-mds-stxp70v4/osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_decode.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_decode.cxx?p2=branches/cv17/dev-mds-stxp70v4/osprey/targinfo/stxp70/isa/isa_decode.cxx&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_syntax.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_syntax.cxx?p2=branches/cv17/dev-mds-stxp70v4/osprey/targinfo/stxp70/isa/isa_syntax.cxx&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_variants.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_variants.cxx?p2=branches/cv17/dev-mds-stxp70v4/osprey/targinfo/stxp70/isa/isa_variants.cxx&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_properties.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_properties.cxx?p2=branches/cv17/dev-mds-stxp70v4/osprey/targinfo/stxp70/isa/isa_properties.cxx&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_subset.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_subset.cxx?p2=branches/cv17/dev-mds-stxp70v4/osprey/targinfo/stxp70/isa/isa_subset.cxx&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_bundle.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_bundle.cxx?p2=branches/cv17/dev-mds-stxp70v4/osprey/targinfo/stxp70/isa/isa_bundle.cxx&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_operands.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_operands.cxx?p2=branches/cv17/dev-mds-stxp70v4/osprey/targinfo/stxp70/isa/isa_operands.cxx&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_pack.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_pack.cxx?p2=branches/cv17/dev-mds-stxp70v4/osprey/targinfo/stxp70/isa/isa_pack.cxx&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_selector.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_selector.cxx?p2=branches/cv17/dev-mds-stxp70v4/osprey/targinfo/stxp70/isa/isa_selector.cxx&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa.cxx?p2=branches/cv17/dev-mds-stxp70v4/osprey/targinfo/stxp70/isa/isa.cxx&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/cv17/dev-mds-stxp70v4/DEPENDENCIES&r1=26413&r2=26419&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Feb 09 13:49:42 CET 2010
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
