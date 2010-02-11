@@ -65,27 +65,16 @@ definitions:
       short  :
         unit : [ open64_test ]
         debug : [debug_info ]
-        medium : [ kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford, eembc_telecom  ] 
+        medium : [ kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford  ] 
         small_ipa : [ fp_aec, fp_exposure, fpu_zoom, h264, iti, jpeg_csd, lao, dijkstra_ospf, edn, hr_4_2, 
-          ti_codebook, wdservo, fp_algonum, marelli, nokia, notch, aec16b, nlms16, audio_speech, bdti
+          ti_codebook, wdservo, fp_algonum, marelli, nokia, notch, aec16b, nlms16, audio_speech, bdti, eembc_telecom
         ]
-        small : [ konica, mp3_32, mp3_64, stvid,
-          eembc_automotive_tblook01, eembc_automotive_rspeed01, eembc_automotive_puwmod01, eembc_automotive_pntrch01, eembc_automotive_idctrn01, 
-          eembc_automotive_empty, eembc_automotive_canrdr01, eembc_automotive_cacheb01, eembc_automotive_bitmnp01, eembc_automotive_a2time01, 
-          valid_extension_admx, valid_extension_ax2, valid_extension_fdx, valid_extension_fx, valid_extension_impl, valid_extension_macr, valid_extension_mini,
-          valid_extension_mp1x, valid_extension_mp1x_export, valid_extension_pix, valid_extension_ts2x, valid_extension_ts3x, 
-          valid_extension_ts4x, valid_extension_tstx, valid_extension_tx, valid_extension_tx_export, valid_extension_vx2, valid_extension_x008, valid_extension_x016, 
-          valid_extension_x032, valid_extension_x064, valid_extension_x128, valid_extension_x256, valid_extension_x512, valid_extension_x1k
-        ] 
+        small : [ konica, mp3_32, mp3_64, stvid, eembc_automotive, valid_extensions ] 
       long   :
         unit : [ open64_test ]
         debug : [debug_info  ]
         small_ipa : [ eembc_networking, audio_speech, h264, jpeg_csd ]
-        medium_ipa : [ eembc_automotive, mp3_32, mp3_64, wb_amr, 
-          valid_extension_admx, valid_extension_ax2, valid_extension_fdx, valid_extension_fx, valid_extension_impl, valid_extension_macr, valid_extension_mini, 
-          valid_extension_mp1x, valid_extension_mp1x_export, valid_extension_pix, valid_extension_ts2x, valid_extension_ts3x, 
-          valid_extension_ts4x, valid_extension_tstx, valid_extension_tx, valid_extension_tx_export, valid_extension_vx2, valid_extension_x008, valid_extension_x016, 
-          valid_extension_x032, valid_extension_x064, valid_extension_x128, valid_extension_x256, valid_extension_x512, valid_extension_x1k ]
+        medium_ipa : [ eembc_automotive, mp3_32, mp3_64, wb_amr, valid_extensions ]
         full : [stvid]
         full_ipa : [ eembc_consumer, basestation, bdti, dhrystone, diags, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe, 
           servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom ] 
@@ -349,14 +338,14 @@ definitions:
         full : [ FP_Exposure, PStone, AST_PDX, HP_valid, Benchs64, plumhall, jasper ]
 
 queues:
-  short : [ cpp_regexp, visibility, basestation, bdti, dhrystone, diags, fp_aec, fp_exposure, fpu_zoom, iti, lao, pstone, seaprobe, kalman,
+  short : [ open64_test, wdservo, cpp_regexp, visibility, basestation, bdti, dhrystone, diags, fp_aec, fp_exposure, fpu_zoom, iti, lao, pstone, seaprobe, kalman,
           servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, ti_codebook, aec16b, nlms16, itu, stltest-1.00,
           eembc_telecom_autcor00data_1, eembc_telecom_autcor00data_2, eembc_telecom_autcor00data_3, eembc_telecom_conven00data_1, eembc_telecom_conven00data_2, 
           eembc_telecom_conven00data_3, eembc_telecom_empty, eembc_telecom_fbital00data_2, eembc_telecom_fbital00data_3, eembc_telecom_fbital00data_6, 
           eembc_telecom_fft00data_1, eembc_telecom_fft00data_2, eembc_telecom_fft00data_3, eembc_telecom_viterb00data_1, eembc_telecom_viterb00data_2, 
           eembc_telecom_viterb00data_3, eembc_telecom_viterb00data_4, valid_extension_fx, valid_extension_impl, valid_extension_macr, valid_extension_mini,
           valid_extension_mp1x, valid_extension_mp1x_export, valid_extension_pix, valid_extension_ts2x, valid_extension_ts3x, valid_extension_ts4x, valid_extension_tstx, 
+          valid_extension_admx, valid_extension_ax2, valid_extension_x008, valid_extension_x016, 
           valid_extension_x032, valid_extension_x064, valid_extension_x128, valid_extension_x256, valid_extension_x512, valid_extension_x1k  ]
   long : [ eembc_networking, eembc_automotive, eembc_consumer, jasper, plumhall, ticpp, mp3_32, mp3_64, wb_amr,
-          valid_extension_admx, valid_extension_ax2, valid_extension_fdx, 
-          valid_extension_tx, valid_extension_tx_export, valid_extension_vx2, valid_extension_x008, valid_extension_x016 ]
+          valid_extension_fdx, valid_extension_tx, valid_extension_tx_export, valid_extension_vx2 ]
