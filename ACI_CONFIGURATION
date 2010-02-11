@@ -147,7 +147,7 @@ definitions:
       short  :
         unit : [ open64_test ]
         debug : [debug_info]
-        medium : [ kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford, eembc_telecom
+        medium : [ valid_extension_mp1x, kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford, eembc_telecom
         ] 
         small_ipa : [ fp_aec, fp_exposure, fpu_zoom, h264, iti, jpeg_csd, lao, dijkstra_ospf, edn, hr_4_2, 
           ti_codebook, wdservo, fp_algonum, marelli, nokia, notch, aec16b, nlms16, audio_speech, bdti
@@ -161,7 +161,7 @@ definitions:
         small_ipa : [ eembc_networking, audio_speech, h264, jpeg_csd ]
         medium_ipa : [ mp3_32, mp3_64, wb_amr, eembc_automotive ]
         full : [stvid]
-        full_ipa : [ eembc_consumer, basestation, bdti, dhrystone, diags, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe, 
+        full_ipa : [ valid_extension_mp1x, eembc_consumer, basestation, bdti, dhrystone, diags, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe, 
           servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom ] 
   st200 :
     reference : 

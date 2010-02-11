@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Feb 11 09:24:48 CET 2010
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85800
+
+Description:
+------------
+	* [trunk] Fix for bug #85800: GCM does not use CGTARG_Dependence_Required() api.
+	Deliver fixes/codex-85800 rev #26440 with authorization branch #89915
+
+
+Modified Files:
+---------------
+	M       osprey/lai/gcm.cxx
+	M       ACI_CONFIGURATION
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26426 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85800@26440 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26426 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-85800@26440" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/gcm.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/gcm.cxx?p2=branches/fixes/codex-85800/osprey/lai/gcm.cxx&r1=26426&r2=26440&roottype=svn&root=open64&diff_format=h
+ACI_CONFIGURATION	http://codex.cro.st.com/svn/viewvc.php/trunk/ACI_CONFIGURATION?p2=branches/fixes/codex-85800/ACI_CONFIGURATION&r1=26426&r2=26440&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Feb 09 16:06:40 CET 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

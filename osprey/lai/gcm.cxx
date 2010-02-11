@@ -2785,6 +2785,21 @@ OP_To_Move (BB *bb, BB *tgt_bb, BB_SET **pred_bbs, mINT32 motion_type, mUINT8 *s
     // - On xp70 : HWloop instruction / epilogues / SFR write instructions / Carry modifying instructions
     // - On ST200 : Spill instruction and Unrolling instructions
     if (CGTARG_gcm_should_not_move_op(cur_op)) continue;
+    // [TDR] - Fix for codex #85800 : check dependencies within block.
+    OP *tmp_op = NULL;
+    INT latency=0;
+    if ((!forw && OP_next(cur_op)) || (forw && OP_prev(cur_op))) {
+        for (tmp_op = (forw) ? OP_prev(cur_op) : OP_next(cur_op); tmp_op; 
+	    	tmp_op = (forw) ? OP_prev(tmp_op) : OP_next(tmp_op)) {
+            if ((!forw && CGTARG_Dependence_Required(cur_op, tmp_op, &latency)) ||
+                (forw && CGTARG_Dependence_Required(tmp_op, cur_op, &latency))) {
+                latency=1;
+                break;
+            }
+            latency=0;
+        }
+        if (latency > 0) continue;
+    }
 #endif 
     // has already been picked before, ignore it now
     if (OP_visited(cur_op)) continue;
