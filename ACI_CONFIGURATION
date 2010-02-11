@@ -289,7 +289,6 @@ definitions:
                      hp_valid, srecord, estl, chess, ast_pdx, pstone, cpp_regexp, 
                      itu, lao, bdti, iti, visibility, fp_exposure, fpu_zoom ]
         full_iss : [ efr_st200 ]
-        noipa    : [ libstdcpp ]
         unit     : [ open64_test, open64_perf, st200gdb ]
       st200gdb :
         unit : [ st200gdb ]
