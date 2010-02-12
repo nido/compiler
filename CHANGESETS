@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Feb 12 09:29:49 CET 2010
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82284
+
+Description:
+------------
+	* [trunk] Fix for bug #82284 - [fpack-struct] Misaligned access to packed struct when several accesses to the same field.
+          Deliver fixes/codex-82284 with authorization branch #84133. 
+
+
+Modified Files:
+---------------
+	M       osprey/be/opt/opt_rvi_emit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26471 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82284@26474 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26471 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82284@26474" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/opt/opt_rvi_emit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_rvi_emit.cxx?p2=branches/fixes/codex-82284/osprey/be/opt/opt_rvi_emit.cxx&r1=26471&r2=26474&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Feb 11 16:46:39 CET 2010
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

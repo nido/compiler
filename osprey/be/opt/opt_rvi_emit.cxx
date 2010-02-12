@@ -319,7 +319,17 @@ RVI_EMIT::Emit_lda_wn_annotations( BB_NODE *bb, WN *wn, WN **new_wn ) const
     bitpos = Rvi()->Get_bitpos(wn);
     if ( bitpos != ILLEGAL_BP ) {
       if ( (annotation = bb->Rvi_anns()->Find( bitpos )) != NULL ) {
-	*new_wn = annotation->New_ldid( Alias_Mgr() );
+#ifdef TARG_ST
+	TY_IDX ty = ST_type(WN_st(wn));
+	if (!((TY_kind(ty) == KIND_ARRAY) &&
+	      (TY_kind(TY_etype(ty)) == KIND_STRUCT) &&
+	      (TY_is_packed(Ty_Table[TY_etype(ty)])) ) || 
+	     ((TY_kind(ty) == KIND_STRUCT) && TY_is_packed(Ty_Table[ty]))) {
+#endif
+	  *new_wn = annotation->New_ldid( Alias_Mgr() );
+#ifdef TARG_ST
+	}
+#endif
       }
     }
   }
