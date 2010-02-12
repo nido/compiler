@@ -338,7 +338,7 @@ definitions:
         full : [ FP_Exposure, PStone, AST_PDX, HP_valid, Benchs64, plumhall, jasper ]
 
 queues:
-  short : [ open64_test, wdservo, cpp_regexp, visibility, basestation, bdti, dhrystone, diags, fp_aec, fp_exposure, fpu_zoom, iti, lao, pstone, seaprobe, kalman,
+  short : [ open64_test, wdservo, cpp_regexp, visibility, basestation, bdti, dhrystone, diags, fp_aec, fp_exposure, fpu_zoom, iti, pstone, seaprobe, kalman,
           servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, ti_codebook, aec16b, nlms16, itu, stltest-1.00,
           eembc_telecom_autcor00data_1, eembc_telecom_autcor00data_2, eembc_telecom_autcor00data_3, eembc_telecom_conven00data_1, eembc_telecom_conven00data_2, 
           eembc_telecom_conven00data_3, eembc_telecom_empty, eembc_telecom_fbital00data_2, eembc_telecom_fbital00data_3, eembc_telecom_fbital00data_6, 
