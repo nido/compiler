@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Feb 12 10:02:39 CET 2010
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-81799
+
+Description:
+------------
+	* [trunk] Fix for bug #81799 - [fpack-struct] Misaligned access to bit field.
+          Deliver fixes/codex-81799 with authorization branch #89405.  
+
+
+Modified Files:
+---------------
+	M       osprey/be/com/wn_lower.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26476 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-81799@26479 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26476 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-81799@26479" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/com/wn_lower.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/wn_lower.cxx?p2=branches/fixes/codex-81799/osprey/be/com/wn_lower.cxx&r1=26476&r2=26479&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Feb 12 09:29:49 CET 2010
 	Author:    bv11
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

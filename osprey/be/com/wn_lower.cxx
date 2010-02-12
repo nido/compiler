@@ -6178,6 +6178,20 @@ static void lower_bit_field_id(WN *wn)
   else rtype = WN_rtype(wn);
 
   INT ofst = field_offset;
+#ifdef TARG_ST
+  if (TY_is_packed(Ty_Table[struct_ty_idx])) {
+    INT required_alignment = bytes_accessed * 8;
+    INT align = TY_align(struct_ty_idx);
+    if (ofst) {
+      INT offset_align = ofst % required_alignment;
+      if (offset_align)
+	align = MIN(align, offset_align);
+    }
+    if (align < required_alignment) {
+      Set_TY_align(fld_ty_idx,align);
+    }
+  }
+#endif
 #if 0
   BOOL unaligned_field = check_unaligned(bytes_accessed * 8, ofst,
 					 TY_align(struct_ty_idx));
