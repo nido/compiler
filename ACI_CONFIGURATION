@@ -142,8 +142,7 @@ definitions:
           ti_codebook, wdservo, fp_algonum, marelli, nokia, notch, aec16b, nlms16, audio_speech, bdti
         ]
         small : [ konica, mp3_32, mp3_64, stvid,
-          eembc_automotive_tblook01, eembc_automotive_rspeed01, eembc_automotive_puwmod01, eembc_automotive_pntrch01, eembc_automotive_idctrn01, 
-          eembc_automotive_empty, eembc_automotive_canrdr01, eembc_automotive_cacheb01, eembc_automotive_bitmnp01, eembc_automotive_a2time01 ]
+          eembc_automotive ]
       long   :
         unit : [ open64_test ]
         debug : [debug_info]
