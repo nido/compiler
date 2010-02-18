@@ -7985,16 +7985,26 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
  * return TY corresponding to the btype
  * (type might be pointer -> btype)
  *
+ * if alignment of type is smaller than the alignment of btype
+ * modify the alignment of TY (case of attribute packed, for example)
+ *
  * ==================================================================== */
 
 static TY_IDX coerceTY(TY_IDX type, TYPE_ID btype)
 {
   TY &ty = Ty_Table[type];
 
-  if (TY_is_pointer(ty))
-    return Make_Pointer_Type(coerceTY(TY_pointed(ty), btype));
-
-  return MTYPE_To_TY(btype);
+  TY_IDX ty_idx;
+  if (TY_is_pointer(ty)) {
+    ty_idx = Make_Pointer_Type(coerceTY(TY_pointed(ty), btype));
+  }
+  else {
+    ty_idx = MTYPE_To_TY(btype);
+  }
+  if (TY_align(type)<TY_align(ty_idx)) {
+    Set_TY_align(ty_idx, (TY_align(type)));
+  }
+  return ty_idx;
 }
 
 

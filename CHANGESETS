@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Feb 18 08:27:38 CET 2010
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82269
+
+Description:
+------------
+	* [trunk] Fix for bug #82269 - [fpack-struct] Misaligned access to packed struct with field of double type. 
+          Deliver fixes/codex-82269 with authorization branch #86930.  
+
+
+Modified Files:
+---------------
+	M       osprey/be/com/wn_lower.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26506 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82269@26523 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26506 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82269@26523" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/com/wn_lower.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/wn_lower.cxx?p2=branches/fixes/codex-82269/osprey/be/com/wn_lower.cxx&r1=26506&r2=26523&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Feb 15 13:12:58 CET 2010
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
