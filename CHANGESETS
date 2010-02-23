@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Feb 23 17:06:05 CET 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59986
+
+Description:
+------------
+	* [trunk] Fix for bug #59986: return type warning.
+	Deliver fixes/codex-59986 rev #26574 with authorization branch #60155
+
+
+Modified Files:
+---------------
+	M       osprey/common/util/errors.cxx
+	M       osprey/common/com/erglob.desc
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26525 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59986@26574 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26525 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59986@26574" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/util/errors.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/errors.cxx?p2=branches/fixes/codex-59986/osprey/common/util/errors.cxx&r1=26525&r2=26574&roottype=svn&root=open64&diff_format=h
+osprey/common/com/erglob.desc	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/erglob.desc?p2=branches/fixes/codex-59986/osprey/common/com/erglob.desc&r1=26525&r2=26574&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Feb 18 08:27:38 CET 2010
 	Author:    bv11
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

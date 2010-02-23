@@ -613,7 +613,7 @@ ERROR_DESC EDESC_Globals[] = {
     3, ET_STRING, ET_STRING, ET_STRING, 0, 0, 0 },
   { EC_Conf_CodeGen,	EM_User | ES_WARNING,	RAG_EN_NONE,
     "code generation option conflicts with input file which is %s",
-    3, ET_STRING, 0, 0, 0, 0, 0 },
+    1, ET_STRING, 0, 0, 0, 0, 0 },
 #endif
 
 /* Pragma errors: */

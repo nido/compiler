@@ -496,7 +496,7 @@ Set_Error_Source ( const char *filename )
 #else
     Source_File_Name = &source_file_name[0];
     strcpy ( Source_File_Name, filename );
-#endif
+#endif /* KEY Bug 4469 */
   }
 }
 
@@ -1145,6 +1145,18 @@ ErrMsg_Report ( INT ecode, INT line, const char *file, va_list vp )
 {
   ERROR_DESC *edesc = Find_Error_Desc (ecode);
 
+#ifdef TARG_ST
+  // FdF 20100121: Emit function name only once for all the warnings
+  // and errors in a function
+  static char *Cur_Err_PU_Name = NULL;
+  if (Orig_PU_Name &&
+      (!Cur_Err_PU_Name || strcmp(Cur_Err_PU_Name, Orig_PU_Name))) {
+    char buf[strlen(Orig_PU_Name)+strlen(": In function `':\n")+1];
+    sprintf(buf,": In function `%s':\n", Orig_PU_Name);
+    Emit_Message((char*)file, buf);
+  }
+  Cur_Err_PU_Name = Orig_PU_Name;
+#endif
   if ( ED_user(edesc) )
     ErrMsg_Report_User ( edesc, ecode, line, file, vp );
   else
@@ -1197,20 +1209,7 @@ ErrMsgSrcpos ( INT ecode, SRCPOS srcpos, ... )
   va_start ( vp, srcpos );
 
   IR_Srcpos_Filename(srcpos, &fname, &dname);
-#ifdef TARG_ST
-  char * buf = NULL;
-  if (dname != NULL) {
-    // TB: Output full source file name 
-    char * buf = (char *)malloc(sizeof(char) *(strlen(fname) + strlen(dname) + 2));
-    sprintf(buf,"%s/%s", dname, fname);
-    fname = buf;
-  }
-#endif
   ErrMsg_Report ( ecode, line, fname, vp );
-#ifdef TARG_ST
-  if (buf) 
-    free (buf);
-#endif
   va_end ( vp );
 }
 #endif
