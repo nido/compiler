@@ -1243,6 +1243,11 @@ static BOOL BaseOffset_Combine(OP *mem_op, OP *inc_op, OPS *ops) {
   OP *new_mem_op = Dup_OP(mem_op);
   OP_Change_Opcode(new_mem_op, top_baseoffset);
   Copy_WN_For_Memory_OP(new_mem_op, mem_op);
+  // FdF 20100210: Unrolling information must be copied, it is used
+  // for memory dependence analysis
+  Set_OP_unrolling(new_mem_op, OP_unrolling(mem_op));
+  Set_OP_orig_idx(new_mem_op, OP_map_idx(mem_op));
+  Set_OP_unroll_bb(new_mem_op, OP_unroll_bb(mem_op));
   Set_OP_opnd(new_mem_op, OP_find_opnd_use(mem_op, OU_offset), baseoffset_tn);
   Set_OP_opnd(new_mem_op, OP_find_opnd_use(mem_op, OU_base), tn1);
   OPS_Append_Op(ops, new_mem_op);

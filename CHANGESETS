@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Feb 24 10:15:58 CET 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-90977
+
+Description:
+------------
+	* [trunk] Fix for bug #90977: Incorrect unrolling information after automod transformation.
+	Deliver fixes/codex-90977 rev #26581 with authorization branch #90980
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cg_automod.cxx
+	M       osprey/targinfo/arm/cg/targ_ebo.cxx
+	M       osprey/targinfo/stxp70/cg/targ_ebo.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26579 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-90977@26581 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26579 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-90977@26581" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cg_automod.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_automod.cxx?p2=branches/fixes/codex-90977/osprey/lai/cg_automod.cxx&r1=26579&r2=26581&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/arm/cg/targ_ebo.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/cg/targ_ebo.cxx?p2=branches/fixes/codex-90977/osprey/targinfo/arm/cg/targ_ebo.cxx&r1=26579&r2=26581&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_ebo.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_ebo.cxx?p2=branches/fixes/codex-90977/osprey/targinfo/stxp70/cg/targ_ebo.cxx&r1=26579&r2=26581&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Feb 23 17:06:05 CET 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
