@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Feb 24 13:52:52 CET 2010
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-91302
+
+Description:
+------------
+	* [trunk] Fix for bug #91302: -ipa in combination with -Mnostartup is not working.
+	Deliver fixes/codex-91302 rev #26596 with authorization branch #91304
+
+
+Modified Files:
+---------------
+	M       osprey/driver/OPTIONS
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26583 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-91302@26596 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26583 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-91302@26596" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/OPTIONS	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/OPTIONS?p2=branches/fixes/codex-91302/osprey/driver/OPTIONS&r1=26583&r2=26596&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Feb 24 10:15:58 CET 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
