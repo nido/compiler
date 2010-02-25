@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Feb 25 12:58:42 CET 2010
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-91412
+
+Description:
+------------
+	* [trunk] Fix for bug #91412: [EBO] H264 failure on branch lv21/dev-v4-loop-directives with IFC and max-unroll=4.
+	Deliver fixes/codex-91412 rev #26603 with authorization branch #91523
+
+	-> Fix in EBO: Updated some predicate equivalence checks that were not working
+	               after register allocation: Only identical TN pointers were taken
+		       into account, while after register allocation 2 different can
+		       hold the same register.
+
+Modified Files:
+---------------
+	M       osprey/lai/ebo_info.h
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26598 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-91412@26603 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26598 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-91412@26603" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/ebo_info.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/ebo_info.h?p2=branches/fixes/codex-91412/osprey/lai/ebo_info.h&r1=26598&r2=26603&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Feb 24 13:52:52 CET 2010
 	Author:    chauveth
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
