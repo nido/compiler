@@ -397,9 +397,6 @@ public:
   UINT Size () const		{ return growing_table::size; }
 
   T& Entry (UINT idx) {
-    if (idx >= size) {
-      printf ("error %d %d\n", idx, size);
-    }
     Is_True (idx < size, ("Array subscript out of bound"));
     return map[idx / block_size].first[idx % block_size];
   }

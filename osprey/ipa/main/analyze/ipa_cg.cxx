@@ -279,7 +279,7 @@ IPA_mark_commons_used_in_io (const IP_FILE_HDR& hdr)
 
 #ifdef TARG_ST
 void
-Process_region(WN *wn, SUMMARY_SYMBOL* sym_array)
+Process_region(WN *wn, SUMMARY_SYMBOL* sym_array, int sym_size)
 {
   if ( ! ( (WN_operator(wn) == OPR_REGION)
 	   &&
@@ -308,53 +308,56 @@ Process_region(WN *wn, SUMMARY_SYMBOL* sym_array)
     }
 
     int st_idx = TCON_uval (INITV_tc_val (st_entry));
-    if ( (st_idx == 0) || (st_idx == -1) ) {
+    if ((st_idx == 0) || (st_idx == -1) || (st_idx >= sym_size)) {
       continue;
     }
 
     ST_IDX new_idx = sym_array[st_idx].St_idx();
     // This st would be used at least in the exception table, mark it
     // so that ipa does not remove it in DVE
-    Set_AUX_ST_flags (Aux_St_Table[new_idx], USED_IN_OBJ);
-    INITV_IDX old_next = INITV_next (st_entry); // for backup
-    INITV_Set_VAL (Initv_Table[st_entry], Enter_tcon (Host_To_Targ (MTYPE_U4, new_idx)), 1);
-    Set_INITV_next (st_entry, old_next);
+    if (ST_IDX_level(new_idx) == GLOBAL_SYMTAB) {
+      Set_AUX_ST_flags (Aux_St_Table[new_idx], USED_IN_OBJ);
+      Clear_ST_is_not_used (St_Table[new_idx]);
+      INITV_IDX old_next = INITV_next (st_entry); // for backup
+      INITV_Set_VAL (Initv_Table[st_entry], Enter_tcon (Host_To_Targ (MTYPE_U4, new_idx)), 1);
+      Set_INITV_next (st_entry, old_next);
+    }
   }
 }
 
 // update EH info recursively
 static void
-Region_scan(WN *wn, SUMMARY_SYMBOL *sym_array)
+Region_scan(WN *wn, SUMMARY_SYMBOL *sym_array, int sym_size)
 {
   WN* wn2;
 
   switch (WN_operator(wn)) {
   case OPR_REGION:
     // recursive wrt Region_scan
-    Process_region(wn, sym_array);
-    Region_scan(WN_region_body(wn), sym_array);
+    Process_region(wn, sym_array, sym_size);
+    Region_scan(WN_region_body(wn), sym_array, sym_size);
     break;
   case OPR_DO_LOOP:
-    Region_scan(WN_do_body(wn), sym_array);
+    Region_scan(WN_do_body(wn), sym_array, sym_size);
     break;
   case OPR_WHILE_DO:
   case OPR_DO_WHILE:
-    Region_scan(WN_while_body(wn), sym_array);
+    Region_scan(WN_while_body(wn), sym_array, sym_size);
     break;
   case OPR_BLOCK:
     wn2 = WN_first(wn);
     while (wn2) {
-      Region_scan(wn2, sym_array);
+      Region_scan(wn2, sym_array, sym_size);
       wn2 = WN_next(wn2);
     }
     break;
   case OPR_IF:
-    Region_scan(WN_then(wn), sym_array);
-    Region_scan(WN_else(wn), sym_array);
+    Region_scan(WN_then(wn), sym_array, sym_size);
+    Region_scan(WN_else(wn), sym_array, sym_size);
     break;
   default:
     for (int i = 0; i < WN_kid_count(wn); i++) {
-      Region_scan(WN_kid(wn,i), sym_array);
+      Region_scan(WN_kid(wn,i), sym_array, sym_size);
     }
     break;
   }
@@ -379,7 +382,7 @@ IPA_update_ehinfo_in_pu (IPA_NODE *node)
         {
 #ifdef TARG_ST
 	  // [CL] process all the PU recursively (look for nested regions)
-	  Region_scan(node->Whirl_Tree(), sym_array);
+	  Region_scan(node->Whirl_Tree(), sym_array, sym_size);
 #endif
 
 	    INITV_IDX idx = INITO_val (inito);
@@ -428,6 +431,14 @@ IPA_update_ehinfo_in_pu (IPA_NODE *node)
 		    continue;
 		}
 		int st_idx = TCON_uval (INITV_tc_val (idx));
+#ifdef TARG_ST
+		// bug fix for OSP_317
+                if (st_idx < 0 || st_idx >= sym_size)
+                {
+                    idx = INITV_next (idx);
+                    continue;
+                }
+#endif
 		FmtAssert (st_idx > 0, ("Invalid st entry in eh-spec table"));
 		ST_IDX new_idx = sym_array[st_idx].St_idx();
 		// TODO: Record this ref in IPL to prevent this situation.

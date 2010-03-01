@@ -878,8 +878,6 @@ Extract_Double_Hi(TCON v)
   TCON c;
   TCON_clear(c);
 
-  DOUBLE doubleTemp = R8_To_RD(TCON_R8(v));
-
 #ifdef TARG_STxP70
   if(Enable_Fpx) {
     TCON_ty(c) = MTYPE_I4;
@@ -891,18 +889,16 @@ Extract_Double_Hi(TCON v)
   TCON_ty(c) = MTYPE_F4;
 #endif
 
-#if __GNUC__ < 3
-  // [CL] copying floats on x86 with gcc-2.95 implies conversions
+  // [CL] copying floats on x86 with gcc implies conversions
   // which may change the copied value (especially in our case where
   // the lo/hi parts of a double are not generally "plain" floats
   // They are likely to be NaNs and as such candidate to conversions
   // which should apply. It would be much cleaner to split a double
   // into 2 parts which are *not* float and have special types for
-  /// the compiler
-  memcpy(&TCON_R4(c), &doubleTemp.hi, sizeof(doubleTemp.hi));
-#else
-  Set_TCON_R4(c, doubleTemp.hi);
-#endif
+  // the compiler
+  // Thus we proceed by using the integer part of union
+  // knowing where are the hi/lo parts (the union is host-endian independant)
+  TCON_u0(c) = TCON_u1(v) ;
   return c;
 }
 
@@ -913,8 +909,6 @@ Extract_Double_Lo(TCON v)
   TCON c;
   TCON_clear(c);
 
-  DOUBLE doubleTemp = R8_To_RD(TCON_R8(v));
-
 #ifdef TARG_STxP70
   if(Enable_Fpx) {
     TCON_ty(c) = MTYPE_I4;
@@ -926,18 +920,17 @@ Extract_Double_Lo(TCON v)
   TCON_ty(c) = MTYPE_F4;
 #endif
 
-#if __GNUC__ < 3
-  // [CL] copying floats on x86 with gcc-2.95 implies conversions
+  // [CL] copying floats on x86 with gcc implies conversions
   // which may change the copied value (especially in our case where
   // the lo/hi parts of a double are not generally "plain" floats
   // They are likely to be NaNs and as such candidate to conversions
   // which should apply. It would be much cleaner to split a double
   // into 2 parts which are *not* float and have special types for
-  /// the compiler
-  memcpy(&TCON_R4(c), &doubleTemp.lo, sizeof(doubleTemp.lo));
-#else
-  Set_TCON_R4(c, doubleTemp.lo);
-#endif
+  // the compiler
+  // Thus we proceed by using the integer part of union
+  // knowing where are the hi/lo parts (the union is host-endian independant)
+  TCON_u0(c) = TCON_u0(v) ;
+
   return c;
 }
 

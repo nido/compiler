@@ -1,3 +1,8 @@
+/* -*- c++ -*-
+ *
+ * Copyright 2003, 2004, 2005, 2006 PathScale, Inc.  All Rights Reserved.
+ */
+
 /*
 
   Copyright (C) 2000, 2001 Silicon Graphics, Inc.  All Rights Reserved.
@@ -474,7 +479,6 @@ SUMMARIZE<program>::Process_phi_jump_function (WN *orig_wn, PHI_NODE *phi)
 	if (phi_node->Get_node_index (0) == -1 &&
 	    phi_node->Get_node_index (1) == -1) {
 	    Restore_from_check_point (&chk_pt);
-	    
             Phi_To_Idx_Map->insert (std::make_pair (phi, -1));
 	    return -1;
 	} else {
@@ -1362,7 +1366,12 @@ SUMMARIZE<program>::Process_jump_function (SUMMARY_DESC *desc)
           INT32 idx = Get_symbol_index (st);
           value->Set_global_index (idx);
           if (idx == -1)
+	  {
             value->Set_global_st_idx (ST_st_idx (st));
+#ifdef KEY
+            value->Set_is_global_st_idx ();
+#endif
+	  }
         }
 	break;
 
@@ -1523,7 +1532,12 @@ SUMMARIZE<program>::Process_jump_function (WN *w, INT value_idx)
 	    INT idx = Get_symbol_index (st);
 	    value->Set_global_index (idx);
 	    if (idx == -1)
+	    {
 		value->Set_global_st_idx (ST_st_idx (st));
+#ifdef KEY
+		value->Set_is_global_st_idx ();
+#endif
+	    }
 	}
 	break;
 
