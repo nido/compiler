@@ -1,6 +1,55 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar 01 09:40:50 CET 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86734
+
+Description:
+------------
+	* [trunk] Fix for bug #86734: Remove restrictions on setl? in GCM.
+	Deliver fixes/codex-86734 rev #26662 with authorization branch #89855
+
+
+Modified Files:
+---------------
+	 M      .
+	M       osprey/lai/gcm.cxx
+	M       osprey/lai/loop_invar_hoist.cxx
+	M       osprey/lai/cgtarget.h
+	M       osprey/targinfo/arm/cg/targ_cg.cxx
+	M       osprey/targinfo/stxp70/config/config_TARG.cxx
+	M       osprey/targinfo/stxp70/config/config_TARG.h
+	M       osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M       osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26618 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86734@26662 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26618 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86734@26662" 
+
+Diff links to modified files:
+-----------------------------
+.	http://codex.cro.st.com/svn/viewvc.php/trunk/.?p2=branches/fixes/codex-86734/.&r1=26618&r2=26662&roottype=svn&root=open64&diff_format=h
+osprey/lai/gcm.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/gcm.cxx?p2=branches/fixes/codex-86734/osprey/lai/gcm.cxx&r1=26618&r2=26662&roottype=svn&root=open64&diff_format=h
+osprey/lai/loop_invar_hoist.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/loop_invar_hoist.cxx?p2=branches/fixes/codex-86734/osprey/lai/loop_invar_hoist.cxx&r1=26618&r2=26662&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgtarget.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgtarget.h?p2=branches/fixes/codex-86734/osprey/lai/cgtarget.h&r1=26618&r2=26662&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/arm/cg/targ_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/cg/targ_cg.cxx?p2=branches/fixes/codex-86734/osprey/targinfo/arm/cg/targ_cg.cxx&r1=26618&r2=26662&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_TARG.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_TARG.cxx?p2=branches/fixes/codex-86734/osprey/targinfo/stxp70/config/config_TARG.cxx&r1=26618&r2=26662&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_TARG.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_TARG.h?p2=branches/fixes/codex-86734/osprey/targinfo/stxp70/config/config_TARG.h&r1=26618&r2=26662&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_cg.cxx?p2=branches/fixes/codex-86734/osprey/targinfo/stxp70/cg/targ_cg.cxx&r1=26618&r2=26662&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/cg/targ_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/cg/targ_cg.cxx?p2=branches/fixes/codex-86734/osprey/targinfo/st200/cg/targ_cg.cxx&r1=26618&r2=26662&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Feb 25 12:58:42 CET 2010
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -1783,7 +1783,7 @@ LOOP_INVAR_CODE_MOTION :: Illegal_Or_Nonprofitable (OP* loopinvar) {
     }
 
 #ifdef TARG_ST
-    if (! CGTARG_Code_Motion_To_LoopHead_Is_Legal( loopinvar,  LOOP_DESCR_loophead(_loop)) ) {
+    if (! CGTARG_Code_Motion_To_BB_Is_Legal( loopinvar,  LOOP_DESCR_loophead(_loop)) ) {
       return TRUE;
     }
 #endif

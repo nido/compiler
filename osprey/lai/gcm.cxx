@@ -1849,10 +1849,13 @@ Can_OP_Move(OP *cur_op, BB *src_bb, BB *tgt_bb, BB_SET **pred_bbs,
 	  op = ((forw && cur_bb != src_bb) || (!forw && cur_bb == src_bb)) ?
 	    OP_prev(op) : OP_next(op)) {
 
-       if (OP_dummy(op)) {
 #ifdef TARG_ST
+       /* some dummy ops have register read/write side-effects and
+          must thus be handled by gcm */
+       if (OP_dummy(op) && !CGTARG_dummy_op_has_sideeffects(op)) {
 	 if (!OP_Is_Barrier(op)) continue;
 #else
+       if (OP_dummy(op)) {
 	 if (!CGTARG_Is_OP_Barrier(op)) continue;
 #endif
 	 else if (OP_memory(cur_op)) return FALSE;
@@ -2785,6 +2788,7 @@ OP_To_Move (BB *bb, BB *tgt_bb, BB_SET **pred_bbs, mINT32 motion_type, mUINT8 *s
     // - On xp70 : HWloop instruction / epilogues / SFR write instructions / Carry modifying instructions
     // - On ST200 : Spill instruction and Unrolling instructions
     if (CGTARG_gcm_should_not_move_op(cur_op)) continue;
+    if (!CGTARG_Code_Motion_To_BB_Is_Legal(cur_op, tgt_bb)) continue;
     // [TDR] - Fix for codex #85800 : check dependencies within block.
     OP *tmp_op = NULL;
     INT latency=0;

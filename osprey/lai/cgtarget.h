@@ -948,6 +948,7 @@ extern TOP CGTARG_TOP_To_Multi(TOP top);
 extern TOP CGTARG_TOP_From_Multi(TOP top);
 extern BOOL CGTARG_should_factorize(OP* first, OP* last);
 extern BOOL CGTARG_gcm_should_not_move_op(OP *op);
+extern BOOL CGTARG_dummy_op_has_sideeffects(OP *op);
 #endif
 
 // Checks to see if <stop> bit is available at <slot> position in the
@@ -1031,7 +1032,7 @@ extern BOOL CGTARG_Is_Simple_Jump(const OP* op);
 extern BOOL CGTARG_bb_is_hwloop_init(const BB* bb);
 extern BOOL CGTARG_op_may_alias_with_call(const OP* op);
 extern BOOL CGTARG_registerclass_may_be_copied(ISA_REGISTER_CLASS cl);
-extern BOOL CGTARG_Code_Motion_To_LoopHead_Is_Legal(const OP* op, BB* loophead);
+extern BOOL CGTARG_Code_Motion_To_BB_Is_Legal(const OP* op, BB* targetbb);
 extern BOOL CGTARG_OP_Has_Loop_Sideeffects(BB* bb, OP* op);
 extern BOOL CGTARG_do_not_unroll_p(BB* bb);
 extern BOOL CGTARG_Detect_Bundle_Id(ISA_EXEC_MASK slot_mask, BOOL* order_changed);
