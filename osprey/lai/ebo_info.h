@@ -382,7 +382,20 @@ get_new_tninfo (BB *current_bb, OP *current_op, TN *local_tn)
   return tninfo;
 } 
 
-
+#ifdef TARG_ST
+/*
+ * Check that the 2 provided predicate TNs are equivalent.
+ * TNs_Are_Equivalent() cannot be called directly because
+ * it must be checked first that we are dealing with register TNs.
+ */
+inline BOOL
+EBO_Predicate_TNs_Are_Equivalent(TN *pred1, TN *pred2) {
+  return (pred1 == pred2 ||
+          (TN_is_register(pred1) &&
+           TN_is_register(pred2) &&
+           TNs_Are_Equivalent(pred1, pred2)));
+}
+#endif
 
 /*
  * EBO_predicate_dominates
@@ -413,7 +426,7 @@ EBO_predicate_dominates (TN *pred1, bool false1, EBO_TN_INFO *info1,
     return TRUE;
   }
 
-  if (TNs_Are_Equivalent(pred1, pred2) && false1 == false2) {
+  if (EBO_Predicate_TNs_Are_Equivalent(pred1, pred2) && false1 == false2) {
    /* Equal predicates are fine if the values are current. */
     return (info1 == info2);
   }
@@ -429,7 +442,7 @@ EBO_predicate_dominates (TN *pred1, EBO_TN_INFO *info1,
    /* A TRUE predicate dominates everything. */
     return TRUE;
   }
-  if (TNs_Are_Equivalent(pred1, pred2)) {
+  if (pred1 == pred2) {
    /* Equal predicates are fine if the values are current. */
     return (info1 == info2);
   }
@@ -482,7 +495,7 @@ EBO_predicate_complements (TN *pred1, bool false1, EBO_TN_INFO *info1,
   if ((pred1 == Zero_TN && !false1) && (pred2 == True_TN && !false2)) {
     return TRUE;
   }
-  if (TNs_Are_Equivalent(pred1, pred2) && false1 != false2) {
+  if (EBO_Predicate_TNs_Are_Equivalent(pred1, pred2) && false1 != false2) {
     return (info1 == info2);
   }
 
@@ -490,7 +503,7 @@ EBO_predicate_complements (TN *pred1, bool false1, EBO_TN_INFO *info1,
       (info1->in_op == NULL) || (info2->in_op == NULL)) {
     return FALSE;
   }
-  if (!TNs_Are_Equivalent(pred1, pred2) && (false1 == false2) && (info1->in_op == info2->in_op)
+  if (!EBO_Predicate_TNs_Are_Equivalent(pred1, pred2) && (false1 == false2) && (info1->in_op == info2->in_op)
       && info1->in_op && OP_results(info1->in_op) == 1) {
    /* If defined by the same instruction but not equal, they must be complements. */
     return TRUE;
@@ -514,7 +527,7 @@ EBO_predicate_complements (TN *pred1, EBO_TN_INFO *info1,
     return FALSE;
   }
 
-  if (!TNs_Are_Equivalent(pred1, pred2) && (info1->in_op == info2->in_op)) {
+  if ((pred1 != pred2) && (info1->in_op == info2->in_op)) {
    /* If defined by the same instruction but not equal, they must be complements. */
 
     return TRUE;
