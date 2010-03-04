@@ -129,6 +129,7 @@ INT32 CG_LAO_aliasing = 0;
 INT32 CG_LAO_prepadding = 0;
 INT32 CG_LAO_postpadding = 0;
 INT32 CG_LAO_overrun = 0;
+INT32 CG_LAO_opslimit = 0;
 
 #ifdef CGG_ENABLED
 BOOL CG_enable_cgg;

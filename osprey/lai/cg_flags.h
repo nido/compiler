@@ -248,6 +248,7 @@ CG_EXPORTED extern INT32 CG_LAO_aliasing;	/* LAO memory aliasing level */
 CG_EXPORTED extern INT32 CG_LAO_prepadding;	/* LAO data pre-padding in bytes */
 CG_EXPORTED extern INT32 CG_LAO_postpadding;	/* LAO data post-padding in bytes */
 CG_EXPORTED extern INT32 CG_LAO_overrun;	/* LAO pipeline overrun */
+CG_EXPORTED extern INT32 CG_LAO_opslimit;	/* LAO maximum number of OPs to compute memory dependences */
 
 #ifdef CGG_ENABLED
 extern BOOL CG_enable_cgg;	/* Enable whirl2ops based on CGG */

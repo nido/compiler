@@ -437,7 +437,8 @@ CGIR_TN_REMAT_to_Temporary(CGIR_TN cgir_tn)
 static Temporary
 CGIR_TN_HOME_to_Temporary(CGIR_TN cgir_tn)
 {
-  DevWarn("Should pass TN_is_gra_homeable to LAO for TN%d\n", TN_number(cgir_tn));
+  //CM 20091019 : CG : You can remove this devwarn as it is a well known todo for the LAO reg allocator. 
+  //DevWarn("Should pass TN_is_gra_homeable to LAO for TN%d\n", TN_number(cgir_tn));
   return NULL;
 }
 
@@ -685,8 +686,6 @@ CGIR_BB_to_BasicBlock(CGIR_BB cgir_bb)
   return basicBlock;
 }
 
-#define LAO_OPS_LIMIT 512	// Maximum number of OPs to compute memory dependences.
-
 // Convert CGIR_LD to LIR LoopScope.
 static LoopScope
 CGIR_LD_to_LoopScope(CGIR_LD cgir_ld)
@@ -723,6 +722,7 @@ CGIR_LD_to_LoopScope(CGIR_LD cgir_ld)
         }
         if (WN_pragma(wn) == WN_PRAGMA_UNROLL) {
           unroll_times = WN_pragma_arg1(wn);
+//fprintf(stderr, "*** UNROLL(%d)\n", unroll_times);
 	  annot_unroll = annot_pragma;
         }
 	annot_pragma = ANNOT_Get(ANNOT_next(annot_pragma), ANNOT_PRAGMA);
@@ -735,7 +735,7 @@ CGIR_LD_to_LoopScope(CGIR_LD cgir_ld)
         renaming = 1;
       }
     } else pipelining = renaming = 0;
-//fprintf(stderr, "*** LOOP_PRELOAD(%d,%d)\n", preloading, l1missextra);
+//fprintf(stderr, "*** LOOP_PRELOAD(%d,%d)\n", preloading, l1missextra);    
     BasicBlock head_block = CGIR_BB_to_BasicBlock(head_bb);
     LOOPINFO *cgir_li = LOOP_DESCR_loopinfo(cgir_ld);
     if (cgir_li != NULL) {
@@ -794,15 +794,15 @@ CGIR_LD_to_LoopScope(CGIR_LD cgir_ld)
 	  if (OP_memory(op) || OP_barrier(op)) ++op_count;
 	}
 	bb_list.push_back(*bb_iter);
-	if (op_count >= LAO_OPS_LIMIT) {
-	  DevWarn("LAO_OPS_LIMIT exceeded (%d memory operations)", op_count);
+	if (op_count >= CG_LAO_opslimit) {
+	  DevWarn("LAO_opslimit exceeded (%d memory operations)", op_count);
 	  break;
 	}
       }
     }
     //
     // Compute the memory dependence graph.
-    if (op_count < LAO_OPS_LIMIT && CG_LAO_aliasing > 0) {
+    if (op_count < CG_LAO_opslimit && CG_LAO_aliasing > 0) {
       bool cyclic = BB_innermost(head_bb) != 0;
       CG_DEP_Compute_Region_MEM_Arcs(bb_list, cyclic, false);
       BB_List::iterator bb_iter;

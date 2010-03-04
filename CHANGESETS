@@ -1,6 +1,47 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Mar 04 10:52:52 CET 2010
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72756
+
+Description:
+------------
+	* [trunk] Fix for bug #72756: [LAO] Optimal pipeliner default setting evaluation.
+	Deliver fixes/codex-72756 rev #26741 with authorization branch #72757
+
+
+Modified Files:
+---------------
+	M       osprey/driver/OPTIONS
+	M       osprey/lai/lao/lao_stub.cxx
+	M       osprey/lai/cg_flags.cxx
+	M       osprey/lai/cgdriver.cxx
+	M       osprey/lai/cg_flags.h
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26735 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72756@26741 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26735 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-72756@26741" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/OPTIONS	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/OPTIONS?p2=branches/fixes/codex-72756/osprey/driver/OPTIONS&r1=26735&r2=26741&roottype=svn&root=open64&diff_format=h
+osprey/lai/lao/lao_stub.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lao/lao_stub.cxx?p2=branches/fixes/codex-72756/osprey/lai/lao/lao_stub.cxx&r1=26735&r2=26741&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_flags.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_flags.cxx?p2=branches/fixes/codex-72756/osprey/lai/cg_flags.cxx&r1=26735&r2=26741&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgdriver.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgdriver.cxx?p2=branches/fixes/codex-72756/osprey/lai/cgdriver.cxx&r1=26735&r2=26741&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_flags.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_flags.h?p2=branches/fixes/codex-72756/osprey/lai/cg_flags.h&r1=26735&r2=26741&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Mar 03 14:32:23 CET 2010
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

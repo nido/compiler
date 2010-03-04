@@ -3173,6 +3173,14 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 #ifdef TARG_ST200
 -mpacking*	;		Cc	cpp,f	""
 	"-mpacking[=n]\n                    n is the level of load/store packing optimization.\n                    '0' means no packing.\n                    '1' means load and store packing with statically known alignment.\n                    '2' means '1' + loop peeling and loop specialization to perform load and store packing with dynamic alignment"
+-msched-near-optimal	;	Cc	be    	"-CG:LAO_pipelining=6"
+	"Enable near optimal scheduling optimization"
+-mno-sched-near-optimal	;	Cc	be	"-CG:LAO_pipelining=2"
+	"Disable near optimal scheduling optimization"
+-msched-pipelining-level=%d ;	Cc	be	"-CG:LAO_pipelining=%d"
+	"Set the pipeliner scheduling level"
+-msched-renaming-level=%d  ;	Cc	be	"-CG:LAO_renaming=%d"
+	"Set the pipeliner renamining level"
 #endif
 #endif
 

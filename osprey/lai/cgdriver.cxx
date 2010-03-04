@@ -227,6 +227,7 @@ static BOOL CG_LAO_aliasing_overridden = FALSE;
 static BOOL CG_LAO_prepadding_overridden = FALSE;
 static BOOL CG_LAO_postpadding_overridden = FALSE;
 static BOOL CG_LAO_overrun_overridden = FALSE;
+static BOOL CG_LAO_opslimit_overridden = FALSE;
 
 static BOOL CG_split_BB_length_overridden = FALSE;
 
@@ -1208,6 +1209,8 @@ static OPTION_DESC Options_CG[] = {
     0, 0, 65536,	&CG_LAO_postpadding, &CG_LAO_postpadding_overridden },
   { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_overrun", "",
     0, 0, 65536,	&CG_LAO_overrun, &CG_LAO_overrun_overridden },
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "LAO_opslimit", "",
+    0, 0, 65536,	&CG_LAO_opslimit, &CG_LAO_opslimit_overridden },
 #endif /* TARG_ST (LAO) */
 
 #ifdef BCO_ENABLED
@@ -2441,6 +2444,7 @@ CG_Init (void)
     if (!CG_LAO_prepadding_overridden) CG_LAO_prepadding = 0;
     if (!CG_LAO_postpadding_overridden) CG_LAO_postpadding = 0;
     if (!CG_LAO_overrun_overridden) CG_LAO_overrun = 0;
+    if (!CG_LAO_opslimit_overridden) CG_LAO_opslimit = 1024;
     lao_init();
   }
 #endif
