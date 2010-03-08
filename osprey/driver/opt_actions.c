@@ -94,6 +94,8 @@ int print_kind;
 
 #ifdef TARG_STxP70
 boolean farcall = FALSE;
+boolean parse_user_asm = FALSE;
+boolean parse_meta_asm = TRUE;
 #endif
 
 

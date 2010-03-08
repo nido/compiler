@@ -357,6 +357,7 @@ typedef enum {
 
 #ifdef TARG_ST
   /* Additional generic pragmas */
+  WN_PRAGMA_ASM_PARSE,          /* flag to parse or not an ASM statement */
   WN_PRAGMA_LOOPDEP,
   WN_PRAGMA_LOOPMOD,
   WN_PRAGMA_LOOPTRIP,		/* estimated trip count for the loop. Scope: loop. */

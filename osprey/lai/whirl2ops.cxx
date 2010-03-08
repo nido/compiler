@@ -206,6 +206,9 @@ static WN *last_loop_pragma;
 
 #define return_max 3
 
+#ifdef TARG_ST
+static WN *last_asmparse_pragma;
+#endif
 /*
  * Last_Mem_OP is used to keep track of the last
  * op processed for the memory op to wn mapping.
@@ -5890,24 +5893,10 @@ Handle_ASM (const WN* asm_wn)
     }
   }
 
-  // now create ASM op
-  OP* asm_op = Mk_VarOP(TOP_asm, num_results, num_opnds, result, opnd);
-  if (WN_Asm_Volatile(asm_wn)) {
-	Set_OP_volatile(asm_op);
-  }
-
-  OPS_Append_Op(&New_OPs, asm_op);
-  OP_MAP_Set(OP_Asm_Map, asm_op, asm_info);
+  CGTARG_Generate_Asm_Ops(asm_info, num_results, num_opnds, result, opnd,
+			  &New_OPs, Cur_BB, TRUE, last_asmparse_pragma);
+  last_asmparse_pragma = NULL;
 #ifdef TARG_ST
-  // TODO: Determine what ASM_livein/out are ?
-  ASMINFO* info = TYPE_PU_ALLOC (ASMINFO);
-  ISA_REGISTER_CLASS rc;
-  FOR_ALL_ISA_REGISTER_CLASS(rc) {
-    ASMINFO_livein(info)[rc] = REGISTER_SET_EMPTY_SET;
-    ASMINFO_liveout(info)[rc] = REGISTER_SET_EMPTY_SET;
-    ASMINFO_kill(info)[rc] = ASM_OP_clobber_set(asm_info)[rc];
-  }
-  BB_Add_Annotation(Cur_BB, ANNOT_ASMINFO, info);
   Start_New_Basic_Block ();
   OPS_Append_Ops(&New_OPs, &reload_ops);
 #endif
@@ -5979,41 +5968,6 @@ Handle_AFFIRM(WN *wn_affirm) {
 }
 #endif
 
-// replace all occurrences of match string with new string in s string.
-static void
-Replace_Substring (char *s, char *match, char *newstr)
-{
-  // need temp buffer since will modify s string
-  char *buf = (char*) alloca(strlen(s)+16);
-  // iterate until no matches
-  while (TRUE) {
-	char *p = strstr (s, match);
-	if (p == NULL) {	// no match this time
-        	return; 	
-	}
-	char *match_end = p + strlen(match);
-	*p = '\0';
-	sprintf(buf, "%s%s%s", s, newstr, match_end);
-	strcpy(s,buf);
-  }
-}
-
-static void
-Modify_Asm_String (char *asm_string, INT pattern_index, TN *tn, char *tn_name)
-{
-  char pattern[4];
-  sprintf(pattern, "%%%c", '0'+pattern_index);	// %N
-  Replace_Substring (asm_string, pattern, tn_name);
-
-  if (tn && TN_is_register(tn)) {
-    for (INT i = 0; i < CGTARG_Num_Asm_Opnd_Modifiers; i++) {
-      char modifier = CGTARG_Asm_Opnd_Modifiers[i];
-      sprintf(pattern, "%%%c%c", modifier, '0'+pattern_index);
-      char* mod_name = (char*) CGTARG_Modified_Asm_Opnd_Name(modifier, tn, tn_name);
-      Replace_Substring (asm_string, pattern, mod_name);
-    }
-  }
-}
 
 /* Try to find and return a non-zero SRCPOS for the loop starting
  * with <body_label>.  (LABELs apparently don't have linenum info.) 
@@ -6227,6 +6181,9 @@ Expand_Statement (
 	  Set_OP_prologue(op);
 	}
 	Annotate_Previous_BB_As_Prologue();
+      }
+      else if (WN_pragma(stmt) == WN_PRAGMA_ASM_PARSE) {
+	last_asmparse_pragma = stmt;
       }
 #else
     if (WN_Pragma_Users(WN_pragma(stmt)) & PUSER_CG) {

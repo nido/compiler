@@ -142,6 +142,9 @@ TARG_LIBIBERTY = $(TARGDIR)/libiberty
 
 TARG_TARG_INFO_DIR	= $(TARGDIR)/targ_info
 TARG_WOPT_DIR           = $(TARGDIR)/wopt
+TARG_LIBPARSE_DIR	= $(TARGDIR)/libparse
+TARG_LIBAIR_DIR		= $(TARGDIR)/libair
+TARG_LIBRTKUTILS_DIR	= $(TARGDIR)/librtkutils
 LIBINSTR_DIR		= $(BUILD_TOT)/instrumentation/libinstrC
 GCCFE_GNU_TARG_DIR      = $(BUILD_TOT)/gccfe/gnu/$(BUILD_TARGET_DIR)
 
@@ -343,6 +346,7 @@ COMMON_TARG_EXP_CXX_SRCS =	\
   dyn_isa_api_access.cxx
 
 COMMON_TARG_CG_CXX_SRCS =	\
+  targ_asmstmt.cxx		\
   targ_calls.cxx		\
   targ_cg.cxx			\
   targ_cgdwarf.cxx		\
@@ -692,10 +696,17 @@ else
 # LLDLIBS += $(TARG_LIBUNWIND)/libunwindP.a
  endif
 CGDEPLIBS += $(TARG_LIBDWARF)/libdwarf.a     \
-	     $(TARG_LIBELFUTIL)/libelfutil.a \
-	     $(TARG_LIBELF)/libelf.a \
+	     $(TARG_LIBELFUTIL)/libelfutil.a 
+ ifeq ($(BUILD_TARGET), STxP70)
+  CGDEPLIBS += $(TARG_LIBAIR_DIR)/libair.a \
+	       $(TARG_LIBPARSE_DIR)/libparse.a 
+ endif
+CGDEPLIBS += $(TARG_LIBELF)/libelf.a \
 	     $(TARGDIR)/libSYS/libSYS.a \
 	     $(TARG_LIBIBERTY)/libiberty.a
+ ifeq ($(BUILD_TARGET), STxP70)
+  CGDEPLIBS += $(TARG_LIBRTKUTILS_DIR)/librtkutils.a 
+ endif
 LLDLIBS += $(CGDEPLIBS)
 endif
 

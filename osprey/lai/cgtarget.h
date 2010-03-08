@@ -1044,4 +1044,21 @@ extern BOOL CGTARG_Is_Register_Quad(TN *tn1, TN *tn2, TN *tn3, TN *tn4);
                                                                                 
 #endif
 
+#ifdef TARG_ST
+/* ====================================================================
+ *   Target specific asm statement information:
+ * ====================================================================
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern void CGTARG_Generate_Asm_Ops(ASM_OP_ANNOT* asm_info,
+				    INT num_results, INT num_opnds,
+				    TN** result, TN** opnd,
+				    OPS *oplist, BB *Cur_BB,
+				    BOOL user, WN* asmparse_pragma);
+#ifdef __cplusplus
+}
+#endif
+#endif
 #endif /* CGTARGET_INCLUDED */

@@ -796,13 +796,13 @@ BE_DSO_LDLIBS +=
 # Please conform to the standard DSO link pattern (see gcommondefs).
 #
 # import global symbols from the target dll (e.g. st200.dll)
-BE_DLLIMPORT_FLAGS += -DTARGINFO_EXPORTED=$(DLLIMPORT)
 BE_DLLIMPORT_FLAGS += -DDLLIMPORT=$(DLLIMPORT)
 
 # export symbols from the be dll
 BE_DLLIMPORT_FLAGS += -DBE_EXPORTED=$(DLLEXPORT)
 
 # do nothing with theses
+BE_DLLIMPORT_FLAGS += -DTARGINFO_EXPORTED=
 BE_DLLIMPORT_FLAGS += -DOPT_EXPORTED=
 BE_DLLIMPORT_FLAGS += -DW2C_EXPORTED=
 BE_DLLIMPORT_FLAGS += -DW2F_EXPORTED=

@@ -125,3 +125,5 @@ DECL_WFE_PRAGMA(WFE_PRAGMA_DISABLE_SPECIFIC_EXTGEN, "disable_specific_extgen", 0
 
 DECL_WFE_PRAGMA(WFE_PRAGMA_FORCE_EXTENSION_OPTION, "force_extension_option", 0, WN_PRAGMA_FORCE_EXTENSION_OPTION, 3, "(A*)", "pragma extension_option (extname,optionname,ident,...)")
 DECL_WFE_PRAGMA(WFE_PRAGMA_DISABLE_EXTENSION_OPTION, "disable_extension_option", 0, WN_PRAGMA_DISABLE_EXTENSION_OPTION, 3, "(A*)", "pragma extension_option (extname,optionname,ident,...)")
+
+DECL_WFE_PRAGMA(WFE_PRAGMA_ASM_PARSE, "parse_next_asmstmt", 1, WN_PRAGMA_ASM_PARSE, 1, "I", "pragma parse_next_asmstmt [0|1]")

@@ -697,6 +697,11 @@ void WFE_Expand_Pragma(tree stmt)
       return;
       break;
     }
+
+  case  WFE_PRAGMA_ASM_PARSE:
+    args[0] = Get_Integer_Value(TREE_VALUE(pragma_args));
+    break;
+    
   default:
     DevWarn ("unsupported Pragma");
     return;

@@ -1,6 +1,77 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar 08 08:54:10 CET 2010
+	Author:    
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/robinec/dev-asm_stmts
+
+Description:
+------------
+	* Deliver parsing of asm-statements, branch #90655 approved on March, the 5th  
+
+
+Modified Files:
+---------------
+	M       osprey/be/be/Makefile.gbase
+	M       osprey/driver/OPTIONS
+	M       osprey/driver/opt_actions.c
+	M       osprey/libair/air/air.c
+	M       osprey/lai/whirl2ops.cxx
+	M       osprey/lai/cgtarget.h
+	M       osprey/lai/Makefile.gbase
+	M       osprey/gccfe/wfe_pragmas.def
+	M       osprey/gccfe/wfe_pragmas.cxx
+	M       osprey/common/com/wn_pragmas.h
+	M       osprey/common/com/isa_loader.cxx
+	M       osprey/common/com/wn_pragmas.cxx
+	A  +    osprey/targinfo/arm/cg/targ_asmstmt.cxx
+	M       osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M       osprey/targinfo/stxp70/config/config_TARG.cxx
+	M       osprey/targinfo/stxp70/config/config_TARG.h
+	M       osprey/targinfo/stxp70/cg/targ_register.cxx
+	A  +    osprey/targinfo/stxp70/cg/targ_asmstmt.cxx
+	A  +    osprey/targinfo/st200/cg/targ_asmstmt.cxx
+	M       osprey/targinfo/generate/isa_syntax_gen.cxx
+	M       osprey/targinfo/parser/src/parser.c
+	M       osprey/targinfo/parser/inc/ext_engine.h
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26784 --new=https://codex.cro.st.com/svnroot/open64/branches/robinec/dev-asm_stmts@26798 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26784 https://codex.cro.st.com/svnroot/open64/branches/robinec/dev-asm_stmts@26798" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/be/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/be/Makefile.gbase?p2=branches/robinec/dev-asm_stmts/osprey/be/be/Makefile.gbase&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/driver/OPTIONS	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/OPTIONS?p2=branches/robinec/dev-asm_stmts/osprey/driver/OPTIONS&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/driver/opt_actions.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/opt_actions.c?p2=branches/robinec/dev-asm_stmts/osprey/driver/opt_actions.c&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/libair/air/air.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/libair/air/air.c?p2=branches/robinec/dev-asm_stmts/osprey/libair/air/air.c&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/lai/whirl2ops.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/whirl2ops.cxx?p2=branches/robinec/dev-asm_stmts/osprey/lai/whirl2ops.cxx&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgtarget.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgtarget.h?p2=branches/robinec/dev-asm_stmts/osprey/lai/cgtarget.h&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/lai/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/Makefile.gbase?p2=branches/robinec/dev-asm_stmts/osprey/lai/Makefile.gbase&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_pragmas.def	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_pragmas.def?p2=branches/robinec/dev-asm_stmts/osprey/gccfe/wfe_pragmas.def&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_pragmas.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_pragmas.cxx?p2=branches/robinec/dev-asm_stmts/osprey/gccfe/wfe_pragmas.cxx&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/common/com/wn_pragmas.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/wn_pragmas.h?p2=branches/robinec/dev-asm_stmts/osprey/common/com/wn_pragmas.h&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/common/com/isa_loader.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/isa_loader.cxx?p2=branches/robinec/dev-asm_stmts/osprey/common/com/isa_loader.cxx&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/common/com/wn_pragmas.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/wn_pragmas.cxx?p2=branches/robinec/dev-asm_stmts/osprey/common/com/wn_pragmas.cxx&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/expand/exp_intrinsic.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/expand/exp_intrinsic.cxx?p2=branches/robinec/dev-asm_stmts/osprey/targinfo/stxp70/expand/exp_intrinsic.cxx&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_TARG.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_TARG.cxx?p2=branches/robinec/dev-asm_stmts/osprey/targinfo/stxp70/config/config_TARG.cxx&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_TARG.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_TARG.h?p2=branches/robinec/dev-asm_stmts/osprey/targinfo/stxp70/config/config_TARG.h&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_register.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_register.cxx?p2=branches/robinec/dev-asm_stmts/osprey/targinfo/stxp70/cg/targ_register.cxx&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/isa_syntax_gen.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/isa_syntax_gen.cxx?p2=branches/robinec/dev-asm_stmts/osprey/targinfo/generate/isa_syntax_gen.cxx&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/parser/src/parser.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/parser/src/parser.c?p2=branches/robinec/dev-asm_stmts/osprey/targinfo/parser/src/parser.c&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/parser/inc/ext_engine.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/parser/inc/ext_engine.h?p2=branches/robinec/dev-asm_stmts/osprey/targinfo/parser/inc/ext_engine.h&r1=26784&r2=26798&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Mar 05 15:00:13 CET 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
