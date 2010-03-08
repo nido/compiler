@@ -260,16 +260,14 @@ dwarf_transform_to_disk_form (
             case DEBUG_LOC:
 		/* not handled yet */
 		continue;
-#ifdef KEY
 	    case EH_FRAME:
                 if (dbg->eh_frame_cies == NULL) continue;
-#ifdef TARG_ST
-		flags = SHF_ALLOC|SHF_WRITE;
+#ifdef KEY
+		flags = SHF_MIPS_NOSTRIP | SHF_ALLOC;
 #else
 		flags = SHF_MIPS_NOSTRIP;
 #endif
 	    	break;
-#endif
 	    default:
 		/* logic error: missing a case */
     	        DWARF_P_DBG_ERROR(dbg, DW_DLE_ELF_SECT_ERR, DW_DLV_NOCOUNT);
