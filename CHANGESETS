@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar 08 09:19:45 CET 2010
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-ifv-v4
+
+Description:
+------------
+	* [trunk] Deliver dt25/dev-ifv-v4 rev #26804 with authorization branch #91841
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cgdriver.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26801 --new=https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-ifv-v4@26804 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26801 https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-ifv-v4@26804" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cgdriver.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgdriver.cxx?p2=branches/dt25/dev-ifv-v4/osprey/lai/cgdriver.cxx&r1=26801&r2=26804&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Mar 08 08:54:10 CET 2010
 	Author:    
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
