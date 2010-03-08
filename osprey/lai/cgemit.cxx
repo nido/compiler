@@ -513,14 +513,6 @@ Init_Section (
       current_pu != (PU_IDX) NULL && PU_in_elf_section(current_pu)) {
     scn_flags |= SHF_MIPS_NODUPE;
   }
-	
-#ifdef TARG_ST
-  // (cbr) support exceptions in pic
-  char *s =  ST_name(em_scn[last_scn].sym);
-  if (!strcmp (s, ".except_table") &&
-      (Gen_PIC_Call_Shared || Gen_PIC_Shared))
-    scn_flags |= SHF_WRITE;
-#endif
 
   scn_entsize = Get_Section_Elf_Entsize(STB_section_idx(st));
 
