@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Mar 09 10:31:45 CET 2010
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-91194
+
+Description:
+------------
+	* [trunk] Fix for bug #91194: Dummy OP introduce bias in scheduler information.
+	Deliver fixes/codex-91194 rev #26850 with authorization branch #91207
+
+
+Modified Files:
+---------------
+	M       osprey/lai/hb_sched.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26846 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-91194@26850 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26846 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-91194@26850" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/hb_sched.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/hb_sched.cxx?p2=branches/fixes/codex-91194/osprey/lai/hb_sched.cxx&r1=26846&r2=26850&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Mar 08 14:44:10 CET 2010
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

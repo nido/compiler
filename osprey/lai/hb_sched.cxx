@@ -1593,6 +1593,11 @@ HB_Schedule::Put_Sched_Vector_Into_BB (BB *bb, BBSCH *bbsch, BOOL is_fwd)
     OPSCH *opsch = OP_opsch(op, _hb_map);
     Reset_OPSCH_visited (opsch);
     OP_scycle(op) = (is_fwd) ? OPSCH_scycle(opsch) : OPSCH_scycle(opsch) - Clock;
+#ifdef TARG_ST
+    //TDR: Fix for bug #91194. If a dummy instruction is inserted as firs instruction, 
+    // we must initialize correctly the OP_scycle
+    if (OP_scycle(op) < 0 && OP_dummy(op) && op == BB_first_op(bb)) OP_scycle(op)=0;
+#endif 
   }
 #ifdef TARG_ST
   }
