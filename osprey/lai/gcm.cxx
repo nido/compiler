@@ -2516,6 +2516,8 @@ Perform_Post_GCM_Steps(BB *bb, BB *cand_bb, OP *cand_op, mINT32 motion_type,
 	  REGISTER result_reg = TN_register(result);
 	  ISA_REGISTER_CLASS result_cl = TN_register_class (result);
 	  FOR_ALL_BB_SET_members (*pred_bbs, cur_bb) {
+	    // [TDR] - We move the instruction to cand_bb => no need to update
+	    if (cur_bb == cand_bb) continue;
 	    REG_LIVE_Update(result_cl, result_reg, cur_bb);
 	  }
 	  REG_LIVE_Update(result_cl, result_reg, bb);

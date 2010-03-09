@@ -2223,3 +2223,7 @@ CGTARG_Initialize ()
 
   return;
 }
+
+BOOL CGTARG_Should_Hoist_Return(BB* ret_bb) {
+   return FALSE;
+}

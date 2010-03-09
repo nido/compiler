@@ -1041,7 +1041,7 @@ extern void CGTARG_FixBundle(ISA_EXEC_MASK slot_mask, OP *slot_op[], INT ibundle
 extern BOOL CGTARG_Exist_Single_OP_Copy(ISA_REGISTER_CLASS rc, INT nhardregs);
 extern BOOL CGTARG_Is_Register_Pair(TN *tn1, TN * tn2);
 extern BOOL CGTARG_Is_Register_Quad(TN *tn1, TN *tn2, TN *tn3, TN *tn4);
-                                                                                
+extern BOOL CGTARG_Should_Hoist_Return(BB* ret_bb);                                                                                
 #endif
 
 #ifdef TARG_ST
