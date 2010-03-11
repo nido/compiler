@@ -1261,13 +1261,11 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
       }
     }
   }
-
+  
   CG_SCHED_EST_Delete(se1);
   CG_SCHED_EST_Delete(se2);
 
-  float est_cost_after = cycles1 / select_factor;
-
-  return KnuthCompareLE(est_cost_after, est_cost_before);
+  return CGTARG_Check_Profitable_Logif(cycles1, est_cost_before, select_factor, bb1, bb2);
 }
 
 
