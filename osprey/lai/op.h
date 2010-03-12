@@ -493,10 +493,13 @@ typedef int TN_effect;
 #define Set_OP_Pred_False(o, opnd) (Set_OP_effects((o), (opnd) ,EFFECT_PRED_FALSE))
 #define OP_Pred_False(o, opnd) ((opnd) == -1 ? false \
 				: OP_effects((o), (opnd)) & EFFECT_PRED_FALSE)
+#define Invert_OP_Pred(o, opnd) (OP_Pred_False((o), (opnd)) ? Set_OP_Pred_True((o), (opnd)) \
+                                 : Set_OP_Pred_False((o), (opnd)))
 #else
 #define Set_OP_Pred_True(o, opnd) false
 #define Set_OP_Pred_False(o, opnd) false
 #define OP_Pred_False(o, opnd) false
+#define Invert_OP_Pred(o, opnd) false
 #endif /* TARG_STxP70 */
 
 #define OP_PredOnFalse(o) OP_Pred_False(o, OP_find_opnd_use(o, OU_predicate))

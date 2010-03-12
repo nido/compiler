@@ -2942,7 +2942,7 @@ Negate_Cmp_BB (OP *br)
   OPS new_ops = OPS_EMPTY;
 
   OP *cmp_op = TN_ssa_def(btn);
-  OP *new_op;
+  OP *new_op,*tmp_op;
 
   if (cmp_op && (BB_id (OP_bb(br)) == BB_id (OP_bb (cmp_op))) &&
       (!GTN_SET_MemberP(BB_live_out(OP_bb (br)), btn)) && 
@@ -2950,6 +2950,15 @@ Negate_Cmp_BB (OP *br)
     Set_OP_result(new_op, 0, btn);
     OPS_Prepend_Op(&new_ops, new_op);
     BB_Replace_Op (cmp_op, &new_ops);
+    // [TDR] Fix for bug #92132: Check the the result TN of the compare is 
+    // not used somewhere else in the BB
+    for (tmp_op = OP_next(cmp_op); tmp_op != NULL; tmp_op = OP_next(tmp_op)) {
+      for (int i = 0; i < OP_opnds(tmp_op); i++) {
+        if (OP_opnd(tmp_op, i) == btn) { 
+            Invert_OP_Pred(tmp_op,i);        	  
+        }
+      }
+    }
   }
   else {
     TN *tn2=Dup_TN(btn);
