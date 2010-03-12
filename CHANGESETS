@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Mar 12 15:16:30 CET 2010
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-92050
+
+Description:
+------------
+	* [trunk] Fix for bug #92050: [EXT-V4] extension result overwritten by a move.
+	Deliver fixes/codex-92050 rev #26936 with authorization branch #92792
+
+	--> Reconf: When generating move code from core to extension registers,
+	            do not allow using R2P, R2Q if P or Q smaller than 32 bits.
+		    (This would required complex shifting/masking code on core registers)
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/expand/exp_extension.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26927 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-92050@26936 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26927 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-92050@26936" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/expand/exp_extension.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/expand/exp_extension.cxx?p2=branches/fixes/codex-92050/osprey/targinfo/stxp70/expand/exp_extension.cxx&r1=26927&r2=26936&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Mar 12 09:59:21 CET 2010
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
