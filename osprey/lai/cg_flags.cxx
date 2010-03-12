@@ -445,10 +445,18 @@ const char *CGTARG_Branch_Taken_Prob = NULL;
 double CGTARG_Branch_Taken_Probability;
 BOOL CGTARG_Branch_Taken_Prob_overridden;
 
+#ifdef TARG_ST
 // ====================================================================
 //   TAILMERGE:
 // ====================================================================
-#ifdef TARG_ST
 INT CG_tailmerge = 0;
 INT CG_simp_flow_in_tailmerge = 0;
+
+// ====================================================================
+//   GTN COALESCER:
+// ====================================================================
+INT32 CG_coalesce = (COALESCE_BEFORE_SCHED | COALESCE_AFTER_SCHED);
+BOOL CG_coalesce_overridden = FALSE;
+BOOL CG_coalesce_pair_only = FALSE;
+INT32 CG_coalesce_max_transfo = INT32_MAX;
 #endif

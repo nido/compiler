@@ -234,6 +234,7 @@ BE_EXPORTED extern char *Sharps;	/* Sharps w/NL, full page width */
 #define TP_EXTENSION    64      /* Extension support (loader, native support) */
 #define TP_TAIL         65	/* Tailmerge */
 #define TP_AFFIRM	66	/* __builtin_assume and AFFIRM property. */
+#define TP_COALESCE     67      /* GTN Coalescing */
 #endif
 
 #ifdef TARG_ST

@@ -221,6 +221,7 @@ static PDESC Phases[] = {
   { TP_EXTENSION,	"EXT",	"Extension support" },
   { TP_TAIL,		"TAL",	"Tailmerge" },
   { TP_AFFIRM,		"AFF",  "Affirm" },
+  { TP_COALESCE,	"COA",  "GTN Coalescing" },
 #endif
 
 #ifdef TARG_ST

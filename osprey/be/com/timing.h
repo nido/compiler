@@ -148,6 +148,8 @@ typedef enum {
 	T_LAO_REG_CU,
 	T_LAO_POST_Comp,       	     /* LAO Postpass optimizations */
 	T_LAO_POST_CU,
+	T_Coalesce_Comp,             /* GTN Coalescer */
+	T_Coalesce_CU,
 #endif
 
 	T_LAST			/* Last index defined */

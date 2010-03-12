@@ -1,6 +1,76 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Mar 12 09:59:21 CET 2010
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-GRA-coalescing
+
+Description:
+------------
+	* [trunk] Deliver tt2/dev-GRA-coalescing rev #26922 with authorization branch #84142
+
+	--> Addition of a GTN coalescing pass before GRA.
+	    --------------------------------------------
+	    The coalescing is performed both before and after pre-allocation scheduling,
+	    in order to capture as many cases as possible.
+	    It is enabled at optimization level >= 2.
+
+    	    The following options can be used to control it:
+	    - "-CG:coalesce_opt=0" : Disable both coalescing passes
+	    - "-CG:coalesce_opt=1" : Enable the first coalescing pass only (the one before pre-allocation scheduler)
+	    - "-CG:coalesce_opt=2" : Enable the second coalescing pass only (the one after pre-allocation scheduler)
+	    - "-CG:coalesce_opt=3" : Enable both coalescing passes [Default]
+
+
+Modified Files:
+---------------
+	M       osprey/be/com/timing.h
+	M       osprey/be/com/timing.cxx
+	A  +    osprey/lai/cg_coalesce.cxx
+	M       osprey/lai/cg_flags.cxx
+	M       osprey/lai/gra_mon/gra_create.cxx
+	M       osprey/lai/gra_mon/gra_trace.cxx
+	M       osprey/lai/gra_mon/gra_trace.h
+	M       osprey/lai/cg.cxx
+	M       osprey/lai/cgdriver.cxx
+	A  +    osprey/lai/cg_coalesce.h
+	M       osprey/lai/cg_flags.h
+	M       osprey/lai/Makefile.gbase
+	M       osprey/common/util/tracing.c
+	M       osprey/common/util/tracing.h
+	M       osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26911 --new=https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-GRA-coalescing@26922 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26911 https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-GRA-coalescing@26922" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/com/timing.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/timing.h?p2=branches/tt2/dev-GRA-coalescing/osprey/be/com/timing.h&r1=26911&r2=26922&roottype=svn&root=open64&diff_format=h
+osprey/be/com/timing.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/timing.cxx?p2=branches/tt2/dev-GRA-coalescing/osprey/be/com/timing.cxx&r1=26911&r2=26922&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_flags.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_flags.cxx?p2=branches/tt2/dev-GRA-coalescing/osprey/lai/cg_flags.cxx&r1=26911&r2=26922&roottype=svn&root=open64&diff_format=h
+osprey/lai/gra_mon/gra_create.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/gra_mon/gra_create.cxx?p2=branches/tt2/dev-GRA-coalescing/osprey/lai/gra_mon/gra_create.cxx&r1=26911&r2=26922&roottype=svn&root=open64&diff_format=h
+osprey/lai/gra_mon/gra_trace.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/gra_mon/gra_trace.cxx?p2=branches/tt2/dev-GRA-coalescing/osprey/lai/gra_mon/gra_trace.cxx&r1=26911&r2=26922&roottype=svn&root=open64&diff_format=h
+osprey/lai/gra_mon/gra_trace.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/gra_mon/gra_trace.h?p2=branches/tt2/dev-GRA-coalescing/osprey/lai/gra_mon/gra_trace.h&r1=26911&r2=26922&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg.cxx?p2=branches/tt2/dev-GRA-coalescing/osprey/lai/cg.cxx&r1=26911&r2=26922&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgdriver.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgdriver.cxx?p2=branches/tt2/dev-GRA-coalescing/osprey/lai/cgdriver.cxx&r1=26911&r2=26922&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_flags.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_flags.h?p2=branches/tt2/dev-GRA-coalescing/osprey/lai/cg_flags.h&r1=26911&r2=26922&roottype=svn&root=open64&diff_format=h
+osprey/lai/Makefile.gbase	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/Makefile.gbase?p2=branches/tt2/dev-GRA-coalescing/osprey/lai/Makefile.gbase&r1=26911&r2=26922&roottype=svn&root=open64&diff_format=h
+osprey/common/util/tracing.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/tracing.c?p2=branches/tt2/dev-GRA-coalescing/osprey/common/util/tracing.c&r1=26911&r2=26922&roottype=svn&root=open64&diff_format=h
+osprey/common/util/tracing.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/tracing.h?p2=branches/tt2/dev-GRA-coalescing/osprey/common/util/tracing.h&r1=26911&r2=26922&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/expand/exp_intrinsic.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/expand/exp_intrinsic.cxx?p2=branches/tt2/dev-GRA-coalescing/osprey/targinfo/stxp70/expand/exp_intrinsic.cxx&r1=26911&r2=26922&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Mar 11 16:17:08 CET 2010
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

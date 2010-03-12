@@ -1356,6 +1356,22 @@ static OPTION_DESC Options_CG[] = {
     "High priority (2): SC+PREF > !SC+USED+PREF > !SC+PREF > SC > !SC+USED > ANY, "
     " [Default 1]",
   },
+
+  // GTN Coalescing:
+  { OVK_INT32,	OV_INTERNAL, TRUE, "coalesce_opt", "",
+    0, 0, 3,	&CG_coalesce, &CG_coalesce_overridden,
+    "Turn on/off coalescing passes:"
+    " 0=no coalescing,"
+    " 1=coalescing before scheduling,"
+    " 2=coalescing after scheduling,"
+    " 3=coalescing before and after scheduling [Default= 3]" },
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "coalesce_pair_only", "",
+    0, 0, 0,	&CG_coalesce_pair_only, NULL,
+    "Limit GTN coalescing to pair of GTNs, even if more GTNs could be merged together [Default FALSE]" },
+  { OVK_INT32,	OV_INTERNAL, TRUE, "coalesce_max_transfo", "",
+    0, 0, INT32_MAX, &CG_coalesce_max_transfo, NULL,
+    "Define the maximum number of copies to coalesce in current UNIT" },
+
 #endif
 
   { OVK_COUNT }
@@ -1850,6 +1866,11 @@ Configure_CG_Options(void)
   /* always push pop unless user override the value. */
   if (!CG_gen_callee_saved_regs_mask_overriden)
       CG_gen_callee_saved_regs_mask = TRUE;
+
+  /* Pre-GRA coalescing is disabled by default on xp70 */
+  if (!CG_coalesce_overridden) {
+    CG_coalesce = 0;
+  }
 #endif
 
   /* Set BB clone limits

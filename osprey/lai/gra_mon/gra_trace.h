@@ -94,6 +94,10 @@
 //      void GRA_Trace_Reuse_Spill_Location (TN *tn, BB_SET *bbs, ST *sym,
 //                                           BB_SET *prev_bbs)
 //          Trace reuse of spill location for spilled live range.
+//
+//      void GRA_Trace_BB_Liveness (BB *bb)
+//          Trace the liveness information of BB <bb>
+//
 #endif
 //
 //      void GRA_Trace_Preference_Attempt( const LRANGE* lrange0,
@@ -285,5 +289,6 @@ void GRA_Trace_Split_BB_Sets (LRANGE *alloc_lrange, LRANGE *deferred_lrange);
 void GRA_Trace_New_Spill_Location (TN *tn, BB_SET *bbs, ST *sym);
 void GRA_Trace_Reuse_Spill_Location (TN *tn, BB_SET *bbs, ST *sym,
 				     BB_SET *prev_bbs);
+void GRA_Trace_BB_Liveness (BB *bb);
 #endif
 #endif

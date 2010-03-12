@@ -121,6 +121,7 @@
 #include "ipra.h"
 #include "cg_color.h"
 #include "cg_tailmerge.h"
+#include "cg_coalesce.h"
 #endif
 
 #ifdef LAO_ENABLED
@@ -878,6 +879,21 @@ CG_Generate_Code(
   CGTARG_Resize_Instructions ();
 #endif
 
+#ifdef TARG_ST
+  // [TTh] First pass of Coalescing, before Prepass Scheduling
+  //       At this stage, live-ranges are less likely to be
+  //       conflicting.
+  if ((CG_opt_level > 1) && (CG_coalesce & COALESCE_BEFORE_SCHED)) {
+      Set_Error_Phase( "GTN Coalescing before Prepass Scheduling" );
+      GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid(rwn) : NULL);
+      BOOL changed = CG_Coalesce_PU();
+      if (changed) {
+        GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid(rwn) : NULL);
+      }
+      Check_for_Dump (TP_COALESCE, NULL);
+    }
+#endif
+
   Set_Error_Phase( "Prepass Scheduling" );
 
   extern void Check_Prolog_Epilog ();
@@ -951,6 +967,22 @@ CG_Generate_Code(
   } else {
   // No allocation  performed by LAO, run full GRA/LRA
 #endif
+
+#ifdef TARG_ST
+    // [TTh] Second pass of Coalescing, after Prepass Scheduling
+    //       At this stage, the scheduling might have removed some
+    //       live-range conflicts.
+    if ((CG_opt_level > 1) && (CG_coalesce & COALESCE_AFTER_SCHED)) {
+      Set_Error_Phase( "GTN Coalescing after Prepass Scheduling" );
+      GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid(rwn) : NULL);
+      BOOL changed = CG_Coalesce_PU();
+      if (changed) {
+        GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid(rwn) : NULL);
+      }
+      Check_for_Dump (TP_COALESCE, NULL);
+    }
+#endif
+
   if (!CG_localize_tns) {
     // Earlier phases (esp. GCM) might have introduced local definitions
     // and uses for global TNs. Rename them to local TNs so that GRA 

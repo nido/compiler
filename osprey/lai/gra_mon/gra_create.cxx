@@ -310,7 +310,9 @@ Create_GRA_BBs_And_Regions(void)
   for ( bb = REGION_First_BB; bb != NULL; bb = BB_next(bb) ) {
     GRA_REGION* region = gra_region_mgr.Get(BB_rid(bb));
     GRA_BB*     gbb    = gbb_mgr.Create(bb,region);
-
+#ifdef TARG_ST
+    GRA_Trace_BB_Liveness(bb);
+#endif
     region->Add_GBB(gbb);
     gra_loop_mgr.Set_GBB_Loop(gbb);
 

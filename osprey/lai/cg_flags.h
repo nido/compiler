@@ -323,6 +323,14 @@ extern BOOL  CG_warn_prefetch_padding;
 #define PREF_REGS_PRIORITY_HIGH   2
 extern BOOL  CG_COLOR_use_pref_regs;
 extern INT32 CG_COLOR_pref_regs_priority;
+
+/* GTN Coalescer: */
+#define COALESCE_BEFORE_SCHED 0x1
+#define COALESCE_AFTER_SCHED  0x2
+extern INT32 CG_coalesce;
+extern BOOL  CG_coalesce_overridden;
+extern BOOL  CG_coalesce_pair_only;
+extern INT32 CG_coalesce_max_transfo;
 #endif
 
 extern INT32 CG_L1_ld_latency;

@@ -250,6 +250,10 @@ Initialize_Timing ( BOOL enable )
 	    Resource_Alloc ( "  LAO Postpass Optimizations", NULL );
     Timer ( T_LAO_POST_CU ) =
 	    Resource_Alloc ( "  LAO Postpass Optimizations", Timer(T_LAO_POST_Comp) );
+    Timer ( T_Coalesce_Comp ) =
+	    Resource_Alloc ( "  GTN Coalescing", NULL );
+    Timer ( T_Coalesce_CU ) =
+	    Resource_Alloc ( "  GTN Coalescing", Timer(T_Coalesce_Comp) );
 #endif
   }
 }
@@ -393,12 +397,15 @@ Report_CG_Region_Timing (FILE *file, char *name)
   Report_Delta_Time ( file, T_Sched_CU );
   Report_Delta_Time ( file, T_THR_CU );
   Report_Delta_Time ( file, T_GCM_CU );
+#ifdef TARG_ST
   Report_Delta_Time ( file, T_Select_CU );
   Report_Delta_Time ( file, T_OutSSA_CU );
+  Report_Delta_Time ( file, T_Coalesce_CU );
   Report_Delta_Time ( file, T_LAO_Interface_CU );
   Report_Delta_Time ( file, T_LAO_PRE_CU );
   Report_Delta_Time ( file, T_LAO_REG_CU );
   Report_Delta_Time ( file, T_LAO_POST_CU );
+#endif
   Report_Delta_Time ( file, T_Region_Finalize_CU );
   fprintf ( file, "%s\n", DBar );
 }
@@ -456,12 +463,15 @@ Finish_BE_Timing (
 	Report_Delta_Time ( file, T_Sched_CU );
 	Report_Delta_Time ( file, T_THR_CU );
 	Report_Delta_Time ( file, T_GCM_CU );
+#ifdef TARG_ST
 	Report_Delta_Time ( file, T_Select_CU );
 	Report_Delta_Time ( file, T_OutSSA_CU );
+	Report_Delta_Time ( file, T_Coalesce_CU );
 	Report_Delta_Time ( file, T_LAO_Interface_CU );
 	Report_Delta_Time ( file, T_LAO_PRE_CU );
 	Report_Delta_Time ( file, T_LAO_REG_CU );
 	Report_Delta_Time ( file, T_LAO_POST_CU );
+#endif
 	Report_Delta_Time ( file, T_Emit_CU );
 	Report_Delta_Time ( file, T_Region_Finalize_CU );
 	fprintf ( file, "%s\n", DBar );
@@ -496,12 +506,15 @@ Finish_BE_Timing (
     Add_Timer_To_Parent ( T_Sched_CU );
     Add_Timer_To_Parent ( T_THR_CU );
     Add_Timer_To_Parent ( T_GCM_CU );
+#ifdef TARG_ST
     Add_Timer_To_Parent ( T_Select_CU );
     Add_Timer_To_Parent ( T_OutSSA_CU );
+    Add_Timer_To_Parent ( T_Coalesce_CU );
     Add_Timer_To_Parent ( T_LAO_Interface_CU );
     Add_Timer_To_Parent ( T_LAO_PRE_CU );
     Add_Timer_To_Parent ( T_LAO_REG_CU );
     Add_Timer_To_Parent ( T_LAO_POST_CU );
+#endif
     Add_Timer_To_Parent ( T_Emit_CU );
     Add_Timer_To_Parent ( T_Region_Finalize_CU );
   }
@@ -559,12 +572,15 @@ Finish_Compilation_Timing (
 	Report_Delta_Time ( file, T_Sched_Comp );
 	Report_Delta_Time ( file, T_THR_Comp );
 	Report_Delta_Time ( file, T_GCM_Comp );
+#ifdef TARG_ST
 	Report_Delta_Time ( file, T_Select_Comp );
 	Report_Delta_Time ( file, T_OutSSA_Comp );
+	Report_Delta_Time ( file, T_Coalesce_Comp );
 	Report_Delta_Time ( file, T_LAO_Interface_Comp );
 	Report_Delta_Time ( file, T_LAO_PRE_Comp );
 	Report_Delta_Time ( file, T_LAO_REG_Comp );
 	Report_Delta_Time ( file, T_LAO_POST_Comp );
+#endif
 	Report_Delta_Time ( file, T_Emit_Comp );
 	Report_Delta_Time ( file, T_Region_Finalize_Comp );
 	fprintf ( file, "%s\n", DBar );

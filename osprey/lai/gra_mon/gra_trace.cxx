@@ -60,6 +60,9 @@
 #include "gra_lrange.h"
 #include "gra_region.h"
 #include "gra_interfere.h"
+#ifdef TARG_ST
+#include "gra_live.h"
+#endif
 
 static INT  trace_detail;
 static BOOL trace_color;
@@ -848,6 +851,15 @@ GRA_Trace_Local_LRange_Request (const char *str,
     GRA_Trace(0, "%s Local LRange %s (BB%d): cl=%d sc=%d nregs=%d count=%d",
 	      str, (demand ? "demand" : "request"),
 	      BB_id(gbb->Bb()), cl, sc, nregs, count);
+  }
+}
+
+void
+GRA_Trace_BB_Liveness (BB *bb)
+{
+  if (trace_color && trace_detail == 1) {
+    fprintf(TFile, "<gra> Liveness for BB%d:\n", BB_id(bb));
+    GRA_LIVE_Print_Liveness(bb);
   }
 }
 #endif
