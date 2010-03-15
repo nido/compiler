@@ -1079,6 +1079,15 @@ EBO_simplify_operand0 (
   /* Inlining of immediate operand unless Zero_TN. */
   if (TN_is_register(OP_opnd(op, opnd1_idx)) &&
       OP_opnd(op, opnd1_idx) != Zero_TN) {
+    if (opcode == TOP_convib_r_b
+	|| opcode == TOP_convbi_b_r) {
+      OPS ops = OPS_EMPTY;
+      TN *imm_tn = Gen_Literal_TN(const_val != 0, 1);
+      Exp_Immediate (OP_result(op, 0), imm_tn, 0, &ops);
+      if (ops.length == 1) {
+	return OPS_first(&ops);
+      }
+    } 
     new_opcode = TOP_opnd_immediate_variant(opcode, opnd1_idx, const_val);
     if (new_opcode != TOP_UNDEFINED && 
 	new_opcode != opcode) {
@@ -1091,7 +1100,7 @@ EBO_simplify_operand0 (
       return new_op;
     }
   }
-  
+
   /* Invert operands and try to simplify operand 1. */
   if (TN_is_register(OP_opnd(op, opnd1_idx)) &&
       OP_opnd(op, opnd1_idx) != Zero_TN &&

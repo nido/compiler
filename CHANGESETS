@@ -1,6 +1,44 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar 15 18:11:15 CET 2010
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-92333
+
+Description:
+------------
+	*  Fix for codex bug #92333 ("Missed opportunities for constant
+	propagation")
+	Delivered fixes/codex-92333 with authorization art #92861.
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/st200/cg/targ_ebo.cxx
+	M       osprey/targinfo/st200/isa/isa_operands.cxx
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26981 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-92333@26983 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26981 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-92333@26983" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/st200/cg/targ_ebo.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/cg/targ_ebo.cxx?p2=branches/fixes/codex-92333/osprey/targinfo/st200/cg/targ_ebo.cxx&r1=26981&r2=26983&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/isa/isa_operands.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/isa/isa_operands.cxx?p2=branches/fixes/codex-92333/osprey/targinfo/st200/isa/isa_operands.cxx&r1=26981&r2=26983&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/fixes/codex-92333/DEPENDENCIES&r1=26981&r2=26983&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Mar 15 17:12:22 CET 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
