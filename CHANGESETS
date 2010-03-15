@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar 15 14:07:48 CET 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93299
+
+Description:
+------------
+	* [trunk] Fix for bug #93299: [freeman VCPU] Assertion failure.
+	Deliver fixes/codex-93299 rev #26961 with authorization branch #93369
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/expand/exp_divrem.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26948 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93299@26961 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26948 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93299@26961" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/expand/exp_divrem.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/expand/exp_divrem.cxx?p2=branches/fixes/codex-93299/osprey/targinfo/stxp70/expand/exp_divrem.cxx&r1=26948&r2=26961&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Mar 12 17:36:54 CET 2010
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
