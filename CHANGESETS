@@ -1,6 +1,45 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar 15 17:12:22 CET 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-range-regression
+
+Description:
+------------
+	* [trunk] Fix for bug #81540: Performance regression on eembc-networking-ip_pktcheck
+	Deliver branches/dt25/dev-range-regression rev #26963 with authorization branch #81969
+
+
+Modified Files:
+---------------
+	M       osprey/common/util/larange.h
+	M       osprey/common/util/lalign.cxx
+	M       osprey/common/util/lalign.h
+	M       osprey/common/util/larange.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26963 --new=https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-range-regression@26978 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26963 https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-range-regression@26978" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/util/larange.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/larange.h?p2=branches/dt25/dev-range-regression/osprey/common/util/larange.h&r1=26963&r2=26978&roottype=svn&root=open64&diff_format=h
+osprey/common/util/lalign.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/lalign.cxx?p2=branches/dt25/dev-range-regression/osprey/common/util/lalign.cxx&r1=26963&r2=26978&roottype=svn&root=open64&diff_format=h
+osprey/common/util/lalign.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/lalign.h?p2=branches/dt25/dev-range-regression/osprey/common/util/lalign.h&r1=26963&r2=26978&roottype=svn&root=open64&diff_format=h
+osprey/common/util/larange.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/util/larange.cxx?p2=branches/dt25/dev-range-regression/osprey/common/util/larange.cxx&r1=26963&r2=26978&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Mar 15 14:07:48 CET 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
