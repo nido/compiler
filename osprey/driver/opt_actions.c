@@ -1200,13 +1200,22 @@ Check_Target ( void )
 
   if (option_was_seen(O_fpic)) {
     if (got_model_opt!=got_none) {
+      // If large model specified on v4, we force standard one
+      if(proc!=PROC_stxp70_v3 && got_model_opt==got_large) {
+        warning("Large got model does not exist on STxP70-v4. Replaced by standard one!");
+        got_model_opt=got_standard;
+      }
       add_stxp70_int_option("-TARG:got_model=%d", got_model_opt, P_be);
     } else {
-      add_stxp70_int_option("-TARG:got_model=%d", got_large, P_be);
+      // Default is large model on v3, standard model on v4
+      if(proc==PROC_stxp70_v3) add_stxp70_int_option("-TARG:got_model=%d", got_large, P_be);
+      else add_stxp70_int_option("-TARG:got_model=%d", got_standard, P_be);
     }
     add_stxp70_int_option("-CG:tail_call=%d", 0, P_be);
   } else if (option_was_seen(O_fPIC)) {
-    add_stxp70_int_option("-TARG:got_model=%d", got_large, P_be);
+    // Default is large model on v3, standard model on v4
+    if(proc==PROC_stxp70_v3) add_stxp70_int_option("-TARG:got_model=%d", got_large, P_be);
+    else add_stxp70_int_option("-TARG:got_model=%d", got_standard, P_be);
     add_stxp70_int_option("-CG:tail_call=%d", 0, P_be);
   }
 

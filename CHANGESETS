@@ -1,6 +1,50 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Mar 16 09:41:38 CET 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lv21/dev-dynamicloading-v4
+
+Description:
+------------
+	*  implement dynamic loading for stxp70v4
+
+
+Modified Files:
+---------------
+	M       osprey/driver/opt_actions.c
+	M       osprey/targinfo/stxp70/expand/exp_memrf.cxx
+	M       osprey/targinfo/stxp70/expand/exp_targ.cxx
+	M       osprey/targinfo/stxp70/config/config_target.cxx
+	M       osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M       osprey/targinfo/stxp70/isa/isa_relocs.cxx
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26995 --new=https://codex.cro.st.com/svnroot/open64/branches/lv21/dev-dynamicloading-v4@26999 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26995 https://codex.cro.st.com/svnroot/open64/branches/lv21/dev-dynamicloading-v4@26999" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/opt_actions.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/opt_actions.c?p2=branches/lv21/dev-dynamicloading-v4/osprey/driver/opt_actions.c&r1=26995&r2=26999&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/expand/exp_memrf.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/expand/exp_memrf.cxx?p2=branches/lv21/dev-dynamicloading-v4/osprey/targinfo/stxp70/expand/exp_memrf.cxx&r1=26995&r2=26999&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/expand/exp_targ.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/expand/exp_targ.cxx?p2=branches/lv21/dev-dynamicloading-v4/osprey/targinfo/stxp70/expand/exp_targ.cxx&r1=26995&r2=26999&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_target.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_target.cxx?p2=branches/lv21/dev-dynamicloading-v4/osprey/targinfo/stxp70/config/config_target.cxx&r1=26995&r2=26999&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_cg.cxx?p2=branches/lv21/dev-dynamicloading-v4/osprey/targinfo/stxp70/cg/targ_cg.cxx&r1=26995&r2=26999&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_relocs.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_relocs.cxx?p2=branches/lv21/dev-dynamicloading-v4/osprey/targinfo/stxp70/isa/isa_relocs.cxx&r1=26995&r2=26999&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/lv21/dev-dynamicloading-v4/DEPENDENCIES&r1=26995&r2=26999&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Mar 16 08:05:05 CET 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
