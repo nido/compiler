@@ -1186,7 +1186,10 @@ Get_Section_ST_With_Given_Name (SECTION_IDX sec, ST_SCLASS sclass, STR_IDX name)
   return newblk;
 }
 
-static void
+#ifndef KEY
+static
+#endif
+void
 Assign_ST_To_Named_Section (ST *st, STR_IDX name)
 {
   ST *newblk;

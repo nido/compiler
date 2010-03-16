@@ -1860,6 +1860,41 @@ Write_Labdiff (
 }
 #endif
 
+#ifdef KEY
+#include <map>
+std::map<const ST*, const ST*> st_to_pic_st;
+// Emit PIC version of a symbol, here, a typeinfo symbol
+static Elf64_Word
+Emit_PIC_version (ST * st, Elf64_Word scn_ofst)
+{
+  if (st_to_pic_st.find (st) == st_to_pic_st.end())
+  {
+    ST * pic_st = New_ST (GLOBAL_SYMTAB);
+    STR_IDX name = Save_Str2 ("DW.ref.", ST_name (st));
+    ST_Init(pic_st, name, CLASS_VAR, SCLASS_DGLOBAL, EXPORT_HIDDEN, MTYPE_TO_TY_array[MTYPE_U8]);
+    Set_ST_is_weak_symbol (pic_st);
+    Set_ST_is_initialized (pic_st);
+    ST_ATTR_IDX st_attr_idx;
+    ST_ATTR&    st_attr = New_ST_ATTR (GLOBAL_SYMTAB, st_attr_idx);
+    ST_ATTR_Init (st_attr, ST_st_idx (pic_st), ST_ATTR_SECTION_NAME, Save_Str2 (".gnu.linkonce.d.", ST_name (pic_st)));
+                                                                                
+    INITV_IDX iv = New_INITV();
+    INITV_Init_Symoff (iv, st, 0, 1);
+    New_INITO (ST_st_idx (pic_st), iv);
+
+    Assign_ST_To_Named_Section (pic_st, ST_ATTR_section_name (st_attr));
+    st_to_pic_st [st] = pic_st;
+  }
+
+#ifdef TARG_ST
+  fprintf (Asm_File, "\t%s\tDW.ref.%s-.\n", AS_WORD, ST_name (st));
+#else
+  fprintf (Asm_File, "\t.long\tDW.ref.%s-.\n", ST_name (st));
+#endif
+
+  return scn_ofst + 4;
+}
+#endif
 
 /* ====================================================================
  *    Write_INITV
@@ -1919,6 +1954,13 @@ Write_INITV (INITV_IDX invidx, INT scn_idx, Elf64_Word scn_ofst)
 
     case INITVKIND_SYMOFF:
       st = &St_Table[INITV_st(inv)];
+#if defined TARG_ST || defined TARG_X8664
+      if ((Gen_PIC_Call_Shared || Gen_PIC_Shared) && emit_typeinfo)
+      { // handle it differently
+	scn_ofst = Emit_PIC_version (st, scn_ofst);
+      	break;
+      }
+#endif
       switch (ST_sclass(st)) {
 	case SCLASS_AUTO:
 	{ /* EH stack variable */
@@ -2244,12 +2286,9 @@ Generate_Exception_Table_Header (INT scn_idx, Elf64_Xword scn_ofst, LABEL_IDX *l
 
     // Generate TType format
     TCON ttype;
-#ifndef TARG_ST200
-    // (cbr) keep 0 encoding value (pro-release-1-9-0-B/65)
     if (Gen_PIC_Call_Shared || Gen_PIC_Shared)
     	ttype = Host_To_Targ (MTYPE_I1, 0x9b);
     else
-#endif
     	ttype = Host_To_Targ (MTYPE_I1, 0);
     scn_ofst = Write_TCON (&ttype, scn_idx, scn_ofst, 1);
 

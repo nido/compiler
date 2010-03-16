@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Mar 16 18:29:55 CET 2010
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-77303
+
+Description:
+------------
+	* [trunk] Fix for bug #77303: .except_table has "w" attribute in PIC.
+	Deliver fixes/codex-77303 rev #27035 with authorization branch #92342
+
+
+Modified Files:
+---------------
+	M       osprey/be/com/data_layout.cxx
+	M       osprey/be/com/data_layout.h
+	M       osprey/lai/cgemit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27025 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-77303@27035 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27025 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-77303@27035" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/com/data_layout.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/data_layout.cxx?p2=branches/fixes/codex-77303/osprey/be/com/data_layout.cxx&r1=27025&r2=27035&roottype=svn&root=open64&diff_format=h
+osprey/be/com/data_layout.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/data_layout.h?p2=branches/fixes/codex-77303/osprey/be/com/data_layout.h&r1=27025&r2=27035&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgemit.cxx?p2=branches/fixes/codex-77303/osprey/lai/cgemit.cxx&r1=27025&r2=27035&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Mar 16 15:25:26 CET 2010
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

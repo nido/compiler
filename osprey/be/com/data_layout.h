@@ -149,6 +149,9 @@ BE_EXPORTED extern ST* Get_Vararg_Symbol (PLOC);
  * Allocate the memory location for all global/static symbols.
  */
 BE_EXPORTED extern void Allocate_File_Statics (void);
+#ifdef KEY
+BE_EXPORTED extern void Assign_ST_To_Named_Section (ST *, STR_IDX);
+#endif
 
 /*
  * Pad global, C arrays
