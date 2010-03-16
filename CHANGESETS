@@ -1,6 +1,46 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Mar 16 08:05:05 CET 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mad-4-3-6-2
+
+Description:
+------------
+	*  upgrade stxp70 v4 architecture to mad version 4.3.6-2
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx
+	M       osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx
+	M       osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx
+	M       osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@26992 --new=https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mad-4-3-6-2@26993 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@26992 https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mad-4-3-6-2@26993" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx?p2=branches/cv17/dev-mad-4-3-6-2/osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx&r1=26992&r2=26993&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx?p2=branches/cv17/dev-mad-4-3-6-2/osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx&r1=26992&r2=26993&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx?p2=branches/cv17/dev-mad-4-3-6-2/osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx&r1=26992&r2=26993&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_bundle.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_bundle.cxx?p2=branches/cv17/dev-mad-4-3-6-2/osprey/targinfo/stxp70/isa/isa_bundle.cxx&r1=26992&r2=26993&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/cv17/dev-mad-4-3-6-2/DEPENDENCIES&r1=26992&r2=26993&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Mar 15 18:11:15 CET 2010
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
