@@ -1,6 +1,46 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Mar 16 15:25:26 CET 2010
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-ifc-tunning-v4
+
+Description:
+------------
+	* [trunk] Deliver dt25/dev-ifc-tunning-v4 rev #27023 with authorization branch #93188
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cg_select.h
+	M       osprey/lai/cg_select.cxx
+	M       osprey/targinfo/arm/cg/targ_select.cxx
+	M       osprey/targinfo/stxp70/cg/targ_select.cxx
+	M       osprey/targinfo/st200/cg/targ_select.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27001 --new=https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-ifc-tunning-v4@27023 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27001 https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-ifc-tunning-v4@27023" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cg_select.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_select.h?p2=branches/dt25/dev-ifc-tunning-v4/osprey/lai/cg_select.h&r1=27001&r2=27023&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_select.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_select.cxx?p2=branches/dt25/dev-ifc-tunning-v4/osprey/lai/cg_select.cxx&r1=27001&r2=27023&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/arm/cg/targ_select.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/cg/targ_select.cxx?p2=branches/dt25/dev-ifc-tunning-v4/osprey/targinfo/arm/cg/targ_select.cxx&r1=27001&r2=27023&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_select.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_select.cxx?p2=branches/dt25/dev-ifc-tunning-v4/osprey/targinfo/stxp70/cg/targ_select.cxx&r1=27001&r2=27023&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/cg/targ_select.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/cg/targ_select.cxx?p2=branches/dt25/dev-ifc-tunning-v4/osprey/targinfo/st200/cg/targ_select.cxx&r1=27001&r2=27023&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Mar 16 09:41:38 CET 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

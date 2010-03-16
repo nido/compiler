@@ -1474,9 +1474,6 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   }
 #endif
 
-  if (!CG_ifc_cycles)
-    return !will_need_predicate_merge;
-
   float est_cost_before = CGTARG_Compute_est_cost_before(se1,se2,sehead,taken_prob,fallthr_prob,will_need_predicate_merge) ;
   float ifc_regions_cycles = CGTARG_Compute_est_cost_after(se1,se2,sehead,taken_prob,fallthr_prob,will_need_predicate_merge,head) ;
   float est_cost_after = ifc_regions_cycles / select_factor;
@@ -1492,7 +1489,7 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
         fprintf (Select_TFile, "\t Comparing without ifc:%f, with ifc:%f\n", est_cost_before, est_cost_after);
   }
 
-  BOOL val = CGTARG_Check_Profitable_Select(se1, se2, size_se1, size_se2, est_cost_before, est_cost_after, fallthr_prob);
+  BOOL val = CGTARG_Check_Profitable_Select(se1, se2, size_se1, size_se2, est_cost_before, est_cost_after, fallthr_prob, will_need_predicate_merge);
 
   CG_SCHED_EST_Delete(sehead);
   if (se1)  CG_SCHED_EST_Delete(se1);
