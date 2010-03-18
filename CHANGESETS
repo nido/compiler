@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Mar 18 16:35:36 CET 2010
+	Author:    janiny
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-stxp70-intrinsics
+
+Description:
+------------
+	* [trunk] Deliver dev-stxp70-intrinsics branch at rev#27086 with authorization branch#90445
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/expand/exp_intrinsic.cxx
+	M       osprey/targinfo/stxp70/config/targ_intrn_info.def
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27084 --new=https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-stxp70-intrinsics@27086 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27084 https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-stxp70-intrinsics@27086" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/expand/exp_intrinsic.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/expand/exp_intrinsic.cxx?p2=branches/janiny/dev-stxp70-intrinsics/osprey/targinfo/stxp70/expand/exp_intrinsic.cxx&r1=27084&r2=27086&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/targ_intrn_info.def	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/targ_intrn_info.def?p2=branches/janiny/dev-stxp70-intrinsics/osprey/targinfo/stxp70/config/targ_intrn_info.def&r1=27084&r2=27086&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Mar 18 14:20:56 CET 2010
 	Author:    
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
