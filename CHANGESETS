@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Mar 18 14:01:48 CET 2010
+	Author:    
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93494
+
+Description:
+------------
+	* Fix for bug 93494  
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/parser/src/parser.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27057 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93494@27078 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27057 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93494@27078" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/parser/src/parser.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/parser/src/parser.c?p2=branches/fixes/codex-93494/osprey/targinfo/parser/src/parser.c&r1=27057&r2=27078&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Mar 16 18:29:55 CET 2010
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
