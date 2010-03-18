@@ -112,6 +112,11 @@ save_options_status(boolean init) {
         q->next=NULL;
         my_int_list[q->value] = q;
     }
+    /* Fix Codex bug #91404: manage implicitly seen options */
+    for (i = 0; i < max_options; i++) {
+      if (option_is_seen[i] == IMPLICITLY_SEEN) my_int_list[i] = my_link_list.head;
+    }
+    
     my_link_list.tail=q;
     if (init == TRUE) {
         saved_init_option_is_seen = my_int_list;
@@ -159,6 +164,10 @@ restore_options_status(boolean init) {
         option_is_seen[q->value] = q;
     }
     order_options_seen.tail=q;
+    /* Fix Codex bug #91404: manage implicitly seen options */
+    for (i = 0; i < max_options; i++) {
+        if (my_int_list[i] == my_link_list.head)  option_is_seen[i] = order_options_seen.head;
+    }
 }
 
 #endif
@@ -353,10 +362,16 @@ extern void
 dump_option_seen (void)
 {
 	int_list *p;
+	int i;
 	printf("order_options_seen:\n");
 	for (p = order_options_seen.head; p != NULL; p = p->next) {
 		printf("flag %d\n", p->value);
 	}
+	printf("option_is_seen:\n");
+	for (i = 0; i < max_options; i++) {
+	  if (option_is_seen[i] != NOT_SEEN)  printf("%d seen\n", i);
+	}
+	printf("\n");
 }
 
 #ifdef TARG_ST

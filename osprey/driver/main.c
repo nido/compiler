@@ -202,7 +202,7 @@ static int return_flag ( char *name, char *argv0 ) {
 
 static void  update_config_file(boolean is_ipa, char *argv[]) {
 	// Check file integrity => convert file/func options if needed.
-	char *temp_cfg_file_name = create_temp_file_name(".cfg");
+	char *temp_cfg_file_name = create_temp_file_name("cfg");
 	FILE *temp_cfg_file = fopen(temp_cfg_file_name, "w");
     fprintf(temp_cfg_file, "configuration \"%s\" {\n",active_configuration->name);
     Pt_file_list ftmp=active_configuration->files;
