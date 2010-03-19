@@ -13,7 +13,7 @@ sv# Revision file that references all dependencies of the project.
 #       The path <directory>/<file> should be sufficient to identify the
 #       dependency source uniquely.
 #
-stxp70-binutils,svn,trunk@6040,https://codex.cro.st.com/svnroot/stxp70cc/stxp70-binutils
+stxp70-binutils,svn,trunk@6049,https://codex.cro.st.com/svnroot/stxp70cc/stxp70-binutils
 mds,svn,trunk@1880,https://codex.cro.st.com/svnroot/mds
 ecc,svn,trunk@3828,https://codex.cro.st.com/svnroot/ecc
 binopt,svn,trunk@1656,https://codex.cro.st.com/svnroot/binopt
