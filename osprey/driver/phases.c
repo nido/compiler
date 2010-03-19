@@ -3778,6 +3778,34 @@ add_ipl_cmd_string (int iflag)
             name = (string) "-Mextension=x3";
     }
 
+    { // Filter option -Mextrcdir. At command line level, we support
+      // two syntaxes "-Mextrcdir xxx" and "-Mextrcdir=xxx". However,
+      // the only possible syntax at this stage of the compilation
+      // process is the second one. See file OPTIONS and discussion
+      // in stxp70_options.i.
+
+      const char *option_str1 = "-Mextrcdir=";
+      const char *str2;
+
+      if(strlen(name)>0 && same_string_prefix(name,option_str1)) {
+        str2 = name + strlen(option_str1);
+
+        // Check that str2 in "-Mextrcdir=<str2>" is a valid directory"
+        // Normally errors should have already been filtered.
+        if(*str2=='\0' || !SYS_is_dir(str2)) {
+          error ("[%s] is not a valid directory for -Mextrcdir",
+                 *str2 ? str2 : "<NULL>");
+          return;
+        }
+
+        // Build an absolute path.
+        if(!SYS_isAbsolute(str2)) {
+          name = concat_strings((char*)option_str1,
+                                SYS_makePath(SYS_getcwd(),str2));
+        }
+      }
+    }
+
     // We have already had -corecfg/-corecfg1 information in the *cc file. 
     // Thus adding -Mconfig is redundant. Skip process.
     if(strlen(name)>0 && 0==strcmp(name,"-Mconfig")) {

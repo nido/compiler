@@ -1,6 +1,46 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Mar 19 13:23:15 CET 2010
+	Author:    janiny
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-92889
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-92889 rev #27099 with authorization branch #93542
+
+
+Modified Files:
+---------------
+	M       osprey/driver/phases.c
+	M       osprey/driver/special_options.c
+	M       osprey/libSYS/SYS.h
+	M       osprey/common/com/isa_loader.cxx
+	M       osprey/targinfo/generate/isa_relocs_gen.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27098 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-92889@27099 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27098 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-92889@27099" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/phases.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/phases.c?p2=branches/fixes/codex-92889/osprey/driver/phases.c&r1=27098&r2=27099&roottype=svn&root=open64&diff_format=h
+osprey/driver/special_options.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/special_options.c?p2=branches/fixes/codex-92889/osprey/driver/special_options.c&r1=27098&r2=27099&roottype=svn&root=open64&diff_format=h
+osprey/libSYS/SYS.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/libSYS/SYS.h?p2=branches/fixes/codex-92889/osprey/libSYS/SYS.h&r1=27098&r2=27099&roottype=svn&root=open64&diff_format=h
+osprey/common/com/isa_loader.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/isa_loader.cxx?p2=branches/fixes/codex-92889/osprey/common/com/isa_loader.cxx&r1=27098&r2=27099&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/isa_relocs_gen.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/isa_relocs_gen.cxx?p2=branches/fixes/codex-92889/osprey/targinfo/generate/isa_relocs_gen.cxx&r1=27098&r2=27099&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Mar 18 16:35:36 CET 2010
 	Author:    janiny
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

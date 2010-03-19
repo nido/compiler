@@ -54,6 +54,7 @@
 #ifdef BCO_ENABLED /* Thierry */
 #include "file_utils.h"
 #endif /* BCO_Enabled Thierry */
+#include "SYS.h"
 static char compiler_version[] = INCLUDE_STAMP;
 
 extern void
