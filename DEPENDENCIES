@@ -1,4 +1,4 @@
-sv# Revision file that references all dependencies of the project.
+# Revision file that references all dependencies of the project.
 # A dependency is a 4-uplet: dependency_name,type,revision,location
 # Depending on the dependency type, the revision and location may have
 # different form.
