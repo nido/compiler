@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Mar 23 16:57:31 CET 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93684
+
+Description:
+------------
+	* [trunk] Fix for bug #93684: [MPX] Segmentation fault in ssa/range analysis on bench jpeg_csd.
+	Deliver fixes/codex-93684 rev #27148 with authorization branch #94239
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cg_ssa.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27145 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93684@27148 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27145 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93684@27148" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cg_ssa.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_ssa.cxx?p2=branches/fixes/codex-93684/osprey/lai/cg_ssa.cxx&r1=27145&r2=27148&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Mar 23 14:29:07 CET 2010
 	Author:    janiny
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

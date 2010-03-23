@@ -2027,20 +2027,6 @@ SSA_Rename (BOOL incremental)
 {
   BB  *bb;
 
-  PU_ssa_variables = CG_ssa_variables;
-
-#if Is_True_On
-  if ((PU_ssa_variables & SSA_VAR_DEDICATED) &&
-      !incremental && (getenv("SSA_DEDIC") != NULL)) {
-    static int count = atoi(getenv("SSA_DEDIC"));
-    static int SSA_on_dedicated;
-    if (count == 0)
-      PU_ssa_variables &= ~SSA_VAR_DEDICATED;
-    else
-      count --;
-  }
-#endif
-
   //
   // First, calculate the dominance frontiers
   //
@@ -2050,8 +2036,21 @@ SSA_Rename (BOOL incremental)
 
   if (!incremental) {
     op_ssa_pinning_map = OP_MAP_Create();
+
+    PU_ssa_variables = CG_ssa_variables;
+#if Is_True_On
+    if ((PU_ssa_variables & SSA_VAR_DEDICATED) && (getenv("SSA_DEDIC") != NULL)) {
+      static int count = atoi(getenv("SSA_DEDIC"));
+      static int SSA_on_dedicated;
+      if (count == 0)
+	PU_ssa_variables &= ~SSA_VAR_DEDICATED;
+      else
+	count --;
+    }
+#endif
     // TBD: Add support for new call instructions in incremental mode
     SSA_init_dedicated_renaming();
+
     // Build live-analysis
     GRA_LIVE_Init (NULL);
   }
