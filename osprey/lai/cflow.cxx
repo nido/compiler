@@ -4592,7 +4592,8 @@ Unify_TNs_for_Merging(OP *cur_op[], INT op_nb, BS *TNs_to_be_unified) {
       /* Transform local register tn into global register */
       Set_TN_is_global_reg(gtn);
       Reset_TN_is_rematerializable(gtn);
-      
+      Set_TN_remat(gtn, NULL);
+
       /* Transform equivalent tns in other equivalent operations into tn */
       for (i = 0; i < op_nb; i++) {
 	tn = OP_opnd(cur_op[i], j);
