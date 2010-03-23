@@ -1,6 +1,48 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Mar 23 14:29:07 CET 2010
+	Author:    janiny
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-stxp70-divconst
+
+Description:
+------------
+	* [trunk] Deliver janiny/dev-stxp70-divconst rev #27143 with authorization branch #91938
+
+
+Modified Files:
+---------------
+	M       osprey/be/com/wn_lower.cxx
+	M       osprey/be/com/w2op.h
+	M       osprey/targinfo/arm/be/betarget.cxx
+	M       osprey/targinfo/stxp70/expand/exp_divrem.cxx
+	M       osprey/targinfo/stxp70/be/betarget.cxx
+	M       osprey/targinfo/st200/be/betarget.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27140 --new=https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-stxp70-divconst@27143 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27140 https://codex.cro.st.com/svnroot/open64/branches/janiny/dev-stxp70-divconst@27143" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/com/wn_lower.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/wn_lower.cxx?p2=branches/janiny/dev-stxp70-divconst/osprey/be/com/wn_lower.cxx&r1=27140&r2=27143&roottype=svn&root=open64&diff_format=h
+osprey/be/com/w2op.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/w2op.h?p2=branches/janiny/dev-stxp70-divconst/osprey/be/com/w2op.h&r1=27140&r2=27143&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/arm/be/betarget.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/be/betarget.cxx?p2=branches/janiny/dev-stxp70-divconst/osprey/targinfo/arm/be/betarget.cxx&r1=27140&r2=27143&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/expand/exp_divrem.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/expand/exp_divrem.cxx?p2=branches/janiny/dev-stxp70-divconst/osprey/targinfo/stxp70/expand/exp_divrem.cxx&r1=27140&r2=27143&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/be/betarget.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/be/betarget.cxx?p2=branches/janiny/dev-stxp70-divconst/osprey/targinfo/stxp70/be/betarget.cxx&r1=27140&r2=27143&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/be/betarget.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/be/betarget.cxx?p2=branches/janiny/dev-stxp70-divconst/osprey/targinfo/st200/be/betarget.cxx&r1=27140&r2=27143&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Mar 23 09:55:50 CET 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

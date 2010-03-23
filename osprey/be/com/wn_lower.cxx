@@ -6430,6 +6430,45 @@ Get_Power_Of_2 (
   /* NOTREACHED */
 }
 
+// Generate a sequence for division by a power of 2 without SELECT.
+// From Hacker's delight p 155.
+static WN *
+lower_div_power_of_two_no_predication(WN *block, WN *tree)
+{
+  TYPE_ID type;
+  BOOL is_signed;
+  INT64 constval;
+  WN *kid0, *kid1;
+  INT pow2;
+  WN *tmp1, *tmp2;
+  LEAF tmp0;
+
+  type = WN_rtype(tree);
+  is_signed = MTYPE_is_signed(type) ? TRUE: FALSE;
+  DevAssert(is_signed==TRUE,
+            ("unexpected type in lower_div_power_of_two_no_predication"));
+
+  kid0 = WN_kid0(tree);
+  kid1 = WN_kid1(tree);
+  constval = Get_Intconst_Val(kid1);
+  pow2 = Get_Power_Of_2 (constval, type);
+
+  // Add 2**k-1 if kid0<0. Add 0 otherwise.
+  tmp0 = Make_Leaf(block, kid0, type);
+  tmp1 = WN_Ashr(type, Load_Leaf(tmp0), WN_Intconst(type,pow2-1 ));
+  tmp1 = WN_Lshr(type,            tmp1, WN_Intconst(type,32-pow2));
+  tmp2 = WN_Add (type, Load_Leaf(tmp0), tmp1);
+
+  // Final arithmetic right shift.
+  tmp2 = WN_Ashr(type,            tmp2, WN_Intconst(type,pow2));
+  
+  if (constval < 0) {
+    tmp2 = WN_Neg(type, tmp2);
+  }
+ 
+  return tmp2;
+}
+
 static WN *
 lower_fast_div(WN *block, WN *tree, LOWER_ACTIONS actions)
 {
@@ -6480,6 +6519,9 @@ lower_fast_div(WN *block, WN *tree, LOWER_ACTIONS actions)
 	  expr = WN_Neg(type, expr);
 	}
       } else {
+        if(Expand_Power_Of_Two_Div_Without_Pred(type,constval)) {
+          expr = lower_div_power_of_two_no_predication(block, tree);
+        } else {
 	/* Optimize for abs(divisor) != 2:
 	   if (kid0 < 0)  expr = (kid0 + abs(divisor)-1)
 	   else           expr = kid0
@@ -6498,6 +6540,7 @@ lower_fast_div(WN *block, WN *tree, LOWER_ACTIONS actions)
 	expr = WN_Ashr(type, expr1, WN_Intconst(type, pow2));
 	if (constval < 0) {
 	  expr = WN_Neg(type, expr);
+         }
 	}
       }
     }

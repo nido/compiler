@@ -76,6 +76,7 @@ BE_EXPORTED extern TOP WHIRL_To_TOP (WN *wn);
 /* return whether MPY, DIV, or REM will be translated into shifts and adds */
 BE_EXPORTED extern BOOL Can_Do_Fast_Multiply (TYPE_ID mtype, INT64 val);
 BE_EXPORTED extern BOOL Can_Do_Fast_Divide (TYPE_ID mtype, INT64 val);
+BE_EXPORTED extern BOOL Expand_Power_Of_Two_Div_Without_Pred (TYPE_ID mtype, INT64 val);
 BE_EXPORTED extern BOOL Can_Do_Fast_Remainder (TYPE_ID mtype, INT64 val);
 
 #ifdef TARG_ST
