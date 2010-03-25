@@ -2173,9 +2173,20 @@ add_final_ld_args (string_list_t *args)
 #ifdef TARG_STxP70
 
 #ifndef COSY_LIB /* [HC] dealing with newlib. Keep former code for CoSy compat. */
+      if (olevel==0) {
+        switch (proc) {
+        case PROC_stxp70_v4_single      :
+        case PROC_stxp70_v4_dual:
+        case PROC_stxp70_v4_novliw:
+          add_string(args,"--ignore-hwlcrossend");
+          add_string(args,"--ignore-align");
+          add_string(args,"--ignore-perfalign");
+          break;
+        }
+      }
       /* build -lc option depending on lib-nofloat option */
     char* libc=get_libc_option("c");
-      
+
     add_string(args,"-lgloss");
     add_string(args,"-lm");
     add_string(args,"-larith");

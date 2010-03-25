@@ -110,11 +110,17 @@ BOOL Align_Padding = FALSE;	/* Pad objects to natural alignment */
 #ifdef BACK_END
 # define ALIGN_FUNCS	  &Align_Functions
 # define ALIGN_LOOPS	  &Align_Loops
+#ifdef TARG_STxP70
+# define ALIGN_LOOPENDS   &Align_Loopends
+# define ALIGN_CALLRETURNS &Align_Callreturns
+#endif
 # define ALIGN_LABELS	  &Align_Labels
 # define ALIGN_JUMPS	  &Align_Jumps
 #else
 # define ALIGN_FUNCS	  &Ignore_Int
 # define ALIGN_LOOPS	  &Ignore_Int
+# define ALIGN_LOOPENDS   &Ignore_Int
+# define ALIGN_CALLRETURNS &Ignore_Int
 # define ALIGN_LABELS	  &Ignore_Int
 # define ALIGN_JUMPS	  &Ignore_Int
 #endif
@@ -346,6 +352,15 @@ static OPTION_DESC Options_OPT[] = {
   { OVK_INT32,	OV_SHY,		TRUE, "align_loops",	"align_l",
     1, 0, 1024, ALIGN_LOOPS,	NULL,
     "Align loops by given byte count" },
+
+#ifdef TARG_STxP70
+  { OVK_INT32,  OV_SHY,         TRUE, "align_loopends",    "align_loopends",
+    1, 0, 1024, ALIGN_LOOPENDS, NULL,
+    "Align loop ends by given byte count" },
+  { OVK_INT32,  OV_SHY,         TRUE, "align_callreturns",    "align_callreturns",
+    1, 0, 1024, ALIGN_CALLRETURNS, NULL,
+    "Align call returns by given byte count" },
+#endif
 
   { OVK_INT32,	OV_SHY,		TRUE, "align_jumps",	"align_jumps",
     1, 0, 1024, ALIGN_JUMPS,	NULL,

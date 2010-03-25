@@ -98,6 +98,14 @@ extern void CGEMIT_Alias (ST *sym, ST *strongsym);
 #ifdef TARG_STxP70
 // Special registers fixup just before verify_instruction 
 extern void CGEMIT_Special_Register_Function_Fixup( OP *op );
+
+// Directive for HW Loop cross-end
+extern void CGEMIT_Loop_CrossEnd_Directive(BB* bb);
+// Directive for HW Loop end alignement
+extern void CGEMIT_Loop_End_Directive(BB* bb);
+// Directive for call returns addresses alignement
+extern void CGEMIT_CallReturns_Directive(BB* bb);
+
 #endif
 
 #ifdef TARG_ARM

@@ -941,6 +941,21 @@ Check_Target ( void )
     case PROC_stxp70_v4_dual:
     case PROC_stxp70_v4_novliw:
     case PROC_stxp70_v4_single:
+      
+      /* force 8-bytes alignement on stxp70v4 (except in O0)*/
+      if (olevel>0) {
+        flag = add_new_option("-CG:emit_space=false");
+        add_phase_for_option(flag, P_be);
+        if (!already_provided(flag)) {
+          prepend_option_seen (flag);
+        }
+        flag = add_new_option("-OPT:align_functions=8 -OPT:align_loops=8 -OPT:align_loopends=8 -OPT:align_jumps=8");
+        add_phase_for_option(flag, P_be);
+        if (!already_provided(flag)) {
+          prepend_option_seen (flag);
+        }
+      }
+
       proc = UNDEFINED; /* [HC] to prevent warning emission in toggle if proc==PROC_stxp70_v3 */
       switch ((corecfg1 & (3<<10))>>10) {
 	case 0x1: /* v4 dual issue, single core ALU */

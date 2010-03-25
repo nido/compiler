@@ -3145,6 +3145,7 @@ Branch_Skips_First_Op (
 // The options that may define a bb alignment are in priority
 // order:
 // -OPT:align_loops
+// -OPT:align_loopends
 // -OPT:align_jumps
 // -OPT:align_labels
 // -OPT:align_instructions
@@ -6203,6 +6204,16 @@ EMT_Assemble_BB (
     }
   }
 
+#ifdef TARG_STxP70
+  // Emits a cross-end directives in first block of HWLoops
+  CGEMIT_Loop_CrossEnd_Directive(bb);
+
+  // Emit an align directive on call return addresses.
+  CGEMIT_CallReturns_Directive(bb);
+  
+  // [TTh] quick fix to align call returns
+#endif
+
   /* List labels attached to BB: */
   for (ant = ANNOT_First (BB_annotations(bb), ANNOT_LABEL);
        ant != NULL;
@@ -6333,6 +6344,10 @@ EMT_Assemble_BB (
   if (Object_Code && BB_exit(bb)) {
     Em_Add_New_Event (EK_EXIT, PC - 2*ISA_MAX_INST_BYTES, 0, 0, 0, PU_section);
   }
+#endif
+
+#ifdef TARG_STxP70
+  CGEMIT_Loop_End_Directive(bb);
 #endif
 
   return;

@@ -1153,6 +1153,10 @@ BE_EXPORTED extern INT32 Align_Instructions;	/* Align frequent blocks and funcs 
 #ifdef TARG_ST
 BE_EXPORTED extern INT32 Align_Functions;	/* Align funcs, has priority over Align_Instructions. */
 BE_EXPORTED extern INT32 Align_Loops;		/* Align loops, has priority over Align_Instructions. */
+#ifdef TARG_STxP70
+BE_EXPORTED extern INT32 Align_Loopends;        /* Align loop ends, has priority over Align_Instructions. */
+BE_EXPORTED extern INT32 Align_Callreturns;     /* Align call returns, has priority over Align_Instructions. */
+#endif
 BE_EXPORTED extern INT32 Align_Labels;		/* Align all labels, has priority over Align_Instructions. */
 BE_EXPORTED extern INT32 Align_Jumps;		/* Align labels reached by jump, has priority over Align_Instructions and Align_Labels. */
 #endif

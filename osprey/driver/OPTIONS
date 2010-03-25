@@ -2817,11 +2817,24 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -falign-loops=%d	;	ALL	NONE	"-OPT:align_loops=%d"
    "-falign-loops=<n>   align the start of loops to the <n>-byte\n                    alignment"
 
+-falign-loopends=%d     ;       ALL     NONE    "-OPT:align_loopends=%d"
+   "-falign-loopends=<n>   align the end of loops to the <n>-byte\n                    alignment"
+
+-falign-callreturns=%d  ;       ALL     NONE    "-OPT:align_callreturns=%d"
+   "-falign-callreturns=<n>   align the call returns to the <n>-byte\n                    alignment"
+
 -falign-jumps=%d	;	ALL	NONE	"-OPT:align_jumps=%d"
 	"-falign-jumps=<n>   align labels which are reached by jump to the <n>-byte\n                    alignment"
 
 -falign-labels=%d	;	ALL	NONE	"-OPT:align_labels=%d"
 	"-falign-labels=<n>  align all labels to the <n>-byte alignment"
+
+-falign8-stxp70v4	;	ALL	NONE	"-OPT:align_functions=8 -OPT:align_loops=8 -OPT:align_loopends=8 -OPT:align_jumps=8"
+	"-falign8-stxp70v4  force 8-bytes alignement on functions/loops/jumps/loop-ends (default on stxp70v4)"
+
+-fno-align-stxp70v4	;	ALL	NONE	"-OPT:align_functions=1 -OPT:align_loops=1 -OPT:align_loopends=1 -OPT:align_jumps=1"
+	"-fno-align-stxp70v4  discards all alignement directives on functions/loops/jumps/loop-ends"
+
 
 -malign-instructions=%d	;	ALL	NONE	"-OPT:align_instructions=%d"
 	"-malign-instructions=<n>\n                    align all frequent instructions blocks to the <n>-byte\n                    alignment"
