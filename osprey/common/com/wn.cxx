@@ -3364,6 +3364,9 @@ WN_has_side_effects (const WN* wn)
     case OPR_INTCONST:
     case OPR_LDA:
     case OPR_LDMA:
+#ifdef KEY
+    case OPR_LDA_LABEL:
+#endif
 
       return FALSE;
 

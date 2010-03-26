@@ -1,6 +1,72 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Mar 26 11:18:19 CET 2010
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93220
+
+Description:
+------------
+	* [trunk] Fix for bug #93220: [WGEN] Compiler asserts : WN_has_side_effects not implemented for OPR_LDA_LABEL  (gnu test suite, gcc-4.2.0, st200).
+	Deliver fixes/codex-93220 rev #27200 with authorization branch #93604
+
+
+Modified Files:
+---------------
+	M       osprey/common/com/wn.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27195 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93220@27200 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27195 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93220@27200" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/com/wn.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/wn.cxx?p2=branches/fixes/codex-93220/osprey/common/com/wn.cxx&r1=27195&r2=27200&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Fri Mar 26 11:06:54 CET 2010
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93220
+
+Description:
+------------
+	* [trunk] Fix for bug #93220: [WGEN] Compiler asserts : WN_has_side_effects not implemented for OPR_LDA_LABEL  (gnu test suite, gcc-4.2.0, st200).
+	Deliver fixes/codex-93220 rev #27193 with authorization branch #93604
+
+
+Modified Files:
+---------------
+	M       osprey/common/com/wn.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27189 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93220@27193 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27189 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93220@27193" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/com/wn.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/wn.cxx?p2=branches/fixes/codex-93220/osprey/common/com/wn.cxx&r1=27189&r2=27193&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Mar 26 11:00:32 CET 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
