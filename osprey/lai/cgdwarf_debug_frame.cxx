@@ -574,7 +574,18 @@ static void Tag_Irrelevant_Saves_And_Restores_For_BB(BB* bb,
       break;
 
     case UE_DESTROY_FRAME:
-      current_frame_size -= ue_iter->offset;
+      if (ue_iter->offset != 0) {
+	current_frame_size -= ue_iter->offset;
+      } else {
+	// [CL] if offset is 0, it means we were unable to compute the
+	// amount of stack which is restored. From this point, we
+	// won't be able to assert other destroy_frame values, if they
+	// occur.
+	current_frame_size = 0;
+	if (Trace_Unwind) {
+	  Print_Unwind_Elem (*ue_iter, "unknown frame size");
+	}
+      }
       if (Trace_Unwind) {
 	Print_Unwind_Elem (*ue_iter, "frame_size");
       }
@@ -1753,7 +1764,16 @@ Emit_Unwind_Directives_For_OP(OP *op, FILE *f, BOOL post_process,
       if (!ue_iter->is_copy) {
         bundle_has_frame_change = TRUE;
       }
-      frame_size -= ue_iter->offset;
+      // [CL] offset == 0 means we were unable to compute the amount
+      // of stack restored here. frame_size == 0 means we have already
+      // encountered a UE with offset==0, and we can no longer assert
+      // partial frame restore values.
+      // Thus, if either offset==0 or frame_size==0, keep frame_size==0;
+      if ( (ue_iter->offset != 0) && (frame_size !=0) ) {
+	frame_size -= ue_iter->offset;
+      } else {
+	frame_size = 0;
+      }
 
       Generate_Label_For_Unwinding(&Label_restore_sp, &Idx_restore_sp,
 				   "restore_sp", *ue_iter, post_process);

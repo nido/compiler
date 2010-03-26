@@ -1,6 +1,46 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Mar 26 10:48:19 CET 2010
+	Author:    
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59412
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-59412 rev #27186 with authorization branch #59457
+	Compiler assertion in targ_cgdwarf.cxx : unwind: unable to compute
+	frame size (Botan, crc24, st200, -Os -CG:ebo=0)
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cgdwarf_debug_frame.cxx
+	M       osprey/targinfo/arm/cg/targ_cgdwarf.cxx
+	M       osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+	M       osprey/targinfo/st200/cg/targ_cgdwarf.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27181 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59412@27186 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27181 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-59412@27186" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cgdwarf_debug_frame.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgdwarf_debug_frame.cxx?p2=branches/fixes/codex-59412/osprey/lai/cgdwarf_debug_frame.cxx&r1=27181&r2=27186&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/arm/cg/targ_cgdwarf.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/cg/targ_cgdwarf.cxx?p2=branches/fixes/codex-59412/osprey/targinfo/arm/cg/targ_cgdwarf.cxx&r1=27181&r2=27186&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx?p2=branches/fixes/codex-59412/osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx&r1=27181&r2=27186&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/cg/targ_cgdwarf.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/cg/targ_cgdwarf.cxx?p2=branches/fixes/codex-59412/osprey/targinfo/st200/cg/targ_cgdwarf.cxx&r1=27181&r2=27186&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Mar 26 10:02:11 CET 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

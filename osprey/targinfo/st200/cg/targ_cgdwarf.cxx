@@ -321,7 +321,22 @@ void Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 		return;
 	      }
 	    }
-	  }	      
+	  }
+
+	  // [CL] bug #59412
+	  // If we can't find the definition of frame size at destroy
+	  // point, don't report an error, and assume the compiler got
+	  // it right!
+	  // Indeed, in the general case it's difficult to compute the
+	  // corresponding definition. [ not worth it ]
+
+	  if ( (frame_op == NULL)
+	       && OP_iadd(op) ) {  // assume we always use positive
+				   // numbers and use sub/add at
+				   // creation/destruction point.
+	    ue.offset = 0;
+	    goto case1_OK;
+	  }
 	}
       } else {
 	// FP/SP is defined as a move from another reg
@@ -347,7 +362,7 @@ void Analyze_OP_For_Unwind_Info (OP *op, UINT when, BB *bb)
 	  // SP is decreased
 	  ue.kind = UE_CREATE_FRAME;
 	} else if ( ( ue.offset < 0 && OP_isub(op) )
-		    || ( ue.offset > 0 && OP_iadd(op) )
+		    || ( ue.offset >= 0 && OP_iadd(op) )
 		    ) {
 	  // SP is increased
 	  ue.kind = UE_DESTROY_FRAME;
