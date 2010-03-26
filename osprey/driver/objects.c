@@ -288,8 +288,17 @@ append_libraries_to_list (string_list_t *list)
           if ( ( lib_suffix_found == NULL ) || ( strcmp( lib_suffix_found, lib_suffix ) != 0 ) ) {
             lib_path = concat_strings(lib_path,lib_suffix);
             // DEBUG // lib_path = concat_strings(lib_path,"/extension_library_dirs");
-            add_string(list, lib_path);
+            add_string(list, concat_strings("-L",lib_path));
           }
+        }
+
+        /* Trials in case of STxP70 v4 dual core ALU to insert
+         * read of specific libraries if they exist in 
+         * .../stxp70v4/lib/dual/...
+         */
+        if (proc == PROC_stxp70_v4_dual) {
+          lib_path = string_copy(get_phase_dir(P_library));
+          add_string(list, concat_strings("-L",concat_strings(concat_strings(lib_path,"/dual"),lib_suffix)));
         }
 
         /*

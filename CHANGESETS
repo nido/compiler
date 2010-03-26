@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Mar 26 10:02:11 CET 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-driver-libv4dual
+
+Description:
+------------
+	*  add -L.../dual option to linker for stxp70v4 dualcoreALU configuration  
+
+
+Modified Files:
+---------------
+	M       osprey/driver/objects.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27162 --new=https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-driver-libv4dual@27179 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27162 https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-driver-libv4dual@27179" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/objects.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/objects.c?p2=branches/cv17/dev-driver-libv4dual/osprey/driver/objects.c&r1=27162&r2=27179&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Mar 25 08:46:59 CET 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
