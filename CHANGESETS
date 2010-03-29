@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Mar 29 13:24:37 CEST 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-aci-config
+
+Description:
+------------
+	*  upgrade aci toolset
+
+
+Modified Files:
+---------------
+	M       ACI_CONFIGURATION
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27203 --new=https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-aci-config@27237 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27203 https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-aci-config@27237" 
+
+Diff links to modified files:
+-----------------------------
+ACI_CONFIGURATION	http://codex.cro.st.com/svn/viewvc.php/trunk/ACI_CONFIGURATION?p2=branches/dt25/dev-aci-config/ACI_CONFIGURATION&r1=27203&r2=27237&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Mar 26 11:18:19 CET 2010
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -10,8 +10,7 @@ definitions:
       path      : 
        crolles  : /sw/gnu_compil/stxp70work/hudson/aci-cec-home/aci-dependencies/toolset-stxp70
        grenoble : /home/compwork/cruisecontrol/CC/persistent_inputs/aci-dependencies/toolset-stxp70
-      name      : STxP70-410_release-rhel3.tar.gz
-      pkg1    : dev-v4-loop-directives-rev27116-STxP70-v3v4-RHE-STXP70CC-4.3.tar.gz
+      name      : STxP70-BOM30-with-tools-20100326.tar.gz
       rtk       : 
         branch   : trunk
         revision : HEAD
@@ -83,8 +82,7 @@ definitions:
       path    : 
        crolles  : /sw/gnu_compil/stxp70work/hudson/aci-cec-home/aci-dependencies/toolset-stxp70
        grenoble : /home/compwork/cruisecontrol/CC/persistent_inputs/aci-dependencies/toolset-stxp70
-      name      : STxP70-410_release-rhel3.tar.gz
-      pkg1    : dev-v4-loop-directives-rev27116-STxP70-v3v4-RHE-STXP70CC-4.3.tar.gz
+      name      : STxP70-BOM30-with-tools-20100326.tar.gz
       rtk       : 
         branch   : trunk
         revision : HEAD
