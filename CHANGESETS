@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Mar 30 13:54:39 CEST 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60256
+
+Description:
+------------
+	* [trunk] Fix for bug #60256: [IPA] Tuning of constant parameter propagation.
+	Deliver fixes/codex-60256 rev #27270 with authorization branch #94254
+
+
+Modified Files:
+---------------
+	M       osprey/ipa/main/optimize/ipo_const.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27269 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60256@27270 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27269 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60256@27270" 
+
+Diff links to modified files:
+-----------------------------
+osprey/ipa/main/optimize/ipo_const.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/main/optimize/ipo_const.cxx?p2=branches/fixes/codex-60256/osprey/ipa/main/optimize/ipo_const.cxx&r1=27269&r2=27270&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Mar 29 13:24:37 CEST 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

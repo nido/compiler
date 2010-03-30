@@ -773,10 +773,20 @@ Replace_Formal_By_LDA (WN* func_body, ST_IDX formal, ST* actual)
 
 	switch (opr) {
 	case OPR_LDID:
+#ifdef TARG_ST
+	  // FdF 20100318: Increment fail_count only if this LDID is on this formal
+	  if (WN_st_idx (wn) == formal) {
+	    if (WN_offset (wn) == 0)
+	      iter.Replace (WN_CreateLda (lda, 0, WN_ty (wn), actual));
+	    else
+	      ++fail_count;
+	  }
+#else
 	    if (WN_st_idx (wn) == formal && WN_offset (wn) == 0)
 		iter.Replace (WN_CreateLda (lda, 0, WN_ty (wn), actual));
 	    else
 		++fail_count;
+#endif
 	    break;
 
 	case OPR_ILOAD:
