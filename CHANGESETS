@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Mar 31 11:24:34 CEST 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-94976
+
+Description:
+------------
+	*  fix fpx port (stxp70-v3)
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/isa/isa_syntax.cxx
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27278 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-94976@27287 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27278 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-94976@27287" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/isa/isa_syntax.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_syntax.cxx?p2=branches/fixes/codex-94976/osprey/targinfo/stxp70/isa/isa_syntax.cxx&r1=27278&r2=27287&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/fixes/codex-94976/DEPENDENCIES&r1=27278&r2=27287&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Mar 30 13:54:39 CEST 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
