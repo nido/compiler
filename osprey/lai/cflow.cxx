@@ -3911,6 +3911,18 @@ Can_Append_Succ(
   }
 #endif
 
+#ifdef TARG_ST
+  // bug #93022 : block innapropriate displacement of BB by testing if
+  // contained ops can be moved.
+  if (delete_suc) {
+    OP *op;
+    FOR_ALL_BB_OPs_FWD(suc, op) {
+      if (!CGTARG_Code_Motion_To_BB_Is_Legal(op, b))
+        return FALSE;
+    }
+  }
+#endif
+
   /* Reject if the region has been scheduled.
    */
   if (b_rid && RID_level(b_rid) >= RL_CGSCHED) {

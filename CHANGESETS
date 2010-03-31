@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Mar 31 15:31:11 CEST 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93022
+
+Description:
+------------
+	* [trunk] Fix for bug #93022: [IPA] Multiples benches fail in OsMult IPA with -Mhwloop=all.
+	Deliver fixes/codex-93022 rev #27303 with authorization branch #95096
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cflow.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27290 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93022@27303 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27290 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93022@27303" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cflow.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cflow.cxx?p2=branches/fixes/codex-93022/osprey/lai/cflow.cxx&r1=27290&r2=27303&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Mar 31 11:24:34 CEST 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
