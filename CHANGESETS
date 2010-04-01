@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 01 12:59:58 CEST 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-95278
+
+Description:
+------------
+	* [trunk] Fix for bug #95278: [IPA] Fatal Error: Array subscript out of bound in lao/fircirc.
+	Deliver fixes/codex-95278 rev #27331 with authorization branch #95305
+
+
+Modified Files:
+---------------
+	M       osprey/ipa/main/optimize/ipo_const.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27326 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-95278@27331 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27326 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-95278@27331" 
+
+Diff links to modified files:
+-----------------------------
+osprey/ipa/main/optimize/ipo_const.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/ipa/main/optimize/ipo_const.cxx?p2=branches/fixes/codex-95278/osprey/ipa/main/optimize/ipo_const.cxx&r1=27326&r2=27331&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Apr 01 11:33:26 CEST 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

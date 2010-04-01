@@ -1204,6 +1204,12 @@ IPA_Propagate_Constants (IPA_NODE* n, BOOL delete_const_param)
     INT k=0;
     // FdF 20081103: Replaced fix from Open64-3.0 by fix from
     // Open64-4.2, they do the same.
+#ifdef TARG_ST
+    // FdF 20100330: Must create a new function type that will point
+    // to a new Tylist, in case several PUs share the same prototype
+    TY_IDX ty_idx = Copy_TY (PU_prototype(Pu_Table[ST_pu(WN_st(w))]));
+    Set_PU_prototype(Pu_Table[ST_pu(WN_st(w))], ty_idx);
+#endif
 #ifdef KEY
     TYLIST_IDX tylist_idx;
     TYLIST_IDX from_idx = TY_tylist(PU_prototype(Pu_Table[ST_pu(WN_st(w))]));
