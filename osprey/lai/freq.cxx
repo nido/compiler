@@ -1217,6 +1217,10 @@ Is_Return_BB(BB *bb)
   while (BB_call(BBLIST_item(succ)) && BB_succs(BBLIST_item(succ))) {
     succ = BB_succs(BBLIST_item(succ));
   }
+#ifdef TARG_ST
+  // FdF 20100316: Support for BB_LIST_item(succ) being a tail-call
+  if (BB_call(BBLIST_item(succ)) && BB_exit(BBLIST_item(succ))) return TRUE;
+#endif
   return BBLIST_next(succ) == NULL && BB_succs(BBLIST_item(succ)) == NULL;
 }
 

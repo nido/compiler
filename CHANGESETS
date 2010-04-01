@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 01 11:33:26 CEST 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-58087
+
+Description:
+------------
+	* [trunk] Fix for bug #58087: [ipa] Tuning of branch frequency probability.
+	Deliver fixes/codex-58087 rev #27323 with authorization branch #93654
+
+
+Modified Files:
+---------------
+	M       osprey/lai/freq.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27312 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-58087@27323 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27312 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-58087@27323" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/freq.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/freq.cxx?p2=branches/fixes/codex-58087/osprey/lai/freq.cxx&r1=27312&r2=27323&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Apr 01 08:37:27 CEST 2010
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
