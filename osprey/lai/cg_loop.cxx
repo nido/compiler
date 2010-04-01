@@ -334,6 +334,18 @@ static BOOL Negate_Branch(OP *br)
     return TRUE;
   }
 
+#ifdef TARG_ST
+  // Handle branches with Predicate True/False support
+  if (PROC_has_predicate_false() && TOP_cond_variant(OP_code(br)) == V_COND_TRUE) {
+    int p_i = OP_find_opnd_use(br, OU_condition);
+    if (OP_Pred_False(br, p_i))
+      Set_OP_Pred_True(br, p_i);
+    else
+      Set_OP_Pred_False(br, p_i);
+    return TRUE;
+  }
+#endif
+
   if (OP_has_predicate(br)) {
     OP *cmp;
     TN *tn1, *tn2;

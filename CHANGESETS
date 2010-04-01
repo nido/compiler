@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 01 08:37:27 CEST 2010
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-90764
+
+Description:
+------------
+	* [trunk] Fix for bug #90764: Assertion failure in CGLoop when using -OPT:unroll_times=8.
+	Deliver fixes/codex-90764 rev #27310 with authorization branch #91096
+
+	- Handle xp70 branch type in cg_loop:Negate_Branch()
+
+Modified Files:
+---------------
+	M       osprey/lai/cg_loop.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27305 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-90764@27310 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27305 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-90764@27310" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cg_loop.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_loop.cxx?p2=branches/fixes/codex-90764/osprey/lai/cg_loop.cxx&r1=27305&r2=27310&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Mar 31 15:31:11 CEST 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
