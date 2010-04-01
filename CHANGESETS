@@ -1,6 +1,42 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 01 15:51:42 CEST 2010
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93506
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-93506 rev #27351 with authorization branch #95050
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/cg/targ_asmstmt.cxx
+	M       osprey/targinfo/parser/src/parser.c
+	M       osprey/targinfo/parser/inc/ext_engine.h
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27342 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93506@27351 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27342 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93506@27351" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/cg/targ_asmstmt.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_asmstmt.cxx?p2=branches/fixes/codex-93506/osprey/targinfo/stxp70/cg/targ_asmstmt.cxx&r1=27342&r2=27351&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/parser/src/parser.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/parser/src/parser.c?p2=branches/fixes/codex-93506/osprey/targinfo/parser/src/parser.c&r1=27342&r2=27351&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/parser/inc/ext_engine.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/parser/inc/ext_engine.h?p2=branches/fixes/codex-93506/osprey/targinfo/parser/inc/ext_engine.h&r1=27342&r2=27351&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Apr 01 14:20:32 CEST 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
