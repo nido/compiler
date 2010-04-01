@@ -1,6 +1,42 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 01 14:20:32 CEST 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mad-4-3-6-3
+
+Description:
+------------
+	*  upgrade stxp70-v4 targinfo model to mad 4.3.6-3
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/abi/abi_properties.cxx
+	M       osprey/targinfo/stxp70/isa/isa_registers.cxx
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27333 --new=https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mad-4-3-6-3@27338 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27333 https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-mad-4-3-6-3@27338" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/abi/abi_properties.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/abi/abi_properties.cxx?p2=branches/cv17/dev-mad-4-3-6-3/osprey/targinfo/stxp70/abi/abi_properties.cxx&r1=27333&r2=27338&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_registers.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_registers.cxx?p2=branches/cv17/dev-mad-4-3-6-3/osprey/targinfo/stxp70/isa/isa_registers.cxx&r1=27333&r2=27338&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/cv17/dev-mad-4-3-6-3/DEPENDENCIES&r1=27333&r2=27338&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Apr 01 12:59:58 CEST 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
