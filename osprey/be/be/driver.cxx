@@ -138,6 +138,11 @@ BOOL Trace_Appli_Config_File = FALSE;
 BOOL Trace_Appli_Config_File_Detailed = FALSE;
 #endif
 
+#ifdef TARG_STxP70
+BE_EXPORTED extern INT32 Activate_Hwloop;
+BE_EXPORTED extern BOOL  Core_Has_HWLoop;
+#endif
+
 extern void* Initialize_Targ_Info(void);
 
 // symbols defined in cg.so
@@ -443,6 +448,35 @@ BE_EXPORTED extern BOOL   Whirl2c_loaded;    /* Defined in cleanup.c */
 
 BE_EXPORTED extern void *Current_Dep_Graph;
 FILE *DFile = stderr;
+
+/* ACF: need to save/restore global options */
+#ifdef TARG_ST
+static INT8 Save_Opt_Level;
+static INT8 Save_Debug_Level;
+static INT32 Save_Max_Sdata_Elt_Size;
+static BOOL Save_Run_cg;
+static BOOL Save_Enable_LAI;
+static BOOL Save_Run_Dsm_Cloner;
+static BOOL Save_Run_Dsm_Common_Check;
+static BOOL Save_Run_Dsm_Check;
+static char* Save_Feedback_File_Name;
+static char* Save_Obj_File_Name;
+static BOOL Save_List_Enabled;
+static char* Save_Lst_File_Name;
+static char* Save_Tlog_File_Name;
+static char* Save_Trc_File_Name;
+static char* Save_Irb_File_Name;
+static char* Save_Global_File_Name;
+static BOOL Save_Run_w2fc_early;
+static BOOL Save_Run_MemCtr;
+static BOOL Save_CXX_Exceptions_On;
+static BOOL Save_OPTION_Space;
+static char* Save_Object_Dir;
+static BOOL Save_Show_Progress;
+static INT Save_Min_Error_Severity;
+static BOOL Save_warnings_are_errors;
+static BOOL Save_Run_autopar;
+#endif
 
 
 /* dso handlers */
@@ -2117,6 +2151,33 @@ Save_Options_For_File()
       CG_Save_Default_Options();
     }
 
+    // Save global options
+    Save_Opt_Level = Opt_Level;
+    Save_Debug_Level = Debug_Level;
+    Save_Max_Sdata_Elt_Size = Max_Sdata_Elt_Size;
+    Save_Run_cg = Run_cg;
+    Save_Enable_LAI = Enable_LAI;
+    Save_Run_Dsm_Cloner = Run_Dsm_Cloner;
+    Save_Run_Dsm_Common_Check = Run_Dsm_Common_Check;
+    Save_Run_Dsm_Check = Run_Dsm_Check;
+    Save_Feedback_File_Name = Feedback_File_Name;
+    Save_Obj_File_Name = Obj_File_Name;
+    Save_List_Enabled = List_Enabled;
+    Save_Lst_File_Name = Lst_File_Name;
+    Save_Tlog_File_Name = Tlog_File_Name;
+    Save_Trc_File_Name = Trc_File_Name;
+    Save_Irb_File_Name = Irb_File_Name;
+    Save_Global_File_Name = Global_File_Name;
+    Save_Run_w2fc_early = Run_w2fc_early;
+    Save_Run_MemCtr = Run_MemCtr;
+    Save_CXX_Exceptions_On = CXX_Exceptions_On;
+    Save_OPTION_Space = OPTION_Space;
+    Save_Object_Dir = Object_Dir;
+    Save_Show_Progress = Show_Progress;
+    Save_Min_Error_Severity = Min_Error_Severity;
+    Save_warnings_are_errors = warnings_are_errors;
+    Save_Run_autopar = Run_autopar;
+
 }//Set_Options_For_File
 //TB: This function process all OPTION_DESC from all modules and reset
 //the default value
@@ -2131,6 +2192,33 @@ Set_Options_For_File()
       CG_Reset_Default_Options();
     }
 
+    // Apply default values to global options;
+    Opt_Level = Save_Opt_Level;
+    Debug_Level = Save_Debug_Level;
+    Max_Sdata_Elt_Size = Save_Max_Sdata_Elt_Size;
+    Run_cg = Save_Run_cg;
+    Enable_LAI = Save_Enable_LAI;
+    Run_Dsm_Cloner = Save_Run_Dsm_Cloner;
+    Run_Dsm_Common_Check = Save_Run_Dsm_Common_Check;
+    Run_Dsm_Check = Save_Run_Dsm_Check;
+    Feedback_File_Name = Save_Feedback_File_Name;
+    Obj_File_Name = Save_Obj_File_Name;
+    List_Enabled = Save_List_Enabled;
+    Lst_File_Name = Save_Lst_File_Name;
+    Tlog_File_Name = Save_Tlog_File_Name;
+    Trc_File_Name = Save_Trc_File_Name;
+    Irb_File_Name = Save_Irb_File_Name;
+    Global_File_Name = Save_Global_File_Name;
+    Run_w2fc_early = Save_Run_w2fc_early;
+    Run_MemCtr = Save_Run_MemCtr;
+    CXX_Exceptions_On = Save_CXX_Exceptions_On;
+    OPTION_Space = Save_OPTION_Space;
+    Object_Dir = Save_Object_Dir;
+    Show_Progress = Save_Show_Progress;
+    Min_Error_Severity = Save_Min_Error_Severity;
+    warnings_are_errors = Save_warnings_are_errors;
+    Run_autopar = Save_Run_autopar;
+
 }//Set_Options_For_File
 // TB: This function set internal variable for perf optimization
 static void 
@@ -2143,6 +2231,44 @@ Apply_Opt_Level(UINT32 level)
     if (Run_cg) {
       CG_Apply_Opt_Level(level);
     }
+
+#ifdef TARG_STxP70
+    /* Generate warning when necessary */
+    static BOOL Warn=FALSE;
+    if (!Core_Has_HWLoop) {
+      if (Activate_Hwloop == 1) {
+	if (!Warn) fprintf(stderr, "Warning: core has no hwloop so hwloop request is downgraded to none (was hwlooponly)\n");
+	Activate_Hwloop = 0;
+	Warn = TRUE;
+      }
+      else if (Activate_Hwloop == 3) {
+	if (!Warn) fprintf(stderr, "Warning: core has no hwloop so hwloop request is downgraded to jrgtudeconly (was all)\n");
+	Activate_Hwloop = 2;
+	Warn = TRUE;
+      }
+    }
+
+    /* Manage Hwloop implicit mechanism */
+    if (Activate_Hwloop == -1) {
+      if (Core_Has_HWLoop) {
+	if (Opt_Level > 0) {
+	  if (OPTION_Space) Activate_Hwloop = 2;
+	  else Activate_Hwloop = 3;
+	}
+	else {
+	  Activate_Hwloop = 0;
+	}
+      }
+      else {
+	if (Opt_Level > 0) {
+	  Activate_Hwloop = 2;
+	}
+	else {
+	  Activate_Hwloop = 0;
+	}
+      }
+    }    
+#endif
 }//Apply_Opt_Level
 
 // This function set internal variable for size optimization

@@ -175,98 +175,6 @@ static char relocatable_str1[1024];
 static char relocatable_str2[1024];
 static char *script_argv[] = { relocatable_str1, relocatable_str2 };
 
-#ifdef TARG_ST 
-static int return_flag ( char *name, char *argv0 ) {
-   int flag,base_flag;
-
-   int  i=1;
-   char *newargv[] = { argv0, name };
-   option_name = name;
-   flag = get_option(&i, newargv);
-	if (flag == O_Unrecognized) { 
-		if (print_warnings) {
-		    /* print as error or not at all? */
-		    parse_error(option_name, "unknown flag");
-		}
-	}
-	else {
-		/* reset option name to possibly include 
-		 * 2nd part, e.g. -G 8 */
-		option_name = get_option_name(flag);
-	}
-	/* sometimes is simple alias to another flag */
-    flag = get_real_option_if_aliased (flag);
-	return flag;
-}
-
-
-static void  update_config_file(boolean is_ipa, char *argv[]) {
-	// Check file integrity => convert file/func options if needed.
-	char *temp_cfg_file_name = create_temp_file_name("cfg");
-	FILE *temp_cfg_file = fopen(temp_cfg_file_name, "w");
-    fprintf(temp_cfg_file, "configuration \"%s\" {\n",active_configuration->name);
-    Pt_file_list ftmp=active_configuration->files;
-    while(ftmp) {
-        fprintf(temp_cfg_file, "\tfile \"%s\" {\n",ftmp->name);
-        if(ftmp->options) {
-    	    Pt_string_list tmp=ftmp->options;
-    	    while(tmp) {
-    	    	int flag,iflag;
-    	        flag=return_flag(tmp->name,argv[0]);
-    			FOREACH_IMPLIED_OPTION(iflag, flag) {
-    			    fprintf(temp_cfg_file, "\t\t%s\n", get_current_implied_name());
-    			}
-    	        tmp = tmp->next;
-    	    }
-        }
-        if(ftmp->functions) {
-    	    Pt_func_list futmp=ftmp->functions;
-    	    while(futmp) {
-    	        fprintf(temp_cfg_file,"\t\tfunction \"%s\" {\n",futmp->name);
-		        if(futmp->options) {
-		    	    Pt_string_list tmp=futmp->options;
-		    	    while(tmp) {
-		    	    	int flag,iflag;
-		    	        flag=return_flag(tmp->name,argv[0]);
-		    			FOREACH_IMPLIED_OPTION(iflag, flag) {
-		    			    fprintf(temp_cfg_file,"\t\t\t%s\n", get_current_implied_name());
-		    			}
-		    	        tmp = tmp->next;
-		    	    }
-		        }
-    	        futmp = futmp->next;
-    	        fprintf(temp_cfg_file,"\t\t}\n");
-    	    }		        	
-        }
-        ftmp = ftmp->next;
-        fprintf(temp_cfg_file, "\t}\n");
-    }
-    fprintf(temp_cfg_file, "}\n\n active configuration \"%s\"\n",active_configuration->name);
-    fclose(temp_cfg_file);
-    
-    restore_options_status(TRUE);
-    int flag;
-	buffer_t buf;
-	// TDR Treat case where config file / config name is specified with '='
-   	sprintf(buf, "-TENV::application_configuration_decl=%s", temp_cfg_file_name);
-    flag = add_new_option(buf);
-    add_phase_for_option(flag, P_be);
-    add_phase_for_option(flag, P_any_ipl);
-    add_phase_for_option(flag, P_any_fe);
-#if (GNU_FRONT_END==33)
-    /* (cbr) -TARG now passed to cpp */
-    add_phase_for_option(flag, P_gcpp);
-    add_phase_for_option(flag, P_gcpp_plus);
-#endif
-    if (!already_provided(flag)) {
-      /* [CL] Only prepend this option if
-         not already provided by the user */
-      prepend_option_seen (flag);
-    }
-    save_options_status(TRUE);
-}
-
-#endif
 
 extern int 
 main (int argc, char *argv[])
@@ -797,7 +705,6 @@ main (int argc, char *argv[])
 	//TDR -  Save initial configuration
 	if (appli_config_file_set && active_configuration) {
         save_options_status(TRUE);
-        update_config_file(ipa,argv);
 	}
 #endif
 	add_special_options();
@@ -978,7 +885,7 @@ main (int argc, char *argv[])
                     //Fix for bug #70574: If counter is not modified, option must be parsed again.
                     my_list=my_list->next;
                 }
-                add_special_options();
+		add_special_options();
             } else {
                 if (is_initial_state == FALSE) {
                     is_initial_state=TRUE;

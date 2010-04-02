@@ -1093,34 +1093,6 @@ Check_Target ( void )
   /* select hwloop_mapping depending on olevel, osize hwloop option */
   /* and core configuration                                         */
 
-  if (!core_has_hwloop) { /* configuration without HW Loops */ 
-
-    /* a warning is emmited if the user specified -Mhwloop=all */
-    if (hwloop_mapping==hwloop_all) {
-      warning("HW loop mapping deactivated due to core configuration - considers default instead");
-      hwloop_mapping=hwloop_default; /* mapping as default instead */
-    }
-
-    /* if default chosen, mapping is set according to optimization level*/
-    if (hwloop_mapping==hwloop_default) {
-      if (olevel>0)
-        hwloop_mapping = jrgtudeconly;
-      else
-        hwloop_mapping = hwloop_none;
-    }
-  } else if (hwloop_mapping==hwloop_default) { /* configuration with HW Loops & default */
-
-    /* as default chosen, mapping is set according to optimization level*/
-    if (olevel>0) {
-        if (osize>0)
-          hwloop_mapping= jrgtudeconly;
-        else
-          hwloop_mapping= hwloop_all;
-    } else {
-        hwloop_mapping = hwloop_none;
-    }
-  }
-
   add_stxp70_int_option("-TARG:activate_hwloop=%d", hwloop_mapping, P_be);
   add_stxp70_int_option("-TARG:core_has_hwloop=%d", core_has_hwloop?  1 : 0, P_be);
 

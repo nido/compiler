@@ -261,7 +261,7 @@ void add_configuration(Pt_appli_config_struct cfg) {
 void set_active_appli_config(char *name) {
     active_configuration=NULL;
     if(!name) {
-        APPLICONFIG_warning("Application Configuration File (-mappli-config-decl) defined without active configuration defined");
+        APPLICONFIG_warning("Application Configuration File (-macf-decl) defined without active configuration defined");
         return;
     }
     if(!appli_configurations) return;

@@ -167,6 +167,7 @@ string icache_mapping = NULL;
 enum icache_algo_enum icache_algo = algo_PH;
 boolean	need_icache_run_ld = FALSE; /* True when only objects files in the command line */
 static boolean next_ld_for_icache_is_simple = UNDEFINED;
+
 /*
 next_ld_for_icache_is_simple == UNDEFINED means binopt phase is not run
 next_ld_for_icache_is_simple == FALSE means binopt phase is run and the next ld phase ld -r
@@ -180,6 +181,36 @@ int flag_M = UNDEFINED;
    const and UNDEFINED */
 #define next_ld_for_icache_is_simple (UNDEFINED)
 #endif /* BCO_Enabled Thierry */
+
+#ifdef TARG_ST
+#include "appli_config_common.h"
+extern boolean appli_config_file_set;
+extern char    *appli_config_file_name;
+extern char    *active_appli_config_file_name;
+static int return_flag ( char *name, char *argv0 ) {
+   int flag,base_flag;
+
+   int  i=1;
+   char *newargv[] = { argv0, name };
+   option_name = name;
+   flag = get_option(&i, newargv);
+	if (flag == O_Unrecognized) { 
+		if (print_warnings) {
+		    /* print as error or not at all? */
+		    parse_error(option_name, "unknown flag");
+		}
+	}
+	else {
+		/* reset option name to possibly include 
+		 * 2nd part, e.g. -G 8 */
+		option_name = get_option_name(flag);
+	}
+	/* sometimes is simple alias to another flag */
+    flag = get_real_option_if_aliased (flag);
+	return flag;
+}
+
+#endif
 
 #ifdef TARG_STxP70
 boolean flag_HWLOOP = TRUE;
@@ -3119,6 +3150,79 @@ run_compiler (void)
                   }
                 }
             }
+	 
+#endif
+#ifdef TARG_ST
+	 if (appli_config_file_set && active_configuration && 
+	     (phase_order[i] != P_gas) && (phase_order[i] != P_any_ld)) {
+	   char* temp_cfg_file_name = create_temp_file_name("cfg");
+	   if (temp_cfg_file_name) {
+	     FILE *temp_cfg_file = fopen(temp_cfg_file_name, "w");
+	     fprintf(temp_cfg_file, "configuration \"%s\" {\n",active_configuration->name);
+	     Pt_file_list ftmp=active_configuration->files;
+	     while(ftmp) {
+	       fprintf(temp_cfg_file, "\tfile \"%s\" {\n",ftmp->name);
+	       if(ftmp->options) {
+		 Pt_string_list tmp=ftmp->options;
+		 while(tmp) {
+		   int flag,iflag;
+		   flag=return_flag(tmp->name,"");
+#ifdef TARG_STxP70
+		   if (flag == O_Mhwloop__) {
+		     extern
+		       enum { hwloop_default = -1, hwloop_none, hwlooponly, jrgtudeconly, hwloop_all}
+		     hwloop_mapping;
+		     fprintf(temp_cfg_file, "\t\t-TARG:activate_hwloop=%d\n", hwloop_mapping);
+		   }
+#endif
+		   FOREACH_IMPLIED_OPTION(iflag, flag) {
+		     fprintf(temp_cfg_file, "\t\t%s\n", get_current_implied_name());
+		   }
+		   tmp = tmp->next;
+		 }
+	       }
+	       if(ftmp->functions) {
+		 Pt_func_list futmp=ftmp->functions;
+		 while(futmp) {
+		   fprintf(temp_cfg_file,"\t\tfunction \"%s\" {\n",futmp->name);
+		   if(futmp->options) {
+		     Pt_string_list tmp=futmp->options;
+		     while(tmp) {
+		       int flag,iflag;
+		       flag=return_flag(tmp->name,"");
+#ifdef TARG_STxP70
+		       if (flag == O_Mhwloop__) {
+			 extern
+			   enum { hwloop_default = -1, hwloop_none, hwlooponly, jrgtudeconly, hwloop_all}
+			 hwloop_mapping;
+			 fprintf(temp_cfg_file, "\t\t-TARG:activate_hwloop=%d\n", hwloop_mapping);
+		       }
+#endif
+		       FOREACH_IMPLIED_OPTION(iflag, flag) {
+			 fprintf(temp_cfg_file,"\t\t\t%s\n", get_current_implied_name());
+		       }
+		       tmp = tmp->next;
+		     }
+		   }
+		   futmp = futmp->next;
+		   fprintf(temp_cfg_file,"\t\t}\n");
+		 }		        	
+	       }
+	       ftmp = ftmp->next;
+	       fprintf(temp_cfg_file, "\t}\n");
+	     }
+	     fprintf(temp_cfg_file, "}\n\n active configuration \"%s\"\n",active_configuration->name);
+	     fclose(temp_cfg_file);
+	     
+	     int flag;
+	     buffer_t buf;
+	     // TDR Treat case where config file / config name is specified with '='
+	     sprintf(buf, "-TENV::application_configuration_decl=%s", temp_cfg_file_name);
+	     flag = add_new_option(buf);
+	     add_phase_for_option(flag, phase_order[i]);
+	     add_option_seen (flag);
+	   }
+	 }
 #endif
 	        /* special case where the frontend decided that
 		   inliner should not be run */

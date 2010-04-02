@@ -41,6 +41,7 @@
 #include "option_seen.h"
 #include "options.h"
 #include "option_names.h"
+#include "opt_actions.h"
 #include "errors.h"
 #ifdef BCO_ENABLED /* Thierry */
 #include "stdio.h"
@@ -74,6 +75,8 @@ typedef struct linked_list_rec {
 } linked_list;
 static linked_list order_options_seen; 
 static int_list_p *option_is_seen;
+
+static int saved_olevel;
 
 static int_list* IMPLICITLY_SEEN;
 #define NOT_SEEN NULL
@@ -125,6 +128,7 @@ save_options_status(boolean init) {
         saved_current_option_is_seen = my_int_list;
         saved_current_order_options_seen = my_link_list;       
     }
+    saved_olevel = olevel;
 }
 
 extern void 
@@ -168,6 +172,8 @@ restore_options_status(boolean init) {
     for (i = 0; i < max_options; i++) {
         if (my_int_list[i] == my_link_list.head)  option_is_seen[i] = order_options_seen.head;
     }
+    /* Fix bug: manage implicitly set olevel to 0 when no -O on command line */
+    olevel = saved_olevel;
 }
 
 #endif
