@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Apr 06 09:34:13 CEST 2010
+	Author:    
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80303
+
+Description:
+------------
+	* Hotfix problem in Win32 build (multiple extern declaration
+	  which leads to a seg fault)   
+
+
+Modified Files:
+---------------
+	M       osprey/driver/phases.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27370 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80303@27377 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27370 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-80303@27377" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/phases.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/phases.c?p2=branches/fixes/codex-80303/osprey/driver/phases.c&r1=27370&r2=27377&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr 02 12:45:23 CEST 2010
 	Author:    
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

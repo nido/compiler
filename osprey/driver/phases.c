@@ -3157,6 +3157,9 @@ run_compiler (void)
 	     (phase_order[i] != P_gas) && (phase_order[i] != P_any_ld)) {
 	   char* temp_cfg_file_name = create_temp_file_name("cfg");
 	   if (temp_cfg_file_name) {
+	     extern
+	       enum { hwloop_default = -1, hwloop_none, hwlooponly, jrgtudeconly, hwloop_all}
+	     hwloop_mapping;
 	     FILE *temp_cfg_file = fopen(temp_cfg_file_name, "w");
 	     fprintf(temp_cfg_file, "configuration \"%s\" {\n",active_configuration->name);
 	     Pt_file_list ftmp=active_configuration->files;
@@ -3169,9 +3172,6 @@ run_compiler (void)
 		   flag=return_flag(tmp->name,"");
 #ifdef TARG_STxP70
 		   if (flag == O_Mhwloop__) {
-		     extern
-		       enum { hwloop_default = -1, hwloop_none, hwlooponly, jrgtudeconly, hwloop_all}
-		     hwloop_mapping;
 		     fprintf(temp_cfg_file, "\t\t-TARG:activate_hwloop=%d\n", hwloop_mapping);
 		   }
 #endif
@@ -3192,9 +3192,6 @@ run_compiler (void)
 		       flag=return_flag(tmp->name,"");
 #ifdef TARG_STxP70
 		       if (flag == O_Mhwloop__) {
-			 extern
-			   enum { hwloop_default = -1, hwloop_none, hwlooponly, jrgtudeconly, hwloop_all}
-			 hwloop_mapping;
 			 fprintf(temp_cfg_file, "\t\t-TARG:activate_hwloop=%d\n", hwloop_mapping);
 		       }
 #endif
