@@ -1,6 +1,47 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 08 19:12:01 CEST 2010
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-91001
+
+Description:
+------------
+	* [trunk] Fix for bug #91001: [GCM] Possibly invalid speculation of sync instruction (st200).
+	Deliver fixes/codex-91001 rev #27401 with authorization branch #91107
+
+
+Modified Files:
+---------------
+	M       osprey/lai/gcm.cxx
+	M       osprey/lai/lra.cxx
+	M       osprey/targinfo/arm/cg/targ_cg.cxx
+	M       osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M       osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27379 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-91001@27401 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27379 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-91001@27401" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/gcm.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/gcm.cxx?p2=branches/fixes/codex-91001/osprey/lai/gcm.cxx&r1=27379&r2=27401&roottype=svn&root=open64&diff_format=h
+osprey/lai/lra.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lra.cxx?p2=branches/fixes/codex-91001/osprey/lai/lra.cxx&r1=27379&r2=27401&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/arm/cg/targ_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/cg/targ_cg.cxx?p2=branches/fixes/codex-91001/osprey/targinfo/arm/cg/targ_cg.cxx&r1=27379&r2=27401&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_cg.cxx?p2=branches/fixes/codex-91001/osprey/targinfo/stxp70/cg/targ_cg.cxx&r1=27379&r2=27401&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/cg/targ_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/cg/targ_cg.cxx?p2=branches/fixes/codex-91001/osprey/targinfo/st200/cg/targ_cg.cxx&r1=27379&r2=27401&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Apr 06 09:34:13 CEST 2010
 	Author:    
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

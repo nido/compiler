@@ -772,10 +772,7 @@ CGTARG_dummy_op_has_sideeffects(OP *op) {
 
 BOOL 
 CGTARG_gcm_should_not_move_op(OP *op) {
-    if (OP_code(op) == TOP_asm) return TRUE;
-    if (OP_spill(op)) return TRUE;
-    if (OP_unrolling(op)) return TRUE;
-	return FALSE;
+  return FALSE;
 }
 
 /* ====================================================================

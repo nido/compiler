@@ -372,6 +372,26 @@ Can_OP_Move_Across_Asm(OP *cur_op, OP *asm_op,
   }
   return TRUE;
 }
+
+// =======================================================================
+// OP_Has_Non_Allocatable_Defs
+// Return True if op statement contains a non allocatable definition 
+// such that it should not be considered as candidate for code motion.
+// =======================================================================
+static BOOL
+OP_Has_Non_Allocatable_Defs(OP *op)
+{
+  INT i;
+
+  for (i = OP_results(op) - 1; i >= 0; --i) {
+    TN *tn = OP_result(op,i);
+    if (TN_is_register(tn) &&
+	TN_register(tn) != REGISTER_UNDEFINED && 
+	!REGISTER_allocatable(TN_register_class(tn),TN_register(tn))) 
+      return TRUE;
+  }
+  return FALSE;
+}
 #endif
 
 // =======================================================================
@@ -2786,9 +2806,16 @@ OP_To_Move (BB *bb, BB *tgt_bb, BB_SET **pred_bbs, mINT32 motion_type, mUINT8 *s
     }
 
 #ifdef TARG_ST    
+    // [CM] - Should not move asm statements
+    if (OP_code(cur_op) == TOP_asm) continue;
+    // [CM] - Should not move OP that have implicit interaction properties with other OPs
+    // in a non-obvious was -- this includes barrier instructions anf flag effects
+    if (OP_has_implicit_interactions(cur_op)) continue;
+    // [CM] - Should not move non allocatable defs
+    if (OP_Has_Non_Allocatable_Defs(cur_op)) continue;
+    
     //TDR - Should not move specific instructions:
-    // - On xp70 : HWloop instruction / epilogues / SFR write instructions / Carry modifying instructions
-    // - On ST200 : Spill instruction and Unrolling instructions
+    // - On xp70 : HWloop instruction / epilogues
     if (CGTARG_gcm_should_not_move_op(cur_op)) continue;
     if (!CGTARG_Code_Motion_To_BB_Is_Legal(cur_op, tgt_bb)) continue;
     // [TDR] - Fix for codex #85800 : check dependencies within block.

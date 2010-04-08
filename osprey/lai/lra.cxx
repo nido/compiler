@@ -2369,8 +2369,9 @@ Setup_Live_Ranges (BB *bb, BOOL in_lra, MEM_POOL *pool)
 	  Detach_LR_ovcoal(lr1);
 	}
 	else if ((LR_last_use(lr1) > BB_length(bb)) ||
-		 (bb_call && ABI_PROPERTY_Is_caller(TN_register_class(tn1),
-						    LRA_TN_register(tn1)))) {
+		 (bb_call && 
+		  LRA_TN_register(tn1) != REGISTER_UNDEFINED &&
+		  REGISTER_SET_MemberP(REGISTER_CLASS_caller_saves(TN_register_class(tn1)), LRA_TN_register(tn1)))) {
 	  // The GTN is either live out or potentially used by the call
 	  Update_Overlap_Coalescing_Info_For_Use(lr1);
 	}
