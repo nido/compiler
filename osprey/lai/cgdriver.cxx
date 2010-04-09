@@ -194,6 +194,7 @@ static BOOL CG_enable_thr_overridden = FALSE;
 static BOOL IPFEC_Enable_LICM_passes_overridden = FALSE;
 static BOOL CG_COLOR_use_pref_regs_overridden = FALSE;
 static BOOL CG_COLOR_pref_regs_priority_overridden = FALSE;
+static BOOL CG_IV_offset_space_overridden = FALSE;
 #endif
 
 static BOOL CG_enable_ssa_overridden = FALSE;
@@ -240,6 +241,7 @@ BOOL CG_nop_insertion_directives = TRUE;
 #endif
 
 #ifdef TARG_ST
+BOOL CG_LOOP_opt_iv_offset = TRUE;
 BOOL CG_AutoMod = FALSE;
 static BOOL CG_AutoMod_overridden = FALSE;
 BOOL CG_AutoMod_RelaxPdom = FALSE;
@@ -662,7 +664,7 @@ static OPTION_DESC Options_CG[] = {
     TRUE, 0, 0, &CG_LOOP_unroll_multi_bb, &CG_LOOP_unroll_multi_bb_overridden },
   { OVK_INT32,  OV_INTERNAL, TRUE, "unroll_heuristics", "",
     7, 0, 7,    &CG_LOOP_unroll_heuristics, NULL },
-  { OVK_INT32,	OV_INTERNAL,	TRUE, "licm", "", 
+  { OVK_INT32,	OV_INTERNAL,	TRUE, "licm_opt", "", 
     1, 0, 2,	&IPFEC_Enable_LICM, &IPFEC_Enable_LICM_overridden },
   /* [vcdv] this option controls which of the 3 passes of licm should
      run. the parameter is a 3bit mask */
@@ -676,6 +678,9 @@ static OPTION_DESC Options_CG[] = {
 #endif
   { OVK_INT32, OV_INTERNAL,	TRUE, "stream_align", "", 
     8, 0, 8,	&CG_LOOP_stream_align, NULL },
+  { OVK_BOOL, OV_INTERNAL,	TRUE, "optimize_iv_offsets", "", 
+    0, 0, 0, &CG_LOOP_opt_iv_offset, NULL,
+    "activate optimization of references to induction variables with large offsets" },
   { OVK_BOOL, OV_INTERNAL,	TRUE, "cbpo_opt", "cbpo", 
     0, 0, 0, &CG_enable_cbpo, &CG_enable_cbpo_overriden,
     "activate common base pointer optimization" },
@@ -1313,6 +1318,11 @@ static OPTION_DESC Options_CG[] = {
   { OVK_BOOL,	OV_INTERNAL, TRUE, "ifc_logif", "",
     0, 0, 0,	&CG_ifc_logif, NULL,
     "Do not if-convert multiple logif"},
+
+  { OVK_BOOL,	OV_INTERNAL, TRUE, "iv_offset_space", "",
+    0, 0, 0,	&CG_IV_offset_space, &CG_IV_offset_space_overridden,
+    "Take into account code size for IV offsets optimization"},
+    
 #endif /* TARG_ST (SSA) */
 
 #ifdef TARG_ST
@@ -2299,6 +2309,8 @@ CG_Apply_Opt_Size(UINT32 level)
   //Integrated Global and Local Scheduling Framework
   if (!CG_enable_thr_overridden)
     CG_enable_thr = FALSE;
+  if (!CG_IV_offset_space_overridden)
+    CG_IV_offset_space = TRUE;
   //GRA
   if (!GRA_spill_count_factor_for_size_set)
     GRA_spill_count_factor_for_size = TRUE;

@@ -1279,7 +1279,14 @@ ALIAS_RESULT Overlapped_base(const ALIAS_MANAGER *am, const WN *wn1, const WN *w
       return POSSIBLY_ALIASED;
       
     if (pt1.Overlap(&pt2))
-      return POSSIBLY_ALIASED;
+      // FdF 20090507: In case of load/store, Aliased_Memop returns a
+      // more accurate information that is needed to build a precise
+      // array dependence graph in LNO.
+      if ((OPCODE_is_load(WN_opcode(wn1)) && OPCODE_is_load(WN_opcode(wn2))) ||
+      	  am->Rule()->Aliased_Memop(&pt1, &pt2, WN_object_ty(wn1), WN_object_ty(wn2)))
+	return POSSIBLY_ALIASED;
+      else
+    	return NOT_ALIASED;
     else
       return NOT_ALIASED;
   } else if (am->Rule()->Aliased_Memop(&pt1, &pt2, WN_object_ty(wn1), WN_object_ty(wn2))) {
