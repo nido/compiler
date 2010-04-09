@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Apr 09 11:17:27 CEST 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-96130
+
+Description:
+------------
+	* seg fault when activating both fpx and mpx
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/cg/targ_asmstmt.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27405 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-96130@27418 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27405 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-96130@27418" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/cg/targ_asmstmt.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_asmstmt.cxx?p2=branches/fixes/codex-96130/osprey/targinfo/stxp70/cg/targ_asmstmt.cxx&r1=27405&r2=27418&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Apr 08 19:12:01 CEST 2010
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
