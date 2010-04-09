@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Apr 09 16:44:38 CEST 2010
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-95099
+
+Description:
+------------
+	*  Fix for codex bug #95099 ("[CFLOW] Segfault on C++ with exception
+	regions")
+	Delivered fixes/codex-95099 with authorization art #95204.
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cflow.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27437 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-95099@27442 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27437 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-95099@27442" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cflow.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cflow.cxx?p2=branches/fixes/codex-95099/osprey/lai/cflow.cxx&r1=27437&r2=27442&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr 09 16:03:34 CEST 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

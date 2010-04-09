@@ -2162,6 +2162,9 @@ Collapse_Same_Logif(BB *bp, BB *targ, INT targ_idx, float edge_freq)
    */
   if (   bp != succ
       && Is_Empty_BB(succ) 
+#ifdef TARG_ST
+      && !BB_Has_Exc_Label(succ)
+#endif
       && BBINFO_kind(succ) == BBKIND_LOGIF
       && Redundant_Logif(bp, succ, &negated))
   {
