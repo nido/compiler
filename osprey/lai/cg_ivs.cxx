@@ -67,6 +67,7 @@ static const char rcs_id[] = "";
 #include "cg_cflow.h"
 #include "wn_util.h"
 #include "whirl2ops.h"
+#include "cg_db_op.h"
 #include "cio.h"
 #include "gra_live.h"
 #include "data_layout.h"
@@ -74,23 +75,8 @@ static const char rcs_id[] = "";
 #include "cg_sched_est.h"
 #include "cg_ivs.h"
 #include "cg_affirm.h"
-#include "cg_automod.h"
-#include "cg_ssa.h"
+
 #include "stblock.h" // for ST_alignment
-
-BOOL CG_IV_offset_space = FALSE;
-
-static INT
-PHI_Loop_Operand (LOOP_IVS *loop_ivs, OP *phi) {
-  Is_True(OP_phi(phi), ("PHI_Loop_Operand called on a non PHI operation"));
-
-  // This must be a PHI in a loop head
-  BB *bb = OP_bb(phi);
-  if ((bb != loop_ivs->Head()) || (OP_opnds(phi) != 2))
-    return -1;
-  
-  return Get_PHI_Predecessor_Idx(phi, loop_ivs->Tail());
-}
 
 // ======================================================================
 //
@@ -100,145 +86,7 @@ PHI_Loop_Operand (LOOP_IVS *loop_ivs, OP *phi) {
 
 // TBD: Traiter les multi BB en inserant les operations qui
 // definissent des GTN et qui ne sont pas sur des dominateurs de la
-// queue de boucle sous forme de KILL. Ou plus simplement en mettant
-// un defid 0 dans la map tn_last_op pour ces definitions.
-
-// Create use-def links over the instructions in the loop.
-#define OPDESC(nres, nopnd, defid) (((INT64)(defid)<<32) | ((nres)<<16) | (nopnd))
-#define OPDESC_nres(opdesc) (((opdesc)>>16)&0xffff)
-#define OPDESC_nopnd(opdesc) ((opdesc)&0xffff)
-#define OPDESC_defid(opdesc) (((opdesc)>>32)&0xffffffff)
-
-void
-LOOP_IVS::Init_IVs_Table(LOOP_DESCR *loop, BB **sorted_bbs, UINT32 num_bbs) {
-
-  // The map tn_last_op remembers, for each TN, the index (in
-  // ivs_table) of the most recent OP defining that TN.
-  // In addition, it also provides the keeo the number of operands and
-  // results of the op, so that the IVS entry can be allocated in the
-  // second pass on forward references.
-  hTN_MAP64 tn_last_op = hTN_MAP64_Create( _loc_mem_pool );
-
-  // First, deallocate the ivs_table if not NULL.
-  if (ivs_table)
-    del_IVS_Table();
-
-  // Count the number of OPs in the loop body.
-  ivs_count = 1;
-
-  for (INT bb_idx = 0; bb_idx < num_bbs; bb_idx ++) {
-    BB *bb = sorted_bbs[bb_idx];
-
-    OP *op;
-    FOR_ALL_BB_OPs_FWD( bb, op ) {
-
-      // Initialize the map tn_last_op
-
-      // Here, also collect the information on the memory size needed
-      // to allocate this DEFID. This way, when there is a foward
-      // reference, the size can already be allocated and the UC can
-      // be computed during the forward pass. 
-      // TBD: Consider only global TNs (Dependence on live-analysis ?)
-      BOOL cond_defs = FALSE;
-      if (OP_has_predicate(op)) {
-	INT p_idx = OP_find_opnd_use(op, OU_predicate);
-	if ((!OP_Pred_False(op, p_idx) && (True_TN == NULL || OP_opnd(op, p_idx) != True_TN)) ||
-	    ( OP_Pred_False(op, p_idx) && (Zero_TN == NULL || OP_opnd(op, p_idx) != Zero_TN)))
-	  cond_defs = TRUE;
-      }
-      for ( INT res = OP_results( op ) - 1; res >= 0; --res ) {
-	if (!TN_is_dedicated(OP_result(op,res))) {
-	  INT64 op_desc = OPDESC(OP_results(op), OP_opnds(op), cond_defs ? 0 : DEFID_make(ivs_count, res));
-	  hTN_MAP64_Set( tn_last_op, OP_result( op, res ), op_desc );
-	}
-      }
-
-      ivs_count++;
-    }
-  }
-
-  // Allocate a table of OP_IV, with one entry for each loop OP.
-  // ivs_table[0] is not used, because index 0 is used to indicate
-  // constant and global operand TNs not defined in the loop.
-  ivs_table = new_IVS_Table(ivs_count);
-
-  // Initialize the entry 0
-  ivs_table[0].init_OP_IV(NULL, _loc_mem_pool);
-  RES_setNotIV(0);
-
-  // Then, initialize the entries for all operations in the loop
-  INT index = 1;
-  for (INT bb_idx = 0; bb_idx < num_bbs; bb_idx ++) {
-    BB *bb = sorted_bbs[bb_idx];
-
-    OP *op;
-    FOR_ALL_BB_OPs_FWD( bb, op ) {
-
-      // Initialize the table entry for this OP
-      ivs_table[index].init_OP_IV(op, _loc_mem_pool);
-      OP_IV& entry = ivs_table[index];
-
-      // Initialize the ivs_table entry for the operands of this OP op
-      // to point to the operands' most recent definitions
-      for ( INT opnd = OP_opnds( op ) - 1; opnd >= 0; --opnd ) {
-	INT defid = 0;
-	INT64 op_desc;
-	TN *opnd_op = OP_opnd( op, opnd );
-	if ( TN_is_register( opnd_op ) && !TN_is_dedicated( opnd_op )) {
-	  op_desc = hTN_MAP64_Get( tn_last_op, opnd_op );
-	  defid = OPDESC_defid(op_desc);
-	}
-
-	entry.UDlink[opnd] = defid;
-	if (defid != 0) {
-	  // In case defid refers to an entry not allocated yet,
-	  // allocate it first, its initialization will be completed
-	  // later.
-
-	  if (DEFID_idx(defid) > index)
-	    RES_entry(defid).alloc_OP_IV(OPDESC_nres(op_desc), OPDESC_nopnd(op_desc), _loc_mem_pool);
-	  Inc_RES_UC(defid);
-	}
-      }
-
-      // Update the map tn_last_op
-      for ( INT res = OP_results( op ) - 1; res >= 0; --res ) {
-	// Update the map tn_last_op
-	if (!TN_is_dedicated(OP_result(op,res))) {
-	  INT64 op_desc = OPDESC(OP_results(op), OP_opnds(op), DEFID_make(index, res));
-	  hTN_MAP64_Set( tn_last_op, OP_result( op, res ), op_desc );
-	}
-      }
-      index ++;
-    }
-  }
-}
-
-void LOOP_IVS::Init( LOOP_DESCR *loop, BB **sorted_bbs, UINT32 num_bbs )
-{
-  head = loop->loophead;
-
-  tail = prolog = epilog = NULL;
-
-  Is_True(BBlist_Len(BB_preds(head)) == 2, ("LOOP_IVS::Init, inconsistency with Check_Simple_Loop"));
-
-  prolog = BBLIST_item(BB_preds(head));
-  if (BB_SET_MemberP(LOOP_DESCR_bbset(loop), prolog)) {
-    tail = prolog;
-    prolog = BB_Other_Predecessor(head, prolog);
-  }
-  else
-    tail = BB_Other_Predecessor(head, prolog);
-
-  if (BBlist_Len(BB_succs(tail)) == 2)
-    epilog = BB_Other_Successor(tail, head);
-
-  Is_True(!BB_SET_MemberP(LOOP_DESCR_bbset(loop), prolog), ("LOOP_IVS::Init: Internal error"));
-  Is_True(!epilog || !BB_SET_MemberP(LOOP_DESCR_bbset(loop), epilog), ("LOOP_IVS::Init: Internal error"));
-
-  // Initialize the ivs_table entries and the map tn_last_op.
-  Init_IVs_Table(loop, sorted_bbs, num_bbs);
-}
+// queue de boucle sous forme de KILL.
 
 // For a TN used in an operation, returns the Induction Variable from
 // which it is derived. Returns 0 if not derived from an IV.
@@ -246,7 +94,16 @@ DefID_t
 LOOP_IVS::OPND_IV_cycle(INT op_idx, INT opnd_idx) {
   Is_True(op_idx > 0, ("Calling OPND_IV_cycle with an invalid op."));
 
-  DefID_t defid = OPND_deflink(op_idx, opnd_idx);
+  DefID_t defid = OPND_defid(op_idx, opnd_idx);
+
+  // This def has already be analyzed to NOT be based on an IV
+  if (DEFID_notIV(defid))
+    return 0;
+
+  // This def has already be analyzed to be based on an IV
+  if (DEFID_isIV(defid))
+    return IV_cycle(defid);
+
   // This def has not been analyzed yet.
   if (OPND_hasOmega(op_idx, opnd_idx))
     return Find_IV(defid, defid);
@@ -259,15 +116,10 @@ LOOP_IVS::OPND_IV_cycle(INT op_idx, INT opnd_idx) {
 INT
 LOOP_IVS::OPND_IV_offset(INT op_idx, INT opnd_idx) {
   Is_True(op_idx > 0, ("Calling OPND_IV_offset with an invalid op."));
-  if (OPND_hasOmega(op_idx, opnd_idx))
+  if (OPND_hasOmega(op_idx, opnd_idx) > 0)
     return 0;
   else
-    return IV_offset(OPND_deflink(op_idx, opnd_idx));
-}
-
-DefID_t
-LOOP_IVS::RES_IV_cycle(DefID_t defid) {
-  return Find_IV(defid, 0);
+    return IV_offset(OPND_defid(op_idx, opnd_idx));
 }
 
 // For an induction variable, returns its step
@@ -277,103 +129,30 @@ LOOP_IVS::IV_step(DefID_t iv_cycle) {
   return IV_offset(iv_cycle);
 }
 
-// This function takes an (op, res_idx), and returns an (opnd_idx,
-// value, (OPR_ADD|OPR_MPY)). This gives a semantics for an
-// operation. This function is used when following the use-def links
-// from an IV cycle. This function must support ADD/SUB/MPY/COPY/PHI
-// TBD: Add support for MPY
-
-static OPERATOR
-Analyze_OP_for_IV(LOOP_IVS *loop_ivs, OP *op, INT res_idx, INT &iv_idx, INT64 &iv_inc)
-{
-  OPERATOR iv_opr = OPERATOR_UNKNOWN;
-
-  // No support yet for operations with multiple results
-  if (res_idx != 0) {
-    // Support for auto-increment operations
-    if (OP_automod(op)) {
-      INT pre_idx = OP_find_result_with_usage(op, OU_preincr);
-      INT post_idx = OP_find_result_with_usage(op, OU_postincr);
-      if (((pre_idx == res_idx) || (post_idx == res_idx)) && (OP_Offset(op) != NULL)) {
-	if (TN_Value_At_Op(OP_Offset(op), op, &iv_inc)) {
-	  iv_opr = OPR_ADD;
-	  iv_idx = OP_find_opnd_use (op, OU_base);
-	}
-      }
-    }
-  }
-
-  else if (OP_Is_Copy(op)) {
-    iv_opr = OPR_ADD;
-    iv_inc = 0;
-    iv_idx = OP_Copy_Operand(op);
-  }
-
-  else if (OP_phi(op)) {
-    iv_idx = PHI_Loop_Operand(loop_ivs, op);
-    if (iv_idx >= 0) {
-      iv_opr = OPR_ADD;
-      iv_inc = 0;
-    }
-  }
-
-  else if (OP_iadd(op) || OP_isub(op)) {
-    TN *opnd_incr = OP_Opnd2(op);
-    iv_idx = OP_find_opnd_use(op, OU_opnd1);
-
-    if (TN_Value_At_Op(opnd_incr, op, &iv_inc)) {
-      if (OP_isub(op)) iv_inc = -iv_inc;
-      iv_opr = OPR_ADD;
-    }
-
-    // Try cst+iv
-    else if (OP_iadd(op)) {
-      opnd_incr = OP_Opnd1(op);
-      iv_idx = OP_find_opnd_use(op, OU_opnd2);
-      if (TN_Value_At_Op(opnd_incr, op, &iv_inc))
-	iv_opr = OPR_ADD;
-    }
-  }
-  return iv_opr;
-}
-
-// Return the idx of the first op in the loop that belongs to the
-// iv_cycle. This will return a PHI operation in loophead when in SSA.
-void
-LOOP_IVS::IV_first(DefID_t iv_cycle, INT &op_idx, INT &opnd_idx) {
-  Is_True(iv_cycle > 0, ("Calling IV_first with an invalid IV."));
-
-  DefID_t iv_idx = iv_cycle;
-  INT64 incr;
-
-  op_idx = DEFID_idx(iv_idx);
-  OPERATOR opr = Analyze_OP_for_IV(this, Op(op_idx), DEFID_res(iv_idx), opnd_idx, incr);
-  Is_True(opr != OPERATOR_UNKNOWN, ("IV_first not called on an IV cycle"));
-
-  // Follow the use-def links until the defining OP is that the last
-  // one in the loop.
-  while (OPND_deflink(op_idx, opnd_idx) != iv_cycle) {
-    iv_idx = OPND_deflink(op_idx, opnd_idx);
-    op_idx = DEFID_idx(iv_idx);
-    opr = Analyze_OP_for_IV(this, Op(op_idx), DEFID_res(iv_idx), opnd_idx, incr);
-    Is_True(opr != OPERATOR_UNKNOWN, ("IV_first not called on an IV cycle"));
-  }
-}
-
 // For an induction variable, returns its defining operation, if
 // found, outside of the loop.
 OP *
 LOOP_IVS::IV_init(DefID_t iv_cycle) {
-  INT op_idx, opnd_idx;
-  IV_first(iv_cycle, op_idx, opnd_idx);
-
-  if (!SSA_Active()) {
-    DEF_KIND kind;
-    return TN_Reaching_Value_At_Op(OP_opnd(Op(op_idx), opnd_idx), Op(op_idx), &kind, TRUE);
-  }
-  // In SSA mode, just return the defining OP
+  Is_True(iv_cycle > 0, ("Calling IV_init with an invalid IV."));
+  // Look for the definition of the IV outside the function.
+  DefID_t iv_idx = iv_cycle;
+  // Assume a COPY, an ADD or a SUB, with IV being used on the first arg
+  INT opnd_idx;
+  if (OP_Is_Copy(DEFID_op(iv_idx)))
+    opnd_idx = OP_Copy_Operand(DEFID_op(iv_idx));
   else
-    return TN_ssa_def(OP_opnd(Op(op_idx), opnd_idx));
+    opnd_idx = OP_find_opnd_use(DEFID_op(iv_idx), OU_opnd1);
+
+  while (OPND_defid(DEFID_idx(iv_idx), opnd_idx) != iv_cycle) {
+    iv_idx = OPND_defid(DEFID_idx(iv_idx), opnd_idx);
+    if (OP_Is_Copy(DEFID_op(iv_idx)))
+      opnd_idx = OP_Copy_Operand(DEFID_op(iv_idx));
+    else
+      opnd_idx = OP_find_opnd_use(DEFID_op(iv_idx), OU_opnd1);
+  }
+
+  DEF_KIND kind;
+  return TN_Reaching_Value_At_Op(OP_opnd(DEFID_op(iv_idx), opnd_idx), DEFID_op(iv_idx), &kind, TRUE);
 }
 
 void
@@ -385,37 +164,33 @@ LOOP_IVS::Trace_IVs_Entries( const char *message )
 
   // Assumes table[0] is not used
   for ( INT index = 1; index < ivs_count; ++index ) {
-    OP_IV *entry = &ivs_table[index];
+    IVs_entry *entry = &ivs_table[index];
     fprintf( TFile, "\n%2d: ", index );
     Print_OP_No_SrcLine( entry->op );
 
     fprintf( TFile, "    op 0x%p\n", entry->op);
-    for (int i = 0; i < OP_results(entry->op); i++) {
-      fprintf( TFile, "\tres %d, uc[%d]: ", i, entry->UC[i]);
-      if (entry->notIV(i))
-	fprintf(TFile, "not IV\n");
-      else if (!entry->isIV(i))
-	fprintf(TFile, "IV not analyzed\n");
-      else {
-	if (entry->IV_cycle[i] == -DEFID_make(index, i)) {
-	  fprintf(TFile, "is IV, IV_step %d\n", entry->IV_offset[i] );
-	}
+    if ( OP_results( entry->op ) > OP_MAX_FIXED_RESULTS )
+      fprintf( TFile, "\tOP_results(entry->op) %d > OP_MAX_FIXED_RESULTS %d\n",
+	       OP_results( entry->op ), OP_MAX_FIXED_RESULTS );
+    else
+      for (int i = 0; i < OP_results(entry->op); i++) {
+	fprintf( TFile, "\tres %d: ", i);
+	if (entry->notIV(i))
+	  fprintf(TFile, "not IV\n");
 	else
 	  fprintf(TFile, "IV_cycle (%3d,%1d), IV_offset %d\n",
 		  DEFID_idx(entry->IV_cycle[i]), DEFID_res(entry->IV_cycle[i]), entry->IV_offset[i] );
       }
-    }
 
-    for ( INT opnd = 0; opnd < OP_opnds( entry->op ); ++opnd ) {
-      INT defid = entry->UDlink[opnd];
-      fprintf( TFile, "\topnd %d: src (%3d,%1d), om %u;",
-	       opnd, DEFID_idx(defid), DEFID_res(defid), OPND_hasOmega(index, opnd) );
-      if (RES_isIV(defid)) {
-	INT iv = OPND_IV_cycle(index, opnd);
-	fprintf( TFile, " --> IV (%d,%d)+%d", DEFID_idx(iv), DEFID_res(iv), OPND_IV_offset(index, opnd));
+    if ( OP_opnds( entry->op ) > OP_MAX_FIXED_OPNDS )
+      fprintf( TFile, "\tOP_opnds(entry->op) %d > OP_MAX_FIXED_OPNDS %d\n",
+	       OP_opnds( entry->op ), OP_MAX_FIXED_OPNDS );
+    else
+      for ( INT opnd = 0; opnd < OP_opnds( entry->op ); ++opnd ) {
+	fprintf( TFile, "\topnd %d: src (%3d,%1d), om %u;\n",
+		 opnd, DEFID_idx(entry->opnd_source[opnd]),
+		 DEFID_res(entry->opnd_source[opnd]), OPND_hasOmega(entry, opnd) );
       }
-      fprintf( TFile, "\n");
-    }
   }
   fprintf( TFile, "\n" );
 }
@@ -429,31 +204,54 @@ DefID_t
 LOOP_IVS::Find_IV( DefID_t defid, DefID_t in_iv_cycle ) {
   // This definition has already been visited, and has been found
   // to NOT be based on an IV.
-  if (RES_notIV(defid))
+  if (DEFID_notIV(defid))
     return 0;
 
   // This definition has already been visited, and has been found to
   // be based on an IV.
-  if (RES_isIV(defid))
+  if (DEFID_isIV(defid))
     return IV_cycle(defid);
 
   // This definition has never been analyzed.
   INT op_idx = DEFID_idx(defid);
-  INT opnd_idx = -1;
-  OP *op = Op(op_idx);
+  INT opnd_idx;
+  IVs_entry *entry = &ivs_table[op_idx];
 
-  OPERATOR iv_opr = OPERATOR_UNKNOWN;
+  BOOL isIVop = FALSE;
   INT64 incr = 0;
 
-  // TBD: Add support for dedicated registers and MPY
-  if (!TN_is_dedicated(OP_result(op, DEFID_res(defid))))
-    iv_opr = Analyze_OP_for_IV(this, op, DEFID_res(defid), opnd_idx, incr);
+  /* Only ADD and SUB operations with an immediate operand are
+     recognized, and copies. */
+  if (DEFID_res(defid) == 0) {
+    if (OP_Is_Copy(entry->op)) {
+      opnd_idx = OP_Copy_Operand(entry->op);
+      incr = 0;
+      isIVop = TRUE;
+    }
+    else if (OP_iadd(entry->op) || OP_isub(entry->op)) {
+      TN *opnd_incr = OP_Opnd2(entry->op);
+      opnd_idx = OP_find_opnd_use(entry->op, OU_opnd1);
+
+      if (TN_Value_At_Op(opnd_incr, entry->op, &incr)) {
+	if (OP_isub(entry->op)) incr = -incr;
+	isIVop = TRUE;
+      }
+
+      // Try cst+iv
+      else if (OP_iadd(entry->op)) {
+	opnd_incr = OP_Opnd1(entry->op);
+	opnd_idx = OP_find_opnd_use(entry->op, OU_opnd2);
+	if (TN_Value_At_Op(opnd_incr, entry->op, &incr))
+	  isIVop = TRUE;
+      }
+    }
+  }
 
   DefID_t iv_index = 0;
   INT iv_offset = 0;
 
-  if (iv_opr == OPR_ADD) {
-    DefID_t usedef_id = OPND_deflink(op_idx, opnd_idx);
+  if (isIVop) {
+    DefID_t usedef_id = OPND_defid(op_idx, opnd_idx);
 
     if (OPND_hasOmega(op_idx, opnd_idx)) {
 
@@ -490,28 +288,109 @@ LOOP_IVS::Find_IV( DefID_t defid, DefID_t in_iv_cycle ) {
 
   // Recursive call to Find_IV may have set the infomation on the
   // current operation, do not set it again.
-  Is_True((!RES_isIV(defid) && !RES_notIV(defid)) || // Uninitialized
-	  (RES_isIV(defid) && (IV_cycle(defid) == iv_index) && // It is an IV
+  Is_True((!DEFID_isIV(defid) && !DEFID_notIV(defid)) || 
+	  (DEFID_isIV(defid) && (IV_cycle(defid) == iv_index) &&
 	   (IV_offset(defid) == iv_offset+incr)) ||
-	  (RES_notIV(defid) && (iv_index == 0)), // It is not an IV
+	  (DEFID_notIV(defid) && (iv_index == 0)),
 	  ("Inconsistency in Find_IV"));
 
-  if (!RES_isIV(defid) && !RES_notIV(defid))
-    if (iv_index != 0)
-      if (in_iv_cycle != 0)
-	RES_setIV(defid, -iv_index, iv_offset+incr);
-      else
-	RES_setIV(defid, iv_index, iv_offset+incr);
-    else
-      RES_setNotIV(defid);
+  if (iv_index != 0)
+    DEFID_setIV(defid, iv_index, iv_offset+incr);
+  else
+    DEFID_setNotIV(defid);
 
   return IV_cycle(defid);
+}
+
+// Create use-def links over the instructions in the loop.
+
+void
+LOOP_IVS::Init_IVs_Table(OP *first_op, hTN_MAP32 tn_last_op) {
+
+  INT index;
+  OP *op = first_op;
+  for ( index = 1; index < ivs_count; ++index ) {
+
+    // Initialize the table entry for this OP
+    IVs_entry& entry = ivs_table[index];
+    entry.op = op;
+
+    // Initialize the map tn_last_op
+    for ( INT res = OP_results( op ) - 1; res >= 0; --res ) {
+      entry.initIV(res);
+      hTN_MAP32_Set( tn_last_op, OP_result( op, res ), DEFID_make(index, res) );
+    }
+    op = OP_next( op );
+  }
+
+  DefID_t noUseDef = DEFID_make(0, 0);
+  // Initialize the operands of ivs_table entries.
+  for ( index = 1; index < ivs_count; ++index ) {
+    IVs_entry& entry = ivs_table[index];
+    OP *op = entry.op;
+
+    // Initialize the ivs_table entry for the operands of this OP op
+    // to point to the operands' most recent definitions
+    for ( INT opnd = OP_opnds( op ) - 1; opnd >= 0; --opnd ) {
+      INT defid = noUseDef;
+      TN *opnd_op = OP_opnd( op, opnd );
+      if ( TN_is_register( opnd_op ) )
+	defid = hTN_MAP32_Get( tn_last_op, opnd_op );
+
+      entry.opnd_source[opnd] = defid;
+    }
+
+    // Update the map tn_last_op
+    for ( INT res = OP_results( op ) - 1; res >= 0; --res ) {
+      hTN_MAP32_Get_And_Set( tn_last_op, OP_result( op, res ), DEFID_make(index,res) );
+    }
+  }
+
+  // Finally, initialize the entry 0
+  ivs_table[0].op = NULL;
+
+  for ( INT res = 0; res < OP_MAX_FIXED_RESULTS; res++ ) {
+    ivs_table[0].setNotIV(res);
+  }
+
+  for ( INT opnd = 0; opnd < OP_MAX_FIXED_OPNDS; opnd++ ) {
+    ivs_table[0].opnd_source[opnd] = noUseDef;
+  }
+}
+
+void LOOP_IVS::Init( LOOP_DESCR *loop )
+{
+  // First, deallocate the ivs_table if not NULL.
+  if (ivs_table) {
+    CXX_DELETE_ARRAY( ivs_table, _loc_mem_pool );
+  }
+
+  BB *body = LOOP_DESCR_loophead( loop );
+  // Count the number of OPs in the loop body.
+  ivs_count = 1;
+  OP *op;
+  FOR_ALL_BB_OPs_FWD( body, op ) {
+    ++ivs_count;
+  }
+
+  // Allocate a table of IVs_entry, with one entry for each loop OP.
+  // ivs_table[0] is not used, because index 0 is used to indicate
+  // constant and global operand TNs.
+  ivs_table = (IVs_entry *) CXX_NEW_ARRAY( IVs_entry, ivs_count,
+					   _loc_mem_pool );
+
+  // The map tn_last_op remembers, for each TN, the index (in
+  // ivs_table) of the most recent OP defining that TN
+  hTN_MAP32 tn_last_op = hTN_MAP32_Create( _loc_mem_pool );
+
+  // Initialize the ivs_table entries and the map tn_last_op.
+  Init_IVs_Table(BB_first_op( body ), tn_last_op);
 }
 
 void
 LOOP_IVS::Replace_Op(INT index, OP *new_op) {
 
-  OP_IV& entry = ivs_table[index];
+  IVs_entry& entry = ivs_table[index];
   Is_True(OP_opnds(entry.op) == OP_opnds(new_op), ("Inconsistent new_op in Replace_OP"));
   Is_True(OP_results(entry.op) == OP_results(new_op), ("Inconsistent new_op in Replace_OP"));
 
@@ -531,576 +410,11 @@ LOOP_IVS::Replace_Op(INT index, OP *new_op) {
 //
 // ======================================================================
 
-static BOOL
-Check_Simple_Loop(LOOP_DESCR *loop, BB **sorted_bbs, UINT32 num_bbs) {
-
-  //  if (BB_SET_Size(LOOP_DESCR_bbset(loop)) != 1)
-  //    return FALSE;
-
-  BB *head = LOOP_DESCR_loophead( loop );
-  if (BBlist_Len(BB_preds(head)) != 2)
-    return FALSE;
-
-  // FdF 20100322: In SSA, simply check this is an inner loop on which
-  // a topological order can be made
-  if (SSA_Active()) {
-    if (!BB_innermost(head))
-      return FALSE;
-    BB_SET *bbs = LOOP_DESCR_bbset(loop);
-    BB_MAP topo_map = BB_Topological_Map(bbs, head);
-
-    BB *bb;
-    FOR_ALL_BB_SET_members(bbs, bb) {
-      INT32 i = BB_MAP32_Get(topo_map, bb);
-      Is_True(i >= 0 && i <= num_bbs, ("bad <topo_map> value"));
-      if (i == 0) {
-	BB_MAP_Delete(topo_map);
-	return FALSE;
-      }
-      sorted_bbs[i-1] = bb;
-    }
-    return TRUE;
-  }
-  
-  // Check that each block in the loop has only one successor in the
-  // loop.
-  INT i = 0;
-  BB *next = NULL;
-  for (BB *bb = head; next != head; bb = next) {
-    sorted_bbs[i++] = bb;
-    BBLIST *succs;
-    next = NULL;
-    FOR_ALL_BB_SUCCS(bb, succs) {
-      if (BB_SET_MemberP(LOOP_DESCR_bbset(loop), BBLIST_item(succs))) {
-	if (next != NULL)
-	  return FALSE;
-	next = BBLIST_item(succs);
-      }
-    }
-
-    // There is no back-edge, probably a fully unrolled loop
-    if (next == NULL)
-      return FALSE;
-  }
-
-  return TRUE;
-}
-
-// Collects the references to an IV
-typedef struct {
-  DefID_t iv_cycle;
-  INT nb_refs;
-  BOOL has_large_offset;
-  BOOL can_use_automod;
-  // Array of references to that IV (defined in cgtarget.h)
-  IV_ref_t *iv_memrefs;
-} IV_refs_t;
-
-static BOOL
-Compare_IV_Offsets(const void *p1, const void *p2) {
-  const IV_ref_t *ref1 = (IV_ref_t *)p1;
-  const IV_ref_t *ref2 = (IV_ref_t *)p2;
-  return (ref1->iv_offset > ref2->iv_offset) ? 1 : (ref1->iv_offset == ref2->iv_offset) ? 0 : -1;
-}
-
-static TN *
-New_IV_For_Refs(LOOP_IVS *loop_ivs, DefID_t iv_cycle, INT iv_dist, TN *iv_tn) {
-
-  // Create a new induction variable, and replace nb_refs references
-  // in iv_refs to use the new IV
-
-  TN *init_iv_tn, *init_new_iv, *ref_new_iv, *inc_new_iv;
-  if (!SSA_Active()) {
-    init_iv_tn = iv_tn;
-    init_new_iv = Dup_TN(iv_tn);
-    ref_new_iv = init_new_iv;
-    inc_new_iv = init_new_iv;
-  }
-  else {
-    init_new_iv = Dup_TN(iv_tn);
-    ref_new_iv = Dup_TN(iv_tn);
-    inc_new_iv = Dup_TN(iv_tn);
-    // Look for the PHI operation in head that is related to
-    // that IV. Get the init TN.
-    INT op_idx, opnd_idx;
-    loop_ivs->IV_first(iv_cycle, op_idx, opnd_idx);
-
-    Is_True(OP_phi(loop_ivs->Op(op_idx)), ("Did not find a PHI op for this IV"));
-    Is_True(PHI_Loop_Operand(loop_ivs, loop_ivs->Op(op_idx)) == opnd_idx, ("Unexpected operand index in PHI"));
-    init_iv_tn = OP_opnd(loop_ivs->Op(op_idx), 1-opnd_idx);
-  }
-
-  // Init: init_new_iv = iv+iv_dist-MIN_OFFSET;
-  OPS prolog_ops = OPS_EMPTY;
-  Exp_OP2(OPC_I4ADD, init_new_iv, init_iv_tn, Gen_Literal_TN(iv_dist, 4), &prolog_ops);
-  if (!SSA_Active()) {
-    // TBD: Insert just after the definition of IV
-    OP *point = BB_last_op(loop_ivs->Prolog());
-    BOOL before = (point != NULL) && OP_xfer(point);
-    BB_Insert_Ops(loop_ivs->Prolog(), point, &prolog_ops, before);
-  }
-  else {
-    OP *point = TN_ssa_def(init_iv_tn);
-    // Insert after all PHI operations.
-    while (OP_next(point) && OP_phi(OP_next(point)))
-      point = OP_next(point);
-    BB_Insert_Ops(OP_bb(point), point, &prolog_ops, FALSE);
-
-    OP *phi_op = SSA_Place_Phi_In_BB(ref_new_iv, loop_ivs->Head());
-    INT loop_opnd = PHI_Loop_Operand(loop_ivs, phi_op);
-    Set_OP_opnd(phi_op, 1-loop_opnd, init_new_iv);
-    Set_OP_opnd(phi_op, loop_opnd, inc_new_iv);
-  }
-
-  // Inc: new_iv += Step(iv)
-  OPS body_ops = OPS_EMPTY;
-  Exp_OP2(OPC_I4ADD, inc_new_iv, ref_new_iv,
-	  Gen_Literal_TN(loop_ivs->IV_step(iv_cycle), 4),
-	  &body_ops);
-  OP *point = BB_last_op(loop_ivs->Tail());
-  BOOL before = (point != NULL) && OP_xfer(point);
-  BB_Insert_Ops(loop_ivs->Tail(), point, &body_ops, before);
-
-  return ref_new_iv;
-}
-
 static void
-Replace_IV_For_Refs(LOOP_IVS *loop_ivs, DefID_t iv_cycle, INT iv_dist,
-		    IV_ref_t *ivrefs, INT nb_refs, TN *ref_new_iv) {
+Optimize_Loop_Induction_Variables( LOOP_DESCR *loop ) {
 
-  // Replace OP(iv+offset) -> OP(new_iv-(iv_dist-MIN_OFFSET));
-  for (int k = 0; k < nb_refs; k++) {
-    OP *use_op = ivrefs[k].op;
-    INT use_offset = ivrefs[k].iv_offset - iv_dist;
-    // Use the literal offset to store the new offset value, if range
-    // permits.
-    Is_True(OP_find_opnd_use(use_op, OU_base) == ivrefs[k].opnd_idx, ("New_IV_For_Refs: Unexpected reference"));
-    Is_True(OP_Offset(use_op), ("New_IV_For_Refs: Unexpected reference"));
-    TN *tn_offset = OP_Offset(use_op);;
-    TN *new_offset;
-    // Use the offset TN to store the offset value, if possible
-    if (TN_has_value(tn_offset) &&
-	(TOP_opnd_value_in_range(OP_code(use_op), OP_find_opnd_use(use_op, OU_offset), use_offset))) {
-      new_offset = Gen_Literal_TN(use_offset, 4);
-    }
-    else {
-      new_offset = Dup_TN(ref_new_iv);
-      OPS offset_ops = OPS_EMPTY;
-      Exp_Immediate(new_offset, Gen_Literal_TN(use_offset, 4), TRUE, &offset_ops);
-      BB_Insert_Ops(use_op->bb, use_op, &offset_ops, TRUE);
-    }
-
-    Set_OP_opnd(use_op, OP_find_opnd_use(use_op, OU_offset), new_offset);
-    Set_OP_opnd(use_op, ivrefs[k].opnd_idx, ref_new_iv);
-
-    // TBD: Decrement reference count on old IV
-    // loop_ivs->Dec_RES_UC(iv_cycle);
-    // Cancel the use-def links on new operands
-    loop_ivs->Set_OPND_deflink(ivrefs[k].op_idx, ivrefs[k].opnd_idx, 0);
-  }
-
-  // TBD: Remove these references from the def-use chain on old IV
-}
-
-// Analyze the memory operations for which the base is an IV. Detects
-// the cases where a large offset is used, or where an automod cannot
-// be used
-
-static INT MIN_OFFSET = 0;           /* In case of signed 9 bits -> -256    */
-static INT MAX_OFFSET = 0;           /* In case of signed 9 bits -> +255    */
-static INT OFFSET_ALIGNMENT = 1; /* 1 -> char (byte), 2 -> short (2 bytes), 4 -> word (4 bytes), ... */
-static INT MAX_WIDTH = -1;
-
-static INT
-Round_toZero(INT v, INT mask) {
-  Is_True((mask&(mask-1))==0, ("Round_toZero must be called with a 2^n mask.\n"));
-  if (v >= 0)
-    return v&~(mask-1);
-  else
-    return -((-v)&~(mask-1));
-}
-
-static void
-Analyze_IV_offsets(LOOP_IVS *loop_ivs, IV_refs_t *iv_refs, MEM_POOL *mem_pool) {
-
-  Is_True(MAX_WIDTH != -1, ("MAX_WIDTH: Uninitialized value"));
-
-  // Check if this loop needs optimizations
-  
-  // For each IV
-  //   - Check if there is at least on memory OP on which AUTOMOD could be performed.
-  //   - Check if there are some memory OP which does not use directly the IV
-
-  // Initialize the array
-  INT idx;
-  OP *op;
-  FOR_ALL_LOOP_IVS_OPs_FWD( loop_ivs, idx, op ) {
-
-    if (!OP_memory(op))
-      continue;
-
-    int base_idx = OP_find_opnd_use(op, OU_base);
-    DefID_t iv_cycle = loop_ivs->OPND_IV_cycle(idx, base_idx);
-    if (iv_cycle == 0)
-      continue;
-
-    // Cannot optimize accesses with non literal offsets
-    TN *tn_offset = OP_Offset(op);
-    INT64 offset_val;
-    if ((tn_offset == NULL) || !TN_Value_At_Op(tn_offset, op, &offset_val))
-      continue;
-
-    // Consider the base+offset expression, as if memop were based on
-    // IV with offset equal to IV_offset
-    INT offset = loop_ivs->OPND_IV_offset(idx, base_idx);
-    offset += offset_val;
-
-    IV_refs_t *ivref = &iv_refs[DEFID_idx(iv_cycle)];
-    if (ivref->nb_refs == 0) {
-      // The number of memory references to that IV is at most the
-      // number of memory operations in the loop, since there is at
-      // most one reference per memory op. We take as an upper bound
-      // the number of operations in the loop.
-      ivref->iv_memrefs = CXX_NEW_ARRAY( IV_ref_t, loop_ivs->Size(), mem_pool );
-      ivref->iv_cycle = iv_cycle;
-    }
-
-    // One of the following conditions must be satisfied to generate
-    // an automod, assuming the IV incrementation can always be put
-    // after the memory operations.
-    // offset == 0 && TOP_AM_automod_variant(OP_code(op), TRUE, (step > 0)) != TOP_UNDEFINED
-    // offset == step && TOP_AM_automod_variant(OP_code(op), FALSE, (step > 0)) != TOP_UNDEFINED
-    // In addition, for an automod, we must have MIN_OFFSET <= step <= MAX_OFFSET
-
-    // TBD: use check_IncrOffset from cg_automod.cxx ???
-    INT IV_step = loop_ivs->IV_step(iv_cycle);
-    if (CG_AutoMod && (IV_step >= MIN_OFFSET) && (IV_step <= MAX_OFFSET)) {
-      // Make sure we check for automod with a variant of the OP_code
-      // that uses an immediate value for the offset argument
-      TOP top = TOP_opnd_immediate_variant(OP_code(op), OP_find_opnd_use(op, OU_offset), IV_step);
-      if ((top != TOP_UNDEFINED) &&
-	  (((offset == 0) && // post-incrementation may be possible
-	    ((offset_val == 0) || (offset_val == -IV_step)) &&
-	    (TOP_AM_automod_variant(top, TRUE, (IV_step > 0), ISA_REGISTER_CLASS_UNDEFINED) != TOP_UNDEFINED)) ||
-	   ((offset == IV_step) && // pre-incrementation may be possible
-	    ((offset_val == 0) || (offset_val == IV_step)) &&
-	    (TOP_AM_automod_variant(top, FALSE, (IV_step > 0), ISA_REGISTER_CLASS_UNDEFINED) != TOP_UNDEFINED))))
-	ivref->can_use_automod = TRUE;
-    }
-
-    // Mark if some access based on that IV cannot have their offset inlined into the operation
-    ivref->has_large_offset |= ((offset < MIN_OFFSET) || (offset > MAX_OFFSET));
-
-    Is_True(ivref->nb_refs < loop_ivs->Size(), ("More references than allocated"));
-    ivref->iv_memrefs[ivref->nb_refs].op = op;
-    ivref->iv_memrefs[ivref->nb_refs].op_idx = idx;
-    ivref->iv_memrefs[ivref->nb_refs].opnd_idx = base_idx;
-    ivref->iv_memrefs[ivref->nb_refs].iv_offset = offset;
-    ivref->nb_refs ++;
-  }
-}
-
-static BOOL
-Analyze_Memop_Address(LOOP_IVS *loop_ivs, DefID_t op_idx) {
-
-  Is_True(MAX_WIDTH != -1, ("MAX_WIDTH: Uninitialized value"));
-
-  // Look for the expression of memory addresses. If the address
-  // expression uses several loop invariant variables, try to rewrite
-  // the expression using one loop invariant variable
-
-  OP *op = loop_ivs->Op(op_idx);
-
-  if (!OP_memory(op) || OP_automod(op))
-    return FALSE;
-
-  INT base_idx = OP_find_opnd_use(op, OU_base);
-  INT offset_idx = OP_find_opnd_use(op, OU_offset);
-
-  if ((base_idx < 0) || (offset_idx < 0))
-    return FALSE;
-
-  // When a memop is based on an IV, it will be optimized in a specific way
-  if (loop_ivs->OPND_IV_cycle(op_idx, base_idx) > 0)
-    return FALSE;
-
-  // Two cases can be optimized:
-  // temp = exp + inv2; memop @inv1(temp) -> inv = inv1+inv2; memop @inv(temp)
-  // temp = exp + inv2; memop @temp(inv1) -> inv = inv1+inv2; memop @inv(temp)
-
-  // Look for a loop invariant
-  INT temp_idx, inv1_idx;
-  INT64 inv1_val;
-  if ((loop_ivs->OPND_deflink(op_idx, base_idx) == 0) ||
-      TN_Value_At_Op(OP_Base(op), op, &inv1_val)) {
-    inv1_idx = base_idx;
-    temp_idx = offset_idx;
-  }
-  else if ((loop_ivs->OPND_deflink(op_idx, offset_idx) == 0) ||
-	   TN_Value_At_Op(OP_Offset(op), op, &inv1_val)) {
-    inv1_idx = offset_idx;
-    temp_idx = base_idx;
-  }
-  else
-    return FALSE;
-
-  // Can only optimize INT expression
-  if (TN_size(OP_opnd(op, temp_idx)) > 4)
-    return FALSE;
-
-  DefID_t defid_temp = loop_ivs->OPND_deflink(op_idx, temp_idx);
-
-  // If the temp is a loop invariant, nothing to optimize
-  if (defid_temp == 0)
-    return FALSE;
-
-  // For OPT_Size, we do not want to create different expressions for
-  // identical or almost identical values.
-  if (CG_IV_offset_space && (loop_ivs->RES_UC(defid_temp) > 1))
-    return FALSE;
-
-  INT temp_op_idx = DEFID_idx(defid_temp);
-  OP *temp_op = loop_ivs->Op(temp_op_idx);
-
-  INT exp_idx, inv2_idx;
-  INT64 inv2_val;
-  if (OP_iadd(temp_op) || OP_isub(temp_op)) {
-    INT idx1 = OP_find_opnd_use(temp_op, OU_opnd1);
-    INT idx2 = OP_find_opnd_use(temp_op, OU_opnd2);
-    if ((loop_ivs->OPND_deflink(temp_op_idx, idx1) == 0) ||
-	TN_Value_At_Op(OP_Opnd1(temp_op), op, &inv2_val)) {
-      if (OP_isub(temp_op))
-	return FALSE;
-      inv2_idx = idx1;
-      exp_idx = idx2;
-    }
-    else if ((loop_ivs->OPND_deflink(temp_op_idx, idx2) == 0) ||
-	TN_Value_At_Op(OP_Opnd2(temp_op), op, &inv2_val)) {
-      exp_idx = idx1;
-      inv2_idx = idx2;
-    }
-    else
-      return FALSE;
-  }
-  else
-    return FALSE;
-
-  // This load is at a loop invariant address, this will be optimized
-  // later if profitable
-  if ((loop_ivs->OPND_deflink(temp_op_idx, exp_idx) == 0) ||
-      TN_Value_At_Op(OP_opnd(temp_op, exp_idx), op, &inv2_val))
-    return FALSE;
-
-  // No invariant to combine if one invariant value is 0
-  if ((TN_Value_At_Op(OP_opnd(op, inv1_idx), op, &inv1_val) && (inv1_val == 0)) ||
-      (TN_Value_At_Op(OP_opnd(temp_op, inv2_idx), temp_op, &inv2_val) && (inv2_val == 0)))
-    return FALSE;
-
-  // Create an op "inv = inv1 + inv2" outside of the loop
-
-  TN *tn_inv1 = OP_opnd(op, inv1_idx);
-  TN *tn_inv2 = OP_opnd(temp_op, inv2_idx);
-
-  TN *tn_exp = OP_opnd(temp_op, exp_idx);
-  TN *tn_inv = Dup_TN(tn_exp);
-
-  Reset_TN_is_rematerializable(tn_inv);
-  Set_TN_remat(tn_inv, NULL);
-  Reset_TN_is_gra_homeable(tn_inv);
-  Set_TN_home(tn_inv, NULL);
-
-  TOP new_top = TOP_opnd_register_variant(OP_code(op), OP_find_opnd_use(op, OU_offset), TN_register_class(tn_exp));
-  if (new_top == TOP_UNDEFINED)
-    return FALSE;
-
-  if (TN_Value_At_Op(tn_inv1, op, &inv1_val))
-    tn_inv1 = Gen_Literal_TN(inv1_val, 4);
-  if (TN_Value_At_Op(tn_inv2, temp_op, &inv2_val))
-    tn_inv2 = Gen_Literal_TN(inv2_val, 4);
-
-  OPS prolog_ops = OPS_EMPTY;
-  if (OP_iadd(temp_op)) {
-    if (TN_has_value(tn_inv1) && TN_has_value(tn_inv2))
-      Exp_Immediate(tn_inv, Gen_Literal_TN(TN_value(tn_inv1) + TN_value(tn_inv2), 4), TRUE, &prolog_ops);
-    else
-      Expand_Add(tn_inv, tn_inv1, tn_inv2, MTYPE_I4, &prolog_ops);
-  }
-  else {
-    if (TN_has_value(tn_inv1) && TN_has_value(tn_inv2))
-      Exp_Immediate(tn_inv, Gen_Literal_TN(TN_value(tn_inv1) - TN_value(tn_inv2), 4), TRUE, &prolog_ops);
-    else
-      Expand_Sub(tn_inv, tn_inv1, tn_inv2, MTYPE_I4, &prolog_ops);
-  }
-
-  OP *point = BB_last_op(loop_ivs->Prolog());
-  BOOL before = (point != NULL) && OP_xfer(point);
-  BB_Insert_Ops(loop_ivs->Prolog(), point, &prolog_ops, before);
-
-  // Update the memop
-
-  Set_OP_opr(op, new_top);
-  Set_OP_opnd(op, base_idx, OP_opnd(temp_op, exp_idx));
-  Set_OP_opnd(op, offset_idx, tn_inv);
-
-  // Update the loop_ivs info.
-  loop_ivs->Set_OPND_deflink(op_idx, base_idx, defid_temp);
-  loop_ivs->Set_OPND_deflink(op_idx, offset_idx, 0); // loop invariant
-  loop_ivs->Dec_RES_UC(defid_temp);
-  if (loop_ivs->OPND_deflink(temp_op_idx, exp_idx) > 0)
-    loop_ivs->Inc_RES_UC(loop_ivs->OPND_deflink(temp_op_idx, exp_idx));
-
-  return TRUE;
-}
-
-// Find a set of memory references, starting at j_first, that meet the
-// following conditions:
-
-// * The range of the offsets is within MAX_WIDTH
-
-// * The set contains at least one operation that can be assigned a
-// * zero offset
-
-static INT
-IV_refs_Within_MaxWidth(IV_refs_t *ivref, INT j_first, INT *first_zero, INT *last_zero) {
-
-  INT j_last = j_first;
-  *first_zero = *last_zero = j_first;
-
-  Is_True(MAX_WIDTH != -1, ("MAX_WIDTH: Uninitialized value"));
-
-  for (INT j = j_first+1; j < ivref->nb_refs; j_last = j, j++) {
-
-    // Do not include this operation if this would make the range of
-    // offsets larger the MAX_WIDTH
-    if ((ivref->iv_memrefs[j].iv_offset - ivref->iv_memrefs[j_first].iv_offset) > MAX_WIDTH)
-      break;
-
-    // Do not include this operation if no operation in the set can be
-    // adjusted to have a zero offset
-    INT min_adjust_to_zero = Round_toZero(MIN_OFFSET-ivref->iv_memrefs[j_first].iv_offset, OFFSET_ALIGNMENT);
-    INT max_adjust_to_zero = Round_toZero(MAX_OFFSET-ivref->iv_memrefs[j].iv_offset, OFFSET_ALIGNMENT);
-    INT new_first_zero = *first_zero;
-    INT new_last_zero = (*last_zero == j_last) ? j : *last_zero;
-    for (INT k = new_first_zero; k <= new_last_zero; k++) {
-      if ((ivref->iv_memrefs[k].iv_offset + max_adjust_to_zero) < 0) {
-	Is_True(k == new_first_zero, ("Incorrect ordering of IV reference offsets"));
-	new_first_zero ++;
-      }
-      if ((ivref->iv_memrefs[k].iv_offset + min_adjust_to_zero) > 0) {
-	new_last_zero = k-1;
-	break;
-      }
-    }
-    if (new_first_zero > new_last_zero) {
-      // Do not inlude this operation in the current set since
-      // otherwise the set would contain no element with a 0 offset.
-      break;
-    }
-    *first_zero = new_first_zero;
-    *last_zero = new_last_zero;
-  }
-
-  return j_last;
-}
-
-// ivref is a set of memory operations that are based on a same
-// induction variable. These memory references are optimized such
-// that:
-
-// * New induction variables are created if the offset on the memory
-// * reference is too large to be inlined into the operation.
-
-// * A new induction variable is created no memory operation has an
-// * offset suitable for later automod optimization.
-
-// Return TRUE if the loop was modified.
-
-static BOOL
-Optimize_IV_refs(LOOP_IVS *loop_ivs, IV_refs_t *ivref) {
-
-  BOOL changed = FALSE;
-
-  Is_True(MAX_WIDTH != -1, ("MAX_WIDTH: Uninitialized value"));
-
-  // Sort the array references according to the IV offset
-  qsort(ivref->iv_memrefs, ivref->nb_refs, sizeof(IV_ref_t), Compare_IV_Offsets);
-
-  // Now, go through the IV references. If some references have large
-  // offsets, introduce new IVs to remove one, or several, adds in the
-  // loop. For small offsets, if no operation is candidate for
-  // automod, also replace the current IV by a new IV.
-
-  INT j_first, j_last;
-  for (j_first = 0; j_first < ivref->nb_refs; j_first = j_last+1) {
-    INT first_zero, last_zero;
-
-    j_last = IV_refs_Within_MaxWidth(ivref, j_first, &first_zero, &last_zero);
-  
-    // Now elements in [j_first,j_last] are the maximum set of memops
-    // that span within MAX_WIDTH, with at least one element that can
-    // be adjusted to have a zero offset. Find the best element whose
-    // offset can be adjusted to 0.
-
-    INT min_adjust_to_zero = Round_toZero(MIN_OFFSET-ivref->iv_memrefs[j_first].iv_offset, OFFSET_ALIGNMENT);
-    INT max_adjust_to_zero = Round_toZero(MAX_OFFSET-ivref->iv_memrefs[j_last].iv_offset, OFFSET_ALIGNMENT);
-
-    INT best_idx = -1;
-    INT best_count = 0;
-    INT count;
-    for (int k = first_zero; k <= last_zero; k += count) {
-      count = 1;
-      Is_True(((ivref->iv_memrefs[k].iv_offset + min_adjust_to_zero) <= 0) &&
-	      ((ivref->iv_memrefs[k].iv_offset + max_adjust_to_zero) >= 0),
-	      ("These elements must be candidate for a zero offset adjustement"));
-      // Count how many references have the same offset
-      while (((k+count) <= j_last) &&
-	     (ivref->iv_memrefs[k].iv_offset == ivref->iv_memrefs[k+count].iv_offset))
-	count ++;
-      if ((best_idx == -1) || (count > best_count)) {
-	best_idx = k;
-	best_count = count;
-      }
-    }
-
-    Is_True(best_count >= 0, ("A set must include a candidate that can be adjusted toward a 0 offset"));
-
-    INT new_iv_dist = ivref->iv_memrefs[best_idx].iv_offset;
-    // Evaluate the gain of introducing a new IV and replacing the
-    // references
-    INT gain = CGTARG_Check_Optimize_IV(&ivref->iv_memrefs[j_first], j_last-j_first+1,
-					loop_ivs->IV_step(ivref->iv_cycle), new_iv_dist);
-    if (gain >= 0) {
-      TN *iv_tn = OP_result(loop_ivs->Op(DEFID_idx(ivref->iv_cycle)), DEFID_res(ivref->iv_cycle));
-      TN *new_iv_tn = New_IV_For_Refs(loop_ivs, ivref->iv_cycle, new_iv_dist, iv_tn);
-      Replace_IV_For_Refs(loop_ivs, ivref->iv_cycle, new_iv_dist,
-			  ivref->iv_memrefs+j_first, j_last-j_first+1, new_iv_tn);
-      changed = TRUE;
-    }
-    //    else {
-    //      TN *iv_tn = OP_result(loop_ivs->Op(DEFID_idx(ivref->iv_cycle)), DEFID_res(ivref->iv_cycle));
-    //      Replace_IV_For_Refs(loop_ivs, ivref->iv_cycle, new_iv_dist, ivref->iv_memrefs+j_first, j_last-j_first+1, iv_tn);
-    //    }
-  }
-
-  return changed;
-}
-
-BOOL 
-Optimize_Loop_Induction_Offsets( LOOP_DESCR *loop ) {
-
-  if (!CG_LOOP_opt_iv_offset)
-    return FALSE;
-
-  UINT32 num_bbs = BB_SET_Size(LOOP_DESCR_bbset(loop));
-  BB *sorted_bbs[num_bbs];
-  if (!Check_Simple_Loop(loop, sorted_bbs, num_bbs))
-    return FALSE;
-
-  // In -Os, only optimize single BB loops, dead loop induction
-  // variables may not be detected on multiple-BB loops.
-  // Under SSA, a global dead code will be performed.
-  if (CG_IV_offset_space && (BB_SET_Size(LOOP_DESCR_bbset(loop)) > 1) && !SSA_Active())
-    return FALSE;
+  if (BB_SET_Size(LOOP_DESCR_bbset(loop)) != 1)
+    return;
 
   // Initialize memory pool for LOOP_IVS
   MEM_POOL local_mem_pool;
@@ -1108,46 +422,39 @@ Optimize_Loop_Induction_Offsets( LOOP_DESCR *loop ) {
   MEM_POOL_Push( &local_mem_pool );
 
   LOOP_IVS loop_ivs( &local_mem_pool );
-  loop_ivs.Init( loop, sorted_bbs, num_bbs );
+  loop_ivs.Init( loop );
 
-  // Allocate an array to hold for each operation an array of
-  // operations that reference an IV.
-  IV_refs_t IV_OP_references[loop_ivs.Size()];
-  memset(IV_OP_references, 0, loop_ivs.Size() * sizeof(IV_refs_t));
+  //  loop_ivs.Trace_IVs_Entries("Before optimizations");
 
-  // Initialize range values
-  CGTARG_Get_Info_For_Common_Base_Opt(&OFFSET_ALIGNMENT, &MIN_OFFSET, &MAX_OFFSET);
-  // Due to scaling factor, not all values are allowed:
-  MIN_OFFSET = Round_toZero(MIN_OFFSET, OFFSET_ALIGNMENT);
-  MAX_OFFSET = Round_toZero(MAX_OFFSET, OFFSET_ALIGNMENT);
-  MAX_WIDTH = MAX_OFFSET - MIN_OFFSET;
+  // Write here the code to optimize the IVs
 
-  Analyze_IV_offsets(&loop_ivs, IV_OP_references, &local_mem_pool);
+  OP *op;
+  int idx;
 
-  BOOL changed = FALSE;
-
-  // loop_ivs.Trace_IVs_Entries("Optimize_Loop_Induction_Offsets");
-
-  // Then, look for IV entries, and check if creating new induction
-  // variables will provide some gains
-
-  for (INT op_idx = 1; op_idx <= loop_ivs.Last_opidx(); op_idx ++) {
-
-    IV_refs_t *ivref = &IV_OP_references[op_idx];
-    if ((ivref->nb_refs > 0) &&
-	(ivref->has_large_offset || (CG_AutoMod && !ivref->can_use_automod))) {
-      // May create new induction variables to avoid the use of large
-      // offsets or to allow the use of auto-modifying addressing mod.
-      if (Optimize_IV_refs(&loop_ivs, ivref))
-	changed = TRUE;
-    }
-
-    // When the computation of an address uses several loop invariant
-    // variables, try to change the expression to use only one loop
-    // invariant variable
-    else if (OP_memory(loop_ivs.Op(op_idx)) && (ivref->nb_refs == 0)) {
-      if (Analyze_Memop_Address(&loop_ivs, op_idx))
-	changed = TRUE;
+  FOR_ALL_LOOP_IVS_OPs_FWD( &loop_ivs, idx, op ) {
+    Print_OP(op);
+    INT opndx;
+    for (opndx = 0; opndx < OP_opnds(op); opndx++) {
+      if (!TN_is_register(OP_opnd(op, opndx)))
+	continue;
+      DefID_t iv_cycle = loop_ivs.OPND_IV_cycle(idx, opndx);
+      fprintf(TFile, "\t");
+      Print_TN(OP_opnd(op, opndx), 0);
+      if (iv_cycle == 0)
+	fprintf(TFile, ": not based on an induction variable.\n");
+      else {
+	INT offset = loop_ivs.OPND_IV_offset(idx, opndx);
+	fprintf(TFile, ": IV = (%d,%d), offset = %d\n", DEFID_idx(iv_cycle), DEFID_res(iv_cycle), offset);
+	if (DEFID_idx(iv_cycle) == idx) {
+	  INT64 step = loop_ivs.IV_step(iv_cycle);
+	  OP *op_init =  loop_ivs.IV_init(iv_cycle);
+	  fprintf(TFile, "\tIV: step %lld, init ", step);
+	  if (op_init)
+	    Print_OP(op_init);
+	  else
+	    fprintf(TFile, "(null)\n");
+	}
+      }
     }
   }
 
@@ -1155,7 +462,26 @@ Optimize_Loop_Induction_Offsets( LOOP_DESCR *loop ) {
   MEM_POOL_Pop( &local_mem_pool );
   MEM_POOL_Delete( &local_mem_pool );
 
-  return changed;
+  return;
+}
+
+void Perform_Induction_Variables_Optimizations() {
+  MEM_POOL loop_descr_pool;
+  MEM_POOL_Initialize(&loop_descr_pool, "loop_descriptors", TRUE);
+  MEM_POOL_Push (&loop_descr_pool);
+
+  Calculate_Dominators();		/* needed for loop recognition */
+
+  for (LOOP_DESCR *loop = LOOP_DESCR_Detect_Loops(&loop_descr_pool);
+       loop;
+       loop = LOOP_DESCR_next(loop)) {
+    Optimize_Loop_Induction_Variables(loop);
+  }
+
+  MEM_POOL_Pop (&loop_descr_pool);
+  MEM_POOL_Delete(&loop_descr_pool);
+
+  Free_Dominators_Memory ();
 }
 
 #if !defined(TARG_STxP70) && !defined(TARG_ARM)
@@ -1215,7 +541,7 @@ typedef struct {
     decreasing.
 
   - align_base and align_bias give the alignment of the first memory
-    operation, or the first memory operation + memsize if !increasing.
+    operation, or the first memory operation + memsize if step < 0.
 
   - align_kind gives the property of the stream regarding loop
     transformations that may be required for packing. TBD: There may
@@ -1433,7 +759,7 @@ Get_Pragma_Alignment(BB *loophead) {
 }
 
 static void
-Get_Memop_Alignment(BB *prolog, OP *memop, INT64 offset, INT *base, INT *bias) {
+Get_Memop_Alignment(OP *memop, INT64 offset, INT *base, INT *bias) {
 
   *base = 1;
   *bias = 0;
@@ -1477,7 +803,7 @@ Get_Memop_Alignment(BB *prolog, OP *memop, INT64 offset, INT *base, INT *bias) {
 
     if (!in_inner_loop) {
       // Check we are in the immediately enclosing loop.
-      if (cur_loophead != BB_loop_head_bb(prolog)) {
+      if (cur_loophead != BB_loop_head_bb(CG_LOOP_prolog)) {
 	def_base = NULL;
 	break;
       }
@@ -2264,8 +1590,7 @@ Get_Stream_Alignment(LOOP_IVS *loop_ivs, MemoryStream_t *stream) {
     // Consider that alignment is correct, since there is no requirement
     base = 0;
   else {
-    Get_Memop_Alignment(loop_ivs->Prolog(), loop_ivs->Op(stream->memory_ops[0].index),
-			stream->align_offset, &base, &bias);
+    Get_Memop_Alignment(loop_ivs->Op(stream->memory_ops[0].index), stream->align_offset, &base, &bias);
     // Look for an option or a #pragma stream_alignment
     if (base == 1) {
       BB *loophead = BB_loop_head_bb(OP_bb(loop_ivs->Op(stream->memory_ops[0].index)));
@@ -2680,7 +2005,7 @@ Cond_Peel_Streams(LOOP_IVS *loop_ivs, MemoryStream_t *first_stream,
 
     for (int idx = 0; idx < cond_peel_count; idx ++)
       for (int kind = MEMOP_LOAD; kind < MEMOP_LAST; kind ++)
-	peel_gain[idx][kind] = 0;
+	peel_gain[idx][memop_kind] = 0;
 
     peel_stream_idx = -1;
 
@@ -2771,18 +2096,9 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes)
 {
   BOOL trace_packing_verbose = Get_Trace(TP_CGLOOP, 0x20);
   BOOL packing_done = FALSE;
-  
-  UINT32 num_bbs = BB_SET_Size(LOOP_DESCR_bbset(cg_loop.Loop()));
-  BB *sorted_bbs[num_bbs];
-  if (!Check_Simple_Loop(cg_loop.Loop(), sorted_bbs, num_bbs))
-    return FALSE;
 
-  loop_ivs->Init( cg_loop.Loop(), sorted_bbs, num_bbs );
-
-  // Because peeling, specialization uses CG_LOOP_prolog and CG_LOOP_epilog
-  if ((loop_ivs->Prolog() != CG_LOOP_prolog) ||
-      (loop_ivs->Epilog() != CG_LOOP_epilog))
-    return FALSE;
+  BB *body = LOOP_DESCR_loophead(cg_loop.Loop());
+  loop_ivs->Init( cg_loop.Loop() );
 
   // Identify (set flag1 for) all OPs that are suitable candidates for
   // 64 bit load/store packing.
@@ -2795,7 +2111,7 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes)
   INT candidate_count = Compute_Packing_IVs(loop_ivs);
 
   if (trace_packing_verbose) {
-    fprintf(stdout, "  <packing> BB head %d\n", BB_id(loop_ivs->Head()));
+    fprintf(stdout, "  <packing> BB head %d\n", BB_id(body));
     fprintf(stdout, "  <packing> found %d candidate operation(s)\n", candidate_count);
   }
 
@@ -2812,26 +2128,25 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes)
   int load_cnt = 0;
   int mem_cnt = 0;
   OP *op;
-  INT opidx;
-  FOR_ALL_LOOP_IVS_OPs_FWD(loop_ivs, opidx, op) {
+  FOR_ALL_BB_OPs(body, op) {
     if (OP_memory(op))
       mem_cnt ++;
     if (OP_load(op))
       load_cnt ++;
   }
 
+  BB_MAP sch_est;
   CG_SCHED_EST *se;
   int latency_II = 0;
   if (Get_Trace(TP_CGLOOP, 0x10)) {
-    BB *bb;
-    FOR_ALL_BB_SET_members(LOOP_DESCR_bbset(cg_loop.Loop()), bb) {
-      se = CG_SCHED_EST_Create(bb, &MEM_local_nz_pool, SCHED_EST_FOR_UNROLL);
-      latency_II += CG_SCHED_EST_Critical_Length(se);
-    }
+    sch_est = BB_MAP_Create();
+    se = CG_SCHED_EST_Create(body, &MEM_local_nz_pool, SCHED_EST_FOR_UNROLL);
+    BB_MAP_Set(sch_est, body, se); 
+    latency_II = CG_SCHED_EST_Critical_Length(se);
   }
 
   se = CG_SCHED_EST_Create_Empty(&MEM_local_nz_pool, SCHED_EST_FOR_UNROLL);
-  FOR_ALL_LOOP_IVS_OPs_FWD(loop_ivs, opidx, op) {
+  FOR_ALL_BB_OPs(body, op) {
     if (!OP_copy(op) && (OP_code(op) != TOP_extractp) && (OP_code(op) != TOP_composep))
       CG_SCHED_EST_Add_Op_Resources(se, OP_code(op));
   }
@@ -2943,22 +2258,19 @@ LoadStore_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes)
 
     mem_cnt = 0;
     load_cnt = 0;
-    FOR_ALL_LOOP_IVS_OPs_FWD(loop_ivs, opidx, op) {
+    FOR_ALL_BB_OPs(body, op) {
       if (OP_memory(op))
 	mem_cnt ++;
       if (OP_load(op))
 	load_cnt ++;
     }
 
-    latency_II = 0;
-    BB *bb;
-    FOR_ALL_BB_SET_members(LOOP_DESCR_bbset(cg_loop.Loop()), bb) {
-      se = CG_SCHED_EST_Create(bb, &MEM_local_nz_pool, SCHED_EST_FOR_UNROLL);
-      latency_II += CG_SCHED_EST_Critical_Length(se);
-    }
+    se = CG_SCHED_EST_Create(body, &MEM_local_nz_pool, SCHED_EST_FOR_UNROLL);
+    BB_MAP_Set(sch_est, body, se);
+    latency_II = CG_SCHED_EST_Critical_Length(se);
 
     se = CG_SCHED_EST_Create_Empty(&MEM_local_nz_pool, SCHED_EST_FOR_UNROLL);
-    FOR_ALL_LOOP_IVS_OPs_FWD(loop_ivs, opidx, op) {
+    FOR_ALL_BB_OPs(body, op) {
       if (!OP_copy(op) && (OP_code(op) != TOP_extractp) && (OP_code(op) != TOP_composep))
 	CG_SCHED_EST_Add_Op_Resources(se, OP_code(op));
     }
@@ -2975,17 +2287,8 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes )
 {
   BOOL trace_packing_verbose = Get_Trace(TP_CGLOOP, 0x20);
 
-  UINT32 num_bbs = BB_SET_Size(LOOP_DESCR_bbset(cg_loop.Loop()));
-  BB *sorted_bbs[num_bbs];
-  if (!Check_Simple_Loop(cg_loop.Loop(), sorted_bbs, num_bbs))
-    return FALSE;
-
-  loop_ivs->Init( cg_loop.Loop(), sorted_bbs, num_bbs );
-
-  // Because peeling, specialization uses CG_LOOP_prolog and CG_LOOP_epilog
-  if ((loop_ivs->Prolog() != CG_LOOP_prolog) ||
-      (loop_ivs->Epilog() != CG_LOOP_epilog))
-    return FALSE;
+  BB *body = LOOP_DESCR_loophead(cg_loop.Loop());
+  loop_ivs->Init( cg_loop.Loop() );
 
   // Identify (set flag1 for) all OPs that are suitable candidates for
   // 64 bit load/store packing.
@@ -3140,7 +2443,7 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes )
 
   // Chek if the loop iterates enough for transformations such as
   // peeling or specialization to be profitable.
-  ANNOTATION *annot = ANNOT_Get(BB_annotations(loop_ivs->Head()), ANNOT_LOOPINFO);
+  ANNOTATION *annot = ANNOT_Get(BB_annotations(body), ANNOT_LOOPINFO);
   LOOPINFO *info = ANNOT_loopinfo(annot);
   TN *trip_count_tn = LOOPINFO_exact_trip_count_tn(info);
   INT loop_iter = -1;
@@ -3427,19 +2730,19 @@ LoadStore_Check_Packing( LOOP_IVS *loop_ivs, CG_LOOP &cg_loop, int allSizes )
 }
 
 static BOOL
-LoadStore_Packing_Discard_Peeling_Specialization(CG_LOOP &cg_loop, BB *prolog, BB *epilog) {
+LoadStore_Packing_Discard_Peeling_Specialization(CG_LOOP &cg_loop) {
 
   // In case of loop peeling or specialization, discard the
   // additional code. Only the effect of remainder_after will be
   // left.
 
   if (cg_loop.Peel_loop()) {
-    cg_loop.Undo_Peel_Loop(prolog);
+    cg_loop.Undo_Peel_Loop(CG_LOOP_prolog);
     return TRUE;
   }
 
   else if (cg_loop.Specialize_loop()) {
-    cg_loop.Undo_Specialize_Loop(prolog, epilog);
+    cg_loop.Undo_Specialize_Loop(CG_LOOP_prolog, CG_LOOP_epilog);
     return TRUE;
   }
 
@@ -3488,7 +2791,7 @@ BOOL IVS_Perform_Load_Store_Packing( CG_LOOP &cg_loop )
     LOOP_IVS loop_ivs( &local_mem_pool );
     changed_loop = LoadStore_Packing( &loop_ivs, cg_loop, allSizes );
     if (!changed_loop) 
-      changed_loop = LoadStore_Packing_Discard_Peeling_Specialization(cg_loop, loop_ivs.Prolog(), loop_ivs.Epilog());
+      changed_loop = LoadStore_Packing_Discard_Peeling_Specialization(cg_loop);
 
     CG_DEP_Addr_Analysis = save_CG_DEP_Addr_Analysis;
     CG_DEP_Delete_Graph( head );

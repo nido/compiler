@@ -1825,13 +1825,6 @@ Can_OP_Move(OP *cur_op, BB *src_bb, BB *tgt_bb, BB_SET **pred_bbs,
 	     if (Ignore_TN_Dep) {
 	       ISA_REGISTER_CLASS result_cl = TN_register_class (result);
 	       REGISTER result_reg = TN_register (result);
-#ifdef TARG_ST
-	       // FdF 20100309: REG_LIVE is now correctly updated.
-	       // This is better since BB_live_in is wrong when
-	       // different TNs are used on the definition and the use
-	       // of a given assigned register.
-	       if (REG_LIVE_Into_BB (result_cl, result_reg, succ_bb))
-#else
 	       if (REG_LIVE_Into_BB (result_cl, result_reg, succ_bb) ||
 		   // #776729: Sometimes during circular-scheduling, we
 		   // insert new blocks. These blocks don't have their
@@ -1851,7 +1844,6 @@ Can_OP_Move(OP *cur_op, BB *src_bb, BB *tgt_bb, BB_SET **pred_bbs,
 							  result_reg, 0)))
 #endif
 		   )
-#endif
 		 return FALSE;
 	     } else {
 	       if (TN_is_global_reg(result) &&
@@ -2562,13 +2554,6 @@ Perform_Post_GCM_Steps(BB *bb, BB *cand_bb, OP *cand_op, mINT32 motion_type,
 	// prepend it to the loop.
 	if (GCM_Loop_Prolog == NULL) {
 	  GCM_Loop_Prolog = CG_LOOP_Gen_And_Prepend_To_Prolog(bb, loop);
-#ifdef TARG_ST
-	  // FdF 20100309: Compute the liveness for new_bb.
-	  if (Ignore_TN_Dep)
-	    REG_LIVE_Update_Livein_From_Liveout(GCM_Loop_Prolog);
-	  else
-	    GRA_LIVE_Compute_Liveness_For_BB(GCM_Loop_Prolog);
-#else
 	  GRA_LIVE_Compute_Liveness_For_BB(GCM_Loop_Prolog);
 #ifdef KEY
 	  // Need to update register liveness info for newly generated blocks.
@@ -2578,8 +2563,7 @@ Perform_Post_GCM_Steps(BB *bb, BB *cand_bb, OP *cand_op, mINT32 motion_type,
 	    REG_LIVE_Finish();
 	    REG_LIVE_Analyze_Region();
 	  }
-#endif
-#endif
+#endif	
 	  if (Trace_GCM) {
 #pragma mips_frequency_hint NEVER
 	    fprintf (TFile, "GCM: Circular Motion:\n");
@@ -2600,12 +2584,6 @@ Perform_Post_GCM_Steps(BB *bb, BB *cand_bb, OP *cand_op, mINT32 motion_type,
 	BB *new_bb;
 	if (br_op) {
 	  new_bb = CG_LOOP_Append_BB_To_Prolog(GCM_Loop_Prolog, bb);
-#ifdef TARG_ST
-	  // FdF 20100309: Compute the liveness for new_bb.
-	  if (Ignore_TN_Dep)
-	    REG_LIVE_Update_Livein_From_Liveout(new_bb);
-	  else
-#endif
 	  GRA_LIVE_Compute_Liveness_For_BB(new_bb);
 	  Set_BB_dom_set(new_bb, BS_Create_Empty(2+PU_BB_Count+1, 
 						 &gcm_loop_pool));

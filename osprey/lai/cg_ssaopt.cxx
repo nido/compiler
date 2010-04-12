@@ -85,7 +85,7 @@
 #include "range_prop.h"
 #include "cg_ssa.h"
 #include "cg_ssaopt.h"
-#include "cg_ivs.h"
+
 #include "cg_spill.h"
 
 /* ================================================================
@@ -1577,29 +1577,6 @@ DCAnalysis::Find_Useful_Ops ()
   }
 }
 
-static void
-Optimize_IV()
-{
-  MEM_POOL loop_descr_pool;
-  MEM_POOL_Initialize(&loop_descr_pool, "loop_descriptors", TRUE);
-  MEM_POOL_Push (&loop_descr_pool);
-
-  BOOL changed = FALSE;
-
-  for (LOOP_DESCR *loop = LOOP_DESCR_Detect_Loops(&loop_descr_pool);
-       loop;
-       loop = LOOP_DESCR_next(loop)) {
-
-    if (Optimize_Loop_Induction_Offsets(loop))
-      changed = TRUE;
-  }
-
-  if (changed) SSA_DeadCode ();
-
-  MEM_POOL_Pop (&loop_descr_pool);
-  MEM_POOL_Delete(&loop_descr_pool);
-}
-
 /* ================================================================
  *
  *   Entry
@@ -1610,8 +1587,6 @@ void
 SSA_Optimize()
 {
   Optimize_Extended_Offset();
-
-  Optimize_IV();
 
   RangePropagate();
 }

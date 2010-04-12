@@ -1,6 +1,85 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Apr 12 09:40:43 CEST 2010
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-revert-codex-58740
+
+Description:
+------------
+	* [trunk] Deliver tt2/dev-revert-codex-58740 rev #27473 with authorization branch #97095
+
+	--> Revert fix for bug #58740 that was delivered on trunk at rev #27437.
+	    This development has introduced a regression in the build of the newlib (bug #97087: [SSA] Assertion failure raised 'Inconsistency in Find_IV')
+
+
+Modified Files:
+---------------
+	M       osprey/be/com/opt_alias_mgr.cxx
+	M       osprey/lai/cg_ssa.cxx
+	M       osprey/lai/cg_loop.cxx
+	M       osprey/lai/reg_live.cxx
+	M       osprey/lai/gcm.cxx
+	M       osprey/lai/bb.h
+	M       osprey/lai/cg_ivs.cxx
+	M       osprey/lai/loop_invar_hoist.cxx
+	M       osprey/lai/cg_ivs.h
+	M       osprey/lai/tnutil.cxx
+	M       osprey/lai/cg_ssaopt.cxx
+	M       osprey/lai/dominate.cxx
+	M       osprey/lai/cgdriver.cxx
+	M       osprey/lai/cg_automod.cxx
+	M       osprey/lai/hb_sched.cxx
+	M       osprey/lai/cg_dep_graph.cxx
+	M       osprey/lai/op.h
+	M       osprey/lai/cg_ssa.h
+	M       osprey/lai/cgtarget.h
+	M       osprey/lai/oputil.cxx
+	M       osprey/targinfo/arm/cg/targ_cg.cxx
+	M       osprey/targinfo/stxp70/cg/targ_cg.cxx
+	M       osprey/targinfo/st200/cg/targ_cg.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27464 --new=https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-revert-codex-58740@27473 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27464 https://codex.cro.st.com/svnroot/open64/branches/tt2/dev-revert-codex-58740@27473" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/com/opt_alias_mgr.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/com/opt_alias_mgr.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/be/com/opt_alias_mgr.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_ssa.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_ssa.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/cg_ssa.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_loop.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_loop.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/cg_loop.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/reg_live.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/reg_live.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/reg_live.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/gcm.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/gcm.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/gcm.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/bb.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/bb.h?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/bb.h&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_ivs.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_ivs.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/cg_ivs.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/loop_invar_hoist.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/loop_invar_hoist.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/loop_invar_hoist.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_ivs.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_ivs.h?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/cg_ivs.h&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/tnutil.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/tnutil.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/tnutil.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_ssaopt.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_ssaopt.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/cg_ssaopt.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/dominate.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/dominate.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/dominate.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgdriver.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgdriver.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/cgdriver.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_automod.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_automod.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/cg_automod.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/hb_sched.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/hb_sched.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/hb_sched.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_dep_graph.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_dep_graph.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/cg_dep_graph.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/op.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/op.h?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/op.h&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_ssa.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_ssa.h?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/cg_ssa.h&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgtarget.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgtarget.h?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/cgtarget.h&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/lai/oputil.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/oputil.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/lai/oputil.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/arm/cg/targ_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/cg/targ_cg.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/targinfo/arm/cg/targ_cg.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_cg.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/targinfo/stxp70/cg/targ_cg.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/cg/targ_cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/cg/targ_cg.cxx?p2=branches/tt2/dev-revert-codex-58740/osprey/targinfo/st200/cg/targ_cg.cxx&r1=27464&r2=27473&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr 09 16:44:38 CEST 2010
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

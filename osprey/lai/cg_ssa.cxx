@@ -1327,7 +1327,7 @@ SSA_Compute_Dominance_Frontier ()
  *
  * ================================================================
  */
-OP *
+static void
 SSA_Place_Phi_In_BB (
   TN *tn, 
   BB *bb
@@ -1338,10 +1338,13 @@ SSA_Place_Phi_In_BB (
   INT num_opnds = BBlist_Len(BB_preds(bb));
 
   TN *result[1];
-  TN *opnd[num_opnds];
 
+  // Arthur: amazingly, we can have a large number of predecessors !!
+  TN **opnd = (TN**)alloca(sizeof(TN*)*num_opnds);
+  BZERO(opnd, sizeof(TN*)*num_opnds);
   // only 1 result possible
   result[0] = tn;
+
   for (i = 0; i < num_opnds; i++) {
     opnd[i] = tn;
   }
@@ -1368,7 +1371,7 @@ SSA_Place_Phi_In_BB (
   }
 #endif
 
-  return phi_op;
+  return;
 }
 
 // Renaming of dedicated registers requires some work to be done:

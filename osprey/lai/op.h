@@ -2035,11 +2035,6 @@ extern INT OP_storeval_byte_offset (OP *op, INT opndno);
  */
 extern INT OP_loadval_byte_offset (OP *op, INT resno);
 
-// FdF: Returns 0 if op is not an auto-mod operation, or if tn is not
-// the auto-modified register, or is redefined also by the operation.
-// Otherwise, return -1 for a pre-automod, and 1 for a post-automod.
-extern INT TN_isAutoMod(OP *op, TN *tn);
-
 /* ====================================================================
  *
  * OP_load_result
@@ -2077,6 +2072,7 @@ CGTARG_OP_Make_movc( TN *guard,
 BOOL
 CGTARG_OP_Lower_movc( OP *op,
                       OPS *lowered_ops );
+
 #endif
 
 #endif /* op_INCLUDED */

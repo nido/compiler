@@ -1190,13 +1190,11 @@ LOOP_INVAR_CODE_MOTION :: Identify_Loop_Invariants (void) {
             for (INT i = OP_opnds (op) - 1; i >= 0 && it_is; i--) {
 
                 TN* opnd = OP_opnd(op,i);
-		if (!(TN_is_Loop_Constant (opnd)  ||
-		      All_Reaching_Def_are_Outside_Of_Loop (op, i) || 
-		      (It_Is_Loop_Invar_TN (opnd) && 
-		       Unique_Reaching_Def_Inside_Loop (op, i)))) {
-		  it_is = FALSE;
-		  break;
-		}
+                it_is = 
+                    TN_is_Loop_Constant (opnd)  ||
+                    All_Reaching_Def_are_Outside_Of_Loop (op, i) || 
+                    It_Is_Loop_Invar_TN (opnd) && 
+                    Unique_Reaching_Def_Inside_Loop (op, i);
             }
 
 

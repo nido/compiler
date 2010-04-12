@@ -155,9 +155,6 @@ extern BOOL SSA_Verify (RID *rid, BOOL region);
 extern void SSA_Enter (RID *rid, BOOL region);
 extern void SSA_Update ();
 
-// Insert a PHI operation in a BB, without renaming
-OP *SSA_Place_Phi_In_BB(TN *tn, BB *bb);
-
 // which BB corresponds to PHI-node operand 'opnd_idx' ?
 extern BB*  Get_PHI_Predecessor (const OP *phi, UINT8 opnd_idx);
 extern void Set_PHI_Predecessor (const OP *phi, UINT8 pos, BB *pred);

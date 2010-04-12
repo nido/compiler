@@ -2217,26 +2217,6 @@ static BOOL addr_subtract(OP *pred_op, OP *succ_op, TN *pred_tn,
 	    *diff = 0;
 	    return TRUE;
 	  }
-#ifdef TARG_ST
-	  // FdF 20090403: Add the case where sarc is a REGIN
-	  // dependence with a source being an auto-mod on pred_op
-	  if (sarc && (ARC_pred(sarc) == pred_op) && OP_automod(pred_op)) {
-	    INT isOpndAutoMod = TN_isAutoMod(pred_op, pred_tn);
-
-	    if (isOpndAutoMod != 0) {
-	      // For Pre-increment, we have to compensate the diff on
-	      // offsets
-	      // For Post-increment, we have to compensate the fact
-	      // that OP_Base_Offset_TNs returns an offset 0 for
-	      // OU_postincr
-	      TN *opnd_offset = OP_Offset(pred_op);
-	      if (TN_has_value(opnd_offset)) {
-		*diff = -TN_value(opnd_offset);
-		return TRUE;
-	      }
-	    }
-	  }
-#endif
 	}
 #ifdef TARG_ST
       } else {

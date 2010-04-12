@@ -1155,9 +1155,6 @@ REG_LIVE_Update_Livein_From_Liveout(BB *bb)
   REGSET livein;
   REGSET kill;
 
-  // FdF 20100309: Extend the representation to include bb
-  REG_LIVE_Update(ISA_REGISTER_CLASS_UNDEFINED, REGISTER_UNDEFINED, bb);
-
   // 1. Compute current live out set
   REGSET_CLEAR (liveout);
   BBLIST *bl;

@@ -3640,45 +3640,6 @@ CGTARG_do_not_unroll_p(BB* bb) {
     return FALSE;
 }
 
-INT
-CGTARG_Check_Optimize_IV(IV_ref_t *iv_refs, INT ref_count, INT iv_step, INT iv_adjust) {
-
-  INT cost = 0;
-  INT gain = 0;
-
-  for (int i = 0; i < ref_count; i++) {
-    OP *use_op = iv_refs[i].op;
-    INT use_offset = iv_refs[i].iv_offset - iv_adjust;
-
-    // * load/store where use_offset can be merged into the offset of
-    // the load/store will not require additional operation
-    if ((OP_load(use_op) || OP_store(use_op)) &&
-	(iv_refs[i].opnd_idx == TOP_Find_Operand_Use(OP_code(use_op), OU_base))) {
-      // No cost nor gain, new offset should be merged with current
-      // offset.
-      if (TN_has_value(OP_Offset(use_op))) {
-	INT new_offset = TN_value(OP_Offset(use_op)) + use_offset;
-	if (!TOP_opnd_value_in_range(OP_code(use_op), TOP_Find_Operand_Use(OP_code(use_op), OU_offset), new_offset))
-	  cost ++;
-      }
-      else
-	cost ++;
-    }
-    // * Otherwise, one addition will be added
-    else if (use_offset != 0)
-      cost ++;
-  }
-
-  // * One add will be added for the increment of the new IV. If step
-  // is "small enough", this add will become an autoincrement if there
-  // is also a load/store with offet 0.
-  cost ++;
-
-  // * Outside the loop, one add will be added for each new IV. TBD:
-  // Consider this operation only if OPT_Space
-
-  return (gain - cost);
-}
 
 /**
  * Return TRUE if it exists a single non-simulated instruction to copy

@@ -558,9 +558,6 @@ inline void Set_BB_loop_head_bb(BB *bb, BB *head) {
 #define BBM_POST_LABEL          0x200000 /* BB has a post-label, i.e. a 
 					    label at the end of the BB, rather
 					    than at the beginning */
-#ifdef TARG_ST
-#define BBM_REACH_EXIT 0x400000 /* If a BB does reach an exit. */
-#endif
 
 #define	BB_entry(x)		(BB_flag(x) & BBM_ENTRY)
 #define BB_handler(bb)		(BB_flag(bb) & BBM_HANDLER)
@@ -584,9 +581,6 @@ inline void Set_BB_loop_head_bb(BB *bb, BB *head) {
 #define BB_asm(bb) 		(BB_flag(bb) & BBM_ASM)
 #define BB_predicate_promote(bb) (BB_flag(bb) & BBM_PREDICATE_PROMOTE)
 #define	BB_has_post_label(x)		(BB_flag(x) & BBM_POST_LABEL)
-#ifdef TARG_ST
-#define BB_reach_exit(x)		(BB_flag(x) & BBM_REACH_EXIT)
-#endif
 
 #define	Set_BB_entry(x)		(BB_flag(x) |= BBM_ENTRY)
 #define Set_BB_handler(bb)	(BB_flag(bb) |= BBM_HANDLER)
@@ -610,9 +604,6 @@ inline void Set_BB_loop_head_bb(BB *bb, BB *head) {
 #define Set_BB_asm(bb) 		(BB_flag(bb) |= BBM_ASM)
 #define Set_BB_predicate_promote(bb) 	(BB_flag(bb) |= BBM_PREDICATE_PROMOTE)
 #define	Set_BB_has_post_label(x)	(BB_flag(x) |= BBM_POST_LABEL)
-#ifdef TARG_ST
-#define Set_BB_reach_exit(x)		(BB_flag(x) |= BBM_REACH_EXIT)
-#endif
 
 #define	Reset_BB_entry(x)	(BB_flag(x) &= ~BBM_ENTRY)
 #define Reset_BB_handler(bb) 	(BB_flag(bb) &= ~BBM_HANDLER)
@@ -636,9 +627,6 @@ inline void Set_BB_loop_head_bb(BB *bb, BB *head) {
 #define Reset_BB_asm(bb) 	(BB_flag(bb) &= ~BBM_ASM)
 #define Reset_BB_predicate_promote(bb) 	(BB_flag(bb) &= ~BBM_PREDICATE_PROMOTE)
 #define	Reset_BB_has_post_label(x)	(BB_flag(x) &= ~BBM_POST_LABEL)
-#ifdef TARG_ST
-#define Reset_BB_reach_exit(x)		(BB_flag(x) &= ~BBM_REACH_EXIT)
-#endif
 
 #define BB_tail_call(bb)	(   (BB_flag(bb) & (BBM_CALL | BBM_EXIT)) \
 				 == (BBM_CALL | BBM_EXIT))
