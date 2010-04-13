@@ -1187,7 +1187,8 @@ Can_Mem_Op_Be_Moved(OP *mem_op, BB *cur_bb, BB *src_bb, BB *dest_bb,
 
   if ((Cur_Gcm_Type & GCM_BEFORE_GRA) && !GCM_PRE_Spec_Loads)
     return FALSE;
-  
+
+ 
   // TODO: first, we filter out the most easy cases (for fast compile time). 
   // I am sure there will be more to filter out (for other motion types as 
   // well) in the future.
@@ -1205,6 +1206,16 @@ Can_Mem_Op_Be_Moved(OP *mem_op, BB *cur_bb, BB *src_bb, BB *dest_bb,
 
   // prefetches don't alias with anything
   if (OP_prefetch(mem_op)) return TRUE;
+
+#ifdef TARG_ST  
+  //[TDR] - Fix for bug #95826
+  // In case of conditional exit block we should avoid memory 
+  // operation movement
+  if (((forw && cur_bb != src_bb) || (!forw && cur_bb != dest_bb)) && BB_exit(cur_bb)) 
+    return FALSE;
+#endif
+
+
 
   OP *cur_op, *br_op, *limit_op;
   BOOL definite = FALSE;
