@@ -2947,12 +2947,12 @@ Negate_Cmp_BB (OP *br)
     Set_OP_result(new_op, 0, btn);
     OPS_Prepend_Op(&new_ops, new_op);
     BB_Replace_Op (cmp_op, &new_ops);
-    // [TDR] Fix for bug #92132: Check the the result TN of the compare is 
+    // [TDR] Fix for bug #92132/#93352: Check if the result TN of the compare is 
     // not used somewhere else in the BB
-    for (tmp_op = OP_next(cmp_op); tmp_op != NULL; tmp_op = OP_next(tmp_op)) {
+    for (tmp_op = OP_next(new_op); tmp_op != NULL && tmp_op != br; tmp_op = OP_next(tmp_op)) {
       for (int i = 0; i < OP_opnds(tmp_op); i++) {
         if (OP_opnd(tmp_op, i) == btn) { 
-            Invert_OP_Pred(tmp_op,i);        	  
+            Invert_OP_Pred(tmp_op,i);
         }
       }
     }
