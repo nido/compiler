@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Apr 13 11:27:39 CEST 2010
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-97114
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-97114 rev #27520 with authorization branch #97137
+
+
+Modified Files:
+---------------
+	M       osprey/libair/air/air_loader.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27517 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-97114@27520 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27517 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-97114@27520" 
+
+Diff links to modified files:
+-----------------------------
+osprey/libair/air/air_loader.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/libair/air/air_loader.cxx?p2=branches/fixes/codex-97114/osprey/libair/air/air_loader.cxx&r1=27517&r2=27520&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Apr 13 10:46:57 CEST 2010
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
