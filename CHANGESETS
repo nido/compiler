@@ -1,6 +1,52 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Apr 13 13:11:53 CEST 2010
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-97017
+
+Description:
+------------
+	* [trunk] Fix for bug #97017: [IVPx] Segmentation fault raised in MExpand.
+	Deliver fixes/codex-97017 rev #27529 with authorization branch #97018
+
+	Fix done in code that compute bitsize of extension register classes and register subclasses.
+	Now relies on isa_operand infos
+
+
+Modified Files:
+---------------
+	M       osprey/common/com/lai_loader.cxx
+	M       osprey/common/com/isa_loader.cxx
+	M       osprey/common/com/isa_loader_api.h
+	M       osprey/common/com/lai_loader_api.h
+	M       osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+	M       osprey/targinfo/generate/isa_syntax_gen.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27527 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-97017@27529 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27527 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-97017@27529" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/com/lai_loader.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/lai_loader.cxx?p2=branches/fixes/codex-97017/osprey/common/com/lai_loader.cxx&r1=27527&r2=27529&roottype=svn&root=open64&diff_format=h
+osprey/common/com/isa_loader.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/isa_loader.cxx?p2=branches/fixes/codex-97017/osprey/common/com/isa_loader.cxx&r1=27527&r2=27529&roottype=svn&root=open64&diff_format=h
+osprey/common/com/isa_loader_api.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/isa_loader_api.h?p2=branches/fixes/codex-97017/osprey/common/com/isa_loader_api.h&r1=27527&r2=27529&roottype=svn&root=open64&diff_format=h
+osprey/common/com/lai_loader_api.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/lai_loader_api.h?p2=branches/fixes/codex-97017/osprey/common/com/lai_loader_api.h&r1=27527&r2=27529&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_entry_exit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx?p2=branches/fixes/codex-97017/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx&r1=27527&r2=27529&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/generate/isa_syntax_gen.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/generate/isa_syntax_gen.cxx?p2=branches/fixes/codex-97017/osprey/targinfo/generate/isa_syntax_gen.cxx&r1=27527&r2=27529&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Apr 13 13:06:17 CEST 2010
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
