@@ -929,6 +929,9 @@ I-cpp_nonansi_f77	;		f77	cpp	KRDEFS NONANSI_svr4
 	"global optimization"
 -O*s	toggle(&osize,1);toggle(&olevel,2);	ALL	CMP,f	self 
 	"optimization for size"
+% Any other digit sequence must be >3, so assume at least O3.
+-O%d	O3_flag=TRUE;toggle(&olevel,optargd);	ALL	CMP,f	"-O%d"
+	"full optimization"
 #endif
 
 #   ifdef TARG_STxP70

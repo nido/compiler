@@ -548,7 +548,11 @@ BE_EXPORTED extern BOOL  GCM_Eager_Null_Ptr_Deref;   /* allow speculation past t
 BE_EXPORTED extern BOOL  GCM_Eager_Null_Ptr_Deref_Set; /* ... option seen? */
 
 /***** Miscellaneous GOPT options *****/
+#ifdef TARG_ST
+#define MAX_OPT_LEVEL	INT32_MAX
+#else
 #define MAX_OPT_LEVEL	3
+#endif
 #define DEF_O_LEVEL	2	/* Level implied by -O */
 #define DEF_OPT_LEVEL	1
 BE_EXPORTED extern INT32 Opt_Level;		/* -On level */

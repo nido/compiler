@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Apr 19 16:58:55 CEST 2010
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-92950
+
+Description:
+------------
+	*  Fix for codex bug #92950 ("-O<num> not behaving as gcc")
+	Delivered fixes/codex-92950 with authorization art #97284.
+
+
+Modified Files:
+---------------
+	M       osprey/driver/OPTIONS
+	M       osprey/driver/special_options.c
+	M       osprey/common/com/config.h
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27625 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-92950@27629 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27625 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-92950@27629" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/OPTIONS	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/OPTIONS?p2=branches/fixes/codex-92950/osprey/driver/OPTIONS&r1=27625&r2=27629&roottype=svn&root=open64&diff_format=h
+osprey/driver/special_options.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/special_options.c?p2=branches/fixes/codex-92950/osprey/driver/special_options.c&r1=27625&r2=27629&roottype=svn&root=open64&diff_format=h
+osprey/common/com/config.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config.h?p2=branches/fixes/codex-92950/osprey/common/com/config.h&r1=27625&r2=27629&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Apr 13 13:11:53 CEST 2010
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

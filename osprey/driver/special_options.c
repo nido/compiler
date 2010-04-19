@@ -356,7 +356,15 @@ get_olevel_flag (int olevel)
 	case 1: return O_O1;
 	case 2: return O_O2;
 	case 3: return O_O3;
+#ifdef TARG_ST
+	default:
+	  if (olevel > 3)
+	    return O_O__;
+	  else
+	    return O_Unrecognized;
+#else
 	default: return O_Unrecognized;
+#endif
 	}
 }
 
