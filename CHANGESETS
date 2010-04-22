@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 22 16:51:15 CEST 2010
+	Author:    
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-gdb
+
+Description:
+------------
+	* [trunk] Deliver lyon/dev-gdb rev #27691 with authorization branch #52222
+	Bump st200gdb revision to #332.
+
+
+Modified Files:
+---------------
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27687 --new=https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-gdb@27691 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27687 https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-gdb@27691" 
+
+Diff links to modified files:
+-----------------------------
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/lyon/dev-gdb/DEPENDENCIES&r1=27687&r2=27691&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Apr 22 16:36:30 CEST 2010
 	Author:    
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
