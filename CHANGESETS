@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 22 16:36:30 CEST 2010
+	Author:    
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-dmucs
+
+Description:
+------------
+	* [trunk] Deliver lyon/dev-dmucs rev #27668 with authorization branch #97995
+	Update DMUCS (distcc) server in Grenoble
+
+
+Modified Files:
+---------------
+	M       osprey/make/sitedefs/grenoble/Makefile.sitedefs
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27631 --new=https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-dmucs@27668 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27631 https://codex.cro.st.com/svnroot/open64/branches/lyon/dev-dmucs@27668" 
+
+Diff links to modified files:
+-----------------------------
+osprey/make/sitedefs/grenoble/Makefile.sitedefs	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/make/sitedefs/grenoble/Makefile.sitedefs?p2=branches/lyon/dev-dmucs/osprey/make/sitedefs/grenoble/Makefile.sitedefs&r1=27631&r2=27668&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Apr 19 16:58:55 CEST 2010
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
