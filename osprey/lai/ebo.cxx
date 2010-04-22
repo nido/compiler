@@ -436,7 +436,10 @@ EBO_OP_predicate_never(OP *op, EBO_TN_INFO **op_opnd_tninfo)
      (True_TN != NULL && OP_opnd(op, p_idx) == True_TN && OP_Pred_False(op, p_idx)));
 }
 
-static BOOL
+#ifndef TARG_ST
+static
+#endif
+BOOL
 EBO_OP_predicate_dominates(OP *op1, EBO_TN_INFO **op1_opnd_tninfo,
 			   OP *op2, EBO_TN_INFO **op2_opnd_tninfo)
 {

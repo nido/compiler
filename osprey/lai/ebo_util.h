@@ -78,6 +78,12 @@
  *	This routine checks to see if a TN has a valid definition that
  *	is input to the current block.
  *
+ *  EBO_OP_predicate_dominates(op1, op1_tninfo, op2, op2_tninfo)
+ *
+ *   Check whether the execution condition p1 for op1 dominates
+ *   the execution condition p2 for op2 by checking whether
+ *   EBO_predicate_domintes(p1, p2).
+ *
  * =======================================================================
  * =======================================================================
  */
@@ -87,6 +93,8 @@ extern void EBO_Set_OP_omega (OP *op, ...);
 extern void EBO_OPS_omega (OPS *ops, TN *opnd, EBO_TN_INFO *opnd_tninfo);
 extern void EBO_OP_merge_omega ( OP *old_op, EBO_TN_INFO **old_opnd_tninfo, OP *new_op );
 extern BOOL TN_live_out_of(TN *tn, BB *bb);
+extern BOOL EBO_OP_predicate_dominates(OP *op1, EBO_TN_INFO **op1_opnd_tninfo,
+                                       OP *op2, EBO_TN_INFO **op2_opnd_tninfo);
 #endif
 
 inline

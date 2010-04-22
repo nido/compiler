@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 22 17:06:34 CEST 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93620
+
+Description:
+------------
+	* [trunk] Fix for bug #93620: [FPX] fswf2i not mapped by compiler.
+	Deliver fixes/codex-93620 rev #27695 with authorization branch #93643
+
+
+Modified Files:
+---------------
+	M       osprey/lai/ebo_util.h
+	M       osprey/lai/ebo.cxx
+	M       osprey/targinfo/stxp70/cg/targ_ebo.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27693 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93620@27695 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27693 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93620@27695" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/ebo_util.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/ebo_util.h?p2=branches/fixes/codex-93620/osprey/lai/ebo_util.h&r1=27693&r2=27695&roottype=svn&root=open64&diff_format=h
+osprey/lai/ebo.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/ebo.cxx?p2=branches/fixes/codex-93620/osprey/lai/ebo.cxx&r1=27693&r2=27695&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_ebo.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_ebo.cxx?p2=branches/fixes/codex-93620/osprey/targinfo/stxp70/cg/targ_ebo.cxx&r1=27693&r2=27695&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Apr 22 16:51:15 CEST 2010
 	Author:    
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
