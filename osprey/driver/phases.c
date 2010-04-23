@@ -3640,7 +3640,16 @@ static void add_command_line_arg_for_ipa(string_list_t *args, char *source_file)
     exit(2);
   }
   // Use for coverage to know the name of files to generate
-  add_string(args, concat_strings("-IPA::ipa_exec_name=", concat_path(cwd, outfile ? outfile : "a.out")));
+  // [CR] fix bug 68161: when outfile is absolute, no need to concat
+  if (outfile) {
+    if (SYS_isAbsolute(outfile))
+      add_string(args, concat_strings("-IPA::ipa_exec_name=", outfile));
+    else
+      add_string(args, concat_strings("-IPA::ipa_exec_name=", concat_path(cwd, outfile)));
+  }
+  else {
+    add_string(args, concat_strings("-IPA::ipa_exec_name=", concat_path(cwd, "a.out")));
+  }
 }
 #endif
 
