@@ -1474,12 +1474,15 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
   }
 #endif
 
-  float est_cost_before = CGTARG_Compute_est_cost_before(se1,se2,sehead,taken_prob,fallthr_prob,will_need_predicate_merge) ;
-  float ifc_regions_cycles = CGTARG_Compute_est_cost_after(se1,se2,sehead,taken_prob,fallthr_prob,will_need_predicate_merge,head) ;
+  float est_cost_before = CGTARG_Compute_est_cost_before(se1,se2,sehead,
+                            taken_prob,fallthr_prob,will_need_predicate_merge) ;
+  float ifc_regions_cycles = CGTARG_Compute_est_cost_after(se1,se2,sehead,
+                            taken_prob,fallthr_prob,will_need_predicate_merge,head) ;
   float est_cost_after = ifc_regions_cycles / select_factor;
 
   if (Trace_Select_Candidates) {
-        fprintf (Select_TFile, "Info region :\n\t cycles1: %f, cycles2: %f, cyclesh: %f, taken_prob:%f, fallthr_prob:%f\n", cycles1,cycles2,cyclesh,taken_prob,fallthr_prob);
+        fprintf (Select_TFile, "Info region :\n\t cycles1: %f, cycles2: %f, cyclesh: %f, taken_prob:%f, fallthr_prob:%f\n", 
+                                              cycles1,cycles2,cyclesh,taken_prob,fallthr_prob);
         fprintf (Select_TFile, "\t size_se1: %d, size_se2: %d, size_sehead: %d\n", size_se1,size_se2,size_sehead);
         int sehead_latency =  CG_SCHED_EST_Critical_Length(sehead) - CG_SCHED_EST_Resource_Cycles(sehead) - 1 ;
         int se1_latency = (se1)?(CG_SCHED_EST_Critical_Length(se1) - CG_SCHED_EST_Resource_Cycles(se1) + 1):0;
@@ -1489,7 +1492,9 @@ Check_Profitable_Select (BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg,
         fprintf (Select_TFile, "\t Comparing without ifc:%f, with ifc:%f\n", est_cost_before, est_cost_after);
   }
 
-  BOOL val = CGTARG_Check_Profitable_Select(se1, se2, size_se1, size_se2, est_cost_before, est_cost_after, fallthr_prob, will_need_predicate_merge);
+  BOOL val = CGTARG_Check_Profitable_Select(se1, se2, sehead, size_se1, size_se2, size_sehead, 
+                                            est_cost_before, est_cost_after, fallthr_prob, head, tail,
+                                            will_need_predicate_merge);
 
   CG_SCHED_EST_Delete(sehead);
   if (se1)  CG_SCHED_EST_Delete(se1);

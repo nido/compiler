@@ -371,7 +371,9 @@ Expand_Cond_Store (
 }
 
 
-float CGTARG_Compute_est_cost_before(CG_SCHED_EST *se1, CG_SCHED_EST *se2, CG_SCHED_EST *sehead, float taken_prob, float fallthr_prob, BOOL will_need_predicate_merge) {
+float CGTARG_Compute_est_cost_before(CG_SCHED_EST *se1, CG_SCHED_EST *se2, CG_SCHED_EST *sehead, 
+                                     float taken_prob, float fallthr_prob, 
+                                     BOOL will_need_predicate_merge) {
     int branch_penalty = CGTARG_Branch_Taken_Penalty();
     float est_cost_before = CG_SCHED_EST_Cycles(sehead);
     if (se1) {
@@ -384,7 +386,9 @@ float CGTARG_Compute_est_cost_before(CG_SCHED_EST *se1, CG_SCHED_EST *se2, CG_SC
 
 }
 
-float CGTARG_Compute_est_cost_after(CG_SCHED_EST *se1, CG_SCHED_EST *se2, CG_SCHED_EST *sehead, float taken_prob, float fallthr_prob, BOOL will_need_predicate_merge, BB* head) {
+float CGTARG_Compute_est_cost_after(CG_SCHED_EST *se1, CG_SCHED_EST *se2, CG_SCHED_EST *sehead, 
+                                    float taken_prob, float fallthr_prob, 
+                                    BOOL will_need_predicate_merge, BB* head) {
     float est_cost_after=0.0;
     if (se1) {
       CG_SCHED_EST_Append_Scheds(sehead, se1);
@@ -401,7 +405,11 @@ float CGTARG_Compute_est_cost_after(CG_SCHED_EST *se1, CG_SCHED_EST *se2, CG_SCH
     return est_cost_after;
 }
 
-BOOL CGTARG_Check_Profitable_Select(CG_SCHED_EST *se1, CG_SCHED_EST *se2,int size_se1, int size_se2, float est_cost_before, float est_cost_after, float fallthr_prob, BOOL will_need_predicate_merge) {
+BOOL CGTARG_Check_Profitable_Select(CG_SCHED_EST *se1, CG_SCHED_EST *se2, CG_SCHED_EST *sehead, 
+                                    int size_se1, int size_se2, int size_sehead, 
+                                    float est_cost_before, float est_cost_after, float fallthr_prob, 
+                                    BB *head, BB *tail,
+                                    BOOL will_need_predicate_merge) {
 	if (!CG_ifc_cycles) return !will_need_predicate_merge;
 	else return KnuthCompareLE(est_cost_after, est_cost_before);
 }
