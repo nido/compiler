@@ -210,6 +210,38 @@ static int return_flag ( char *name, char *argv0 ) {
 	return flag;
 }
 
+static void
+write_options_file(Pt_string_list list, FILE* temp_cfg_file) {
+  while(list) {
+    int flag,iflag;
+    flag=return_flag(list->name,"");
+#ifdef TARG_STxP70
+    if (flag == O_Mhwloop__) {
+      extern
+	enum { hwloop_default = -1, hwloop_none, hwlooponly, jrgtudeconly, hwloop_all}
+      hwloop_mapping;
+      fprintf(temp_cfg_file, "\t\t-TARG:activate_hwloop=%d\n", hwloop_mapping);
+    }
+    if (flag == O_Msda__) {
+      extern int sda_mem;
+      fprintf(temp_cfg_file, "\t\t-TARG:sda_mem=%d\n", sda_mem);
+    }
+    if (flag == O_Mtda__) {
+      extern int tda_mem;
+      fprintf(temp_cfg_file, "\t\t-TARG:tda_mem=%d\n", tda_mem);
+    }
+    if (flag == O_Mda__) {
+      extern int da_mem;
+      fprintf(temp_cfg_file, "\t\t-TARG:da_mem=%d\n", da_mem);
+    }
+#endif
+    FOREACH_IMPLIED_OPTION(iflag, flag) {
+      fprintf(temp_cfg_file, "\t\t%s\n", get_current_implied_name());
+    }
+    list = list->next;
+  }
+}
+
 #endif
 
 #ifdef TARG_STxP70
@@ -3165,41 +3197,15 @@ run_compiler (void)
 	     Pt_file_list ftmp=active_configuration->files;
 	     while(ftmp) {
 	       fprintf(temp_cfg_file, "\tfile \"%s\" {\n",ftmp->name);
-	       if(ftmp->options) {
-		 Pt_string_list tmp=ftmp->options;
-		 while(tmp) {
-		   int flag,iflag;
-		   flag=return_flag(tmp->name,"");
-#ifdef TARG_STxP70
-		   if (flag == O_Mhwloop__) {
-		     fprintf(temp_cfg_file, "\t\t-TARG:activate_hwloop=%d\n", hwloop_mapping);
-		   }
-#endif
-		   FOREACH_IMPLIED_OPTION(iflag, flag) {
-		     fprintf(temp_cfg_file, "\t\t%s\n", get_current_implied_name());
-		   }
-		   tmp = tmp->next;
-		 }
+	       if (ftmp->options) {
+		 write_options_file(ftmp->options, temp_cfg_file);
 	       }
-	       if(ftmp->functions) {
+	       if (ftmp->functions) {
 		 Pt_func_list futmp=ftmp->functions;
 		 while(futmp) {
 		   fprintf(temp_cfg_file,"\t\tfunction \"%s\" {\n",futmp->name);
 		   if(futmp->options) {
-		     Pt_string_list tmp=futmp->options;
-		     while(tmp) {
-		       int flag,iflag;
-		       flag=return_flag(tmp->name,"");
-#ifdef TARG_STxP70
-		       if (flag == O_Mhwloop__) {
-			 fprintf(temp_cfg_file, "\t\t-TARG:activate_hwloop=%d\n", hwloop_mapping);
-		       }
-#endif
-		       FOREACH_IMPLIED_OPTION(iflag, flag) {
-			 fprintf(temp_cfg_file,"\t\t\t%s\n", get_current_implied_name());
-		       }
-		       tmp = tmp->next;
-		     }
+		     write_options_file(futmp->options, temp_cfg_file);
 		   }
 		   futmp = futmp->next;
 		   fprintf(temp_cfg_file,"\t\t}\n");
@@ -3876,7 +3882,12 @@ add_ipl_cmd_string (int iflag)
     if (strlen(name) > 0 && is_derived_option(iflag)
 	&& option_phases(iflag)==0
 	&& !has_implied_option(get_derived_parent(iflag))) {
-      name = concat_strings (get_option_name(get_derived_parent(iflag)), name);
+
+      // [CR] -macf-decl must have absolute file name
+      if (!strcmp(get_option_name(get_derived_parent(iflag)), "-macf-decl")) 
+	name = concat_strings (get_option_name(get_derived_parent(iflag)), appli_config_file_name);	
+      else
+	name = concat_strings (get_option_name(get_derived_parent(iflag)), name);
     }
 #endif
 

@@ -831,85 +831,20 @@ check_range(char* m1, char* m2, int min1, int max1, int min2, int max2)
 
 #endif /* TARG_ARM */
 
+#ifdef TARG_STxP70
 /* ====================================================================
  *
- * Check_Target
+ * Handle_Options
  *
- * Verify that the target selection is consistent and set defaults.
+ * .Handle multiply flag processed in stxp70_options.i file
+ * and pass it to back-end
  *
  * ====================================================================
  */
 void
-Check_Target ( void )
+Handle_Options ( void )
 {
-  int opt_id;
-  int opt_val;
   int flag;
-#ifdef TARG_ST200
-  int flag_as ;
-#endif
-  string old_dir;
-  string new_P_library_dir;
-  string new_P_startup_dir;
-  char * ptr;
-
-  if ( debug ) {
-    fprintf ( stderr, "Check_Target ABI=%d ISA=%d Processor=%d\n",
-	      abi, isa, proc );
-  }
-
-  /* If -Ofast is given, default to -n32, specified platform's
-   * processor, and best ISA:
-   */
-  if ( (ofast == TRUE) || (Gen_feedback == TRUE)) {
-    Ofast_Target ();
-  }
-
-#ifdef TARG_ST200
-  switch (proc) {
-  case UNDEFINED:
-    toggle(&proc, PROC_ST231);
-    /* fallthru ST231 default. */
-  case PROC_ST231:
-    flag = add_new_option("-TARG:proc=st231");
-    flag_as = add_new_option("-mcore=st231");
-    break;
-  case PROC_ST240:
-    flag = add_new_option("-TARG:proc=st240");
-    flag_as = add_new_option("-mcore=st240");
-    break;
-    // This one is kept interim to still support st220 internally
-  case PROC_ST220:
-    flag = add_new_option("-TARG:proc=st220");
-    flag_as = add_new_option("-mcore=st220");
-    break;
-  case PROC_ST210:
-    flag = add_new_option("-TARG:proc=st210");
-    flag_as = add_new_option("-mcore=st210");
-    break;
-  }
-
-  if (proc != PROC_NONE) {
-    add_st200_phase_for_option(flag);
-    add_phase_for_option(flag_as, P_any_as);
-    prepend_option_seen (flag_as); 
-  }
-
-  extern int packing_level;
-
-  if (packing_level != -1) {
-    buffer_t buf;
-    sprintf(buf, "-TARG:packing_level=%d", packing_level);
-    flag = add_new_option(buf);
-    add_st200_phase_for_option(flag);
-  }
-#endif
-
-
-#ifdef TARG_STxP70
-  /* [VCdV] Handle multiply flag processed in stxp70_options.i file
-   * and pass it to back-end
-   */
   extern boolean STxP70mult;
   if (STxP70mult) {
     flag = add_new_option("-TARG:enable_mx=on");
@@ -920,93 +855,6 @@ Check_Target ( void )
     ExtensionSeen=1;
   }
 
-  //[dt] Best way of detecting default arch from environment
-  char *proc_env_name=NULL;
-  if (proc == UNDEFINED && (proc_env_name = getenv("SXARCHITECTURE")) != NULL) {
-    int i;
-    if (same_string(proc_env_name,"stxp70v4")) 	toggle (&proc, PROC_stxp70_v4_novliw);
-    else if (same_string(proc_env_name,"stxp70v3")) 	toggle (&proc, PROC_stxp70_v3);
-    else {
-      for (i = 0; Proc_Map[i].pname != NULL; i++) {
-        if (same_string(proc_env_name, Proc_Map[i].pname)) {
-          toggle (&proc, Proc_Map[i].pid);
-        }
-      }
-    }
-  }
-  extern
-  unsigned int corecfg1;
-
-  switch (proc) {
-    case PROC_stxp70_v4_dual:
-    case PROC_stxp70_v4_novliw:
-    case PROC_stxp70_v4_single:
-      
-      /* force 8-bytes alignement on stxp70v4 (except in O0)*/
-      if (olevel>0) {
-        flag = add_new_option("-CG:emit_space=false");
-        add_phase_for_option(flag, P_be);
-        if (!already_provided(flag)) {
-          prepend_option_seen (flag);
-        }
-        flag = add_new_option("-OPT:align_functions=8 -OPT:align_loops=8 -OPT:align_loopends=8 -OPT:align_jumps=8");
-        add_phase_for_option(flag, P_be);
-        if (!already_provided(flag)) {
-          prepend_option_seen (flag);
-        }
-      }
-
-      proc = UNDEFINED; /* [HC] to prevent warning emission in toggle if proc==PROC_stxp70_v3 */
-      switch ((corecfg1 & (3<<10))>>10) {
-	case 0x1: /* v4 dual issue, single core ALU */
-	  if (bundlingas!=FALSE) { /* in combination with --no-bundle ? */
-             toggle (&proc, PROC_stxp70_v4_single); 
-	  } else {
-	     toggle (&proc, PROC_stxp70_v4_novliw);
-	  }
-          break;
-	case 0x3: /* v4 dual issue, dual core ALU */
-	  if (bundlingas!=FALSE) { /* in combination with --no-bundle ? */
-             toggle (&proc, PROC_stxp70_v4_dual); 
-	  } else {
-	     toggle (&proc, PROC_stxp70_v4_novliw);
-          }
-	  break;
-        case 0x0: /* v4 Single issue */
-	default:
-          toggle (&proc, PROC_stxp70_v4_novliw); break;
-      }
-      change_phase_name(P_as,"stxp70v4-as");
-      change_phase_name(P_gas,"stxp70v4-as");
-      change_phase_name(P_ld,"stxp70v4-ld");
-      change_phase_name(P_ipa_link,"stxp70v4-ipa_link");
-#ifdef BCO_ENABLED
-      change_phase_name(P_ldsimple,"stxp70v4-ld");
-      change_phase_name(P_binopt,"stxp70v4-binopt");
-#endif
-      break;
-    case PROC_stxp70_v3:
-      if (bundlingas==FALSE) {
-        warning("--no-bundle is not supported by STxP70 v3 architecture");
-      }
-      switch ((corecfg1 & (3<<10))>>10) {
-	case 0x1: /* v4 dual issue, single core ALU */
-	case 0x3: /* v4 dual issue, dual core ALU */
-          warning("Dual issue is not supported by STxP70 v3 architecture");
-	  corecfg1 &= ~(3<<10);
-          break;
-      }
-      change_phase_name(P_as,"stxp70v3-as");
-      change_phase_name(P_gas,"stxp70v3-as");
-      change_phase_name(P_ld,"stxp70v3-ld");
-      change_phase_name(P_ipa_link,"stxp70v3-ipa_link");
-#ifdef BCO_ENABLED
-      change_phase_name(P_ldsimple,"stxp70v3-ld");
-      change_phase_name(P_binopt,"stxp70v3-binopt");
-#endif
-      break;
-  }
-  
   /*
    * [VB] Force no tail recursion when -pg or -finstrument-functions
    */
@@ -1017,71 +865,7 @@ Check_Target ( void )
       add_option_seen (flag);
     }
   }
-
-  old_dir = get_phase_dir(P_library);
-  new_P_library_dir = string_copy(old_dir);
-  old_dir = get_phase_dir(P_startup);
-  new_P_startup_dir = string_copy(old_dir);
-  switch (proc) {
-  case UNDEFINED:
-    toggle(&proc, PROC_stxp70_v3);
-    /* fallthru stxp70 default. */
-  case PROC_stxp70_v3:
-    flag = add_new_option("-TARG:proc=stxp70_v3");
-    if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4/lib"))) {
-      ptr[7] = '3';
-      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
-    } else if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4\\lib"))) {
-      ptr[7] = '3';
-      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
-    }
-    if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v4/lib"))) {
-       ptr[7] = '3';
-       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
-    } else if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v4\\lib"))) {
-       ptr[7] = '3';
-       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
-    }
-    break;
-  case PROC_stxp70_v4_novliw:
-  case PROC_stxp70_v4_single:
-  case PROC_stxp70_v4_dual:
-    if (proc == PROC_stxp70_v4_novliw) {
-       flag = add_new_option("-TARG:proc=stxp70_v4_novliw");
-    } else if (proc == PROC_stxp70_v4_single) {
-       flag = add_new_option("-TARG:proc=stxp70_v4_single");
-    } else if (proc == PROC_stxp70_v4_dual) {
-       flag = add_new_option("-TARG:proc=stxp70_v4_dual");
-    }
-    if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v3/lib"))) {
-      ptr[7] = '4';
-      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
-    } else if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v3\\lib"))) {
-      ptr[7] = '4';
-      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
-    }
-    if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v3/lib"))) {
-       ptr[7] = '4';
-       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
-    } else if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v3\\lib"))) {
-       ptr[7] = '4';
-       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
-    }
-    break;
-  }
-
-  if (proc != PROC_NONE) {
-    add_stxp70_phase_for_option(flag);
-    if (proc == PROC_stxp70_v4_novliw) {
-      /* bug #81649 : in novliw mode, we must add this option to avoid
-       * ext/ext bundles when connecting a dual pipe extension
-       */
-      flag = add_new_option("-TARG:max_ext_issue_width=1");
-      add_stxp70_phase_for_option(flag);
-    }
-
-  }
-
+  
   extern
     enum { hwloop_default = -1, hwloop_none, hwlooponly, jrgtudeconly, hwloop_all}
   hwloop_mapping;
@@ -1179,6 +963,237 @@ Check_Target ( void )
       }
     }
   }
+}
+#endif
+
+/* ====================================================================
+ *
+ * Check_Target
+ *
+ * Verify that the target selection is consistent and set defaults.
+ *
+ * ====================================================================
+ */
+void
+Check_Target ( void )
+{
+  int opt_id;
+  int opt_val;
+  int flag;
+#ifdef TARG_ST200
+  int flag_as ;
+#endif
+  string old_dir;
+  string new_P_library_dir;
+  string new_P_startup_dir;
+  char * ptr;
+
+  if ( debug ) {
+    fprintf ( stderr, "Check_Target ABI=%d ISA=%d Processor=%d\n",
+	      abi, isa, proc );
+  }
+
+  /* If -Ofast is given, default to -n32, specified platform's
+   * processor, and best ISA:
+   */
+  if ( (ofast == TRUE) || (Gen_feedback == TRUE)) {
+    Ofast_Target ();
+  }
+
+#ifdef TARG_ST200
+  switch (proc) {
+  case UNDEFINED:
+    toggle(&proc, PROC_ST231);
+    /* fallthru ST231 default. */
+  case PROC_ST231:
+    flag = add_new_option("-TARG:proc=st231");
+    flag_as = add_new_option("-mcore=st231");
+    break;
+  case PROC_ST240:
+    flag = add_new_option("-TARG:proc=st240");
+    flag_as = add_new_option("-mcore=st240");
+    break;
+    // This one is kept interim to still support st220 internally
+  case PROC_ST220:
+    flag = add_new_option("-TARG:proc=st220");
+    flag_as = add_new_option("-mcore=st220");
+    break;
+  case PROC_ST210:
+    flag = add_new_option("-TARG:proc=st210");
+    flag_as = add_new_option("-mcore=st210");
+    break;
+  }
+
+  if (proc != PROC_NONE) {
+    add_st200_phase_for_option(flag);
+    add_phase_for_option(flag_as, P_any_as);
+    prepend_option_seen (flag_as); 
+  }
+
+  extern int packing_level;
+
+  if (packing_level != -1) {
+    buffer_t buf;
+    sprintf(buf, "-TARG:packing_level=%d", packing_level);
+    flag = add_new_option(buf);
+    add_st200_phase_for_option(flag);
+  }
+#endif
+
+
+#ifdef TARG_STxP70
+  //[dt] Best way of detecting default arch from environment
+  char *proc_env_name=NULL;
+  if (proc == UNDEFINED && (proc_env_name = getenv("SXARCHITECTURE")) != NULL) {
+    int i;
+    if (same_string(proc_env_name,"stxp70v4")) 	toggle (&proc, PROC_stxp70_v4_novliw);
+    else if (same_string(proc_env_name,"stxp70v3")) 	toggle (&proc, PROC_stxp70_v3);
+    else {
+      for (i = 0; Proc_Map[i].pname != NULL; i++) {
+        if (same_string(proc_env_name, Proc_Map[i].pname)) {
+          toggle (&proc, Proc_Map[i].pid);
+        }
+      }
+    }
+  }
+  extern
+  unsigned int corecfg1;
+
+  switch (proc) {
+    case PROC_stxp70_v4_dual:
+    case PROC_stxp70_v4_novliw:
+    case PROC_stxp70_v4_single:
+      
+      /* force 8-bytes alignement on stxp70v4 (except in O0)*/
+      if (olevel>0) {
+        flag = add_new_option("-CG:emit_space=false");
+        add_phase_for_option(flag, P_be);
+        if (!already_provided(flag)) {
+          prepend_option_seen (flag);
+        }
+        flag = add_new_option("-OPT:align_functions=8 -OPT:align_loops=8 -OPT:align_loopends=8 -OPT:align_jumps=8");
+        add_phase_for_option(flag, P_be);
+        if (!already_provided(flag)) {
+          prepend_option_seen (flag);
+        }
+      }
+
+      proc = UNDEFINED; /* [HC] to prevent warning emission in toggle if proc==PROC_stxp70_v3 */
+      switch ((corecfg1 & (3<<10))>>10) {
+	case 0x1: /* v4 dual issue, single core ALU */
+	  if (bundlingas!=FALSE) { /* in combination with --no-bundle ? */
+             toggle (&proc, PROC_stxp70_v4_single); 
+	  } else {
+	     toggle (&proc, PROC_stxp70_v4_novliw);
+	  }
+          break;
+	case 0x3: /* v4 dual issue, dual core ALU */
+	  if (bundlingas!=FALSE) { /* in combination with --no-bundle ? */
+             toggle (&proc, PROC_stxp70_v4_dual); 
+	  } else {
+	     toggle (&proc, PROC_stxp70_v4_novliw);
+          }
+	  break;
+        case 0x0: /* v4 Single issue */
+	default:
+          toggle (&proc, PROC_stxp70_v4_novliw); break;
+      }
+      change_phase_name(P_as,"stxp70v4-as");
+      change_phase_name(P_gas,"stxp70v4-as");
+      change_phase_name(P_ld,"stxp70v4-ld");
+      change_phase_name(P_ipa_link,"stxp70v4-ipa_link");
+#ifdef BCO_ENABLED
+      change_phase_name(P_ldsimple,"stxp70v4-ld");
+      change_phase_name(P_binopt,"stxp70v4-binopt");
+#endif
+      break;
+    case PROC_stxp70_v3:
+      if (bundlingas==FALSE) {
+        warning("--no-bundle is not supported by STxP70 v3 architecture");
+      }
+      switch ((corecfg1 & (3<<10))>>10) {
+	case 0x1: /* v4 dual issue, single core ALU */
+	case 0x3: /* v4 dual issue, dual core ALU */
+          warning("Dual issue is not supported by STxP70 v3 architecture");
+	  corecfg1 &= ~(3<<10);
+          break;
+      }
+      change_phase_name(P_as,"stxp70v3-as");
+      change_phase_name(P_gas,"stxp70v3-as");
+      change_phase_name(P_ld,"stxp70v3-ld");
+      change_phase_name(P_ipa_link,"stxp70v3-ipa_link");
+#ifdef BCO_ENABLED
+      change_phase_name(P_ldsimple,"stxp70v3-ld");
+      change_phase_name(P_binopt,"stxp70v3-binopt");
+#endif
+      break;
+  }
+  
+
+  old_dir = get_phase_dir(P_library);
+  new_P_library_dir = string_copy(old_dir);
+  old_dir = get_phase_dir(P_startup);
+  new_P_startup_dir = string_copy(old_dir);
+  switch (proc) {
+  case UNDEFINED:
+    toggle(&proc, PROC_stxp70_v3);
+    /* fallthru stxp70 default. */
+  case PROC_stxp70_v3:
+    flag = add_new_option("-TARG:proc=stxp70_v3");
+    if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4/lib"))) {
+      ptr[7] = '3';
+      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
+    } else if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v4\\lib"))) {
+      ptr[7] = '3';
+      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
+    }
+    if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v4/lib"))) {
+       ptr[7] = '3';
+       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
+    } else if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v4\\lib"))) {
+       ptr[7] = '3';
+       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
+    }
+    break;
+  case PROC_stxp70_v4_novliw:
+  case PROC_stxp70_v4_single:
+  case PROC_stxp70_v4_dual:
+    if (proc == PROC_stxp70_v4_novliw) {
+       flag = add_new_option("-TARG:proc=stxp70_v4_novliw");
+    } else if (proc == PROC_stxp70_v4_single) {
+       flag = add_new_option("-TARG:proc=stxp70_v4_single");
+    } else if (proc == PROC_stxp70_v4_dual) {
+       flag = add_new_option("-TARG:proc=stxp70_v4_dual");
+    }
+    if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v3/lib"))) {
+      ptr[7] = '4';
+      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
+    } else if (NULL != (ptr = strstr(new_P_library_dir,"stxp70v3\\lib"))) {
+      ptr[7] = '4';
+      set_phase_dir(get_phase_mask(P_library),new_P_library_dir);
+    }
+    if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v3/lib"))) {
+       ptr[7] = '4';
+       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
+    } else if (NULL != (ptr = strstr(new_P_startup_dir,"stxp70v3\\lib"))) {
+       ptr[7] = '4';
+       set_phase_dir(get_phase_mask(P_startup),new_P_startup_dir);
+    }
+    break;
+  }
+
+  if (proc != PROC_NONE) {
+    add_stxp70_phase_for_option(flag);
+    if (proc == PROC_stxp70_v4_novliw) {
+      /* bug #81649 : in novliw mode, we must add this option to avoid
+       * ext/ext bundles when connecting a dual pipe extension
+       */
+      flag = add_new_option("-TARG:max_ext_issue_width=1");
+      add_stxp70_phase_for_option(flag);
+    }
+
+  }
+
 
   /* [VL] Handles PIC code and GOT models: if -fpic is set, we propagate */
   /* the got model option, or got_large if none is specified. If -fPIC   */

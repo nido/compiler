@@ -129,6 +129,11 @@ extern void toggle (int *obj, int value);
 
 /* Options for configuring the target: */
 
+#ifdef TARG_STxP70
+/* Handle multiply flag processed in stxp70_options.i file and pass it to back-end */
+extern void Handle_Options ( void );
+#endif
+
 /* Verify that the target selection is consistent and set defaults: */
 extern void Check_Target ( void );
 

@@ -1,6 +1,46 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri Apr 23 10:32:43 CEST 2010
+	Author:    
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-95274
+
+Description:
+------------
+	* Deliver fix for bug #95274  
+
+
+Modified Files:
+---------------
+	M       osprey/driver/opt_actions.c
+	M       osprey/driver/phases.c
+	M       osprey/driver/opt_actions.h
+	M       osprey/driver/main.c
+	M       osprey/common/appliconfig/appli_config.lex
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27702 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-95274@27705 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27702 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-95274@27705" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/opt_actions.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/opt_actions.c?p2=branches/fixes/codex-95274/osprey/driver/opt_actions.c&r1=27702&r2=27705&roottype=svn&root=open64&diff_format=h
+osprey/driver/phases.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/phases.c?p2=branches/fixes/codex-95274/osprey/driver/phases.c&r1=27702&r2=27705&roottype=svn&root=open64&diff_format=h
+osprey/driver/opt_actions.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/opt_actions.h?p2=branches/fixes/codex-95274/osprey/driver/opt_actions.h&r1=27702&r2=27705&roottype=svn&root=open64&diff_format=h
+osprey/driver/main.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/main.c?p2=branches/fixes/codex-95274/osprey/driver/main.c&r1=27702&r2=27705&roottype=svn&root=open64&diff_format=h
+osprey/common/appliconfig/appli_config.lex	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/appliconfig/appli_config.lex?p2=branches/fixes/codex-95274/osprey/common/appliconfig/appli_config.lex&r1=27702&r2=27705&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr 23 09:02:23 CEST 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

@@ -894,6 +894,9 @@ main (int argc, char *argv[])
                 }
             }
         }
+#ifdef TARG_STxP70
+	Handle_Options();
+#endif      
 #endif      
 		run_compiler();
 		if (multiple_source_files) cleanup();

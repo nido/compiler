@@ -169,14 +169,21 @@ int yywrap () {	return (1);}
 	 
 Pt_string_list add_string_to_list(Pt_string_list l1, char *opt) {
 	Pt_string_list new_list = (Pt_string_list) malloc(sizeof(string_list));
-	new_list->next=NULL;
-	new_list->name=strdup(opt);
-	if (l1 != NULL) {
-		Pt_string_list tmp_pt=l1;
-		while (tmp_pt->next) tmp_pt=tmp_pt->next;
-		tmp_pt->next=new_list;
-		return l1;
-	} else return new_list;
+	/* Config option has not to be in config file: same hardware configuration for entire application */
+	if (strncmp(opt, "-Mconfig=", 9) == 0) {
+	  APPLICONFIG_warning("-Mconfig options not accepted in configuration file --> discarded\n");
+	  return NULL;
+	}
+	else {
+	  new_list->next=NULL;
+	  new_list->name=strdup(opt);
+	  if (l1 != NULL) {
+	    Pt_string_list tmp_pt=l1;
+	    while (tmp_pt->next) tmp_pt=tmp_pt->next;
+	    tmp_pt->next=new_list;
+	    return l1;
+	  } else return new_list;
+	}
 }
 
 Pt_func_list generate_func_conf(char *name, Pt_string_list l1) {
