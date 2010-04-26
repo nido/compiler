@@ -1,6 +1,79 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Apr 26 13:43:37 CEST 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60286
+
+Description:
+------------
+	* [trunk] Fix for bug #60286: [IPA] Cycle count increase in Stanford in -Os.
+	Deliver fixes/codex-60286 rev #27739 with authorization branch #94520
+
+
+Modified Files:
+---------------
+	M       osprey/be/opt/opt_cfg.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27737 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60286@27739 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27737 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-60286@27739" 
+
+Diff links to modified files:
+-----------------------------
+osprey/be/opt/opt_cfg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/be/opt/opt_cfg.cxx?p2=branches/fixes/codex-60286/osprey/be/opt/opt_cfg.cxx&r1=27737&r2=27739&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
+	Date  :    Fri Apr 23 09:02:23 CEST 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-97102
+
+Description:
+------------
+	*  bundle issue when NOP in slot 1
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx
+	M       osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx
+	M       osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx
+	M       osprey/targinfo/stxp70/isa/isa_bundle.cxx
+	M       DEPENDENCIES
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27697 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-97102@27700 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27697 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-97102@27700" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx?p2=branches/fixes/codex-97102/osprey/targinfo/stxp70/proc/stxp70_v4_dual_si.cxx&r1=27697&r2=27700&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx?p2=branches/fixes/codex-97102/osprey/targinfo/stxp70/proc/stxp70_v4_novliw_si.cxx&r1=27697&r2=27700&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx?p2=branches/fixes/codex-97102/osprey/targinfo/stxp70/proc/stxp70_v4_single_si.cxx&r1=27697&r2=27700&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/isa/isa_bundle.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/isa/isa_bundle.cxx?p2=branches/fixes/codex-97102/osprey/targinfo/stxp70/isa/isa_bundle.cxx&r1=27697&r2=27700&roottype=svn&root=open64&diff_format=h
+DEPENDENCIES	http://codex.cro.st.com/svn/viewvc.php/trunk/DEPENDENCIES?p2=branches/fixes/codex-97102/DEPENDENCIES&r1=27697&r2=27700&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr 23 13:28:39 CEST 2010
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

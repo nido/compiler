@@ -754,6 +754,14 @@ While_Test_is_simple(WN *while_test) {
     if ((WN_kid_count(kid0) == 0) && (WN_kid_count(kid1) == 0))
       if ((WN_operator(kid0) == OPR_INTCONST) || (WN_operator(kid1) == OPR_INTCONST))
 	return TRUE;
+    // FdF 20100319: Look also for one integer constant and one add
+    // between two variables, since a primary IV may have been created
+    WN *var_kid = (WN_operator(kid0) == OPR_INTCONST) ? kid1 :
+                  (WN_operator(kid1) == OPR_INTCONST) ? kid0 : NULL;
+    if ((var_kid != NULL) && (WN_operator(var_kid) == OPR_ADD) && 
+	(WN_kid_count(WN_kid(var_kid, 0)) == 0) &&
+	(WN_kid_count(WN_kid(var_kid, 1)) == 0))
+      return TRUE;
   }
   return FALSE;
 }
