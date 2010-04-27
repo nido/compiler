@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Apr 27 15:08:22 CEST 2010
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-81537
+
+Description:
+------------
+	* [trunk] Fix for bug #81537: Ifconversion heuristic enhancement.
+	Deliver fixes/codex-81537 rev #27845 with authorization branch #93418
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/cg/targ_select.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27741 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-81537@27845 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27741 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-81537@27845" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/cg/targ_select.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_select.cxx?p2=branches/fixes/codex-81537/osprey/targinfo/stxp70/cg/targ_select.cxx&r1=27741&r2=27845&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Apr 26 13:43:37 CEST 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
