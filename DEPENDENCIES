@@ -17,6 +17,6 @@ stxp70-binutils,svn,trunk@6273,https://codex.cro.st.com/svnroot/stxp70cc/stxp70-
 mds,svn,trunk@1912,https://codex.cro.st.com/svnroot/mds
 ecc,svn,trunk@3828,https://codex.cro.st.com/svnroot/ecc
 binopt,svn,trunk@1656,https://codex.cro.st.com/svnroot/binopt
-st200-gdb,svn,20080922_ST200GDB_6.8-ST-2.0@334,http://codex.cro.st.com/svnroot/st200-gdb
+st200-gdb,svn,20080922_ST200GDB_6.8-ST-2.0@335,http://codex.cro.st.com/svnroot/st200-gdb
 st200-reftoolset,file,,/sw/st/gnu_compil/comp/st200/r6.2/linux-rh-ws-3
 st200-libs-shtdi,file,,/sw/st/gnu_compil/comp/st200/libs-shtdi/20081203/linux
