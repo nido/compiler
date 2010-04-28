@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Apr 28 13:54:33 CEST 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-97204
+
+Description:
+------------
+	* [trunk] Fix for bug #97204: operators extension failures with fix in dev rtk fixes/codex-97204 .
+	Deliver fixes/codex-97204 rev #27873 with authorization branch #97208
+
+
+Modified Files:
+---------------
+	M       osprey/common/com/isa_loader.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27871 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-97204@27873 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27871 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-97204@27873" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/com/isa_loader.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/isa_loader.cxx?p2=branches/fixes/codex-97204/osprey/common/com/isa_loader.cxx&r1=27871&r2=27873&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Apr 28 10:26:55 CEST 2010
 	Author:    
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
