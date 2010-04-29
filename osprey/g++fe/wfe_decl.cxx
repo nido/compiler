@@ -1544,6 +1544,7 @@ WFE_Start_Function (tree fndecl)
     }
     if (DECL_ALWAYS_INLINE(fndecl)) {
       Set_PU_must_inline (Pu_Table [ST_pu (func_st)]);
+      Set_PU_must_delete (Pu_Table [ST_pu (func_st)]);
       wfe_invoke_inliner = TRUE;
     }
     /* (cbr) const attribute */
@@ -1961,7 +1962,10 @@ WFE_Finish_Function (void)
     // But may be given the attribute always_inline
     // We fix these contradictions here (time for a user message if -Winline is on)
     if (PU_no_inline (Get_Current_PU ()) && PU_must_inline (Get_Current_PU ()))
-      Clear_PU_must_inline(Get_Current_PU ());
+      {
+	Clear_PU_must_inline(Get_Current_PU ());
+	Clear_PU_must_delete(Get_Current_PU ());
+      }
 #endif
 
     Delete_Scope (CURRENT_SYMTAB);

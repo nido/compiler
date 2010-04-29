@@ -1,6 +1,42 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 29 18:44:31 CEST 2010
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82783
+
+Description:
+------------
+	*  Fix for codex bug #82783 ("[INLINER] Inlines all calls, but does
+	not eliminate function").
+	Delivered fixes/codex-82783 with authorization art #97285.
+
+
+Modified Files:
+---------------
+	M       osprey/gccfe/wfe_decl.cxx
+	M       osprey/g++fe/wfe_decl.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27916 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82783@27918 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27916 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-82783@27918" 
+
+Diff links to modified files:
+-----------------------------
+osprey/gccfe/wfe_decl.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_decl.cxx?p2=branches/fixes/codex-82783/osprey/gccfe/wfe_decl.cxx&r1=27916&r2=27918&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_decl.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_decl.cxx?p2=branches/fixes/codex-82783/osprey/g++fe/wfe_decl.cxx&r1=27916&r2=27918&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Apr 29 18:32:08 CEST 2010
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
