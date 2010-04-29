@@ -20,9 +20,9 @@ definitions:
       devimage  :
     flags :
       O0_nog:
-        CCOPT  : "-O0 -keep"
+        CCOPT  : "-O0 -keep --no-deadcode"
       O0Fpx_nog :
-        CCOPT  : "-O0 -Mextension=fpx -mlib-short-double -fshort-double -keep"
+        CCOPT  : "-O0 -Mextension=fpx -mlib-short-double -fshort-double -keep --no-deadcode"
       O0 :
         CCOPT  : "-O0 -g"
       O1 :
@@ -92,7 +92,7 @@ definitions:
       devimage  :
     flags :
       O0_nog:
-        CCOPT  : "-O0 -keep -mcore=stxp70v4"
+        CCOPT  : "-O0 -keep --no-deadcode -mcore=stxp70v4"
         RUNOPT : "-target=sxv4_valid_iss"
       O0 :
         CCOPT  : "-O0 -g -mcore=stxp70v4"

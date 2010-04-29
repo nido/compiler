@@ -5276,10 +5276,26 @@ Cg_Dwarf_Output_Asm_Bytes_Sym_Relocs (FILE                 *asm_file,
 	  case 4: shift = 2; break;
 	  default: Is_True((0), ("Unsupported inst word for first_of_length_pair_inst_word")); break;
 	  }
-	  fprintf(asm_file, "\t%s\t(%s - %s) >> %d", reloc_name,
-		  Cg_Dwarf_Name_From_Handle(reloc_buffer[k + 1].drd_symbol_index),
-		  Cg_Dwarf_Name_From_Handle(reloc_buffer[k].drd_symbol_index),
-		  shift);
+	  const char *sym_start = Cg_Dwarf_Name_From_Handle(reloc_buffer[k].drd_symbol_index);
+	  const char *sym_end = Cg_Dwarf_Name_From_Handle(reloc_buffer[k + 1].drd_symbol_index);
+	  if (ASM_SLEB128_SUPPORTED()) {
+	    fprintf(asm_file, "\t%s\t(%s - %s) >> %d", reloc_name,
+		    sym_end, sym_start, shift);
+	  }
+	  else {
+	    // Manual generation of SLEB128 encoding when not supported by assembler
+	    reloc_name = AS_BYTE;
+	    fprintf(asm_file, "\t%s\t0x80 + (((%s - %s) >> %d) & 0x7f)", reloc_name,
+		    sym_end, sym_start, shift);
+	    fprintf(asm_file, ", 0x80 + (((%s - %s) >> (%d+7)) & 0x7f)",
+		    sym_end, sym_start, shift);
+	    fprintf(asm_file, ", 0x80 + (((%s - %s) >> (%d+14)) & 0x7f)",
+		    sym_end, sym_start, shift);
+	    fprintf(asm_file, ", 0x80 + (((%s - %s) >> (%d+21)) & 0x7f)",
+		    sym_end, sym_start, shift);
+	    fprintf(asm_file, ", (((%s - %s) >> (%d+28)) & 0x7f)",
+		    sym_end, sym_start, shift);
+	  }
 	  ++k;
 	}
 	break;

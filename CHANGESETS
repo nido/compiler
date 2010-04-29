@@ -1,6 +1,53 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 29 10:26:21 CEST 2010
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-94342
+
+Description:
+------------
+	* [trunk] Fix for bug #94342: [DEBUG] Multi-Context debugging issue.
+	Deliver fixes/codex-94342 rev #27891 with authorization branch #95427
+
+	- xp70-v3: Enabled generation of symbolic offsets in debug section,
+	           in order to avoid unmapped address range in debug line
+	           section when asm stmts are present in source code.
+	- Disabled binopt (--no-deadcode) for xp70 debug_info testsuite.
+
+Modified Files:
+---------------
+	M       osprey/lai/cgdwarf.cxx
+	M       osprey/targinfo/arm/config/config_asm.h
+	M       osprey/targinfo/stxp70/config/config_asm.h
+	M       osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx
+	M       osprey/targinfo/st200/config/config_asm.h
+	M       ACI_CONFIGURATION
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27876 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-94342@27891 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27876 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-94342@27891" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cgdwarf.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgdwarf.cxx?p2=branches/fixes/codex-94342/osprey/lai/cgdwarf.cxx&r1=27876&r2=27891&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/arm/config/config_asm.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/config/config_asm.h?p2=branches/fixes/codex-94342/osprey/targinfo/arm/config/config_asm.h&r1=27876&r2=27891&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_asm.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_asm.h?p2=branches/fixes/codex-94342/osprey/targinfo/stxp70/config/config_asm.h&r1=27876&r2=27891&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx?p2=branches/fixes/codex-94342/osprey/targinfo/stxp70/cg/targ_cgdwarf.cxx&r1=27876&r2=27891&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/config/config_asm.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/config/config_asm.h?p2=branches/fixes/codex-94342/osprey/targinfo/st200/config/config_asm.h&r1=27876&r2=27891&roottype=svn&root=open64&diff_format=h
+ACI_CONFIGURATION	http://codex.cro.st.com/svn/viewvc.php/trunk/ACI_CONFIGURATION?p2=branches/fixes/codex-94342/ACI_CONFIGURATION&r1=27876&r2=27891&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Apr 28 13:54:33 CEST 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
