@@ -1,6 +1,42 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu Apr 29 18:32:08 CEST 2010
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93553
+
+Description:
+------------
+	*  Fix for codex bug #93553 ("Spurious warnings Variable
+	__return_address might be used uninitialized")
+	Delivered fixes/codex-93553 with authorization art #97025.
+
+
+Modified Files:
+---------------
+	M       osprey/gccfe/wfe_decl.cxx
+	M       osprey/g++fe/wfe_decl.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27910 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93553@27912 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27910 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-93553@27912" 
+
+Diff links to modified files:
+-----------------------------
+osprey/gccfe/wfe_decl.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_decl.cxx?p2=branches/fixes/codex-93553/osprey/gccfe/wfe_decl.cxx&r1=27910&r2=27912&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_decl.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_decl.cxx?p2=branches/fixes/codex-93553/osprey/g++fe/wfe_decl.cxx&r1=27910&r2=27912&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu Apr 29 10:26:21 CEST 2010
 	Author:    tt2
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

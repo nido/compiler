@@ -4055,6 +4055,7 @@ WFE_Get_Return_Address_ST (int level)
     ST_Init (return_address_st, Save_Str ("__return_address"), CLASS_VAR,
              SCLASS_AUTO, EXPORT_LOCAL, 
              Make_Pointer_Type (Be_Type_Tbl (MTYPE_V), FALSE));
+    Set_ST_is_temp_var (return_address_st);
     Return_Address_ST [CURRENT_SYMTAB] = return_address_st;
   }
   return return_address_st;
