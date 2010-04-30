@@ -1618,7 +1618,7 @@ void OP_Base_Offset_TNs(OP *memop, TN **base_tn, TN **offset_tn)
 #ifdef TARG_ST
     // FdF 20060517: Support for automod addressing mode
     if (OP_find_opnd_use(memop, OU_postincr) >= 0)
-      *offset_tn = Zero_TN;
+      *offset_tn = Gen_Literal_TN(0, 4);
     else
 #endif
     *offset_tn = OP_opnd(memop, offset_num);
@@ -1824,6 +1824,37 @@ OP_loadval_byte_offset (OP *op, INT resno)
   return byte_offset;
 }
 
+// FdF: Returns 0 if op is not an auto-mod operation, of if tn is not
+// the auto-modified register, or is redefined also by the operation.
+// Otherwise, return -1 for a pre-automod, and 1 for a post-automod.
+INT
+TN_isAutoMod(OP *op, TN *tn) {
+
+  INT isAutoMod;
+  INT opndAutoMod_idx;
+
+  // Check this op is an auto-mod operation
+  if ((opndAutoMod_idx = OP_find_opnd_use(op, OU_preincr)) != -1)
+    isAutoMod = -1;
+  else if ((opndAutoMod_idx = OP_find_opnd_use(op, OU_postincr)) != -1)
+    isAutoMod = 1;
+  else
+    return 0;
+
+  // tn is not the auto-mod operand
+  if (OP_opnd(op, opndAutoMod_idx) != tn)
+    return 0;
+
+  // Check that tn is only defined as the auto-mode result.
+  for (INT res_idx = 0; res_idx < OP_results(op); res_idx++) {
+    if ((OP_result(op, res_idx) == tn) &&
+	(OP_same_res(op, res_idx) != opndAutoMod_idx))
+      return 0;
+  }
+
+  return isAutoMod;
+}
+
 /* ====================================================================
  *
  * OP_load_result
@@ -1861,5 +1892,4 @@ OP_load_result (OP *op)
   }
   return candidate;
 }
-
 #endif

@@ -87,6 +87,7 @@
 //TB; for List_Software_Names
 #include "config_list.h"
 #include "lai_loader_api.h" // extension api
+#include "cg_ssa.h"
 #endif
 
 #ifdef TARG_ST
@@ -1232,6 +1233,45 @@ TN_Reaching_Value_At_Op(
 #define MAX_BB_THRESHOLD    30     // Don't look beyond 30 predecessor blocks.
                                    // Results of finding very unlikely.
 
+
+#ifdef TARG_ST
+  if (reaching_def && SSA_Active()) {
+    value_op = TN_ssa_def(tn);
+    if (value_op == NULL) {
+      *kind = VAL_UNKNOWN;
+      return NULL;
+    }
+    if (Is_OP_Cond(value_op)) {
+      if (OP_has_predicate(value_op) && OP_has_predicate(op)) {
+	/* (cbr) predicate operand # is not necessary constant */
+	int idx1 = OP_find_opnd_use(value_op, OU_predicate);
+	int idx2 = OP_find_opnd_use(op, OU_predicate);
+
+	TN *p1 = OP_opnd((OP*) value_op, idx1);
+	TN *p2 = OP_opnd((OP*) op, idx2);
+	// (cbr) Support for guards on false
+	if (TNs_Are_Equivalent (p1, p2) &&
+	    OP_Pred_False (value_op, idx1) == OP_Pred_False (op, idx2)) {
+	  *kind =  VAL_COND_DEF;
+	  return value_op;
+	}
+      }
+      *kind = VAL_COND_DEF;
+      return NULL;
+    }
+    // In case of a PSI operation, consider this is a conditional
+    // relation. A more accurate result would require to make a
+    // projection of the PSI operation on the predicate for op, and
+    // see if there is only one reaching definition.
+    if (OP_psi(value_op)) {
+      *kind =  VAL_COND_DEF;
+      return value_op;
+    }
+    *kind = VAL_KNOWN;
+    return value_op;
+  }
+#endif
+
   if (TN_register(tn) != REGISTER_UNDEFINED) {
     REGISTER reg = TN_register(tn);
 #ifdef TARG_ST
@@ -1620,10 +1660,12 @@ TN_Value_At_Op(
 	tn = OP_opnd(def_op, 1);
 	use_op = def_op;
 	continue;
-      } else if (OP_copy(def_op)) {
 #ifdef TARG_ST
+      } else if ((SSA_Active() && OP_Is_Copy(def_op)) ||
+		 (!SSA_Active() && OP_copy(def_op))) {
 	tn = OP_opnd(def_op, OP_Copy_Operand(def_op));
 #else
+      } else if (OP_copy(def_op)) {
 	tn = OP_opnd(def_op, OP_COPY_OPND);
 #endif
 	use_op = def_op;

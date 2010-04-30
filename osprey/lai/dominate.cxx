@@ -570,6 +570,14 @@ Calculate_Dominators(void)
   //
   for (bb = REGION_First_BB; bb; bb = BB_next(bb)) {
     BS_Difference1D(BB_dom_set(bb), 0);
+#ifdef TARG_ST
+    // FdF 20100222: For a BB that contains BB_ID_POST_ENTRY in its
+    // post-dominator set, set the REACH_EXIT flag.
+    if (BS_MemberP(BB_pdom_set(bb), 1+PU_BB_Count))
+      Set_BB_reach_exit(bb);
+    else
+      Reset_BB_reach_exit(bb);
+#endif
     BS_Difference1D(BB_pdom_set(bb), 1+PU_BB_Count);
 #ifdef TARG_ST
     /*  TDR: Fix for bug #76582 Cleanup */

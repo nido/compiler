@@ -103,7 +103,10 @@ BOOL Is_WellFormed_Loop(BB* loop_head)
 // any of the exit blocks. This is the desired behavior.
 // Warning: it also return FALSE if several exit blocks can be reached from
 // the block, which is not really expected!! To be reworked.
-                                                                                                 
+
+// FdF 20100225: Modified Calculate_Dominator to set/reset the flag
+// BBM_REACH_EXIT that indicates if a BB reach at least one exit
+
 static BOOL
 Is_Pdom_valid(BB *bb) {
   BS *PDOM_bb = BB_pdom_set(bb);
@@ -115,15 +118,12 @@ Is_Pdom_valid(BB *bb) {
   // The option RelaxPdom allows to move back to former behavior 
   // for evaluation or support purpose
   if (CG_AutoMod_RelaxPdom) return TRUE;
-                                                                                                 
-  for(bbList = Exit_BB_Head; bbList; bbList = BB_LIST_rest(bbList)) {
-    BB *bb_exit = BB_LIST_first(bbList);
-    // fprintf(TFile, "Checks exit %d\n", BB_id(bb_exit));
-    if (BS_MemberP(PDOM_bb, BB_id(bb_exit))) {
-      // fprintf(TFile, "Block %d post dom OK for exit %d\n", BB_id(bb), BB_id(bb_exit));
-      return TRUE;
-    }
+
+  if (BB_reach_exit(bb)) {
+    // fprintf(TFile, "Block %d post dom OK for exit %d\n", BB_id(bb), BB_id(bb_exit));
+    return TRUE;
   }
+                                                            
   if(CGA_Trace) fprintf(TFile, "Block %d not member of valid ones\n", BB_id(bb));
   return FALSE;
 }
@@ -131,15 +131,6 @@ Is_Pdom_valid(BB *bb) {
 // *****************************************************************************
 
 // Define function to check dominance/postdominance between operations
-
-static BOOL
-check_OP_dominates(OP *op1, OP *op2) {
-
-  if (OP_bb(op1) == OP_bb(op2))
-    return ((op1 == op2) || OP_Precedes(op1, op2));
-
-  return BB_SET_MemberP(BB_dom_set(OP_bb(op2)), OP_bb(op1));
-}
 
 static BOOL
 check_OP_postdominates(OP *op1, OP *op2) {
@@ -153,7 +144,7 @@ check_OP_postdominates(OP *op1, OP *op2) {
 
 static BOOL
 check_OP_on_path(OP *first_op, OP *last_op, op *op) {
-  return check_OP_dominates(first_op, op) && check_OP_postdominates(last_op, op);
+  return OP_Dominates(first_op, op) && check_OP_postdominates(last_op, op);
 }
 
 /*
@@ -522,9 +513,9 @@ check_LiveOut(BB_SET *bbRegion_set, OP *memop, OP* incrop, TN *tn){
     BS *DOM = BB_dom_set(dom);
     BS *PDOM = BB_pdom_set(dom);
 
-    if(    BS_MemberP(DOM,  BB_id(OP_bb(memop)))
-       && !BS_MemberP(PDOM, BB_id(OP_bb(incrop)))
-       && !BS_MemberP(DOM,  BB_id(OP_bb(incrop)))) {
+    if(    BB_SET_MemberP(DOM,  OP_bb(memop))
+       && !BB_SET_MemberP(PDOM, OP_bb(incrop))
+       && !BB_SET_MemberP(DOM,  OP_bb(incrop))) {
 
       BBLIST *bb_l;
       FOR_ALL_BB_SUCCS(dom, bb_l){
@@ -565,7 +556,7 @@ is_Incrop_DU(DUD_REGION *dud, OP *useop, OP* incrop){
     OP *op = du_link.op(j);
 
     if (op == useop) {
-      return check_OP_dominates(incrop, useop);
+      return OP_Dominates(incrop, useop);
     }
   }
   return FALSE;
@@ -779,8 +770,8 @@ postincr_RepairOffset(DUD_REGION *dud, OP *memop, OP* incrop){
 	  FmtAssert(0, ("unexpected operation to repair in automod"));
 	}
       }
-      else if (check_OP_dominates(memop, useop) &&
-	       !check_OP_dominates(incrop, useop)) {
+      else if (OP_Dominates(memop, useop) &&
+	       !OP_Dominates(incrop, useop)) {
 	// Repair code insertion needed in a basicblock or on an out edge of the region
 
 	// Curently not supported
@@ -859,8 +850,8 @@ preincr_RepairOffset(DUD_REGION *dud, OP *memop, OP* incrop){
 	  FmtAssert(0, ("unexpected operation to repair in automod"));
 	}
       }
-      else if (check_OP_dominates(incrop, useop) &&
-	       !check_OP_dominates(memop, useop)) {
+      else if (OP_Dominates(incrop, useop) &&
+	       !OP_Dominates(memop, useop)) {
 	// Repair code insertion needed in a basicblock or on an out edge of the region
 
 	// Currently not supported
@@ -917,7 +908,7 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
       OP *useop = du_link.op(i);
 
       if (check_Incrop(useop)
-	  && check_OP_dominates(op, useop) && check_OP_postdominates(useop, op)
+	  && OP_Dominates(op, useop) && check_OP_postdominates(useop, op)
 	  && check_IncrOffset(useop, op, TRUE)
 	  && is_NotDefined_PostIncr(dud, op, useop)
 	  && check_LiveOut(bbRegion_set, op, useop, tn_base)
@@ -957,7 +948,7 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
   if (ud_link.size() == 1) {
 
     if (check_Incrop(defop)
-	&& check_OP_dominates(defop, op) && check_OP_postdominates(op, defop)
+	&& OP_Dominates(defop, op) && check_OP_postdominates(op, defop)
 	&& check_IncrOffset(defop, op, FALSE)
 	&& check_LiveOut(bbRegion_set, defop, op, tn_base)
 	&& BB_loop_head_bb(OP_bb(defop)) == BB_loop_head_bb(OP_bb(op))) {
@@ -991,7 +982,7 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
        */
       if ((OP_iadd(defop) || OP_isub(defop))
 	  && check_OffsetIncrOffset(defop, op)
-	  && check_OP_dominates(defop, op) && check_OP_postdominates(op, defop)
+	  && OP_Dominates(defop, op) && check_OP_postdominates(op, defop)
 	  && (preincr_Cost(dud, op, defop) < INT_MAX) 
 	  && check_LiveOut(bbRegion_set, defop, op, tn_base)
 	  && BB_loop_head_bb(OP_bb(defop)) == BB_loop_head_bb(OP_bb(op))) {
@@ -1508,8 +1499,8 @@ baseOffset_Cost(DUD_REGION *dud, OP *memop, OP* incrop){
 	}
 
       }
-      else if (check_OP_dominates(incrop, useop) &&
-	       !check_OP_dominates(memop, useop)) {
+      else if (OP_Dominates(incrop, useop) &&
+	       !OP_Dominates(memop, useop)) {
 
 	// Repair code insertion needed in a basicblock or on an out edge of the region
 

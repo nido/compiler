@@ -3435,6 +3435,11 @@ void Unroll_Make_Remainder_Loop(CG_LOOP& cl, INT32 ntimes)
   if (remainder_after) {
     extend_epilog(loop);
     CG_LOOP_prolog = CG_LOOP_epilog;
+    // FdF 20100201: Update enclosing loop, needed for Counted Loop
+    // mapping
+    LOOP_DESCR *enclosing = LOOP_DESCR_Next_Enclosing_Loop(loop);
+    if (enclosing)
+      LOOP_DESCR_Add_BB(enclosing, CG_LOOP_epilog);
   }
 #endif
 
