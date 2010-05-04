@@ -5073,6 +5073,9 @@ Assemble_Simulated_OP (
 	// Align current PC
 	PC = PC_Align_N(PC, DEFAULT_FUNCTION_ALIGNMENT);
       }
+      // [SC] We do not know the size of the asm, so we no longer know
+      // our offset from the Last_Label, so set it to unknown.
+      Last_Label = LABEL_IDX_ZERO;
 #endif
     }
     if (Lai_Code) {

@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue May 04 12:06:38 CEST 2010
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-91521
+
+Description:
+------------
+	*  Fix for codex bug #91521 ("[CG] Incorrect eh frame unwind generated
+ 	in presence of gnu asms")
+	Delivered fixes/codex-91521 with authorization art #98859.
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cgemit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27973 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-91521@27983 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27973 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-91521@27983" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgemit.cxx?p2=branches/fixes/codex-91521/osprey/lai/cgemit.cxx&r1=27973&r2=27983&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri Apr 30 14:30:27 CEST 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
