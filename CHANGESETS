@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed May 05 17:06:57 CEST 2010
+	Author:    chauveth
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-98963
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-98963 rev #28007 with authorization branch #98965
+
+
+Modified Files:
+---------------
+	M       osprey/driver/objects.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@27985 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-98963@28007 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@27985 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-98963@28007" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/objects.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/objects.c?p2=branches/fixes/codex-98963/osprey/driver/objects.c&r1=27985&r2=28007&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue May 04 12:06:38 CEST 2010
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

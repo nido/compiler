@@ -288,7 +288,7 @@ append_libraries_to_list (string_list_t *list)
           if ( ( lib_suffix_found == NULL ) || ( strcmp( lib_suffix_found, lib_suffix ) != 0 ) ) {
             lib_path = concat_strings(lib_path,lib_suffix);
             // DEBUG // lib_path = concat_strings(lib_path,"/extension_library_dirs");
-            add_string(list, concat_strings("-L",lib_path));
+            add_string(list, lib_path);
           }
         }
 
