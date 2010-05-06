@@ -1175,9 +1175,16 @@ Finalize_BB(BB *bp)
 
       Is_True(BB_Find_Succ(bp, succ_bb),
 	      ("BB:%d preds/succs don't match BBINFO", BB_id(bp)));
+#ifdef TARG_ST
+      Is_True(   !freqs_computed
+		 || (BBLIST_prob(BB_Find_Succ(bp, succ_bb)) == 1.0)
+		 || (CG_opt_level == 0),
+		 ("BB:%d preds/succs don't match BBINFO", BB_id(bp)));
+#else
       Is_True(   !freqs_computed
 		 || (BBLIST_prob(BB_Find_Succ(bp, succ_bb)) == 1.0),
 		 ("BB:%d preds/succs don't match BBINFO", BB_id(bp)));
+#endif
 
       if (   offset == 0
 	  && succ_bb == BB_next(bp) 
@@ -1295,8 +1302,13 @@ Finalize_BB(BB *bp)
       Is_True(   BB_succs_len(bp) == 1
 	      && BBLIST_item(BB_succs(bp)) == succ_bb,
 	      ("BB:%d preds/succs don't match BBINFO", BB_id(bp)));
+#ifdef TARG_ST
+      Is_True(!freqs_computed || BBLIST_prob(BB_Find_Succ(bp, succ_bb)) == 1.0 || (CG_opt_level == 0),
+	      ("BB:%d preds/succs don't match BBINFO", BB_id(bp)));
+#else
       Is_True(!freqs_computed || BBLIST_prob(BB_Find_Succ(bp, succ_bb)) == 1.0,
 	      ("BB:%d preds/succs don't match BBINFO", BB_id(bp)));
+#endif
       Is_True(offset == 0, ("CALL BB:%d offset non-zero", BB_id(bp)));
 
       /* The call block doesn't fall through to its succ so insert

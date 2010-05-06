@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu May 06 16:13:33 CEST 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-68711
+
+Description:
+------------
+	* [trunk] Fix for bug #68711: assertion preds/succs don't match BBINFO (ccvs / -Os).
+	Deliver fixes/codex-68711 rev #28026 with authorization branch #99081
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cflow.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28024 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-68711@28026 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28024 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-68711@28026" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cflow.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cflow.cxx?p2=branches/fixes/codex-68711/osprey/lai/cflow.cxx&r1=28024&r2=28026&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed May 05 17:06:57 CEST 2010
 	Author:    chauveth
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
