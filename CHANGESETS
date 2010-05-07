@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri May 07 14:41:47 CEST 2010
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99480
+
+Description:
+------------
+	* [trunk] Fix for bug #99480: [ACI_CONFIGURATION] Add adobe_cpp validation test suite for st200.
+	Deliver fixes/codex-99480 rev #28055 with authorization branch #99481
+
+
+Modified Files:
+---------------
+	M       ACI_CONFIGURATION
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28049 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99480@28055 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28049 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99480@28055" 
+
+Diff links to modified files:
+-----------------------------
+ACI_CONFIGURATION	http://codex.cro.st.com/svn/viewvc.php/trunk/ACI_CONFIGURATION?p2=branches/fixes/codex-99480/ACI_CONFIGURATION&r1=28049&r2=28055&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri May 07 09:44:43 CEST 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
