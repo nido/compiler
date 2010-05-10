@@ -599,7 +599,7 @@ static OPTION_DESC Options_IPA[] = {
     { OVK_BOOL, OV_INTERNAL,	FALSE, "eh_opt",	"",
 	  0, 0, 0,		&IPA_Enable_EH_Region_Removal,	NULL,
 	  "Enable removal of exception regions"},
-    { OVK_BOOL,	OV_VISIBLE,	FALSE, "clone_list",	"",
+    { OVK_BOOL,	OV_VISIBLE,	FALSE, "clone_list",	"clone_list",
 	  0, 0, 0,	&IPA_Clone_List_Actions,	NULL,
 	  "Report function cloner actions" },
 #endif

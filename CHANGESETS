@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon May 10 13:57:57 CEST 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-98815
+
+Description:
+------------
+	* [trunk] Fix for bug #98815: Option -IPA:clone is ambiguous.
+	Deliver fixes/codex-98815 rev #28089 with authorization branch #98820
+
+
+Modified Files:
+---------------
+	M       osprey/common/com/config_ipa.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28079 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-98815@28089 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28079 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-98815@28089" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/com/config_ipa.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config_ipa.cxx?p2=branches/fixes/codex-98815/osprey/common/com/config_ipa.cxx&r1=28079&r2=28089&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon May 10 13:13:44 CEST 2010
 	Author:    
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
