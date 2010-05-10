@@ -103,7 +103,7 @@ active_configuration:
 	FL_ACTIVE_CONF FL_STRING 
 	{ 
 		if(active_appli_config_file_name != NULL)  { 
-			APPLICONFIG_warning("Command-line active configuration (-mappli-config-active) already defined with value: %s, ignoring configuration file value %s",active_appli_config_file_name,$2);
+			APPLICONFIG_warning("Command-line active configuration (-macf-active) already defined with value: %s, ignoring configuration file value %s",active_appli_config_file_name,$2);
 		} else 
 			active_appli_config_file_name = strdup($2); 
 		DBG_printf("Active configuration is %s\n",$2);

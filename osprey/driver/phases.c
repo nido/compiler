@@ -3186,7 +3186,13 @@ run_compiler (void)
 #endif
 #ifdef TARG_ST
 	 if (appli_config_file_set && active_configuration && 
-	     (phase_order[i] != P_gas) && (phase_order[i] != P_any_ld)) {
+	     (phase_order[i] != P_gas) &&
+	     (!is_matching_phase(get_phase_mask(phase_order[i]), P_any_ld))
+#ifdef BCO_ENABLED /* Thierry */
+	     && (phase_order[i] != P_ldsimple)
+	     && (phase_order[i] != P_binopt)
+#endif
+	     ) {
 	   char* temp_cfg_file_name = create_temp_file_name("cfg");
 	   if (temp_cfg_file_name) {
 	     extern
