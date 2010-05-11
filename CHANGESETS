@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue May 11 16:27:59 CEST 2010
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-97483
+
+Description:
+------------
+	* [trunk] Fix for bug #97483: [MP1x][IPA][V4] Fatal Error: Illegal dedicated return register .
+	Deliver fixes/codex-97483 rev #28143 with authorization branch #97673
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/arm/config/targ_sim.cxx
+	M       osprey/targinfo/stxp70/config/targ_sim.cxx
+	M       osprey/targinfo/st200/config/targ_sim.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28136 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-97483@28143 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28136 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-97483@28143" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/arm/config/targ_sim.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/arm/config/targ_sim.cxx?p2=branches/fixes/codex-97483/osprey/targinfo/arm/config/targ_sim.cxx&r1=28136&r2=28143&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/targ_sim.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/targ_sim.cxx?p2=branches/fixes/codex-97483/osprey/targinfo/stxp70/config/targ_sim.cxx&r1=28136&r2=28143&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/config/targ_sim.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/config/targ_sim.cxx?p2=branches/fixes/codex-97483/osprey/targinfo/st200/config/targ_sim.cxx&r1=28136&r2=28143&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue May 11 09:37:43 CEST 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
