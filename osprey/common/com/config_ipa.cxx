@@ -140,13 +140,7 @@ BOOL IPA_Enable_final_link = TRUE;	/* Final link step */
 BOOL IPA_Enable_Memtrace = FALSE;	/* Memory trace */
 BOOL IPA_Enable_DST = TRUE;		/* Generate DST */
 BOOL IPA_Enable_DCE = TRUE;		/* Enable Dead Call Elimination */
-#ifdef TARG_ST
-// [CM] inline functions that have exceptions is functional
-// but triggers massive inlining problems when compiling qt-embedded
-BOOL IPA_Enable_Exc = FALSE;		/* Enable exception handling */
-#else
 BOOL IPA_Enable_Exc = TRUE;		/* Enable exception handling */
-#endif
 BOOL IPA_Enable_Recycle = TRUE;		/* Enable recycling of variables */
 BOOL IPA_Enable_DVE = TRUE;		/* Enable Dead Variable Elimination */
 BOOL IPA_Enable_CGI = TRUE;		/* Enable Constant Global Variable
@@ -632,13 +626,7 @@ BOOL	INLINE_Enable_Copy_Prop = TRUE; /* Copy Propogation during stand-alone inli
 BOOL	INLINE_Enable_Subst_Copy_Prop = FALSE; /* Aggressive substitution of actual for formal and hence copy propogation during stand-alone inlining */
 BOOL    INLINE_F90 = TRUE;  /* Enable recognition of F90 in parameter type compatibility */
 BOOL	INLINE_None = FALSE;	/* Inline nothing? */
-#ifdef TARG_ST
-// [CM] inline functions that have exceptions is functional
-// but triggers massive inlining problems when compiling qt-embedded
-BOOL	INLINE_Exceptions = FALSE;	/* Inline exception code? */
-#else
 BOOL	INLINE_Exceptions = TRUE;	/* Inline exception code? */
-#endif
 BOOL	INLINE_Keep_PU_Order = FALSE;	/* Retain input PU order? */
 #ifdef TARG_ST
 BOOL    INLINE_Sort_PU_Order = TRUE; /* Sort input PUs to aid code generation. */

@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue May 11 18:35:17 CEST 2010
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-94896
+
+Description:
+------------
+	* [trunk] Fix for bug #94896: [INLINE] Investigate the default inlining of functions that may throw exceptions (st200, C++).
+	Deliver fixes/codex-94896 rev #28150 with authorization branch #94935
+
+
+Modified Files:
+---------------
+	M       osprey/common/com/config_ipa.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28146 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-94896@28150 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28146 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-94896@28150" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/com/config_ipa.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/config_ipa.cxx?p2=branches/fixes/codex-94896/osprey/common/com/config_ipa.cxx&r1=28146&r2=28150&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue May 11 16:27:59 CEST 2010
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
