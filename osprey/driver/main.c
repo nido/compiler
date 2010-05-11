@@ -491,7 +491,7 @@ main (int argc, char *argv[])
            }
          }
          if (j==ExtensionNameTabSize) {
-           warning("Unknown extension '%s' specified to option -Mextoption. Ignored.", Mextoption[i].ext);
+           warning("Unknown extension '%s' specified to option -Mextop. Ignored.", Mextoption[i].ext);
          }
        }
      }

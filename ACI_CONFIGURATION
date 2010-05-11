@@ -10,7 +10,7 @@ definitions:
       path      : 
        crolles  : /sw/gnu_compil/stxp70work/hudson/aci-cec-home/aci-dependencies/toolset-stxp70
        grenoble : /home/compwork/cruisecontrol/CC/persistent_inputs/aci-dependencies/toolset-stxp70
-      name      : STxP70-BOM30-plus-updated-binutils-20100429.tar.gz
+      name      : STxP70-BOM30-with-tools-20100326.tar.gz
       rtk       : 
         branch   : trunk
         revision : HEAD
@@ -82,7 +82,7 @@ definitions:
       path    : 
        crolles  : /sw/gnu_compil/stxp70work/hudson/aci-cec-home/aci-dependencies/toolset-stxp70
        grenoble : /home/compwork/cruisecontrol/CC/persistent_inputs/aci-dependencies/toolset-stxp70
-      name      : STxP70-BOM30-plus-updated-binutils-20100429.tar.gz
+      name      : STxP70-BOM30-with-tools-20100326.tar.gz
       rtk       : 
         branch   : trunk
         revision : HEAD
