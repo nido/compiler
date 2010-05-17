@@ -1,6 +1,44 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon May 17 18:33:58 CEST 2010
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99873
+
+Description:
+------------
+	*  Fix for codex bug #99873 ("[EBO] Missing propagation through
+	subset loads").
+	Delivered fixes/codex-99873 with authorization art #100040.
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/st200/expand/exp_memrf.cxx
+	M       osprey/targinfo/st200/expand/exp_targ.cxx
+	M       osprey/targinfo/st200/cg/targ_ebo.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28207 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99873@28214 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28207 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99873@28214" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/st200/expand/exp_memrf.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/expand/exp_memrf.cxx?p2=branches/fixes/codex-99873/osprey/targinfo/st200/expand/exp_memrf.cxx&r1=28207&r2=28214&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/expand/exp_targ.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/expand/exp_targ.cxx?p2=branches/fixes/codex-99873/osprey/targinfo/st200/expand/exp_targ.cxx&r1=28207&r2=28214&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/cg/targ_ebo.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/cg/targ_ebo.cxx?p2=branches/fixes/codex-99873/osprey/targinfo/st200/cg/targ_ebo.cxx&r1=28207&r2=28214&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon May 17 15:31:32 CEST 2010
 	Author:    bv11
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

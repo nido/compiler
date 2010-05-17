@@ -754,9 +754,10 @@ EBO_combine_adjacent_loads(
  * 1. store at offset_pred of size_pred
  * 2. load at offset_succ of size_succ
  * 
- * Currently only handle the case where:
- * offset_pred == offset_succ == 0 and size_pred == size_succ
- * In this case we must emit the load extension.
+ * Currently only handle cases where:
+ *   a. The load is unpredicated
+ *      (we could extend this to handle predicates using a select)
+ *   b. Store is writing at most one word to memory
  * =====================================================================
  */
 BOOL
@@ -771,41 +772,38 @@ EBO_replace_subset_load_with_extract (
 )
 {
   INT byte_offset = offset_succ - offset_pred;
-  
-  if (offset_pred == 0 && offset_pred == offset_succ &&
-      size_pred == size_succ) {
-    if (TN_size(succ_result) > size_succ) {
-      TOP new_opcode = TOP_UNDEFINED;
-      TN *tn1;
-      TN *tn2;
-      if (size_succ == 2) {
-	new_opcode = TOP_is_unsign(OP_code(op)) ? TOP_zxth_r_r : TOP_sxth_r_r;
-	tn1 = pred_result;
-	tn2 = NULL;
-      } else if (size_succ == 1) {
-	if (TOP_is_unsign(OP_code(op))) {
-	  new_opcode = TOP_and_i_r_r;
-	  tn1 = pred_result;
-	  tn2 = Gen_Literal_TN(0xff, 4);
-	} else {
-	  new_opcode = TOP_sxtb_r_r;
-	  tn1 = pred_result;
-	  tn2 = NULL;
-	}
-      }
-      if (new_opcode == TOP_UNDEFINED) return FALSE;
-      OP *new_op;
-      new_op = Mk_OP(new_opcode, succ_result,tn1,tn2);
-      OP_srcpos(new_op) = OP_srcpos(op);
-      if (!EBO_Verify_Op(new_op)) return FALSE;
-      BB_Insert_Op_After(OP_bb(op), op, new_op);
-      
-      return TRUE;
-      
-    }
+  // If anything is wider than a word, give up
+  if (size_pred > 4) return FALSE;
+  if (OP_has_predicate(op)) return FALSE;
+
+  // value_start is the bit at width the value to be extracted starts
+  // For little-endian, it is simply the byte offset of the load from the
+  // stored value.
+  // For big-endian, a little more complicated ... since we need to
+  // take into account the difference in size between the load and the store.
+  UINT value_start = 8 * ((Target_Byte_Sex == BIG_ENDIAN)
+			  ? ((size_pred - size_succ) - byte_offset)
+			  : byte_offset);
+  // The width in bits of the extracted value
+  UINT value_width = 8 * size_succ;
+  // Signedness of the extracted value
+  BOOL extracted_value_unsigned = TOP_is_unsign(OP_code(op));
+  TYPE_ID desc = extracted_value_unsigned ? MTYPE_U4 : MTYPE_I4;
+  TYPE_ID rtype = desc;
+  OPS ops = OPS_EMPTY;
+  Exp_Extract_Bits (rtype, desc, value_start, value_width,
+		    succ_result, pred_result, &ops);
+  OP *newop;
+  FOR_ALL_OPS_OPs(&ops, newop) {
+    OP_srcpos(newop) = OP_srcpos(op);
   }
+  /* Note that in some cases Exp_Extract_Bits requires temporary
+     registers which is not allowed if EBO_in_peep, so the following
+     call to EBO_Verify_Ops will return false in this case. */
+  if (!EBO_Verify_Ops(&ops)) return FALSE;
   
-  return FALSE;
+  BB_Insert_Ops_After(OP_bb(op), op, &ops);
+  return TRUE;
 }
 
 /* =====================================================================

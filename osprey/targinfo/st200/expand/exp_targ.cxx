@@ -437,34 +437,29 @@ Expand_Convert_Length (
 
   if (old_length <= 32) {
     // fits into the LX registers
-    if (new_length == 8) {
-      // zero extension requires a sequence of shifts:
-      if (signed_extension) {
-          Build_OP (TOP_sxtb_r_r, dest, src, ops);
-      }
-      else {
-	Build_OP (TOP_and_i_r_r, dest, src, Gen_Literal_TN(0xff,4), ops);
-      }
+    if (new_length == 8 && signed_extension) {
+      Build_OP (TOP_sxtb_r_r, dest, src, ops);
     }
     else if (new_length == 16) {
-      // zero extension requires a sequence of shifts:
+      Build_OP ((signed_extension ? TOP_sxth_r_r : TOP_zxth_r_r),
+		dest, src, ops);
+    }
+    else if (new_length < 32) {
       if (signed_extension) {
-          Build_OP (TOP_sxth_r_r, dest, src, ops);
-      }
-      else {
-	Build_OP (TOP_zxth_r_r, dest, src, ops);
+	TN *tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	Expand_Shift (tmp, src, Gen_Literal_TN(32 - new_length, 4),
+		      MTYPE_I4, shift_left, ops);
+	Expand_Shift (dest, tmp, Gen_Literal_TN(32 - new_length, 4),
+		      MTYPE_I4, shift_aright, ops);
+      } else {
+	INT64 mask = (1 << new_length) - 1;
+	Build_OP ((ISA_LC_Value_In_Class (mask, LC_isrc2)
+		   ? TOP_and_i_r_r : TOP_and_ii_r_r), dest, src,
+		  Gen_Literal_TN(mask, 4), ops);
       }
     }
-    else if (new_length < 16) {
-      INT64 mask = 1;
-      INT32 i;
-
-      for ( i = 0; i < new_length-1; ++i ) {
-        mask |= mask << 1;
-      }
-
-      Build_OP (TOP_and_i_r_r, dest, src, Gen_Literal_TN(mask, 4), ops);
-    }
+    else
+      FmtAssert(FALSE, ("Expand_Convert_Length: unknown dest extension"));
   }
   else
       FmtAssert(FALSE, ("Expand_Convert_Length: unknown src extension"));

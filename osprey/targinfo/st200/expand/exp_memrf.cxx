@@ -1137,19 +1137,26 @@ Exp_Extract_Bits (
     
     // shift left -> clear the bits bit_offset+size -> 31
     left_shift = 32 - bit_offset - bit_size;
-    if (left_shift) {
-      tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
-      Build_OP(TOP_shl_i_r_r, tmp, src_tn, 
-	       Gen_Literal_TN(left_shift, 4), ops);
-    } else {
-      tmp = src_tn;
-    }
-    
-    // move the bits to be extracted to position 0
     right_shift = 32 - bit_size;
-    extr_op = MTYPE_signed(desc) ? TOP_shr_i_r_r : TOP_shru_i_r_r;
-    Build_OP(extr_op, tgt_tn, tmp, 
-	     Gen_Literal_TN(right_shift,4), ops);
+    if (left_shift == right_shift) {
+      Expand_Convert_Length (tgt_tn, src_tn,
+			     Gen_Literal_TN (bit_size, 4),
+			     desc, 
+			     MTYPE_signed(rtype), ops);
+    } else {
+      if (left_shift) {
+	tmp = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer);
+	Build_OP(TOP_shl_i_r_r, tmp, src_tn, 
+		 Gen_Literal_TN(left_shift, 4), ops);
+      } else {
+	tmp = src_tn;
+      }
+    
+      // move the bits to be extracted to position 0
+      extr_op = MTYPE_signed(desc) ? TOP_shr_i_r_r : TOP_shru_i_r_r;
+      Build_OP(extr_op, tgt_tn, tmp, 
+	       Gen_Literal_TN(right_shift,4), ops);
+    }
   }
   return;
 }
