@@ -5487,7 +5487,15 @@ Analyze_Spilling_Live_Range (
       last_def = i;
       cur_benefit = 0;
 #ifdef TARG_ST
-      benefit_since_last_use = 0;
+      if (OP_cond_def(op)) {
+        if (!def_available) {
+          // [TTh] For cond_def results, the previous value must be available
+          cost += restore_cost;
+        }
+      }
+      else {
+        benefit_since_last_use = 0;
+      }
       if (reloadable || 
 	  (already_spilled && Is_OP_Spill_Load (op, spill_loc)) && (i != first_def)) {
 #else
@@ -6156,13 +6164,24 @@ last_def = -1;
       }
 
       else if (OP_cond_def(op) && OP_result(op, 0) == spill_tn) {
-        OPS copy_ops = OPS_EMPTY;
-        Exp_COPY(new_tn, prev_tn, &copy_ops);
-        if (Do_LRA_Trace(Trace_LRA_Spill)) {
-          fprintf (TFile, "LRA_SPILL>> copy TN%d to TN%d for cond_def OP\n", 
-                   TN_number(prev_tn), TN_number(new_tn));
+
+#ifdef TARG_ST
+        if (!def_available) {
+          // [TTh] Reload previous version before the cond_def
+          def_available = TRUE;
+          Add_Spill_Load_Before_Use (new_tn, spill_loc, reloadable_def, i, bb);
         }
-        CGSPILL_Insert_Ops_Before(bb, op, &copy_ops);
+        else
+#endif
+        {
+          OPS copy_ops = OPS_EMPTY;
+          Exp_COPY(new_tn, prev_tn, &copy_ops);
+          if (Do_LRA_Trace(Trace_LRA_Spill)) {
+            fprintf (TFile, "LRA_SPILL>> copy TN%d to TN%d for cond_def OP\n", 
+                     TN_number(prev_tn), TN_number(new_tn));
+          }
+          CGSPILL_Insert_Ops_Before(bb, op, &copy_ops);
+        }
         resnum = TN_Resnum_In_OP (op, spill_tn);
       }
 

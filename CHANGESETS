@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon May 17 10:53:51 CEST 2010
+	Author:    tt2
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99560
+
+Description:
+------------
+	* [trunk] Fix for bug #99560: [LRA][V4dual] Allocation failure on WB-AMR in IPA-Mode16.
+	Deliver fixes/codex-99560 rev #28185 with authorization branch #99573
+
+	- LRA: Improved spill cost computation of cond_def results and fix the generated spill code
+
+Modified Files:
+---------------
+	M       osprey/lai/lra.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28154 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99560@28185 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28154 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99560@28185" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/lra.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/lra.cxx?p2=branches/fixes/codex-99560/osprey/lai/lra.cxx&r1=28154&r2=28185&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue May 11 18:35:17 CEST 2010
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
