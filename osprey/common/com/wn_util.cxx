@@ -1638,3 +1638,46 @@ WN_get_align (WN *wn)
 
 } // get_WN_align
 #endif
+
+
+#ifdef TARG_ST
+// bv11 - WN_Equiv_Tree - Corresponds to a recursive WN_Equiv
+BOOL WN_Equiv_Tree (WN *wn1, WN* wn2) {
+
+  if (!wn1 && !wn2) return TRUE;    // both are NULL
+  if (!wn1 || !wn2) return FALSE;   // one (but not both) is NULL
+  if (!WN_Equiv (wn1, wn2)) return FALSE;   // not the same
+
+  // Now examine the kids
+  OPERATOR opr = WN_operator(wn1);
+  if ((opr == OPR_ADD) || (opr == OPR_BAND) || (opr == OPR_BIOR) ||
+      (opr == OPR_BNOR) || (opr == OPR_BXOR) || (opr == OPR_EQ) ||
+      (opr == OPR_MAX) || (opr == OPR_MIN) || (opr == OPR_MPY) ||
+      (opr == OPR_NE)) {
+    // Case of commutative operators having the same kids
+    // but not in the same order
+    Is_True (WN_kid_count(wn1)==2,
+	     ("WN_Equiv_Tree: Unexpected number of children for a commutative operator"));
+    WN *kid10 = WN_kid(wn1,0);
+    WN *kid11 = WN_kid(wn1,1);
+    WN *kid20 = WN_kid(wn2,0);
+    WN *kid21 = WN_kid(wn2,1);
+    if ((WN_Equiv_Tree (kid10, kid20) && WN_Equiv_Tree (kid11, kid21)) ||
+	(WN_Equiv_Tree (kid10, kid21) && WN_Equiv_Tree (kid11, kid20))) {
+      return TRUE;
+    }
+    else {
+      return FALSE;
+    }
+  }
+  else {
+    // Since the two nodes are equiv, they have the same number of children
+    for (INT i=0; i<WN_kid_count(wn1); i++) {
+      if (!WN_Equiv_Tree (WN_kid(wn1,i), WN_kid(wn2,i))) {
+	return FALSE;
+      }
+    }
+    return TRUE;
+  }
+}
+#endif

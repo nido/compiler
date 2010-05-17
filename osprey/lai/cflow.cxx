@@ -97,6 +97,7 @@
 
 #ifdef TARG_ST
 #   include <set>
+#include "wn_util.h" // for WN_Equiv_Tree
 #endif
 
 #include "cflow.h"
@@ -4618,8 +4619,28 @@ Unify_TNs_for_Merging(OP *cur_op[], INT op_nb, BS *TNs_to_be_unified) {
       gtn = OP_opnd(cur_op[0], j);
       /* Transform local register tn into global register */
       Set_TN_is_global_reg(gtn);
-      Reset_TN_is_rematerializable(gtn);
-      Set_TN_remat(gtn, NULL);
+      if (TN_is_rematerializable(gtn)) {
+	for (i = 0; i < op_nb; i++) {
+	  tn = OP_opnd(cur_op[i], j);
+	  if (!TN_is_rematerializable(tn) ||
+	      (TN_is_rematerializable(tn) && !WN_Equiv_Tree(TN_remat(tn), TN_remat(gtn)))) {
+	    Reset_TN_is_rematerializable(gtn);
+	    Set_TN_remat(gtn, NULL);
+	    break;
+	  }
+	}
+      }
+      if (TN_is_gra_homeable(gtn)) {
+	for (i = 0; i < op_nb; i++) {
+	  tn = OP_opnd(cur_op[i], j);
+	  if (!TN_is_gra_homeable(tn) ||
+	      (TN_is_gra_homeable(tn) && !WN_Equiv_Tree(TN_home(tn), TN_home(gtn)))) {
+	    Reset_TN_is_gra_homeable(gtn);
+	    Set_TN_home(gtn, NULL);
+	    break;
+	  }
+	}
+      }
 
       /* Transform equivalent tns in other equivalent operations into tn */
       for (i = 0; i < op_nb; i++) {
@@ -4986,6 +5007,28 @@ Unify_TNs_for_Hoisting(OP *cur_op[], INT op_nb, BS *TNs_to_be_unified) {
       gtn = OP_result(cur_op[0], j);
       /* Transform local register tn into global register */
       Set_TN_is_global_reg(gtn);
+      if (TN_is_rematerializable(gtn)) {
+	for (i = 0; i < op_nb; i++) {
+	  tn = OP_result(cur_op[i], j);
+	  if (!TN_is_rematerializable(tn) ||
+	      (TN_is_rematerializable(tn) && !WN_Equiv_Tree(TN_remat(tn), TN_remat(gtn)))) {
+	    Reset_TN_is_rematerializable(gtn);
+	    Set_TN_remat(gtn, NULL);
+	    break;
+	  }
+	}
+      }
+      if (TN_is_gra_homeable(gtn)) {
+	for (i = 0; i < op_nb; i++) {
+	  tn = OP_result(cur_op[i], j);
+	  if (!TN_is_gra_homeable(tn) ||
+	      (TN_is_gra_homeable(tn) && !WN_Equiv_Tree(TN_home(tn), TN_home(gtn)))) {
+	    Reset_TN_is_gra_homeable(gtn);
+	    Set_TN_home(gtn, NULL);
+	    break;
+	  }
+	}
+      }
 
       /* Transform equivalent tns in other equivalent operations into tn */
       for (i = 1; i < op_nb; i++) {

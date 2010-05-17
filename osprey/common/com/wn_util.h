@@ -434,6 +434,10 @@ inline BOOL WN_is_black_box(const WN *wn)
   return OPCODE_is_black_box( WN_opcode(wn) ); 
 }
 
+#ifdef TARG_ST
+BE_EXPORTED BOOL WN_Equiv_Tree (WN *wn1, WN* wn2);
+#endif
+  
 #ifdef __cplusplus
 } /* close extern "C" */
 

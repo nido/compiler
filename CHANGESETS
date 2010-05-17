@@ -1,6 +1,44 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon May 17 15:31:32 CEST 2010
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-98460
+
+Description:
+------------
+	* [trunk] Fix for bug #98460 - [CFLOW] Segmentation fault raised in GRA.
+          Deliver fixes/codex-98460 rev #28205 with authorization branch #98464.
+  
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cflow.cxx
+	M       osprey/common/com/wn_util.cxx
+	M       osprey/common/com/wn_util.h
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28201 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-98460@28205 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28201 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-98460@28205" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cflow.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cflow.cxx?p2=branches/fixes/codex-98460/osprey/lai/cflow.cxx&r1=28201&r2=28205&roottype=svn&root=open64&diff_format=h
+osprey/common/com/wn_util.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/wn_util.cxx?p2=branches/fixes/codex-98460/osprey/common/com/wn_util.cxx&r1=28201&r2=28205&roottype=svn&root=open64&diff_format=h
+osprey/common/com/wn_util.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/wn_util.h?p2=branches/fixes/codex-98460/osprey/common/com/wn_util.h&r1=28201&r2=28205&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon May 17 14:24:52 CEST 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
