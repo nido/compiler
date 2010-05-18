@@ -1,6 +1,40 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue May 18 14:19:46 CEST 2010
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99707
+
+Description:
+------------
+	*  Fix for codex bug #99707 ("[DRIVER] Mishandling compiling from
+	stdin with -keep").
+	Delivered fixes/codex-99707 with authorization art #99733.
+
+
+Modified Files:
+---------------
+	M       osprey/driver/file_names.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28228 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99707@28235 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28228 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99707@28235" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/file_names.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/driver/file_names.c?p2=branches/fixes/codex-99707/osprey/driver/file_names.c&r1=28228&r2=28235&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue May 18 09:58:18 CEST 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

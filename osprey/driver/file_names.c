@@ -167,6 +167,11 @@ construct_name (string src, string suffix)
 		if (outfile && option_was_seen(O_c) && get_suffix(outfile))
 			srcname = outfile;
 		else
+#ifdef TARG_ST
+		  if (src[0] == '-') {
+		        srcname = concat_strings("_", src + 1);
+		  } else
+#endif
 			srcname = src;
 /* fix #14600 */
       srcname = change_suffix(drop_path(srcname), suffix);
