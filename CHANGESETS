@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue May 18 09:58:18 CEST 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-hotfix-97102
+
+Description:
+------------
+	*  stxp70-v3 extension backward compatibity fix
+
+
+Modified Files:
+---------------
+	M       osprey/common/com/dyn_isa_api_access.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28219 --new=https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-hotfix-97102@28224 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28219 https://codex.cro.st.com/svnroot/open64/branches/cv17/dev-hotfix-97102@28224" 
+
+Diff links to modified files:
+-----------------------------
+osprey/common/com/dyn_isa_api_access.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/dyn_isa_api_access.cxx?p2=branches/cv17/dev-hotfix-97102/osprey/common/com/dyn_isa_api_access.cxx&r1=28219&r2=28224&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon May 17 18:33:58 CEST 2010
 	Author:    clarkes
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
