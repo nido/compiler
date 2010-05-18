@@ -66,8 +66,11 @@ void add_edge(graphMLGraph* g, graphMLEdge* e) {
 }
 
 void set_label(graphMLNode* n, char* label) {
-	n->label_= TYPE_MEM_POOL_ALLOC_N(char, &graphml_pool, 2+strlen(label));
-	strcpy(n->label_, label);
+	n->label_= TYPE_MEM_POOL_ALLOC_N(char, &graphml_pool, strlen(label)+2);
+	//[TDR] Fix for bug #96132: When uggly strings are passed, strcopy may fail
+	// due to undeterminated end of string 
+	strncpy(n->label_, label, strlen(label)+1);
+	n->label_[strlen(label)]='\0';
 }
 
 /******************* XML dumping function *********************/
