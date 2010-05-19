@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed May 19 14:09:57 CEST 2010
+	Author:    janiny
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99729
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-99729 rev #28278 with authorization branch #99743
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/cg/targ_ebo.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28272 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99729@28278 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28272 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99729@28278" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/cg/targ_ebo.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_ebo.cxx?p2=branches/fixes/codex-99729/osprey/targinfo/stxp70/cg/targ_ebo.cxx&r1=28272&r2=28278&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed May 19 11:27:59 CEST 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
