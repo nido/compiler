@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed May 19 11:27:59 CEST 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99234
+
+Description:
+------------
+	* [trunk] Fix for bug #99233: Failure due to deliver of branch fixes/codex-97087.
+	Deliver fixes/codex-99234 rev #28268 with authorization branch #99582
+
+
+Modified Files:
+---------------
+	M       osprey/lai/hb_sched.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28254 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99234@28268 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28254 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-99234@28268" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/hb_sched.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/hb_sched.cxx?p2=branches/fixes/codex-99234/osprey/lai/hb_sched.cxx&r1=28254&r2=28268&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue May 18 16:46:17 CEST 2010
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

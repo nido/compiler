@@ -417,7 +417,6 @@ HB_Schedule::Update_Regs_For_OP (OP *op)
 // such that the addiu and the load/store can be interchanged.
 // ======================================================================
 // FdF 20/10/2003 : Added support for sequences (cmpeq,cmpne; add)
-// FdF 20090403: Add support for automod addressing
 BOOL
 Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
 {
@@ -463,42 +462,17 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
   }
 
 #ifdef TARG_ST
-  // FdF 20060518: Support for automod addressing mode
-  if (OP_automod(ldst_op))
-    return FALSE;
-
-  // FdF 20090403: Consider also auto-mod memop as ADD operations.
-  INT64 addiu_const;
-  if (OP_automod(addiu_op)) {
-    addiu_const = TN_value(OP_Offset(addiu_op));
-  }
-  else {
-    Is_True(OP_iadd(addiu_op), ("OPSCH_addiu but not OP_iadd"));
-    Is_True(TN_has_value(OP_Opnd2(addiu_op)), ("OPSCH_addiu but second operand is not literal"));
-    addiu_const = TN_value (OP_Opnd2(addiu_op));
-  }
+  Is_True(OP_iadd(addiu_op), ("OPSCH_addiu but not OP_iadd"));
+  INT add_opnd2_idx = OP_find_opnd_use(addiu_op, OU_opnd2);
+  Is_True(TN_has_value(OP_opnd(addiu_op, add_opnd2_idx)), ("OPSCH_addiu but second operand is not literal"));
+  INT64 addiu_const = TN_value (OP_opnd(addiu_op, add_opnd2_idx));
   
-  // FdF 20090403: addiu op can be an auto-mod
-  INT addiu_res_idx = 0 /*???*/;
-  if (OP_automod(addiu_op)) {
-    addiu_res_idx = -1;
-    for (INT res_idx = 0; res_idx < OP_results(addiu_op); res_idx++) {
-      if (OP_same_res(addiu_op, res_idx) == OP_find_opnd_use(addiu_op, OU_base)) {
-	addiu_res_idx = res_idx;
-	break;
-      }
-    }
-    Is_True(addiu_res_idx >= 0, ("Is_Ldst_Addiu_Pair: Could find res_idx for automod definition"));
-  }
-  else
-    addiu_res_idx = 0 /*???*/;
-
   // FdF 20/10/2003 : Support for sequences (cmpeq,cmpne; add)
   if (OP_Is_Cmp_Eq_Ne(ldst_op)) {
     INT cmp_opnd1_idx = OP_find_opnd_use(ldst_op, OU_opnd1);
     INT cmp_opnd2_idx = OP_find_opnd_use(ldst_op, OU_opnd2);
     Is_True(TN_has_value(OP_opnd(ldst_op, cmp_opnd2_idx)), ("OP_Is_Cmp_Eq_Ne returned true but opnd2 is not literal"));
-    if (OP_result(addiu_op, addiu_res_idx) != OP_opnd(ldst_op, cmp_opnd1_idx))
+    if (OP_result(addiu_op,0) != OP_opnd(ldst_op, cmp_opnd1_idx))
       return FALSE;
     INT64 ldst_const = TN_value (OP_opnd(ldst_op, cmp_opnd2_idx));
     return OP_code(ldst_op) == TOP_opnd_immediate_variant(OP_code(ldst_op), cmp_opnd2_idx, ldst_const - addiu_const*multiplier);
@@ -513,7 +487,7 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
   // as the result of the addiu. Assume that add result is result index 0.
 
 #ifdef TARG_ST
-  if (OP_result(addiu_op, addiu_res_idx) != OP_opnd(ldst_op, base_opndnum))
+  if (OP_result(addiu_op, 0 /*???*/) != OP_opnd(ldst_op, base_opndnum))
     return FALSE;
 
   // FdF 20080903: Use TN_Are_Equivalent instead of direct pointer
@@ -532,18 +506,10 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
   // base = LDW off(base)
   // base = base + inc
   for (INT res_idx = 0; res_idx < OP_results(ldst_op); res_idx++) {
-    if (TNs_Are_Equivalent(OP_result(ldst_op, res_idx), OP_result(addiu_op, addiu_res_idx)))
+    if (TNs_Are_Equivalent(OP_result(ldst_op, res_idx), OP_result(addiu_op, 0)))
       return FALSE;
   }
 
-  // Check for the case
-  // val = LDW off(base)
-  // STW 0(base = base + inc), val
-  if (OP_store(addiu_op)) {
-    for (INT res_idx = 0; res_idx < OP_results(ldst_op); res_idx++)
-      if (TNs_Are_Equivalent(OP_result(ldst_op, res_idx), OP_Storeval(addiu_op)))
-	return FALSE;
-  }
 #else
   if (OP_result(addiu_op,0 /*???*/) != OP_opnd(ldst_op, base_opndnum) ||
       (OP_store(ldst_op) &&
@@ -555,6 +521,10 @@ Is_Ldst_Addiu_Pair (OPSCH *opsch1, OPSCH *opsch2, OP *op1,OP *op2)
 
   INT64 ldst_const;
 #ifdef TARG_ST
+  // FdF 20060518: Support for automod addressing mode
+  if (OP_automod(ldst_op))
+    return FALSE;
+
   // FdF 15/12/2003: Added support for symbolic offsets in the stack.
   if (TN_is_symbol(OP_opnd(ldst_op, offset_opndnum))) {
     TN *old_ofst_tn = OP_opnd(ldst_op, offset_opndnum);
@@ -668,16 +638,7 @@ HB_Schedule::Adjust_Ldst_Offsets (void)
     OPSCH *opsch = OP_opsch(op, _hb_map);
     Set_OPSCH_visited (opsch);
     if (!OPSCH_addiu (opsch)) continue;
-#ifdef TARG_ST
-    // FdF 20090403: Also consider auto-mod memops as addiu
-    INT64 addiu_const;
-    if (OP_automod(op))
-      addiu_const = TN_value (OP_Offset(op));
-    else
-      addiu_const = TN_value (OP_Opnd2(op));
-#else
     INT64 addiu_const = TN_value (OP_opnd(op,OP_find_opnd_use(op, OU_opnd2)));
-#endif
     ARC_LIST *arcs;
     for (arcs = OP_succs(op); arcs != NULL; arcs = ARC_LIST_rest(arcs)) {
       ARC *arc = ARC_LIST_first(arcs);
@@ -687,11 +648,7 @@ HB_Schedule::Adjust_Ldst_Offsets (void)
 #ifdef TARG_ST
 	// FdF 15/12/2003: Do not call twice when there are a REGANTI
 	// and a MISC dependence for example (see Is_Ldst_addiu_Pair).
-	if (ARC_kind(arc) != CG_DEP_REGIN)
-	  continue;
-	// FdF 20090403: For an automod, check this is the auto-mod TN
-	if (OP_automod(op) && (OP_Base(op) != OP_opnd(succ_op, ARC_opnd(arc))))
-	  continue;
+	if (ARC_kind(arc) == CG_DEP_REGIN || ARC_kind(arc) == CG_DEP_REGANTI)
 #endif
 	  Fixup_Ldst_Offset (succ_op, addiu_const, +1, type());
       }
@@ -703,11 +660,7 @@ HB_Schedule::Adjust_Ldst_Offsets (void)
       if (OPSCH_ldst (pred_opsch) && !OPSCH_visited (pred_opsch)) {
 #ifdef TARG_ST
 	// FdF 15/12/2003: Do not call more than once
-	if (ARC_kind(arc) != CG_DEP_REGANTI)
-	  continue;
-	// FdF 20090403: For an automod, check this is the auto-mod TN
-	if (OP_automod(op) && (ARC_opnd(arc) != OP_find_opnd_use(op, OU_base)))
-	  continue;	
+	if (ARC_kind(arc) == CG_DEP_REGIN || ARC_kind(arc) == CG_DEP_REGANTI)
 #endif
 	Fixup_Ldst_Offset (pred_op, addiu_const, -1, type());
       }
@@ -792,13 +745,8 @@ Init_OPSCH_For_BB (BB *bb, BB_MAP value_map, MEM_POOL *pool)
 #ifdef TARG_ST
     // FdF 15/12/2003: Support for symbolic offset in the stack, in
     // postpass scheduling only.
-    // FdF 20090403: Consider an auto-mod operation as and add
-    // operation
-    if ((OP_Is_Addr_Incr(op) && 
-	 (!TN_is_sp_reg(OP_result(op,0 /*???*/)) || !Before_LRA)) ||
-	(OP_memory(op) && OP_automod(op) &&
-	 TN_isAutoMod(op, OP_Base(op)) &&
-	 (!TN_is_sp_reg(OP_Base(op)) || !Before_LRA))) {
+    if (OP_Is_Addr_Incr(op) && 
+	(!TN_is_sp_reg(OP_result(op,0 /*???*/)) || !Before_LRA)) {
 #else
     if (CGTARG_Is_OP_Addr_Incr(op) && 
 	!TN_is_sp_reg(OP_result(op,0 /*???*/))) {
@@ -808,15 +756,6 @@ Init_OPSCH_For_BB (BB *bb, BB_MAP value_map, MEM_POOL *pool)
       for (arcs = OP_succs(op); arcs != NULL; arcs = ARC_LIST_rest(arcs)) {
 	arc = ARC_LIST_first(arcs);
 	if (ARC_kind(arc) == CG_DEP_REGOUT) {
-#ifdef TARG_ST
-	  // FdF 20090403: In case of an automod, check this is on the
-	  // right TN
-	  if (OP_automod(op)) {
-	    TN *tn_automod = OP_Offset(op);
-	    if (OP_opnd(ARC_succ(arc), ARC_opnd(arc)) != tn_automod)
-	      continue;
-	  }
-#endif
 	  addiu_ok = FALSE;
 	  break;
 	}
@@ -824,14 +763,6 @@ Init_OPSCH_For_BB (BB *bb, BB_MAP value_map, MEM_POOL *pool)
       for (arcs = OP_preds(op); arcs != NULL; arcs = ARC_LIST_rest(arcs)) {
 	arc = ARC_LIST_first(arcs);
 	if (ARC_kind(arc) == CG_DEP_REGIN) {
-#ifdef TARG_ST
-	  // FdF 20090403: In case of an automod, check this is on the
-	  // right TN
-	  if (OP_automod(op)) {
-	    if (ARC_opnd(arc) != OP_find_opnd_use(op, OU_base))
-	      continue;
-	  }
-#endif
 	  addiu_ok = FALSE;
 	  break;
 	}
