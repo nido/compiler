@@ -218,12 +218,13 @@ validate_replacement (const RangeAnalysis &range_analysis,
   OP_srcpos (OPS_first (ops)) = OP_srcpos (op);
 
   BB *bb = OP_bb (op);
-  OP *prev = OP_prev (op);
+  OP *point = OP_next(op);
+  while (point && OP_phi(point)) point = OP_next(point);
   BB_Remove_Op (bb, op);
-  if (prev)
-    BB_Insert_Ops_After (bb, prev, ops);
+  if (point)
+    BB_Insert_Ops_Before (bb, point, ops);
   else
-    BB_Prepend_Ops (bb, ops);
+    BB_Append_Ops (bb, ops);
   return TRUE;
 }
 
@@ -501,18 +502,20 @@ RangePropagateOp (RangeAnalysis &range_analysis,
   // Mostly, transformations do not change the value of any result,
   // or the significant bits in any operand.
 {
-  OPS ops = OPS_EMPTY;
-
 
   // Check early if we can replace or remove the current operation
   if (!op_can_be_replaced(op)) return FALSE;
 
   // First let target-specific code try it.
 
-  if (TARG_RangePropagate (range_analysis, op, &ops)
-      && validate_replacement (range_analysis, op, &ops)) {
-    next = OPS_first (&ops);
-    return TRUE;
+  {
+    OPS ops = OPS_EMPTY;
+
+    if (TARG_RangePropagate (range_analysis, op, &ops)
+	&& validate_replacement (range_analysis, op, &ops)) {
+      next = OPS_first (&ops);
+      return TRUE;
+    }
   }
       
   TOP opcode = OP_code(op);
@@ -533,10 +536,24 @@ RangePropagateOp (RangeAnalysis &range_analysis,
 
   if (range_analysis.Forward_Valid ()) {
 
+    // FdF 20100420: First of all, if result is a literal value, just
+    // create it. Since not all registers may be defined from an
+    // immediate value, only do it for integer and boolean registers.
+    OPS ops = OPS_EMPTY;
+    if ((OP_results(op) == 1) && Literal_Value (range_analysis, result) &&
+	((TN_register_class(result) == CGTARG_Register_Class_For_Mtype(MTYPE_I4)) ||
+	 (TN_register_class(result) == CGTARG_Register_Class_For_Mtype(MTYPE_B)))) {
+      Exp_Immediate(result, Literal_Value (range_analysis, result), TRUE, &ops);
+      if (validate_replacement (range_analysis, op, &ops)) {
+	return TRUE;
+      }
+    }
+
     // Try generic constant propagation.
 
     if (opnd1 && TN_is_register (opnd1)) {
       TN *new_opnd1 = Literal_Value (range_analysis, opnd1);
+      OPS ops = OPS_EMPTY;
       if (new_opnd1 &&
 	  Try_To_Simplify_Operand0 (range_analysis, op, result, new_opnd1, opnd2,
 				    &ops)) {
@@ -546,6 +563,7 @@ RangePropagateOp (RangeAnalysis &range_analysis,
     }
     if (opnd2 && TN_is_register (opnd2)) {
       TN *new_opnd2 = Literal_Value (range_analysis, opnd2);
+      OPS ops = OPS_EMPTY;
       if (new_opnd2 &&
 	  Try_To_Simplify_Operand1 (range_analysis, op, result, opnd1, new_opnd2,
 				    &ops)) {
@@ -565,6 +583,7 @@ RangePropagateOp (RangeAnalysis &range_analysis,
 			  - TOP_opnd_use_bits (opcode,
 					       OP_find_opnd_use(op, OU_opnd1)));    
     BOOL is_signed = (OP_sext(op) != 0);
+    OPS ops = OPS_EMPTY;
     if (unneeded_extension (range_analysis, op,
 			    result, opnd1, is_signed,
 			    extension_bits, extension_bits, &ops)) {
@@ -586,6 +605,7 @@ RangePropagateOp (RangeAnalysis &range_analysis,
 	TN *left_shift_count_tn = OP_Opnd2 (op2);
 	if (TN_has_value (left_shift_count_tn)) {
 	  INT64 leftshift = TN_value (left_shift_count_tn);
+	  OPS ops = OPS_EMPTY;
 	  if (unneeded_extension (range_analysis, op,
 				  result, left_shift_opnd, is_signed,
 				  leftshift, rightshift, &ops)) {
@@ -616,6 +636,7 @@ RangePropagateOp (RangeAnalysis &range_analysis,
 	SWAP_TN (opnd1, opnd2);
       }
       if (Ge (r1, r2)->Equal (range_analysis.getLattice ()->makeRangeMinMax (1, 1))) {
+	OPS ops = OPS_EMPTY;
 	if (OP_imin (op)) {
 	  // opnd2 must be the minimum
 	  if (TN_is_register (opnd2))
@@ -651,6 +672,7 @@ RangePropagateOp (RangeAnalysis &range_analysis,
 	selected_opnd = opnd2;
       }
       if (selected_opnd) {
+	OPS ops = OPS_EMPTY;
 	if (TN_is_register (selected_opnd))
 	  Exp_COPY (result, selected_opnd, &ops);
 	else
@@ -671,6 +693,7 @@ RangePropagateOp (RangeAnalysis &range_analysis,
       INT tzcnt2 = r2->getTzcnt ();
       INT tzcnt = OP_imul(op) ? tzcnt1 + tzcnt2 : Min(tzcnt1, tzcnt2);
       if (tzcnt >= rres->bits ()) {
+	OPS ops = OPS_EMPTY;
 	Exp_Immediate (result, Gen_Literal_TN(0, TN_size(result)), FALSE, &ops);	
 	if (validate_replacement (range_analysis, op, &ops)) 
 	  return TRUE;
@@ -684,18 +707,25 @@ RangePropagateOp (RangeAnalysis &range_analysis,
       LRange_p rres = range_analysis.Get_Value(result);
       if (rres->hasValue ()) {
 	INT64 value = rres->getValue ();
+	OPS ops = OPS_EMPTY;
 	Exp_Immediate (result, Gen_Literal_TN(value, TN_size(result)), FALSE, &ops);	
 	if (validate_replacement (range_analysis, op, &ops)) 
 	  return TRUE;
       }
     }
 
-    if (match_compare_sub_to_zero (range_analysis, op, &ops)) {
-      if (validate_replacement (range_analysis, op, &ops)) 
-	return TRUE;
+    {
+      OPS ops = OPS_EMPTY;
+      if (match_compare_sub_to_zero (range_analysis, op, &ops)) {
+	if (validate_replacement (range_analysis, op, &ops)) 
+	  return TRUE;
+      }
     }
-    if (match_compare_invert_to_zero (range_analysis, op, &ops)) {
-      return TRUE;
+    {
+      OPS ops = OPS_EMPTY;
+      if (match_compare_invert_to_zero (range_analysis, op, &ops)) {
+	return TRUE;
+      }
     }
 
   } else if (range_analysis.Backward_Valid ()) {
@@ -708,7 +738,8 @@ RangePropagateOp (RangeAnalysis &range_analysis,
       if (TN_has_value (opnd2)) {
 	  INT64 leftshift = TN_value (opnd2);
 	  if ( leftshift >= rres->bits() ) {
-	    Exp_Immediate (result, Gen_Literal_TN(0, TN_size(result)), FALSE, &ops);
+          OPS ops = OPS_EMPTY;
+	  Exp_Immediate (result, Gen_Literal_TN(0, TN_size(result)), FALSE, &ops);
 	    if (validate_replacement (range_analysis, op, &ops)) {
 	      return TRUE;
 	    }
@@ -745,6 +776,7 @@ RangePropagateOp (RangeAnalysis &range_analysis,
       else
 	return FALSE;
       if (mtype != MTYPE_UNKNOWN) {
+	OPS ops = OPS_EMPTY;
 	if (OP_ior(op))
 	  Expand_Binary_Or (result, opnd, Gen_Literal_TN(val, TN_size (result)), mtype, &ops);
 	else if (OP_ixor(op))

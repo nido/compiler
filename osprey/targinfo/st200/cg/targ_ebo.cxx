@@ -5538,7 +5538,10 @@ EBO_literal_replacement_tn(OP *op)
   if (opcode == TOP_convib_r_b && OP_opnd(op, 0) == Zero_TN) {
     return Gen_Literal_TN (0, TN_size(OP_opnd(op, 0)));
   } else if (opcode == TOP_cmpeq_r_r_b && OP_opnd(op, 0) == Zero_TN && OP_opnd(op, 1) == Zero_TN) {
-    return Gen_Literal_TN (1, TN_size(OP_opnd(op, 0)));
+    // FdF 20100421: Must be True_TN instead of 1 for the value to be
+    // optimized.
+    // return Gen_Literal_TN (1, TN_size(OP_opnd(op, 0)));
+    return True_TN;
   }
 
   return NULL;

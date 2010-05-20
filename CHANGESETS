@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu May 20 13:12:06 CEST 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86807
+
+Description:
+------------
+	* [trunk] Fix for bug #86807: [CG] Constant clz evaluation.
+	Deliver fixes/codex-86807 rev #28312 with authorization branch #97810
+
+
+Modified Files:
+---------------
+	M       osprey/lai/range_prop.cxx
+	M       osprey/targinfo/st200/cg/targ_ebo.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28305 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86807@28312 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28305 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-86807@28312" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/range_prop.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/range_prop.cxx?p2=branches/fixes/codex-86807/osprey/lai/range_prop.cxx&r1=28305&r2=28312&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/st200/cg/targ_ebo.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/st200/cg/targ_ebo.cxx?p2=branches/fixes/codex-86807/osprey/targinfo/st200/cg/targ_ebo.cxx&r1=28305&r2=28312&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu May 20 08:04:20 CEST 2010
 	Author:    
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
