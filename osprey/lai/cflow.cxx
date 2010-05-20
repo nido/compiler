@@ -4441,23 +4441,6 @@ Merge_Blocks ( BOOL in_cgprep )
  * ====================================================================
  */
 
-static BOOL
-TN_equiv(TN *tn1, TN *tn2) {
-
-  if (tn1 == tn2)
-    return TRUE;
-
-  if (TN_is_register(tn1) &&
-      TN_is_register(tn2) &&
-      TNs_Are_Equivalent(tn1, tn2))
-    return TRUE;
-
-  if (TN_is_zero(tn1) && TN_is_zero(tn2))
-    return TRUE;
-
-  return FALSE;
-}
-
 #define TN_is_local_reg(r)   (!(TN_is_dedicated(r) | TN_is_global_reg(r)))
 
 static BOOL
@@ -5160,53 +5143,57 @@ Hoist_Ops_in_Succs(BB *b) {
     BS *TNs_to_be_unified = BS_Create_Empty(OP_results(cur_op[0]),
 					    &cflow_pool);
 
-    FOR_ALL_BB_SUCCS (b, bblst) {
-      BB *pbb = BBLIST_item(bblst);
-      if (BB_id(pbb) == BB_id(OP_bb(cur_op[0]))){
-	continue;
-      }
-      find = FALSE;
-      i++;
-    
-      cur_op[i] = BB_first_op(pbb);
-      if (CG_opt_level >= 2 && CFLOW_depgraph_use) {
-	CG_DEP_Compute_Graph (pbb, 
-			      INCLUDE_ASSIGNED_REG_DEPS,
-			      NON_CYCLIC,
-			      INCLUDE_MEMREAD_ARCS,
-			      INCLUDE_MEMIN_ARCS,
-			      NO_CONTROL_ARCS,
-			      NULL);
-	if (CFLOW_Trace_Hoist_Ops) CG_DEP_Trace_Graph (pbb);
-	
-	while (cur_op[i]) {
-	  if (OP_equiv_for_hoisting(cur_op[0], cur_op[i],
-				    TNs_to_be_unified)) {
-	    find = TRUE;
-	    break;
-	  }
-	  cur_op_tmp = OP_next(cur_op[i]); 
-	  while (cur_op_tmp) {
-	    if(OP_preds(cur_op_tmp) != NULL) {
-	      cur_op_tmp = OP_next(cur_op_tmp);
-	    }
-	    else break;
-	  }
-	  cur_op[i] = cur_op_tmp;
-	}
-	
-	CG_DEP_Delete_Graph (pbb);
-	if (find == TRUE) continue;
-	else {
-	  common_op = NULL;
-	  break;
-	}
-      }
-      else {
-	if (!OP_equiv(cur_op[0], cur_op[i])) {
-	  common_op = NULL;
-	  break;
-	}
+    if (! CGTARG_Allow_Operation_To_Be_Hoisted_In_Succs(common_op)) {
+      common_op = NULL;
+    } else {
+      FOR_ALL_BB_SUCCS (b, bblst) {
+        BB *pbb = BBLIST_item(bblst);
+        if (BB_id(pbb) == BB_id(OP_bb(cur_op[0]))){
+          continue;
+        }
+        find = FALSE;
+        i++;
+        
+        cur_op[i] = BB_first_op(pbb);
+        if (CG_opt_level >= 2 && CFLOW_depgraph_use) {
+          CG_DEP_Compute_Graph (pbb, 
+                                INCLUDE_ASSIGNED_REG_DEPS,
+                                NON_CYCLIC,
+                                INCLUDE_MEMREAD_ARCS,
+                                INCLUDE_MEMIN_ARCS,
+                                NO_CONTROL_ARCS,
+                                NULL);
+          if (CFLOW_Trace_Hoist_Ops) CG_DEP_Trace_Graph (pbb);
+          
+          while (cur_op[i]) {
+            if (OP_equiv_for_hoisting(cur_op[0], cur_op[i],
+                                      TNs_to_be_unified)) {
+              find = TRUE;
+              break;
+            }
+            cur_op_tmp = OP_next(cur_op[i]); 
+            while (cur_op_tmp) {
+              if(OP_preds(cur_op_tmp) != NULL) {
+                cur_op_tmp = OP_next(cur_op_tmp);
+              }
+              else break;
+            }
+            cur_op[i] = cur_op_tmp;
+          }
+          
+          CG_DEP_Delete_Graph (pbb);
+          if (find == TRUE) continue;
+          else {
+            common_op = NULL;
+            break;
+          }
+        }
+        else {
+          if (!OP_equiv(cur_op[0], cur_op[i])) {
+            common_op = NULL;
+            break;
+          }
+        }
       }
     }
 
@@ -5223,6 +5210,7 @@ Hoist_Ops_in_Succs(BB *b) {
       if (!BS_EmptyP(TNs_to_be_unified)) {
 	Unify_TNs_for_Hoisting(cur_op, succ_count, TNs_to_be_unified);
       }
+
       OP *new_common = Dup_OP(common_op);
       if (OP_memory(common_op)) Copy_WN_For_Memory_OP(new_common, common_op);
       OP_scycle(new_common) = 0; // Reset cycle to 0 for safeness at postscheduling time.

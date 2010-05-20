@@ -720,5 +720,6 @@ extern BOOL TN_Reloc_has_parenthesis( INT32 reloc );
 //subclass
 extern const char *REGISTER_extended_name(TN* tn,
 					  ISA_REGISTER_SUBCLASS sc) ;
+extern BOOL TN_equiv(TN *tn1, TN *tn2);
 #endif
 #endif /* tn_INCLUDED */

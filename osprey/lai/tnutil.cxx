@@ -2025,6 +2025,54 @@ const char *REGISTER_extended_name(TN* tn,
   }
   return rname;
 }
+
+
+/** 
+ * Check TN equivalence
+ * 
+ * @param tn1 
+ * @param tn2 
+ * 
+ * @return true if tn1 and tn2 are equivalent, false otherwise
+ */
+BOOL
+TN_equiv(TN *tn1, TN *tn2) {
+
+  if (tn1 == tn2)
+
+    return TRUE;
+
+  if (TN_is_register(tn1) &&
+      TN_is_register(tn2) &&
+      TNs_Are_Equivalent(tn1, tn2))
+    return TRUE;
+
+  if (TN_is_zero(tn1) && TN_is_zero(tn2))
+    return TRUE;
+
+  if (TN_has_value(tn1) && TN_has_value(tn2) &&
+      TN_value(tn1) == TN_value(tn2))
+    return TRUE;
+
+
+  if (TN_is_symbol(tn1) && TN_is_symbol(tn2) &&
+      TN_var(tn1) == TN_var(tn2) &&
+      TN_offset(tn1) == TN_offset(tn2) &&
+      TN_relocs(tn1) == TN_relocs(tn2))
+    return TRUE;
+
+  if (TN_is_label(tn1) && TN_is_label(tn2) &&
+      TN_label(tn1) == TN_label(tn2) &&
+      TN_offset(tn1) == TN_offset(tn2)) 
+    return TRUE;
+
+  if (TN_is_enum(tn1) && TN_is_enum(tn2) &&
+      TN_enum(tn1) == TN_enum(tn2))
+    return TRUE;
+
+  return FALSE;
+}
+
 #endif
 
 

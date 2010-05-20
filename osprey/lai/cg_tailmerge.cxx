@@ -253,36 +253,6 @@ GetBBFromJump(const OP* a_jump)
     return Get_Label_BB(TN_label(tgt));
 }
 
-/**
- * Check tn equivalence.
- * Two tns are equivalent either:
- * @li When they point to the same tn
- * @li Or they represent the same register
- *
- * @param  tn1 A tn
- * @param  tn2 A tn
- *
- * @pre    true
- * @post   result implies tn1 and tn2 are equivalent (tn1 can be used instead of
- *         tn2 and vice versa)
- *
- * @return true if tn1 and tn2 are equivalent, false otherwise
- */
-static bool
-TNequiv(TN* tn1, TN* tn2)
-{
-    bool result = tn1 == tn2;
-
-    if(!result && tn1 && tn2)
-        {
-            result = (TN_is_register(tn1) &&
-                      TN_is_register(tn2) &&
-                      TNs_Are_Equivalent(tn1, tn2)) ||
-                (TN_is_zero(tn1) && TN_is_zero(tn2));
-        }
-    return result;
-}
-
 void
 Tailmerge(INT phase)
 {
@@ -470,7 +440,7 @@ AreEquivalent<OP>(OP* op1, OP* op2)
                     int i;
                     for(i = 0; i < OP_results(op1) && result; ++i)
                         {
-                            result &= TNequiv(OP_result(op1, i),
+                            result &= TN_equiv(OP_result(op1, i),
                                               OP_result(op2, i));
                         }
                     for(i = 0; i < OP_opnds(op1) && result; ++i)
@@ -480,7 +450,7 @@ AreEquivalent<OP>(OP* op1, OP* op2)
                                 {
                                     continue;
                                 }
-                            result &= TNequiv(OP_opnd(op1, i), OP_opnd(op2, i));
+                            result &= TN_equiv(OP_opnd(op1, i), OP_opnd(op2, i));
                         }
                     // BB_kind may be invalid, so temporary removes the
                     // reference for the test
@@ -495,12 +465,12 @@ AreEquivalent<OP>(OP* op1, OP* op2)
                     result = true;
                     for(i = 0; i < OP_results(op1) && result; ++i)
                         {
-                            result &= TNequiv(OP_result(op1, i),
+                            result &= TN_equiv(OP_result(op1, i),
                                               OP_result(op2, i));
                         }
                     for(i = 0; i < OP_opnds(op1) && result; ++i)
                         {
-                            result &= TNequiv(OP_opnd(op1, i), OP_opnd(op2, i));
+                            result &= TN_equiv(OP_opnd(op1, i), OP_opnd(op2, i));
                         }
                     // VL 2008-09-16: we must check that instructions guarded by same guard pair
                     // have the same predicate too - fix for codex bug #51929
