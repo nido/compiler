@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Thu May 20 15:43:08 CEST 2010
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-27796
+
+Description:
+------------
+	* [trunk] Fix for bug #27796: Registers assigned to variables are not pushed/poped in IT and functions.
+	Deliver fixes/codex-27796 rev #28320 with authorization branch #95413
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28314 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-27796@28320 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28314 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-27796@28320" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/cg/targ_entry_exit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx?p2=branches/fixes/codex-27796/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx&r1=28314&r2=28320&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu May 20 13:12:06 CEST 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
