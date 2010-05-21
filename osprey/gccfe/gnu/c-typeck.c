@@ -2722,7 +2722,7 @@ bool
 is_packed_ref(t)
      tree t;
 {
-  if ((TREE_CODE (t) == VAR_DECL) && TYPE_PACKED (t)) {
+  if ((TREE_CODE (t) == VAR_DECL) && TYPE_PACKED (TREE_TYPE (t))) {
     return true;
   }
   if (TREE_CODE (t) == COMPONENT_REF) {
@@ -2731,7 +2731,7 @@ is_packed_ref(t)
     if ((TREE_CODE (field) == FIELD_DECL) && (DECL_PACKED (field))) {
       return true;
     }
-    if (TYPE_PACKED (ref)) {
+    if (TYPE_PACKED (TREE_TYPE (ref))) {
       return true;
     }
     return (is_packed_ref(ref));

@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri May 21 08:11:19 CEST 2010
+	Author:    bv11
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-100373
+
+Description:
+------------
+	* [trunk] Deliver fixes/codex-100373 rev #28292 with authorization branch #100469.  
+
+
+Modified Files:
+---------------
+	M       osprey/gccfe/gnu/c-typeck.c
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28327 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-100373@28335 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28327 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-100373@28335" 
+
+Diff links to modified files:
+-----------------------------
+osprey/gccfe/gnu/c-typeck.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/c-typeck.c?p2=branches/fixes/codex-100373/osprey/gccfe/gnu/c-typeck.c&r1=28327&r2=28335&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Thu May 20 16:10:35 CEST 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
