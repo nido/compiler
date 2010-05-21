@@ -1272,7 +1272,16 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
 static BOOL
 Are_equivalent_defininition_TNs(TN *tn1, TN *tn_ref) {
 	if (!tn1 || !tn_ref)  return FALSE;
-	if (!TN_is_register(tn1) || !TN_is_register(tn_ref)) return FALSE;
+	if (!TN_is_register(tn1) || !TN_is_register(tn_ref)) {
+		if (TN_has_value(tn1) && TN_has_value(tn_ref) && 
+		   (TN_value(tn1) == TN_value(tn_ref))) 
+			return TRUE;
+		OP *def_op = TN_ssa_def(tn1);
+		if (!def_op) return FALSE;
+		if (OP_Is_Copy_Immediate_Into_Register(def_op))  
+			return Are_equivalent_defininition_TNs(OP_Copy_Operand_TN(def_op),tn_ref);
+		return FALSE;
+	}
 	if (TNs_Are_Equivalent(tn1,tn_ref)) return TRUE;
 	OP *def_op = TN_ssa_def(tn1);
 	if (!def_op) return FALSE;
@@ -1303,8 +1312,7 @@ Check_min_max_abs_candidate(BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg, B
 	OP *cond_op = TN_ssa_def (cond_tn);
 	if (!TOP_is_cmp(OP_code(cond_op))) return FALSE;
 	if (!TN_is_register(OP_Opnd1(cond_op))) return FALSE;
-	if (!TN_is_register(OP_Opnd2(cond_op)) && !TN_is_zero(OP_Opnd2(cond_op))) return FALSE;
-	//If we do not compare to 0 or to a register we do not deal with min/max/abs
+	//If we do not compare register to a register or a constant we do not deal with min/max/abs
 	if (TN_is_zero(OP_Opnd2(cond_op)) && !OP_fcmp(cond_op)) {
 		// Treatment of float cmp on STxP70 V3: compare from fcmp to register then compare this register to 0
 		if (OP_cmp_variant(cond_op) == V_CMP_NE) {
@@ -1325,8 +1333,12 @@ Check_min_max_abs_candidate(BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg, B
 			OP *def_op1 = TN_ssa_def(tn1);
 			OP *def_op2 = TN_ssa_def(tn2);
 			if (!def_op1 || !def_op2) continue;
-			if (!(BB_SET_MemberP(taken_reg, bb1) && BB_SET_MemberP(fallthru_reg, bb2)) &&
-			!(BB_SET_MemberP(fallthru_reg, bb1) && BB_SET_MemberP(taken_reg, bb2))) continue;
+			if (BB_SET_EmptyP(taken_reg)) {
+				if (!(BB_SET_MemberP(fallthru_reg, bb2) || BB_SET_MemberP(fallthru_reg, bb1))) continue;
+			} else {
+				if (!(BB_SET_MemberP(taken_reg, bb1) && BB_SET_MemberP(fallthru_reg, bb2)) &&
+				!(BB_SET_MemberP(fallthru_reg, bb1) && BB_SET_MemberP(taken_reg, bb2))) continue;
+			}
 			//min/max case : we search simple affectation (copy)
 			if(Are_equivalent_defininition_TNs(tn1,OP_Opnd1(cond_op)) && Are_equivalent_defininition_TNs(tn2,OP_Opnd2(cond_op))) {
 				if(CGTARG_apply_min_max_transformation(cond_op,phi,BB_SET_MemberP(fallthru_reg, bb1))) modification_applied = TRUE;
@@ -1336,7 +1348,7 @@ Check_min_max_abs_candidate(BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg, B
 				if( CGTARG_apply_min_max_transformation(cond_op,phi,BB_SET_MemberP(fallthru_reg, bb2))) modification_applied = TRUE;
 				continue;
 			}
-			
+
 			//abs search
 			BOOL Abs_Pattern = (OP_Opnd2(cond_op) && TN_is_zero(OP_Opnd2(cond_op))) || 
 					(OP_fcmp(cond_op) && OP_Opnd2(cond_op) && TN_ssa_def(OP_Opnd2(cond_op)) && 

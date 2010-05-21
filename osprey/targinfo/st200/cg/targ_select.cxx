@@ -423,6 +423,7 @@ BOOL CGTARG_apply_min_max_transformation(OP *cmp, OP* phi, BOOL cmp_order) {
 	OP *new_op;
 	TOP new_top;
 	if (OP_fcmp(cmp)) return FALSE;
+	if (TN_is_constant(OP_Opnd2(cmp)) || TN_is_constant(OP_Opnd2(cmp)))   return FALSE;
 	VARIANT variant = OP_cmp_variant(cmp);
 	switch (variant) {
 		// Min/max
