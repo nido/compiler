@@ -1175,9 +1175,12 @@ Check_Profitable_Logif (BB *bb1, BB *bb2)
 
   //TDR Add an option to control multiple logif 
   if (!CG_ifc_logif) return FALSE;
-  
-  //TDR In size, a logif transfomration is not profitable without bundles.
-  if (!CG_ifc_cycles && !PROC_has_bundles())  return FALSE;
+
+  //TDR In size, a logif transformation is not profitable without bundles.
+  if (!CG_ifc_cycles && !CGTARG_Profitable_Logif_Transformation()) {
+    return FALSE;
+  }
+
 
   TN *cond_tn;
   TN *dummy;
