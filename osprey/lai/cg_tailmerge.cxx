@@ -461,24 +461,43 @@ AreEquivalent<OP>(OP* op1, OP* op2)
                 }
             else
                 {
-                    int i;
-                    result = true;
-                    for(i = 0; i < OP_results(op1) && result; ++i)
-                        {
-                            result &= TN_equiv(OP_result(op1, i),
-                                              OP_result(op2, i));
-                        }
-                    for(i = 0; i < OP_opnds(op1) && result; ++i)
-                        {
-                            result &= TN_equiv(OP_opnd(op1, i), OP_opnd(op2, i));
-                        }
-                    // VL 2008-09-16: we must check that instructions guarded by same guard pair
-                    // have the same predicate too - fix for codex bug #51929
-                    if(result && OP_has_predicate(op1))
-                        {
+                  int i;
+                  result = true;
+
+                  /* tailmerge must not be activated on conditional
+                   * transfert operations (like jrgtudec on xp70)
+                   */
+                  int opndIdx;
+                  if (
+                      (OP_xfer(op1) &&
+                      (((opndIdx = OP_find_opnd_use(op1,OU_predicate)) >= 0 &&
+                        OP_opnd(op1, opndIdx) != True_TN) ||
+                       ((opndIdx = OP_find_opnd_use(op1,OU_condition)) >= 0 &&
+                        OP_opnd(op1, opndIdx) != True_TN))) ||
+                      (OP_xfer(op2) &&
+                      (((opndIdx = OP_find_opnd_use(op2,OU_predicate)) >= 0 &&
+                        OP_opnd(op2, opndIdx) != True_TN) ||
+                       ((opndIdx = OP_find_opnd_use(op2,OU_condition)) >= 0 &&
+                        OP_opnd(op2, opndIdx) != True_TN)))
+                      ) {
+                    result=false;
+                  }
+                  for(i = 0; i < OP_results(op1) && result; ++i)
+                    {
+                      result &= TN_equiv(OP_result(op1, i),
+                                         OP_result(op2, i));
+                    }
+                  for(i = 0; i < OP_opnds(op1) && result; ++i)
+                    {
+                      result &= TN_equiv(OP_opnd(op1, i), OP_opnd(op2, i));
+                    }
+                  // VL 2008-09-16: we must check that instructions guarded by same guard pair
+                  // have the same predicate too - fix for codex bug #51929
+                  if(result && OP_has_predicate(op1))
+                    {
                             result &= (OP_Pred_False(op1, OP_find_opnd_use(op1, OU_predicate)) ==
                                        OP_Pred_False(op2, OP_find_opnd_use(op2, OU_predicate)));
-                        }
+                    }
                 }
         }
     return result;

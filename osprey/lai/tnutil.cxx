@@ -88,6 +88,7 @@
 #include "config_list.h"
 #include "lai_loader_api.h" // extension api
 #include "cg_ssa.h"
+#include "label_util.h"        // For Get_Label_BB
 #endif
 
 #ifdef TARG_ST
@@ -2062,7 +2063,7 @@ TN_equiv(TN *tn1, TN *tn2) {
     return TRUE;
 
   if (TN_is_label(tn1) && TN_is_label(tn2) &&
-      TN_label(tn1) == TN_label(tn2) &&
+      Get_Label_BB(TN_label(tn1)) == Get_Label_BB(TN_label(tn2)) &&
       TN_offset(tn1) == TN_offset(tn2)) 
     return TRUE;
 

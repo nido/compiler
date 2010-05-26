@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed May 26 09:43:22 CEST 2010
+	Author:    cv17
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-100711
+
+Description:
+------------
+	* [trunk] Fix for bug #100711: [tailmerge] lipFP compilation asserts on trunk since deliver 28327.
+	Deliver fixes/codex-100711 rev #28390 with authorization branch #100712
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cg_tailmerge.cxx
+	M       osprey/lai/tnutil.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28388 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-100711@28390 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28388 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-100711@28390" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cg_tailmerge.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_tailmerge.cxx?p2=branches/fixes/codex-100711/osprey/lai/cg_tailmerge.cxx&r1=28388&r2=28390&roottype=svn&root=open64&diff_format=h
+osprey/lai/tnutil.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/tnutil.cxx?p2=branches/fixes/codex-100711/osprey/lai/tnutil.cxx&r1=28388&r2=28390&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue May 25 08:53:10 CEST 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
