@@ -1566,6 +1566,11 @@ WFE_Start_Function (tree fndecl)
       Set_PU_is_interrupt_nostkaln(Pu_Table [ST_pu (func_st)]);
     }
 
+    // [VL-HMP] task attribute
+    if (lookup_attribute("task", DECL_ATTRIBUTES(fndecl))) {
+      Set_PU_is_task(Pu_Table [ST_pu (func_st)]);
+    }
+
     // [VB] Stack alignment attribute for more than 64bit types
       {
 	tree attr = lookup_attribute("aligned_stack", DECL_ATTRIBUTES(fndecl));

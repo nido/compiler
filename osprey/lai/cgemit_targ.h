@@ -99,6 +99,9 @@ extern void CGEMIT_Alias (ST *sym, ST *strongsym);
 // Special registers fixup just before verify_instruction 
 extern void CGEMIT_Special_Register_Function_Fixup( OP *op );
 
+// Emit asm macro for prolog and epilog of STxP70 tasks
+extern void CGEMIT_Task_Asm_Macro();
+
 // Directive for HW Loop cross-end
 extern void CGEMIT_Loop_CrossEnd_Directive(BB* bb);
 // Directive for HW Loop end alignement

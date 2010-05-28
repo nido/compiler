@@ -930,9 +930,11 @@ Can_Do_Tail_Calls_For_PU ()
   if (PU_has_unknown_control_flow (Get_Current_PU())) return FALSE;
 
 #ifdef TARG_ST
-  // If PU is an interrupt handler, cannot do tail-call opt
+  // If PU is an interrupt/trap handler, cannot do tail-call opt
+  // [VL-HMP] Same restriction for tasks
   if (PU_is_interrupt(Get_Current_PU())
-      || PU_is_interrupt_nostkaln(Get_Current_PU())) return FALSE;
+      || PU_is_interrupt_nostkaln(Get_Current_PU())
+      || PU_is_task(Get_Current_PU()) ) return FALSE;
   // If PU is an exception handler, avoid tail-call opt
   if (PU_Has_EH_Return) return FALSE;
 #endif

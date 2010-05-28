@@ -913,6 +913,14 @@ Set_PU_is_interrupt_nostkaln (PU& pu)		{ pu.flags |= PU_IS_INTERRUPT_NOSTKALN; }
 inline void
 Clear_PU_is_interrupt_nostkaln (PU& pu)		{ pu.flags &= ~PU_IS_INTERRUPT_NOSTKALN; }
 
+/* [VL-HMP] Support for HMP tasks */
+inline BOOL
+PU_is_task (const PU& pu)         { return (pu.flags & PU_IS_TASK) != 0; }
+inline void
+Set_PU_is_task (PU& pu)           { pu.flags |= PU_IS_TASK; }
+inline void
+Clear_PU_is_task (PU& pu)         { pu.flags &= ~PU_IS_TASK; }
+
 /* [VB] Support for stack alignment attribute. */
 inline UINT64
 PU_aligned_stack (const PU& pu)		{ return pu.stkaln; }

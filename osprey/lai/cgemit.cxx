@@ -6973,6 +6973,11 @@ EMT_Emit_PU (
     Print_All_BBs ();
   }
 
+// [VL-HMP] 
+#ifdef TARG_STxP70
+  CGEMIT_Task_Asm_Macro();
+#endif
+
   Init_Unwind_Info (trace_unwind);
 
 #if 0

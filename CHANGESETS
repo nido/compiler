@@ -1,6 +1,58 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri May 28 07:24:49 CEST 2010
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/lv21/dev-hmp-tasks
+
+Description:
+------------
+	* [trunk] Deliver lv21/dev-hmp-tasks rev #28452 with authorization branch #100418
+                  Support for ST-E HMP tasks.
+
+Modified Files:
+---------------
+	M       osprey/lai/cgemit.cxx
+	M       osprey/lai/cgemit_targ.h
+	M       osprey/lai/calls.cxx
+	M       osprey/gccfe/gnu/config/stxp70/stxp70.c
+	M       osprey/gccfe/wfe_decl.cxx
+	M       osprey/g++fe/wfe_decl.cxx
+	M       osprey/common/com/symtab_access.h
+	M       osprey/common/com/symtab_defs.h
+	M       osprey/targinfo/stxp70/config/config_asm.h
+	M       osprey/targinfo/stxp70/cg/targ_cgemit.cxx
+	M       osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28422 --new=https://codex.cro.st.com/svnroot/open64/branches/lv21/dev-hmp-tasks@28452 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28422 https://codex.cro.st.com/svnroot/open64/branches/lv21/dev-hmp-tasks@28452" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgemit.cxx?p2=branches/lv21/dev-hmp-tasks/osprey/lai/cgemit.cxx&r1=28422&r2=28452&roottype=svn&root=open64&diff_format=h
+osprey/lai/cgemit_targ.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cgemit_targ.h?p2=branches/lv21/dev-hmp-tasks/osprey/lai/cgemit_targ.h&r1=28422&r2=28452&roottype=svn&root=open64&diff_format=h
+osprey/lai/calls.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/calls.cxx?p2=branches/lv21/dev-hmp-tasks/osprey/lai/calls.cxx&r1=28422&r2=28452&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/gnu/config/stxp70/stxp70.c	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/gnu/config/stxp70/stxp70.c?p2=branches/lv21/dev-hmp-tasks/osprey/gccfe/gnu/config/stxp70/stxp70.c&r1=28422&r2=28452&roottype=svn&root=open64&diff_format=h
+osprey/gccfe/wfe_decl.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/gccfe/wfe_decl.cxx?p2=branches/lv21/dev-hmp-tasks/osprey/gccfe/wfe_decl.cxx&r1=28422&r2=28452&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_decl.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/g++fe/wfe_decl.cxx?p2=branches/lv21/dev-hmp-tasks/osprey/g++fe/wfe_decl.cxx&r1=28422&r2=28452&roottype=svn&root=open64&diff_format=h
+osprey/common/com/symtab_access.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/symtab_access.h?p2=branches/lv21/dev-hmp-tasks/osprey/common/com/symtab_access.h&r1=28422&r2=28452&roottype=svn&root=open64&diff_format=h
+osprey/common/com/symtab_defs.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/common/com/symtab_defs.h?p2=branches/lv21/dev-hmp-tasks/osprey/common/com/symtab_defs.h&r1=28422&r2=28452&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/config/config_asm.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/config/config_asm.h?p2=branches/lv21/dev-hmp-tasks/osprey/targinfo/stxp70/config/config_asm.h&r1=28422&r2=28452&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_cgemit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_cgemit.cxx?p2=branches/lv21/dev-hmp-tasks/osprey/targinfo/stxp70/cg/targ_cgemit.cxx&r1=28422&r2=28452&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_entry_exit.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx?p2=branches/lv21/dev-hmp-tasks/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx&r1=28422&r2=28452&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed May 26 09:43:22 CEST 2010
 	Author:    cv17
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

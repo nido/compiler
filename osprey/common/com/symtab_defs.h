@@ -659,6 +659,8 @@ public:
 /* [CR] for interrupt attribute. */
 #define	PU_IS_INTERRUPT 0x0000004000000000LL // pu is an interrupt handler
 #define	PU_IS_INTERRUPT_NOSTKALN 0x0000008000000000LL // pu is an interrupt handler
+/* [VL-HMP] for tasks in the context of the HMP */
+#define PU_IS_TASK               0x0000010000000000LL // pu is a HMP task
 #endif
 
 enum PU_SRC_LANG_FLAGS
