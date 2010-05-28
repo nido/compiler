@@ -1017,10 +1017,12 @@ Memop_to_Incrop(BB_REGION *bbRegion, BB_SET *bbRegion_set, DUD_REGION *dud, OP* 
  * Perform code reparation and motion
  * on selected memory operation/increment operation
  */
-static void
+static BOOL
 code_Repair(DUD_REGION *dud){
 
   M_Mem_Map_Iter it;
+
+  BOOL change = FALSE;
 
   // Pre-increment
   for(it = M_PreIncr2Mem.begin(); it != M_PreIncr2Mem.end(); ++it){
@@ -1032,6 +1034,7 @@ code_Repair(DUD_REGION *dud){
     preincr_RepairOffset(dud, memop, incrop);
     // Move increment operation before memory operation
     BB_Move_Op_Before(OP_bb(memop), memop, OP_bb(incrop), incrop);
+    change = TRUE;
 
     if(CGA_Trace) {
       fprintf(TFile, "PreIncrement: Move OP before");
@@ -1051,6 +1054,7 @@ code_Repair(DUD_REGION *dud){
     postincr_RepairOffset(dud, memop, incrop);
     // Move increment operation after memory operation
     BB_Move_Op_After(OP_bb(memop), memop, OP_bb(incrop), incrop);
+    change = TRUE;
 
     if(CGA_Trace) {
       fprintf(TFile, "PostIncrement: Move OP after");
@@ -1070,6 +1074,7 @@ code_Repair(DUD_REGION *dud){
     OPS ops = OPS_EMPTY;
 
     if(BaseOffset_Combine(memop, incrop, &ops)) {
+      change = TRUE;
 
       // Repair operations on path from increment operation to memory operation 
       preincr_RepairOffset(dud, memop, incrop);
@@ -1089,11 +1094,13 @@ code_Repair(DUD_REGION *dud){
       BB_Remove_Op(OP_bb(memop), memop);
     }
   }
-
+  return change;
 }
 
 
-void Perform_AutoMod_Optimization() {
+BOOL Perform_AutoMod_Optimization() {
+
+  BOOL change = FALSE;
 
   MEM_POOL loop_descr_pool;
   MEM_POOL_Initialize(&loop_descr_pool, "loop_descriptors", TRUE);
@@ -1138,8 +1145,8 @@ void Perform_AutoMod_Optimization() {
       }
 
       // Code repair and motion
-      code_Repair(dudRegion);
-
+      if (code_Repair(dudRegion))
+	change = TRUE;
     }
 
   }
@@ -1151,6 +1158,10 @@ void Perform_AutoMod_Optimization() {
   MEM_POOL_Delete(&bbregion_set_pool);
 
   Free_Dominators_Memory ();
+
+  if (change)
+
+  return change;
 }
 
 

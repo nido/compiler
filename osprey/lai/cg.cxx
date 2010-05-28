@@ -789,11 +789,17 @@ CG_Generate_Code(
       Start_Timer( T_EBO_CU );
       EBO_Process_Region (region ? REGION_get_rid(rwn) : NULL);
 #ifdef TARG_ST
+#ifdef TARG_STxP70
+      // Some instructions, like TBIT, need a second EBO pass to be catched
+      GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid(rwn) : NULL);
+      EBO_Process_Region (region ? REGION_get_rid(rwn) : NULL);
+#endif
       if (CG_AutoMod) {
-        GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
-        Perform_AutoMod_Optimization();
-        EBO_Process_Region (region ? REGION_get_rid(rwn) : NULL);
-        GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid( rwn) : NULL);
+	GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid(rwn) : NULL);   
+        if (Perform_AutoMod_Optimization()) {
+	  GRA_LIVE_Recalc_Liveness(region ? REGION_get_rid(rwn) : NULL);   
+	  EBO_Process_Region (region ? REGION_get_rid(rwn) : NULL);
+	}
       }
 #endif
 #if defined TARG_IA64 || (defined TARG_ST && defined SUPPORTS_PREDICATION)

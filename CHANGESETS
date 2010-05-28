@@ -1,6 +1,43 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Fri May 28 09:43:08 CEST 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-100492
+
+Description:
+------------
+	* [trunk] Fix for bug #100492: The automod transformation does not update the liveness.
+	Deliver fixes/codex-100492 rev #28457 with authorization branch #100494
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cg_automod.h
+	M       osprey/lai/cg.cxx
+	M       osprey/lai/cg_automod.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28454 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-100492@28457 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28454 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-100492@28457" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cg_automod.h	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_automod.h?p2=branches/fixes/codex-100492/osprey/lai/cg_automod.h&r1=28454&r2=28457&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg.cxx?p2=branches/fixes/codex-100492/osprey/lai/cg.cxx&r1=28454&r2=28457&roottype=svn&root=open64&diff_format=h
+osprey/lai/cg_automod.cxx	http://codex.cro.st.com/svn/viewvc.php/trunk/osprey/lai/cg_automod.cxx?p2=branches/fixes/codex-100492/osprey/lai/cg_automod.cxx&r1=28454&r2=28457&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri May 28 07:24:49 CEST 2010
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
