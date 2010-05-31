@@ -31,6 +31,14 @@ definitions:
         CCOPT  : "-O2 -g"
       OsMode16 :
         CCOPT  : "-Os -g -Mmode16"
+      OsMult :
+        CCOPT  : "-Os -g -Mconfig=mult:yes"
+      O3Mult :
+        CCOPT  : "-O3 -g -Mconfig=mult:yes" 
+      OsMultIPA :
+        CCOPT  : "-Os -Mconfig=mult:yes -ipa"
+      O3MultIPA :
+        CCOPT  : "-O3 -Mconfig=mult:yes -ipa" 
       OsMultCAS :
         CCOPT  : "-Os -g -Mconfig=mult:yes"
         RUNOPT : "-target=sxv3_valid_cas"
@@ -50,33 +58,40 @@ definitions:
         CCOPT  : "-O3 -g -Mextension=fpx -mlib-short-double -fshort-double"
         RUNOPT : "-ext=fpx"
     option_sets :
-      unit     : [ O0 ]
-      debug    : [ O0_nog, O0Fpx_nog ]
-      small    : [ OsMultCAS, O3MultCAS ]
-      small_ipa  : [ OsMultCAS, OsMultCASIPA, O3MultCAS, O3MultCASIPA ]
-      medium   : [ O0, O2, OsMode16, O3FpxShortDouble, OsMultCAS, O3MultCAS ]
-      medium_ipa : [ O0, O2, OsMode16, O3FpxShortDouble, OsMultCAS, OsMultCASIPA, O3MultCAS, O3MultCASIPA ]
-      full     : [ O0, O1, O2, OsMode16, OsFpxShortDouble, O3FpxShortDouble, OsMultCAS, O3MultCAS ]
-      full_ipa   : [ O0, O1, O2, OsMode16, OsFpxShortDouble, O3FpxShortDouble, OsMultCAS, OsMultCASIPA, O3MultCAS, O3MultCASIPA ]
+      unit       : [ O0 ]
+      debug      : [ O0_nog, O0Fpx_nog ]
+      perf       : [ OsMultCAS, O3MultCAS, OsMultCASIPA, O3MultCASIPA]
+      perf_noipa : [ OsMultCAS, O3MultCAS ]
+      func       : [ OsMult, O3Mult, OsMultIPA, O3MultIPA]
+      medium     : [ O0, O2, OsMode16, O3FpxShortDouble ]
+      full       : [ O0, O1, O2, OsMode16, OsFpxShortDouble, O3FpxShortDouble ]
     configuration :
       tiny   :
-        full_ipa : [dhrystone]
+        full       : [ dhrystone ]
+        perf       : [ dhrystone ]
       short  :
-        unit : [ open64_test ]
-        debug : [debug_info ]
-        medium : [ kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford  ] 
-        small_ipa : [ fp_aec, fp_exposure, fpu_zoom, h264, iti, jpeg_csd, lao, dijkstra_ospf, edn, hr_4_2, 
-          ti_codebook, wdservo, fp_algonum, marelli, nokia, notch, aec16b, nlms16, audio_speech, bdti, eembc_telecom
-        ]
-        small : [ konica, mp3_32, mp3_64, stvid, eembc_automotive, valid_extensions ] 
+        unit       : [ open64_test ]
+        debug      : [ debug_info  ]
+        perf       : [ eembc_networking, audio_speech, h264, jpeg_csd, eembc_automotive, mp3_32, mp3_64, wb_amr,  
+                       eembc_consumer, basestation, bdti, dhrystone, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe,
+                       servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom
+                     ]
+        perf_noipa : [ stvid ]
+        func       : [ valid_extensions, diags ]
+        medium     : [ kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford  ] 
       long   :
-        unit : [ open64_test ]
-        debug : [debug_info  ]
-        small_ipa : [ eembc_networking, audio_speech, h264, jpeg_csd ]
-        medium_ipa : [ eembc_automotive, mp3_32, mp3_64, wb_amr, valid_extensions ]
-        full : [stvid]
-        full_ipa : [ eembc_consumer, basestation, bdti, dhrystone, diags, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe, 
-          servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom ] 
+        unit       : [ open64_test ]
+        debug      : [ debug_info  ]
+        perf       : [ eembc_networking, audio_speech, h264, jpeg_csd, eembc_automotive, mp3_32, mp3_64, wb_amr,  
+                       eembc_consumer, basestation, bdti, dhrystone, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe,
+                       servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom
+                     ]
+        perf_noipa : [ stvid ]
+        func       : [ valid_extensions, diags ]
+        medium     : [ eembc_automotive, mp3_32, mp3_64, wb_amr, valid_extensions ]
+        full       : [ stvid, eembc_consumer, basestation, bdti, dhrystone, diags, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe, 
+                       servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom 
+                     ] 
   stxp70v4 :
     reference : 
       path    : 
@@ -106,6 +121,14 @@ definitions:
       OsMode16 :
         CCOPT  : "-Os -g -Mmode16 -mcore=stxp70v4"
         RUNOPT : "-target=sxv4_valid_iss"
+      OsMult :
+        CCOPT  : "-Os -g -Mconfig=mult:yes -mcore=stxp70v4"
+      O3Mult :
+        CCOPT  : "-O3 -g -Mconfig=mult:yes -mcore=stxp70v4" 
+      OsMultIPA :
+        CCOPT  : "-Os -Mconfig=mult:yes -ipa -mcore=stxp70v4"
+      O3MultIPA :
+        CCOPT  : "-O3 -Mconfig=mult:yes -ipa -mcore=stxp70v4" 
       OsMultCAS :
         CCOPT  : "-Os -g -Mconfig=mult:yes -mcore=stxp70v4"
         RUNOPT : "-target=sxv4_valid_cas"
@@ -119,36 +142,41 @@ definitions:
         CCOPT  : "-O3 -Mconfig=mult:yes -ipa -mcore=stxp70v4" 
         RUNOPT : "-target=sxv4_valid_cas"
     option_sets :
-      unit     : [ O0 ]
-      debug    : [ O0_nog ]
-      small    : [ OsMultCAS, O3MultCAS ]
-      small_ipa  : [ OsMultCAS, OsMultCASIPA, O3MultCAS, O3MultCASIPA ]
-      medium   : [ O0, O2, OsMode16, OsMultCAS, O3MultCAS ]
-      medium_ipa : [ O0, O2, OsMode16, OsMultCAS, OsMultCASIPA, O3MultCAS, O3MultCASIPA ]
-      full     : [ O0, O1, O2, OsMode16, OsMultCAS, O3MultCAS ]
-      full_ipa   : [ O0, O1, O2, OsMode16, OsMultCAS, OsMultCASIPA, O3MultCAS, O3MultCASIPA ]
+      unit       : [ O0 ]
+      debug      : [ O0_nog ]
+      perf       : [ OsMultCAS, O3MultCAS, OsMultCASIPA, O3MultCASIPA]
+      perf_noipa : [ OsMultCAS, O3MultCAS ]
+      func       : [ OsMult, O3Mult, OsMultIPA, O3MultIPA]
+      medium     : [ O0, O2, OsMode16 ]
+      full       : [ O0, O1, O2, OsMode16  ]
 
     configuration :
       tiny   :
-        full_ipa : [dhrystone]
+        full       : [ dhrystone ]
+        perf       : [ dhrystone ]
       short  :
-        unit : [ open64_test ]
-        debug : [debug_info]
-        medium : [ valid_extension_mp1x, kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford, eembc_telecom
-        ] 
-        small_ipa : [ fp_aec, fp_exposure, fpu_zoom, h264, iti, jpeg_csd, lao, dijkstra_ospf, edn, hr_4_2, 
-          ti_codebook, wdservo, fp_algonum, marelli, nokia, notch, aec16b, nlms16, audio_speech, bdti
-        ]
-        small : [ konica, mp3_32, mp3_64, stvid,
-          eembc_automotive ]
+        unit       : [ open64_test ]
+        debug      : [ debug_info  ]
+        perf       : [ eembc_networking, audio_speech, h264, jpeg_csd, eembc_automotive, mp3_32, mp3_64, wb_amr,  
+                       eembc_consumer, basestation, bdti, dhrystone, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe,
+                       servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom
+                     ]
+        perf_noipa : [ stvid ]
+        func       : [ valid_extension_mp1x, diags ]
+        medium     : [ kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford  ] 
       long   :
-        unit : [ open64_test ]
-        debug : [debug_info]
-        small_ipa : [ eembc_networking, audio_speech, h264, jpeg_csd ]
-        medium_ipa : [ mp3_32, mp3_64, wb_amr, eembc_automotive ]
-        full : [stvid]
-        full_ipa : [ valid_extension_mp1x, eembc_consumer, basestation, bdti, dhrystone, diags, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe, 
-          servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom ] 
+        unit       : [ open64_test ]
+        debug      : [ debug_info  ]
+        perf       : [ eembc_networking, audio_speech, h264, jpeg_csd, eembc_automotive, mp3_32, mp3_64, wb_amr,  
+                       eembc_consumer, basestation, bdti, dhrystone, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe,
+                       servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom
+                     ]
+        perf_noipa : [ stvid ]
+        func       : [ valid_extension_mp1x, diags ]
+        medium     : [ eembc_automotive, mp3_32, mp3_64, wb_amr, valid_extensions ]
+        full       : [ stvid, eembc_consumer, basestation, bdti, dhrystone, diags, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe, 
+                       servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom 
+                     ] 
   st200 :
     reference : 
       path      : 
@@ -335,6 +363,8 @@ definitions:
         full : [ FP_Exposure, PStone, AST_PDX, HP_valid, Benchs64, plumhall, jasper ]
 
 queues:
-  short : [ open64_test, wdservo, basestation, bdti, diags, fp_aec, fp_exposure, fpu_zoom, iti, pstone, seaprobe, 
-          servo, stanford, marelli, nokia, notch, edn, itu ]
-  long : [ eembc_networking, eembc_automotive ]
+  short : [ wdservo, basestation, bdti, diags, fp_aec, fp_exposure, fpu_zoom, iti, pstone, seaprobe, aec16b, nlms16, audio_speech, 
+          servo, stanford, marelli, nokia, notch, edn, itu, ti_codebook, kalman, dhrystone, lao, dijkstra_ospf, fp_algonum ]
+
+  long : [ eembc_networking, eembc_automotive, efr, eembc_consumer ]
+

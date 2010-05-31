@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon May 31 10:07:08 CEST 2010
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-new-aci-conf
+
+Description:
+------------
+	* [trunk] Deliver dt25/dev-new-aci-conf rev #28477 with authorization branch #100493
+
+
+Modified Files:
+---------------
+	M       ACI_CONFIGURATION
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28460 --new=https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-new-aci-conf@28477 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28460 https://codex.cro.st.com/svnroot/open64/branches/dt25/dev-new-aci-conf@28477" 
+
+Diff links to modified files:
+-----------------------------
+ACI_CONFIGURATION	http://codex.cro.st.com/svn/viewvc.php/trunk/ACI_CONFIGURATION?p2=branches/dt25/dev-new-aci-conf/ACI_CONFIGURATION&r1=28460&r2=28477&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Fri May 28 09:43:08 CEST 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
