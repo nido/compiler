@@ -78,7 +78,7 @@ definitions:
                      ]
         perf_noipa : [ stvid ]
         func       : [ valid_extensions, diags ]
-        medium     : [ kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford  ] 
+        medium     : [ kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford ] 
       long   :
         unit       : [ open64_test ]
         debug      : [ debug_info  ]
