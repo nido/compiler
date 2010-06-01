@@ -467,12 +467,18 @@ BOOL ALIAS_RULE::Aliased_C_Qualifier_Rule(const POINTS_TO *mem1, const POINTS_TO
       mem1->Restricted() && 
       mem1->Based_sym() != mem2->Based_sym() &&
       !mem2->Default_vsym())
+#ifdef KEY // bug 9001: do not use this rule when Based_kind() == BASE_IS_FIXED
+    if (mem2->Based_sym() != NULL)
+#endif
     return FALSE;
 
   if (mem2->Based_sym() != NULL &&
       mem2->Restricted() && 
       mem2->Based_sym() != mem1->Based_sym() &&
       !mem1->Default_vsym())
+#ifdef KEY // bug 9001: do not use this rule when Based_kind() == BASE_IS_FIXED
+    if (mem1->Based_sym() != NULL)
+#endif
     return FALSE;
 #endif
 
