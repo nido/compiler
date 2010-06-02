@@ -1311,6 +1311,12 @@ Check_min_max_abs_candidate(BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg, B
 	TN *dummy;
 	OP *br_op = BB_branch_op(head);
 	BOOL modification_applied=FALSE;
+	// [TDR] - Bug #101114 for min/max, ensure head dominate tail, 
+	// i.e. no direct access to  taken_reg or fallthru_reg
+	if (!BB_Dominates(head,tail)) {
+		if (Trace_Select_Candidates) fprintf (Select_TFile, "Min/Max refused head=%d don't dom tail=%d\n",BB_id(head),BB_id(tail));
+		return FALSE;
+	}
 	(void) CGTARG_Analyze_Branch(br_op, &cond_tn, &dummy);
 	OP *cond_op = TN_ssa_def (cond_tn);
 	if (!TOP_is_cmp(OP_code(cond_op))) return FALSE;

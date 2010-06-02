@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jun 02 15:12:39 CEST 2010
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-101114
+
+Description:
+------------
+	* [trunk] Fix for bug #101114: jpeg_csd fails in O2 v4-dual.
+	Deliver fixes/codex-101114 rev #28543 with authorization branch #101178
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cg_select.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28508 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-101114@28543 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28508 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-101114@28543" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cg_select.cxx	https://codex.cro.st.com//svn/viewvc.php/trunk/osprey/lai/cg_select.cxx?p2=branches/fixes/codex-101114/osprey/lai/cg_select.cxx&r1=28508&r2=28543&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jun 01 09:41:59 CEST 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
