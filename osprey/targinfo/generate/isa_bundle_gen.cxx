@@ -826,17 +826,23 @@ static void Emit_Bundle_Scheduling(FILE *hfile, FILE *cfile, FILE *efile)
     
     fprintf (hfile, "\ntypedef %s ISA_EXEC_UNIT_PROPERTY;\n",
              info_index_type);
-
+    
     fprintf (hfile, "\n/* Number of slots used by exec unit */\n");
     fprintf (hfile, "typedef mUINT8 ISA_EXEC_UNIT_SLOTS;\n");
-
+    
     fprintf (hfile, "\n");
-    for (iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei) {
-      ISA_EXEC_UNIT_TYPE curr_exec_type = *iei;
-      fprintf (hfile, "#define ISA_EXEC_PROPERTY_%-15s (" PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s)\n",
-                       curr_exec_type->name,
-                       (1ULL << curr_exec_type->bit_position), int_suffix);
-    }
+  }
+
+  
+  for (iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei) {
+    ISA_EXEC_UNIT_TYPE curr_exec_type = *iei;
+    fprintf (hfile, "#define ISA_EXEC_PROPERTY_%-15s (" PRINTF_LONGLONG_FORMAT( "0x", "", "x" ) "%s)\n",
+             curr_exec_type->name,
+             (1ULL << curr_exec_type->bit_position), int_suffix);
+  }
+  
+  
+  if(gen_static_code) {
 
     fprintf (hfile, "\ntypedef enum {\n");
     for (iei = all_exec_types.begin(); iei != all_exec_types.end(); ++iei) {

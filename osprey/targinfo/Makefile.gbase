@@ -328,9 +328,14 @@ TARG_INFO_HOST_OBJS = $(TARG_INFO_SRCS:.c=.o)
 TARG_INFO_HOST_OBJS += targ_isa_topcode.o
 TARG_INFO_HOST_OBJS += targ_proc_proc.o
 
+targinfo_config.o: $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/config/targinfo_config.cxx targ_isa_bundle.h targinfo_config.h
+		   $(CC) $(CFLAGS) -c $< -o $@
+
+
 LIBTARGINFO_OBJS = \
 	$(TARGINFO_ACCESS_HOST_OBJS)	\
-	$(TARG_INFO_HOST_OBJS)
+	$(TARG_INFO_HOST_OBJS) \
+        targinfo_config.o
 
 TARGETS = \
 	$(TARGINFO_ACCESS_HDRS) \
