@@ -1310,6 +1310,8 @@ Check_min_max_abs_candidate(BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg, B
 	TN *cond_tn;
 	TN *dummy;
 	OP *br_op = BB_branch_op(head);
+    BOOL cmp_order;
+    BOOL invert_cond=FALSE;
 	BOOL modification_applied=FALSE;
 	// [TDR] - Bug #101114 for min/max, ensure head dominate tail, 
 	// i.e. no direct access to  taken_reg or fallthru_reg
@@ -1330,7 +1332,19 @@ Check_min_max_abs_candidate(BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg, B
 				cond_op=fpx_cond_op;
 			} 
 		}
+  		if (OP_cmp_variant(cond_op) == V_CMP_EQ) {
+			OP *prev_def_op = TN_ssa_def(OP_Opnd1(cond_op));
+            if (prev_def_op && CGTARG_is_bool_expand(prev_def_op)) {
+                OP *prev_cond_op = TN_ssa_def(OP_Opnd1(prev_def_op));
+                if (prev_cond_op && TOP_is_cmp(OP_code(prev_cond_op))) {
+                    cond_op=prev_cond_op;
+                    invert_cond=TRUE;
+                }
+            }
+        }
 	} 
+    // [TDR] - Fix for bug #100942: order of compare also depend of OP_Pred_False
+	if(OP_Pred_False(br_op, OP_find_opnd_use(br_op,OU_condition))) invert_cond=1-invert_cond;
 	OP *phi;
 	FOR_ALL_BB_PHI_OPs(tail, phi) {
 		if (OP_opnds(phi) == 2) {
@@ -1341,6 +1355,15 @@ Check_min_max_abs_candidate(BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg, B
 			FmtAssert(TN_is_register(tn1) && TN_is_register(tn2),("Tns in a Phi operation must be registers\n")); 
 			OP *def_op1 = TN_ssa_def(tn1);
 			OP *def_op2 = TN_ssa_def(tn2);
+			if (Trace_Select_Candidates) {
+				fprintf (Select_TFile, "Check_min_max_abs_candidate 0- try to apply on BB%d and BB%d\n", BB_id(bb1),BB_id(bb2));
+				Print_OP_No_SrcLine(phi);
+				Print_OP_No_SrcLine(cond_op);
+				if(def_op1) Print_OP_No_SrcLine(def_op1);
+				else fprintf (Select_TFile, "No Def op 1\n");
+				if(def_op2) Print_OP_No_SrcLine(def_op2);
+				else fprintf (Select_TFile, "No Def op 2\n");
+			}
 			if (!def_op1 || !def_op2) continue;
 			if (BB_SET_EmptyP(taken_reg)) {
 				if (!(BB_SET_MemberP(fallthru_reg, bb2) || BB_SET_MemberP(fallthru_reg, bb1))) continue;
@@ -1348,13 +1371,34 @@ Check_min_max_abs_candidate(BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg, B
 				if (!(BB_SET_MemberP(taken_reg, bb1) && BB_SET_MemberP(fallthru_reg, bb2)) &&
 				!(BB_SET_MemberP(fallthru_reg, bb1) && BB_SET_MemberP(taken_reg, bb2))) continue;
 			}
+			if (Trace_Select_Candidates) {
+				fprintf (Select_TFile, "Check_min_max_abs_candidate: Shape is ok for transfo\n");
+				if (Are_equivalent_defininition_TNs(tn1,OP_Opnd1(cond_op))) fprintf (Select_TFile, "tn1 == opnd1\n");
+				if (Are_equivalent_defininition_TNs(tn2,OP_Opnd2(cond_op))) fprintf (Select_TFile, "tn2 == opnd2\n");
+				if (Are_equivalent_defininition_TNs(tn2,OP_Opnd1(cond_op))) fprintf (Select_TFile, "tn2 == opnd1\n");
+				if (Are_equivalent_defininition_TNs(tn1,OP_Opnd2(cond_op))) fprintf (Select_TFile, "tn1 == opnd2\n");
+			}
 			//min/max case : we search simple affectation (copy)
-			if(Are_equivalent_defininition_TNs(tn1,OP_Opnd1(cond_op)) && Are_equivalent_defininition_TNs(tn2,OP_Opnd2(cond_op))) {
-				if(CGTARG_apply_min_max_transformation(cond_op,phi,BB_SET_MemberP(fallthru_reg, bb1))) modification_applied = TRUE;
+			if(Are_equivalent_defininition_TNs(tn1,OP_Opnd1(cond_op)) 
+               && Are_equivalent_defininition_TNs(tn2,OP_Opnd2(cond_op))) {
+                if (Trace_Select_Candidates) {
+                    fprintf (Select_TFile, "Check min/max 1 - try on BB%d and BB%d\n", BB_id(bb1),BB_id(bb2));
+    				Print_OP_No_SrcLine(br_op);
+                }
+				if (invert_cond) cmp_order=BB_SET_MemberP(fallthru_reg, bb2);
+			    else           cmp_order=BB_SET_MemberP(fallthru_reg, bb1);
+				if(CGTARG_apply_min_max_transformation(cond_op,phi,cmp_order)) modification_applied = TRUE;
 				continue;
 			}
-			if(Are_equivalent_defininition_TNs(tn2,OP_Opnd1(cond_op)) && Are_equivalent_defininition_TNs(tn1,OP_Opnd2(cond_op))) {
-				if( CGTARG_apply_min_max_transformation(cond_op,phi,BB_SET_MemberP(fallthru_reg, bb2))) modification_applied = TRUE;
+			if(Are_equivalent_defininition_TNs(tn2,OP_Opnd1(cond_op)) 
+               && Are_equivalent_defininition_TNs(tn1,OP_Opnd2(cond_op))) {
+                if (Trace_Select_Candidates) {
+                    fprintf (Select_TFile, "Check min/max  2 - try on BB%d and BB%d\n", BB_id(bb1),BB_id(bb2));
+    				Print_OP_No_SrcLine(br_op);
+                }
+				if (invert_cond) cmp_order=BB_SET_MemberP(fallthru_reg, bb1);
+			    else           cmp_order=BB_SET_MemberP(fallthru_reg, bb2);
+				if( CGTARG_apply_min_max_transformation(cond_op,phi,cmp_order)) modification_applied = TRUE;
 				continue;
 			}
 
@@ -1363,11 +1407,25 @@ Check_min_max_abs_candidate(BB *head, BB_SET *taken_reg, BB_SET *fallthru_reg, B
 					(OP_fcmp(cond_op) && OP_Opnd2(cond_op) && TN_ssa_def(OP_Opnd2(cond_op)) && 
 					CGTARG_OP_is_float_cst_load(TN_ssa_def(OP_Opnd2(cond_op)),0));
 			if (Abs_Pattern) {
-				if (Are_equivalent_defininition_TNs(tn1,OP_Opnd1(cond_op)) && Are_equivalent_defininition_negated_TNs(tn2,OP_Opnd1(cond_op),FALSE)) {
-					if(CGTARG_apply_abs_transformation(cond_op,phi,BB_SET_MemberP(fallthru_reg, bb2))) modification_applied = TRUE;
+				if (Are_equivalent_defininition_TNs(tn1,OP_Opnd1(cond_op)) 
+                    && Are_equivalent_defininition_negated_TNs(tn2,OP_Opnd1(cond_op),FALSE)) {
+                    if (Trace_Select_Candidates) {
+                        fprintf (Select_TFile, "Check abs 3 - try on BB%d and BB%d\n", BB_id(bb1),BB_id(bb2));
+    				    Print_OP_No_SrcLine(br_op);
+                    }
+				    if (invert_cond) cmp_order=BB_SET_MemberP(fallthru_reg, bb1);
+			        else             cmp_order=BB_SET_MemberP(fallthru_reg, bb2);
+					if(CGTARG_apply_abs_transformation(cond_op,phi,cmp_order)) modification_applied = TRUE;
 				}
-				if (Are_equivalent_defininition_TNs(tn2,OP_Opnd1(cond_op)) && Are_equivalent_defininition_negated_TNs(tn1,OP_Opnd1(cond_op),FALSE)) {
-					if(CGTARG_apply_abs_transformation(cond_op,phi,BB_SET_MemberP(fallthru_reg, bb1))) modification_applied = TRUE;
+				if (Are_equivalent_defininition_TNs(tn2,OP_Opnd1(cond_op)) 
+                    && Are_equivalent_defininition_negated_TNs(tn1,OP_Opnd1(cond_op),FALSE)) {
+                    if (Trace_Select_Candidates) {
+                        fprintf (Select_TFile, "Check abs 2 - try on BB%d and BB%d\n", BB_id(bb1),BB_id(bb2));
+    				    Print_OP_No_SrcLine(br_op);
+                    }
+				    if (invert_cond) cmp_order=BB_SET_MemberP(fallthru_reg, bb2);
+			        else             cmp_order=BB_SET_MemberP(fallthru_reg, bb1);
+					if(CGTARG_apply_abs_transformation(cond_op,phi,cmp_order)) modification_applied = TRUE;
 				}
 			}					
 		}
@@ -3682,6 +3740,7 @@ Convert_Min_Max(RID *rid, const BB_REGION& bb_region)
 
 	INT i;
 	BOOL modification_applied=FALSE;
+	Trace_Select_Init();
 	Identify_Logifs_Candidates();
 	// make sure dominator information are correct 
 	// before starting optimizing

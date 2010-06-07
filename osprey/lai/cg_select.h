@@ -136,4 +136,6 @@ extern BOOL CGTARG_apply_min_max_transformation(OP *cmp, OP* phi, BOOL cmp_order
 extern BOOL CGTARG_IsNegOP(OP* op);
 extern BOOL CGTARG_apply_abs_transformation(OP *cmp, OP* phi, BOOL cmp_order);
 extern BOOL CGTARG_OP_is_float_cst_load(OP *op, INT32 val);
+/*TDR - is bool expand detect instruction that promote a boolean value to an int*/
+extern BOOL CGTARG_is_bool_expand(OP *op);
 #endif /* SELECT_H_INCLUDED */
