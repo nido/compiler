@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jun 08 11:14:33 CEST 2010
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-101775
+
+Description:
+------------
+	* [trunk] Fix for bug #101775: [IT] Loopenable not generated in IT when HWLoop registers clobered registers in a ASM-STMT.
+	Deliver fixes/codex-101775 rev #28636 with authorization branch #102000
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/cg/targ_entry_exit.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28634 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-101775@28636 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28634 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-101775@28636" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/cg/targ_entry_exit.cxx	https://codex.cro.st.com//svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx?p2=branches/fixes/codex-101775/osprey/targinfo/stxp70/cg/targ_entry_exit.cxx&r1=28634&r2=28636&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jun 08 10:56:36 CEST 2010
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
