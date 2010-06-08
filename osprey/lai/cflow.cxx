@@ -4456,48 +4456,6 @@ TN_equiv_for_unification(TN *tn1, TN *tn2) {
   return FALSE;
 }
 
-static BOOL
-OP_equiv(OP *op1, OP *op2) {
-
-  INT i;
-
-  if (!op1 || !op2)
-    return FALSE;
-
-  if (OP_xfer(op1) || OP_xfer(op2) ||
-      OP_code(op1) == TOP_asm || OP_code(op2) == TOP_asm ||
-      OP_volatile(op1) || OP_volatile(op2))
-    return FALSE;
-  
-  if ((OP_code(op1) != OP_code(op2)) ||
-      (OP_opnds(op1) != OP_opnds(op2)) ||
-      (OP_results(op1) != OP_results(op2)))
-    return FALSE;
-
-  // FdF 20100113: Merge operations only if none or both belong to the
-  // prologue or epilogue
-  if ((OP_prologue(op1) != OP_prologue(op2)) ||
-      (OP_epilogue(op1) != OP_epilogue(op2)))
-    return FALSE;
-
-  for (i = 0; i < OP_opnds(op1); i ++) {
-#ifdef TARG_ST
-    // (cbr) Support for guards on false
-    if (!TN_equiv(OP_opnd(op1, i), OP_opnd(op2, i)) || 
-        (OP_Pred_False(op1, i) != OP_Pred_False(op2, i)))
-#else
-    if (!TN_equiv(OP_opnd(op1, i), OP_opnd(op2, i)))
-#endif
-      return FALSE;
-  }
-  for (i = 0; i < OP_results(op1); i ++) {
-    if (!TN_equiv(OP_result(op1, i), OP_result(op2, i)))
-      return FALSE;
-  }
-
-  return TRUE;
-}
-
 // FdF 20091020: call_result_set contains the set of registers that
 // may be used to get results from a call. Uses of these dedicated
 // registers will prevent merging of an operation.
@@ -4577,6 +4535,28 @@ OP_equiv_for_merging(OP *op1, OP *op2, BS *TNs_to_be_unified) {
   return TRUE;
 }
 
+static BOOL
+OP_can_be_merged(OP *op, BOOL before_regalloc) {
+
+  int i;
+  TN *tn;
+
+  if (OP_code(op) == TOP_spadjust)
+    return FALSE;
+
+  if (before_regalloc && OP_no_move_before_gra(op))
+    return FALSE;
+
+  if (BB_entry(OP_bb(op))) {
+    for (i = 0; i < OP_opnds(op); i ++) {
+      TN *tn = OP_opnd(op, i);
+      if ((TN_is_register(tn)) && (TN_is_dedicated(tn)))
+	return FALSE;
+    }
+  }
+
+  return TRUE;
+}
 
 static void
 Unify_TNs_for_Merging(OP *cur_op[], INT op_nb, BS *TNs_to_be_unified) {
@@ -4663,7 +4643,7 @@ Unify_TNs_for_Merging(OP *cur_op[], INT op_nb, BS *TNs_to_be_unified) {
 static BOOL
 Merge_Ops_in_Preds(BB *b) {
 #define MAX_PRED_BBS 10
-  OP *cur_op[MAX_PRED_BBS], *cur_op_tmp;
+  OP *cur_op[MAX_PRED_BBS];
   BOOL merged = FALSE;
   INT pred_count = BB_preds_len(b);
 
@@ -4679,88 +4659,126 @@ Merge_Ops_in_Preds(BB *b) {
   if (pred_count > MAX_PRED_BBS)
     return FALSE;
 
-  OP *common_op = NULL;
   BBLIST *bblst;
-  BOOL find;
-  BB *bb_tmp;
 
   cur_op[0] = BB_last_op(BBLIST_item(BB_preds(b)));
   if (cur_op[0] && OP_br(cur_op[0]))
     cur_op[0] = OP_prev(cur_op[0]);
 
-  while (cur_op[0]) {
-    int i = 0;
-    common_op = cur_op[0];
-    BS *TNs_to_be_unified = BS_Create_Empty(OP_opnds(cur_op[0]),
-					    &cflow_pool);
+  // Compute the dep-graph only when needed
+  BOOL cg_dep_graph = FALSE;
 
+  while (cur_op[0]) {
+
+    int i = 0;
+    BS *TNs_to_be_unified = NULL;
+
+    BOOL common_op_in_preds = TRUE;
+
+    // Iterate over all predecessors to find operations equivalent to
+    // cur_op[0] that can be moved into b
     FOR_ALL_BB_PREDS (b, bblst) {
       BB *pbb = BBLIST_item(bblst);
-      if (BB_id(pbb) == BB_id(OP_bb(cur_op[0]))){
-	continue;
+
+      if (i > 0) {
+	cur_op[i] = BB_last_op(pbb);
+	if (cur_op[i] && OP_br(cur_op[i]))
+	  cur_op[i] = OP_prev(cur_op[i]);
       }
-      find = FALSE;
-      i++;
-    
-      cur_op[i] = BB_last_op(pbb);
-      if (cur_op[i] && OP_br(cur_op[i]))
-	cur_op[i] = OP_prev(cur_op[i]);
-    
-      if (CG_opt_level >= 2 && CFLOW_depgraph_use) {
-	CG_DEP_Compute_Graph (pbb, 
-			      INCLUDE_ASSIGNED_REG_DEPS,
-			      NON_CYCLIC,
-			      INCLUDE_MEMREAD_ARCS,
-			      INCLUDE_MEMIN_ARCS,
-			      NO_CONTROL_ARCS,
-			      NULL);
-	if (CFLOW_Trace_Merge_Ops) CG_DEP_Trace_Graph (pbb);
-	
-	while (cur_op[i]) {
-	  if (OP_equiv_for_merging(cur_op[0], cur_op[i], TNs_to_be_unified)) {
-	    find = TRUE;
+
+      while (cur_op[i]) {
+	BOOL is_candidate;
+	if (i == 0)
+	  is_candidate = OP_can_be_merged(cur_op[0], before_regalloc);
+	else
+	  is_candidate = OP_equiv_for_merging(cur_op[0], cur_op[i], TNs_to_be_unified);
+
+	if (is_candidate) {
+	  // This is the last operation in the block, no more checks
+	  if (OP_next(cur_op[i]) == NULL)
+	    break;
+
+	  // Otherwise, check for dependencies with next ops, which
+	  // requires the dependence graph.
+	  if (!cg_dep_graph && CG_opt_level >= 2 && CFLOW_depgraph_use) {
+	    CG_DEP_Compute_Graph (pbb, 
+				  INCLUDE_ASSIGNED_REG_DEPS,
+				  NON_CYCLIC,
+				  INCLUDE_MEMREAD_ARCS,
+				  INCLUDE_MEMIN_ARCS,
+				  NO_CONTROL_ARCS,
+				  NULL);
+	    cg_dep_graph = TRUE;
+	    if (CFLOW_Trace_Merge_Ops) CG_DEP_Trace_Graph (pbb);
+	  }
+
+	  if (cg_dep_graph) {
+	    // Check depencies with next operations
+	    if (OP_succs(cur_op[i]) == NULL)
+	      break;
+	  }
+	  // The dependence graph is not available, no operation other
+	  // than the last one can be moved into b.
+	  else {
+	    cur_op[i] = NULL;
 	    break;
 	  }
-	  cur_op_tmp = OP_prev(cur_op[i]); 
-	  while (cur_op_tmp) {
-	    if(OP_succs(cur_op_tmp) != NULL) {
-	      cur_op_tmp = OP_prev(cur_op_tmp);
-	    }
-	    else break;
-	  }
-	  cur_op[i] = cur_op_tmp;
 	}
-	
-	CG_DEP_Delete_Graph (pbb);
-	if (find == TRUE) continue;
-	else {
-	  common_op = NULL;
-	  break;
-	}
-      }
-      else {
-	if (!OP_equiv(cur_op[0], cur_op[i])) {
-	  common_op = NULL;
-	  break;
-	}
-      }
-    }
-    
-    cur_op_tmp = OP_prev(cur_op[0]);
-    bb_tmp = OP_bb(cur_op[0]);
 
-    if (common_op) {
+	// Current operation is not a candidate, check the next one
+	cur_op[i] = OP_prev(cur_op[i]);
+
+      } // while (cur_op[i])
+
+      if (cg_dep_graph) {
+	CG_DEP_Delete_Graph (pbb);
+	cg_dep_graph = FALSE;
+      }
+
+      // Could not find an operation in pbb that is candidate for
+      // moving into b
+      if (cur_op[i] == NULL) {
+	common_op_in_preds = FALSE;
+	break;
+      }
+
+      if (i == 0)
+	TNs_to_be_unified = BS_Create_Empty(OP_opnds(cur_op[0]), &cflow_pool);
+
+      // Iterates over next predecessor
+      i++;
+    } // FOR_ALL_BB_PREDS
+
+    // No GRA before O2
+    if (TNs_to_be_unified && !BS_EmptyP(TNs_to_be_unified) && (CG_opt_level < 2))
+      common_op_in_preds = FALSE;
+
+    // Three cases:
+    // 1- common_op_in_preds == TRUE ==> cur_op[0] != NULL
+    //    Move ops in b, then continue on OP_prev(cur_op[0])
+    // 2- common_op_in_preds == FALSE && cur_op[0] != NULL
+    //    No common op for cur_op[0], continue on OP_prev(cur_op[0])
+    // 3- common_op_in_preds == FALSE && cur_op[0] == NULL
+    //    No op in first successor is candidate for moving, stop now
+
+    // Prepare for next iteration, before cur_op[0] is removed from
+    // its block
+    OP *prev_op = (cur_op[0] != NULL) ? OP_prev(cur_op[0]) : NULL;
+
+    if (common_op_in_preds) {
+
+      Is_True(cur_op[0] != NULL, ("Merge_Ops_in_Preds: cur_op[0] is NULL when commom_op_in_preds is TRUE"));
 
       /* Move to b, remove from all predecessors. */
       if (CFLOW_Trace_Merge_Ops) {
 	#pragma mips_frequency_hint NEVER
-	fprintf(TFile, "Operation %s removed from BBs", TOP_Name(OP_code(common_op)));
+	fprintf(TFile, "Operation %s removed from BBs", TOP_Name(OP_code(cur_op[0])));
       }
       if (!BS_EmptyP(TNs_to_be_unified)) {
 	Unify_TNs_for_Merging(cur_op, pred_count, TNs_to_be_unified);
       }
-      OP *new_common = Dup_OP(common_op);
-      if (OP_memory(common_op)) Copy_WN_For_Memory_OP(new_common, common_op);
+      OP *new_common = Dup_OP(cur_op[0]);
+      if (OP_memory(cur_op[0])) Copy_WN_For_Memory_OP(new_common, cur_op[0]);
       OP_scycle(new_common) = 0; // Reset cycle to 0 for safeness at postscheduling time.
 
       BB_Insert_Op(b, NULL, new_common, TRUE);
@@ -4780,33 +4798,8 @@ Merge_Ops_in_Preds(BB *b) {
       merged = TRUE;
     }
 
-    if (CG_opt_level >= 2 && CFLOW_depgraph_use) {
-      CG_DEP_Compute_Graph (bb_tmp, 
-			    INCLUDE_ASSIGNED_REG_DEPS,
-			    NON_CYCLIC,
-			    INCLUDE_MEMREAD_ARCS,
-			    INCLUDE_MEMIN_ARCS,
-			    NO_CONTROL_ARCS,
-			    NULL);
-      if (CFLOW_Trace_Merge_Ops) CG_DEP_Trace_Graph (bb_tmp);
-      
-      while (cur_op_tmp) {
-	if(OP_succs(cur_op_tmp) != NULL) {
-	  cur_op_tmp = OP_prev(cur_op_tmp);
-	}
-	else break;
-      }
-      CG_DEP_Delete_Graph (bb_tmp);
-      cur_op[0] = cur_op_tmp;
-    }
-    else {
-      if (common_op) {
-	cur_op[0] = cur_op_tmp;
-      }
-      else {
-	cur_op[0] = NULL;
-      }
-    }
+    // Iterates over the operations in the first successor
+    cur_op[0] = prev_op;
   }
   
   if (merged && !CG_localize_tns) {
@@ -5038,68 +5031,83 @@ Unify_TNs_for_Hoisting(OP *cur_op[], INT op_nb, BS *TNs_to_be_unified) {
 }
 
 static BOOL
-OP_no_move_before_regalloc(OP *op, BB *b) {
+OP_can_be_hoisted(OP *op, BOOL before_regalloc) {
 
   int i;
   TN *tn;
 
-  if (OP_no_move_before_gra(op)) return TRUE;
+  if (op == BB_exit_sp_adj_op(OP_bb(op)))
+    return FALSE;
 
-  if (BBINFO_kind(b) == BBKIND_RETURN) {
+  if (before_regalloc && OP_no_move_before_gra(op))
+    return FALSE;
+
+  if (BBINFO_kind(OP_bb(op)) == BBKIND_RETURN) {
     for (i = 0; i < OP_results(op); i++) {
       tn = OP_result(op, i);
-      if ((TN_is_register(tn)) && (TN_is_dedicated(tn))) return TRUE;
+      if ((TN_is_register(tn)) && (TN_is_dedicated(tn)))
+	return FALSE;
     }
   }
 
-  return FALSE;
+  return TRUE;
 }
 
-
+// Check there is no register dependencies between op1 and op2
 static BOOL
-OP_no_move_after_regalloc(OP *op, BB *pb, BB *lb) {
+Has_RegDependencies(OP *op1, OP *op2) {
+  INT idx1;
+  INT idx2;
 
-  int i, j;
-  TN *tn, *tn2;
+  if ((op1 == NULL) || (op2 == NULL))
+    return FALSE;
 
-  if (BBINFO_kind(lb) == BBKIND_RETURN) {
-    for (i = 0; i < OP_results(op); i++) {
-      tn = OP_result(op, i);
-      if ((TN_is_register(tn)) && (TN_is_dedicated(tn))) return TRUE;
+  for (idx1 = 0; idx1 < OP_results(op1); idx1 ++) {
+    TN *res1 = OP_result(op1, idx1);
+    if (!TN_is_register(res1)) continue;
+
+    // Check REGOUT dependences
+    for (idx2 = 0; idx2 < OP_results(op2); idx2 ++) {
+      TN *res2 = OP_result(op2, idx2);
+      if (TN_is_register(res2) && TNs_Are_Equivalent(res1, res2))
+	return TRUE;
+    }
+
+    // Check REGIN dependences
+    for (idx2 = 0; idx2 < OP_opnds(op2); idx2 ++) {
+      TN *opnd2 = OP_opnd(op2, idx2);
+      if (TN_is_register(opnd2) && TNs_Are_Equivalent(res1, opnd2))
+	return TRUE;
     }
   }
 
-  for (i = 0; i < OP_results(op); i++) {
-    tn = OP_result(op, i);
-    if ((Is_Predicate_REGISTER_CLASS(TN_register_class(tn))) &&
-	(BBINFO_kind(pb) == BBKIND_LOGIF)) {
-      OP *ifop = BB_last_op(pb);
-      for (j = 0; j < OP_opnds(ifop); j++) {
-	tn2 = OP_opnd(ifop, j);
-	if ((TN_is_register(tn)) && (TN_is_register(tn2)) &&
-	    (TN_register(tn) == TN_register(tn2))) return TRUE;
-      }
+  // Check REGANTI dependences
+  for (idx1 = 0; idx1 < OP_opnds(op1); idx1 ++) {
+    TN *opnd1 = OP_opnd(op1, idx1);
+    if (!TN_is_register(opnd1)) continue;
+
+    for (idx2 = 0; idx2 < OP_results(op2); idx2 ++) {
+      TN *res2 = OP_result(op2, idx2);
+      if (TN_is_register(res2) && TNs_Are_Equivalent(opnd1, res2))
+	return TRUE;
     }
   }
-  
+
   return FALSE;
 }
-
 
 static BOOL
 Hoist_Ops_in_Succs(BB *b) {
 
 #define MAX_SUCC_BBS 10
 
-  OP *cur_op[MAX_SUCC_BBS], *cur_op_tmp;
+  OP *cur_op[MAX_SUCC_BBS];
   BOOL merged = FALSE;
   OP *common_op = NULL;
   BBLIST *bblst;
   OP *last_op;
   BOOL before;
   INT succ_count = BB_succs_len(b);
-  BOOL find;
-  BB *bb_tmp;
 
   /* Stop if BB b has only one successor and if merged BB will be too large.
    */
@@ -5122,97 +5130,124 @@ Hoist_Ops_in_Succs(BB *b) {
     before = FALSE;
   }
 
+  // Compute the dep-graph only when needed
+  BOOL cg_dep_graph = FALSE;
+
   cur_op[0] = BB_first_op(BBLIST_item(BB_succs(b)));
-  if (CG_opt_level >= 2 && CFLOW_depgraph_use) {
-    while (cur_op[0] && ((OP_code(cur_op[0]) == TOP_spadjust) ||
-			 (cur_op[0] == BB_exit_sp_adj_op(OP_bb(cur_op[0]))) ||
-			 (OP_epilogue(cur_op[0])) ||
-			 (before_regalloc &&
-			  OP_no_move_before_regalloc(cur_op[0],
-						     BBLIST_item(BB_succs(b)))) ||
-			 ((!before_regalloc) &&
-			  OP_no_move_after_regalloc(cur_op[0], b,
-						    BBLIST_item(BB_succs(b)))))) {
-      cur_op[0] = OP_next(cur_op[0]);
-    }
-  }
-  
+
+  // Iterates over the operations in the first successor until there
+  // is no more operation
   while (cur_op[0]) {
+
     int i = 0;
-    common_op = cur_op[0];
-    BS *TNs_to_be_unified = BS_Create_Empty(OP_results(cur_op[0]),
-					    &cflow_pool);
+    BS *TNs_to_be_unified = NULL;
 
-    if (! CGTARG_Allow_Operation_To_Be_Hoisted_In_Succs(common_op)) {
-      common_op = NULL;
-    } else {
-      FOR_ALL_BB_SUCCS (b, bblst) {
-        BB *pbb = BBLIST_item(bblst);
-        if (BB_id(pbb) == BB_id(OP_bb(cur_op[0]))){
-          continue;
-        }
-        find = FALSE;
-        i++;
-        
-        cur_op[i] = BB_first_op(pbb);
-        if (CG_opt_level >= 2 && CFLOW_depgraph_use) {
-          CG_DEP_Compute_Graph (pbb, 
-                                INCLUDE_ASSIGNED_REG_DEPS,
-                                NON_CYCLIC,
-                                INCLUDE_MEMREAD_ARCS,
-                                INCLUDE_MEMIN_ARCS,
-                                NO_CONTROL_ARCS,
-                                NULL);
-          if (CFLOW_Trace_Hoist_Ops) CG_DEP_Trace_Graph (pbb);
-          
-          while (cur_op[i]) {
-            if (OP_equiv_for_hoisting(cur_op[0], cur_op[i],
-                                      TNs_to_be_unified)) {
-              find = TRUE;
-              break;
-            }
-            cur_op_tmp = OP_next(cur_op[i]); 
-            while (cur_op_tmp) {
-              if(OP_preds(cur_op_tmp) != NULL) {
-                cur_op_tmp = OP_next(cur_op_tmp);
-              }
-              else break;
-            }
-            cur_op[i] = cur_op_tmp;
-          }
-          
-          CG_DEP_Delete_Graph (pbb);
-          if (find == TRUE) continue;
-          else {
-            common_op = NULL;
-            break;
-          }
-        }
-        else {
-          if (!OP_equiv(cur_op[0], cur_op[i])) {
-            common_op = NULL;
-            break;
-          }
-        }
+    BOOL common_op_in_succs = TRUE;
+
+    // Iterate over all successors to find operations equivalent to
+    // cur_op[0] that can be moved into b
+    FOR_ALL_BB_SUCCS (b, bblst) {
+      BB *pbb = BBLIST_item(bblst);
+
+      if (i > 0)
+	cur_op[i] = BB_first_op(pbb);
+
+      // Look for an operation that could be moved into b
+      while (cur_op[i]) {
+	BOOL is_candidate;
+	if (i == 0)
+	  is_candidate = OP_can_be_hoisted(cur_op[0], before_regalloc) &&
+	                 CGTARG_Allow_Operation_To_Be_Hoisted_In_Succs(cur_op[0]) &&
+	                 !Has_RegDependencies(last_op, cur_op[0]);
+	else
+	  is_candidate = OP_equiv_for_hoisting(cur_op[0], cur_op[i], TNs_to_be_unified);
+
+	if (is_candidate) {
+	  // This is the first operation in the block, no more checks
+	  if (OP_prev(cur_op[i]) == NULL)
+	    break;
+
+	  // Otherwise, check for dependencies with previous ops,
+	  // which requires the dependence graph.
+	  if (!cg_dep_graph && CG_opt_level >= 2 && CFLOW_depgraph_use) {
+	    CG_DEP_Compute_Graph (pbb,
+				  INCLUDE_ASSIGNED_REG_DEPS,
+				  NON_CYCLIC,
+				  INCLUDE_MEMREAD_ARCS,
+				  INCLUDE_MEMIN_ARCS,
+				  NO_CONTROL_ARCS,
+				  NULL);
+	    cg_dep_graph = TRUE;
+	    if (CFLOW_Trace_Hoist_Ops) CG_DEP_Trace_Graph (pbb);
+	  }
+	  if (cg_dep_graph) {
+	    // Check depencies with previous operations
+	    if (OP_preds(cur_op[i]) == NULL)
+	      break;
+	  }
+	  // The dependence graph is not available, no operation other
+	  // than the first one can be moved into b. Stop here.
+	  else {
+	    cur_op[i] = NULL;
+	    break;
+	  }
+	}
+
+	// Current operation is not a candidate, check the next one
+	cur_op[i] = OP_next(cur_op[i]);
+
+      } // while (cur_op[i])
+
+      if (cg_dep_graph) {
+	CG_DEP_Delete_Graph (pbb);
+	cg_dep_graph = FALSE;
       }
-    }
 
-    cur_op_tmp = OP_next(cur_op[0]);
-    bb_tmp = OP_bb(cur_op[0]);
-    
-    if (common_op) {
+      // Could not find an operation in pbb that is candidate for
+      // moving into b
+      if (cur_op[i] == NULL) {
+	common_op_in_succs = FALSE;
+	break;
+      }
+
+      if (i == 0)
+	TNs_to_be_unified = BS_Create_Empty(OP_results(cur_op[0]), &cflow_pool);
+
+      // Iterates over next successor
+      i++;
+    } // FOR_ALL_BB_SUCCS
+
+    // No GRA before O2
+    if (TNs_to_be_unified && !BS_EmptyP(TNs_to_be_unified) && (CG_opt_level < 2))
+      common_op_in_succs = FALSE;
+
+    // Three cases:
+    // 1- common_op_in_succs == TRUE ==> cur_op[0] != NULL
+    //    Move ops in b, then continue on OP_next(cur_op[0])
+    // 2- common_op_in_succs == FALSE && cur_op[0] != NULL
+    //    No common op for cur_op[0], continue on OP_next(cur_op[0])
+    // 3- common_op_in_succs == FALSE && cur_op[0] == NULL
+    //    No op in first successor is candidate for moving, stop now
+
+    // Prepare for next iteration, before cur_op[0] is removed from
+    // its block
+    OP *next_op = (cur_op[0] != NULL) ? OP_next(cur_op[0]) : NULL;
+
+    if (common_op_in_succs) {
+
+      Is_True(cur_op[0] != NULL, ("Hoist_Ops_in_Succs: cur_op[0] is NULL when commom_op_in_succs is TRUE"));
 
       /* Move to b, remove from all successors. */
       if (CFLOW_Trace_Hoist_Ops) {
 	#pragma mips_frequency_hint NEVER
-	fprintf(TFile, "Operation %s removed from BBs", TOP_Name(OP_code(common_op)));
+	fprintf(TFile, "Operation %s removed from BBs", TOP_Name(OP_code(cur_op[0])));
       }
       if (!BS_EmptyP(TNs_to_be_unified)) {
 	Unify_TNs_for_Hoisting(cur_op, succ_count, TNs_to_be_unified);
       }
 
-      OP *new_common = Dup_OP(common_op);
-      if (OP_memory(common_op)) Copy_WN_For_Memory_OP(new_common, common_op);
+      OP *new_common = Dup_OP(cur_op[0]);
+      if (OP_memory(cur_op[0])) Copy_WN_For_Memory_OP(new_common, cur_op[0]);
       OP_scycle(new_common) = 0; // Reset cycle to 0 for safeness at postscheduling time.
 
       BB_Insert_Op(b, last_op, new_common, before);
@@ -5232,40 +5267,8 @@ Hoist_Ops_in_Succs(BB *b) {
       merged = TRUE;
     }
 
-    if (CG_opt_level >= 2 && CFLOW_depgraph_use) {
-      CG_DEP_Compute_Graph (bb_tmp, 
-			    INCLUDE_ASSIGNED_REG_DEPS,
-			    NON_CYCLIC,
-			    INCLUDE_MEMREAD_ARCS,
-			    INCLUDE_MEMIN_ARCS,
-			    NO_CONTROL_ARCS,
-			    NULL);
-      if (CFLOW_Trace_Hoist_Ops) CG_DEP_Trace_Graph (bb_tmp);
-      
-      while (cur_op_tmp) {
-	if((OP_code(cur_op_tmp) == TOP_spadjust) ||
-	   (cur_op_tmp == BB_exit_sp_adj_op(OP_bb(cur_op_tmp))) ||
-	   (OP_epilogue(cur_op_tmp)) ||
-	   (OP_preds(cur_op_tmp) != NULL) ||
-	   (before_regalloc &&
-	    OP_no_move_before_regalloc(cur_op_tmp, bb_tmp)) ||
-	   ((!before_regalloc) &&
-	    OP_no_move_after_regalloc(cur_op_tmp, b, bb_tmp))) {
-	  cur_op_tmp = OP_next(cur_op_tmp);
-	}
-	else break;
-      }
-      CG_DEP_Delete_Graph (bb_tmp);
-      cur_op[0] = cur_op_tmp;
-    }
-    else {
-      if (common_op) {
-	cur_op[0] = cur_op_tmp;
-      }
-      else {
-	cur_op[0] = NULL;
-      }
-    }
+    // Iterates over the operations in the first successor
+    cur_op[0] = next_op;
   }
   
   if (merged && !CG_localize_tns) {

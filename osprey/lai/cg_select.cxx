@@ -962,7 +962,7 @@ Can_Speculate_BB(BB *bb)
     // can't speculate hardware registers.
     for (INT opndnum = 0; opndnum < OP_results(op); opndnum++) {
       TN *res = OP_result(op, opndnum);
-      if (TN_is_register(res) && TN_is_global_reg(res) && TN_is_dedicated(res))
+      if (TN_is_register(res) && TN_is_global_reg(res) && !TN_is_ssa_var(res))
         return FALSE;
     }
     
