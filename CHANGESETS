@@ -1,6 +1,45 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jun 08 10:56:36 CEST 2010
+	Author:    monat
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-71783
+
+Description:
+------------
+	* [trunk] Fix for bug #71783: compiler message using unsupported cores.
+	Deliver fixes/codex-71783 rev #28632 with authorization branch #101551
+
+
+Modified Files:
+---------------
+	M       osprey/driver/opt_actions.c
+	M       osprey/driver/phases.c
+	M       osprey/driver/main.c
+	M       osprey/driver/stxp70_options.i
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28626 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-71783@28632 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28626 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-71783@28632" 
+
+Diff links to modified files:
+-----------------------------
+osprey/driver/opt_actions.c	https://codex.cro.st.com//svn/viewvc.php/trunk/osprey/driver/opt_actions.c?p2=branches/fixes/codex-71783/osprey/driver/opt_actions.c&r1=28626&r2=28632&roottype=svn&root=open64&diff_format=h
+osprey/driver/phases.c	https://codex.cro.st.com//svn/viewvc.php/trunk/osprey/driver/phases.c?p2=branches/fixes/codex-71783/osprey/driver/phases.c&r1=28626&r2=28632&roottype=svn&root=open64&diff_format=h
+osprey/driver/main.c	https://codex.cro.st.com//svn/viewvc.php/trunk/osprey/driver/main.c?p2=branches/fixes/codex-71783/osprey/driver/main.c&r1=28626&r2=28632&roottype=svn&root=open64&diff_format=h
+osprey/driver/stxp70_options.i	https://codex.cro.st.com//svn/viewvc.php/trunk/osprey/driver/stxp70_options.i?p2=branches/fixes/codex-71783/osprey/driver/stxp70_options.i&r1=28626&r2=28632&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jun 08 09:33:18 CEST 2010
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk

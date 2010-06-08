@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <cmplrs/rcodes.h>
 #include "W_unistd.h"
 
 #include "W_errno.h"
@@ -2756,9 +2757,9 @@ void init_cmplrs_phases_info (
     driver_root = SYS_idirname(driver_root);
 
     if (driver_root == NULL || !SYS_is_dir(driver_root)) {
-      error ("can't find the compiler installation root directory");
+      internal_error ("can't find the compiler installation root directory");
       // no way !
-      exit(1);
+      exit(error_status);
     }
 
 #ifdef RELEASE
@@ -3643,7 +3644,7 @@ static void add_command_line_arg_for_ipa(string_list_t *args, char *source_file)
   add_string(args, concat_strings("-IPA::compiler_command=", cmd_file_name));
   if (getcwd (cwd, PATH_MAX - 1) == NULL) {
     perror("Driver could not execute getcwd");
-    exit(2);
+    exit(RC_SYSTEM_ERROR);
   }
   // Use for coverage to know the name of files to generate
   // [CR] fix bug 68161: when outfile is absolute, no need to concat

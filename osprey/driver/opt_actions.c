@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <libiberty.h>
 #include <hashtab.h>
+#include <cmplrs/rcodes.h>
 #include "SYS.h"
 #include "opt_actions.h"
 #include "options.h"
@@ -2294,8 +2295,9 @@ Process_ST200_Targ (string option,  string targ_args )
 	toggle (&proc, Proc_Map[i].pid);
       }
     }
-    if ( proc == UNDEFINED ) {
-      warning("unsupported processor %s\n", targ_args);
+    if ( proc == UNDEFINED || proc == PROC_NONE ) {
+      error("illegal -mcore syntax or unsupported processor: <%s>\n", targ_args);
+      exit(RC_NORECOVER_USER_ERROR);
       proc = PROC_NONE;
     }
 #ifdef MUMBLE_ST200_BSP
@@ -2768,7 +2770,7 @@ Process_STxP70_Targ (string option,  string targ_args )
     // [VL, #84853] If processor is unknown at this point, we just abort
     if ( proc == UNDEFINED || proc == PROC_NONE ) {
       error("illegal -mcore syntax or unsupported processor: <%s>\n", targ_args);
-      exit(-1);
+      exit(RC_NORECOVER_USER_ERROR);
     }
   }
 

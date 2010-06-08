@@ -269,7 +269,7 @@ main (int argc, char *argv[])
             tmp = malloc(strlen("-T")+strlen(argv[i])+1);
             if(NULL==tmp) { 
              internal_error("memory allocation error.");
-             exit(1);
+             exit(RC_SYSTEM_ERROR);
             }
             strcpy(tmp,"-T");
             strcat(tmp,argv[i]);
