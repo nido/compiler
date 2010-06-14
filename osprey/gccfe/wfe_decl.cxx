@@ -499,9 +499,11 @@ WFE_Start_Function (tree fndecl)
       Set_PU_is_interrupt_nostkaln(Pu_Table [ST_pu (func_st)]);
     }
 
-    // [VL] task attributes
+    // [VL] task attributes - also implies used attribute
     if (lookup_attribute("task", DECL_ATTRIBUTES(fndecl))) {
       Set_PU_is_task(Pu_Table [ST_pu (func_st)]);
+      Set_PU_no_delete (Pu_Table [ST_pu (func_st)]);
+      Set_ST_is_used(func_st);
     }
 
     // [VB] Stack alignment attribute for more than 64bit types

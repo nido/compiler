@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jun 14 13:42:33 CEST 2010
+	Author:    lv21
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-101771
+
+Description:
+------------
+	* [trunk] Fix for bug #101771: [HMP] Attribute task should also be considered as "used" attribute.
+	Deliver fixes/codex-101771 rev #28696 with authorization branch #101827
+
+
+Modified Files:
+---------------
+	M       osprey/gccfe/wfe_decl.cxx
+	M       osprey/g++fe/wfe_decl.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28654 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-101771@28696 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28654 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-101771@28696" 
+
+Diff links to modified files:
+-----------------------------
+osprey/gccfe/wfe_decl.cxx	https://codex.cro.st.com//svn/viewvc.php/trunk/osprey/gccfe/wfe_decl.cxx?p2=branches/fixes/codex-101771/osprey/gccfe/wfe_decl.cxx&r1=28654&r2=28696&roottype=svn&root=open64&diff_format=h
+osprey/g++fe/wfe_decl.cxx	https://codex.cro.st.com//svn/viewvc.php/trunk/osprey/g++fe/wfe_decl.cxx?p2=branches/fixes/codex-101771/osprey/g++fe/wfe_decl.cxx&r1=28654&r2=28696&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jun 08 14:22:57 CEST 2010
 	Author:    ferriere
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
