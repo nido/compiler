@@ -1,6 +1,38 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Mon Jun 14 13:54:55 CEST 2010
+	Author:    clarkes
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/clarkes/dev-gcc4-commit-stage1
+
+Description:
+------------
+	*  Deliver step 1 for gcc4 commit: place a dummy intrn_entry.def file
+	on open64 trunk.
+
+
+Modified Files:
+---------------
+	A  +    osprey/common/com/intrn_entry.def
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28698 --new=https://codex.cro.st.com/svnroot/open64/branches/clarkes/dev-gcc4-commit-stage1@28700 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28698 https://codex.cro.st.com/svnroot/open64/branches/clarkes/dev-gcc4-commit-stage1@28700" 
+
+Diff links to modified files:
+-----------------------------
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Mon Jun 14 13:42:33 CEST 2010
 	Author:    lv21
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
