@@ -3122,7 +3122,7 @@ Optimize_Branches(void)
 			&& BBINFO_kind(targ_0) == BBKIND_RETURN 
 			&& OP_Predicate(BB_first_op(targ_0)) == True_TN
 			&& BB_next(bp) == targ_1
-			&& CGTARG_Should_Hoist_Return(targ_0)) {
+		    && CGTARG_Should_Hoist_Return(bp,targ_0)) {
 			if (CFLOW_Trace_Branch) {
 				#pragma mips_frequency_hint NEVER
 				fprintf(TFile, "==========================\nOnly one inst and Tail Block\n");

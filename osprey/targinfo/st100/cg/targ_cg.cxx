@@ -2224,6 +2224,6 @@ CGTARG_Initialize ()
   return;
 }
 
-BOOL CGTARG_Should_Hoist_Return(BB* ret_bb) {
+BOOL CGTARG_Should_Hoist_Return(BB* src,BB* target) {
    return FALSE;
 }
