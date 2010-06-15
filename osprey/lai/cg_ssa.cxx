@@ -1430,8 +1430,13 @@ SSA_PCOPY_Epilogue(BB *bb_epilog) {
   FOR_ALL_BB_OPs_REV(bb_epilog, op) {
     // This function has one single basic block, prologue and epilogue
     // code should not mix.
-    if (OP_prologue(op))
+
+    // FdF 20100602: But instrumentation code before PREAMBLE_END is
+    // marked prolog, and contains a tailcall to __gcov_init, so must
+    // be analyzed here.
+    if (OP_PCOPY(op) && OP_prologue(op))
       break;
+
     for (INT i = 0; i < OP_results(op); i++) {
       TN *tn = OP_result(op,i);
       if (TN_is_SSA_candidate(tn) && TN_is_dedicated(tn) && !TN_SET_MemberP(dedicated_set, tn)) {

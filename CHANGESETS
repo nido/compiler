@@ -1,6 +1,39 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Tue Jun 15 12:48:56 CEST 2010
+	Author:    ferriere
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-101254
+
+Description:
+------------
+	* [trunk] Fix for bug #101254: [profile] Files gcda not any longer generated in -O2 and higher.
+	Deliver fixes/codex-101254 rev #28731 with authorization branch #101684
+
+
+Modified Files:
+---------------
+	M       osprey/lai/cg_ssa.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28729 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-101254@28731 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28729 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-101254@28731" 
+
+Diff links to modified files:
+-----------------------------
+osprey/lai/cg_ssa.cxx	https://codex.cro.st.com//svn/viewvc.php/trunk/osprey/lai/cg_ssa.cxx?p2=branches/fixes/codex-101254/osprey/lai/cg_ssa.cxx&r1=28729&r2=28731&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Tue Jun 15 10:45:00 CEST 2010
 	Author:    monat
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
