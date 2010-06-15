@@ -105,8 +105,8 @@ RangeAnalysis::TARG_Visit_Forward (OP *op, INT result_idx, LRange_pc &new_value,
     // Count leading zeros.
 
     TN *tn = OP_Opnd1(op);
-    INT tn_topbit = TN_bitwidth (tn) - 1;
-    LRange_pc bitrange = lattice->makeRangeValue (tn_topbit);
+    // On st200 clz(0) is defined to be 32
+    LRange_pc bitrange = lattice->makeRangeValue (TN_bitwidth (tn));
     LRange_pc opnd = MakeUnsigned(Value(tn), TN_bitwidth(tn));
     LRange_pc r = HighestSetBit (opnd);  // Calculate highest set bit.
     r = Min (bitrange, r);           // Limit it to the top bit of the tn.
