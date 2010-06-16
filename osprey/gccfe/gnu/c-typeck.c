@@ -3160,7 +3160,7 @@ build_unary_op (code, xarg, flag)
 	       (error if the option -fpack-struct is set, 
 	       warning if the attribute packed is put by the user 
 	       in the C code) */
-	    if (PackStruct_WarningsEnabled) {
+	    if (warn_pack_struct) {
 	      if (address_of_packed_field(arg)){
 		if (flag_pack_struct) {
 		  error ("building address of a packed field in a (packed) structure - may lead to a misaligned access");

@@ -134,6 +134,7 @@ BINUTILS_LOC?=
 PREFIX?=
 SUFFIX?=
 YACC_LOC?=
+AWK_LOC?=
 LEX_LOC?=
 INSTALL_LOC?=
 
@@ -241,7 +242,7 @@ FC	= $(F77)
 INSTALL = $(INSTALL_LOC)$(INSTALLNAME)
 LEX     = $(LEX_LOC)$(LEXNAME)
 YACC    = $(YACC_LOC)$(YACCNAME)
-AWK     = $(AWKNAME)$(AWKNAME)
+AWK     = $(AWK_LOC)$(AWKNAME)
 YACC_NO = $(YACC_LOC)$(YACCNAME_NO)
 
 DLLTOOL = $(COMPILER_LOC)$(PREFIX)$(DLLTOOLNAME)$(SUFFIX)
@@ -285,10 +286,10 @@ BUILD_C++_NAME = g++
 BUILD_CXX_NAME = $(BUILD_C++_NAME)
 BUILD_AR_NAME = ar
 
-BUILD_CC = $(CCACHE) $(BUILD_COMPILER_LOC)$(BUILD_PREFIX)$(BUILD_CC_NAME)$(BUILD_SUFFIX)
-BUILD_C++ = $(CCACHE) $(BUILD_COMPILER_LOC)$(BUILD_PREFIX)$(BUILD_C++_NAME)$(BUILD_SUFFIX)
-BUILD_CXX = $(CCACHE) $(BUILD_COMPILER_LOC)$(BUILD_PREFIX)$(BUILD_CXX_NAME)$(BUILD_SUFFIX)
-BUILD_AR = $(BUILD_BINUTILS_LOC)$(BUILD_PREFIX)$(BUILD_AR_NAME)$(BUILD_SUFFIX)
+BUILD_CC=$(CCACHE) $(BUILD_COMPILER_LOC)$(BUILD_PREFIX)$(BUILD_CC_NAME)$(BUILD_SUFFIX)
+BUILD_C++=$(CCACHE) $(BUILD_COMPILER_LOC)$(BUILD_PREFIX)$(BUILD_C++_NAME)$(BUILD_SUFFIX)
+BUILD_CXX=$(CCACHE) $(BUILD_COMPILER_LOC)$(BUILD_PREFIX)$(BUILD_CXX_NAME)$(BUILD_SUFFIX)
+BUILD_AR=$(BUILD_BINUTILS_LOC)$(BUILD_PREFIX)$(BUILD_AR_NAME)$(BUILD_SUFFIX)
 
 BUILD_GCFLAGS= -funsigned-char -D_SGI_SOURCE -D__GNU_BUG_WORKAROUND -D_LONGLONG -D_LANGUAGE_C -I$(INCLDIR)
 BUILD_LCFLAGS= 
@@ -609,6 +610,19 @@ endif
 # Stack needs to be that large under cygwin
 ifeq ($(HOST_OS), CYGWIN_NT)
 GLDDSOOPTS += -Wl,--stack,9437184
+endif
+
+# Stack needs to be that large under mingwin
+#
+#--stack reserve,commit
+#Specify the number of bytes of memory to reserve (and optionally commit) to
+#be used as stack for this program. The default is 2Mb reserved, 4K committed.
+#[This option is specific to the i386 PE targeted port of the linker]
+#
+# I set it up to the Linux default equivalent 10Mo
+ifeq ($(HOST_OS), MINGW)
+GLDOPTS += -Wl,--stack,0xA00000
+GLDDSOOPTS += -Wl,--stack,0xA00000
 endif
 
 else # !(ifeq ($(DSO_MODE), DLL))

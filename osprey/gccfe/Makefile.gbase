@@ -128,6 +128,9 @@ endif
 FE_DIR 			= $(BUILD_BASE)
 COMMON_COM_DIR 		= $(BUILD_TOT)/common/com
 COMMON_UTIL_DIR		= $(BUILD_TOT)/common/util
+BE_DIR 			= $(BUILD_TOT)/be
+BE_WHIRL2C_DIR		= $(BE_DIR)/whirl2c
+BE_COM_DIR 		= $(BE_DIR)/com
 
 # ST compilers have a different target info directory structure:
 ifneq ($(TARGET_FROM_ST),)
@@ -203,6 +206,8 @@ INC_DIRS =		\
   $(GNU_COMMON_DIR)/include \
   $(TARGINFO_PARSER_INC_DIR) \
   $(LIBAIR_DIR)         \
+  $(BE_WHIRL2C_DIR) \
+  $(BE_COM_DIR) \
   .
 
 #----------------------------------------------------------------------

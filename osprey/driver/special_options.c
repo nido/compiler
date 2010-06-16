@@ -51,6 +51,7 @@
 #include "file_names.h"
 #include "get_options.h"
 #include "phases.h"
+#include "run.h"
 #ifdef BCO_ENABLED /* Thierry */
 #include "file_utils.h"
 #endif /* BCO_Enabled Thierry */
@@ -343,6 +344,23 @@ set_defaults (void)
 		toggle(&isstatic,1);
 		prepend_option_seen(O_automatic);
 	}
+#ifdef KEY
+	if (!is_toggled(gnu_major_version)) {
+	  toggle(&gnu_major_version, get_gcc_major_version());
+	  switch (gnu_major_version) {
+	    case 3:	// default to GCC 3.3
+	      toggle(&gnu_minor_version, 3);
+	      toggle(&gnu_revision, 3);
+	      break;
+	    case 4:	// default to GCC 4.2
+	      toggle(&gnu_minor_version, 2);
+	      toggle(&gnu_revision, 0);
+	      break;
+	    default:
+	      error("no support for GCC version %d", gnu_major_version);
+	  }
+	}
+#endif
 	prepend_option_seen(O_auto_include);
 
 }
@@ -532,13 +550,31 @@ add_special_options (void)
 #endif
 	}
 
+#ifdef TARG_ST200
 	/* (cbr) specific path for c++ includes */
-	if (!nostdinc && !nostdincc && invoked_lang == L_CC) {
-	  flag = add_string_option(O_isystem__,  concat_path(get_phase_dir(P_include),"c++"));
-	  add_option_seen (flag);
-	  flag = add_string_option(O_isystem__,  concat_path(get_phase_dir(P_include), concat_path("c++","backward")));
-	  add_option_seen (flag);
+	if (invoked_lang == L_CC && !nostdincc) {
+	  /* We are on a multi-lib multi-version installation
+	     The includes are there ${prefix}/lib/gcc/st200/${gcc_version}/include
+	     But for legacy if there is nothing at the previoous location we should go in ${prefix}/include
+	     First try to build the full path, then if it does not exist fallback on the usual root
+	  */
+	  string cxxincpath = concat_path(get_phase_dir(P_gnu_include),"c++");
+	  /* If we don't find we fall back in legacy */
+	  if (!is_directory(cxxincpath))
+	    cxxincpath = concat_path(get_phase_dir(P_include),"c++");	    
+	  if (!is_directory(cxxincpath))
+	    warning ("No path from %s to find C++ headers", cxxincpath ) ;
+   
+	  if (cxxincpath) {
+	    flag = add_string_option(O_isystem__, cxxincpath);
+	    add_option_seen (flag);
+	    flag = add_string_option(O_isystem__, concat_path(cxxincpath, "st200"));
+	    add_option_seen (flag);
+	    flag = add_string_option(O_isystem__, concat_path(cxxincpath, "backward"));
+	    add_option_seen (flag);
+	  }
 	}
+#endif
 #endif
 
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
@@ -813,6 +849,7 @@ add_special_options (void)
 #endif
 
 #ifdef TARG_ST200
+#ifdef MUMBLE_ST200_BSP
 	/* This is the management of linker option that must be
 	 * emitted when using OS21 trace options We have kept them
 	 * separate (eg options that imply --undefined and that imply
@@ -901,6 +938,7 @@ add_special_options (void)
 	    }
 	  }
 	}
+#endif
 #endif
 
 #ifdef TARG_STxP70

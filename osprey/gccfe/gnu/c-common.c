@@ -342,6 +342,9 @@ int warn_format_nonliteral;
 
 int warn_format_security;
 
+#ifdef TARG_ST
+int warn_pack_struct = 2;
+#endif
 
 /* C/ObjC language option variables.  */
 

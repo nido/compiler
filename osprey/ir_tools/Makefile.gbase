@@ -138,6 +138,10 @@ COMMON_UTIL_DIR= $(BUILD_TOT)/common/util
 COMMON_TARGINFO_PARSER_INC_DIR= $(BUILD_TOT)/targinfo/parser/inc
 LIBAIR_DIR = $(BUILD_TOT)/libair/air
 
+BE_DIR 			= $(BUILD_TOT)/be
+BE_WHIRL2C_DIR		= $(BE_DIR)/whirl2c
+BE_COM_DIR 		= $(BE_DIR)/com
+
 LIBINSTRC_DIR=$(BUILD_TOT)/instrumentation/libinstrC
 
 SRC_DIRS =              \
@@ -164,7 +168,9 @@ INC_DIRS =		\
 	$(COMMON_TARG_INFO_ACCESS_DIR) \
 	$(TARG_GCCFE_DIR) \
 	$(COMMON_TARGINFO_PARSER_INC_DIR) \
-	$(LIBAIR_DIR)
+	$(LIBAIR_DIR) \
+	$(BE_WHIRL2C_DIR) \
+	$(BE_COM_DIR)
 
 LDIRT = ir_a2b ir_sel
 

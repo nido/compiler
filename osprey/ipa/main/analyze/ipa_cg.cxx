@@ -369,14 +369,14 @@ void
 IPA_update_ehinfo_in_pu (IPA_NODE *node)
 {
 	if (!(PU_src_lang (node->Get_PU()) & PU_CXX_LANG) ||
-	    !node->Get_PU().unused)
+	    !PU_misc_info (node->Get_PU()))
 	    return;
 
         int sym_size;
         SUMMARY_SYMBOL* sym_array = IPA_get_symbol_file_array(node->File_Header(), sym_size);
         FmtAssert (sym_array != NULL, ("Missing SUMMARY_SYMBOL section"));
 
-	INITV_IDX tinfo = INITV_next (INITV_next (INITO_val (node->Get_PU().unused)));
+	INITV_IDX tinfo = INITV_next (INITV_next (INITO_val (PU_misc_info (node->Get_PU()))));
         INITO_IDX inito = TCON_uval (INITV_tc_val (tinfo));
         if (inito)
         {

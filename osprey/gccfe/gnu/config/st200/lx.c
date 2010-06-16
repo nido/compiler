@@ -59,24 +59,11 @@ struct gcc_target targetm = TARGET_INITIALIZER;
 /* dummy function. assembly code done by open64 code generator */
 void default_lxopen64_assemble (tree t, int v) { }
 
-int override_options ()
+void
+lx_override_options ()
 {
-  flag_omit_frame_pointer = 1;
-
-  if (lx_cpu_string) {
-    if (! strcmp (lx_cpu_string, "st200") ||
-	! strcmp (lx_cpu_string, "st210"))
-        lx_cpu = (int)CPU_ST210;
-    else if (! strcmp (lx_cpu_string, "st220"))
-        lx_cpu = (int)CPU_ST220;
-    else
-      error ("Unknown -mcpu=%s.\nValid cpus are st200, st210, st220\n",
-	     lx_cpu_string);
-  }
-  else {
-    /* default */
-    lx_cpu = (int)CPU_ST220; /* default */
-  }
+  if (warn_pack_struct == 2)
+    warn_pack_struct = 0;
 }
 
 /* Print an operand to a assembler instruction. */

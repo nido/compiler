@@ -117,8 +117,10 @@ static lang_info_t language_info[] = {
 #define BINPATH		"/bin"
 #define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
+#define GNULIBPATH	"/lib/gcc/st200"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
+#define GNUINCPATH	GNULIBPATH
 #define PHASEPATH	LIBPATH"/cmplrs"
 #define GNUPHASEPATH	LIBPATH
 
@@ -129,8 +131,10 @@ static lang_info_t language_info[] = {
 #define BINPATH		"/bin"
 #define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
+#define GNULIBPATH	"/lib/gcc/st200"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
+#define GNUINCPATH	GNULIBPATH
 #define PHASEPATH	LIBPATH"/cmplrs"
 #define GNUPHASEPATH	LIBPATH
 
@@ -141,8 +145,10 @@ static lang_info_t language_info[] = {
 #define BINPATH		"/bin"
 #define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
+#define GNULIBPATH	"/lib/gcc/st200"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
+#define GNUINCPATH	GNULIBPATH
 #define PHASEPATH	LIBPATH"/cmplrs"
 #define GNUPHASEPATH	LIBPATH
 
@@ -154,7 +160,9 @@ static lang_info_t language_info[] = {
 #define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
 #define ALTLIBPATH	"/target"
+#define GNULIBPATH	"/lib/gcc/st200"
 #define INCPATH         "/include"
+#define GNUINCPATH	GNULIBPATH
 #define PHASEPATH	LIBPATH"/cmplrs"
 #define GNUPHASEPATH	LIBPATH
 
@@ -164,8 +172,10 @@ static lang_info_t language_info[] = {
 #define BINPATH		"/bin"
 #define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
+#define GNULIBPATH	"/lib/gcc/arm"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
+#define GNUINCPATH	GNULIBPATH
 #define PHASEPATH	LIBPATH"/cmplrs"
 #define GNUPHASEPATH	LIBPATH
 
@@ -175,8 +185,10 @@ static lang_info_t language_info[] = {
 #define BINPATH		"/bin"
 #define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
+#define GNULIBPATH	"/lib/gcc/arm"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
+#define GNUINCPATH	GNULIBPATH
 #define PHASEPATH	LIBPATH"/cmplrs"
 #define GNUPHASEPATH	LIBPATH
 
@@ -186,8 +198,10 @@ static lang_info_t language_info[] = {
 #define BINPATH		"/bin"
 #define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
+#define GNULIBPATH	"/lib/gcc/arm"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
+#define GNUINCPATH	GNULIBPATH
 #define PHASEPATH	LIBPATH"/cmplrs"
 #define GNUPHASEPATH	LIBPATH
 
@@ -197,8 +211,10 @@ static lang_info_t language_info[] = {
 #define BINPATH		"/bin"
 #define IPALINKPREFIX	""
 #define LIBPATH		"/lib"
+#define GNULIBPATH	"/lib/gcc/arm"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
+#define GNUINCPATH	GNULIBPATH
 #define PHASEPATH	LIBPATH"/cmplrs"
 #define GNUPHASEPATH	LIBPATH
 
@@ -209,8 +225,10 @@ static lang_info_t language_info[] = {
 #define BINPATH		"/bin"
 #define IPALINKPREFIX	"stxp70v3-"
 #define LIBPATH		"/stxp70v3/lib"
+#define GNULIBPATH	"/lib/gcc/stxp70v3"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
+#define GNUINCPATH	GNULIBPATH
 #define PHASEPATH	"/lib/cmplrs"
 #define GNUPHASEPATH	"/lib"
 
@@ -221,8 +239,10 @@ static lang_info_t language_info[] = {
 #define BINPATH		"/bin"
 #define IPALINKPREFIX	"stxp70v3-"
 #define LIBPATH		"/stxp70v3/lib"
+#define GNULIBPATH	"/lib/gcc/stxp70v3"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
+#define GNUINCPATH	GNULIBPATH
 #define PHASEPATH	"/lib/cmplrs"
 #define GNUPHASEPATH	"/lib"
 
@@ -233,8 +253,10 @@ static lang_info_t language_info[] = {
 #define BINPATH		"/bin"
 #define IPALINKPREFIX	"stxp70v3-"
 #define LIBPATH		"/stxp70v3/lib"
+#define GNULIBPATH	"/lib/gcc/stxp70v3"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
+#define GNUINCPATH	GNULIBPATH
 #define PHASEPATH	"/lib/cmplrs"
 #define GNUPHASEPATH	"/lib"
 
@@ -245,8 +267,10 @@ static lang_info_t language_info[] = {
 #define BINPATH		"/bin"
 #define IPALINKPREFIX	"stxp70v3-"
 #define LIBPATH		"/stxp70v3/lib"
+#define GNULIBPATH	"/lib/gcc/stxp70v3"
 #define ALTLIBPATH	"/target"
 #define INCPATH         "/include"
+#define GNUINCPATH	GNULIBPATH
 #define PHASEPATH	"/lib/cmplrs"
 #define GNUPHASEPATH	"/lib"
 
@@ -362,6 +386,11 @@ static phase_info_t phase_info[] = {
    {'f',  0x0000000000080000LL,	"mfef90",PHASEPATH,	FALSE},	/* cppf90_fe */
    {'f',  0x0000000000100000LL,	"gfec",PHASEPATH,	TRUE }, /* c_gfe */
    {'f',  0x0000000000200000LL,	"gfecc",PHASEPATH,	TRUE }, /* cplus_gfe */
+#ifdef KEY
+   {'f',  0x0000000000400000LL, "cc1"   ,PHASEPATH,     TRUE }, /* spin_cc1  */
+   {'f',  0x0000000000800000LL, "cc1plus",PHASEPATH,    TRUE }, /* spin_cc1plus */
+   {'w',  0x0000000001000000LL, "wgen",PHASEPATH,       TRUE }, /* wgen      */
+#endif
    /* place-holder for generic fe, whose mask unites all fe's; */
    /* this is so -Wf will apply to whatever fe is being invoked. */
    {'f',  0x0000000000ff0000LL,	"",	"",		FALSE},	/* any_fe */
@@ -411,8 +440,10 @@ static phase_info_t phase_info[] = {
 #ifdef TARG_ST
    {'S',  0x0010000000000000LL,	"crt",	LIBPATH,	FALSE},	/* startup */
    {'I',  0x0020000000000000LL,	"inc",	INCPATH,	FALSE},	/* include */
-   {'L',  0x0040000000000000LL,	"lib",	LIBPATH,	FALSE},	/* library */
-   {'L',  0x0080000000000000LL,	"target",	ALTLIBPATH,	FALSE},	/* alt_library */
+   {'I',  0x0040000000000000LL,	"gnuinc",	GNUINCPATH,	FALSE},	/* gnu include */
+   {'L',  0x0080000000000000LL,	"lib",	LIBPATH,	FALSE},	/* library */
+   {'L',  0x0100000000000000LL,	"target",	ALTLIBPATH,	FALSE},	/* alt_library */
+   {'L',  0x0200000000000000LL,	"gnulib",	GNULIBPATH,	FALSE},	/* gnu library */
 #else
    {'S',  0x0010000000000000LL,	"crt",	LIBPATH,	FALSE},	/* startup */
    {'I',  0x0020000000000000LL,	"inc",	"/usr/include",	FALSE},	/* include */
@@ -436,7 +467,7 @@ mask_t LIB_MASK =
 #ifdef TARG_ST
 mask_t CMPLRS_MASK = 
 /* #ifndef BCO_ENABLED /\* Thierry *\/ */
-          0x0000010130300060LL; /* cpp, inline , gfec , be, ipl, ipa */
+          0x0000010131f00060LL; /* cpp, inline , gfec , spin_cc1, spin_cc1plus, wgen, be, ipl, ipa */
 /* #else /\* BCO_Enabled Thierry *\/ */
 /*           0x0300010130300060LL; /\* cpp, inline , gfec , be, binopt, ipa, ipa *\/ */
 /* #endif /\* BCO_Enabled Thierry *\/ */

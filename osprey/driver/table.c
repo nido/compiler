@@ -617,9 +617,21 @@ write_option_names (void)
 		fprintf(f, "#define %s %d\n", options[i].flag, i);
 		if (options[i].toggle) {
 			/* get var after "toggle(&" */
+#ifdef KEY
+			// Handle multiple toggles such as:
+			//   toggle(&var1,10);toggle(&var2,11)
+			char *p = options[i].action;
+			while ((p = strstr(p, "toggle(&")) != NULL) {
+			  p = p + 8;
+			  strcpy(buffer, p);
+			  ivar = strtok(buffer,COMMA);
+			  add_implicit_var(ivar);
+			}
+#else
 			strcpy(buffer, ((char*)options[i].action)+8);
 			ivar = strtok(buffer,COMMA);
 			add_implicit_var(ivar);
+#endif
 		}
 	}
 	fprintf(f, "#define LAST_PREDEFINED_OPTION %d\n", num_options);

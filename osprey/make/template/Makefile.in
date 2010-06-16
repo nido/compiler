@@ -85,6 +85,7 @@ LIBRARY_SUBDIRS =   \
 	libSYS      \
 	libparse    \
 	libair      \
+	libspin     \
 	instrumentationC
 
 DEPS_FOR_libiberty	= include
@@ -97,6 +98,7 @@ DEPS_FOR_librcparser	=
 DEPS_FOR_libSYS		= include
 DEPS_FOR_libparse  	= targ_info
 DEPS_FOR_libair         = include targ_info gccfe
+DEPS_FOR_libspin	= libSYS
 DEPS_FOR_instrumentationC =
 
 #
@@ -109,6 +111,9 @@ DEPS_FOR_instrumentationC =
 TOOL_SUBDIRS = \
 	gccfe \
 	g++fe \
+	libfereconf \
+	osprey-gcc-4.2.0 \
+	wgen \
 	wopt \
 	be \
 	lai \
@@ -131,6 +136,9 @@ endif
 
 DEPS_FOR_gccfe		:= $(INCLUDE_SUBDIRS) $(filter-out libair,$(LIBRARY_SUBDIRS))
 DEPS_FOR_g++fe		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) gccfe
+DEPS_FOR_libfereconf	:= gccfe
+DEPS_FOR_osprey-gcc-4.2.0 := $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) libfereconf
+DEPS_FOR_wgen		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) libfereconf
 DEPS_FOR_be		:= $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS) gccfe
 DEPS_FOR_lai		:= be
 DEPS_FOR_wopt		:= be
@@ -158,9 +166,12 @@ DEPS_FOR_parser         := $(INCLUDE_SUBDIRS) $(LIBRARY_SUBDIRS)
 #### Only these for now by default #####
 TARG_LIBRARY_SUBDIRS = \
 	libgcov \
-	libunwind
+	libunwind \
+	libstdc++-v3 
+
 DEPS_FOR_libgov =
 DEPS_FOR_libunwind =
+DEPS_FOR_libsrdc++-v3 =
 
 #
 # All modules to compile are put in SUBDIRS
@@ -249,6 +260,17 @@ clobber: $(addprefix clobber_,$(SUBDIRS))
 
 last: $(addprefix last_,$(SUBDIRS))
 	$(MAKE) last-local
+
+# Convert to standard Gnu targets for the gcc subcomponent.
+clobber_osprey-gcc-%:
+	$(MAKE) -C osprey-gcc-$* clean
+default_osprey-gcc-%:
+	$(MAKE) -C osprey-gcc-$*
+last_osprey-gcc-%:
+	$(MAKE) -C osprey-gcc-$*
+install_osprey-gcc-%:
+	$(MAKE) -C osprey-gcc-$*
+	$(MAKE) -C osprey-gcc-$* -f gccfeconf.mk install
 
 clean_%:
 	$(MAKE) -C $* clean

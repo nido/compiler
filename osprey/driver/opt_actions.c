@@ -1603,6 +1603,13 @@ change_phase_path (string arg)
 			parse_error(option_name, "bad phase for -Y option");
 		} else {
 			set_phase_dir(get_phase_mask(get_phase(*s)), dir);
+#ifdef KEY
+			// Special case wgen because it is affected by -Yf but
+			// is not considered a front-end (because it does not
+			// take C/C++ front-end flags in OPTIONS).
+			if (get_phase(*s) == P_any_fe)
+			  set_phase_dir(get_phase_mask(P_wgen), dir);
+#endif
 		}
 	}
 }
@@ -1966,6 +1973,40 @@ print_file_path (string fname)
   printf("%s\n", fname);
 }
 
+#ifdef TARG_ST
+void
+print_multi_lib(void)
+{
+#ifdef TARG_ST200
+#ifdef TARGET_OS21
+  puts(".;");
+  puts("st231/le/bare;@mcore=st231@EL");
+  puts("st231/be/bare;@mcore=st231@EB");
+  puts("st240/le/bare;@mcore=st240@EL");
+  puts("st240/be/bare;@mcore=st240@EB");
+
+  puts("st231/le/os21;@mcore=st231@EL@mruntime=os21");
+  puts("st231/be/os21;@mcore=st231@EB@mruntime=os21");
+  puts("st240/le/os21;@mcore=st240@EL@mruntime=os21");
+  puts("st240/be/os21;@mcore=st240@EB@mruntime=os21");
+#elif defined(TARGET_LINUX)
+  puts(".;");
+#else
+  puts(".;");
+#endif
+#else
+  /*Any other target */
+  puts(".;");
+#endif
+}
+
+void
+print_multi_os_directory(void)
+{
+  puts(".");
+}
+#endif
+
 #ifdef BCO_ENABLED /* Thierry */
 
 /* ====================================================================
@@ -2191,7 +2232,12 @@ Process_Std(string option_args) {
   if (flag != LAST_PREDEFINED_OPTION) {
       /* Need to pass to tools recognizing this option*/
       add_phase_for_option(flag, P_gcpp);
+#ifdef TARG_ST
+      add_phase_for_option(flag, P_gcpp_plus);
+      add_phase_for_option(flag, P_pseudo_c_fe);
+#else
       add_phase_for_option(flag, P_c_gfe);
+#endif
       add_option_seen (flag);
   }
 
@@ -2560,6 +2606,7 @@ get_os21_trace_options_elements(OS21_TRACE kind, char *elts[], size_t maxnelts)
     return options_nelements ;
 }
 
+#ifdef MUMBLE_ST200_BSP
 /* This is the central function for the OS21 trace support 
    Analyze the options and parameters, calls for action and record...
 */
@@ -2580,7 +2627,6 @@ Process_ST200_OS21_Trace (string option,  string targ_args )
   if (debug)
     fprintf ( stderr, "Process_ST200_OS21_Trace Looking in %s \n", os21traceoptdir);
 
-#ifdef MUMBLE_ST200_BSP
   if (strncasecmp (option, "-trace-no-constructor", 21) == 0) {
     /* Parses the contents of $(path)/$(prefix)trace.ld and
        for each line found removes the line as possible a linker
@@ -2659,8 +2705,8 @@ Process_ST200_OS21_Trace (string option,  string targ_args )
   } else {
       warning("OS21TRACE : Unexpected argument [%s] passed to option [%s].", targ_args, option);
   }
-#endif
 }
+#endif
 
 /* 
    The following functions expose the os21 profiler options to the driver

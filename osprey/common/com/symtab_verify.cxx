@@ -584,8 +584,10 @@ void INITO::Verify(UINT level) const
   Is_True(ST_IDX_index (st_idx) > 0 &&
 	  ST_IDX_index (st_idx) < ST_Table_Size (ST_IDX_level (st_idx)),
 	  ("Invalid st_idx for INITO"));
+#ifndef KEY // no longer true because INITO is used to link up nested functions
   Is_True(ST_is_initialized (St_Table[st_idx]),
 	   ("ST_IS_INITIALIZED not set"));
+#endif
   Is_True(0 <  val && val < INITV_Table_Size(),
            ("Invalid field for INITO: val"));
   Is_True(level == ST_IDX_level(st_idx),
@@ -1012,8 +1014,8 @@ void TY::Verify(UINT) const
 		 (msg, "TY_PTR_AS_ARRAY can only be set for POINTERS")); 
 
     if ( TY_anonymous (*this))
-	Is_True (kind == KIND_STRUCT,
-		 (msg, "TY_ANONYMOUS can only be set for STRUCTS/CLASSES")); 
+	Is_True (kind == KIND_STRUCT || kind == KIND_ARRAY,
+		 (msg, "TY_ANONYMOUS can only be set for STRUCTS/CLASSES/ARRAYS")); 
 
 #endif // Is_True_On
 } // TY::Verify() 
@@ -1037,18 +1039,21 @@ void PU::Verify(UINT) const
 	   TY_IDX_index (prototype) < TY_Table_Size (),
 	   ("Invalid TY_IDX in PU::prototype"));
 
-#ifdef TARG_ST
-  /* (cbr) exc scopes means we have cleanup region. can happen in C with
-     cleanup attribute */
-  if (!PU_has_exc_scopes (*this) && !(src_lang & PU_CXX_LANG))
-#else
+#ifndef TARG_ST
+  /* [SC] If the whirl was created with exception support enabled,
+     then MISC will contain a reference to the exception table
+     information. */
 #ifdef KEY
 // We are using 'unused' to store ST_IDXs of 2 special variables for
 // C++ exception handling.
   if (!(src_lang & PU_CXX_LANG))
 #endif // !KEY
+    Is_True (misc == 0, ("misc fields must be zero"));
 #endif
+
+#if ! defined(TARG_ST) || !defined(PU_HAS_NO_UNUSED)
   Is_True (unused == 0, ("unused fields must be zero"));
+#endif
 
   // Verify flags
   static char msg[] = "Invalid PU flags: (%s)";

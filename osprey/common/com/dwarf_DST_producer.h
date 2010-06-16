@@ -124,6 +124,29 @@ extern DST_FILE_IDX DST_mk_file_name(char *file_name,
 */
 extern mUINT16 DST_number_of_files(void);
 
+#ifdef KEY
+/* Define or undefine a macro.
+ */
+extern DST_MACR_IDX
+DST_mk_macr (UINT lineno, /* source line number */
+	     char *name,  /* macro and definition */
+	     INT  tag     /* DW_MACINFO_* */);
+  
+/* End a file for the macinfo section.
+ */
+extern DST_MACR_IDX
+DST_mk_macr_end_file (void);
+  
+/* Start a file for macinfo section.
+ */
+extern DST_MACR_IDX
+DST_mk_macr_start_file (UINT lineno, /* source line number */
+			UINT fileno  /* a file number */);
+  
+/* The number of macros entered so far.
+ */
+extern mUINT16 DST_number_of_macros(void);
+#endif
 
    /*------------------------------------------------
     * Creation of .debug_macinfo section information
@@ -670,6 +693,19 @@ DST_mk_subroutine_type(USRCPOS      decl,            /* Source location */
 		       DST_INFO_IDX abstract_origin, /* In inlined instance */
 		       BOOL         is_prototyped);
 
+#ifdef KEY
+/* Creates a DW_TAG_namelist entry, with the namelist items as children.
+ */
+extern DST_INFO_IDX
+DST_mk_namelist(USRCPOS      decl,            /* Source location */
+		char        *name             /* Name */);
+
+/* Creates a DW_TAG_namelist_items entry.
+ */
+extern DST_INFO_IDX
+DST_mk_namelist_item(USRCPOS      decl,            /* Source location */
+		     char        *name             /* Name */);
+#endif
 
 #if defined(_SUPPORT_IPA) || defined(_STANDALONE_INLINER) || (defined(TARG_ST) && defined(MONGOOSE_BE))
 extern void

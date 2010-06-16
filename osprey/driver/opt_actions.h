@@ -164,6 +164,12 @@ extern void Process_Cray_Mp (void);
 
 extern void print_file_path (string);	/* print path to named file */
 
+#ifdef TARG_ST
+/* print multi lib paths a la gcc */
+extern void print_multi_lib ();	
+extern void print_multi_os_directory ();	
+#endif
+
 #ifdef TARG_STxP70
 typedef enum { got_none, got_small, got_standard, got_large} TYPE_GOT_MODEL;
 extern TYPE_GOT_MODEL got_model_opt;

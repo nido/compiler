@@ -110,6 +110,11 @@ typedef enum {
 	P_cppf90_fe,	/* cpp embedded in f90 fe */
 	P_c_gfe,	/* gcc c fe */
 	P_cplus_gfe,	/* gnu c++ fe */
+#ifdef KEY
+	P_spin_cc1,	/* gnu gcc4 C fe */
+	P_spin_cc1plus,	/* gnu gcc4 C++ fe */
+	P_wgen,		/* wgen */
+#endif
 	P_any_fe,	/* generic union of all fe's */
 	P_pseudo_f_fe,	/* not a real phase, just a placeholder 
 			 * for options for f_fe but not c_fe */
@@ -145,8 +150,10 @@ typedef enum {
 	/* because -Y can also modify libraries, we include library places */
 	P_startup,
 	P_include,
+	P_gnu_include,	/* alternate include path to a gnu-like multilib multiversion install tree*/
 	P_library,
 	P_alt_library,	/* alternate library path */
+	P_gnu_library,	/* alternate library path to a gnu-like multilib multiversion install tree*/
 
 	P_LAST
 } phases_t;

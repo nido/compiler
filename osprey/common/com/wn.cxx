@@ -360,6 +360,10 @@ inline WN *WN_FREE_LIST_Pop(WN_FREE_LIST *list)
  * nodes with two kids will end up on the free_stmt_list, which is fine.
  * It's the size, not type, that's important when choosing the list.
  */
+#ifdef TARG_ST
+// [SC] free_stmt_list conflicts with free_stmt_list function defined in gcc.
+static
+#endif
 WN_FREE_LIST free_stmt_list, free_expr_list;
 
 inline WN_FREE_LIST *Which_WN_FREE_LIST(INT32 size)
@@ -1591,13 +1595,18 @@ WN *WN_CreateExp1(OPERATOR opr, TYPE_ID rtype, TYPE_ID desc,WN *kid0)
 WN *WN_CreateExp2(OPERATOR opr, TYPE_ID rtype, TYPE_ID desc, WN *kid0, WN *kid1)
 {
   OPCODE opc = OPCODE_make_op (opr, rtype, desc);
-  WN *wn;
+  WN *wn = NULL;
 
   Is_True(OPCODE_is_expression(WN_opcode(kid0)),
 	  ("Bad kid0 in WN_CreateExp2"));
   Is_True(OPCODE_is_expression(WN_opcode(kid1)),
 	  ("Bad kid1 in WN_CreateExp2"));
+
+#ifdef KEY
+  if( !Disable_Simplification_For_FE) /* Disable Simplification if it is called in WGEN. */
+#endif
   wn = WN_SimplifyExp2(opc, kid0, kid1);
+
   if (!wn) {
      wn = WN_Create(opr,rtype,desc,2);
      WN_kid0(wn) = kid0;

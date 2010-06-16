@@ -1272,7 +1272,7 @@ Setup_Entry_For_EH (void)
                                 0)), 1);
     Set_INITV_next (tinfo, eh_spec);
 
-    Get_Current_PU().unused = New_INITO (ST_st_idx (etable), exc_ptr_iv);
+    Set_PU_misc_info (Get_Current_PU(), New_INITO (ST_st_idx (etable), exc_ptr_iv));
 }
 #endif
 
@@ -1825,6 +1825,12 @@ WFE_Start_Function (tree fndecl)
       Set_TY_is_varargs (ty_idx);
       Set_TY_has_prototype (ty_idx);
       Set_PU_prototype (pu, ty_idx);
+
+	  tree fntype = TREE_TYPE(fndecl);
+      if (TREE_CODE(fntype) == METHOD_TYPE) {
+          TY_IDX base = Get_TY(TYPE_METHOD_BASETYPE(fntype));
+          Set_PU_base_class(pu, base);
+      }
     }
 
     if (!thunk && DECL_GLOBAL_CTOR_P(fndecl)) {

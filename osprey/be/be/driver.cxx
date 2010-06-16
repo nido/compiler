@@ -127,6 +127,10 @@
 #include "wn_instrument.h"          /* whirl instrumenter */
 #include "wn_coverage.h"          /* whirl coverage */
 #include "mem_ctr.h"
+#ifdef KEY
+#include "config_wopt.h"    // for WOPT_Enable_Simple_If_Conv
+#include "goto_conv.h"
+#endif
 #ifdef TARG_ST
 #include "W_alloca.h"             // alloca
 #include "loader.h"
@@ -1882,6 +1886,17 @@ Preprocess_PU (PU_Info *current_pu)
   if (Run_purple) {
     Prp_Instrument_And_EmitSrc(pu);
   }
+
+#ifdef KEY
+  if (Early_Goto_Conversion &&
+       // bug 14188: by default, disabled for fortran
+      (!PU_ftn_lang(Get_Current_PU()) || Early_Goto_Conversion_Set))
+  {
+      GTABLE goto_table( pu, MEM_pu_pool_ptr );
+      goto_table.Remove_Gotos();
+      // goto_table gets destructed here
+  }
+#endif
 
   /* Add instrumentation here for vho lower. */
   if ( Instrumentation_Enabled

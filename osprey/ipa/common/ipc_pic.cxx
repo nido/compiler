@@ -158,6 +158,11 @@ struct PIC_OPT
 	    export_class == EXPORT_LOCAL_INTERNAL) {
 	    if (ST_class (st) == CLASS_FUNC) {
 		Set_ST_name_idx (st, Create_Unique_Name (ST_name (st)));
+#ifdef KEY
+// Reset the flag so that cg does not remove this function. Applies only to C functions.
+		if (!IPA_Enable_Inline)
+		    Clear_PU_is_extern_inline (Pu_Table [ST_pu (st)]);
+#endif
 
 		if (address_taken)
 		    Set_ST_export (st, EXPORT_HIDDEN);
@@ -341,6 +346,11 @@ struct fix_static_func
 	// [CL] be coherent with PIC case
 	if (ST_class (st) == CLASS_FUNC) {
 	  Set_ST_name_idx (st, Create_Unique_Name (ST_name (st)));
+#ifdef KEY
+// Reset the flag so that cg does not remove this function. Applies only to C functions.
+	  if (!IPA_Enable_Inline)
+	    Clear_PU_is_extern_inline (Pu_Table [ST_pu (st)]);
+#endif
 	  if (address_taken)
 	    Set_ST_export (st, EXPORT_HIDDEN);
 	  else

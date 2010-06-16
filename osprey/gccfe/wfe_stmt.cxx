@@ -311,7 +311,7 @@ Function_ST_For_String (const char * s)
 static void
 Generate_unwind_resume (void)
 {
-  ST_IDX exc_ptr_param = TCON_uval (INITV_tc_val (INITO_val (Get_Current_PU().unused)));
+  ST_IDX exc_ptr_param = TCON_uval (INITV_tc_val (INITO_val (PU_misc_info (Get_Current_PU()))));
   ST exc_st = St_Table[exc_ptr_param];
   WN* parm_node = WN_Ldid (Pointer_Mtype, 0, &exc_st, ST_type (exc_st));
 

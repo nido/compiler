@@ -355,6 +355,15 @@ typedef enum {
   WN_PRAGMA_ASM_CONSTRAINT,	/* constraint string for an ASM operand */
   WN_PRAGMA_ASM_CLOBBER,        /* clobber string for an ASM statement */
 
+#ifdef KEY
+  WN_PRAGMA_FORALL,
+#endif
+  WN_PRAGMA_COPYPRIVATE, /* by jhs, 02/7/22 */
+  WN_PRAGMA_PARALLEL_WORKSHARE, /* by jhs, 04/3/10 */
+  WN_PRAGMA_PWORKSHARE_BEGIN, /* by jhs, 2004/3/10 */
+  WN_PRAGMA_PWORKSHARE_END, /* by jhs, 2004/3/10 */
+  WN_PRAGMA_THREADPRIVATE, /* by jhs, 02.9.18 */
+
 #ifdef TARG_ST
   /* Additional generic pragmas */
   WN_PRAGMA_ASM_PARSE,          /* flag to parse or not an ASM statement */

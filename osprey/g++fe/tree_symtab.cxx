@@ -1714,6 +1714,25 @@ Create_ST_For_Tree (tree decl_node)
         ST_Init (st,
                  Save_Str ( IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (decl_node))),
                  CLASS_FUNC, sclass, eclass, TY_IDX (pu_idx));
+#ifdef KEY
+	char *p = IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (decl_node));
+	if (*p == '*')
+	  p++;
+        // St is a constructor
+        if (DECL_CONSTRUCTOR_P(decl_node) && !DECL_COPY_CONSTRUCTOR_P(decl_node))
+            Set_PU_is_constructor(pu);
+        // St is a pure virual function
+        if (DECL_PURE_VIRTUAL_P(decl_node) || strncmp(p, "__cxa_pure_virtual", 18) == 0)
+            Set_ST_is_pure_vfunc(st);
+
+        p = IDENTIFIER_POINTER (DECL_NAME (decl_node));
+        if (!strncmp(p,"operator",8))
+                Set_PU_is_operator(pu);
+#endif
+        if (TREE_CODE(TREE_TYPE(decl_node)) == METHOD_TYPE) {
+                TY_IDX base = Get_TY(TYPE_METHOD_BASETYPE(TREE_TYPE(decl_node)));
+                Set_PU_base_class(pu, base);
+        }
 
 #ifndef TARG_ST
         /* (cbr) */
@@ -1943,6 +1962,10 @@ Create_ST_For_Tree (tree decl_node)
 #endif // KEY
 
         ST_Init (st, Save_Str(name), CLASS_VAR, sclass, eclass, ty_idx);
+#ifdef KEY
+        if (TREE_CODE (decl_node) == VAR_DECL && DECL_THREAD_LOCAL (decl_node))
+          Set_ST_is_thread_local (st);
+#endif
         if (TREE_CODE(decl_node) == PARM_DECL) {
             Set_ST_is_value_parm(st);
         }

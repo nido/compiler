@@ -138,6 +138,12 @@ extern char *driver_dirname(const char *s);
 extern char *dirname(char *const s);
 #endif
 
+#ifdef KEY
+// Get the system GCC's major version number.
+extern int get_gcc_major_version(void);
+extern void init_frontend_phase_names(int, int, int);
+#endif
+
 #define PASS1 0
 #define PASS2 1
 

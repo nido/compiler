@@ -1045,6 +1045,12 @@ Merge_Global_Pu(UINT pu_idx, const IPC_GLOBAL_TABS& original_tabs)
     TY_IDX prototype_idx = (*New_Ty_Idx)[PU_prototype(this_pu)];
     Set_PU_prototype(Pu_Table[new_idx], prototype_idx);
 
+    // merge base class in PU 
+    if (PU_base_class(this_pu) != TY_IDX_ZERO) { 
+        TY_IDX base_class_idx = (*New_Ty_Idx)[PU_base_class(this_pu)]; 
+        Set_PU_base_class(Pu_Table[new_idx], base_class_idx); 
+    } 
+
     // sync. up with the Aux_Pu_Table
     UINT32 aux_idx;
     AUX_PU& aux_pu = Aux_Pu_Table.New_entry (aux_idx);
@@ -1161,8 +1167,11 @@ Synch_Pu_With_Pu (PU& merged_pu, const PU& original_pu)
 
     merged_pu.src_lang |= original_pu.src_lang;
 #ifdef KEY
-    if (!merged_pu.unused)
-    	merged_pu.unused = original_pu.unused; // EH information
+    if (!merged_pu.misc)
+    	merged_pu.misc = original_pu.misc; // EH/C nested function information
+#if !defined(TARG_ST) || !defined(PU_HAS_NO_UNUSED)
+    merged_pu.unused = original_pu.unused; // EH information
+#endif
 #endif
 } // Synch_Pu_With_Pu
 

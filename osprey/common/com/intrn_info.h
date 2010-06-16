@@ -73,6 +73,20 @@ typedef enum INTRN_RETKIND {
   IRETURN_DYNAMIC,           /* dynamically added mtype */
 #endif
   IRETURN_F10,               /* MTYPE_F10 */
+#ifdef TARG_X8664
+  IRETURN_V16I2,	     /* MTYPE_V16I2 */
+  IRETURN_V16I4,	     /* MTYPE_V16I4 */
+  IRETURN_V16F4,	     /* MTYPE_V16F4 */
+  IRETURN_V16F8,	     /* MTYPE_V16F8 */
+  IRETURN_V16C8,	     /* MTYPE_V16C8 */
+  IRETURN_M8I1,              /* MTYPE_M8I1 */
+  IRETURN_M8I2,              /* MTYPE_M8I2 */
+  IRETURN_M8I4,              /* MTYPE_M8I4 */
+  IRETURN_V16I8,             /* MTYPE_V16I8 */
+  IRETURN_V16I1,             /* MTYPE_V16I1 */
+#endif
+  IRETURN_PPU2,         /* return type of ctype_b_loc() */
+  IRETURN_PPI4,         /* return type of ctype_toupper_loc() and ctype_tolower_loc() */
 } INTRN_RETKIND;
 #define INTRN_RETKIND_LAST IRETURN_F10
 
@@ -89,6 +103,8 @@ typedef enum INTRN_RETKIND {
 #define NOT_ACTUAL	FALSE
 #define CGINTRINSIC	TRUE
 #define NOT_CGINTRINSIC	FALSE
+#define NOT_SLAVE       CGINTRINSIC
+#define SLAVE           NOT_CGINTRINSIC
 
 #ifdef TARG_ST
 #include "config_intrinsic.h"
@@ -134,6 +150,9 @@ typedef struct intrn_info_t {
  mBOOL		never_returns;
  mBOOL		is_actual;
  mBOOL		is_cg_intrinsic;
+#ifndef TARG_ST
+ mBOOL          slave;
+#endif
  INTRN_RETKIND	return_kind;
  char		*c_name;
  char		*specific_name;

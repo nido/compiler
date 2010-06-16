@@ -2667,6 +2667,21 @@ Expand__bitcntw(
 @@@  break ;
 */
 
+static void
+Expand__bitcntl(
+		TN * o0,
+		TN * i0,
+		TN * i1,
+		OPS* ops
+		)
+{
+  TN *tmp1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *tmp2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  Expand__bitcntw (tmp1, i0, ops);
+  Expand__bitcntw (tmp2, i1, ops);
+  Build_OP ( TOP_add_r_r_r, o0, tmp1, tmp2, ops);
+}
+
 /*
  * Expansion of bitnoth based on validated and scheduled basic assembly source.
 */
@@ -2989,6 +3004,84 @@ Expand__clampwh(
 */
 
 /*
+ * Expansion of ctzl based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__ctzl(
+ TN* o0,
+ TN* il0,
+ TN* ih0,
+ OPS* ops
+)
+{
+  TN *b0_0_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+  TN *b0_1_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+  TN *b0_1_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+  TN *b0_1_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+  TN *r0_16_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_17_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_17_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_18_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_19_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_20_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+#define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
+  TN *c32 = Gen_Literal_TN(__EXTS32TOS64(32), 4) ;
+  TN *c64 = Gen_Literal_TN(__EXTS32TOS64(64), 4) ;
+  TN *c_1 = Gen_Literal_TN(__EXTS32TOS64(-1), 4) ;
+#undef __EXTS32TOS64
+  Build_OP (    TOP_convib_r_b, b0_1_0, Zero_TN,        ops) ;
+  Build_OP (    TOP_mov_i_r,    r0_20_0,        c_1,    ops) ;
+  Build_OP (    TOP_targ_addcg_b_r_r_b_r,       r0_19_1,        b0_1_1, il0,    r0_20_0,        b0_1_0, ops) ;
+  Build_OP (    TOP_targ_addcg_b_r_r_b_r,       r0_18_2,        b0_1_2, ih0,    r0_20_0,        b0_1_1, ops) ;
+  Build_OP (    TOP_andc_r_r_r, r0_16_2,        il0,    r0_19_1,        ops) ;
+  Build_OP (    TOP_clz_r_r,    r0_16_3,        r0_16_2,        ops) ;
+  Build_OP (    TOP_andc_r_r_r, r0_17_3,        ih0,    r0_18_2,        ops) ;
+  Build_OP (    TOP_convib_r_b, b0_0_4, r0_17_3,        ops) ;
+  Build_OP (    TOP_clz_r_r,    r0_17_4,        r0_17_3,        ops) ;
+  Build_OP (    TOP_add_i_r_r,  r0_16_4,        r0_16_3,        c32,    ops) ;
+  Build_OP (    TOP_slctf_r_r_b_r, r0_16_5,        b0_0_4, r0_16_4,        r0_17_4,        ops) ;
+  Build_OP (    TOP_sub_r_i_r,  o0,     c64,    r0_16_5,        ops) ;
+} /* Expand__ctzl */
+ 
+/*
+@@@  case INTRN_CTZ64:
+@@@    Expand__ctzl(result[0],opnd[0],opnd[1],ops) ;
+@@@  break ;
+*/
+
+/*
+ * Expansion of ctzw based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__ctzw(
+ TN* o0,
+ TN* i0,
+ OPS* ops
+)
+{
+  TN *r0_16_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_17_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+#define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
+  TN *c32 = Gen_Literal_TN(__EXTS32TOS64(32), 4) ;
+  TN *c_1 = Gen_Literal_TN(__EXTS32TOS64(-1), 4) ;
+#undef __EXTS32TOS64
+  Build_OP (    TOP_add_i_r_r,  r0_17_0,        i0,     c_1,    ops) ;
+  Build_OP (    TOP_andc_r_r_r, r0_16_1,        i0,     r0_17_0,        ops) ;
+  Build_OP (    TOP_clz_r_r,    r0_16_2,        r0_16_1,        ops) ;
+  Build_OP (    TOP_sub_r_i_r,  o0,     c32,    r0_16_2,        ops) ;
+} /* Expand__ctzw */
+ 
+/*
+@@@  case INTRN_CTZ32:
+@@@    Expand__ctzw(result[0],opnd[0],ops) ;
+@@@  break ;
+*/
+
+/*
  * Expansion of disth based on validated and scheduled basic assembly source.
 */
 static void
@@ -3211,6 +3304,186 @@ Expand__equl(
 /*
 @@@  case INTRN_EQUL:
 @@@    Expand__equl(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
+@@@  break ;
+*/
+
+/*
+ * Expansion of ffsl based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__ffsl(
+ TN* o0,
+ TN* il0,
+ TN* ih0,
+ OPS* ops
+)
+{
+  TN *b0_0_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+  TN *b0_1_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_branch) ;
+  TN *r0_16_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_17_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_17_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_18_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_18_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_19_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_20_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+#define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
+  TN *c32 = Gen_Literal_TN(__EXTS32TOS64(32), 4) ;
+  TN *c64 = Gen_Literal_TN(__EXTS32TOS64(64), 4) ;
+  TN *c_1 = Gen_Literal_TN(__EXTS32TOS64(-1), 4) ;
+#undef __EXTS32TOS64
+  Build_OP (    TOP_sub_r_r_r,  r0_19_0,        Zero_TN,        il0,    ops) ;
+  Build_OP (    TOP_sub_r_r_r,  r0_20_0,        Zero_TN,        ih0,    ops) ;
+  Build_OP (    TOP_sub_r_i_r,  r0_18_0,        c_1,    ih0,    ops) ;
+  Build_OP (    TOP_cmpgtu_r_r_b,       b0_1_0, il0,    Zero_TN,        ops) ;
+  Build_OP (    TOP_targ_slct_r_r_b_r,  r0_18_1,        b0_1_0, r0_18_0,        r0_20_0,        ops) ;
+  Build_OP (    TOP_and_r_r_r,  r0_16_1,        il0,    r0_19_0,        ops) ;
+  Build_OP (    TOP_clz_r_r,    r0_16_2,        r0_16_1,        ops) ;
+  Build_OP (    TOP_and_r_r_r,  r0_17_2,        ih0,    r0_18_1,        ops) ;
+  Build_OP (    TOP_convib_r_b, b0_0_3, r0_17_2,        ops) ;
+  Build_OP (    TOP_clz_r_r,    r0_17_3,        r0_17_2,        ops) ;
+  Build_OP (    TOP_add_i_r_r,  r0_16_3,        r0_16_2,        c32,    ops) ;
+  Build_OP (    TOP_slctf_r_r_b_r, r0_16_4,        b0_0_3, r0_16_3,        r0_17_3,        ops) ;
+  Build_OP (    TOP_sub_r_i_r,  o0,     c64,    r0_16_4,        ops) ;
+} /* Expand__ffsl */
+ 
+/*
+@@@  case INTRN_FFS64:
+@@@    Expand__ffsl(result[0],opnd[0],opnd[1],ops) ;
+@@@  break ;
+*/
+
+/*
+ * Expansion of ffsw based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__ffsw(
+ TN* o0,
+ TN* i0,
+ OPS* ops
+)
+{
+  TN *r0_16_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_17_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+#define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
+  TN *c32 = Gen_Literal_TN(__EXTS32TOS64(32), 4) ;
+#undef __EXTS32TOS64
+  Build_OP (    TOP_sub_r_r_r,  r0_17_0,        Zero_TN,        i0,     ops) ;
+  Build_OP (    TOP_and_r_r_r,  r0_16_1,        i0,     r0_17_0,        ops) ;
+  Build_OP (    TOP_clz_r_r,    r0_16_2,        r0_16_1,        ops) ;
+  Build_OP (    TOP_sub_r_i_r,  o0,     c32,    r0_16_2,        ops) ;
+} /* Expand__ffsw */
+ 
+/*
+@@@  case INTRN_FFS32:
+@@@    Expand__ffsw(result[0],opnd[0],ops) ;
+@@@  break ;
+*/
+
+static void
+Expand__isnanf(
+ TN* o0,
+ TN* i0,
+ OPS* ops
+)
+{
+  TN *t1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+#define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
+  TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
+  TN *c0xff000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xff000000), 4) ;
+  TN *c0xff000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  Build_OP (    TOP_mov_ii_r,      c0xff000000,        c0xff000000_ltn,    ops) ;
+#undef __EXTS32TOS64
+  Build_OP (    TOP_shl_i_r_r,  t1,      i0,    c1,     ops) ;
+  Build_OP (    TOP_cmpgtu_r_r_r, o0,    t1,    c0xff000000, ops) ;
+} /* Expand__isnanf */
+ 
+/*
+@@@  case INTRN_ISNANF:
+@@@    Expand__isnanf(result[0],opnd[0],ops) ;
+@@@  break ;
+*/
+
+static void Expand__gtul(TN*, TN*, TN*, TN*, TN*, OPS*);
+
+static void
+Expand__isnand(
+ TN* o0,
+ TN* il0,
+ TN* ih0,
+ OPS* ops
+)
+{
+  TN *t1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+#define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
+  TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
+  TN *c0xffc00000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffc00000), 4) ;
+  TN *c0xffc00000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  Build_OP (    TOP_mov_ii_r,      c0xffc00000,        c0xffc00000_ltn,    ops) ;
+#undef __EXTS32TOS64
+  Build_OP (    TOP_shl_i_r_r,  t1,     ih0,    c1,     ops) ;
+  Expand__gtul (o0, il0, t1, Zero_TN, c0xffc00000, ops) ;
+} /* Expand__isnand */
+ 
+/*
+@@@  case INTRN_ISNAND:
+@@@    Expand__isnand(result[0],opnd[0],opnd[1],ops) ;
+@@@  break ;
+*/
+
+static void
+Expand__isinff(
+ TN* o0,
+ TN* i0,
+ OPS* ops
+)
+{
+  TN *t1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+#define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
+  TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
+  TN *c0xff000000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xff000000), 4) ;
+  TN *c0xff000000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  Build_OP (    TOP_mov_ii_r,      c0xff000000,        c0xff000000_ltn,    ops) ;
+#undef __EXTS32TOS64
+  Build_OP (    TOP_shl_i_r_r,   t1,   i0,    c1,     ops) ;
+  Build_OP (    TOP_cmpeq_r_r_r, o0,   t1,    c0xff000000,  ops) ;
+} /* Expand__isinff */
+ 
+/*
+@@@  case INTRN_ISINFF:
+@@@    Expand__isinff(result[0],opnd[0],ops) ;
+@@@  break ;
+*/
+
+/*
+ * Expansion of isinfd based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__isinfd(
+ TN* o0,
+ TN* il0,
+ TN* ih0,
+ OPS* ops
+)
+{
+  TN *t1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+#define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
+  TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
+  TN *c0xffc00000_ltn = Gen_Literal_TN(__EXTS32TOS64(0xffc00000), 4) ;
+  TN *c0xffc00000 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  Build_OP (    TOP_mov_ii_r,      c0xffc00000,        c0xffc00000_ltn,    ops) ;
+#undef __EXTS32TOS64
+  Build_OP (    TOP_shl_i_r_r,  t1,     ih0,    c1,     ops) ;
+  Expand__eql (o0, il0, t1, Zero_TN, c0xffc00000,   ops) ;
+} /* Expand__isinfd */
+ 
+/*
+@@@  case INTRN_ISINFD:
+@@@    Expand__isinfd(result[0],opnd[0],opnd[1],ops) ;
 @@@  break ;
 */
 
@@ -5833,6 +6106,121 @@ Expand__normw(
 */
 
 /*
+ * Expansion of parityl based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__parityl(
+ TN* o0,
+ TN* il0,
+ TN* ih0,
+ OPS* ops
+)
+{
+  TN *r0_16_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_10 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_7 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_9 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_17_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_17_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_17_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_17_7 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_17_9 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_18_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_18_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_18_6 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_18_8 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_19_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_19_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_19_6 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_19_8 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_20_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_21_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+#define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
+  TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
+  TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
+  TN *c2 = Gen_Literal_TN(__EXTS32TOS64(2), 4) ;
+  TN *c4 = Gen_Literal_TN(__EXTS32TOS64(4), 4) ;
+  TN *c8 = Gen_Literal_TN(__EXTS32TOS64(8), 4) ;
+#undef __EXTS32TOS64
+  Build_OP (    TOP_shru_i_r_r, r0_21_0,        il0,    c1,     ops) ;
+  Build_OP (    TOP_shru_i_r_r, r0_20_0,        ih0,    c1,     ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_16_1,        r0_21_0,        il0,    ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_17_1,        r0_20_0,        ih0,    ops) ;
+  Build_OP (    TOP_shru_i_r_r, r0_19_2,        r0_16_1,        c2,     ops) ;
+  Build_OP (    TOP_shru_i_r_r, r0_18_2,        r0_17_1,        c2,     ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_16_3,        r0_16_1,        r0_19_2,        ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_17_3,        r0_17_1,        r0_18_2,        ops) ;
+  Build_OP (    TOP_shru_i_r_r, r0_19_4,        r0_16_3,        c4,     ops) ;
+  Build_OP (    TOP_shru_i_r_r, r0_18_4,        r0_17_3,        c4,     ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_16_5,        r0_16_3,        r0_19_4,        ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_17_5,        r0_17_3,        r0_18_4,        ops) ;
+  Build_OP (    TOP_shru_i_r_r, r0_19_6,        r0_16_5,        c8,     ops) ;
+  Build_OP (    TOP_shru_i_r_r, r0_18_6,        r0_17_5,        c8,     ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_16_7,        r0_16_5,        r0_19_6,        ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_17_7,        r0_17_5,        r0_18_6,        ops) ;
+  Build_OP (    TOP_shru_i_r_r, r0_19_8,        r0_16_7,        c16,    ops) ;
+  Build_OP (    TOP_shru_i_r_r, r0_18_8,        r0_17_7,        c16,    ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_16_9,        r0_16_7,        r0_19_8,        ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_17_9,        r0_17_7,        r0_18_8,        ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_16_10,       r0_16_9,        r0_17_9,        ops) ;
+  Build_OP (    TOP_and_i_r_r,  o0,     r0_16_10,       c1,     ops) ;
+} /* Expand__parityl */
+ 
+/*
+@@@  case INTRN_PARITY64:
+@@@    Expand__parityl(result[0],opnd[0],opnd[1],ops) ;
+@@@  break ;
+*/
+
+/*
+ * Expansion of parityw based on validated and scheduled basic assembly source.
+*/
+static void
+Expand__parityw(
+ TN* o0,
+ TN* i0,
+ OPS* ops
+)
+{
+  TN *r0_16_1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_3 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_5 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_7 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_16_9 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_17_2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_17_4 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_17_6 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_17_8 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *r0_18_0 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+#define __EXTS32TOS64(x)                (((long long)(x)<<32) >> 32)
+  TN *c1 = Gen_Literal_TN(__EXTS32TOS64(1), 4) ;
+  TN *c16 = Gen_Literal_TN(__EXTS32TOS64(16), 4) ;
+  TN *c2 = Gen_Literal_TN(__EXTS32TOS64(2), 4) ;
+  TN *c4 = Gen_Literal_TN(__EXTS32TOS64(4), 4) ;
+  TN *c8 = Gen_Literal_TN(__EXTS32TOS64(8), 4) ;
+#undef __EXTS32TOS64
+  Build_OP (    TOP_shru_i_r_r, r0_18_0,        i0,     c1,     ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_16_1,        i0,     r0_18_0,        ops) ;
+  Build_OP (    TOP_shru_i_r_r, r0_17_2,        r0_16_1,        c2,     ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_16_3,        r0_16_1,        r0_17_2,        ops) ;
+  Build_OP (    TOP_shru_i_r_r, r0_17_4,        r0_16_3,        c4,     ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_16_5,        r0_16_3,        r0_17_4,        ops) ;
+  Build_OP (    TOP_shru_i_r_r, r0_17_6,        r0_16_5,        c8,     ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_16_7,        r0_16_5,        r0_17_6,        ops) ;
+  Build_OP (    TOP_shru_i_r_r, r0_17_8,        r0_16_7,        c16,    ops) ;
+  Build_OP (    TOP_xor_r_r_r,  r0_16_9,        r0_16_7,        r0_17_8,        ops) ;
+  Build_OP (    TOP_and_i_r_r,  o0,     r0_16_9,        c1,     ops) ;
+} /* Expand__parityw */
+ 
+/*
+@@@  case INTRN_PARITY32:
+@@@    Expand__parityw(result[0],opnd[0],ops) ;
+@@@  break ;
+*/
+
+/*
  * Expansion of priorh based on validated and scheduled basic assembly source.
 */
 static void
@@ -7079,6 +7467,66 @@ Expand__builtin_dwarf_cfa(
 	   OPERATOR_UNKNOWN, ops);
 } /* Expand__builtin_dwarf_cfa */
 
+static void
+Expand__isunordered(
+		    TN *o0,
+		    TN *i0,
+		    TN *i1,
+		    TN *i2,
+		    TN *i3,
+		    OPS* ops
+		    )
+{
+  TN *t1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *t2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  Expand__isnand (t1, i0, i1, ops);
+  Expand__isnand (t2, i2, i3, ops);
+  Build_OP ( TOP_or_r_r_r, o0, t1, t2, ops);
+}
+
+static void
+Expand__isunorderedf(
+		     TN *o0,
+		     TN *i0,
+		     TN *i1,
+		     OPS* ops
+		     )
+{
+  TN *t1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  TN *t2 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  Expand__isnanf (t1, i0, ops);
+  Expand__isnanf (t2, i1, ops);
+  Build_OP ( TOP_or_r_r_r, o0, t1, t2, ops);
+}
+
+static void
+Expand__isordered(
+		  TN *o0,
+		  TN *i0,
+		  TN *i1,
+		  TN *i2,
+		  TN *i3,
+		  OPS* ops
+		  )
+{
+  TN *t1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  Expand__isunordered (t1, i0, i1, i2, i3, ops);
+  Build_OP ( TOP_cmpeq_r_r_r, o0, t1, Zero_TN, ops);
+}
+
+static void
+Expand__isorderedf(
+		   TN *o0,
+		   TN *i0,
+		   TN *i1,
+		   OPS* ops
+		   )
+{
+  TN *t1 = Build_RCLASS_TN (ISA_REGISTER_CLASS_integer) ;
+  Expand__isunorderedf (t1, i0, i1, ops);
+  Build_OP ( TOP_cmpeq_r_r_r, o0, t1, Zero_TN, ops);
+}
+
 #define INTRN_EXPAND
 #include "gen_intrinsics.inc"
 #undef INTRN_EXPAND
@@ -7347,9 +7795,11 @@ Exp_Intrinsic_Op (
       Expand__lzcnth(result[0],opnd[0],ops) ;
     break ;
     case INTRN_LZCNTL:
+    case INTRN_CLZ:
       Expand__lzcntl(result[0],opnd[0],opnd[1],ops) ;
     break ;
     case INTRN_LZCNTW:
+    case INTRN_CLZ32:
       Expand__lzcntw(result[0],opnd[0],ops) ;
     break ;
     case INTRN_MAFCW:
@@ -7648,6 +8098,54 @@ Exp_Intrinsic_Op (
     break ;
   case INTRN_BUILTIN_DWARF_CFA:
     Expand__builtin_dwarf_cfa (result[0], ops) ;
+    break;
+  case INTRN_CTZ32:
+    Expand__ctzw(result[0],opnd[0],ops) ;
+    break;
+  case INTRN_CTZ64:
+    Expand__ctzl(result[0],opnd[0],opnd[1],ops) ;
+    break;
+  case INTRN_FFS32:
+    Expand__ffsw(result[0],opnd[0],ops) ;
+    break;
+  case INTRN_FFS64:
+    Expand__ffsl(result[0],opnd[0],opnd[1],ops) ;
+    break;
+  case INTRN_ISINFF:
+    Expand__isinff(result[0],opnd[0],ops) ;
+    break;
+  case INTRN_ISINFD:
+    Expand__isinfd(result[0],opnd[0],opnd[1],ops) ;
+    break;
+  case INTRN_ISNANF:
+    Expand__isnanf(result[0],opnd[0],ops) ;
+    break;
+  case INTRN_ISNAND:
+    Expand__isnand(result[0],opnd[0],opnd[1],ops) ;
+    break;
+  case INTRN_PARITY32:
+    Expand__parityw(result[0],opnd[0],ops) ;
+    break;
+  case INTRN_PARITY64:
+    Expand__parityl(result[0],opnd[0],opnd[1],ops) ;
+    break;
+  case INTRN_POPCOUNT32:
+    Expand__bitcntw(result[0],opnd[0],ops) ;
+    break;
+  case INTRN_POPCOUNT64:
+    Expand__bitcntl(result[0],opnd[0],opnd[1],ops) ;
+    break;
+  case INTRN_ISUNORDERED:
+    Expand__isunordered(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
+    break;
+  case INTRN_ISUNORDEREDF:
+    Expand__isunorderedf(result[0],opnd[0],opnd[1],ops) ;
+    break;
+  case INTRN_ISORDERED:
+    Expand__isordered(result[0],opnd[0],opnd[1],opnd[2],opnd[3],ops) ;
+    break;
+  case INTRN_ISORDEREDF:
+    Expand__isorderedf(result[0],opnd[0],opnd[1],ops) ;
     break;
 #define INTRN_SWITCH
 #include "gen_intrinsics.inc"

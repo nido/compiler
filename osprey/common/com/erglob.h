@@ -217,6 +217,11 @@ extern "C" {
 #define EC_Null_Tree	EC_Undef_Code+114	/* str */
 #define EC_Inv_Treenum	EC_Undef_Code+115	/* int, tree, tree, int */
 
+#ifdef KEY
+#define EC_Bad_Omp	EC_Undef_Code+116	/* str */
+#define EC_Ill_Alias	EC_Undef_Code+117	/* str, str, str */
+#endif /* KEY */
+
 /* Region errors: */
 #define EC_Rgn_Ill_Entry	EC_Undef_Code+120	/* str */
 #define EC_Rgn_Ill_Exit		EC_Undef_Code+121	/* str */
@@ -329,9 +334,15 @@ extern "C" {
 #define EC_P_Heur_No_MU	EC_Undef_Code+327	/* str */
 #define EC_P_Heur_No_RA	EC_Undef_Code+328	/* str */
 
+#ifdef KEY
+/* ASM operands: */
+#define EC_Inv_Asm_Opnd EC_Undef_Code+340       /* none */
+#define EC_Misc_Asm EC_Undef_Code+341		/* str */
+#endif
+
 #ifdef TARG_ST
 /* Extension code expansion errors */
-#define EC_Ext_Expand   EC_Undef_Code+340        /* str */
+#define EC_Ext_Expand   EC_Undef_Code+350        /* str */
 #endif
 
 

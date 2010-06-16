@@ -225,6 +225,7 @@ LDIRT += $(DERIVED_INCS) $(DERIVED_SRCS)
 BE_BE_CXX_SRCS = 	\
   cleanup.cxx		\
   fill_align.cxx        \
+  goto_conv.cxx         \
   mem_ctr.cxx           \
   dra_ec.cxx		\
   dra_file_util.cxx     \

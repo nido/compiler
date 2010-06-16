@@ -2723,8 +2723,12 @@ Setup_EH_Region (bool for_unwinding)
     if (!for_unwinding) pad = lookup_cleanups (iv);
     else
     {
+#ifdef TARG_ST
+      iv = 0;
+#else
 	iv = New_INITV();
         INITV_Set_ZERO (Initv_Table[iv], MTYPE_U4, 1);
+#endif
     }
 
     INITV_IDX initv_label = New_INITV();
@@ -4818,7 +4822,7 @@ WFE_Expand_Expr (tree exp,
 // a constant
 		else
 		{
-		  iopc = INTRN_BUILTIN_CONSTANT_P;
+		  iopc = INTRN_CONSTANT_P;
                   if (ret_mtype == MTYPE_V) ret_mtype = MTYPE_I4;
 		  intrinsic_op = TRUE;
 		}
@@ -5685,7 +5689,7 @@ WFE_Expand_Expr (tree exp,
         if (flag_exceptions)
         //        if (key_exceptions)
           {
-            ST_IDX exc_ptr_st = TCON_uval (INITV_tc_val (INITO_val (Get_Current_PU().unused)));
+            ST_IDX exc_ptr_st = TCON_uval (INITV_tc_val (INITO_val (PU_misc_info (Get_Current_PU()))));
             wn = WN_Ldid (Pointer_Mtype, 0, exc_ptr_st, Get_TY(TREE_TYPE(exp)));
           }
         else

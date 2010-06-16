@@ -209,6 +209,10 @@ BE_EXPORTED extern UINT32 Instrumentation_Actions;
 BE_EXPORTED extern BOOL Instrumentation_Unique_Output;
 BE_EXPORTED extern INT32 Feedback_Phase_Num;
 BE_EXPORTED extern OPTION_LIST* Feedback_Option;
+#ifdef KEY
+BE_EXPORTED extern BOOL Early_Goto_Conversion;
+BE_EXPORTED extern BOOL Early_Goto_Conversion_Set;
+#endif
 #ifdef __cplusplus
 }
 #endif

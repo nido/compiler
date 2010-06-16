@@ -477,6 +477,8 @@ BE_EXPORTED extern BOOL  Enable_GOT_Call_Conversion; /* %call16 -> %got_disp? */
 BE_EXPORTED extern BOOL  OPT_Unroll_Analysis;	/* Enable unroll limitations? */
 BE_EXPORTED extern BOOL  OPT_Unroll_Analysis_Set;	/* ... option seen? */
 
+extern BOOL Disable_Simplification_For_FE;  /* Disable Simplification for Front End*/
+
 /***** Various Scalar Optimizer options *****/
 BE_EXPORTED extern BOOL  Enable_Copy_Propagate;
 

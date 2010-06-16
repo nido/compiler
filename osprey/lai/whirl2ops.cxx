@@ -51,6 +51,8 @@
 #include <vector>
 #ifdef TARG_ST
 #include <stdarg.h>
+#include <elf.h>
+#include <libelf.h>
 #endif
 #include "defs.h"
 #include "mempool.h"
@@ -105,6 +107,8 @@
 #include "config_opt.h" /* For OPT_Enable_Warn_Assume */
 #include "cg_affirm.h"
 #include "insn-config.h" /* for MAX_RECOG_OPERANDS */
+#include "em_elf.h"
+#include "em_dwarf.h"
 #endif
 
 #ifdef TARG_ST200
@@ -4770,6 +4774,8 @@ Expand_Expr (
 	return NULL;
 
   case OPR_INTRINSIC_OP:
+    if (WN_intrinsic(expr)==INTRN_EXPECT)
+      return Expand_Expr(WN_kid0(WN_kid0(expr)), WN_kid0(expr), result);
     return Handle_INTRINSIC_OP (expr, result);
 
   default:
@@ -4811,7 +4817,38 @@ Expand_Expr (
   }
 
   if (top != TOP_UNDEFINED) {
-    // Build_OP uses OP_opnds to determine # operands, 
+#ifdef TARG_ST
+    // [SC] Build_OP does check the number of operands we pass to it,
+    // so we must call the correct variant here.
+    int n = 0;
+    TN *args[5];
+    if (result) args[n++] = result;
+    if (TOP_is_predicated(top)) args[n++] = True_TN;
+    int i;
+    for (i = 0; i < num_opnds; i++)
+      args[n++] = opnd_tn[i];
+    switch (n) {
+    case 0:
+       Build_OP (top, &New_OPs);
+       break;
+    case 1:
+       Build_OP (top, args[0], &New_OPs);
+       break;
+    case 2:
+       Build_OP (top, args[0], args[1], &New_OPs);
+       break;
+    case 3:
+       Build_OP (top, args[0], args[1], args[2], &New_OPs);
+       break;
+    case 4:
+       Build_OP (top, args[0], args[1], args[2], args[3], &New_OPs);
+       break;
+    case 5:
+       Build_OP (top, args[0], args[1], args[2], args[3], args[4], &New_OPs);
+       break;
+    }
+#else
+   // Build_OP uses OP_opnds to determine # operands, 
     // so doesn't matter if we pass extra unused ops.
     if (TOP_is_predicated(top)) {
       Build_OP (top, result, True_TN, opnd_tn[0], opnd_tn[1], opnd_tn[2], 
@@ -4819,6 +4856,7 @@ Expand_Expr (
     } else {
       Build_OP (top, result, opnd_tn[0], opnd_tn[1], opnd_tn[2], &New_OPs);
     }
+#endif
   } else {
     switch (num_opnds) {
     case 0:
@@ -5562,6 +5600,72 @@ static void Handle_Frame_Address (TN *result, TN *frame_number)
     Exp_Lda (Pointer_type, result, Get_UpFormal_Base_Symbol (), -STACK_OFFSET_ADJUSTMENT, OPERATOR_UNKNOWN, &New_OPs);
   } else {
     Exp_Immediate (result, Gen_Literal_TN(0, Pointer_Size), FALSE, &New_OPs);
+  }
+}
+
+static void Handle_Dwarf_SP_Column (TN *result)
+{
+  Exp_Immediate (result, Gen_Literal_TN(Get_Debug_Reg_Id (CLASS_REG_PAIR_sp), 4),
+		 FALSE, &New_OPs);
+}
+
+static void Handle_EH_Return_Data_Regno (TN *result, TN *val)
+{
+  INT64 v;
+  
+  if (TN_has_value(val))
+    v = TN_value (val);
+  else if (TN_is_zero(val))
+    v = 0;
+  else if (TN_is_rematerializable(val)) {
+    WN *wn = TN_remat(val) ;
+    if (WN_operator_is(wn, OPR_INTCONST)) {
+      v = WN_const_val(wn);
+    } else {
+      FmtAssert (FALSE,
+		 ("Non-integer operand for INTRN_BUILTIN_EH_RETURN_DATA_REGNO"));
+    }
+  } else {
+    FmtAssert (FALSE,
+	       ("Non-constant operand for INTRN_BUILTIN_EH_RETURN_DATA_REGNO"));
+  }
+
+  DebugRegId r = (DebugRegId)(-1);
+  if (v >= 0
+      && v < (sizeof(CLASS_REG_PAIR_eh_return_data)
+	      / sizeof(CLASS_REG_PAIR_eh_return_data[0]))) {
+    CLASS_REG_PAIR cr = CLASS_REG_PAIR_eh_return_data[v];
+    if (! CLASS_REG_PAIR_EqualP (cr,  CLASS_REG_PAIR_undef)) {
+      r = Get_Debug_Reg_Id (cr);
+    }
+  }
+  Exp_Immediate (result, Gen_Literal_TN((INT64)r, 4), FALSE, &New_OPs);
+}
+
+static void Handle_Init_Dwarf_Reg_Sizes (TN *base)
+{
+  TYPE_ID desc = MTYPE_U1;
+  INT64 desc_sz = MTYPE_byte_size (desc);
+  ISA_REGISTER_CLASS rclass;
+
+  FOR_ALL_ISA_REGISTER_CLASS (rclass) {
+    const ISA_REGISTER_CLASS_INFO *cinfo;
+    cinfo = ISA_REGISTER_CLASS_Info(rclass);
+    INT32 bit_size = ISA_REGISTER_CLASS_INFO_Bit_Size(cinfo);
+    INT64 byte_size = ((INT64)bit_size + 7)/8;
+    INT32 index;
+    for (index = ISA_REGISTER_CLASS_INFO_First_Reg(cinfo);
+	 index <= ISA_REGISTER_CLASS_INFO_Last_Reg(cinfo); index++) {
+      unsigned int v = CGTARG_DW_DEBUG_Get_Reg_Id(rclass, index,
+						  bit_size);
+      //      if (v < ??) {
+      TN *offset_tn = Gen_Literal_TN (v * desc_sz, 4);
+      TN *size_tn = Build_TN_Of_Mtype (MTYPE_U4);
+      Exp_Immediate (size_tn, Gen_Literal_TN(byte_size, 4),
+		     FALSE, &New_OPs);
+      Expand_Store (desc, size_tn, base, offset_tn, &New_OPs);
+	//      }
+    }
   }
 }
 #endif
@@ -6335,14 +6439,28 @@ Handle_INTRINSIC_CALL (
 
   OPS_Init(&loop_ops);
 #ifdef TARG_ST
-  if (id == INTRN_BUILTIN_EH_RETURN) {
+  switch (id) {
+  case INTRN_BUILTIN_EH_RETURN:
     Handle_EH_Return (opnd_tn[0], opnd_tn[1]);
-  } else if (id == INTRN_BUILTIN_UNWIND_INIT) {
+    break;
+  case INTRN_BUILTIN_UNWIND_INIT:
     PU_Has_EH_Return = TRUE;
-  } else if (id == INTRN_BUILTIN_FRAME_ADDRESS) {
+    break;
+  case INTRN_BUILTIN_FRAME_ADDRESS:
     Handle_Frame_Address (res[0], opnd_tn[0]);
-  } else {
+    break;
+  case INTRN_BUILTIN_DWARF_SP_COLUMN:
+    Handle_Dwarf_SP_Column (res[0]);
+    break;
+  case INTRN_BUILTIN_EH_RETURN_DATA_REGNO:
+    Handle_EH_Return_Data_Regno (res[0], opnd_tn[0]);
+    break;
+  case INTRN_BUILTIN_INIT_DWARF_REG_SIZES:
+    Handle_Init_Dwarf_Reg_Sizes (opnd_tn[0]);
+    break;
+  default:
     Exp_Intrinsic_Call (id, numrests, numopnds, res, opnd_tn, &New_OPs, &label, &loop_ops, current_srcpos);
+    break;
   }
 
   // [CG]:We keep the last generated op

@@ -1863,7 +1863,11 @@ IPO_INLINE::Process_OPR_REGION(WN* wn, IPA_NODE* caller_node)
 			if (INITV_kind (initv) == INITVKIND_VAL)
 			{
 			  int sym = TCON_uval (INITV_tc_val (initv));
+#ifdef TARG_ST
+			  if (sym < 0 && sym != INT32_MIN)
+#else
 			  if (sym < 0)
+#endif
 			  {
 			    int new_ofst = -(mINT32)(-sym + 
 			    			caller_node->EH_spec_size());
@@ -1897,7 +1901,11 @@ IPO_INLINE::Process_OPR_REGION(WN* wn, IPA_NODE* caller_node)
 		    while (initv) {
 			if (INITV_kind (initv) == INITVKIND_VAL) {
 			  int sym = TCON_uval (INITV_tc_val (initv));
+#ifdef TARG_ST
+			  if (sym < 0 && sym != INT32_MIN) {
+#else
 			  if (sym < 0) {
+#endif
 			    int new_ofst = -(mINT32)(-sym + 
 			    			caller_node->EH_spec_size());
 			    INITV_IDX bkup = INITV_next (initv);
@@ -2127,7 +2135,7 @@ IPO_INLINE::Process_Op_Code (TREE_ITER& iter, IPO_INLINE_AUX& aux)
 			    !strcmp (func_name, "__cxa_begin_catch")), 
 			   ("Function %s has one-per-pu paramter", func_name));
 	    	// Fixup parameter
-	    	INITV_IDX exc_ptr = INITO_val ((INITO_IDX) Get_Current_PU ().unused);
+	    	INITV_IDX exc_ptr = INITO_val ((INITO_IDX) PU_misc_info (Get_Current_PU ()));
 		WN_st_idx (kid0) = TCON_uval (INITV_tc_val (exc_ptr));
 	    }
 	}
@@ -2149,7 +2157,7 @@ IPO_INLINE::Process_Op_Code (TREE_ITER& iter, IPO_INLINE_AUX& aux)
 //
 	    // fix the first parameter, take the proper input from runtime
 	    // (1)
-	    INITV_IDX first = INITO_val ((INITO_IDX) Get_Current_PU ().unused);
+	    INITV_IDX first = INITO_val ((INITO_IDX) PU_misc_info (Get_Current_PU ()));
 	    WN_st_idx (WN_kid0 (wn)) = TCON_uval (INITV_tc_val (INITV_next (first)));
 	    // fix the 2nd parameter -- filter value
 	    int current_filter = WN_const_val (WN_kid1 (wn));
@@ -2161,7 +2169,7 @@ IPO_INLINE::Process_Op_Code (TREE_ITER& iter, IPO_INLINE_AUX& aux)
 	    }
 	    Set_Tables (Callee_node());
 
-	    INITO_IDX ino = Pu_Table [ST_pu (Callee_node()->Func_ST())].unused;
+	    INITO_IDX ino = PU_misc_info (Pu_Table [ST_pu (Callee_node()->Func_ST())]);
 	    INITV_IDX tinfo = INITV_next (INITV_next (INITO_val (ino)));
 	    INITV_IDX ttable = INITO_val (TCON_uval (INITV_tc_val (tinfo)));
 	    int filter;
@@ -3567,7 +3575,7 @@ IPO_INLINE::Merge_EH_Spec_Tables (void)
 {
     INITV_IDX start, blk;
     // callee side
-    INITO_IDX tmp = Pu_Table [ST_pu (Callee_node()->Func_ST())].unused;
+    INITO_IDX tmp = PU_misc_info (Pu_Table [ST_pu (Callee_node()->Func_ST())]);
     if (tmp)
     	start = INITO_val (tmp);
     else return;
@@ -3597,7 +3605,7 @@ IPO_INLINE::Merge_EH_Spec_Tables (void)
 
     // caller side, change tables temporarily
     Set_Tables (Caller_node());
-    start = INITO_val (Pu_Table [ST_pu (Caller_node()->Func_ST())].unused);
+    start = INITO_val (PU_misc_info (Pu_Table [ST_pu (Caller_node()->Func_ST())]));
     const INITO_IDX caller_spec = TCON_uval (INITV_tc_val (INITV_next (INITV_next (INITV_next (start)))));
     if (caller_spec)
     	blk = INITV_blk (INITO_val (caller_spec));
@@ -3663,7 +3671,7 @@ IPO_INLINE::Merge_EH_Typeinfo_Tables (void)
     vector<ST_IDX> callee_typeinfos, caller_typeinfos;
     INITV_IDX start, blk, last_blk=0;
     // callee side
-    INITO_IDX tmp = Pu_Table [ST_pu (Callee_node()->Func_ST())].unused;
+    INITO_IDX tmp = PU_misc_info (Pu_Table [ST_pu (Callee_node()->Func_ST())]);
     if (tmp)
     	start = INITO_val (tmp);
     else
@@ -3684,7 +3692,7 @@ IPO_INLINE::Merge_EH_Typeinfo_Tables (void)
     // caller side
     // change tables temporarily
     Set_Tables (Caller_node());
-    start = INITO_val (Pu_Table [ST_pu (Caller_node()->Func_ST())].unused);
+    start = INITO_val (PU_misc_info (Pu_Table [ST_pu (Caller_node()->Func_ST())]));
     INITO_IDX caller_ttable = TCON_uval (INITV_tc_val (INITV_next (INITV_next (start))));
     if (caller_ttable) blk = INITO_val (caller_ttable);
     else blk = 0;

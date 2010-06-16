@@ -1816,6 +1816,16 @@ ST::Print (FILE *f, BOOL verbose) const
 	    if (flags & PU_HAS_USER_ALLOCA)	fprintf (f, " user_alloca");
 	    if (flags & PU_HAS_UNKNOWN_CONTROL_FLOW)	fprintf (f, " unknown_control_flow");
 	    if (flags & PU_IS_THUNK)		fprintf (f, " thunk");
+#ifdef KEY
+	    if (flags & PU_NEEDS_MANUAL_UNWINDING) fprintf (f, " needs_manual_unwinding");
+	    if (flags & PU_IS_EXTERN_INLINE) fprintf (f, " extern_inline");
+	    if (flags & PU_IS_MARKED_INLINE) fprintf (f, " inline_keyword");
+	    if (flags & PU_NO_INSTRUMENT) fprintf (f, " no_instrument");
+	    if (flags & PU_NEED_TRAMPOLINE) fprintf (f, " need_trampoline");
+#endif
+#ifdef TARG_X8664
+	    if (flags & PU_FF2C_ABI) fprintf (f, " ff2c_abi");
+#endif
 #ifdef TARG_ST
             /* (cbr) */
             if (flags & PU_STATIC_INITIALIZER)  fprintf (f, " static initializer");
@@ -2022,6 +2032,12 @@ TY::Print (FILE *f) const
 	if (flags & TY_NOT_IN_UNION)	fprintf (f, " not_in_union");
 	if (flags & TY_NO_ANSI_ALIAS)	fprintf (f, " no_ansi_alias");
 	if (flags & TY_IS_NON_POD)	fprintf (f, " non_pod");
+#ifdef KEY
+	if (flags & TY_RETURN_IN_MEM)	fprintf (f, " return_in_mem");
+	if (flags & TY_CONTENT_SEEN)	fprintf (f, " content_seen");
+        if (flags & TY_IS_INCOMPLETE)   fprintf (f, " incomplete");
+	if (flags & TY_NO_SPLIT)        fprintf (f, " no_split");
+#endif
 #ifdef TARG_ST
         // (cbr) object doesn't throws */
 	if (flags & TY_IS_NOTHROW)	fprintf (f, " nothrow");

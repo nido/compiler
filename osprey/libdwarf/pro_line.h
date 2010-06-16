@@ -39,10 +39,12 @@
 #ifdef TARG_ST
 /* MIN_INST_LENGTH has been replaced by the field de_min_inst_length
  * of Dwarf_P_Debug_s structure */
+/* DEFAULT_IS_STMT is now set to true, to cope with GDB-7.0 */
+#define DEFAULT_IS_STMT			true
 #else
 #define MIN_INST_LENGTH			4
-#endif
 #define DEFAULT_IS_STMT			false
+#endif
 			/* line base and range are temporarily defines.
 			   They need to be calculated later */
 #define LINE_BASE			-1

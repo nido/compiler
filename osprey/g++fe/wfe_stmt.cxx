@@ -643,7 +643,7 @@ Do_EH_Tables (void)
 			// Store the inito_idx in the PU
 			// 1. exc_ptr 2. filter : Set 3rd entry with inito_idx
 			INITV_IDX index = INITV_next (INITV_next (INITO_val (
-			               (INITO_IDX) Get_Current_PU().unused)));
+				       PU_misc_info (Get_Current_PU()))));
 			// INITV_Set_VAL resets the next field, so back it up
 			// and set it again.
 			INITV_IDX bkup = INITV_next (index);
@@ -679,7 +679,7 @@ Do_EH_Tables (void)
 		ST * eh_spec = Get_eh_spec_ST ();
 		id = New_INITO (ST_st_idx(eh_spec), start);
 		INITV_IDX index = INITV_next (INITV_next (INITV_next (
-			INITO_val ((INITO_IDX) Get_Current_PU().unused))));
+			INITO_val (PU_misc_info (Get_Current_PU())))));
 		// INITV_Set_VAL resets the next field, so back it up
 		// and set it again.
 		INITV_IDX bkup = INITV_next (index);
@@ -721,12 +721,18 @@ Do_Cleanups_For_EH (void)
     WFE_Stmt_Append (WN_CreateLabel ((ST_IDX) 0, e.start, 0, NULL), 
     		     Get_Srcpos());
 
+#ifdef TARG_ST
+    in_cleanup = TRUE;
+#endif
     for (vector<tree>::iterator j=e.cleanups->begin();
 		j!=e.cleanups->end();++j)
     {
     	tree cleanup = *j;
         Emit_Cleanup(cleanup);
     }
+#ifdef TARG_ST
+    in_cleanup = FALSE;
+#endif
     if (e.goto_idx)
 	WFE_Stmt_Append (WN_CreateGoto ((ST_IDX) 0, e.goto_idx), Get_Srcpos());
     else {
@@ -3092,7 +3098,11 @@ Get_typeinfo_var (tree t)
 // Get the handlers for the current try block. Move up in scope and append any
 // more handlers that may be present, to INITV.
 static INITV_IDX
+#ifdef TARG_ST
+Create_handler_list (int scope_index, bool &cleanups_seen)
+#else
 Create_handler_list (int scope_index)
+#endif
 {
   INITV_IDX type_st, prev_type_st=0, start=0;
 
@@ -3101,7 +3111,14 @@ Create_handler_list (int scope_index)
   for (int i=scope_index; i>=0; i--)
   {
     tree t = scope_cleanup_stack[i].stmt;
+#ifdef TARG_ST
+    if ((TREE_CODE(t) != (enum tree_code)TRY_BLOCK) || CLEANUP_P(t)) {
+      if (TREE_CODE(t) != (enum tree_code)BIND_EXPR) cleanups_seen = true;
+      continue;
+    }
+#else
     if ((TREE_CODE(t) != (enum tree_code)TRY_BLOCK) || CLEANUP_P(t))	continue;
+#endif
 
     tree h = TRY_HANDLERS (t);
     if (flag_exceptions)
@@ -3257,15 +3274,50 @@ static bool manual_unwinding_needed (void);
 
 LABEL_IDX
 lookup_cleanups (INITV_IDX& iv)
+// [SC] Generate summary information for the action we have to take
+// if we get an exception at the current context.
+// This action will be to perform cleanups until we reach the
+// nearest enclosing try block.
+// At the nearest enclosing catch clause, compare the thrown type
+// with each of the handler types.  If there is no match, perform
+// cleanups until we reach the next outer catch clause, etc.
+// If there is no enclosing catch clause in the current function scope,
+// we need to compare the thrown type with the types allowed to
+// be thrown by the current function scope.  If there is no match,
+// then we will call "unexpected", otherwise we will call
+// Unwind_Resume to continue unwind to the calling function.
+// So the summary information is:
+//   - A list of types expected by all the enclosing catch clauses in the
+//     current function.  Will be empty if there are no enclosing
+//     catch clauses.
+//   - An exception spec vector containing a null-terminated list of
+//     exception types accepted by the current function.
+//     Note that in principle, inlining could have happened, and there
+//     can be multiple exception scopes.
+//     Element zero of the exception spec vector is always zero.
+//   - We may also need to indicate if any cleanups are required, since if
+//     the thrown type does not match any of the expected types, the
+//     unwinder will not call our handler at all, unless cleanups are
+//     required.  In general the unwinder needs to know there are cleanups, but
+//     we can optimize it away in a couple of cases:
+//     - if there is an enclosing catch-all clause, then the unwinder will
+//       always call this handler anyway,
+//     - if there are no enclosing catch clauses and no exception spec
+//       vector then the unwinder will assume cleanups.
 {
   tree t=0;
   iv = 0;
   vector<tree> *cleanups = new vector<tree>();
+#ifdef TARG_ST
+  bool outer_cleanups = false;
+#endif
 
   if (scope_cleanup_i == -1) 
   {
+#ifndef TARG_ST
 	iv = New_INITV();
 	INITV_Set_ZERO (Initv_Table[iv], MTYPE_U4, 1);
+#endif
 	return 0;
   }
   tree temp_cleanup=0;
@@ -3306,16 +3358,10 @@ lookup_cleanups (INITV_IDX& iv)
   if (TREE_CODE(t) == (enum tree_code)TRY_BLOCK)
   {
     h = TRY_HANDLERS (t);
-	iv = Create_handler_list (scope_index);
 #ifdef TARG_ST
-        // (cbr) insert cleanup action.
-        if (!cleanups->empty()) {
-          INITV_IDX start;
-          start = New_INITV();
-          INITV_Set_ZERO (Initv_Table[start], MTYPE_U4, 1);
-          Set_INITV_next (start, iv);
-          iv = start;
-        }
+        iv = Create_handler_list (scope_index, outer_cleanups);
+#else
+	iv = Create_handler_list (scope_index);
 #endif
 	goto_idx = scope_cleanup_stack[scope_index].cmp_idx;
   }
@@ -3328,8 +3374,10 @@ lookup_cleanups (INITV_IDX& iv)
       }
     else if (cleanups->empty() && eh_spec_vector.empty())
       {
+#ifndef TARG_ST
         iv = New_INITV();
         INITV_Set_ZERO (Initv_Table[iv], MTYPE_U4, 1);
+#endif
         return 0;
       }
   }
@@ -3342,36 +3390,71 @@ lookup_cleanups (INITV_IDX& iv)
 #endif
 
 // the following 2 calls can change 'iv'.
+#ifndef TARG_ST
 // NOTE: CG expects a zero before eh-spec filter
   bool catch_all_appended = false;
-#ifdef TARG_ST
-      /* (cbr) don't mess up with "no action" */
-  if (need_manual_unwinding && !processing_handler)
-#else
   if (PU_needs_manual_unwinding (Get_Current_PU()))
-#endif
   {
 	append_catch_all (iv);
 	catch_all_appended = true;
   }
+#endif
   if (processing_handler)
   {
   	vector<ST_IDX> * eh_spec = handler_stack.top().eh_spec;
 	FmtAssert (eh_spec, ("Invalid eh_spec inside handler"));
 	if (!eh_spec->empty())
 	{
+#ifndef TARG_ST
 	    if (!catch_all_appended)
 	    	append_catch_all (iv);
+#endif
 	    append_eh_filter (iv);
   	}
   }
   else if (!eh_spec_vector.empty())
   {
+#ifndef TARG_ST
 	if (!catch_all_appended)
 	    append_catch_all (iv);
+#endif
   	append_eh_filter (iv);
   }
-#ifndef TARG_ST
+#ifdef TARG_ST
+  // [SC] Our action list (iv) contains only catch clauses and exception
+  // specifications so far.  In the case that there are also
+  // cleanup actions we need to indicate that also, but only in the
+  // following conditions:
+  //    1. There really are cleanups
+  //       It should be ok (but inefficient) to indicate that there
+  //       are cleanups when there are none.
+  //    2. The list is not completely empty  (iv != 0)
+  //       (since a completely empty list and non-null pad
+  //       here indicates cleanups)
+  //    3. There is no catch-all typeinfo (if there were
+  //       a catch-all typeinfo the unwind will always match
+  //       it and call the pad, so the presence of cleanup
+  //       info is superfluous).  Catch-all typeinfo appears
+  //       as a zero on this list.
+  if ((! cleanups->empty () || outer_cleanups)
+      && iv != 0)
+    {
+      INITV_IDX ix;
+      for (ix = iv; ix != 0; ix = INITV_next (ix)) {
+	if (INITV_kind(ix) == INITVKIND_ZERO) {
+	  break;
+	}
+      }
+      if (ix == 0) {
+	/* No catch-all found, so prepend a clean-up action. */
+	/* Indicate a clean-up action by INT32_MIN here. */
+	ix = New_INITV();
+	INITV_Init_Integer (ix, MTYPE_I4, INT32_MIN, 1);
+	Set_INITV_next (ix, iv);
+	iv = ix;
+      }
+    }
+#else
   if (!iv)
   { // not yet assigned
 	iv = New_INITV();
@@ -3867,7 +3950,7 @@ static void Generate_filter_cmp (int filter, LABEL_IDX goto_idx);
 static WN *
 Generate_cxa_call_unexpected (void)
 {
-  ST_IDX exc_ptr_param = TCON_uval (INITV_tc_val (INITO_val (Get_Current_PU().unused)));
+  ST_IDX exc_ptr_param = TCON_uval (INITV_tc_val (INITO_val (PU_misc_info (Get_Current_PU()))));
   ST exc_st = St_Table[exc_ptr_param];
   WN* parm_node = WN_Ldid (Pointer_Mtype, 0, &exc_st, ST_type (exc_st));
 
@@ -3895,7 +3978,7 @@ Generate_cxa_call_unexpected (void)
 static void
 Generate_unwind_resume (void)
 {
-  ST_IDX exc_ptr_param = TCON_uval (INITV_tc_val (INITO_val (Get_Current_PU().unused)));
+  ST_IDX exc_ptr_param = TCON_uval (INITV_tc_val (INITO_val (PU_misc_info (Get_Current_PU()))));
   ST exc_st = St_Table[exc_ptr_param];
   WN* parm_node = WN_Ldid (Pointer_Mtype, 0, &exc_st, ST_type (exc_st));
 
@@ -3958,7 +4041,7 @@ Generate_unwind_resume (void)
 static void
 Generate_filter_cmp (int filter, LABEL_IDX goto_idx)
 {
-  ST_IDX filter_param = TCON_uval (INITV_tc_val (INITV_next (INITO_val (Get_Current_PU().unused))));
+  ST_IDX filter_param = TCON_uval (INITV_tc_val (INITV_next (INITO_val (PU_misc_info (Get_Current_PU())))));
   const TYPE_ID mtype = TARGET_64BIT ? MTYPE_U8 : MTYPE_U4;
   
   WN * wn_ldid = WN_Ldid (mtype, 0, &St_Table[filter_param],

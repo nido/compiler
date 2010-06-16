@@ -6157,12 +6157,6 @@ static void lower_bit_field_id(WN *wn)
 	   OPERATOR_name(opr)));
 
   TY_IDX fld_ty_idx = FLD_type(fld);
-#ifndef TARG_ST
-  // [CG]: Modification of wn type will occur later
-  WN_set_ty (wn, (opr == OPR_ISTORE ?
-		  Make_Pointer_Type (fld_ty_idx, FALSE) :
-		  fld_ty_idx));
-#endif
 
 #ifdef TARG_ST
   // [CG] When converting struct type to type of the field,
@@ -6216,40 +6210,27 @@ static void lower_bit_field_id(WN *wn)
   WN_load_offset(wn) = WN_load_offset(wn) + ofst; 
 
   // Optimizations of byte level accesses
+  TYPE_ID mtype;
+  if ((bsize & 7) == 0 && 		   // field size multiple of bytes
+#ifdef KEY // bug 11076
+      bsize &&                             // field size non-zero
+#endif
+      (bytes_accessed * 8 % bsize) == 0 && // bytes_accessed multiple of bsize
+      (bofst % bsize) == 0		   // bofst multiple of bsize
 #ifdef TARG_ST
   // [CG]: Optimization of memory access must be disabled
   // when crossing the Max_Int_Mtype size as
   // it would necessitate a CVT operator.
-  if ((bsize & 7) == 0 && 		   // field size multiple of bytes
-#ifdef KEY // bug 11076
-      bsize &&                             // field size non-zero
-#endif
-      (bytes_accessed * 8 % bsize) == 0 && // bytes_accessed multiple of bsize
-      (bofst % bsize) == 0 &&		   // bofst multiple of bsize
       // avoid CVT generation
-      !(MTYPE_bit_size(rtype) > MTYPE_bit_size(Max_Int_Mtype) &&
-	bsize <= MTYPE_bit_size(Max_Int_Mtype)))
-#else
-  if ((bsize & 7) == 0 && 		   // field size multiple of bytes
-#ifdef KEY // bug 11076
-      bsize &&                             // field size non-zero
-#endif
-      (bytes_accessed * 8 % bsize) == 0 && // bytes_accessed multiple of bsize
-      (bofst % bsize) == 0) 		   // bofst multiple of bsize
+      && !(MTYPE_bit_size(rtype) > MTYPE_bit_size(Max_Int_Mtype) &&
+	bsize <= MTYPE_bit_size(Max_Int_Mtype))
 #endif 
+      )
     {
     // bit-field operation not needed; leave operator as previous one
-#ifdef TARG_ST
-    // Replace hi level type by bit field type.
-    WN_set_ty (wn, (opr == OPR_ISTORE ?
-		    Make_Pointer_Type (fld_ty_idx, FALSE) :
-		    fld_ty_idx));
-    if (opr == OPR_ILOAD)
-      WN_set_load_addr_ty (wn, Make_Pointer_Type (fld_ty_idx, FALSE));
-#endif
     WN_set_field_id(wn, 0);
-    TYPE_ID new_desc = Mtype_AlignmentClass(bsize >> 3, MTYPE_type_class(rtype));
-    WN_set_desc(wn, new_desc);
+    mtype = Mtype_AlignmentClass(bsize >> 3, MTYPE_type_class(rtype));
+    WN_set_desc(wn, mtype);
     WN_load_offset(wn) = WN_load_offset(wn) + (bofst >> 3);
   } else { // generate lowered-to bit-field operator
     // [CG]: Unclear benefit, disabled it.
@@ -6263,22 +6244,39 @@ static void lower_bit_field_id(WN *wn)
       bofst = 0;
     }
 #endif
-#ifdef TARG_ST
     WN_set_operator(wn, new_opr);
-    WN_set_ty (wn, (new_opr == OPR_ISTBITS ?
-		    Make_Pointer_Type (fld_ty_idx, FALSE) :
-		    fld_ty_idx));
-    if (new_opr == OPR_ILDBITS)
-      WN_set_load_addr_ty (wn, Make_Pointer_Type (fld_ty_idx, FALSE));
+
+#ifdef KEY
+    mtype = Mtype_AlignmentClass(bytes_accessed, MTYPE_type_class(rtype));
+    Is_True( mtype != MTYPE_UNKNOWN, ("Unknown mtype encountered.") );
+    WN_set_desc(wn, mtype);
 #else
-    WN_set_operator(wn, new_opr);
-#endif
     WN_set_desc(wn, Mtype_AlignmentClass(bytes_accessed, MTYPE_type_class(rtype)));
+#endif // KEY
+
     if (OPERATOR_is_load(new_opr) && 
 	MTYPE_byte_size(WN_rtype(wn)) < bytes_accessed)
       WN_set_rtype(wn, WN_desc(wn));
     WN_set_bit_offset_size(wn, bofst, bsize);
   }
+
+  // fix the TYs
+  if (MTYPE_byte_size(mtype) > MTYPE_byte_size(TY_mtype(fld_ty_idx))) {
+    fld_ty_idx = MTYPE_To_TY(mtype);
+#ifdef TARG_ST
+    // Care about packed struct: do not make the field type more aligned
+    // than the struct containing it.
+    Set_TY_align (fld_ty_idx, MIN(TY_align(fld_ty_idx),
+				  TY_align(struct_ty_idx)));
+#endif
+  }
+  WN_set_ty (wn, (opr == OPR_ISTORE ?
+		  Make_Pointer_Type (fld_ty_idx, FALSE) :
+		  fld_ty_idx));
+#ifdef KEY // bug 12394
+  if (new_opr == OPR_ILDBITS)
+    WN_set_load_addr_ty(wn, Make_Pointer_Type(fld_ty_idx));
+#endif
 }
 
 static void lower_trapuv_alloca (WN *block, WN *tree, LOWER_ACTIONS actions
@@ -6863,7 +6861,7 @@ static WN *lower_expr(WN *block, WN *tree, LOWER_ACTIONS actions)
       break;
 
 #ifdef KEY
-    if ( (INTRINSIC) WN_intrinsic (tree) == INTRN_BUILTIN_CONSTANT_P
+    if ( (INTRINSIC) WN_intrinsic (tree) == INTRN_CONSTANT_P
          /* && Action (LOWER_TO_CG) */ ) {
       WN * old = tree;
       WN * parm = WN_kid0 (WN_kid0 (old)); // child of OPR_PARM
@@ -13377,6 +13375,9 @@ static WN *lower_assert(WN *block, WN *tree, LOWER_ACTIONS actions)
   return IF;
 }
 
+#ifdef SHORTCIRCUIT_HACK
+static BOOL tree_has_cand_cior (WN *tree);
+#endif
 
 static WN *lower_branch(WN *block, WN *tree, LOWER_ACTIONS actions)
 {
@@ -13407,6 +13408,27 @@ static WN *lower_branch(WN *block, WN *tree, LOWER_ACTIONS actions)
     kid = lo;
   }
   else {
+#ifdef SHORTCIRCUIT_HACK
+    if (Action(LOWER_SHORTCIRCUIT) && tree_has_cand_cior(WN_kid0(tree))) {
+      WN *wn_branch, *wn_br;
+      if (WN_opcode(tree) == OPC_TRUEBR)
+	wn_br = lower_truebr(WN_label_number(tree), WN_kid0(tree), &wn_branch, actions);
+      else
+	wn_br = lower_falsebr(WN_label_number(tree), WN_kid0(tree), &wn_branch, actions);
+
+      // [TB] Improve line number.
+      WN_copy_linenum(tree, wn_br);
+      WN *body = WN_CreateBlock();
+      WN_INSERT_BlockFirst(body, wn_br);
+      if (Cur_PU_Feedback) {
+	Cur_PU_Feedback->FB_lower_branch( tree, wn_branch );
+      }
+
+      WN_Delete(tree);
+      return body;
+    }
+    else
+#endif
     kid = lower_expr(block, WN_kid0(tree), actions);
   }
 #else
@@ -16925,27 +16947,27 @@ static WN *lower_landing_pad_entry(WN *tree)
 
 #ifdef TARG_ST200
   /* (cbr) only needed if used scratch registesrs. on st200 r8 r9 are used */
-  ST_IDX exc_ptr_param = TCON_uval (INITV_tc_val (INITO_val (Get_Current_PU().unused)));
+  ST_IDX exc_ptr_param = TCON_uval (INITV_tc_val (INITO_val (PU_misc_info (Get_Current_PU()))));
   ST exc_ptr_st = St_Table[exc_ptr_param];
   // Store rax into exc_ptr variable
   WN *exc_ptr_rax = WN_LdidPreg (Pointer_Mtype, Exc_Ptr_Param_Offset);
   WN *exc_ptr_stid = WN_Stid (Pointer_Mtype, 0, &exc_ptr_st, 
 			ST_type(exc_ptr_st), exc_ptr_rax);
 
-  ST_IDX filter_param = TCON_uval (INITV_tc_val (INITV_next (INITO_val (Get_Current_PU().unused))));
+  ST_IDX filter_param = TCON_uval (INITV_tc_val (INITV_next (INITO_val (PU_misc_info (Get_Current_PU())))));
   ST filter_st = St_Table[filter_param];
   // Store rdx into filter variable
   WN *filter_rdx = WN_LdidPreg (MTYPE_U4, Exc_Filter_Param_Offset);
   WN *filter_stid = WN_Stid (MTYPE_U4, 0, &filter_st, ST_type(filter_st), filter_rdx);
 #else
-  ST_IDX exc_ptr_param = TCON_uval (INITV_tc_val (INITO_val (Get_Current_PU().unused)));
+  ST_IDX exc_ptr_param = TCON_uval (INITV_tc_val (INITO_val (PU_misc_info (Get_Current_PU()))));
   ST exc_ptr_st = St_Table[exc_ptr_param];
   // Store rax into exc_ptr variable
   WN *exc_ptr_rax = WN_LdidPreg (Pointer_Mtype, 0);
   WN *exc_ptr_stid = WN_Stid (Pointer_Mtype, 0, &exc_ptr_st, 
 			ST_type(exc_ptr_st), exc_ptr_rax);
 
-  ST_IDX filter_param = TCON_uval (INITV_tc_val (INITV_next (INITO_val (Get_Current_PU().unused))));
+  ST_IDX filter_param = TCON_uval (INITV_tc_val (INITV_next (INITO_val (PU_misc_info (Get_Current_PU())))));
   ST filter_st = St_Table[filter_param];
   // Store rdx into filter variable
   WN *filter_rdx = WN_LdidPreg (MTYPE_U4, 1);

@@ -155,6 +155,7 @@ thisprg=`basename $0`		# program name
 absbuildpath=`pwd`		# absolute path to working dir
 makepath=${thispath}/make	# path to the osprey/make directory
 verbose=1			# verbose level
+configure_osprey_gcc=0          # set if we need to call gcc configure
 
 # Do not allow configuring directly in the top directory
 if [ $absthispath = $absbuildpath ]; then
@@ -204,7 +205,9 @@ chmod 755 config.status
 # Add here any variable you want substituted in the makefile fragments
 # 
 subst_decl ROOT '$(BUILD_AREA)/devimage'
-listsubdir="include targ_info libiberty libelf libelfutil libdwarf libSYS libcmplrs libcomutil librtkutils librcparser libparse gensyn instrumentationC gccfe g++fe wopt be lai ipl ipa lno lw_inline whirl2c ir_tools driver libair parser"
+subst_decl ABS_ROOT $absbuildpath/devimage
+
+listsubdir="include targ_info libiberty libelf libelfutil libdwarf libSYS libcmplrs libcomutil librtkutils librcparser libparse libspin gensyn instrumentationC gccfe g++fe libfereconf osprey-gcc-4.2.0 wgen wopt be lai ipl ipa lno lw_inline whirl2c ir_tools driver libair parser"
 subst_decl SUBDIRS "$listsubdir"
 
 #
@@ -343,17 +346,24 @@ done
 # Now for each configure level subdirs, 
 # create the Makefile from Makefile.sub.in.
 #
-input=${makepath}/template/Makefile.sub.in
 if [ ! -f $input ]; then
     echo "$0: missing configuration file: $input">&2
     exit 1
 fi
+input=${makepath}/template/Makefile.sub.in
 for i in $conf_subdirs; do
+    if [ x$i = xosprey-gcc-4.2.0 ]; then
+	configure_osprey_gcc=1
+	output=$i/gccfeconf.mk
+    else
+	output=$i/Makefile
+    fi
+	
     if [ ! -d $i ]; then
 	mkdir $i || exit 1
     fi
     if [ $verbose -ge 1 ]; then
-	echo "Creating subdir makefile: $i/Makefile"
+	echo "Creating subdir makefile: $output"
     fi
 
     #
@@ -389,9 +399,9 @@ for i in $conf_subdirs; do
         -e \'s!@EXTENSION_LIST@!${EXTENSION_LIST}!\' \
 	-e \'s!@ENABLE_BOOST@!${ENABLE_BOOST}!\' \
 	${subst_sed_args} \
-	<$input >$i/Makefile
+	<$input >$output
     if [ $? != 0 ]; then
-	echo "$0: error while creating $i/Makefile" >&2
+	echo "$0: error while creating $output" >&2
 	exit 1
     fi
 done
@@ -418,7 +428,7 @@ fi
 
 
 #
-# Finally, we built Makefile.extensions file
+# We build Makefile.extensions file
 # that is included in Makefile.gsetup
 #
 if [ "CORE_EXTENSIONS" != "" ] ; then
@@ -441,4 +451,11 @@ EOF
       echo "BUILD_BASE_$BUILD_MOD = \$(BUILD_TOT)/targinfo_ext/$i" >> $makefile_extensions
    done
  
+fi
+
+#
+# Run the gcc frontend configure.
+#
+if [ $configure_osprey_gcc -ne 0 ]; then
+    make --file=gccfeconf.mk --directory=osprey-gcc-4.2.0 configure
 fi

@@ -4396,7 +4396,7 @@ WFE_Expand_Expr (tree exp,
 // a constant
 		else
 		{
-		  iopc = INTRN_BUILTIN_CONSTANT_P;
+		  iopc = INTRN_CONSTANT_P;
                   if (ret_mtype == MTYPE_V) ret_mtype = MTYPE_I4;
 		  intrinsic_op = TRUE;
 		}

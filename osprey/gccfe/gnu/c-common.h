@@ -507,6 +507,9 @@ extern int warn_format_nonliteral;
 
 extern int warn_format_security;
 
+#ifdef TARG_ST
+extern int warn_pack_struct;
+#endif
 
 /* C/ObjC language option variables.  */
 

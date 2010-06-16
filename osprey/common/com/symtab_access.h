@@ -539,7 +539,36 @@ inline void
 Set_ST_one_per_pu (ST* s)	{ s->flags_ext |= ST_ONE_PER_PU; }
 inline void
 Clear_ST_one_per_pu (ST* s)	{ s->flags_ext &= ~ST_ONE_PER_PU; }
-#endif
+
+inline BOOL
+ST_initv_in_other_st (const ST* s)     { return s->flags_ext & ST_INITV_IN_OTHER_ST; }
+inline void
+Set_ST_initv_in_other_st (ST* s)       { s->flags_ext |= ST_INITV_IN_OTHER_ST; }
+inline void
+Clear_ST_initv_in_other_st (ST* s)     { s->flags_ext &= ~ST_INITV_IN_OTHER_ST; }
+
+inline BOOL
+ST_is_pure_vfunc (const ST* s)  { return s->flags_ext & ST_IS_PURE_VFUNC; }
+inline void
+Set_ST_is_pure_vfunc (ST* s)    { s->flags_ext |= ST_IS_PURE_VFUNC; }
+inline void
+Reset_ST_is_pure_vfunc (ST* s)  { s->flags_ext &= ~ST_IS_PURE_VFUNC; }
+
+inline BOOL
+ST_is_thread_local (const ST* s) { return s->flags_ext & ST_IS_THREAD_LOCAL;}
+inline void
+Set_ST_is_thread_local (ST* s)	 { s->flags_ext |= ST_IS_THREAD_LOCAL; }
+inline void
+Reset_ST_is_thread_local (ST* s) { s->flags_ext &= ~ST_IS_THREAD_LOCAL; }
+inline BOOL
+ST_is_thread_local (const ST& s) { return s.flags_ext & ST_IS_THREAD_LOCAL; }
+inline void
+Set_ST_is_thread_local (ST& s)   { s.flags_ext |= ST_IS_THREAD_LOCAL; }
+inline void
+Reset_ST_is_thread_local (ST& s) { s.flags_ext &= ~ST_IS_THREAD_LOCAL; }
+inline void
+Clear_ST_is_thread_local (ST* s) { s->flags_ext &= ~ST_IS_THREAD_LOCAL; }
+#endif /* KEY */
 
 #ifdef TARG_ST
 /* (cbr) vague linkage */
@@ -615,6 +644,16 @@ inline SYMTAB_IDX
 PU_lexical_level (const PU& pu)		{ return pu.lexical_level; }
 inline void
 Set_PU_lexical_level (PU& pu, SYMTAB_IDX l) { pu.lexical_level = l; }
+
+inline INITO_IDX
+PU_misc_info (const PU& pu)		{ return pu.misc; }
+inline void
+Set_PU_misc_info (PU& pu, INITO_IDX i)	{ pu.misc = i; }
+
+inline TY_IDX 
+PU_base_class (const PU& pu) { return pu.base_class; } 
+inline void 
+Set_PU_base_class (PU& pu, TY_IDX ty_idx) { pu.base_class = ty_idx; } 
 
 //----------------------------------------------------------------------
 // PU flags
@@ -871,6 +910,102 @@ Set_PU_is_thunk (PU& pu)		{ pu.flags |= PU_IS_THUNK; }
 inline void
 Clear_PU_is_thunk (PU& pu)		{ pu.flags &= ~PU_IS_THUNK; }
 
+#ifdef KEY
+inline BOOL
+PU_needs_manual_unwinding (const PU& pu) { return (pu.flags & PU_NEEDS_MANUAL_UNWINDING) != 0;}
+inline void
+Set_PU_needs_manual_unwinding (PU& pu) { pu.flags |= PU_NEEDS_MANUAL_UNWINDING;}
+inline void
+Clear_PU_needs_manual_unwinding (PU& pu) { pu.flags &= ~PU_NEEDS_MANUAL_UNWINDING;}
+
+inline BOOL
+PU_is_extern_inline (const PU& pu)	{ return (pu.flags & PU_IS_EXTERN_INLINE) != 0; }
+inline void
+Set_PU_is_extern_inline (PU& pu) 	{ pu.flags |= PU_IS_EXTERN_INLINE; }
+inline void
+Clear_PU_is_extern_inline (PU& pu)	{ pu.flags &= ~PU_IS_EXTERN_INLINE; }
+
+inline BOOL
+PU_mp_lower_generated (const PU& pu)	{ return (pu.flags & PU_MP_LOWER_GENERATED) != 0; }
+inline void
+Set_PU_mp_lower_generated (PU& pu) 	{ pu.flags |= PU_MP_LOWER_GENERATED; }
+inline void
+Clear_PU_mp_lower_generated (PU& pu)	{ pu.flags &= ~PU_MP_LOWER_GENERATED; }
+
+inline BOOL
+PU_is_operator (const PU& pu)    { return (pu.flags & PU_IS_OPERATOR) != 0; }
+inline void
+Set_PU_is_operator (PU& pu)      { pu.flags |= PU_IS_OPERATOR; }
+inline void
+Clear_PU_is_operator (PU& pu)    { pu.flags &= ~PU_IS_OPERATOR; }
+
+inline BOOL
+PU_is_malloc (const PU& pu)			{ return (pu.flags & PU_IS_MALLOC) != 0; } 
+inline void
+Set_PU_is_malloc (PU& pu)			{ pu.flags |= PU_IS_MALLOC; }
+inline void
+Clear_PU_is_malloc (PU& pu)			{ pu.flags &= ~PU_IS_MALLOC; }
+
+inline BOOL
+PU_has_attr_malloc (const PU& pu)      { return (pu.flags & PU_HAS_ATTR_MALLOC) != 0; } 
+inline void
+Set_PU_has_attr_malloc (PU& pu)        { pu.flags |= PU_HAS_ATTR_MALLOC; }
+inline void
+Clear_PU_has_attr_malloc (PU& pu)      { pu.flags &= ~PU_HAS_ATTR_MALLOC; }
+
+inline BOOL
+PU_has_attr_pure (const PU& pu)      { return (pu.flags & PU_HAS_ATTR_PURE) != 0; } 
+inline void
+Set_PU_has_attr_pure (PU& pu)        { pu.flags |= PU_HAS_ATTR_PURE; }
+inline void
+Clear_PU_has_attr_pure (PU& pu)      { pu.flags &= ~PU_HAS_ATTR_PURE; }
+
+inline BOOL
+PU_has_attr_noreturn (PU& pu)        { return (pu.flags & PU_HAS_ATTR_NORETURN) != 0; } 
+inline void
+Set_PU_has_attr_noreturn (PU& pu)    { pu.flags |= PU_HAS_ATTR_NORETURN; }
+inline void
+Clear_PU_has_attr_noreturn (PU& pu)  { pu.flags &= ~PU_HAS_ATTR_NORETURN; }
+
+inline BOOL
+PU_is_marked_inline (const PU& pu)	{ return (pu.flags & PU_IS_MARKED_INLINE) != 0; }
+inline void
+Set_PU_is_marked_inline (PU& pu) 	{ pu.flags |= PU_IS_MARKED_INLINE; }
+inline void
+Clear_PU_is_marked_inline (PU& pu)	{ pu.flags &= ~PU_IS_MARKED_INLINE; }
+
+inline BOOL
+PU_no_instrument (const PU& pu)         { return (pu.flags & PU_NO_INSTRUMENT) != 0; }
+inline void
+Set_PU_no_instrument (PU& pu)           { pu.flags |= PU_NO_INSTRUMENT; }
+inline void
+Clear_PU_no_instrument (PU& pu)         { pu.flags &= ~PU_NO_INSTRUMENT; }
+
+inline BOOL
+PU_need_trampoline (const PU& pu)	{ return (pu.flags & PU_NEED_TRAMPOLINE) != 0; }
+inline void
+Set_PU_need_trampoline (PU& pu)		{ pu.flags |= PU_NEED_TRAMPOLINE; }
+
+inline BOOL
+PU_has_nonlocal_goto_label (const PU& pu) { return (pu.flags & PU_HAS_NONLOCAL_GOTO_LABEL) != 0; }
+inline void
+Set_PU_has_nonlocal_goto_label (PU& pu)	{ pu.flags |= PU_HAS_NONLOCAL_GOTO_LABEL; }
+
+inline BOOL
+PU_has_goto_outer_block (const PU& pu) { return (pu.flags & PU_HAS_GOTO_OUTER_BLOCK) != 0; }
+inline void
+Set_PU_has_goto_outer_block (PU& pu)	{ pu.flags |= PU_HAS_GOTO_OUTER_BLOCK; }
+#endif
+
+#ifdef TARG_X8664
+inline BOOL
+PU_ff2c_abi (const PU& pu)		{ return (pu.flags & PU_FF2C_ABI) != 0;}
+inline void
+Set_PU_ff2c_abi (PU& pu)		{ pu.flags |= PU_FF2C_ABI; }
+inline void
+Clear_PU_ff2c_abi (PU& pu)		{ pu.flags &= ~PU_FF2C_ABI; }
+#endif
+
 #ifdef TARG_ST
 /* (cbr) gnu extern inline support */
 inline BOOL
@@ -973,6 +1108,13 @@ inline void
 Set_PU_java_lang (PU& pu)		{ pu.src_lang |= PU_JAVA_LANG; }
 inline void
 Clear_PU_java_lang (PU& pu)		{ pu.src_lang &= ~PU_JAVA_LANG; }
+
+inline BOOL
+PU_is_constructor (const PU& pu)        { return (pu.flags & PU_IS_CONSTRUCTOR) != 0; }
+inline void
+Set_PU_is_constructor (PU& pu)          { pu.flags |= PU_IS_CONSTRUCTOR; }
+inline void
+Clear_PU_is_constructor (PU &pu)        { pu.flags &= ~PU_IS_CONSTRUCTOR; }
 
 // PU_ftn_lang (f77 or f90) is defined in symtab.h
 // PU_has_nested (f77 or f90) is defined in symtab.h
@@ -1220,6 +1362,59 @@ inline void
 Set_TY_is_non_pod (TY_IDX tyi)    { Set_TY_is_non_pod(Ty_Table[tyi]); }
 inline void
 Clear_TY_is_non_pod (TY_IDX tyi)  { Clear_TY_is_non_pod(Ty_Table[tyi]); }
+
+#ifdef KEY
+inline BOOL
+TY_return_in_mem (const TY& ty)		{ return ty.flags & TY_RETURN_IN_MEM; }
+inline void
+Set_TY_return_in_mem (TY& ty)		{ ty.flags |= TY_RETURN_IN_MEM; }
+inline void
+Clear_TY_return_in_mem (TY& ty)	{ ty.flags &= ~TY_RETURN_IN_MEM; }
+inline BOOL
+TY_return_in_mem (const TY_IDX tyi)    { return TY_return_in_mem(Ty_Table[tyi]); }
+inline void
+Set_TY_return_in_mem (TY_IDX tyi)      { Set_TY_return_in_mem(Ty_Table[tyi]); }
+inline void
+Clear_TY_return_in_mem (TY_IDX tyi)    { Clear_TY_return_in_mem(Ty_Table[tyi]); }
+inline BOOL
+TY_content_seen (const TY& ty)		{ return ty.flags & TY_CONTENT_SEEN; }
+inline void
+Set_TY_content_seen (TY& ty)		{ ty.flags |= TY_CONTENT_SEEN; }
+inline void
+Clear_TY_content_seen (TY& ty)	{ ty.flags &= ~TY_CONTENT_SEEN; }
+inline BOOL
+TY_content_seen (const TY_IDX tyi)    { return TY_content_seen(Ty_Table[tyi]); }
+inline void
+Set_TY_content_seen (TY_IDX tyi)      { Set_TY_content_seen(Ty_Table[tyi]); }
+inline void
+Clear_TY_content_seen (TY_IDX tyi)    { Clear_TY_content_seen(Ty_Table[tyi]); }
+
+inline BOOL
+TY_is_incomplete (const TY& ty)		{ return ty.flags & TY_IS_INCOMPLETE; }
+inline void
+Set_TY_is_incomplete (TY& ty)		{ ty.flags |= TY_IS_INCOMPLETE; }
+inline void
+Clear_TY_is_incomplete (TY& ty)		{ ty.flags &= ~TY_IS_INCOMPLETE; }
+inline BOOL
+TY_is_incomplete (const TY_IDX tyi)	{ return TY_is_incomplete(Ty_Table[tyi]); }
+inline void
+Set_TY_is_incomplete (TY_IDX tyi)    { Set_TY_is_incomplete(Ty_Table[tyi]); }
+inline void
+Clear_TY_is_incomplete (TY_IDX tyi)  { Clear_TY_is_incomplete(Ty_Table[tyi]); }
+
+inline BOOL
+TY_no_split (const TY& ty)		{ return ty.flags & TY_NO_SPLIT; }
+inline void
+Set_TY_no_split (TY& ty)		{ ty.flags |= TY_NO_SPLIT; }
+inline void
+Clear_TY_no_split (TY& ty)		{ ty.flags &= ~TY_NO_SPLIT; }
+inline BOOL
+TY_no_split (const TY_IDX tyi)	{ return TY_no_split(Ty_Table[tyi]); }
+inline void
+Set_TY_no_split (TY_IDX tyi)    { Set_TY_no_split(Ty_Table[tyi]); }
+inline void
+Clear_TY_no_split (TY_IDX tyi)  { Clear_TY_no_split(Ty_Table[tyi]); }
+#endif
 
 #ifdef TARG_ST
 // (cbr) type doesn't throws */

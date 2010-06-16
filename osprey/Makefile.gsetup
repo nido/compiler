@@ -324,6 +324,9 @@ BUILD_BASE_librcparser	= $(BUILD_TOT)/common/rcparser
 BUILD_BASE_libparse	= $(BUILD_TOT)/targinfo/parser
 BUILD_BASE_gensyn	= $(BUILD_TOT)/targinfo/parser/gensyn
 BUILD_BASE_instrumentationC	= $(BUILD_TOT)/instrumentation/libinstrC
+BUILD_BASE_wgen         = $(BUILD_TOT)/wgen
+BUILD_BASE_osprey-gcc-4.2.0 = $(BUILD_TOT)/osprey-gcc-4.2.0
+BUILD_BASE_libfereconf  = $(BUILD_TOT)/libfereconf
 BUILD_BASE_gccfe	= $(BUILD_TOT)/gccfe
 BUILD_BASE_gccfe_gnu	= $(BUILD_TOT)/gccfe/gnu
 BUILD_BASE_g++fe	= $(BUILD_TOT)/g++fe
@@ -341,9 +344,11 @@ BUILD_BASE_ir_tools	= $(BUILD_TOT)/ir_tools
 BUILD_BASE_driver	= $(BUILD_TOT)/driver
 BUILD_BASE_libgcov	= $(BUILD_TOT)/instrumentation/libgcov
 BUILD_BASE_libunwind	= $(BUILD_TOT)/gccfe/gnu
+BUILD_BASE_libstdc++-v3	= $(BUILD_TOT)/osprey-gcc-4.2.0/libstdc++-v3
 BUILD_BASE_targ_info_ext= $(BUILD_TOT)/targinfo_ext
 BUILD_BASE_libair       = $(BUILD_TOT)/libair/air
 BUILD_BASE_parser       = $(BUILD_TOT)/parser
+BUILD_BASE_libspin      = $(BUILD_TOT)/libspin
 
 #For extensions, the following makefile adds the
 #needed paths.

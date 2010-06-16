@@ -1,0 +1,234 @@
+#
+#
+#  Copyright (C) 2009 STMicroelectronics.  All Rights Reserved.
+#
+#  This program is free software; you can redistribute it and/or modify it
+#  under the terms of version 2 of the GNU General Public License as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it would be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+#
+#  Further, this software is distributed without any warranty that it is
+#  free of the rightful claim of any third person regarding infringement 
+#  or the like.  Any license provided herein, whether implied or 
+#  otherwise, applies only to this software file.  Patent licenses, if 
+#  any, provided herein do not apply to combinations of this program with 
+#  other software, or any other product whatsoever.  
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write the Free Software Foundation, Inc., 59
+#  Temple Place - Suite 330, Boston MA 02111-1307, USA.
+#
+
+TARGDIR = $(BUILD_AREA)
+
+#----------------------------------------------------------------------
+#  Include the usual commondefs
+#----------------------------------------------------------------------
+include $(COMMONDEFS)
+
+# This is handled by the libstdc++ installation procedure
+#INSTALL_TARGETS=
+
+#
+# Synthesize GNU_HOST
+#
+# HOST_OS is in  { BARE_OS21, CYGWIN_NT, LINUX, MINGW, SUNOS5 }
+# HOST_ARCH is in { ARM, IA32, ST200, STxP70 }
+
+ifeq "$(HOST_OS)" "LINUX"
+  ifeq "$(HOST_ARCH)" "IA32"
+    GNU_HOST = i686-pc-linux-gnu
+  else
+     ifeq "$(HOST_ARCH)" "ST200"
+      GNU_HOST = st231-linux-gnu
+     else
+       ifeq "$(HOST_ARCH)" "ARM"
+         GNU_HOST = arm-linux-gnu
+       endif
+     endif
+  endif
+else
+  ifeq "$(HOST_OS)" "SUNOS5"
+    GNU_HOST = sparc-sun-solaris
+  else
+    ifeq "$(HOST_OS)" "MINGW"
+      GNU_HOST = i386-pc-mingw32
+    else
+      ifeq "$(HOST_OS)" "CYGWIN_NT"
+        GNU_HOST = i386-pc-cygwin
+      endif
+    endif
+  endif
+endif
+
+ifndef GNU_HOST
+  GNU_HOST = unknown-host
+endif
+
+#
+# Synthesize GNU_TARGET
+#
+# BUILD_TARGET is in { ARM, ST200, STxP70 }
+# BUILD_TARGET_OS is in { BARE_OS21, LINUX }
+ifeq "$(BUILD_TARGET)" "ARM"
+  ifeq "$(BUILD_TARGET_OS)" "BARE_OS21"
+    GNU_TARGET = arm-elf
+  else
+    ifeq "$(BUILD_TARGET_OS)" "LINUX"
+      GNU_TARGET = arm-linux
+    endif
+  endif
+else
+  ifeq "$(BUILD_TARGET)" "ST200"
+    ifeq "$(BUILD_TARGET_OS)" "BARE_OS21"
+      GNU_TARGET = lx-stm-elf32
+    else
+      ifeq "$(BUILD_TARGET_OS)" "LINUX"
+        GNU_TARGET = st231-linux
+      endif
+    endif
+  else
+    ifeq "$(BUILD_TARGET)" "STxP70"
+      ifeq "$(BUILD_TARGET_OS)" "BARE_OS21"
+        GNU_TARGET = stxp70-elf32
+      endif
+    endif
+  endif
+endif
+
+ifndef GNU_TARGET
+  GNU_TARGET = unknown-target
+endif
+
+#
+# Synthesize GNU_BUILD
+#
+# BUILD_OS is in { CYGWIN_NT, LINUX, SUNOS5 }
+# BUILD_ARCH is in { IA32, SPARC }
+# BUILD_ABI is in { I32BIT }
+ifeq "$(BUILD_OS)" "CYGWIN_NT"
+  GNU_BUILD = i386-pc-cygwin
+else
+  ifeq "$(BUILD_OS)" "LINUX"
+    ifeq "$(BUILD_ARCH)" "IA32"
+      GNU_BUILD = i686-pc-linux-gnu
+    else
+      ifeq "$(BUILD_ARCH)" "ARM"
+        GNU_BUILD = arm-linux-gnu
+      else
+        ifeq "$(BUILD_ARCH)" "ST200"
+          GNU_BUILD = st231-linux-gnu
+        endif
+      endif
+    endif
+  else
+    ifeq "$(BUILD_OS)" "SUNOS5"
+      GNU_BUILD = sparc-sun-solaris
+    endif
+  endif
+endif
+
+ifndef GNU_BUILD
+  GNU_BUILD = unknown-build
+endif
+
+ifeq "$(BUILD_OPTIMIZE)" "DEBUG"
+  GNU_CHECKING = --enable-checking=tree
+else
+  GNU_CHECKING = --disable-checking
+endif
+
+#
+# This fragment is intendend to be used in st200 libraries bootstrapping context
+# Where a fresh compiler is available and can be designated from ROOT
+# Note that target instrumentation library, coverage library seem to use COMPILER_LOC 
+# In an implicit similar way 
+# COMPILER_LOC conventionally finishes by "/bin/" and is used like this elswhere
+# Thus the following ugly definitions
+#
+ifeq ($(HOST_ARCH), ST200)
+TARGET_ROOT=$(ROOT)/bin/
+TARGET_AR=$(TARGET_ROOT)st200-ar
+TARGET_AS=$(TARGET_ROOT)st200-as
+TARGET_CC=$(TARGET_ROOT)st200cc
+TARGET_CXX=$(TARGET_ROOT)st200c++
+TARGET_LD=$(TARGET_ROOT)st200-ld
+TARGET_NM=$(TARGET_ROOT)st200-nm
+TARGET_RANLIB=$(TARGET_ROOT)st200-ranlib
+TARGET_STRIP=$(TARGET_ROOT)st200-strip
+else
+$(error Only ST200 target is supported)
+endif
+
+#
+# The target tools must be installed so that we can proceed further
+#
+ifeq ($(shell $(TARGET_AR) --version >/dev/null 2>&1 || echo FAIL), FAIL)
+$(error "Archiver not found: $(TARGET_AR)")
+endif
+ifeq ($(shell $(TARGET_AS) --version >/dev/null 2>&1 || echo FAIL), FAIL)
+$(error "Assembler not found: $(TARGET_AS)")
+endif
+ifeq ($(shell $(TARGET_CC) --version >/dev/null 2>&1 || echo FAIL), FAIL)
+$(error "C Compiler not found: $(TARGET_CC)")
+endif
+ifeq ($(shell $(TARGET_CXX) --version >/dev/null 2>&1 || echo FAIL), FAIL)
+$(error "C++ Compiler not found: $(TARGET_CXX)")
+endif
+ifeq ($(shell $(TARGET_LD) --version >/dev/null 2>&1 || echo FAIL), FAIL)
+$(error "Linker not found: $(TARGET_LD)")
+endif
+ifeq ($(shell $(TARGET_NM) --version >/dev/null 2>&1 || echo FAIL), FAIL)
+$(error "Symbol lister not found: $(TARGET_NM)")
+endif
+ifeq ($(shell $(TARGET_RANLIB) --version >/dev/null 2>&1 || echo FAIL), FAIL)
+$(error "Archive indexer not found: $(TARGET_RANLIB)")
+endif
+ifeq ($(shell $(TARGET_STRIP) --version >/dev/null 2>&1 || echo FAIL), FAIL)
+$(error "Symbol stripper not found: $(TARGET_STRIP)")
+endif
+
+#
+#
+#
+first:
+
+#
+#
+#
+local: configure 
+	$(MAKE) all
+
+#
+# Relying on the libstdc++ configury
+#
+configure:
+	AR="$(TARGET_AR)" AS="$(TARGET_AS)" CC="$(TARGET_CC)" CXX="$(TARGET_CXX)" LD=$(TARGET_LD) NM=$(TARGET_NM) RANLIB=$(TARGET_RANLIB) STRIP=$(TARGET_STRIP) $(BUILD_BASE)/configure --prefix=$(ABS_ROOT)/osprey-gcc-4.2.0/libstdc++-v3 --with-gnu-as --with-gnu-ld --enable-shared=no --with-pic=no --enable-c-mbchar=no --enable-long-long=yes --disable-sjlj-exceptions --enable-nls=no --enable-wchar_t=yes --with-newlib --enable-multilib=yes --enable-version-specific-runtime-libs=yes --with-target-subdir=st200 --enable-cxx-flags="-Os" --enable-c99=yes --build=$(GNU_BUILD) --host=st200 --target=st200 --config-cache
+
+#--build=$(GNU_BUILD) --host=$(GNU_HOST)  --target=$(GNU_TARGET) 
+
+#
+# Relying on the installation target of libstdc++
+# Note that this is used for boostrapping so we install in the current compiler
+# In the CruiseControl context BUILD_INSTALL receives DEFAULT at this stage
+# At the moment I am adding TARGET_BUILD_INSTALL to progress
+#
+TARGET_BUILD_INSTALL=$(ROOT)
+install: local
+	$(MAKE) install prefix=$(TARGET_BUILD_INSTALL)
+
+#----------------------------------------------------------------------
+#  The usual $(COMMONRULES) are not included in this makefile
+#  At the moment the model does not fit well with the library build
+#  Thus we need to implement clean clobber rmtargets
+#  This is hairy since when libstdc++ is not configured
+#  There is no such thing as a clean target
+#----------------------------------------------------------------------
+clean:
+
+clobber:
+
+rmtargets:

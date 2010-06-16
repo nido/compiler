@@ -267,6 +267,12 @@ IPO_CLONE::Fix_INITO(WN* cloned_wn, WN* wn)
           // if Get_Cloned_INITO_IDX is true, then it is a promoted static
 	  if (init_cp_idx = _sym->Get_Cloned_INITO_IDX(_sym->Get_INITO(init_idx))) {
               WN_ereg_supp(cloned_wn) = init_cp_idx;
+#ifdef TARG_ST
+	      // [SC] We now put EH initos in the cloned _hash_map, and these
+	      // should not be translated in the original, so filter them out here.
+	      ST *st = INITO_st(init_idx);
+	      if (ST_sclass(st) != SCLASS_EH_REGION_SUPP)
+#endif
               WN_ereg_supp(wn) = init_cp_idx;
           }
           else 
@@ -636,8 +642,35 @@ IPO_SYMTAB::Copy_Local_Tables(BOOL label_only)
 	// Need to reset _cloned_label_last_idx to reflect the current cloned SYMTAB
 	Set_cloned_label_last_idx((_cloned_scope_tab[_cloned_level].label_tab)->Size()-1);
 	Set_cloned_inito_last_idx((_cloned_scope_tab[_cloned_level].inito_tab)->Size()-1);
+#ifdef TARG_ST
+	// [SC] ST support gcc attribute cleanup with -fexceptions in C, so we need
+	// this for C also.
+	// So check if there is an EH inito, and copy if there is one.
+	// [SC] Unfortunately, copying all the INITOs can have a bad side
+	// effect, because it can leave in references to pstatic symbols.
+	// If such a symbol is unreferenced in the whirl, then the Has_pstatics
+	// attribute in the summary information will not be set and these INITOs
+	// will not be processed correctly.  Two possible solutions: either set
+	// Has_pstatics if a pstatic is referenced in the INITOs, or else
+	// here do not clone such pstatic INITOs.  I choose to only clone the
+	// EH initos, and thus do all the fixups KEY were nervous of in the bug 4091
+	// comment below.  Well, it does not seem so arduous: I put the new
+	// INITOs in the hash_map, and let them be translated with the pstatics.
+	for (int i=start_idx; 
+	     i<(_orig_scope_tab[_orig_level].inito_tab)->Size(); ++i) {
+	  INITO copy = (*_orig_scope_tab[_orig_level].inito_tab)[i];
+	  if (ST_sclass(INITO_st(copy)) == SCLASS_EH_REGION_SUPP) {
+	    INITO_TAB *cloned_inito_tab = _cloned_scope_tab[_cloned_level].inito_tab;
+	    cloned_inito_tab->Insert (copy);
+	    Set_Cloned_INITO(&(*_orig_scope_tab[_orig_level].inito_tab)[i],
+			     make_INITO_IDX (cloned_inito_tab->Size()-1,
+					     _cloned_level));
+	  }
+	}
+#else
 #ifdef KEY
 	if (PU_src_lang (Get_Current_PU()) & PU_CXX_LANG)
+#endif
 	{
 #if 0
 	// For lang other than C++, the copy below won't be done anyway 

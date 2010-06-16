@@ -2693,6 +2693,15 @@ Process_Initos_And_Literals (
     INT64 ofst;
     ST* base;
     ST* st = *st_iter;
+
+#ifdef KEY // for PUs with nested functions, the INITO is used only to record
+	   // the list of nested functions only, since the STs of the nested
+	   // functions can only be entered in the global symbol table
+     if (ST_class(st) == CLASS_PREG && 
+         strncmp(ST_name(st), ".nested_functions", 17) == 0)
+       continue;
+#endif
+
     ST_INITO_MAP::iterator st_inito_entry = st_inito_map.find(ST_st_idx(st));
 
     if (st_inito_entry != st_inito_map.end()) {
@@ -6964,6 +6973,16 @@ EMT_Emit_PU (
   INT Initial_Pu_PC;
   INT64 ofst;
   INT i;
+
+  // bugs 2178, 2152
+  // fix bug OSP_115
+  // "__inline__" is a reserved keyword in C so it's 
+  // safe(ish) to use in headers, including sys/*.h
+  // when PU is marked extern _inline_ in C, 
+  // needn't emit anything.
+  if ( PU_is_extern_inline (Pu_Table[ST_pu(pu)]) ) {
+    return;
+  }
 
   Trace_Inst	= Get_Trace ( TP_EMIT,1 );
   BOOL trace_unwind = Get_Trace (TP_EMIT, 64);

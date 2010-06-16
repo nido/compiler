@@ -3407,6 +3407,10 @@ ETABLE::Recursive_rehash_and_replace(CODEREP           *x,
       cr->Copy(*x);	
       cr->Set_usecnt(0);
       for  (INT32 i = 0; i < x->Kid_count(); i++) {
+	// bug 12471: __builtin_expect's first kid must be constant
+	if (cr->Opr() == OPR_INTRINSIC_OP && cr->Intrinsic() == INTRN_EXPECT &&
+	    i == 1)
+	  continue;
 	expr = Recursive_rehash_and_replace(x->Opnd(i), occur, repl,
 					    FALSE, depth+1);
 	if (expr) {

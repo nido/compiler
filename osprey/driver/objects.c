@@ -414,6 +414,21 @@ add_library_options (void)
 #endif
 	extern string st200_libdir;
 
+	/*
+	  Create gnu dirs based on the gcc compiler version in use
+	  For includes : ${toolroot}/lib/gcc/st200/${gccversion}/include
+	  Fro libraries : ${prefix}/lib/gcc/st200/${gccversion}/{st220,st231,st240}/{le,be}/{bare,os21}
+	 */
+	const char *gccversion = get_gcc_version(NULL,0);
+	if (gccversion) {
+	  /* P_gnu_include should be invariant from now on */
+	  append_phase_dir(P_gnu_include, concat_path((char*)gccversion, "include"));
+	  /* P_gnu_library will be appended with code/endianness/os */
+	  append_phase_dir(P_gnu_library, (char*)gccversion);
+	} else {
+	  warning ("Undefined gcc version");
+	}
+
 	switch (proc) {
 	case PROC_ST210:
 	  append_phase_dir(P_library, "st210");
@@ -421,24 +436,29 @@ add_library_options (void)
 	  break;
 	case PROC_ST220:
 	  append_phase_dir(P_library, "st220");
+	  append_phase_dir(P_gnu_library, "st220");
 	  append_phase_dir(P_startup, "st220");
 	  break;
 	case PROC_ST231:
 	  append_phase_dir(P_library, "st231");
+	  append_phase_dir(P_gnu_library, "st231");
 	  append_phase_dir(P_startup, "st231");
 	  break;
 	case PROC_ST240:
 	  append_phase_dir(P_library, "st240");
+	  append_phase_dir(P_gnu_library, "st240");
 	  append_phase_dir(P_startup, "st240");
 	  break;
 	}
 
 	if (endian == ENDIAN_LITTLE) {
 	  append_phase_dir(P_library, "le");
+	  append_phase_dir(P_gnu_library, "le");
 	  append_phase_dir(P_startup, "le");
 	}
 	else {
 	  append_phase_dir(P_library, "be");
+	  append_phase_dir(P_gnu_library, "be");
 	  append_phase_dir(P_startup, "be");
 	}
 
@@ -446,11 +466,13 @@ add_library_options (void)
 	switch (st200_runtime) {	  
 	case RUNTIME_BARE:
 	  append_phase_dir(P_library, "bare");
+	  append_phase_dir(P_gnu_library, "bare");
 	  append_phase_dir(P_startup, "bare");
 	  break;
 	case RUNTIME_OS21:
 	case RUNTIME_OS21_DEBUG:
 	  append_phase_dir(P_library, "os21");
+	  append_phase_dir(P_gnu_library, "os21");
 	  append_phase_dir(P_startup, "os21");
 	  break;	  
 	default:
@@ -641,6 +663,10 @@ add_library_options (void)
 	  }
 	}
 
+	/* Adding the gnu lib search path *before* the rest, does not harm if directory non existent */
+	/* Note that P_gnu_library contains the multilib path with core/endian/os */
+	flag = add_string_option(O_L__, get_phase_dir(P_gnu_library));
+	add_option_seen (flag);
 
 	if (st200_core && is_directory (st200_core)) {
 	  st200_core = concat_path (st200_core, 

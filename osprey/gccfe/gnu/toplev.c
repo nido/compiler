@@ -1414,7 +1414,10 @@ documented_lang_options[] =
   { "-Wno-write-strings", "" },
   { "-fpragmas", "" },
   { "-fno-pragmas", N_("Do not process #pragmas") },
-
+#ifdef TARG_ST
+  { "-mwarn-pack-struct", N_("Enable emission of warnings/errors when option -fpack-struct is set") },
+  { "-mno-warn-pack-struct", N_("Disable emission of warnings/errors when option -fpack-struct is set") },
+#endif
 
 #define DEFINE_LANG_NAME(NAME) { NULL, NAME },
 

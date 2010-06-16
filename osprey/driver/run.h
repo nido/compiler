@@ -66,3 +66,6 @@ extern void handler (int sig);
 /* set signal handler */ 
 extern void catch_signals (void);
 
+/* get gcc version string, e.g. "2.7.2".
+ * put numeric result in passed param (int), if not null. */
+extern const char *get_gcc_version (int *, int);

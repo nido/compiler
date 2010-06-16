@@ -132,6 +132,9 @@ FE_DIR 			= $(BUILD_BASE)
 FE_COM_DIR		= $(BUILD_TOT)/gccfe
 COMMON_COM_DIR 		= $(BUILD_TOT)/common/com
 COMMON_UTIL_DIR		= $(BUILD_TOT)/common/util
+BE_DIR 			= $(BUILD_TOT)/be
+BE_WHIRL2C_DIR		= $(BE_DIR)/whirl2c
+BE_COM_DIR 		= $(BE_DIR)/com
 
 ifneq ($(TARGET_FROM_ST),)
 COMMON_COM_TARG_DIR	    = 
@@ -216,6 +219,8 @@ INC_DIRS =		\
   $(TARG_GCCFE_DIR)	\
   $(TARGINFO_PARSER_INC_DIR) \
   $(LIBAIR_DIR)         \
+  $(BE_WHIRL2C_DIR) \
+  $(BE_COM_DIR) \
   .
 
 #----------------------------------------------------------------------

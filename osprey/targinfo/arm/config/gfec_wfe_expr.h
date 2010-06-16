@@ -1,4 +1,4 @@
-#if defined(TARG_STxP70)
+#if defined(TARG_ARM)
     case BUILT_IN_ABSCH:
       iopc = INTRN_ABSCH ;
       intrinsic_op = TRUE ;
@@ -968,11 +968,11 @@
       intrinsic_op = TRUE ;
     break;
     case BUILT_IN_VA_START:
-      /* For STxP70 we use an intrinsic call. */
+      /* For ARM we use an intrinsic call. */
       iopc = INTRN_VA_START;
     break;
 
 #define INTRN_GFEC_WFE_EXPR
 #include "gen_intrinsics.inc"
 #undef INTRN_GFEC_WFE_EXPR
-#endif /* defined(TARG_STxP70) */
+#endif /* defined(TARG_ARM) */

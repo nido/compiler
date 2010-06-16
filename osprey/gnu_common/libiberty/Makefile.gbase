@@ -115,10 +115,6 @@ OBJS =	alloca.o	\
 	bcmp.o \
 	regex.o
 
-ifeq ($(HOST_OS),MINGW)
-OBJS +=	cygpath.o	
-endif
-
 default: first
 	$(MAKE) local last
 install: last

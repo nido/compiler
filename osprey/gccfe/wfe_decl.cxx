@@ -348,7 +348,7 @@ Setup_Entry_For_EH (void)
                                 0)), 1);
     Set_INITV_next (tinfo, eh_spec);
 
-    Get_Current_PU().unused = New_INITO (ST_st_idx (etable), exc_ptr_iv);
+    Set_PU_misc_info (Get_Current_PU(), New_INITO (ST_st_idx (etable), exc_ptr_iv));
 }
 #endif
 
@@ -750,8 +750,6 @@ WFE_Finish_Function (void)
       Do_Cleanups_For_EH();
       need_manual_unwinding=false;
     }
-    else
-      Get_Current_PU().unused = 0;
 #endif
 
 #ifdef TARG_ST
@@ -1177,6 +1175,10 @@ WFE_Add_Aggregate_Init_Address (tree init)
 				("expected decl under plus_expr"));
 		WFE_Add_Aggregate_Init_Symbol (WN_st (init_wn),
 					       WN_offset (init_wn));
+//Bug 555
+#ifdef KEY
+                Set_ST_initv_in_other_st (WN_st(init_wn));
+#endif
 		WN_Delete (init_wn);
 	}
 	break;
@@ -1268,6 +1270,10 @@ WFE_Add_Aggregate_Init_Address (tree init)
 				("expected operator encountered"));
 		WFE_Add_Aggregate_Init_Symbol (WN_st (init_wn),
 					       WN_offset (init_wn));
+#ifdef KEY
+//Bug 555
+                Set_ST_initv_in_other_st (WN_st(init_wn));
+#endif
 		WN_Delete (init_wn);
 	}
       	break;
@@ -1510,6 +1516,10 @@ Add_Initv_For_Tree (tree val, UINT size)
 		     WN_opcode (WN_kid0 (init_wn)) == OPC_U8LDA)) {
 			WFE_Add_Aggregate_Init_Symbol (WN_st (WN_kid0 (init_wn)),
 						       WN_offset (WN_kid0 (init_wn)));
+//Bug 555
+#ifdef KEY
+                        Set_ST_initv_in_other_st (WN_st(WN_kid0 (init_wn)));
+#endif
 			WN_DELETE_Tree (init_wn);
 			break;
 		}
@@ -1517,6 +1527,10 @@ Add_Initv_For_Tree (tree val, UINT size)
 		if (WN_operator (init_wn) == OPR_LDA) {
 			WFE_Add_Aggregate_Init_Symbol (WN_st (init_wn),
 						       WN_offset (init_wn));
+//Bug 555
+#ifdef KEY
+                        Set_ST_initv_in_other_st (WN_st(init_wn));
+#endif
 			WN_DELETE_Tree (init_wn);
 			break;
 		}
@@ -1542,6 +1556,10 @@ Add_Initv_For_Tree (tree val, UINT size)
 			    WN_operator(kid1) == OPR_INTCONST) {
 			  WFE_Add_Aggregate_Init_Symbol (WN_st (kid0),
 				     WN_offset(kid0) + WN_const_val(kid1));
+//Bug 555
+#ifdef KEY
+                          Set_ST_initv_in_other_st (WN_st(kid0));
+#endif
 			  WN_DELETE_Tree (init_wn);
 			  break;
 			}
@@ -1549,6 +1567,10 @@ Add_Initv_For_Tree (tree val, UINT size)
 			    WN_operator(kid0) == OPR_INTCONST) {
 			  WFE_Add_Aggregate_Init_Symbol (WN_st (kid1),
 				     WN_offset(kid1) + WN_const_val(kid0));
+//Bug 555
+#ifdef KEY
+                          Set_ST_initv_in_other_st (WN_st(kid1));
+#endif
 			  WN_DELETE_Tree (init_wn);
 			  break;
 			}
@@ -1565,6 +1587,10 @@ Add_Initv_For_Tree (tree val, UINT size)
 			    WN_operator(kid1) == OPR_INTCONST) {
 			  WFE_Add_Aggregate_Init_Symbol (WN_st (kid0),
 				     WN_offset(kid0) - WN_const_val(kid1));
+//Bug 555
+#ifdef KEY
+                          Set_ST_initv_in_other_st (WN_st(kid0));
+#endif
 			  WN_DELETE_Tree (init_wn);
 			  break;
                         }
@@ -2405,6 +2431,10 @@ Add_Inito_For_Tree (tree init, tree decl, ST *st)
   if (WN_operator(init_wn) == OPR_LDA) {
 	aggregate_inito = New_INITO (st);
 	not_at_root = FALSE;
+//Bug 555
+#ifdef KEY
+        Set_ST_initv_in_other_st (WN_st(init_wn));
+#endif
 	WFE_Add_Aggregate_Init_Symbol (WN_st (init_wn), WN_offset (init_wn));
 	return;
   }
@@ -2419,6 +2449,10 @@ Add_Inito_For_Tree (tree init, tree decl, ST *st)
       not_at_root = FALSE;
       WFE_Add_Aggregate_Init_Symbol (WN_st(kid0),
 		WN_offset(kid0) + WN_const_val(kid1));
+//Bug 555
+#ifdef KEY
+      Set_ST_initv_in_other_st (WN_st(kid0));
+#endif
 #else
     if (WN_operator(WN_kid0(init_wn)) == OPR_LDA &&
         WN_operator(WN_kid1(init_wn)) == OPR_INTCONST) {
@@ -2426,6 +2460,10 @@ Add_Inito_For_Tree (tree init, tree decl, ST *st)
       not_at_root = FALSE;
       WFE_Add_Aggregate_Init_Symbol (WN_st(WN_kid0(init_wn)),
 		WN_offset(WN_kid0(init_wn)) + WN_const_val(WN_kid1(init_wn)));
+//Bug 555
+#ifdef KEY
+      Set_ST_initv_in_other_st (WN_st(WN_kid0(init_wn)));
+#endif
 #endif
       return;
     }
@@ -2441,6 +2479,12 @@ Add_Inito_For_Tree (tree init, tree decl, ST *st)
       not_at_root = FALSE;
       WFE_Add_Aggregate_Init_Symbol (WN_st(kid0),
 		WN_offset(kid0) - WN_const_val(kid1));
+//Bug 555
+#ifdef KEY
+      WN *kid_of_init_wn = WN_kid0(kid0);
+      if (WN_has_sym(kid_of_init_wn))
+        Set_ST_initv_in_other_st (WN_st(kid_of_init_wn));
+#endif
 #else
     if (WN_operator(WN_kid0(init_wn)) == OPR_LDA &&
         WN_operator(WN_kid1(init_wn)) == OPR_INTCONST) {
@@ -2448,6 +2492,12 @@ Add_Inito_For_Tree (tree init, tree decl, ST *st)
       not_at_root = FALSE;
       WFE_Add_Aggregate_Init_Symbol (WN_st(WN_kid0(init_wn)),
 		WN_offset(WN_kid0(init_wn)) - WN_const_val(WN_kid1(init_wn)));
+//Bug 555
+#ifdef KEY
+      WN *kid_of_init_wn = WN_kid0(WN_kid0(init_wn));
+      if (WN_has_sym(kid_of_init_wn))
+        Set_ST_initv_in_other_st (WN_st(kid_of_init_wn));
+#endif
 #endif
       return;
     }

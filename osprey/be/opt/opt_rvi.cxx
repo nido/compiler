@@ -984,6 +984,12 @@ RVI::Get_wn_local_attributes( BB_NODE *bb, WN *wn, BOOL *check_const )
     for ( INT ikid = 0; ikid < WN_kid_count(wn); ikid++ ) {
       WN *kid = WN_kid(wn,ikid);
       BOOL is_const;
+#ifdef KEY // bug 12471: __builtin_expect's first kid must be constant
+      if (WN_operator(wn) == OPR_INTRINSIC_OP &&
+	  ((INTRINSIC) WN_intrinsic(wn)) == INTRN_EXPECT &&
+	  ikid == 1)
+	continue;
+#endif
       Get_wn_local_attributes( bb, kid, &is_const );
 
       // if this kid was constant, need to do some more checks

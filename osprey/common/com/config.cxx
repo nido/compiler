@@ -206,9 +206,11 @@ BOOL CSE_Elim_Enabled = FALSE;		/* Is CSE-elim on? -- this does
 					 * not control it, it just
 					 * shadows the opt. level
 					 */
+BOOL Disable_Simplification_For_FE = FALSE;  /* Disable Simplification for Front End*/
 BOOL Enable_LAI = FALSE;               /* Generate Lai_Code ? */
 
-#ifdef BACK_END
+#if defined BACK_END || (defined TARG_ST && defined FE_GNU_4_2_0)
+// [SC] Define Debug_Level even for frontend with the gcc 4 frontend.
 # define DEF_DEBUG_LEVEL        0
 INT8 Debug_Level = DEF_DEBUG_LEVEL;     /* -gn: debug level */
 #endif
@@ -1048,6 +1050,11 @@ BOOL Allow_Exceptions = TRUE;
 
 /***** Compiler	debug/trace options *****/
 BOOL Tracing_Enabled = FALSE;		/* Any trace options set? */
+#ifdef TARG_ST
+#ifdef FE_GNU_4_2_0
+int trace_verbose = FALSE;
+#endif
+#endif
 
 /***** Miscellaneous optimization options *****/
 /* Should idict commute operands in seeking match? */

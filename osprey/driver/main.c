@@ -593,32 +593,6 @@ main (int argc, char *argv[])
 	}
 #endif
 
-        if (show_version) {
-            /* Echo information about the compiler version */
-#ifdef TARG_ST
-	  FILE *output=stdout;
-	  if (execute_flag) output=stderr;
-	  if (!dump_version) {
-	      fprintf(output, "STMicroelectronics Compilers: Version %s\n", compiler_version);
-	      fprintf(output, "Pro64 OpenSource 0.01.0-13\n");
-	      fprintf(output, "Thread model: %s\n", thread_model) ;
-	      fprintf(output, "%s front end version 3.3.3 %s\n",
- 		      (invoked_lang == L_CC ? "g++" : "gcc"),
-		      compiler_version);
-	  } else {
-	      if (invoked_lang == L_CC) 
-		  fprintf(output, "3.3.3\n");
-	      else
-		  fprintf(output, "3.3.3\n");
-	  }
-#else
-#ifndef mips
-            fprintf(stderr, "SGIcc Compilers: Version %s\n", compiler_version);
-#else
-            fprintf(stderr, "MIPSpro Compilers: Version %s\n", compiler_version);
-#endif
-#endif
-        }
 	if (option_was_seen(O_show_defaults)) {
 		/* TODO: print default values */
 		exit(RC_OKAY);
@@ -695,6 +669,89 @@ main (int argc, char *argv[])
 	/* add defaults if not already set */
 	set_defaults();
 	
+#ifdef KEY
+	// Perform GNU4-related checks after set_defaults has run, since
+	// set_defaults can change the gnu version.  Bug 10250.
+	if (gnu_major_version == 4) {
+	  if (option_was_seen(O_fwritable_strings) ||
+	      option_was_seen(O_fno_writable_strings)) {
+	    warning("ignored -fwritable-strings/-fno-writable-strings because"
+		    " option not supported under GNU GCC 4");
+	    set_option_unseen(O_fwritable_strings);
+	    set_option_unseen(O_fno_writable_strings);
+	  }
+	  if ((source_lang == L_cc ||
+	       source_lang == L_CC) &&
+	      option_was_seen(O_mp) &&	// bug 11896
+	      gnu_minor_version < 2) {
+	    warning("ignored -mp because option not supported under"
+		    " GNU GCC 4.0");
+	    set_option_unseen(O_mp);
+	  }
+#ifndef TARG_ST
+	  /* [SC] cxx_openmp not supported by ST currently. */
+	  else if (gnu_minor_version >= 2 &&
+	           !option_was_seen(O_fno_cxx_openmp)) {
+	    add_option_seen(O_fcxx_openmp);
+	    toggle(&fcxx_openmp,1);
+	  }
+#endif
+	} else {	// not GNU 4
+#ifdef TARG_ST200
+	  if (option_was_seen(O_fpic) || option_was_seen(O_fPIC)) {
+	    int flag;
+
+	    flag = add_string_option(O_D, "__pic__=1");
+	    prepend_option_seen (flag);
+	    flag = add_string_option(O_D, "__PIC__=1");
+	    prepend_option_seen (flag);
+	  }  
+#endif
+#ifndef TARG_ST
+	  /* [SC] ST do not currently have requirement for
+	     -fgnu-exceptions, which is a Pathscale invention, not a
+	     standard gcc option. */
+	  if (option_was_seen(O_fgnu_exceptions) ||	// bug 11732
+	      option_was_seen(O_fno_gnu_exceptions)) {
+	    warning("ignored -fgnu-exceptions/-fno-gnu-exceptions because"
+		    " option is for GNU GCC 4 only");
+	    set_option_unseen(O_fgnu_exceptions);
+	    set_option_unseen(O_fno_gnu_exceptions);
+	    gnu_exceptions = UNDEFINED;
+	  }
+#endif
+	}
+	// Select the appropriate GNU version front-end.
+	init_frontend_phase_names(gnu_major_version, gnu_minor_version,
+				  gnu_revision);
+#endif
+
+        if (show_version) {
+            /* Echo information about the compiler version */
+#ifdef TARG_ST
+	  int v[4];
+	  const char *gcc_version = get_gcc_version(0, 0);
+	  FILE *output=stdout;
+	  if (execute_flag) output=stderr;
+	  if (!dump_version) {
+	      fprintf(output, "STMicroelectronics Compilers: Version %s\n", compiler_version);
+	      fprintf(output, "Pro64 OpenSource 0.01.0-13\n");
+	      fprintf(output, "Thread model: %s\n", thread_model) ;
+	      fprintf(output, "%s front end version %s %s\n",
+		      (invoked_lang == L_CC ? "g++" : "gcc"),
+		      gcc_version, compiler_version);
+	  } else {
+	    fprintf(output, "%s\n", gcc_version);
+	  }
+#else
+#ifndef mips
+            fprintf(stderr, "SGIcc Compilers: Version %s\n", compiler_version);
+#else
+            fprintf(stderr, "MIPSpro Compilers: Version %s\n", compiler_version);
+#endif
+#endif
+        }
+
 	if (num_files > 1) {
 		multiple_source_files = TRUE;
 	}
@@ -1168,3 +1225,57 @@ dump_args (string msg, FILE *file)
 }
 
 
+const char *
+get_gcc_version(int *v, int nv)
+{
+	static char version[128];
+#ifdef TARG_ST
+	if (!is_toggled(gnu_major_version)) {
+	  error("gcc version not initialized");
+	  abort ();
+	}
+	sprintf (version, "%d.%d.%d",
+		 gnu_major_version, gnu_minor_version, gnu_revision);
+#else
+	static int major;
+	static int minor;
+	static int patch;
+
+	if (version[0] == '\0') {
+#if defined(__MINGW32__)
+		/* cannot rely on accessing system,
+		 * so just use what we were built with */
+		sprintf(version, "%d.%d", __GNUC__, __GNUC_MINOR__);
+#else
+		FILE *fp = read_gcc_output("-dumpversion");
+		char *c;
+		fread(version, 1, sizeof(version) - 1, fp);
+		pclose(fp);
+
+		version[sizeof(version) - 1] = '\0';
+		
+		if ((c = strchr(version, '\n'))) {
+			*c = '\0';
+		}
+#endif
+	}
+
+	if (v) {
+		char *l = version + strlen(version);
+		char *a;
+		int i;
+
+		for (i = 0, a = version; i < nv; i++) {
+			char *d;
+			if (a < l && isdigit(*a)) {
+				v[i] = strtol(a, &d, 10);
+				a = d + 1;
+			} else {
+				v[i] = 0;
+			}
+		}
+	}
+#endif
+	
+	return version;
+}

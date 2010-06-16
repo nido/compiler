@@ -1446,14 +1446,6 @@ put_member(DST_flag flag, DST_MEMBER *attr, Dwarf_P_Die die)
 		    DST_MEMBER_bit_size(attr), &dw_error);
   }
   put_dopetype (DST_MEMBER_dopetype(attr), flag, die);
-#ifdef TARG_ST
-  // [CL]
-  if (DST_MEMBER_accessibility(attr) != DW_ACCESS_public) {
-    dwarf_add_AT_unsigned_const(dw_dbg, die, DW_AT_accessibility,
-				DST_MEMBER_accessibility(attr),
-				&dw_error);
-  }
-#endif
   if (DST_IS_declaration(flag)) {
 	put_flag (DW_AT_declaration, die);
   }
@@ -1480,6 +1472,14 @@ put_member(DST_flag flag, DST_MEMBER *attr, Dwarf_P_Die die)
 				      DW_AT_data_member_location, expr, &dw_error);
 	}
   }
+#ifdef KEY
+  // Bug 1419 - add information about accessibility
+  if (Dwarf_Language == DW_LANG_C_plus_plus &&
+      DST_MEMBER_accessibility(attr) != 0)
+    dwarf_add_AT_unsigned_const(dw_dbg, die, DW_AT_accessibility, 
+				DST_MEMBER_accessibility(attr), &dw_error);
+#endif
+
 }
 
 
@@ -2544,6 +2544,13 @@ Cg_Dwarf_Begin (BOOL is_64bit)
   cu_info = DST_INFO_IDX_TO_PTR (cu_idx);
   Dwarf_Language = Get_Dwarf_Language (cu_info);
 
+#ifdef KEY
+  if (!CG_emit_unwind_info)
+  dw_dbg = Em_Dwarf_Begin(is_64bit, Trace_Dwarf, 
+			  0,
+			  Cg_Dwarf_Enter_Elfsym);
+  else
+#endif
   dw_dbg = Em_Dwarf_Begin(is_64bit, Trace_Dwarf, 
 			  (Dwarf_Language == DW_LANG_C_plus_plus),
 			  Cg_Dwarf_Enter_Elfsym);

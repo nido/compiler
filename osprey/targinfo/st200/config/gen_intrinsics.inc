@@ -3676,6 +3676,362 @@ DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200WMB,
              ATTR_NOTHROW_LIST)
 #endif /* INTRN_GFECC_BUILTINS_DEF */
 
+#ifdef INTRN_GFECC4_BUILTINS_DEF
+
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200ABSS_PH,
+            "__st200abss_ph",
+             BT_FN_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200ABSUBU_PB,
+            "__st200absubu_pb",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200ADDSO,
+            "__st200addso",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200ADDS_PH,
+            "__st200adds_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200ADD_PH,
+            "__st200add_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200AVG4U_PB,
+            "__st200avg4u_pb",
+             BT_FN_INT_UINT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200AVGU_PB,
+            "__st200avgu_pb",
+             BT_FN_INT_UINT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200CMPEQ_PB,
+            "__st200cmpeq_pb",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200CMPEQ_PB_BDEST,
+            "__st200cmpeq_pb_bdest",
+             BT_FN_UINT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200CMPEQ_PH,
+            "__st200cmpeq_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200CMPEQ_PH_BDEST,
+            "__st200cmpeq_ph_bdest",
+             BT_FN_UINT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200CMPGTU_PB,
+            "__st200cmpgtu_pb",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200CMPGTU_PB_BDEST,
+            "__st200cmpgtu_pb_bdest",
+             BT_FN_UINT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200CMPGT_PH,
+            "__st200cmpgt_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200CMPGT_PH_BDEST,
+            "__st200cmpgt_ph_bdest",
+             BT_FN_UINT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200DIB,
+            "__st200dib",
+             BT_FN_VOID,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200EXT1_PB,
+            "__st200ext1_pb",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200EXT2_PB,
+            "__st200ext2_pb",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200EXT3_PB,
+            "__st200ext3_pb",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200EXTL_PB,
+            "__st200extl_pb",
+             BT_FN_INT_UINT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200EXTR_PB,
+            "__st200extr_pb",
+             BT_FN_INT_UINT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200FLUSHADD,
+            "__st200flushadd",
+             BT_FN_VOID_INT_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200FLUSHADD_L1,
+            "__st200flushadd_l1",
+             BT_FN_VOID_INT_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200INVADD,
+            "__st200invadd",
+             BT_FN_VOID_INT_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200INVADD_L1,
+            "__st200invadd_l1",
+             BT_FN_VOID_INT_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200LDWL,
+            "__st200ldwl",
+             BT_FN_INT_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___MAXUW,
+            "__maxuw",
+             BT_FN_UINT_UINT_UINT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___MAXW,
+            "__maxw",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200MAX_PH,
+            "__st200max_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___MINUW,
+            "__minuw",
+             BT_FN_UINT_UINT_UINT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___MINW,
+            "__minw",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200MIN_PH,
+            "__st200min_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200MULADDUS_PB,
+            "__st200muladdus_pb",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200MULADD_PH,
+            "__st200muladd_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200MULFRACADDS_PH,
+            "__st200mulfracadds_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200MULFRACRM_PH,
+            "__st200mulfracrm_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200MULFRACRNE_PH,
+            "__st200mulfracrne_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200MUL_PH,
+            "__st200mul_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PACKRNP_PHH,
+            "__st200packrnp_phh",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PACKSU_PB,
+            "__st200packsu_pb",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PACKS_PH,
+            "__st200packs_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PACK_PB,
+            "__st200pack_pb",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PACK_PH,
+            "__st200pack_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PERM_PB,
+            "__st200perm_pb",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST220PRGADD_L1,
+            "__st220prgadd_l1",
+             BT_FN_VOID_INT_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PRGADD_L1,
+            "__st200prgadd_l1",
+             BT_FN_VOID_INT_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST220PRGINS,
+            "__st220prgins",
+             BT_FN_VOID,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PRGINS,
+            "__st200prgins",
+             BT_FN_VOID,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PRGINSADD,
+            "__st200prginsadd",
+             BT_FN_VOID_INT_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PRGINSADD_L1,
+            "__st200prginsadd_l1",
+             BT_FN_VOID_INT_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PRGINSSET,
+            "__st200prginsset",
+             BT_FN_VOID_INT_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PRGINSSET_L1,
+            "__st200prginsset_l1",
+             BT_FN_VOID_INT_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PRGSET_L1,
+            "__st200prgset_l1",
+             BT_FN_VOID_INT_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PSWCLR,
+            "__st200pswclr",
+             BT_FN_VOID_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PSWMASK,
+            "__st200pswmask",
+             BT_FN_INT_INT_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200PSWSET,
+            "__st200pswset",
+             BT_FN_VOID_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200RETENTION,
+            "__st200retention",
+             BT_FN_VOID,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SADU_PB,
+            "__st200sadu_pb",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SATSO,
+            "__st200satso",
+             BT_FN_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SH1ADDSO,
+            "__st200sh1addso",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SH1SUBSO,
+            "__st200sh1subso",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SHLSO,
+            "__st200shlso",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SHLS,
+            "__st200shls",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SHLS_PH,
+            "__st200shls_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SHL_PH,
+            "__st200shl_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SHRRNE_PH,
+            "__st200shrrne_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SHRRNP,
+            "__st200shrrnp",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SHRRNP_PH,
+            "__st200shrrnp_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SHR_PH,
+            "__st200shr_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SHUFFEVE_PB,
+            "__st200shuffeve_pb",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SHUFFODD_PB,
+            "__st200shuffodd_pb",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SHUFF_PBH,
+            "__st200shuff_pbh",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SHUFF_PBL,
+            "__st200shuff_pbl",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SHUFF_PHH,
+            "__st200shuff_phh",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SHUFF_PHL,
+            "__st200shuff_phl",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SLCT_PB,
+            "__st200slct_pb",
+             BT_FN_INT_UINT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200STWL,
+            "__st200stwl",
+             BT_FN_UINT_INT_INT,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SUBSO,
+            "__st200subso",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SUBS_PH,
+            "__st200subs_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SUB_PH,
+            "__st200sub_ph",
+             BT_FN_INT_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST220SYNC,
+            "__st220sync",
+             BT_FN_VOID,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SYNC,
+            "__st200sync",
+             BT_FN_VOID,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST220SYNCINS,
+            "__st220syncins",
+             BT_FN_VOID,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200SYNCINS,
+            "__st200syncins",
+             BT_FN_VOID,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200UNPACKU_PBH,
+            "__st200unpacku_pbh",
+             BT_FN_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200UNPACKU_PBL,
+            "__st200unpacku_pbl",
+             BT_FN_INT_INT,
+             ATTR_PURE_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200WAITL,
+            "__st200waitl",
+             BT_FN_VOID,
+             ATTR_NOTHROW_LIST)
+DEF_EXT_LIB_BUILTIN (BUILT_IN___ST200WMB,
+            "__st200wmb",
+             BT_FN_VOID,
+             ATTR_NOTHROW_LIST)
+#endif /* INTRN_GFECC4_BUILTINS_DEF */
+
 #ifdef INTRN_GFEC_BUILTINS_DEF
 
 DEF_BUILTIN (BUILT_IN___ST200ABSS_PH)
@@ -3859,4 +4215,724 @@ DEF_BUILTIN (BUILT_IN___ST200WMB)
     case BUILT_IN___ST200WAITL:
     case BUILT_IN___ST200WMB:
 #endif /* INTRN_GFEC_BUILTINS_H */
+
+#ifdef INTRN_ENUM_GSBI
+
+    GSBI_BUILT_IN___ST200ABSS_PH,
+    GSBI_BUILT_IN___ST200ABSUBU_PB,
+    GSBI_BUILT_IN___ST200ADDSO,
+    GSBI_BUILT_IN___ST200ADDS_PH,
+    GSBI_BUILT_IN___ST200ADD_PH,
+    GSBI_BUILT_IN___ST200AVG4U_PB,
+    GSBI_BUILT_IN___ST200AVGU_PB,
+    GSBI_BUILT_IN___ST200CMPEQ_PB,
+    GSBI_BUILT_IN___ST200CMPEQ_PB_BDEST,
+    GSBI_BUILT_IN___ST200CMPEQ_PH,
+    GSBI_BUILT_IN___ST200CMPEQ_PH_BDEST,
+    GSBI_BUILT_IN___ST200CMPGTU_PB,
+    GSBI_BUILT_IN___ST200CMPGTU_PB_BDEST,
+    GSBI_BUILT_IN___ST200CMPGT_PH,
+    GSBI_BUILT_IN___ST200CMPGT_PH_BDEST,
+    GSBI_BUILT_IN___ST200DIB,
+    GSBI_BUILT_IN___ST200EXT1_PB,
+    GSBI_BUILT_IN___ST200EXT2_PB,
+    GSBI_BUILT_IN___ST200EXT3_PB,
+    GSBI_BUILT_IN___ST200EXTL_PB,
+    GSBI_BUILT_IN___ST200EXTR_PB,
+    GSBI_BUILT_IN___ST200FLUSHADD,
+    GSBI_BUILT_IN___ST200FLUSHADD_L1,
+    GSBI_BUILT_IN___ST200INVADD,
+    GSBI_BUILT_IN___ST200INVADD_L1,
+    GSBI_BUILT_IN___ST200LDWL,
+    GSBI_BUILT_IN___MAXUW,
+    GSBI_BUILT_IN___MAXW,
+    GSBI_BUILT_IN___ST200MAX_PH,
+    GSBI_BUILT_IN___MINUW,
+    GSBI_BUILT_IN___MINW,
+    GSBI_BUILT_IN___ST200MIN_PH,
+    GSBI_BUILT_IN___ST200MULADDUS_PB,
+    GSBI_BUILT_IN___ST200MULADD_PH,
+    GSBI_BUILT_IN___ST200MULFRACADDS_PH,
+    GSBI_BUILT_IN___ST200MULFRACRM_PH,
+    GSBI_BUILT_IN___ST200MULFRACRNE_PH,
+    GSBI_BUILT_IN___ST200MUL_PH,
+    GSBI_BUILT_IN___ST200PACKRNP_PHH,
+    GSBI_BUILT_IN___ST200PACKSU_PB,
+    GSBI_BUILT_IN___ST200PACKS_PH,
+    GSBI_BUILT_IN___ST200PACK_PB,
+    GSBI_BUILT_IN___ST200PACK_PH,
+    GSBI_BUILT_IN___ST200PERM_PB,
+    GSBI_BUILT_IN___ST220PRGADD_L1,
+    GSBI_BUILT_IN___ST200PRGADD_L1,
+    GSBI_BUILT_IN___ST220PRGINS,
+    GSBI_BUILT_IN___ST200PRGINS,
+    GSBI_BUILT_IN___ST200PRGINSADD,
+    GSBI_BUILT_IN___ST200PRGINSADD_L1,
+    GSBI_BUILT_IN___ST200PRGINSSET,
+    GSBI_BUILT_IN___ST200PRGINSSET_L1,
+    GSBI_BUILT_IN___ST200PRGSET_L1,
+    GSBI_BUILT_IN___ST200PSWCLR,
+    GSBI_BUILT_IN___ST200PSWMASK,
+    GSBI_BUILT_IN___ST200PSWSET,
+    GSBI_BUILT_IN___ST200RETENTION,
+    GSBI_BUILT_IN___ST200SADU_PB,
+    GSBI_BUILT_IN___ST200SATSO,
+    GSBI_BUILT_IN___ST200SH1ADDSO,
+    GSBI_BUILT_IN___ST200SH1SUBSO,
+    GSBI_BUILT_IN___ST200SHLSO,
+    GSBI_BUILT_IN___ST200SHLS,
+    GSBI_BUILT_IN___ST200SHLS_PH,
+    GSBI_BUILT_IN___ST200SHL_PH,
+    GSBI_BUILT_IN___ST200SHRRNE_PH,
+    GSBI_BUILT_IN___ST200SHRRNP,
+    GSBI_BUILT_IN___ST200SHRRNP_PH,
+    GSBI_BUILT_IN___ST200SHR_PH,
+    GSBI_BUILT_IN___ST200SHUFFEVE_PB,
+    GSBI_BUILT_IN___ST200SHUFFODD_PB,
+    GSBI_BUILT_IN___ST200SHUFF_PBH,
+    GSBI_BUILT_IN___ST200SHUFF_PBL,
+    GSBI_BUILT_IN___ST200SHUFF_PHH,
+    GSBI_BUILT_IN___ST200SHUFF_PHL,
+    GSBI_BUILT_IN___ST200SLCT_PB,
+    GSBI_BUILT_IN___ST200STWL,
+    GSBI_BUILT_IN___ST200SUBSO,
+    GSBI_BUILT_IN___ST200SUBS_PH,
+    GSBI_BUILT_IN___ST200SUB_PH,
+    GSBI_BUILT_IN___ST220SYNC,
+    GSBI_BUILT_IN___ST200SYNC,
+    GSBI_BUILT_IN___ST220SYNCINS,
+    GSBI_BUILT_IN___ST200SYNCINS,
+    GSBI_BUILT_IN___ST200UNPACKU_PBH,
+    GSBI_BUILT_IN___ST200UNPACKU_PBL,
+    GSBI_BUILT_IN___ST200WAITL,
+    GSBI_BUILT_IN___ST200WMB,
+#endif /* INTRN_ENUM_GSBI */
+
+#ifdef INTRN_GCC_BUILT_IN2GSBI
+
+    case BUILT_IN___ST200ABSS_PH:
+      return GSBI_BUILT_IN___ST200ABSS_PH;
+    case BUILT_IN___ST200ABSUBU_PB:
+      return GSBI_BUILT_IN___ST200ABSUBU_PB;
+    case BUILT_IN___ST200ADDSO:
+      return GSBI_BUILT_IN___ST200ADDSO;
+    case BUILT_IN___ST200ADDS_PH:
+      return GSBI_BUILT_IN___ST200ADDS_PH;
+    case BUILT_IN___ST200ADD_PH:
+      return GSBI_BUILT_IN___ST200ADD_PH;
+    case BUILT_IN___ST200AVG4U_PB:
+      return GSBI_BUILT_IN___ST200AVG4U_PB;
+    case BUILT_IN___ST200AVGU_PB:
+      return GSBI_BUILT_IN___ST200AVGU_PB;
+    case BUILT_IN___ST200CMPEQ_PB:
+      return GSBI_BUILT_IN___ST200CMPEQ_PB;
+    case BUILT_IN___ST200CMPEQ_PB_BDEST:
+      return GSBI_BUILT_IN___ST200CMPEQ_PB_BDEST;
+    case BUILT_IN___ST200CMPEQ_PH:
+      return GSBI_BUILT_IN___ST200CMPEQ_PH;
+    case BUILT_IN___ST200CMPEQ_PH_BDEST:
+      return GSBI_BUILT_IN___ST200CMPEQ_PH_BDEST;
+    case BUILT_IN___ST200CMPGTU_PB:
+      return GSBI_BUILT_IN___ST200CMPGTU_PB;
+    case BUILT_IN___ST200CMPGTU_PB_BDEST:
+      return GSBI_BUILT_IN___ST200CMPGTU_PB_BDEST;
+    case BUILT_IN___ST200CMPGT_PH:
+      return GSBI_BUILT_IN___ST200CMPGT_PH;
+    case BUILT_IN___ST200CMPGT_PH_BDEST:
+      return GSBI_BUILT_IN___ST200CMPGT_PH_BDEST;
+    case BUILT_IN___ST200DIB:
+      return GSBI_BUILT_IN___ST200DIB;
+    case BUILT_IN___ST200EXT1_PB:
+      return GSBI_BUILT_IN___ST200EXT1_PB;
+    case BUILT_IN___ST200EXT2_PB:
+      return GSBI_BUILT_IN___ST200EXT2_PB;
+    case BUILT_IN___ST200EXT3_PB:
+      return GSBI_BUILT_IN___ST200EXT3_PB;
+    case BUILT_IN___ST200EXTL_PB:
+      return GSBI_BUILT_IN___ST200EXTL_PB;
+    case BUILT_IN___ST200EXTR_PB:
+      return GSBI_BUILT_IN___ST200EXTR_PB;
+    case BUILT_IN___ST200FLUSHADD:
+      return GSBI_BUILT_IN___ST200FLUSHADD;
+    case BUILT_IN___ST200FLUSHADD_L1:
+      return GSBI_BUILT_IN___ST200FLUSHADD_L1;
+    case BUILT_IN___ST200INVADD:
+      return GSBI_BUILT_IN___ST200INVADD;
+    case BUILT_IN___ST200INVADD_L1:
+      return GSBI_BUILT_IN___ST200INVADD_L1;
+    case BUILT_IN___ST200LDWL:
+      return GSBI_BUILT_IN___ST200LDWL;
+    case BUILT_IN___MAXUW:
+      return GSBI_BUILT_IN___MAXUW;
+    case BUILT_IN___MAXW:
+      return GSBI_BUILT_IN___MAXW;
+    case BUILT_IN___ST200MAX_PH:
+      return GSBI_BUILT_IN___ST200MAX_PH;
+    case BUILT_IN___MINUW:
+      return GSBI_BUILT_IN___MINUW;
+    case BUILT_IN___MINW:
+      return GSBI_BUILT_IN___MINW;
+    case BUILT_IN___ST200MIN_PH:
+      return GSBI_BUILT_IN___ST200MIN_PH;
+    case BUILT_IN___ST200MULADDUS_PB:
+      return GSBI_BUILT_IN___ST200MULADDUS_PB;
+    case BUILT_IN___ST200MULADD_PH:
+      return GSBI_BUILT_IN___ST200MULADD_PH;
+    case BUILT_IN___ST200MULFRACADDS_PH:
+      return GSBI_BUILT_IN___ST200MULFRACADDS_PH;
+    case BUILT_IN___ST200MULFRACRM_PH:
+      return GSBI_BUILT_IN___ST200MULFRACRM_PH;
+    case BUILT_IN___ST200MULFRACRNE_PH:
+      return GSBI_BUILT_IN___ST200MULFRACRNE_PH;
+    case BUILT_IN___ST200MUL_PH:
+      return GSBI_BUILT_IN___ST200MUL_PH;
+    case BUILT_IN___ST200PACKRNP_PHH:
+      return GSBI_BUILT_IN___ST200PACKRNP_PHH;
+    case BUILT_IN___ST200PACKSU_PB:
+      return GSBI_BUILT_IN___ST200PACKSU_PB;
+    case BUILT_IN___ST200PACKS_PH:
+      return GSBI_BUILT_IN___ST200PACKS_PH;
+    case BUILT_IN___ST200PACK_PB:
+      return GSBI_BUILT_IN___ST200PACK_PB;
+    case BUILT_IN___ST200PACK_PH:
+      return GSBI_BUILT_IN___ST200PACK_PH;
+    case BUILT_IN___ST200PERM_PB:
+      return GSBI_BUILT_IN___ST200PERM_PB;
+    case BUILT_IN___ST220PRGADD_L1:
+      return GSBI_BUILT_IN___ST220PRGADD_L1;
+    case BUILT_IN___ST200PRGADD_L1:
+      return GSBI_BUILT_IN___ST200PRGADD_L1;
+    case BUILT_IN___ST220PRGINS:
+      return GSBI_BUILT_IN___ST220PRGINS;
+    case BUILT_IN___ST200PRGINS:
+      return GSBI_BUILT_IN___ST200PRGINS;
+    case BUILT_IN___ST200PRGINSADD:
+      return GSBI_BUILT_IN___ST200PRGINSADD;
+    case BUILT_IN___ST200PRGINSADD_L1:
+      return GSBI_BUILT_IN___ST200PRGINSADD_L1;
+    case BUILT_IN___ST200PRGINSSET:
+      return GSBI_BUILT_IN___ST200PRGINSSET;
+    case BUILT_IN___ST200PRGINSSET_L1:
+      return GSBI_BUILT_IN___ST200PRGINSSET_L1;
+    case BUILT_IN___ST200PRGSET_L1:
+      return GSBI_BUILT_IN___ST200PRGSET_L1;
+    case BUILT_IN___ST200PSWCLR:
+      return GSBI_BUILT_IN___ST200PSWCLR;
+    case BUILT_IN___ST200PSWMASK:
+      return GSBI_BUILT_IN___ST200PSWMASK;
+    case BUILT_IN___ST200PSWSET:
+      return GSBI_BUILT_IN___ST200PSWSET;
+    case BUILT_IN___ST200RETENTION:
+      return GSBI_BUILT_IN___ST200RETENTION;
+    case BUILT_IN___ST200SADU_PB:
+      return GSBI_BUILT_IN___ST200SADU_PB;
+    case BUILT_IN___ST200SATSO:
+      return GSBI_BUILT_IN___ST200SATSO;
+    case BUILT_IN___ST200SH1ADDSO:
+      return GSBI_BUILT_IN___ST200SH1ADDSO;
+    case BUILT_IN___ST200SH1SUBSO:
+      return GSBI_BUILT_IN___ST200SH1SUBSO;
+    case BUILT_IN___ST200SHLSO:
+      return GSBI_BUILT_IN___ST200SHLSO;
+    case BUILT_IN___ST200SHLS:
+      return GSBI_BUILT_IN___ST200SHLS;
+    case BUILT_IN___ST200SHLS_PH:
+      return GSBI_BUILT_IN___ST200SHLS_PH;
+    case BUILT_IN___ST200SHL_PH:
+      return GSBI_BUILT_IN___ST200SHL_PH;
+    case BUILT_IN___ST200SHRRNE_PH:
+      return GSBI_BUILT_IN___ST200SHRRNE_PH;
+    case BUILT_IN___ST200SHRRNP:
+      return GSBI_BUILT_IN___ST200SHRRNP;
+    case BUILT_IN___ST200SHRRNP_PH:
+      return GSBI_BUILT_IN___ST200SHRRNP_PH;
+    case BUILT_IN___ST200SHR_PH:
+      return GSBI_BUILT_IN___ST200SHR_PH;
+    case BUILT_IN___ST200SHUFFEVE_PB:
+      return GSBI_BUILT_IN___ST200SHUFFEVE_PB;
+    case BUILT_IN___ST200SHUFFODD_PB:
+      return GSBI_BUILT_IN___ST200SHUFFODD_PB;
+    case BUILT_IN___ST200SHUFF_PBH:
+      return GSBI_BUILT_IN___ST200SHUFF_PBH;
+    case BUILT_IN___ST200SHUFF_PBL:
+      return GSBI_BUILT_IN___ST200SHUFF_PBL;
+    case BUILT_IN___ST200SHUFF_PHH:
+      return GSBI_BUILT_IN___ST200SHUFF_PHH;
+    case BUILT_IN___ST200SHUFF_PHL:
+      return GSBI_BUILT_IN___ST200SHUFF_PHL;
+    case BUILT_IN___ST200SLCT_PB:
+      return GSBI_BUILT_IN___ST200SLCT_PB;
+    case BUILT_IN___ST200STWL:
+      return GSBI_BUILT_IN___ST200STWL;
+    case BUILT_IN___ST200SUBSO:
+      return GSBI_BUILT_IN___ST200SUBSO;
+    case BUILT_IN___ST200SUBS_PH:
+      return GSBI_BUILT_IN___ST200SUBS_PH;
+    case BUILT_IN___ST200SUB_PH:
+      return GSBI_BUILT_IN___ST200SUB_PH;
+    case BUILT_IN___ST220SYNC:
+      return GSBI_BUILT_IN___ST220SYNC;
+    case BUILT_IN___ST200SYNC:
+      return GSBI_BUILT_IN___ST200SYNC;
+    case BUILT_IN___ST220SYNCINS:
+      return GSBI_BUILT_IN___ST220SYNCINS;
+    case BUILT_IN___ST200SYNCINS:
+      return GSBI_BUILT_IN___ST200SYNCINS;
+    case BUILT_IN___ST200UNPACKU_PBH:
+      return GSBI_BUILT_IN___ST200UNPACKU_PBH;
+    case BUILT_IN___ST200UNPACKU_PBL:
+      return GSBI_BUILT_IN___ST200UNPACKU_PBL;
+    case BUILT_IN___ST200WAITL:
+      return GSBI_BUILT_IN___ST200WAITL;
+    case BUILT_IN___ST200WMB:
+      return GSBI_BUILT_IN___ST200WMB;
+#endif /* INTRN_GCC_BUILT_IN2GSBI */
+
+#ifdef INTRN_WGEN_EXPR
+
+    case GSBI_BUILT_IN___ST200ABSS_PH:
+      iopc = INTRN___ST200ABSS_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200ABSUBU_PB:
+      iopc = INTRN___ST200ABSUBU_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200ADDSO:
+      iopc = INTRN___ST200ADDSO;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200ADDS_PH:
+      iopc = INTRN___ST200ADDS_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200ADD_PH:
+      iopc = INTRN___ST200ADD_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200AVG4U_PB:
+      iopc = INTRN___ST200AVG4U_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200AVGU_PB:
+      iopc = INTRN___ST200AVGU_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200CMPEQ_PB:
+      iopc = INTRN___ST200CMPEQ_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200CMPEQ_PB_BDEST:
+      iopc = INTRN___ST200CMPEQ_PB_BDEST;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200CMPEQ_PH:
+      iopc = INTRN___ST200CMPEQ_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200CMPEQ_PH_BDEST:
+      iopc = INTRN___ST200CMPEQ_PH_BDEST;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200CMPGTU_PB:
+      iopc = INTRN___ST200CMPGTU_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200CMPGTU_PB_BDEST:
+      iopc = INTRN___ST200CMPGTU_PB_BDEST;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200CMPGT_PH:
+      iopc = INTRN___ST200CMPGT_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200CMPGT_PH_BDEST:
+      iopc = INTRN___ST200CMPGT_PH_BDEST;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200DIB:
+      iopc = INTRN___ST200DIB;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200EXT1_PB:
+      iopc = INTRN___ST200EXT1_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200EXT2_PB:
+      iopc = INTRN___ST200EXT2_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200EXT3_PB:
+      iopc = INTRN___ST200EXT3_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200EXTL_PB:
+      iopc = INTRN___ST200EXTL_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200EXTR_PB:
+      iopc = INTRN___ST200EXTR_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200FLUSHADD:
+      iopc = INTRN___ST200FLUSHADD;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200FLUSHADD_L1:
+      iopc = INTRN___ST200FLUSHADD_L1;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200INVADD:
+      iopc = INTRN___ST200INVADD;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200INVADD_L1:
+      iopc = INTRN___ST200INVADD_L1;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200LDWL:
+      iopc = INTRN___ST200LDWL;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___MAXUW:
+      iopc = INTRN___MAXUW;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___MAXW:
+      iopc = INTRN___MAXW;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200MAX_PH:
+      iopc = INTRN___ST200MAX_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___MINUW:
+      iopc = INTRN___MINUW;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___MINW:
+      iopc = INTRN___MINW;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200MIN_PH:
+      iopc = INTRN___ST200MIN_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200MULADDUS_PB:
+      iopc = INTRN___ST200MULADDUS_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200MULADD_PH:
+      iopc = INTRN___ST200MULADD_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200MULFRACADDS_PH:
+      iopc = INTRN___ST200MULFRACADDS_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200MULFRACRM_PH:
+      iopc = INTRN___ST200MULFRACRM_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200MULFRACRNE_PH:
+      iopc = INTRN___ST200MULFRACRNE_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200MUL_PH:
+      iopc = INTRN___ST200MUL_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200PACKRNP_PHH:
+      iopc = INTRN___ST200PACKRNP_PHH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200PACKSU_PB:
+      iopc = INTRN___ST200PACKSU_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200PACKS_PH:
+      iopc = INTRN___ST200PACKS_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200PACK_PB:
+      iopc = INTRN___ST200PACK_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200PACK_PH:
+      iopc = INTRN___ST200PACK_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200PERM_PB:
+      iopc = INTRN___ST200PERM_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST220PRGADD_L1:
+      iopc = INTRN___ST220PRGADD_L1;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200PRGADD_L1:
+      iopc = INTRN___ST200PRGADD_L1;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST220PRGINS:
+      iopc = INTRN___ST220PRGINS;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200PRGINS:
+      iopc = INTRN___ST200PRGINS;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200PRGINSADD:
+      iopc = INTRN___ST200PRGINSADD;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200PRGINSADD_L1:
+      iopc = INTRN___ST200PRGINSADD_L1;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200PRGINSSET:
+      iopc = INTRN___ST200PRGINSSET;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200PRGINSSET_L1:
+      iopc = INTRN___ST200PRGINSSET_L1;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200PRGSET_L1:
+      iopc = INTRN___ST200PRGSET_L1;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200PSWCLR:
+      iopc = INTRN___ST200PSWCLR;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200PSWMASK:
+      iopc = INTRN___ST200PSWMASK;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200PSWSET:
+      iopc = INTRN___ST200PSWSET;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200RETENTION:
+      iopc = INTRN___ST200RETENTION;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200SADU_PB:
+      iopc = INTRN___ST200SADU_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SATSO:
+      iopc = INTRN___ST200SATSO;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SH1ADDSO:
+      iopc = INTRN___ST200SH1ADDSO;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SH1SUBSO:
+      iopc = INTRN___ST200SH1SUBSO;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SHLSO:
+      iopc = INTRN___ST200SHLSO;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SHLS:
+      iopc = INTRN___ST200SHLS;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SHLS_PH:
+      iopc = INTRN___ST200SHLS_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SHL_PH:
+      iopc = INTRN___ST200SHL_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SHRRNE_PH:
+      iopc = INTRN___ST200SHRRNE_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SHRRNP:
+      iopc = INTRN___ST200SHRRNP;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SHRRNP_PH:
+      iopc = INTRN___ST200SHRRNP_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SHR_PH:
+      iopc = INTRN___ST200SHR_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SHUFFEVE_PB:
+      iopc = INTRN___ST200SHUFFEVE_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SHUFFODD_PB:
+      iopc = INTRN___ST200SHUFFODD_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SHUFF_PBH:
+      iopc = INTRN___ST200SHUFF_PBH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SHUFF_PBL:
+      iopc = INTRN___ST200SHUFF_PBL;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SHUFF_PHH:
+      iopc = INTRN___ST200SHUFF_PHH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SHUFF_PHL:
+      iopc = INTRN___ST200SHUFF_PHL;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SLCT_PB:
+      iopc = INTRN___ST200SLCT_PB;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200STWL:
+      iopc = INTRN___ST200STWL;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200SUBSO:
+      iopc = INTRN___ST200SUBSO;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SUBS_PH:
+      iopc = INTRN___ST200SUBS_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200SUB_PH:
+      iopc = INTRN___ST200SUB_PH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST220SYNC:
+      iopc = INTRN___ST220SYNC;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200SYNC:
+      iopc = INTRN___ST200SYNC;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST220SYNCINS:
+      iopc = INTRN___ST220SYNCINS;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200SYNCINS:
+      iopc = INTRN___ST200SYNCINS;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200UNPACKU_PBH:
+      iopc = INTRN___ST200UNPACKU_PBH;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200UNPACKU_PBL:
+      iopc = INTRN___ST200UNPACKU_PBL;
+      intrinsic_op = TRUE;
+    break;
+    case GSBI_BUILT_IN___ST200WAITL:
+      iopc = INTRN___ST200WAITL;
+      intrinsic_op = FALSE;
+    break;
+    case GSBI_BUILT_IN___ST200WMB:
+      iopc = INTRN___ST200WMB;
+      intrinsic_op = FALSE;
+    break;
+#endif /* INTRN_WGEN_EXPR */
+
+#ifdef INTRN_GSBI_NAME
+
+  case GSBI_BUILT_IN___ST200ABSS_PH: return "GSBI_BUILT_IN___ST200ABSS_PH";
+  case GSBI_BUILT_IN___ST200ABSUBU_PB: return "GSBI_BUILT_IN___ST200ABSUBU_PB";
+  case GSBI_BUILT_IN___ST200ADDSO: return "GSBI_BUILT_IN___ST200ADDSO";
+  case GSBI_BUILT_IN___ST200ADDS_PH: return "GSBI_BUILT_IN___ST200ADDS_PH";
+  case GSBI_BUILT_IN___ST200ADD_PH: return "GSBI_BUILT_IN___ST200ADD_PH";
+  case GSBI_BUILT_IN___ST200AVG4U_PB: return "GSBI_BUILT_IN___ST200AVG4U_PB";
+  case GSBI_BUILT_IN___ST200AVGU_PB: return "GSBI_BUILT_IN___ST200AVGU_PB";
+  case GSBI_BUILT_IN___ST200CMPEQ_PB: return "GSBI_BUILT_IN___ST200CMPEQ_PB";
+  case GSBI_BUILT_IN___ST200CMPEQ_PB_BDEST: return "GSBI_BUILT_IN___ST200CMPEQ_PB_BDEST";
+  case GSBI_BUILT_IN___ST200CMPEQ_PH: return "GSBI_BUILT_IN___ST200CMPEQ_PH";
+  case GSBI_BUILT_IN___ST200CMPEQ_PH_BDEST: return "GSBI_BUILT_IN___ST200CMPEQ_PH_BDEST";
+  case GSBI_BUILT_IN___ST200CMPGTU_PB: return "GSBI_BUILT_IN___ST200CMPGTU_PB";
+  case GSBI_BUILT_IN___ST200CMPGTU_PB_BDEST: return "GSBI_BUILT_IN___ST200CMPGTU_PB_BDEST";
+  case GSBI_BUILT_IN___ST200CMPGT_PH: return "GSBI_BUILT_IN___ST200CMPGT_PH";
+  case GSBI_BUILT_IN___ST200CMPGT_PH_BDEST: return "GSBI_BUILT_IN___ST200CMPGT_PH_BDEST";
+  case GSBI_BUILT_IN___ST200DIB: return "GSBI_BUILT_IN___ST200DIB";
+  case GSBI_BUILT_IN___ST200EXT1_PB: return "GSBI_BUILT_IN___ST200EXT1_PB";
+  case GSBI_BUILT_IN___ST200EXT2_PB: return "GSBI_BUILT_IN___ST200EXT2_PB";
+  case GSBI_BUILT_IN___ST200EXT3_PB: return "GSBI_BUILT_IN___ST200EXT3_PB";
+  case GSBI_BUILT_IN___ST200EXTL_PB: return "GSBI_BUILT_IN___ST200EXTL_PB";
+  case GSBI_BUILT_IN___ST200EXTR_PB: return "GSBI_BUILT_IN___ST200EXTR_PB";
+  case GSBI_BUILT_IN___ST200FLUSHADD: return "GSBI_BUILT_IN___ST200FLUSHADD";
+  case GSBI_BUILT_IN___ST200FLUSHADD_L1: return "GSBI_BUILT_IN___ST200FLUSHADD_L1";
+  case GSBI_BUILT_IN___ST200INVADD: return "GSBI_BUILT_IN___ST200INVADD";
+  case GSBI_BUILT_IN___ST200INVADD_L1: return "GSBI_BUILT_IN___ST200INVADD_L1";
+  case GSBI_BUILT_IN___ST200LDWL: return "GSBI_BUILT_IN___ST200LDWL";
+  case GSBI_BUILT_IN___MAXUW: return "GSBI_BUILT_IN___MAXUW";
+  case GSBI_BUILT_IN___MAXW: return "GSBI_BUILT_IN___MAXW";
+  case GSBI_BUILT_IN___ST200MAX_PH: return "GSBI_BUILT_IN___ST200MAX_PH";
+  case GSBI_BUILT_IN___MINUW: return "GSBI_BUILT_IN___MINUW";
+  case GSBI_BUILT_IN___MINW: return "GSBI_BUILT_IN___MINW";
+  case GSBI_BUILT_IN___ST200MIN_PH: return "GSBI_BUILT_IN___ST200MIN_PH";
+  case GSBI_BUILT_IN___ST200MULADDUS_PB: return "GSBI_BUILT_IN___ST200MULADDUS_PB";
+  case GSBI_BUILT_IN___ST200MULADD_PH: return "GSBI_BUILT_IN___ST200MULADD_PH";
+  case GSBI_BUILT_IN___ST200MULFRACADDS_PH: return "GSBI_BUILT_IN___ST200MULFRACADDS_PH";
+  case GSBI_BUILT_IN___ST200MULFRACRM_PH: return "GSBI_BUILT_IN___ST200MULFRACRM_PH";
+  case GSBI_BUILT_IN___ST200MULFRACRNE_PH: return "GSBI_BUILT_IN___ST200MULFRACRNE_PH";
+  case GSBI_BUILT_IN___ST200MUL_PH: return "GSBI_BUILT_IN___ST200MUL_PH";
+  case GSBI_BUILT_IN___ST200PACKRNP_PHH: return "GSBI_BUILT_IN___ST200PACKRNP_PHH";
+  case GSBI_BUILT_IN___ST200PACKSU_PB: return "GSBI_BUILT_IN___ST200PACKSU_PB";
+  case GSBI_BUILT_IN___ST200PACKS_PH: return "GSBI_BUILT_IN___ST200PACKS_PH";
+  case GSBI_BUILT_IN___ST200PACK_PB: return "GSBI_BUILT_IN___ST200PACK_PB";
+  case GSBI_BUILT_IN___ST200PACK_PH: return "GSBI_BUILT_IN___ST200PACK_PH";
+  case GSBI_BUILT_IN___ST200PERM_PB: return "GSBI_BUILT_IN___ST200PERM_PB";
+  case GSBI_BUILT_IN___ST220PRGADD_L1: return "GSBI_BUILT_IN___ST220PRGADD_L1";
+  case GSBI_BUILT_IN___ST200PRGADD_L1: return "GSBI_BUILT_IN___ST200PRGADD_L1";
+  case GSBI_BUILT_IN___ST220PRGINS: return "GSBI_BUILT_IN___ST220PRGINS";
+  case GSBI_BUILT_IN___ST200PRGINS: return "GSBI_BUILT_IN___ST200PRGINS";
+  case GSBI_BUILT_IN___ST200PRGINSADD: return "GSBI_BUILT_IN___ST200PRGINSADD";
+  case GSBI_BUILT_IN___ST200PRGINSADD_L1: return "GSBI_BUILT_IN___ST200PRGINSADD_L1";
+  case GSBI_BUILT_IN___ST200PRGINSSET: return "GSBI_BUILT_IN___ST200PRGINSSET";
+  case GSBI_BUILT_IN___ST200PRGINSSET_L1: return "GSBI_BUILT_IN___ST200PRGINSSET_L1";
+  case GSBI_BUILT_IN___ST200PRGSET_L1: return "GSBI_BUILT_IN___ST200PRGSET_L1";
+  case GSBI_BUILT_IN___ST200PSWCLR: return "GSBI_BUILT_IN___ST200PSWCLR";
+  case GSBI_BUILT_IN___ST200PSWMASK: return "GSBI_BUILT_IN___ST200PSWMASK";
+  case GSBI_BUILT_IN___ST200PSWSET: return "GSBI_BUILT_IN___ST200PSWSET";
+  case GSBI_BUILT_IN___ST200RETENTION: return "GSBI_BUILT_IN___ST200RETENTION";
+  case GSBI_BUILT_IN___ST200SADU_PB: return "GSBI_BUILT_IN___ST200SADU_PB";
+  case GSBI_BUILT_IN___ST200SATSO: return "GSBI_BUILT_IN___ST200SATSO";
+  case GSBI_BUILT_IN___ST200SH1ADDSO: return "GSBI_BUILT_IN___ST200SH1ADDSO";
+  case GSBI_BUILT_IN___ST200SH1SUBSO: return "GSBI_BUILT_IN___ST200SH1SUBSO";
+  case GSBI_BUILT_IN___ST200SHLSO: return "GSBI_BUILT_IN___ST200SHLSO";
+  case GSBI_BUILT_IN___ST200SHLS: return "GSBI_BUILT_IN___ST200SHLS";
+  case GSBI_BUILT_IN___ST200SHLS_PH: return "GSBI_BUILT_IN___ST200SHLS_PH";
+  case GSBI_BUILT_IN___ST200SHL_PH: return "GSBI_BUILT_IN___ST200SHL_PH";
+  case GSBI_BUILT_IN___ST200SHRRNE_PH: return "GSBI_BUILT_IN___ST200SHRRNE_PH";
+  case GSBI_BUILT_IN___ST200SHRRNP: return "GSBI_BUILT_IN___ST200SHRRNP";
+  case GSBI_BUILT_IN___ST200SHRRNP_PH: return "GSBI_BUILT_IN___ST200SHRRNP_PH";
+  case GSBI_BUILT_IN___ST200SHR_PH: return "GSBI_BUILT_IN___ST200SHR_PH";
+  case GSBI_BUILT_IN___ST200SHUFFEVE_PB: return "GSBI_BUILT_IN___ST200SHUFFEVE_PB";
+  case GSBI_BUILT_IN___ST200SHUFFODD_PB: return "GSBI_BUILT_IN___ST200SHUFFODD_PB";
+  case GSBI_BUILT_IN___ST200SHUFF_PBH: return "GSBI_BUILT_IN___ST200SHUFF_PBH";
+  case GSBI_BUILT_IN___ST200SHUFF_PBL: return "GSBI_BUILT_IN___ST200SHUFF_PBL";
+  case GSBI_BUILT_IN___ST200SHUFF_PHH: return "GSBI_BUILT_IN___ST200SHUFF_PHH";
+  case GSBI_BUILT_IN___ST200SHUFF_PHL: return "GSBI_BUILT_IN___ST200SHUFF_PHL";
+  case GSBI_BUILT_IN___ST200SLCT_PB: return "GSBI_BUILT_IN___ST200SLCT_PB";
+  case GSBI_BUILT_IN___ST200STWL: return "GSBI_BUILT_IN___ST200STWL";
+  case GSBI_BUILT_IN___ST200SUBSO: return "GSBI_BUILT_IN___ST200SUBSO";
+  case GSBI_BUILT_IN___ST200SUBS_PH: return "GSBI_BUILT_IN___ST200SUBS_PH";
+  case GSBI_BUILT_IN___ST200SUB_PH: return "GSBI_BUILT_IN___ST200SUB_PH";
+  case GSBI_BUILT_IN___ST220SYNC: return "GSBI_BUILT_IN___ST220SYNC";
+  case GSBI_BUILT_IN___ST200SYNC: return "GSBI_BUILT_IN___ST200SYNC";
+  case GSBI_BUILT_IN___ST220SYNCINS: return "GSBI_BUILT_IN___ST220SYNCINS";
+  case GSBI_BUILT_IN___ST200SYNCINS: return "GSBI_BUILT_IN___ST200SYNCINS";
+  case GSBI_BUILT_IN___ST200UNPACKU_PBH: return "GSBI_BUILT_IN___ST200UNPACKU_PBH";
+  case GSBI_BUILT_IN___ST200UNPACKU_PBL: return "GSBI_BUILT_IN___ST200UNPACKU_PBL";
+  case GSBI_BUILT_IN___ST200WAITL: return "GSBI_BUILT_IN___ST200WAITL";
+  case GSBI_BUILT_IN___ST200WMB: return "GSBI_BUILT_IN___ST200WMB";
+#endif /* INTRN_GSBI_NAME */
 

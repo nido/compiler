@@ -672,11 +672,18 @@ run_phase (phases_t phase, string name, string_list_t *args)
 	  switch (status) {
 	  case RC_OKAY:
 	    if (inline_t == UNDEFINED
+#ifdef TARG_ST
+		&& (is_matching_phase(get_phase_mask(phase), P_wgen) ||
+		    (gnu_major_version == 3
+		     && is_matching_phase(get_phase_mask(phase), P_any_fe)) || 
+#else
 		&& (is_matching_phase(get_phase_mask(phase), P_any_fe) || 
+#endif
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
 		    /* TODO: check inline. */
 		    /* (cbr) if !keep fe is called at P_gcpp */
-		    (!keep_flag && is_matching_phase(get_phase_mask(phase), P_gcpp)))
+		    (!keep_flag && gnu_major_version == 3
+		     && is_matching_phase(get_phase_mask(phase), P_gcpp)))
 #endif
 		)
 	      
@@ -687,7 +694,9 @@ run_phase (phases_t phase, string name, string_list_t *args)
 		   functions if fe requested it */
 		if (olevel > 1 ||
 		    is_matching_phase(get_phase_mask(phase),
-				      P_cplus_gfe))
+				      P_cplus_gfe) ||
+		    is_matching_phase(get_phase_mask(phase),
+				      P_wgen))
 		  inline_t = TRUE;
 		else 
 #endif
@@ -696,8 +705,14 @@ run_phase (phases_t phase, string name, string_list_t *args)
 	    break;
 	  case RC_NEED_INLINER:
 	    if (inline_t == UNDEFINED
+#ifdef TARG_ST
+		&& ((gnu_major_version == 3
+		     && is_matching_phase(get_phase_mask(phase), P_any_fe))
+		    || is_matching_phase(get_phase_mask(phase), P_wgen)))
+#else
 		&& is_matching_phase(
 				     get_phase_mask(phase), P_any_fe) )
+#endif
 	      {
 		inline_t = TRUE;
 	      }

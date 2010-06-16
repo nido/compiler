@@ -214,6 +214,11 @@ ETABLE::LPRE_bottom_up_cr(STMTREP *stmt, INT stmt_kid_num, CODEREP *cr,
 	cr->Set_max_depth( ( depth <= 255 ) ? depth : 255 );
 	
       for (INT32 i=0; i<cr->Kid_count(); i++)	{ 
+#ifdef KEY // bug 12471: __builtin_expect's first kid must be constant
+	if (cr->Opr() == OPR_INTRINSIC_OP && cr->Intrinsic() == INTRN_EXPECT &&
+	    i == 1)
+	  continue;
+#endif
 	LPRE_bottom_up_cr(stmt, stmt_kid_num, cr->Opnd(i), FALSE, (depth+1), cr, i);
       }
       break;

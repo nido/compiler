@@ -1003,7 +1003,7 @@ struct sort_on_filter : public binary_function<type_filter_entry,
 static INITO*
 Create_Type_Filter_Map (void)
 {
-  INITV_IDX i = INITV_next (INITV_next (INITO_val (Get_Current_PU().unused)));
+  INITV_IDX i = INITV_next (INITV_next (INITO_val (PU_misc_info (Get_Current_PU()))));
   INITO* ino;
   INITO_IDX idx = TCON_uval (INITV_tc_val(i));
   if (idx)	// idx for typeinfo_table
@@ -1069,7 +1069,7 @@ Create_INITO_For_Range_Table(ST * st, ST * pu)
 // 4th field in a call-site record.
   int running_ofst=1;
   int bytes_for_filter;
-  INITO_IDX tmp = Get_Current_PU().unused;
+  INITO_IDX tmp = PU_misc_info (Get_Current_PU());
 
   INITO* eh_spec = (tmp) ? Create_Type_Filter_Map () : NULL ;
 
@@ -1112,6 +1112,20 @@ Create_INITO_For_Range_Table(ST * st, ST * pu)
 
     // first action index
     // build chain of actions
+
+    // [SC] The information we have here is a list of actions.
+    //    = 0: indicates either a catch-all clause.
+    //    = INT32_MIN: indicates a cleanup action.
+    //    < 0: indicates an eh_spec: value is the index into the
+    //         exception specs table
+    //    > 0: indicates a catch clause: value is the ST_IDX of the catch type.
+    //  There is an ambiguity between an action record representing a
+    //  catch-all, and an action record representing a non-action.
+    //  I have made some changes to the frontend to improve the
+    //  representation of cleanup actions.
+    //  The frontend now uses the special values 0 for catch-all, and
+    //  INT32_MIN for cleanup action.
+
 #ifndef TARG_ST
       /* (cbr) don't mess up with "no action" */
     FmtAssert (INITV_next (first_initv) != 0, ("No handler information available"));
@@ -1137,6 +1151,39 @@ Create_INITO_For_Range_Table(ST * st, ST * pu)
 	if (INITV_kind(next_initv) != INITVKIND_ZERO)
 	    sym = TCON_uval(INITV_tc_val (next_initv));
 
+#ifdef TARG_ST
+	// [SC] Attempt to simplify and make more understandable
+	// the original code.  A zero value is now unambiguously a
+	// catch-all, a cleanup action has a different magic value.
+
+	int filter_val;
+	if (sym == INT32_MIN) {
+	  // sym==INT32_MIN => cleanup action.  This is represented
+	  // by filter_val zero.
+	  filter_val = 0;
+	} else if (sym >= 0) {
+	  // sym>0 => catch clause => the type filter is an
+	  // index into types table.
+	  // sym==0 => catch-all => the type filter is again
+	  // an index into the types table (the types table entry
+	  // is zero).
+	  filter_val = type_filter_map[sym];
+	} else {
+	  // sym<0  => eh spec.  => the type filter is index into
+	  //                        exception specs
+	  // In both cases we put the value directly in the action record.
+	  filter_val = sym;
+	}
+	// [SC] Should be using INITV_Init_Integer here,
+	// but nervous about INITV_ONE case.
+	if (filter_val == 0) {
+	  INITV_Set_ZERO (Initv_Table[action], MTYPE_I4, 1);
+	} else {
+	  INITV_Set_VAL (Initv_Table[action],
+			 Enter_tcon (Host_To_Targ (MTYPE_I4,filter_val)), 1);
+	}
+	bytes_for_filter = sizeof_signed_leb128 (filter_val);
+#else
 	bool catch_all = false;	// catch-all clause
 	if (!sym)
 	    catch_all = (type_filter_map.find(sym) != type_filter_map.end());
@@ -1154,12 +1201,7 @@ Create_INITO_For_Range_Table(ST * st, ST * pu)
 	    INITV_IDX tmp_idx = INITV_next (next_initv);
 	    if (INITV_kind (tmp_idx) != INITVKIND_ZERO)
 	    	next_sym = TCON_ival (INITV_tc_val (tmp_idx));
-#ifdef TARG_ST
-            /* (cbr) first null action is a cleanup */
-	    if (next_sym)
-#else
 	    if (next_sym < 0)
-#endif
 	    	catch_all = false;
 	}
 
@@ -1189,12 +1231,14 @@ Create_INITO_For_Range_Table(ST * st, ST * pu)
 	    zero_action = true;
 	    bytes_for_filter = 1;
 	}
+#endif
 
     	if (!action_ofst)
 	{
 	    // store the head of each action chain
 	    action_chains.push_back (action);
 
+#ifndef TARG_ST
 	    // action start marker for call-site record
 	    if (zero_action && !INITV_next (next_initv))
 	    {
@@ -1203,6 +1247,7 @@ Create_INITO_For_Range_Table(ST * st, ST * pu)
 	      INITV_Set_ZERO (Initv_Table[first_action], MTYPE_I4, 1);
 	    }
 	    else
+#endif
 	      INITV_Set_VAL (Initv_Table[first_action],
 		Enter_tcon (Host_To_Targ (MTYPE_I4, running_ofst)), 1);
 	    // store offset into first action **Note: not the filter, but offset to it

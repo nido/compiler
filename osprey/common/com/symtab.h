@@ -258,11 +258,15 @@ PU_Init (PU& pu, TY_IDX prototype, SYMTAB_IDX level)
     pu.target_idx = TARGET_INFO_IDX_ZERO;
     pu.prototype = prototype;
     Is_True (level > GLOBAL_SYMTAB, ("lexical level of a PU must be > 1"));
+    pu.base_class = TY_IDX_ZERO;
     pu.lexical_level = level;
     pu.gp_group = 0;
     pu.src_lang = PU_UNKNOWN_LANG;
     pu.stkaln = Target_Stack_Alignment;
+    pu.misc = 0;
+#if ! defined(TARG_ST) || defined(PU_HAS_UNUSED)
     pu.unused = 0;
+#endif
     pu.flags = 0;
 #ifdef TARG_ST
   //TB" Add size optimization level for this PU

@@ -123,8 +123,10 @@ CLASS_REG_PAIR      CLASS_REG_PAIR_true = CLASS_REG_PAIR_undef;
 CLASS_REG_PAIR      CLASS_REG_PAIR_fzero = CLASS_REG_PAIR_undef;
 CLASS_REG_PAIR      CLASS_REG_PAIR_fone = CLASS_REG_PAIR_undef;
 CLASS_REG_PAIR      CLASS_REG_PAIR_link = CLASS_REG_PAIR_undef;
-#ifdef TARG_ST // [SC] TLS support
+#ifdef TARG_ST
 CLASS_REG_PAIR      CLASS_REG_PAIR_tp = CLASS_REG_PAIR_undef;
+CLASS_REG_PAIR      CLASS_REG_PAIR_eh_return_data[4] = {
+  CLASS_REG_PAIR_undef, CLASS_REG_PAIR_undef, CLASS_REG_PAIR_undef, CLASS_REG_PAIR_undef };
 #endif
 
 #if ISA_REGISTER_MAX >= 64
@@ -395,6 +397,7 @@ Initialize_Register_Class(
   REGISTER_SET	     rotating       = REGISTER_SET_EMPTY_SET;
 #ifdef TARG_ST
   REGISTER_SET       eh_return      = REGISTER_SET_EMPTY_SET;
+  INT eh_return_count = 0;
 #endif
 
 #ifdef TARG_ST
@@ -494,8 +497,15 @@ Initialize_Register_Class(
         if ( ABI_PROPERTY_Is_stacked(rclass, isa_reg) )
           stacked = REGISTER_SET_Union1(stacked, reg);
 #ifdef TARG_ST
-        if ( ABI_PROPERTY_Is_eh_return(rclass, isa_reg) )
+        if ( ABI_PROPERTY_Is_eh_return(rclass, isa_reg) ) {
           eh_return = REGISTER_SET_Union1(eh_return, reg);
+	  FmtAssert(eh_return_count < (sizeof (CLASS_REG_PAIR_eh_return_data)
+				       / sizeof (CLASS_REG_PAIR_eh_return_data[0])),
+		    ("too many eh_return_data registers specified in ABI"));
+          Set_CLASS_REG_PAIR_reg(CLASS_REG_PAIR_eh_return_data[eh_return_count], reg);
+	  Set_CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_eh_return_data[eh_return_count++],
+				    rclass);
+	}
 #endif
       }
     }

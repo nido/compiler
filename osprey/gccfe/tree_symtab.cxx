@@ -833,6 +833,8 @@ Create_TY_For_Tree (tree type_tree, TY_IDX idx)
 		    Get_Integer_Value(DECL_FIELD_OFFSET(field)) +
 		    Get_Integer_Value(DECL_FIELD_BIT_OFFSET(field))
 					/ BITSPERBYTE );
+	  if (DECL_NAME(field) == NULL)
+	    Set_FLD_is_anonymous(fld);
 #ifdef OLDCODE
 	  if ( ! DECL_BIT_FIELD(field)
 	       && Get_Integer_Value(DECL_SIZE(field)) > 0
@@ -1393,6 +1395,9 @@ Create_ST_For_Tree (tree decl_node)
           }
         }
 #endif
+	if (TREE_CODE(decl_node) == VAR_DECL && DECL_THREAD_LOCAL(decl_node)) {
+		Set_ST_is_thread_local (st);
+	}
 #ifdef TARG_ST
 	// [SC] TLS support
 	if (DECL_THREAD_LOCAL (decl_node)) {

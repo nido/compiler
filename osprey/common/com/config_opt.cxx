@@ -317,7 +317,12 @@ UINT32 Mpy_Exe_Ratio = 12;      /* A cut-off percentage for value profiling. */
 UINT32 Freq_Threshold_For_Space = 100;      /* If the PU is executed less than this, OPT_Space is set to true. */
 UINT32 Size_Threshold_For_Space = 100;      /* If the PU is bigger than this, OPT_Space is set to true. */
 BOOL FB_CodeSize_Perf_Ratio = FALSE;		/* Optimize for size when freq < Freq_Threshold_For_Space or when size > Size_Threshold_For_Space */
-
+#ifdef TARG_ST
+BOOL Early_Goto_Conversion = FALSE;
+#else
+BOOL Early_Goto_Conversion = TRUE; // Goto conversion applied before VHO(C/C++)
+#endif
+BOOL Early_Goto_Conversion_Set = FALSE;
 #endif
 
 /***** Obsolete options *****/
@@ -429,6 +434,9 @@ static OPTION_DESC Options_OPT[] = {
   { OVK_UINT32,	OV_INTERNAL,	TRUE, "mpy_exe_ratio",	"",
     0, 0, 100,	&Mpy_Exe_Ratio, NULL ,
     "Restrict mpy optimization via value profiling" },
+  { OVK_BOOL,   OV_INTERNAL,    TRUE, "early_goto_conv", "",
+    0, 0, 0,    &Early_Goto_Conversion, &Early_Goto_Conversion_Set,
+    "Do GOTO conversion before VHO" },
 #endif
 #ifdef TARG_ST
   { OVK_UINT32,	OV_INTERNAL,	TRUE, "freq_threshold_space",	"",

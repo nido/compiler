@@ -895,10 +895,10 @@ void
 SUMMARIZE<program>::Process_eh_globals (void)
 {
     if (!(PU_src_lang (Get_Current_PU()) & PU_CXX_LANG) || 
-    	!Get_Current_PU().unused)
+    	!PU_misc_info (Get_Current_PU()))
     	return;
 
-    INITV_IDX i = INITV_next (INITV_next (INITO_val (Get_Current_PU().unused)));
+    INITV_IDX i = INITV_next (INITV_next (INITO_val (PU_misc_info (Get_Current_PU()))));
     INITO_IDX idx = TCON_uval (INITV_tc_val(i));
     if (idx)	// typeinfo
     {

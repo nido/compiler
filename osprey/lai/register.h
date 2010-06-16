@@ -1006,11 +1006,13 @@ extern CLASS_REG_PAIR		CLASS_REG_PAIR_rs;
 #define REGISTER_CLASS_rs	CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_rs)
 #define CLASS_AND_REG_rs	CLASS_REG_PAIR_class_n_reg(CLASS_REG_PAIR_rs)
 
-#ifdef TARG_ST /* [SC] TLS support */
+#ifdef TARG_ST
 extern CLASS_REG_PAIR           CLASS_REG_PAIR_tp;
 #define REGISTER_tp             CLASS_REG_PAIR_reg(CLASS_REG_PAIR_tp)
 #define REGISTER_CLASS_tp	CLASS_REG_PAIR_rclass(CLASS_REG_PAIR_tp)
 #define CLASS_AND_REG_tp	CLASS_REG_PAIR_class_n_reg(CLASS_REG_PAIR_tp)
+
+extern CLASS_REG_PAIR           CLASS_REG_PAIR_eh_return_data[4];
 #endif
 
 CG_EXPORTED extern const CLASS_REG_PAIR		CLASS_REG_PAIR_undef;

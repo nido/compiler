@@ -986,6 +986,18 @@ I-cpp_nonansi_f77	;		f77	cpp	KRDEFS NONANSI_svr4
 	""
 -gdwarf-23	toggle(&glevel,3);	ALL	cpp	self "-DEBUG:format=dwarf2 -g3 -CG:emit_asm_dwarf=on -CG:emit_unwind_info=on"
 	""
+#ifdef KEY
+-gnu3	toggle(&gnu_major_version,3);toggle(&gnu_minor_version,3);toggle(&gnu_revision,3);	Cc	NONE	""
+	"Use GCC 3.3.3 C/C++ front-end."
+-gnu4	toggle(&gnu_major_version,4);toggle(&gnu_minor_version,2);toggle(&gnu_revision,0);	Cc	NONE	""
+	"Use GCC 4.2.0 C/C++ front-end."
+#ifndef TARG_ST
+-gnu40	toggle(&gnu_major_version,4);toggle(&gnu_minor_version,0);	Cc	NONE	""
+	"Use GCC 4.0 C/C++ front-end."
+#endif
+-gnu42	toggle(&gnu_major_version,4);toggle(&gnu_minor_version,2);toggle(&gnu_revision,0);	Cc	NONE	""
+	"Use GCC 4.2.0 C/C++ front-end."
+#endif
 -gstabs		;		ALL	cpp	self "-DEBUG:format=stabs"
 	""
 -gstabs0	toggle(&glevel,0);	ALL	cpp	self "-DEBUG:format=stabs -g0"
@@ -2071,6 +2083,8 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	"issue -pedantic warnings as errors instead"
 -W	;		Cc	f,cpp	self
 	"enable extra warnings"
+-Wextra	;		Cc	f,cpp	"-W"
+	"enable extra warnings"
 -Wall	Add_Wuninitialized();Add_Wreturn_type();		Cc	cpp,f	self
 	"enable most warning messages"
 -Waggregate-return	;		Cc	f,cpp	self
@@ -2431,8 +2445,16 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 	NA__"Copy memory operands into registers before using"
 -fdata-sections	;		Cc	cpp,f	self
 	""
+#ifdef TARG_ST
+-fno-data-sections	;		Cc	cpp,f	self
+	""
+#endif
 -ffunction-sections	;		Cc	cpp,f	self
 	NA__"place each function into its own section"
+#ifdef TARG_ST
+-fno-function-sections	;		Cc	cpp,f	self
+	NA__"place each function into its own section"
+#endif
 -fgcse		;		Cc	cpp,f	self
 	""
 
@@ -2671,11 +2693,11 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 #ifdef TARG_ST200
 -fembedded      toggle(&abi,ABI_ST200_embedded);	Cc      NONE    ""
         "Generate code for the embedded ABI"
--fpic		toggle(&abi,ABI_ST200_embedded);	Cc	cpp,FE	self "-TENV:GPREL -TENV:PIC -D__PIC__ -D__pic__"
+-fpic		toggle(&abi,ABI_ST200_embedded);	Cc	cpp,FE	self "-TENV:GPREL -TENV:PIC"
 	"Generate position independent code for the embedded ABI"
 -fno-pic	toggle(&abi,ABI_ST200_embedded);	Cc	cpp,FE	self ""
 	"Generate position-dependant code for the embedded ABI"
--fPIC		toggle(&abi,ABI_ST200_embedded);	Cc	cpp,FE	self "-TENV:GPREL -TENV:PIC -TENV:large_GOT -D__PIC__ -D__pic__"
+-fPIC		toggle(&abi,ABI_ST200_embedded);	Cc	cpp,FE	self "-TENV:GPREL -TENV:PIC -TENV:large_GOT"
  	"Generate position indepdendent code, assume large GOT"
 -fno-PIC	toggle(&abi,ABI_ST200_embedded);	Cc	cpp,FE	self ""
 	"Generate position-dependant code for the embedded ABI"
@@ -2748,9 +2770,9 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -fpack-struct	;		Cc	cpp,FE	"-fpack-struct"
 	"pack structure members together without holes"
 #ifdef TARG_ST
--mwarn-pack-struct	;	Cc	cpp,FE	"-TENV:pack-struct-warnings-enabled=1"
+-mwarn-pack-struct	;	Cc	cpp,FE	"-mwarn-pack-struct -TENV:pack-struct-warnings-enabled=1"
 	"-mwarn-pack-struct\n                    Enable emission of warnings/errors when option -fpack-struct is set"
--mno-warn-pack-struct	;	Cc	cpp,FE	"-TENV:pack-struct-warnings-enabled=0"
+-mno-warn-pack-struct	;	Cc	cpp,FE	"-mno-warn-pack-struct -TENV:pack-struct-warnings-enabled=0"
 	"-mno-warn-pack-struct\n                    Disable emission of warnings/errors when option -fpack-struct is set"
 #endif
 -fstack-check	;		Cc	NONE	""
@@ -2981,6 +3003,14 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 -print-file-name=%s	{execute_flag=FALSE; print_name = optargs; print_kind = PRINT_FILE;}	ALL	NONE	""
 	""
 -print-libgcc-file-name	{execute_flag=FALSE; print_name = "libgcc.a"; print_kind = PRINT_FILE;}	ALL	NONE	""
+	""
+-print-multi-lib	{execute_flag=FALSE;  print_multi_lib(); }	ALL	NONE	""
+	""
+--print-multi-lib	;		ALL	NONE	"-print-multi-lib"
+	""
+-print-multi-os-directory {execute_flag=FALSE; print_multi_os_directory(); }	ALL	NONE	""
+	""
+--print-multi-os-directory	;	ALL	NONE	"-print-multi-os-directory"
 	""
 -print-prog-name=%s	{execute_flag=FALSE; print_name = optargs; print_kind = PRINT_PROG;}	ALL	NONE	""
 	""
@@ -3311,5 +3341,235 @@ I-exp3		toggle(&proc,31);        ALL     NONE    "-TARG:proc=exp3"
 %     ax:<n>          Select size of aX register set; <n> in [2..4]
 %     gpr:<n>         Select size of STxP70 Core register set; <n> in [16..32]
 % sxcc switches no more supported - end
+
+#endif
+
+#ifdef TARG_ST
+%%% OPTIONS
+% [CM] 20090515: gcc-4.2.x options
+
+%C Language Options
+-fgnu89-inline	;		cc	cpp,f	self 
+	"Requires use of the traditional GNU semantics for inline functions when in C99 mode"
+%-fno-gnu89-inline is not supported
+-aux-info*%s	;     	        cc	cpp,f	"-aux-info=%s"
+	"Output to the given filename prototyped declarations for all functions declared and/or defined in a translation unit."
+-fno-builtin-%s	;		cc	cpp,f	"-fno-builtin-%s"
+	"Disable the built-in `function' function."
+-fms-extensions	;		cc	cpp,f	self 
+	"Accept some non-standard constructs used in Microsoft header files."
+%-fno-ms-extensions was previously defined
+
+%C++ Language Options
+-fconserve-space  ;		CC	cpp,f	self
+	"Put uninitialized or runtime-initialized global variables into the common segment, as C does."
+-ffriend-injection  ;		CC	cpp,f	self
+	"Inject friend functions into the enclosing namespace, so that they are visible outside the scope of the class in which they are declared."
+-fno-friend-injection  ;		CC	cpp,f	self
+	"Do not inject friend functions into the enclosing namespace."
+-fno-nonansi-builtins    ;		CC	cpp,f	self
+	"Disable built-in declarations of functions that are not mandated by ANSI/ISO C."
+-fno-operator-names     ;		CC	cpp,f	self
+	"Do not treat the operator name keywords and, bitand, bitor, compl, not, or and xor as synonyms as keywords."
+-fno-optional-diags      ;		CC	cpp,f	self
+	"Disable diagnostics that the standard says a compiler does not need to issue."
+%__cxa_guard_acquire and __cxa_guard_release
+-fno-threadsafe-statics      ;		CC	cpp,f	self
+	"Do not emit extra code to use the routines specified in the C++ ABI for thread-safe initialization of local statics."
+-fthreadsafe-statics      ;		CC	cpp,f	self
+	"Emit extra code to use the routines specified in the C++ ABI for thread-safe initialization of local statics."
+-fno-use-cxa-get-exception-ptr      ;		CC	cpp,f	self
+	"Don't use the __cxa_get_exception_ptr runtime routine"
+-fuse-cxa-get-exception-ptr      ;		CC	cpp,f	self
+	"Use the __cxa_get_exception_ptr runtime routine"
+-fno-weak      ;		CC	cpp,f	self
+	"Do not use weak symbol support, even if it is provided by the linker."
+-fweak      ;		 	CC	cpp,f	self
+	"Use weak symbol support, even if it is provided by the linker."
+-fvisibility-inlines-hidden     ;		CC	cpp,f	self
+	"Declare that one does not attempt to compare pointers to inline methods where the addresses of the two functions were taken in different shared objects." 	
+-fno-visibility-inlines-hidden     ;		CC	cpp,f	self
+	"Declare that one compares pointers to inline methods where the addresses of the two functions were taken in different shared objects."
+-Wstrict-null-sentinel      ;		CC	cpp,f	self
+	"Warn about the use of an uncasted NULL as sentinel."
+-Wno-strict-null-sentinel      ;		CC	cpp,f	self
+	"Do not warn about the use of an uncasted NULL as sentinel."
+
+% C++ Diagnostic options
+-fdiagnostics-show-option      ;		Cc	cpp,f	self
+	"Instructs the diagnostic machinery to add text to each diagnostic emitted."
+-fno-diagnostics-show-option      ;		Cc	cpp,f	self
+	"Instructs the diagnostic machinery not to add text to each diagnostic emitted."
+                                                            
+% Warning Options
+%-fsyntax-only    ;		Cc	cpp,f	self
+%	"Check the code for syntax errors, but don't do anything beyond that."
+-Waddress      ;		Cc	cpp,f	self
+	"Warn about suspicious uses of memory addresses."
+-Wno-address      ;		Cc	cpp,f	self
+	"Do not warn about suspicious uses of memory addresses."
+-Wattributes     ;		Cc	cpp,f	self
+	"Warn if an unexpected __attribute__ is used"
+-Wno-attributes     ;		Cc	cpp,f	self
+	"Do not warn if an unexpected __attribute__ is used"
+-Wc++-compat     ;		Cc	cpp,f	self
+	"Warn about ISO C constructs that are outside of the common subset of ISO C and ISO C++"
+-Wno-c++-compat     ;		Cc	cpp,f	self
+	"Do not warn about ISO C constructs that are outside of the common subset of ISO C and ISO C++"
+-Werror=%s	;		Cc	cpp,f	"-Werror=%s"
+	"Make the specified warning into an error."
+-Wno-error=%s	;		Cc	cpp,f	"-Wno-error=%s"
+	"Negate -Werror for specific warnings"
+%-Wfatal-errors     ;		Cc	cpp,f	self
+%	"This option causes the compiler to abort compilation on the first error occurred."
+-Winit-self      ;		Cc	cpp,f	self
+	"Warn about uninitialized variables which are initialized with themselves."
+-Wno-init-self      ;		Cc	cpp,f	self
+	"Do not warn about uninitialized variables which are initialized with themselves."
+-Wint-to-pointer-cast  ;	cc	cpp,f	self
+	"Warn about casts to pointer type of an integer of a different size."
+-Wno-int-to-pointer-cast  ;	cc	cpp,f	self
+	"Suppress warnings from casts to pointer type of an integer of a different size."
+-Winvalid-offsetof   ;	CC	cpp,f	self
+	"Warni when applying the `offsetof' macro to a non-POD type."
+-Wno-invalid-offsetof   ;	CC	cpp,f	self
+	"Suppress warnings from applying the `offsetof' macro to a non-POD type."
+-Wunsafe-loop-optimizations  ;	Cc	cpp,f	self
+	"Warn if the loop cannot be optimized because the compiler could not assume anything on the bounds of the loop indices."
+-Wno-unsafe-loop-optimizations  ;	Cc	cpp,f	self
+	"Do not warn if the loop cannot be optimized in unsafe loop optimizatin mode."
+-Wmissing-field-initializers ;	Cc	cpp,f	self
+	"Warn if a structure's initializer has some fields missing."
+-Wno-missing-field-initializers ;	Cc	cpp,f	self
+	"Do not warn if a structure's initializer has some fields missing."
+-Wmissing-include-dirs     ;	Cc	cpp,f	self
+	"Warn if a user-supplied include directory does not exist."
+-Wno-missing-include-dirs     ;	Cc	cpp,f	self
+	"Do not warn if a user-supplied include directory does not exist. "
+-Woverflow     ;		Cc	cpp,f	self
+	"Warn about compile-time overflow in constant expressions. "
+-Wno-overflow     ;		Cc	cpp,f	self
+	"Do not warn about compile-time overflow in constant expressions. "
+-Woverlength-strings     ;	Cc	cpp,f	self
+	"Warn about string constants which are longer than the “minimum maximum” length specified in the C standard."
+-Wno-overlength-strings     ;	Cc	cpp,f	self
+	"Do not warn about string constants which are longer than the “minimum maximum” length specified in the C standard."
+-Wpointer-to-int-cast     ;	cc	cpp,f	self
+	"Warn about casts from a pointer to an integer type of a different size."
+-Wno-pointer-to-int-cast     ;	cc	cpp,f	self
+	"Suppress warnings from casts from a pointer to an integer type of a different size."
+-Wstrict-aliasing=2     ;	Cc	cpp,f	self
+	"Warns about code which might break the strict aliasing rules."
+-Wstrict-overflow     ;		Cc	cpp,f	self
+	"Warns about cases where the compiler optimizes based on the assumption that signed overflow does not occur."
+-Wno-strict-overflow     ;		Cc	cpp,f	self
+	"Do not warn about cases where the compiler optimizes based on the assumption that signed overflow does not occur."
+-Wstrict-overflow=%d     ;	Cc	cpp,f	"-Wstrict-overflow=%d"
+	"Warns about cases where the compiler optimizes based on the assumption that signed overflow does not occur."
+-Wpragmas      	     	 ;		Cc	cpp,f	self
+	"Warn about misuses of pragmas."
+-Wno-pragmas     ;		Cc	cpp,f	self
+	"Do not warn about misuses of pragmas."
+-Wvariadic-macros     ;		Cc	cpp,f	self
+	"Warn if variadic macros are used in pedantic ISO C90 mode"
+-Wno-variadic-macros     ;		Cc	cpp,f	self
+	"Do not warn if variadic macros are used in pedantic ISO C90 mode"
+-Wvolatile-register-var      ;	Cc	cpp,f	self
+	"Warn if a register variable is declared volatile. "
+-Wno-volatile-register-var      ;	Cc	cpp,f	self
+	"Do not warn if a register variable is declared volatile. "
+
+% C-only Warning Options
+-Wold-style-definition     ;	cc	cpp,f	self
+	"Warn if an old-style function definition is used."
+-Wno-old-style-definition     ;	cc	cpp,f	self
+	"Do not warn if an old-style function definition is used."
+-Wdeclaration-after-statement ;	cc	cpp,f	self
+	"Warn when a declaration is found after a statement in a block."
+-Wno-declaration-after-statement ;	cc	cpp,f	self
+	"Do not warn when a declaration is found after a statement in a block."
+-Wpointer-sign    ;		cc	cpp,f	self
+	"Warn for pointer argument passing or assignment with different signedness."
+-Wno-pointer-sign    ;		cc	cpp,f	self
+	"Warn for pointer argument passing or assignment with different signedness."
+
+% Debugging Options
+% Not supported : specific to GCC IR
+%-feliminate-dwarf2-dups     ;	Cc	cpp,f	self
+%	"Compress DWARF2 debugging information by eliminating duplicated information about each symbol."
+%-fno-eliminate-dwarf2-dups     ;	Cc	cpp,f	self
+%	"Do not compress DWARF2 debugging information by eliminating duplicated information about each symbol."
+%-feliminate-unused-debug-types    ;		Cc	cpp,f	self
+%	"Avoid producing debug symbol output for types that are nowhere used in the source file being compiled."
+%-fno-eliminate-unused-debug-types    ;		Cc	cpp,f	self
+%	"Do not avoid producing debug symbol output for types that are nowhere used in the source file being compiled."
+
+% Optimization Options 
+-finline-functions-called-once     ;	Cc	cpp,f	self
+	"Consider all static functions called once for inlining into their caller even if they are not marked inline."
+-fno-inline-functions-called-once     ;	Cc	cpp,f	self
+	"Do not consider all static functions called once for inlining into their caller even if they are not marked inline."
+-fstrict-overflow     ;	Cc	cpp,f	self
+	"Allow the compiler to assume strict signed overflow rules."
+-fno-strict-overflow     ;	Cc	cpp,f	self
+	"Do not allow the compiler to assume strict signed overflow rules."
+-funsafe-loop-optimizations     ;	Cc	cpp,f	self
+	"Assume that loop indices do not overflow, and that the loops with nontrivial exit condition are not infinite."
+-fno-unsafe-loop-optimizations     ;	Cc	cpp,f	self
+	"Do not assume that loop indices do not overflow, or that the loops with nontrivial exit condition are not infinite."
+%-fkeep-static-consts      ;		Cc	cpp,f	self
+%	"Emit variables declared static const when optimization isn't turned on, even if the variables aren't referenced."
+%-fmerge-constants      ;		Cc	cpp,f	self
+%	"Attempt to merge identical constants (string constants and floating point constants) across compilation units."
+%-fmerge-all-constants     ;		Cc	cpp,f	self
+%	"Attempt to merge identical constants and identical variables."
+              
+% Preprocessor Options
+%%-Aquestion=answer 
+%%-A-question[=answer] 
+%%-imultilib 
+%%-isysroot
+%%-P  
+-ftabstop=%d		;		Cc	f,cpp	-ftabstop=%d
+	"Set the distance between tab stops."
+-fworking-directory  	  ;		Cc	f,cpp	self
+	"Enable generation of linemarkers in the preprocessor output."
+-fno-working-directory  	  ;		Cc	f,cpp	self
+	"Disable generation of linemarkers in the preprocessor output."
+-fshow-column		;		Cc	f,cpp	self
+	"Print column numbers in diagnostics"
+-fno-show-column	;		Cc	f,cpp	self
+	"Do not print column numbers in diagnostics"
+%%-Xpreprocessor option
+
+%%Assembler Option
+%%-Xassembler option
+         
+%%Linker Options
+%%-Xlinker option 
+                 
+%%Target Options
+%%-V version  
+%%-b machine
+
+%%Code Generation conventions
+%-fcall-saved-reg  
+%-fcall-used-reg 
+%-fnon-call-exceptions 
+%-fno-jump-tables 
+-fshort-wchar ;		Cc	cpp,f	self
+	"Override the type for `wchar_t' to be `short unsigned int' instead of the default."
+-fno-short-wchar ;	Cc	cpp,f	self
+	"Do not override the type for `wchar_t' to be `short unsigned int' instead of the default."
+%-fstack-limit-register=reg  
+%-fstack-limit-symbol=sym 
+%-fno-stack-limit 
+%-fargument-alias  
+%-fargument-noalias 
+%-fargument-noalias-global  
+%-fargument-noalias-anything 
+%-fleading-underscore 
+%-ftrapv  
+%-fwrapv  
 
 #endif

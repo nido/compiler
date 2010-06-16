@@ -473,11 +473,46 @@ copy_phase_options (string_list_t *phase_list, phases_t phase)
 	int iflag;
 	FOREACH_OPTION_SEEN(flag) {
 		FOREACH_IMPLIED_OPTION(iflag, flag) {
+			boolean matches_phase = FALSE;
+
 			/* Only add if option is legal for phase and lang.
 			 * Make sure it matches both parent and implied lang.
 			 * Also, don't add object options. */
 
-			if (option_matches_phase(iflag, phase)
+#ifdef KEY		// Hack to filter out -OPT: options to spin_cc1,
+			// which takes all front-end options except -OPT:.  Bug
+			// 10209.  (Why is -OPT classified as a front-end
+			// option in the first place?)
+			//
+			// Pass -OPT: options to wgen for bug 10262.
+			if (gnu_major_version == 4 &&
+#ifdef TARG_ST
+			    (!strncmp("-TENV:", get_option_name(iflag), 6)
+			     || !strncmp("-TARG:", get_option_name(iflag), 6)
+			     || !strncmp("-OPT:", get_option_name(iflag), 5))) {
+#else
+			    !strcmp("-OPT:", get_option_name(iflag))) {
+#endif
+			  if (phase == P_spin_cc1 ||
+#ifdef TARG_ST
+			      (gnu_major_version == 4
+			       && (phase == P_gcpp_plus || phase == P_gcpp)) ||
+#endif
+			      phase == P_spin_cc1plus)
+			    continue;
+			  else if (phase == P_wgen)
+			    matches_phase = TRUE;
+			  else
+			    matches_phase = option_matches_phase(iflag, phase);
+			} else
+#endif
+			matches_phase = option_matches_phase(iflag, phase);
+
+			/* Only add if option is legal for phase and lang.
+			 * Make sure it matches both parent and implied lang.
+			 * Also, don't add object options. */
+
+			if (matches_phase
 			    && option_matches_language(flag, source_lang)
 			    && !is_object_option(iflag) )
 			{
@@ -694,26 +729,16 @@ add_file_args (string_list_t *args, phases_t index)
 	   * However we don't have the full gcc mechanism to handle that
 	   */
 	  if(nogcc != 1) {
-	    /* (cbr) set c++ front end */
+	    char vsn[5];
+	    sprintf(vsn, "%d", gnu_major_version);
+	    add_string(args, concat_strings ("-D__GNUC__=", vsn));
 	    if (source_lang == L_CC) {
-	      add_string(args, "-D__GNUC__=3");
-	      add_string(args, "-D__GNUC_MINOR__=3");
-	      add_string(args, "-D__GNUC_PATCHLEVEL__=3");
-	      add_string(args, "-D__GNUG__=3");
-#if defined (TARG_ST) && (GNU_FRONT_END==295)
-	      add_string(args, "-D__GXX_ABI_VERSION=102");
-	      if(!is_toggled(noexceptions) || !noexceptions)
-		add_string(args, "-D__EXCEPTIONS");
-	      /* (cbr)  (cm : ansi not considered when deciding to check nodeprecated to conform gcc) */
-	      if (!is_toggled(nodeprecated))
-		add_string(args, "-D__DEPRECATED");
-#endif
+	      add_string(args, concat_strings ("-D__GNUG__=", vsn));
 	    }
-	    else {
-	      add_string(args, "-D__GNUC__=3");
-	      add_string(args, "-D__GNUC_MINOR__=3");
-	      add_string(args, "-D__GNUC_PATCHLEVEL__=3");
-	    }
+	    sprintf(vsn, "%d", gnu_minor_version);
+	    add_string(args, concat_strings ("-D__GNUC_MINOR__=", vsn));
+	    sprintf(vsn, "%d", gnu_revision);
+	    add_string(args, concat_strings ("-D__GNUC_PATCHLEVEL__=", vsn));
 	  }
 
 #endif /* TARG_ST */
@@ -733,6 +758,11 @@ add_file_args (string_list_t *args, phases_t index)
 	  /* (cbr) use embedded cc1 cpp */
 	  if (last_phase == P_any_cpp || keep_flag || source_lang==L_as)
 	    add_string(args, "-E");
+#endif
+
+#ifdef TARG_ST
+	  if (quiet_flag) 
+	    add_string(args, "-quiet");
 #endif
 
 	  if (source_lang == L_f90) {
@@ -805,23 +835,16 @@ add_file_args (string_list_t *args, phases_t index)
 	   * However we don't have the full gcc mechanism to handle that
 	   */
 	  if(nogcc != 1) {
-	    /* (cbr) set c++ front end */
+	    char vsn[5];
+	    sprintf(vsn, "%d", gnu_major_version);
+	    add_string(args, concat_strings ("-D__GNUC__=", vsn));
 	    if (source_lang == L_CC) {
-	      add_string(args, "-D__GNUG__=3");
-#if defined (TARG_ST) && (GNU_FRONT_END==295)
-	      add_string(args, "-D__GXX_ABI_VERSION=102");
-	      if(!is_toggled(noexceptions) || !noexceptions)
-		add_string(args, "-D__EXCEPTIONS");
-	      /* (cbr) (cm : ansi not considered when deciding to check nodeprecated to conform gcc) */
-	      if (!is_toggled(nodeprecated))
-		add_string(args, "-D__DEPRECATED");
-#endif
+	      add_string(args, concat_strings ("-D__GNUG__=", vsn));
 	    }
-
-	      add_string(args, "-D__GNUC__=3");
-	      add_string(args, "-D__GNUC_MINOR__=3");
-	      add_string(args, "-D__GNUC_PATCHLEVEL__=3");
-
+	    sprintf(vsn, "%d", gnu_minor_version);
+	    add_string(args, concat_strings ("-D__GNUC_MINOR__=", vsn));
+	    sprintf(vsn, "%d", gnu_revision);
+	    add_string(args, concat_strings ("-D__GNUC_PATCHLEVEL__=", vsn));
 	  }
 
 #if defined (TARG_ST) && (GNU_FRONT_END==295)
@@ -894,7 +917,12 @@ add_file_args (string_list_t *args, phases_t index)
 	      add_string(args, "-mbig-endian");
 
 	    add_string(args, "-dumpbase");
+#ifdef TARG_ST
+	    // [CL] the full source path is needed for the debug info
+	    add_string(args, source_file);
+#else
 	    add_string(args, drop_path(source_file));
+#endif
 	  }
 	  else
 #endif
@@ -925,8 +953,13 @@ add_file_args (string_list_t *args, phases_t index)
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
 	  /* (cbr) use embedded cc1 cpp */
 	    if (last_phase != P_any_cpp && !keep_flag && source_lang!=L_as) {
-	      add_string(args, "-o");
-	      add_string(args, construct_name(source_file,"B"));
+	      if (gnu_major_version == 4) {
+		add_string(args, "-spinfile");
+		add_string(args, construct_name(source_file,"spin"));
+	      } else {
+		add_string(args, "-o");
+		add_string(args, construct_name(source_file,"B"));
+	      }
 	      if (dashdash_flag)
 		add_string(args,"--");
 	    }
@@ -1149,6 +1182,36 @@ add_file_args (string_list_t *args, phases_t index)
 		add_string(args, input_source);
 		break;
 
+#ifdef KEY
+	case P_spin_cc1:
+	case P_spin_cc1plus:
+		{
+#ifndef TARG_ST // [SC] Avoid KEY hack since we configure gcc correctly for host.
+#if !defined(_WIN32)
+		  struct utsname uts;
+		  uname(&uts);
+		  if (strstr(uts.machine, "x86_64") == NULL) {
+		    add_string(args, "-fi386-host");		// bug 10532
+		  }
+#endif
+#endif
+		}
+#ifndef TARG_ST
+		/* [SC] ST do not currently have a requirement for -fno-gnu-exceptions,
+		   which is a Pathscale invention, not a standard gcc option,
+		   ST do not currently support cxx-openmp. */
+		if (gnu_exceptions == FALSE) {			// bug 11732
+		  add_string(args, "-fno-gnu-exceptions");
+		}
+		if (fcxx_openmp == 1) {
+		  add_string(args, "-fcxx-openmp");
+		}
+		else if (fcxx_openmp == 0) {
+		  add_string(args, "-fno-cxx-openmp");
+		}
+#endif
+	        // fall through
+#endif
 	case P_c_gfe:
 	case P_cplus_gfe:
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
@@ -1197,11 +1260,22 @@ add_file_args (string_list_t *args, phases_t index)
 #endif
 
 	  add_string(args, "-dumpbase");
-	  add_string(args, drop_path(source_file));
 #ifdef TARG_ST
+	    // [CL] the full source path is needed for the debug info
+	  add_string(args, source_file);
+#else
+	  add_string(args, drop_path(source_file));
+#endif
+#ifdef TARG_ST
+	  if (index == P_spin_cc1
+	      || index == P_spin_cc1plus) {
+	    add_string(args, "-spinfile");
+	    add_string(args, construct_name(source_file, "spin"));
+	  } else {
+	    add_string(args, "-o");
+	    add_string(args, construct_name(source_file,"B"));
+	  }
 	  // [CG] Treat dashdash
-	  add_string(args, "-o");
-	  add_string(args, construct_name(source_file,"B"));
 	  if (dashdash_flag)
 	    add_string(args,"--");
 	  // [SC] Source file name MUST be the last arg.  This is required by
@@ -1214,6 +1288,14 @@ add_file_args (string_list_t *args, phases_t index)
 #endif
 	  break;
 
+#ifdef KEY
+	case P_wgen:
+		sprintf(buf, "-fS,%s", construct_name(source_file, "spin"));
+		add_string(args, buf);
+		sprintf(buf, "-fB,%s", construct_name(source_file, "B"));
+		add_string(args, buf);
+		break;
+#endif
 	case P_inline:
 		if (source_kind == S_B)
 		    sprintf (buf, "-fB,%s", source_file);
@@ -2466,12 +2548,21 @@ determine_phase_order (void)
 	else
 		link_phase = P_ld;
 
+#if defined(KEY) && !defined(TARG_NVISA) /* nvisa doesn't use spin yet */
+
+	phases_t c_fe = (gnu_major_version == 4) ? P_spin_cc1 : P_c_gfe;
+	phases_t cplus_fe = (gnu_major_version == 4) ? P_spin_cc1plus : P_cplus_gfe;
+#else
+	phases_t c_fe = P_c_gfe;
+	phases_t cplus_fe = P_cplus_gfe;
+#endif
+
 	switch (source_kind) {
 	case S_c:
 	case S_C:
 		if (first_phase != P_any_cpp) {
 		    next_phase = (source_lang == L_CC ? 
-					P_cplus_gfe : P_c_gfe);
+					cplus_fe : c_fe);
 		} else {
 		    if (source_lang == L_CC)
 			add_phase(P_gcpp_plus);
@@ -2480,12 +2571,16 @@ determine_phase_order (void)
 
 #if defined (TARG_ST) && (GNU_FRONT_END==33)
 		    /* (cbr) use embedded cc1 cpp */
-		    if (!keep_flag)
-		      next_phase = post_fe_phase ();
+		    if (!keep_flag) {
+		      if (gnu_major_version == 4)
+			next_phase = P_wgen;
+		      else
+			next_phase = post_fe_phase ();
+		    }
 		    else
 #endif
 		    next_phase = (source_lang == L_CC ? 
-					P_cplus_gfe : P_c_gfe);
+					cplus_fe : c_fe);
 		}
 		break;
 	case S_i:
@@ -2497,13 +2592,13 @@ determine_phase_order (void)
 		else if (source_lang == L_as)
 			next_phase = asm_phase;
 		else if (source_lang == L_CC)
-			next_phase = P_cplus_gfe;
+			next_phase = cplus_fe;
 		else if (source_lang == L_cc)
-			next_phase = P_c_gfe;
+			next_phase = c_fe;
 		else if (source_kind == S_ii)
-			next_phase = P_cplus_gfe;
+			next_phase = cplus_fe;
 		else
-			next_phase = P_c_gfe;
+			next_phase = c_fe;
 		break;
 	case S_r:
 		if (run_m4) add_phase(P_m4);
@@ -2577,6 +2672,18 @@ determine_phase_order (void)
 			add_phase(next_phase);
 			next_phase = post_fe_phase ();
 			break;
+#ifdef KEY
+		case P_spin_cc1:
+		case P_spin_cc1plus:
+			add_phase(next_phase);
+			next_phase = P_wgen;
+			break;
+
+		case P_wgen:
+			add_phase(next_phase);
+			next_phase = post_fe_phase ();
+			break;
+#endif
 		case P_f90_fe:
                 case P_cppf90_fe:
 			if (keep_listing) {
@@ -2857,6 +2964,31 @@ init_phase_info (
 		}
 	}
 #endif
+}
+
+// Change the front-end names to reflect the GNU version.
+void
+init_frontend_phase_names (int gnu_major_version, int gnu_minor_version,
+			   int gnu_revision)
+{
+  // Select the appropriate GNU 4 front-end.
+  if (gnu_major_version == 4) {
+    switch (gnu_minor_version) {
+      case 2:
+#ifdef TARG_ST
+	change_phase_name(P_gcpp, "cc1");
+	change_phase_name(P_gcpp_plus, "cc1plus");
+#endif
+	change_phase_name(P_spin_cc1, "cc1");
+	change_phase_name(P_spin_cc1plus, "cc1plus");
+	change_phase_name(P_wgen, "wgen");
+	break;
+      default:
+        error("no support for GNU %d.%d.%d front-end", gnu_major_version,
+	      gnu_minor_version, gnu_revision);
+	break;
+    }
+  }
 }
 
 extern void
@@ -3260,6 +3392,11 @@ run_compiler (void)
 			    phase_order[i] > P_any_optfe &&
 			    phase_order[i] != P_c_gfe &&
 			    phase_order[i] != P_cplus_gfe &&
+#ifdef KEY
+			    phase_order[i] != P_spin_cc1 &&
+			    phase_order[i] != P_spin_cc1plus &&
+			    phase_order[i] != P_wgen &&
+#endif
 			    phase_order[i] < P_any_fe) 
 			{
 			    add_command_line_arg(args, source_file);
@@ -4075,3 +4212,31 @@ do_f90_common_args(string_list_t *args)
 
    add_string(args,"-LANG:=F90");
 }
+
+#ifdef KEY
+// Get the system GCC's major version number.
+int
+get_gcc_major_version(void)
+{
+#ifdef TARG_ST
+  // [SC] ST hard-code the default gcc version, rather than interrogating the
+  // host.
+#ifdef TARG_STxP70
+  return 3;
+#else
+  return 4;
+#endif
+#else
+#ifdef __MINGW32__
+  /* cannot rely on accessing system,
+   * so just use what we were built with */
+  return __GNUC__;
+#else
+  int v[4];
+  get_gcc_version(v, 4);
+  return v[0];
+#endif
+#endif
+}
+#endif
+

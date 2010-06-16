@@ -299,7 +299,7 @@ definitions:
         full : [ pstone, cpp_regexp, adobe_cpp, itu, lao, bdti, iti, visibility, fp_exposure, fpu_zoom ]
         unit : [ open64_test, open64_perf, st200gdb ]
       long   :
-        full     : [ ticpp, libstdcpp, jasper, plumhall, quest, stltest-1.00, 
+        full     : [ ticpp, libstdcpp-v3, jasper, plumhall, quest, stltest-1.00, 
                      hp_valid, srecord, estl, chess, ast_pdx, pstone, cpp_regexp, adobe_cpp,
                      itu, lao, bdti, iti, visibility, fp_exposure, fpu_zoom ]
         full_iss : [ efr_st200 ]

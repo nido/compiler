@@ -263,6 +263,8 @@ static void sanitize_cpp_opts PARAMS ((void));
   OPT("gen-decls",		CL_OBJC,  OPT_gen_decls)		     \
   OPT("lang-asm",		CL_C_ONLY, OPT_lang_asm)		     \
   OPT("lang-objc",              CL_ALL,   OPT_lang_objc)		     \
+  OPT("mno-warn-pack-struct",   CL_ALL,   OPT_mno_warn_pack_struct)          \
+  OPT("mwarn-pack-struct",      CL_ALL,   OPT_mwarn_pack_struct)             \
   OPT("nostdinc",               CL_ALL,   OPT_nostdinc)			     \
   OPT("nostdinc++",             CL_ALL,   OPT_nostdincplusplus)		     \
   OPT("o",			CL_ALL | CL_ARG, OPT_o)                      \
@@ -1266,6 +1268,26 @@ c_common_decode_option (argc, argv)
       cpp_opts->objc = 1;
       break;
 
+#ifdef TARG_ST
+    case OPT_mwarn_pack_struct:
+      if (!on)
+	return 0;  /* reject -no-mwarn-pack-struct */
+      warn_pack_struct = 1;
+      /* Suppress lang-independent processing for this option:
+	 because it begins with -m, it looks like a target-specific
+         option, but we do not want to handle it there. */
+      result = -1;
+      break;
+    case OPT_mno_warn_pack_struct:
+      if (!on)
+	return 0;  /* reject -no-mno-warn-pack-struct */
+      warn_pack_struct = 0;
+      /* Suppress lang-independent processing for this option:
+	 because it begins with -m, it looks like a target-specific
+         option, but we do not want to handle it there. */
+      result = -1;
+      break;
+#endif
     case OPT_nostdinc:
       /* No default include directories.  You must specify all
 	 include-file directories with -I.  */
