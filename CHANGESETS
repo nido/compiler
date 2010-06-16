@@ -1,6 +1,41 @@
 ------------------------------------------------------
                SVNBRANCH CHANGESET
 ------------------------------------------------------
+	Date  :    Wed Jun 16 09:06:59 CEST 2010
+	Author:    dt25
+	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
+	Branch:    https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-102174
+
+Description:
+------------
+	* [trunk] Fix for bug #102174: [IPA][V4DUAL] Wrong guard propagation in EBO.
+	Deliver fixes/codex-102174 rev #28757 with authorization branch #102356
+
+
+Modified Files:
+---------------
+	M       osprey/targinfo/stxp70/cg/targ_ebo.cxx
+	M       osprey/targinfo/stxp70/cg/targ_op.cxx
+
+
+Diff command:
+-------------------------
+"svn diff --old=https://codex.cro.st.com/svnroot/open64/trunk@28754 --new=https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-102174@28757 --diff-cmd tkdiff" 
+
+
+Merge command:
+-------------------------
+"svn merge https://codex.cro.st.com/svnroot/open64/trunk@28754 https://codex.cro.st.com/svnroot/open64/branches/fixes/codex-102174@28757" 
+
+Diff links to modified files:
+-----------------------------
+osprey/targinfo/stxp70/cg/targ_ebo.cxx	https://codex.cro.st.com//svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_ebo.cxx?p2=branches/fixes/codex-102174/osprey/targinfo/stxp70/cg/targ_ebo.cxx&r1=28754&r2=28757&roottype=svn&root=open64&diff_format=h
+osprey/targinfo/stxp70/cg/targ_op.cxx	https://codex.cro.st.com//svn/viewvc.php/trunk/osprey/targinfo/stxp70/cg/targ_op.cxx?p2=branches/fixes/codex-102174/osprey/targinfo/stxp70/cg/targ_op.cxx&r1=28754&r2=28757&roottype=svn&root=open64&diff_format=h
+
+
+------------------------------------------------------
+               SVNBRANCH CHANGESET
+------------------------------------------------------
 	Date  :    Wed Jun 16 08:42:45 CEST 2010
 	Author:    dt25
 	Parent:    https://codex.cro.st.com/svnroot/open64/trunk
