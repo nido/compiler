@@ -1,0 +1,6 @@
+
+Feedback data of loop_switch.c/switch_exple (checksum 2)
+invoke = 
+	id = 0	FB---> invoke = 1774
+Switch = 
+	id = 0	targets = 6, 0: 0, 1: 590, 2: 592, 3: 592, 4: 0, 5: 0

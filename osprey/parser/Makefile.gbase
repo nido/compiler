@@ -1,0 +1,223 @@
+#
+#
+#  Copyright (C) 2000, 2001 Silicon Graphics, Inc.  All Rights Reserved.
+#
+#  This program is free software; you can redistribute it and/or modify it
+#  under the terms of version 2 of the GNU General Public License as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it would be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+#
+#  Further, this software is distributed without any warranty that it is
+#  free of the rightful claim of any third person regarding infringement 
+#  or the like.  Any license provided herein, whether implied or 
+#  otherwise, applies only to this software file.  Patent licenses, if 
+#  any, provided herein do not apply to combinations of this program with 
+#  other software, or any other product whatsoever.  
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write the Free Software Foundation, Inc., 59
+#  Temple Place - Suite 330, Boston MA 02111-1307, USA.
+#
+#  Contact information:  Silicon Graphics, Inc., 1600 Amphitheatre Pky,
+#  Mountain View, CA 94043, or:
+#
+#  http://www.sgi.com
+#
+#  For further information regarding this notice, see:
+#
+#  http://oss.sgi.com/projects/GenInfo/NoticeExplan
+#
+#
+
+#  Makefile.base for targ_info
+#
+
+#----------------------------------------------------------------------
+#  Include the usual commondefs
+#----------------------------------------------------------------------
+include $(COMMONDEFS)
+
+#----------------------------------------------------------------------
+#  List of directories, and source files of interest
+#----------------------------------------------------------------------
+
+CURRENT_DIR    = .
+COMMON_DIR     = $(BUILD_TOT)/common
+COMMON_COM_DIR = $(COMMON_DIR)/com
+
+TARG_INCLUDE_DIR   = $(BUILD_AREA)/include
+TARG_TARG_INFO_DIR = $(BUILD_AREA)/targ_info
+
+TARGINFO_DIR           = $(BUILD_TOT)/targinfo
+COMMON_TARG_ACCESS_DIR = $(TARGINFO_DIR)/access
+
+PARSER_DIR             = $(BUILD_TOT)/parser
+TARGINFO_PARSER_DIR    = $(TARGINFO_DIR)/parser/inc
+TARGINFO_PARSER_DIR   += $(TARGINFO_DIR)/parser/utils/include
+TARGINFO_PARSER_DIR   += $(TARGINFO_DIR)/parser/utils/include/$(HOST_OS)
+
+TARG_RTKUTILS_DIR      = $(BUILD_AREA)/librtkutils
+
+PARSER_DEPLIBS  = $(BUILD_AREA)/libparse/libparse.a 
+PARSER_DEPLIBS += $(BUILD_AREA)/targ_info/libtarginfo.a
+PARSER_DEPLIBS += $(BUILD_AREA)/libSYS/libSYS.a 
+PARSER_DEPLIBS += $(BUILD_AREA)/libiberty/libiberty.a
+PARSER_DEPLIBS += $(LIBAIR_BUILD_DIR)/libair.a
+PARSER_DEPLIBS += $(TARG_RTKUTILS_DIR)/librtkutils.a
+
+PARSER_LIBS=
+
+ifneq ($(HOST_OS), CYGWIN_NT)
+ifneq ($(HOST_OS), MINGW)
+# all we need is already in lcygwin and mingwin
+PARSER_LIBS=-ldl
+endif
+endif
+
+LIBAIR             = $(BUILD_TOT)/libair
+LIBAIR_DIR         = $(LIBAIR)/air
+
+TARGINFO_BUILD_DIR = $(BUILD_AREA)/targ_info
+LIBAIR_BUILD_DIR   = $(BUILD_AREA)/libair
+
+GENSYN_ARGS = $(addprefix $(TARGINFO_GENSYN_PR_DIR),$(GENSYN_ARGS_FILES))
+
+# These are the directories in which to look for source files.
+
+SRC_DIRS =                  \
+  $(CURRENT_DIR)            \
+  $(TARG_INCLUDE_DIR)       \
+  $(COMMON_COM_DIR)         \
+  $(TARGINFO_PARSER_DIR)    \
+  $(LIBAIR_DIR)             \
+  $(TARGINFO_BUILD_DIR)     \
+  $(LIBAIR_BUILD_DIR)       \
+  $(PARSER_DIR)             \
+  $(COMMON_TARG_ACCESS_DIR)
+
+VPATH    =  $(SRC_DIRS)
+
+#----------------------------------------------------------------------
+#  Compiler Options
+#----------------------------------------------------------------------
+
+TARGDEFS =
+
+LCOPTS = $(STD_COMPILE_OPTS)
+LCDEFS = $(HOSTDEFS) $(TARGDEFS)
+LCINCS = $(addprefix -I, $(SRC_DIRS))
+
+BUILDDEFS += -DIPL_EXPORTED= -DLNO_EXPORTED=
+BUILD_CFLAGS = $(LCINCS) $(LCOPTS) $(BUILDDEFS) $(TARGDEFS)
+
+LCXXOPTS = $(STD_COMPILE_OPTS) -g
+LCXXDEFS = $(HOSTDEFS) $(TARGDEFS)
+LCXXINCS = $(addprefix -I, $(SRC_DIRS))
+BUILD_CXXFLAGS = $(LCXXINCS)  $(LCXXOPTS) $(BUILDDEFS) $(TARGDEFS)
+
+CXXLDFLAGS = $(CXXFLAGS) $(LDFLAGS)
+
+#----------------------------------------------------------------------
+#  Files to remove with clobber make target
+#----------------------------------------------------------------------
+
+LDIRT += *.[ch] parser
+
+TARGETS=parser$(HEXE) $(BUILD_AREA)/gensyn/gensyn$(HEXE)
+
+ifeq ($(DSO_MODE),DLL)
+HOSTDEFS += -DTARGINFO_EXPORTED=$(DLLEXPORT)
+HOSTDEFS += -DBE_EXPORTED=$(DLLEXPORT)
+else
+HOSTDEFS += -DTARGINFO_EXPORTED=
+HOSTDEFS += -DBE_EXPORTED=
+endif
+
+HFILES= \
+   $(TARGINFO_PARSER_DIR)/parser.h \
+   $(TARGINFO_PARSER_DIR)/type_defs.h \
+   $(COMMON_COM_DIR)/defs_exported.h \
+   $(TARGINFO_PARSER_DIR)/astype.h \
+   $(TARGINFO_PARSER_DIR)/analyzer.h \
+   $(TARGINFO_PARSER_DIR)/ext_engine.h \
+   $(LIBAIR_DIR)/air.h
+   
+CFILES=	\
+   parser_main.c
+   
+#----------------------------------------------------------------------
+#  Variables describing additional sources, objects, and libraries
+#----------------------------------------------------------------------
+LLDLIBS = 
+
+default: first
+	$(MAKE) local last
+
+#----------------------------------------------------------------------
+#  The commands in this section are done BEFORE any other target is 
+#  built.
+#----------------------------------------------------------------------
+first:
+ifndef PARALLEL
+	cd $(BUILD_AREA)/include && $(MAKE) install
+	cd $(TARG_TARG_INFO_DIR) && $(MAKE)
+	cd $(TARG_RTKUTILS_DIR) && $(MAKE)
+	cd $(BUILD_AREA)/libSYS && $(MAKE)
+	cd $(BUILD_AREA)/libiberty && $(MAKE)
+	cd $(BUILD_AREA)/libair && $(MAKE)
+	cd $(BUILD_AREA)/libparse && $(MAKE)
+endif
+
+#----------------------------------------------------------------------
+# The commands in this section do not check the accuracy of
+# library/includes coming from other modules...
+#----------------------------------------------------------------------
+first_local:
+
+local: $(TARGETS)
+
+#----------------------------------------------------------------------
+#  The commands in this section are done AFTER every other target is 
+#  built.
+#----------------------------------------------------------------------
+
+last: make_deps
+
+#----------------------------------------------------------------------
+#  install target
+#----------------------------------------------------------------------
+install: last
+
+#----------------------------------------------------------------------
+#
+#  These rules build the parser and its objects
+#
+#----------------------------------------------------------------------
+
+#
+# shared library
+#
+%_asm.so: %_targ_isa_parse.o
+	$(CC) $(CFLAGS) $(STD_DSO_LOADOPTS) $^ -o $@
+
+#
+# windows dll (+ import library)
+#
+%_asm.dll %_asm_dll.a : %_targ_isa_parse.o
+	$(CC) --shared -o $*_asm.dll -Wl,--out-implib,$*_asm_dll.a \
+	$^ $(LDDSOOPTS) -Wl,--image-base=0x12000000
+
+
+parser$(HEXE): parser_main.o $(PARSER_DEPLIBS)
+	$(CC) $(LDFLAGS) $(PARSER_LIBS) -o $@ $^
+
+$(BUILD_AREA)/gensyn/gensyn$(HEXE):
+	cd $(BUILD_AREA)/gensyn && $(MAKE) gensyn$(HEXE)
+
+#----------------------------------------------------------------------
+#  Include the usual commonrules
+#----------------------------------------------------------------------
+include $(COMMONRULES)

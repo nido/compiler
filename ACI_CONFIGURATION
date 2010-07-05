@@ -1,0 +1,370 @@
+targets: 
+  - stxp70
+  - stxp70v4
+  - st200
+  - arm
+  - stxpe
+definitions:
+  stxp70:
+    reference : 
+      path      : 
+       crolles  : /sw/gnu_compil/stxp70work/hudson/aci-cec-home/aci-dependencies/toolset-stxp70
+       grenoble : /home/compwork/cruisecontrol/CC/persistent_inputs/aci-dependencies/toolset-stxp70
+      name      : STxP70-BOM30-with-tools-20100527-fixes-99800.tar.gz
+      rtk       : 
+        branch   : trunk
+        revision : HEAD
+      structure : stxp70cc/4.3
+      config    : STxP70.sh 
+      prefix    : stxp70v3-  
+      devimage  :
+    flags :
+      O0_nog:
+        CCOPT  : "-O0 -keep --no-deadcode"
+      O0Fpx_nog :
+        CCOPT  : "-O0 -Mextension=fpx -mlib-short-double -fshort-double -keep --no-deadcode"
+      O0 :
+        CCOPT  : "-O0 -g"
+      O1 :
+        CCOPT  : "-O1 -g"
+      O2 :
+        CCOPT  : "-O2 -g"
+      OsMode16 :
+        CCOPT  : "-Os -g -Mmode16"
+      OsMult :
+        CCOPT  : "-Os -g -Mconfig=mult:yes"
+      O3Mult :
+        CCOPT  : "-O3 -g -Mconfig=mult:yes" 
+      OsMultIPA :
+        CCOPT  : "-Os -Mconfig=mult:yes -ipa"
+      O3MultIPA :
+        CCOPT  : "-O3 -Mconfig=mult:yes -ipa" 
+      OsMultCAS :
+        CCOPT  : "-Os -g -Mconfig=mult:yes"
+        RUNOPT : "-target=sxv3_valid_cas"
+      O3MultCAS :
+        CCOPT  : "-O3 -g -Mconfig=mult:yes" 
+        RUNOPT : "-target=sxv3_valid_cas"
+      OsMultCASIPA :
+        CCOPT  : "-Os -Mconfig=mult:yes -ipa"
+        RUNOPT : "-target=sxv3_valid_cas"
+      O3MultCASIPA :
+        CCOPT  : "-O3 -Mconfig=mult:yes -ipa" 
+        RUNOPT : "-target=sxv3_valid_cas"
+      OsFpxShortDouble :
+        CCOPT  : "-Os -g -Mextension=fpx -mlib-short-double -fshort-double"
+        RUNOPT : "-ext=fpx"
+      O3FpxShortDouble :
+        CCOPT  : "-O3 -g -Mextension=fpx -mlib-short-double -fshort-double"
+        RUNOPT : "-ext=fpx"
+    option_sets :
+      unit       : [ O0 ]
+      debug      : [ O0_nog, O0Fpx_nog ]
+      perf       : [ OsMultCAS, O3MultCAS, OsMultCASIPA, O3MultCASIPA]
+      perf_noipa : [ OsMultCAS, O3MultCAS ]
+      func       : [ OsMult, O3Mult, OsMultIPA, O3MultIPA]
+      medium     : [ O0, O2, OsMode16, O3FpxShortDouble ]
+      full       : [ O0, O1, O2, OsMode16, OsFpxShortDouble, O3FpxShortDouble ]
+    configuration :
+      tiny   :
+        full       : [ dhrystone ]
+        perf       : [ dhrystone ]
+      short  :
+        unit       : [ open64_test ]
+        debug      : [ debug_info  ]
+        perf       : [ eembc_networking, audio_speech, h264, jpeg_csd, eembc_automotive, mp3_32, mp3_64, wb_amr,  
+                       eembc_consumer, basestation, bdti, dhrystone, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe,
+                       servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom
+                     ]
+        perf_noipa : [ stvid ]
+        func       : [ valid_extensions, diags ]
+        medium     : [ kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford ] 
+      long   :
+        unit       : [ open64_test ]
+        debug      : [ debug_info  ]
+        perf       : [ eembc_networking, audio_speech, h264, jpeg_csd, eembc_automotive, mp3_32, mp3_64, wb_amr,  
+                       eembc_consumer, basestation, bdti, dhrystone, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe,
+                       servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom
+                     ]
+        perf_noipa : [ stvid ]
+        func       : [ valid_extensions, diags ]
+        medium     : [ eembc_automotive, mp3_32, mp3_64, wb_amr, valid_extensions ]
+        full       : [ stvid, eembc_consumer, basestation, bdti, dhrystone, diags, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe, 
+                       servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom 
+                     ] 
+  stxp70v4 :
+    reference : 
+      path    : 
+       crolles  : /sw/gnu_compil/stxp70work/hudson/aci-cec-home/aci-dependencies/toolset-stxp70
+       grenoble : /home/compwork/cruisecontrol/CC/persistent_inputs/aci-dependencies/toolset-stxp70
+      name      : STxP70-BOM30-with-tools-20100527-fixes-99800.tar.gz
+      rtk       : 
+        branch   : trunk
+        revision : HEAD
+      structure : stxp70cc/4.3
+      config  : STxP70.sh 
+      prefix  : stxp70v4-  
+      devimage  :
+    flags :
+      O0_nog:
+        CCOPT  : "-O0 -keep --no-deadcode -mcore=stxp70v4"
+        RUNOPT : "-target=sxv4_valid_iss"
+      O0 :
+        CCOPT  : "-O0 -g -mcore=stxp70v4"
+        RUNOPT : "-target=sxv4_valid_iss"
+      O1 :
+        CCOPT  : "-O1 -g -mcore=stxp70v4"
+        RUNOPT : "-target=sxv4_valid_iss"
+      O2 :
+        CCOPT  : "-O2 -g -mcore=stxp70v4"
+        RUNOPT : "-target=sxv4_valid_iss"
+      OsMode16 :
+        CCOPT  : "-Os -g -Mmode16 -mcore=stxp70v4"
+        RUNOPT : "-target=sxv4_valid_iss"
+      OsMult :
+        CCOPT  : "-Os -g -Mconfig=mult:yes -mcore=stxp70v4"
+      O3Mult :
+        CCOPT  : "-O3 -g -Mconfig=mult:yes -mcore=stxp70v4" 
+      OsMultIPA :
+        CCOPT  : "-Os -Mconfig=mult:yes -ipa -mcore=stxp70v4"
+      O3MultIPA :
+        CCOPT  : "-O3 -Mconfig=mult:yes -ipa -mcore=stxp70v4" 
+      OsMultCAS :
+        CCOPT  : "-Os -g -Mconfig=mult:yes -mcore=stxp70v4"
+        RUNOPT : "-target=sxv4_valid_cas"
+      O3MultCAS :
+        CCOPT  : "-O3 -g -Mconfig=mult:yes -mcore=stxp70v4" 
+        RUNOPT : "-target=sxv4_valid_cas"
+      OsMultCASIPA :
+        CCOPT  : "-Os -Mconfig=mult:yes -ipa -mcore=stxp70v4"
+        RUNOPT : "-target=sxv4_valid_cas"
+      O3MultCASIPA :
+        CCOPT  : "-O3 -Mconfig=mult:yes -ipa -mcore=stxp70v4" 
+        RUNOPT : "-target=sxv4_valid_cas"
+    option_sets :
+      unit       : [ O0 ]
+      debug      : [ O0_nog ]
+      perf       : [ OsMultCAS, O3MultCAS, OsMultCASIPA, O3MultCASIPA]
+      perf_noipa : [ OsMultCAS, O3MultCAS ]
+      func       : [ OsMult, O3Mult, OsMultIPA, O3MultIPA]
+      medium     : [ O0, O2, OsMode16 ]
+      full       : [ O0, O1, O2, OsMode16  ]
+
+    configuration :
+      tiny   :
+        full       : [ dhrystone ]
+        perf       : [ dhrystone ]
+      short  :
+        unit       : [ open64_test ]
+        debug      : [ debug_info  ]
+        perf       : [ eembc_networking, audio_speech, h264, jpeg_csd, eembc_automotive, mp3_32, mp3_64, wb_amr,  
+                       eembc_consumer, basestation, bdti, dhrystone, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe,
+                       servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom
+                     ]
+        perf_noipa : [ stvid ]
+        func       : [ valid_extension_mp1x, diags ]
+        medium     : [ kalman, basestation, dhrystone, diags, pstone, seaprobe, servo, stanford  ] 
+      long   :
+        unit       : [ open64_test ]
+        debug      : [ debug_info  ]
+        perf       : [ eembc_networking, audio_speech, h264, jpeg_csd, eembc_automotive, mp3_32, mp3_64, wb_amr,  
+                       eembc_consumer, basestation, bdti, dhrystone, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe,
+                       servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom
+                     ]
+        perf_noipa : [ stvid ]
+        func       : [ valid_extension_mp1x, diags ]
+        medium     : [ eembc_automotive, mp3_32, mp3_64, wb_amr, valid_extensions ]
+        full       : [ stvid, eembc_consumer, basestation, bdti, dhrystone, diags, efr, fp_aec, fp_exposure, fpu_zoom, iti, kalman, konica, lao, pstone, seaprobe, 
+                       servo, stanford, fp_algonum, marelli, nokia, notch, dijkstra_ospf, edn, hr_4_2, ti_codebook, wdservo, aec16b, nlms16, eembc_telecom 
+                     ] 
+  st200 :
+    reference : 
+      path      : 
+       crolles  : /sw/st/gnu_compil/comp/st200/integration-compilers
+       grenoble : /sw/st/gnu_compil/comp/st200/integration-compilers
+      name      : release-5-0-0-B-20090629/linux
+      lao       : 
+        branch   : trunk
+        revision : HEAD
+      devimage  :
+      runner    : 
+        path     : /sw/st/gnu_compil/comp/st200/r6.3/linux-rh-ws-3/bin
+        command  : st200xrun -c st200sp -t st231simle  --
+      simulator :
+        st231 : /sw/st/gnu_compil/comp/st200/st200-sim/6.8.0/linux-rh-7.2/Linux_2.4.21-32/lib
+        st240 : /sw/st/gnu_compil/comp/st200/st240-sim/1.11.0/linux-rh-7.2/Linux_2.4.21-32/lib
+    flags :
+      O0_g_st231_le : 
+        CCOPT  : "-O0 -g -mcore=st231 -EL"
+      O1_g_st231_le : 
+        CCOPT  : "-O1 -g -mcore=st231 -EL"
+      O2_g_st231_le : 
+        CCOPT  : "-O2 -g -mcore=st231 -EL"
+        RUNOPT : -cas
+      O2_g_st231_le_iss : 
+        CCOPT  : "-O2 -g -mcore=st231 -EL"
+      O2_ipa_st231_le : 
+        CCOPT  : "-O2 -ipa -mcore=st231 -EL"
+        RUNOPT : -cas
+      O2_ipa_st231_le_iss : 
+        CCOPT  : "-O2 -ipa -mcore=st231 -EL"
+      Os_g_st231_le : 
+        CCOPT  : "-Os -g -mcore=st231 -EL"
+        RUNOPT : -cas
+      Os_g_st231_le_iss : 
+        CCOPT  : "-Os -g -mcore=st231 -EL"
+      Os_ipa_st231_le : 
+        CCOPT  : "-Os -ipa -mcore=st231 -EL"
+        RUNOPT : -cas
+      Os_ipa_st231_le_iss : 
+        CCOPT  : "-Os -ipa -mcore=st231 -EL"
+      O3_g_st231_le : 
+        CCOPT  : "-O3 -g -mcore=st231 -EL"
+        RUNOPT : -cas
+      O3_g_st231_le_iss : 
+        CCOPT  : "-O3 -g -mcore=st231 -EL"
+      O3_ipa_st231_le : 
+        CCOPT  : "-O3 -ipa -mcore=st231 -EL"
+        RUNOPT : -cas
+      O3_ipa_st231_le_iss : 
+        CCOPT  : "-O3 -ipa -mcore=st231 -EL"
+      O3_g_nolao_st231_le : 
+        CCOPT  : "-O3 -g -CG:lao_opt=0 -mcore=st231 -EL"
+        RUNOPT : -cas
+      O3_g_nolao_st231_le_iss : 
+        CCOPT  : "-O3 -g -CG:lao_opt=0 -mcore=st231 -EL"
+      O3_ipa_nolao_st231_le : 
+        CCOPT  : "-O3 -ipa -CG:lao_opt=0 -mcore=st231 -EL"
+        RUNOPT : -cas
+      O3_ipa_nolao_st231_le_iss : 
+        CCOPT  : "-O3 -ipa -CG:lao_opt=0 -mcore=st231 -EL"
+      O0_g_st240_le : 
+        CCOPT  : "-O0 -g -mcore=st240 -EL"
+      O1_g_st240_le : 
+        CCOPT  : "-O1 -g -mcore=st240 -EL"
+      O2_g_st240_le : 
+        CCOPT  : "-O2 -g -mcore=st240 -EL"
+        RUNOPT : -cas
+      O2_g_st240_le_iss : 
+        CCOPT  : "-O2 -g -mcore=st240 -EL"
+      O2_ipa_st240_le : 
+        CCOPT  : "-O2 -ipa -mcore=st240 -EL"
+        RUNOPT : -cas
+      O2_ipa_st240_le_iss : 
+        CCOPT  : "-O2 -ipa -mcore=st240 -EL"
+      Os_g_st240_le : 
+        CCOPT  : "-Os -g -mcore=st240 -EL"
+        RUNOPT : -cas
+      Os_g_st240_le_iss  : 
+        CCOPT  : "-Os -g -mcore=st240 -EL"
+      Os_ipa_st240_le : 
+        CCOPT  : "-Os -ipa -mcore=st240 -EL"
+        RUNOPT : -cas
+      Os_ipa_st240_le_iss  : 
+        CCOPT  : "-Os -ipa -mcore=st240 -EL"
+      O3_g_st240_le : 
+        CCOPT  : "-O3 -g -mcore=st240 -EL"
+        RUNOPT : -cas
+      O3_g_st240_le_iss  : 
+        CCOPT  : "-O3 -g -mcore=st240 -EL"
+      O3_ipa_st240_le : 
+        CCOPT  : "-O3 -ipa -mcore=st240 -EL"
+        RUNOPT : -cas
+      O3_ipa_st240_le_iss  : 
+        CCOPT  : "-O3 -ipa -mcore=st240 -EL"
+      O3_g_nolao_st240_le : 
+        CCOPT  : "-O3 -g -CG:lao_opt=0 -mcore=st240 -EL"
+        RUNOPT : -cas
+      O3_g_nolao_st240_le_iss  : 
+        CCOPT  : "-O3 -g -CG:lao_opt=0 -mcore=st240 -EL"
+      O3_ipa_nolao_st240_le : 
+        CCOPT  : "-O3 -ipa -CG:lao_opt=0 -mcore=st240 -EL"
+        RUNOPT : -cas
+      O3_ipa_nolao_st240_le_iss  : 
+        CCOPT  : "-O3 -ipa -CG:lao_opt=0 -mcore=st240 -EL"
+    option_sets :
+      unit    : [ O0_g_st231_le ]
+      full    : [ O0_g_st231_le, O1_g_st231_le, O2_g_st231_le, O2_ipa_st231_le, Os_g_st231_le, Os_ipa_st231_le, 
+                  O3_g_st231_le, O3_ipa_st231_le, O3_g_nolao_st231_le,  O3_ipa_nolao_st231_le,
+                  O0_g_st240_le, Os_g_st240_le, O3_ipa_st240_le ]
+      full_iss: [ O0_g_st231_le, O1_g_st231_le, O2_g_st231_le_iss, O2_ipa_st231_le_iss, Os_g_st231_le_iss, Os_ipa_st231_le_iss, 
+                  O3_g_st231_le_iss, O3_ipa_st231_le_iss, O3_g_nolao_st231_le_iss, O3_ipa_nolao_st231_le_iss,
+                  O0_g_st240_le, Os_g_st240_le_iss, O3_ipa_st240_le_iss ]
+      noipa   : [ O0_g_st231_le, O1_g_st231_le, O2_g_st231_le, Os_g_st231_le, O3_g_st231_le, O3_g_nolao_st231_le,
+                  O0_g_st240_le, Os_g_st240_le ]
+    configuration :
+      tiny   :
+        full : [ itu, fp_exposure, lao, bdti, iti, stltest-1.00 ]
+      short  :
+        full : [ pstone, cpp_regexp, adobe_cpp, itu, lao, bdti, iti, visibility, fp_exposure, fpu_zoom ]
+        unit : [ open64_test, open64_perf, st200gdb ]
+      long   :
+        full     : [ ticpp, libstdcpp-v3, jasper, plumhall, quest, stltest-1.00, 
+                     hp_valid, srecord, estl, chess, ast_pdx, pstone, cpp_regexp, adobe_cpp,
+                     itu, lao, bdti, iti, visibility, fp_exposure, fpu_zoom ]
+        full_iss : [ efr_st200 ]
+        unit     : [ open64_test, open64_perf, st200gdb ]
+      st200gdb :
+        unit : [ st200gdb ]
+  arm :
+    reference : 
+      path      : 
+       crolles  : /sw/gnu_compil/stxp70work/hudson/aci-cec-home/aci-dependencies/toolset-arm
+       grenoble : /home/compwork/cruisecontrol/CC/persistent_inputs/aci-dependencies/toolset-arm
+      name      : base-devimage-090409.tgz
+      devimage  :
+      runner    : 
+        path     : /sw/st/gnu_compil/comp/arm/code_sourcery/arm-2006q3-27/linux-rh-ws-3/bin 
+        command  : arm-none-eabi-run
+    flags :
+      O0_g : 
+        CCOPT  : "-O0 -g"
+      O1_g : 
+        CCOPT  : "-O1 -g"
+      O2_g : 
+        CCOPT  : "-O2 -g"
+      Os_g : 
+        CCOPT  : "-Os -g"
+      O3_g : 
+        CCOPT  : "-O3 -g"
+    option_sets :
+      unit   : [ O0_g ]
+      full   : [ O0_g, O1_g, O2_g, O3_g ]
+    configuration :
+      short  :
+        unit : [ open64_perf ]
+  stxpe :
+    reference : 
+      path      : 
+       crolles  : /sw/gnu_compil/stxp70work/hudson/aci-cec-home/aci-dependencies/toolset-stxpe
+       grenoble : /home/compwork/cruisecontrol/CC/persistent_inputs/aci-dependencies/toolset-stxpe
+      name      : base-devimage.tgz
+      devimage  :
+      runner    : 
+        path     : /home/codes/xSTream/xpe_tools/bin
+        command  : stxperun
+    flags :
+      O0 : 
+        CCOPT  : "-O0"
+      O1 : 
+        CCOPT  : "-O1"
+      O2 : 
+        CCOPT  : "-O2"
+      Os : 
+        CCOPT  : "-Os"
+      O3 : 
+        CCOPT  : "-O3"
+    option_sets :
+      unit   : [ O0 ]
+      full   : [ O0, O1, O2, O3 ]
+    configuration :
+      short  :
+        unit : [ open64_perf ]
+        full : [ FP_Exposure, PStone, AST_PDX, HP_valid, Benchs64, plumhall, jasper ]
+
+queues:
+  short : [ wdservo, basestation, bdti, diags, fp_aec, fp_exposure, fpu_zoom, iti, pstone, seaprobe, aec16b, nlms16, audio_speech, 
+          servo, stanford, marelli, nokia, notch, edn, itu, ti_codebook, kalman, dhrystone, lao, dijkstra_ospf, fp_algonum ]
+
+  long : [ eembc_networking, eembc_automotive, efr, eembc_consumer ]
+

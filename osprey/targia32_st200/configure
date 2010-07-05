@@ -1,0 +1,2 @@
+#!/bin/sh
+../configure BUILD=gnu-default PLATFORMS=linux-st200 TOOLDEFS=gnu_compil $*

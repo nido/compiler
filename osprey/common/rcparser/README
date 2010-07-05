@@ -1,0 +1,11 @@
+This directory shall remain in sync with
+https://codex.cro.st.com/svnroot/stxp70cc repository on the components
+   - stxp70-binutils/RTK/rcparser/src
+   - stxp70-binutils/utils/include
+   - stxp70-binutils/utils/src
+   
+sxgenrc tool from STxP70-RTK uses the RC parser in order to update stxp70extrc
+add-on resource file of open64 driver.
+
+Content of this directory is currently up-to-date with:
+https://codex.cro.st.com/svnroot/stxp70cc/stxp70-binutils/branches/fixes/codex-75124 rev 4759

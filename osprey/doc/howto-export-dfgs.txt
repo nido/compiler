@@ -1,0 +1,64 @@
+###############################################################################
+# Author : Guillaume Simon
+# Date   : July 2008
+# 
+# Desc   : This file describes how to use the DFG exportation in the
+#          open64 compiler.
+#
+###############################################################################
+
+1) Profiling
+
+        -ftest-coverage
+            creating .gcno files for profiling feedback
+
+        -fprofile-arcs
+            creating .gcda files while executing for feedback
+
+        -fbranch-probabilities
+	    replace option -fprofile-arcs when feedbacking
+
+
+2) Exportation to DFGs
+
+    * Export the DFGs for ISE identification tool.
+
+        -CG:dfg_ise_mask=<mask>
+
+	     <mask> values :
+               0x1        Dumping in GraphML format the exported DFGs;
+                              Prints to one graphml file for each source file
+                              of the application :
+                              [source_file_name].graphml
+               0x2        Dumping edges corresponding to non real dependencies;
+               0x4        Dumping the CFGs;
+               0x8        No dumping of format information while exporting to
+                              graphml, in order to accelerate the parsing of
+                              graphml files.
+
+
+    * Export the DFGs for debug and code analysis.
+
+        -CG:dfg_debug_mask=<mask> -Wb,-tr<phase>[,-tf<num>][,-tb<num>]
+
+ 	     <mask> values :
+               0x1        Dumping in GraphML format the exported DFGs;
+                              Prints to one graphml file for each phase to
+                              export of each source file :
+                              [source_file_name]_[phase_number]_[error_phase].graphml
+               0x2        Dumping edges corresponding to non real dependencies;
+               0x4        Dumping the CFGs;
+               0x8        No dumping of format information while exporting to
+                              graphml, in order to accelerate the parsing of
+                              graphml files.
+
+	     -tr<phase>   As for tracing IR, activate the exportation to DFGs
+	     		  for the given phase of CGIR.
+
+	     -tf<num>     Choose the number of the function you wish to export.
+	     		      Use option -show to get the number from the name
+                              of the function.
+
+	     -tb<num>     Choose the number of the basic blocks you wish to
+                              export.
+

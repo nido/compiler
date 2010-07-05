@@ -1,0 +1,1022 @@
+#
+#
+#  Copyright (C) 2000 Silicon Graphics, Inc.  All Rights Reserved.
+#
+#  This program is free software; you can redistribute it and/or modify it
+#  under the terms of version 2 of the GNU General Public License as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it would be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+#
+#  Further, this software is distributed without any warranty that it is
+#  free of the rightful claim of any third person regarding infringement 
+#  or the like.  Any license provided herein, whether implied or 
+#  otherwise, applies only to this software file.  Patent licenses, if 
+#  any, provided herein do not apply to combinations of this program with 
+#  other software, or any other product whatsoever.  
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write the Free Software Foundation, Inc., 59
+#  Temple Place - Suite 330, Boston MA 02111-1307, USA.
+#
+#  Contact information:  Silicon Graphics, Inc., 1600 Amphitheatre Pky,
+#  Mountain View, CA 94043, or:
+#
+#  http://www.sgi.com
+#
+#  For further information regarding this notice, see:
+#
+#  http://oss.sgi.com/projects/GenInfo/NoticeExplan
+#
+#
+
+#
+#  Makefile.base for cg
+#
+
+#----------------------------------------------------------------------
+#  Information about Makefile
+#
+#  This Makefile is used to build the 32 bit host/target version of the
+#  code generator.
+#
+#  *  This Makefile does not require that targ_info has already been built.
+#
+#  *  Because the Makefile removes temporary files that are in the
+#     current directory (at startup and on interrupts) you can't
+#     run two or more makes in the same directory at the same time.
+#     (Perhaps, If I could force the temp files out to a temp directory,
+#     this could be changed?)
+#
+#----------------------------------------------------------------------
+
+#----------------------------------------------------------------------
+#  Set environment variables
+#
+#  TARGDIR   :  is the targ specific directory in which we do build.
+#               e.g.  /d1/cmplrs.src/v4.00/host32
+#
+#----------------------------------------------------------------------
+TARGDIR = $(BUILD_AREA)
+CURDIR  = .
+
+#----------------------------------------------------------------------
+#  Include the usual commondefs
+#----------------------------------------------------------------------
+include $(COMMONDEFS)
+
+ifeq ($(BUILD_COMPILER), EDG)
+CVERSION = -xansi
+WOFF = -fullwarn
+endif
+
+#----------------------------------------------------------------------
+#  Compiler Options
+#----------------------------------------------------------------------
+HOSTDEFS += -Dsgi
+HOSTDEFS += -DBACK_END -DMONGOOSE_BE
+HOSTDEFS += -Dlonglong
+# need to define _LONGLONG and _SVR4_SOURCE to allow compilation with -ansi.
+HOSTDEFS += -D_LONGLONG -D_SVR4_SOURCE
+ifeq ($(BUILD_COMPILER), EDG)
+HOSTDEFS += -no_auto_include
+endif
+# The following is only for em_dwarf.o and targ_em_dwarf.o
+HOSTDEFS += -LANG:packed=on
+
+ifeq ($(BUILD_TARGET), ST200)
+TARGDEFS += -DTARG_ST200 -DSUPPORTS_SELECT -DSUPPORTS_PREDICATION
+endif
+
+ifeq ($(BUILD_TARGET), STxP70)
+TARGDEFS += -DTARG_STxP70 -DSUPPORTS_SELECT
+endif
+
+ifeq ($(BUILD_TARGET), ARM)
+TARGDEFS += -DTARG_ARM -DSUPPORTS_SELECT -DNO_IFC_DEFAULT
+endif
+
+ifeq ($(BUILD_OPTIMIZE), DEBUG)
+HOSTDEFS += -DIs_True_On
+endif
+
+ifeq ($(BUILD_PCH), USE_PCH)
+HOSTDEFS += -DUSE_PCH
+endif
+
+ifeq ($(BUILD_VARIANT), MEM_STATS)
+HOSTDEFS += -DMEM_STATS
+endif
+
+ifeq ($(DSO_MODE),DLL)
+# import
+HOSTDEFS += -DBE_EXPORTED=$(DLLIMPORT)
+HOSTDEFS += -DTARGINFO_EXPORTED=$(DLLIMPORT)
+HOSTDEFS += -DOPT_EXPORTED=$(DLLIMPORT)
+# export
+HOSTDEFS += -DCG_EXPORTED=$(DLLEXPORT)
+endif
+
+## Should go away after elf.h cleanup !
+TARGDEFS += -D__MIPS_AND_IA64_ELF_H
+
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+ifeq ($(ENABLE_BOOST), true)
+TARGDEFS += -DBOOST_ENABLED
+endif
+
+#----------------------------------------------------------------------
+#  Where to look for libraries:
+#----------------------------------------------------------------------
+TARG_LIBELF = $(TARGDIR)/libelf
+TARG_LIBELFUTIL = $(TARGDIR)/libelfutil
+TARG_LIBDWARF = $(TARGDIR)/libdwarf
+TARG_LIBUNWIND = $(TARGDIR)/libunwindP
+TARG_LIBIBERTY = $(TARGDIR)/libiberty
+
+#----------------------------------------------------------------------
+#  List of directories, and source files of interest
+#----------------------------------------------------------------------
+
+TARG_TARG_INFO_DIR	= $(TARGDIR)/targ_info
+TARG_WOPT_DIR           = $(TARGDIR)/wopt
+TARG_LIBPARSE_DIR	= $(TARGDIR)/libparse
+TARG_LIBAIR_DIR		= $(TARGDIR)/libair
+TARG_LIBRTKUTILS_DIR	= $(TARGDIR)/librtkutils
+LIBINSTR_DIR		= $(BUILD_TOT)/instrumentation/libinstrC
+GCCFE_GNU_TARG_DIR      = $(BUILD_TOT)/gccfe/gnu/$(BUILD_TARGET_DIR)
+
+BE_DIR 			= $(BUILD_TOT)/be
+BE_COM_DIR 		= $(BE_DIR)/com
+BE_BE_DIR		= $(BE_DIR)/be
+BE_CG_DIR 		= $(BUILD_TOT)/lai
+BE_CG_GRA_DIR		= $(BE_CG_DIR)/gra_mon
+BE_REGION_DIR 		= $(BE_DIR)/region
+BE_PROMPF_DIR		= $(BE_DIR)/prompf_anl
+BE_OPT_DIR              = $(BE_DIR)/opt
+COMMON_DIR 		= $(BUILD_TOT)/common
+COMMON_COM_DIR 		= $(COMMON_DIR)/com
+COMMON_UTIL_DIR 	= $(COMMON_DIR)/util
+LIBDWARF_DIR		= $(BUILD_TOT)/libdwarf
+COMMON_STL_DIR 		= $(COMMON_DIR)/stl
+COMMON_TARG_CONFIG_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
+COMMON_TARG_BE_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/be
+COMMON_TARG_CG_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/cg
+COMMON_TARG_EMIT_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/emit
+COMMON_TARG_EXP_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/expand
+COMMON_TARG_ACCESS_DIR = $(BUILD_TOT)/targinfo/access
+COMMON_TARG_PARSER_INC_DIR = $(BUILD_TOT)/targinfo/parser/inc
+COMMON_LIBAIR_DIR = $(BUILD_TOT)/libair/air
+
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+DFGFORISE_DIR		= $(BUILD_TOT)/dfgforise
+ifeq ($(ENABLE_BOOST), true)
+DFGFORISE_COMMON_DIR	= $(DFGFORISE_DIR)/common
+DFGFORISE_DUMPS_DIR	= $(DFGFORISE_DIR)/dumps
+DFGFORISE_GRAPHS_DIR	= $(DFGFORISE_DIR)/graphs
+endif
+
+#CGG_DEV{
+COMMON_TARG_CGG_DIR = $(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/cgg
+#}CGG_DEV
+
+ifdef LAO_ENABLED
+BE_LAO_DIR 		= $(BE_CG_DIR)/lao
+BE_LAO_TARG_DIR		= $(BE_CG_DIR)/lao/$(BUILD_TARGET_DIR)
+endif
+
+# These are the directories in which to look for source files.
+
+SRC_DIRS = 			\
+  $(CURDIR)			\
+  $(BE_CG_DIR)			\
+  $(BE_CG_GRA_DIR)		\
+  $(COMMON_COM_DIR)		\
+  $(COMMON_UTIL_DIR)		\
+  $(COMMON_TARG_CONFIG_DIR)	\
+  $(COMMON_TARG_BE_DIR)		\
+  $(COMMON_TARG_CG_DIR)		\
+  $(COMMON_TARG_EMIT_DIR)	\
+  $(COMMON_TARG_EXP_DIR)	\
+  $(COMMON_TARG_ACCESS_DIR)
+
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+SRC_DIRS += 					\
+  $(DFGFORISE_DIR)
+ifeq ($(ENABLE_BOOST), true)
+SRC_DIRS +=					\
+  $(DFGFORISE_COMMON_DIR) 			\
+  $(DFGFORISE_DUMPS_DIR)			\
+  $(DFGFORISE_GRAPHS_DIR)
+endif
+
+ifdef LAO_ENABLED
+SRC_DIRS +=	\
+  $(BE_LAO_DIR) \
+  $(BE_LAO_TARG_DIR)
+endif
+
+ifndef TARG_BE
+TARG_BE = $(TARGDIR)/be
+endif
+
+HEADER_DIRS = 		\
+  $(SRC_DIRS)		\
+  $(COMMON_STL_DIR)	\
+  $(BE_COM_DIR)		\
+  $(BE_REGION_DIR)	\
+  $(BE_PROMPF_DIR)	\
+  $(BE_OPT_DIR)		\
+  $(TARG_TARG_INFO_DIR)	\
+  $(TARG_BE)            \
+  $(LIBDWARF_DIR)	\
+  $(LIBINSTR_DIR)	\
+  $(COMMON_TARG_PARSER_INC_DIR) \
+  $(COMMON_LIBAIR_DIR)
+
+HEADER_DIRS += $(TARGDIR)/include/libelf
+
+# Next dir should be the last one, to avoid conflicts
+# between header files with same name.
+HEADER_DIRS += $(GCCFE_GNU_TARG_DIR)
+
+
+ifdef LAO_ENABLED
+HEADER_DIRS +=	\
+  $(BE_LAO_DIR) \
+  $(BE_LAO_TARG_DIR)
+endif
+
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+ifeq ($(ENABLE_BOOST), true)
+HEADER_DIRS += 					\
+  /sw/st/gnu_compil/gnu/linux-rh-ws-3/include/boost-1_35
+endif
+
+#----------------------------------------------------------------------
+# Build derived files
+#
+# Be sure to also add .c files to the DERIVED_SRCS list, and the
+# various include files to the DERIVED_INCS list
+#
+#----------------------------------------------------------------------
+SETGEN  = $(COMMON_UTIL_DIR)/gen_x_set		\
+          $(COMMON_UTIL_DIR)/x_set_func.c	\
+          $(COMMON_UTIL_DIR)/x_set_func.h	\
+          $(COMMON_UTIL_DIR)/x_set_macro.h	\
+	  $(COMMON_UTIL_DIR)/x_set_macro.td	\
+	  $(COMMON_UTIL_DIR)/x_set_func.td	\
+          $(COMMON_UTIL_DIR)/x_set_interface
+
+DERIVED_SRCS = 		\
+  bb_list.cxx		\
+  gra_bb_list.cxx 	\
+  lrange_list.cxx 	\
+  op_list.cxx 		\
+  st_list.cxx 		\
+  tn_list.cxx		\
+  void_list.cxx 	\
+  cg_loop_scc_prop.cxx 	\
+  tn_prop.cxx
+
+# remove all derived files with make clobber.
+LDIRT = $(DERIVED_INCS) $(DERIVED_INCS:.h=.c) $(DERIVED_INCS:.h=.cxx) *.pch
+
+#----------------------------------------------------------------------
+#  List of source files.  Please keep them in alphabetical order.
+#----------------------------------------------------------------------
+
+COMMON_COM_CXX_SRCS = 	\
+  em_dwarf.cxx		\
+  em_elf.cxx		
+
+COMMON_TARG_EM_CXX_SRCS =	\
+  targ_em_const.cxx	\
+  targ_em_elf.cxx	\
+  targ_em_dwarf.cxx     \
+
+COMMON_UTIL_SRCS =	\
+  bitset.c	\
+
+ifneq ($(BUILD_VARIANT),STATIC_BACKEND)
+COMMON_TARG_ACCESS_SRCS = \
+  ti_errors.c	\
+  ti_asm.c
+else
+ # do not compile ti_asm.c (already in libtarginfo.a)
+COMMON_TARG_ACCESS_SRCS = \
+  ti_errors.c
+endif
+
+CG_C_SRCS = \
+  $(COMMON_UTIL_SRCS)	\
+  $(COMMON_TARG_ACCESS_SRCS)
+
+BE_CG_GRA_CXX_SRCS =		\
+  gra.cxx			\
+  gra_bb.cxx			\
+  gra_cflow.cxx			\
+  gra_color.cxx			\
+  gra_create.cxx		\
+  gra_grant.cxx			\
+  gra_interfere.cxx		\
+  gra_loop.cxx			\
+  gra_lrange.cxx		\
+  gra_lrange_subuniverse.cxx	\
+  gra_lrange_vset.cxx           \
+  gra_lunit.cxx			\
+  gra_pref.cxx			\
+  gra_region.cxx		\
+  gra_spill.cxx			\
+  lrange_set.cxx		\
+  gra_split.cxx			\
+  gra_trace.cxx
+
+CG_GRA_PCH_CXX_SRCS= $(BE_CG_GRA_CXX_SRCS)
+
+COMMON_TARG_EXP_CXX_SRCS =	\
+  exp_targ.cxx			\
+  exp_branch.cxx		\
+  exp_pred.cxx			\
+  exp_memrf.cxx			\
+  exp_divrem.cxx                \
+  exp_intrinsic.cxx		\
+  dyn_isa_api_access.cxx
+
+COMMON_TARG_CG_CXX_SRCS =	\
+  targ_asmstmt.cxx		\
+  targ_calls.cxx		\
+  targ_cg.cxx			\
+  targ_cgdwarf.cxx		\
+  targ_cgemit.cxx		\
+  targ_ebo.cxx			\
+  targ_entry_exit.cxx		\
+  targ_loop_recur.cxx		\
+  targ_op.cxx			\
+  targ_register.cxx		\
+  targ_register_common.cxx	\
+  targ_swp.cxx			\
+  targ_swp_bundle.cxx		\
+  targ_tn.cxx                   \
+  targ_range_analysis.cxx       \
+  targ_range_prop.cxx		
+
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+DFGFORISE_CXX_SRCS =		\
+  ExportFromBackEnd.cxx
+
+ifeq ($(ENABLE_BOOST), true)
+
+DFGFORISE_CXX_SRCS +=		\
+  Constant.cxx			\
+  OperandResult.cxx		\
+  Operation.cxx			\
+  Variable.cxx			\
+  XmlUtils.cxx			\
+  DumpToGraphml.cxx		\
+  BasicBlock.cxx		\
+  DfgEdge.cxx			\
+  DfgGraph.cxx			\
+  DfgVertexConstant.cxx		\
+  DfgVertex.cxx			\
+  DfgVertexOperation.cxx	\
+  DfgVertexVariable.cxx		\
+  Function.cxx			\
+  Subgraph.cxx			\
+  SubgraphMeritData.cxx
+endif # ENABLE_BOOST
+
+
+ifeq ($(BUILD_TARGET), STxP70)
+  COMMON_TARG_EXP_CXX_SRCS += exp_extension.cxx
+endif
+
+ifeq ($(BUILD_TARGET), IA64)
+  BE_CG_TARG_CXX_SRCS += float_rf.cxx
+endif
+
+ifeq ($(BUILD_TARGET), IA32)
+  BE_CG_TARG_CXX_SRCS += stack_fp_regs.cxx
+  BE_CG_TARG_CXX_SRCS += exp_longlong.cxx
+endif
+
+CG_CXX_PCH_SRCS = 	\
+  cg_cflow.cxx		\
+  cg_dep_graph.cxx 	\
+  eh_region.cxx		\
+  gra_live.cxx		\
+  gtn_tn_set.cxx        \
+  gtn_universe.cxx      \
+  lra.cxx		\
+  op_map.cxx		\
+  oputil.cxx		\
+  tn_map.cxx		\
+  tnutil.cxx
+
+CG_CXX_SRCS = 		\
+  $(COMMON_COM_CXX_SRCS)\
+  $(COMMON_TARG_EM_CXX_SRCS)\
+  $(COMMON_TARG_EXP_CXX_SRCS)\
+  $(COMMON_TARG_CG_CXX_SRCS)\
+  annotations.cxx	\
+  bblist.cxx		\
+  bbutil.cxx 		\
+  bb_map.cxx		\
+  calls.cxx		\
+  cflow.cxx		\
+  cg.cxx		\
+  graphml_dumper.cxx \
+  cgdriver.cxx		\
+  cgdwarf.cxx		\
+  cgdwarf_debug_frame.cxx \
+  cgemit.cxx		\
+  cgexp.cxx		\
+  cgprep.cxx		\
+  cg_affirm.cxx		\
+  cg_db_op.cxx		\
+  cg_dud.cxx		\
+  cg_automod.cxx	\
+  cg_flags.cxx		\
+  cg_flags_arch.cxx	\
+  cg_ivs.cxx		\
+  cg_loop.cxx		\
+  cg_loop_scc.cxx	\
+  cg_loop_mii.cxx	\
+  cg_loop_recur.cxx	\
+  loop_invar_hoist.cxx	\
+  cg_region.cxx		\
+  cg_sched_est.cxx	\
+  cg_spill.cxx		\
+  cg_ssa.cxx		\
+  cg_outssa.cxx		\
+  cg_ssaopt.cxx		\
+  cg_swp.cxx		\
+  cg_swp_allocator.cxx	\
+  cg_swp_bundle.cxx	\
+  cg_swp_emit.cxx	\
+  cg_swp_sched.cxx	\
+  cg_thr.cxx		\
+  cg_vector.cxx		\
+  cg_coalesce.cxx       \
+  cio_rwtran.cxx	\
+  comment.cxx		\
+  dominate.cxx		\
+  ebo.cxx		\
+  findloops.cxx		\
+  freq.cxx		\
+  gcm.cxx		\
+  igls.cxx		\
+  init.cxx		\
+  label_util.cxx	\
+  localize.cxx		\
+  note.cxx		\
+  register.cxx		\
+  reg_live.cxx		\
+  tag.cxx		\
+  variants.cxx		\
+  whirl2ops.cxx		\
+                        \
+  hb.cxx		\
+  hb_block_select.cxx	\
+  hb_hazards.cxx	\
+  hb_id_candidates.cxx	\
+  hb_if_convert.cxx	\
+  hb_sched.cxx		\
+  hb_tail_duplication.cxx	\
+  hb_trace.cxx		\
+			\
+  $(DERIVED_SRCS) \
+  gcov_profile.cxx \
+  gcov_coverage.cxx 
+
+#//////// GS-DFGforISE : Exportation to DfgForIse classes. ////////
+CG_CXX_SRCS += 		\
+  $(DFGFORISE_CXX_SRCS)
+
+DERIVED_INCS += gcov-iov.h
+
+#add the pqs sources
+ifeq ($(BUILD_TARGET),IA64)
+  CG_CXX_SRCS +=  pqs.cxx
+  CG_CXX_SRCS +=  pqs_cg.cxx
+endif
+
+ifneq ($(TARGET_FROM_ST),)
+  CG_CXX_SRCS += cg_select.cxx
+  CG_CXX_SRCS += targ_select.cxx
+  CG_CXX_SRCS += targ_hb.cxx
+  CG_CXX_SRCS += top_properties.cxx
+  CG_CXX_SRCS += mexpand.cxx
+  CG_CXX_SRCS += ipra.cxx
+  CG_CXX_SRCS += range_analysis.cxx
+  CG_CXX_SRCS += range_prop.cxx
+  CG_CXX_SRCS += cg_tailmerge.cxx
+  CG_CXX_SRCS += cg_color.cxx
+  CG_CXX_SRCS += pqs.cxx
+  CG_CXX_SRCS += pqs_cg.cxx
+  CG_CXX_SRCS += targ_pqs.cxx
+endif
+
+ifdef LAO_ENABLED
+CG_CXX_SRCS +=	\
+  lao_stub.cxx \
+  lao_cgir.cxx
+endif
+
+ifeq ($(BUILD_PCH), USE_PCH)
+CG_PCH_OBJS = $(CG_CXX_PCH_SRCS:.cxx=.o)
+CG_GRA_PCH_OBJS = $(CG_GRA_PCH_CXX_SRCS:.cxx=.o)
+else
+CG_CXX_SRCS += $(CG_CXX_PCH_SRCS)
+CG_CXX_SRCS += $(CG_GRA_PCH_CXX_SRCS)
+endif
+
+CG_C_OBJS = $(CG_C_SRCS:.c=.o)
+
+CG_CXX_OBJS = $(CG_CXX_SRCS:.cxx=.o)
+
+VPATH    =  $(SRC_DIRS)
+
+LCOPTS += $(STD_COMPILE_OPTS)
+ifneq ($(BUILD_COMPILER), EDG)
+# (cbr) LCOPTS += -fwritable-strings
+endif
+LCDEFS = $(HOSTDEFS) $(TARGDEFS)
+LCINCS = $(addprefix -I, $(HEADER_DIRS))
+
+LC++OPTS += $(STD_COMPILE_OPTS) $(PCH_OPTS)
+ifneq ($(BUILD_COMPILER), EDG)
+# (cbr) LC++OPTS += -fwritable-strings
+endif
+LC++DEFS = $(HOSTDEFS) $(TARGDEFS)
+LC++INCS = $(addprefix -I, $(HEADER_DIRS))
+LASOPTS = $(STD_COMPILE_OPTS)
+LASDEFS = $(HOSTDEFS) $(TARGDEFS)
+LASINCS = $(addprefix -I, $(HEADER_DIRS))
+
+ifeq ($(BUILD_COMPILER), EDG)
+DSOSTARTOPT = -check_registry $(TARG_BE)/so_locations
+DSOSTARTOPT_32 = $(DSOSTARTOPT)
+DSOSTARTOPT_N32 = $(DSOSTARTOPT)
+else
+DSOSTARTOPT =
+endif
+
+#----------------------------------------------------------------------
+# File containing the list of symbols exported outside of cg.so
+#----------------------------------------------------------------------
+ifeq ($(BUILD_COMPILER), EDG)
+EXPORT_LIST = -exports_file $(BE_CG_DIR)/Exported
+else
+EXPORT_LIST = 
+endif
+
+#----------------------------------------------------------------------
+#  Define target
+#----------------------------------------------------------------------
+
+# shared library
+ifeq ($(DSO_MODE),SO)
+TARGETS = cg.so
+endif
+# windows dll
+ifeq ($(DSO_MODE),DLL)
+TARGETS = cg.dll
+endif
+# static library
+ifeq ($(DSO_MODE),STATIC)
+TARGETS = libcg.a
+endif
+
+#----------------------------------------------------------------------
+#  Variables describing additional sources, objects, and libraries
+#----------------------------------------------------------------------
+ifeq ($(BUILD_COMPILER), EDG)
+LLDLIBS = -none 
+else
+LLDLIBS =
+endif
+
+##
+##  Defining the target library
+##
+
+# We need to have one of the target .so's on the link line 
+# while building cg.so . This is needed by the linker on linux.
+# So, arbitrarily pick one of the target .so's to define TARGET_SO.
+ifeq ($(BUILD_TARGET), MIPS)
+TARGET_SO = r10000.so
+endif
+ifeq ($(BUILD_TARGET), IA64)
+TARGET_SO = itanium.so
+endif
+ifeq ($(BUILD_TARGET), IA32)
+TARGET_SO = pentium.so
+endif
+
+ifneq ($(TARGET_FROM_ST),)
+ # shared library
+ ifeq ($(DSO_MODE),SO)
+  TARGET_SO = 
+ endif
+ # windows dll import library
+ ifeq ($(DSO_MODE),DLL)
+  TARGET_SO =
+ endif
+ # static library
+ ifeq ($(DSO_MODE),STATIC)
+  ifeq ($(BUILD_TARGET), ST200)
+   TARGET_SO = libst220.a
+  endif
+  ifeq ($(BUILD_TARGET), STxP70)
+   TARGET_SO = libstxp70.a
+  endif
+  ifeq ($(BUILD_TARGET), ARM)
+   TARGET_SO = libarm.a
+  endif
+ endif
+endif # TARGET_FROM_ST
+
+##
+## Defining the wopt library
+##
+# shared library
+ifeq ($(DSO_MODE),SO)
+WOPT_SO = wopt.so
+endif
+# windows dll import library
+ifeq ($(DSO_MODE),DLL)
+WOPT_SO = wopt_dll.a
+endif
+# static library
+ifeq ($(DSO_MODE),STATIC)
+WOPT_SO = 
+endif
+
+
+
+##
+## Defining the back-end library
+##
+
+# shared library 
+ifeq ($(DSO_MODE),SO)
+BE_DSO=be.so
+endif
+# import library (win32 platforms)
+ifeq ($(DSO_MODE),DLL)
+BE_DSO=be_dll.a
+endif
+# static build of the back-end
+ifeq ($(DSO_MODE),STATIC)
+BE_DSO=
+endif
+
+# 
+ifeq ($(DSO_MODE),SO)
+TARGINFO_SO=libtarginfo.so
+endif
+# import library (win32 platforms)
+ifeq ($(DSO_MODE),DLL)
+TARGINFO_SO=libtarginfo_dll.a
+endif
+# static build of the back-end
+ifeq ($(DSO_MODE),STATIC)
+TARGINFO_SO=
+endif
+
+ifeq ($(BUILD_OS), IRIX)
+LLDLIBS += -lelf_xtnd -ldwarf_xtnd -lelfutil_xtnd -lm -lc
+else
+ ifeq ($(BUILD_TARGET), IA64)
+  CGDEPLIBS = $(TARG_LIBUNWIND)/libunwindP.a
+ endif
+ ifeq ($(BUILD_TARGET), ST200)
+# LLDLIBS += $(TARG_LIBUNWIND)/libunwindP.a
+ endif
+CGDEPLIBS += $(TARG_LIBDWARF)/libdwarf.a     \
+	     $(TARG_LIBELFUTIL)/libelfutil.a 
+ ifeq ($(BUILD_TARGET), STxP70)
+  CGDEPLIBS += $(TARG_LIBAIR_DIR)/libair.a \
+	       $(TARG_LIBPARSE_DIR)/libparse.a 
+ endif
+CGDEPLIBS += $(TARG_LIBELF)/libelf.a \
+	     $(TARGDIR)/libSYS/libSYS.a \
+	     $(TARG_LIBIBERTY)/libiberty.a
+ ifeq ($(BUILD_TARGET), STxP70)
+  CGDEPLIBS += $(TARG_LIBRTKUTILS_DIR)/librtkutils.a 
+ endif
+LLDLIBS += $(CGDEPLIBS)
+endif
+
+ifneq ($(DSO_MODE),DLL)
+LLDLIBS += $(TARG_TARG_INFO_DIR)/libtarginfo.a
+endif
+
+ifeq ($(DSO_MODE),DLL)
+LLDLIBS += $(TARG_TARG_INFO_DIR)/libtarginfo_dll.a
+endif
+
+ifneq ($(HOST_OS),CYGWIN_NT)
+# all we need is provided by libcygwin
+LLDLIBS += -lm
+endif
+
+#----------------------------------------------------------------------
+#  Intermediate variable, to expose dependency of .o file towards
+#  derived_files. Would not work with a named dependency (such as
+#  'derived_files')
+#  ----------------------------------------------------------------------
+DERIVED_FILES = $(DERIVED_SRCS) $(DERIVED_INCS)
+
+default: first 
+	$(MAKE) local last
+
+#----------------------------------------------------------------------
+#  The commands in this section are done BEFORE any other target is
+#  built.
+#----------------------------------------------------------------------
+first:
+ifndef PARALLEL
+	cd $(TARG_LIBELF) && $(MAKE)
+	cd $(TARG_LIBELFUTIL) && $(MAKE)
+	cd $(TARG_LIBDWARF) && $(MAKE)
+ifeq ($(BUILD_TARGET), IA64)
+	cd $(TARG_LIBUNWIND) && $(MAKE)
+endif
+## verify that be.so and targ.so are up to date
+ifneq ($(DSO_MODE),STATIC)
+	cd $(TARG_BE) && $(MAKE)
+	cd $(TARG_TARG_INFO_DIR) && $(MAKE)
+ifeq ($(DSO_MODE),DLL)
+	cd $(TARG_WOPT_DIR) && $(MAKE)
+endif
+endif
+ifeq ($(BUILD_PCH), USE_PCH)
+## build pch files first so that we can use precompiled headers
+# TODO: how to build pch on irix
+	( $(MAKE) \
+	PCH_OPTS="-LANG:create_pch=cg_pch.pch" cg_pch.pch cg_pch.o )
+	( $(MAKE) \
+	PCH_OPTS="-LANG:use_pch=cg_pch.pch" cg_pch_files )
+endif
+endif
+
+#----------------------------------------------------------------------
+# The commands in this section do not check the accuracy of
+# library/includes coming from other modules...
+#----------------------------------------------------------------------
+first_local :
+ifneq ($(DSO_MODE),STATIC)
+	if [ ! -h $(BE_DSO) ]; then ln -sf $(TARG_BE)/$(BE_DSO) .; fi
+ifeq ($(DSO_MODE),DLL)
+	if [ ! -h $(WOPT_SO) ]; then ln -sf $(TARG_WOPT_DIR)/$(WOPT_SO) .; fi
+	if [ ! -h $(TARGINFO_SO) ]; then ln -sf $(TARG_TARG_INFO_DIR)/libtarginfo_dll.a .; fi
+endif
+endif
+
+$(TARGETS): | first_local
+local: $(TARGETS)
+
+#----------------------------------------------------------------------
+#  The commands in this section are done AFTER every other target is
+#  built.
+#----------------------------------------------------------------------
+last: make_deps
+
+#----------------------------------------------------------------------
+#  Install target
+#----------------------------------------------------------------------
+install:: last
+ifneq ($(BUILD_OS), IRIX)
+	if [ ! -d $(STD_MONGOOSE_OS_LOC) ]; then $(STD_INSTALL) -d $(STD_MONGOOSE_OS_LOC); fi
+	for h in $(TARGETS); do \
+	    $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(STD_MONGOOSE_OS_LOC) ; \
+	done
+else
+	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) -F $(STD_MONGOOSE_LOC) cg.so
+ ifeq ($(BUILD_TYPE), SHARED)
+ ifndef NOSYSGEN
+	$(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) -F /usr/cpu/sysgen/root$(STD_MONGOOSE_LOC) cg.so
+ endif
+ endif
+endif
+
+#----------------------------------------------------------------------
+#  Build 'cg' library
+#----------------------------------------------------------------------
+ifeq ($(BUILD_COMPILER), EDG)
+UNRESOLVED_FLAGS = -no_unresolved
+else
+UNRESOLVED_FLAGS =
+endif
+
+
+LINK_DSOS = $(BE_DSO) $(TARGET_SO)
+
+##
+## Shared library
+##
+ifeq ($(DSO_MODE), SO)
+
+$(TARG_BE)/$(BE_DSO):
+	cd $(TARG_BE) && $(MAKE) $(BE_DSO)
+
+$(TARG_LIBDWARF)/libdwarf.a:
+	cd $(TARG_LIBDWARF) && $(MAKE) libdwarf.a
+
+$(TARG_LIBELFUTIL)/libelfutil.a:
+	cd $(TARG_LIBELFUTIL) && $(MAKE) libelfutil.a
+
+$(TARG_LIBELF)/libelf.a:
+	cd $(TARG_LIBELF) && $(MAKE) libelf.a
+
+ifneq ($(BUILD_PCH), USE_PCH)
+
+ifeq ($(BUILD_HOST), IA64)
+ ifeq ($(BUILD_COMPILER), SGI)
+  STD_DSO_LOADOPTS += -Wl,-relax
+ endif
+endif
+
+cg.so: $(CG_CXX_OBJS) $(CG_C_OBJS) $(TARG_BE)/$(BE_DSO) \
+	$(BE_CG_DIR)/Exported $(BE_BE_DIR)/so_locations $(CGDEPLIBS)
+	$(C++F) $(UNRESOLVED_FLAGS) $(STD_DSO_LOADOPTS) $(EXPORT_LIST) \
+		$(CG_C_OBJS) $(CG_CXX_OBJS) \
+		-o $@ $(LINK_DSOS) $(LLDLIBS) $(LDOPTS)
+
+else # Using Pre-Compiled Headers
+cg_pch_files: $(CG_PCH_OBJS) cg_pch.pch
+cg_gra_pch_files: $(CG_GRA_PCH_OBJS) cg_gra_pch.pch
+
+cg.so:  $(CG_CXX_OBJS) $(CG_C_OBJS) $(CG_PCH_OBJS) $(CG_GRA_PCH_OBJS)\
+	$(BE_CG_DIR)/Exported $(TARG_BE)/$(BE_DSO) \
+	$(BE_BE_DIR)/so_locations
+	$(C++F) $(UNRESOLVED_FLAGS) $(STD_DSO_LOADOPTS) $(EXPORT_LIST) \
+	$(CG_C_OBJS) $(CG_CXX_OBJS) $(CG_PCH_OBJS) $(CG_GRA_PCH_OBJS)\
+	-o $@ $(TARG_BE)/$(BE_DSO) $(LLDLIBS) $(LDOPTS)
+endif # BUILD_PCH
+endif # shared library
+
+##
+## DLL build
+##
+ifeq ($(DSO_MODE), DLL)
+
+LDDSOOPTS+=  $(LLDLIBS)
+
+cg.dll cg_dll.a : $(CG_CXX_OBJS) $(CG_C_OBJS) $(CGDEPLIBS) $(TARG_BE)/$(BE_DSO)
+	$(CXX) --shared -o cg.dll -Wl,--out-implib,cg_dll.a \
+	$(CG_CXX_OBJS) $(CG_C_OBJS) $(LINK_DSOS) $(LDOPTS) $(LDDSOOPTS) -Wl,--image-base=0x68000000
+endif
+
+##
+## Static build
+##
+ifeq ($(DSO_MODE), STATIC)
+libcg.a : derived_files $(CG_CXX_OBJS) $(CG_C_OBJS)
+	$(AR) rc $@ $(CG_CXX_OBJS) $(CG_C_OBJS) 
+endif
+
+
+# Things to remove with make clobber
+LDIRT += $(LINK_DSOS) be ii_files 
+
+ifdef LINK_DSO
+debug-cg: cg.so
+	(cd $(TARG_BE); $(MAKE) LINK_DSO='$(LINK_DSO)' \
+		LINK_DSO_OPTS='$(LINK_DSO_OPTS) -L.' be)
+endif
+
+#----------------------------------------------------------------------
+#  Misc dependencies
+#----------------------------------------------------------------------
+
+ifeq ($(BUILD_OS),CYGWIN_NT)
+SHELLNAME=sh
+else
+SHELLNAME=csh
+endif
+
+DERIVED_INCS += bb_list.h
+bb_list.cxx : bb_list.h
+bb_list.h : $(COMMON_UTIL_DIR)/gen_x_list.$(SHELLNAME)                   \
+            $(BE_CG_DIR)/gen_bb_list.$(SHELLNAME)
+	$(SHELLNAME) -f	$(BE_CG_DIR)/gen_bb_list.$(SHELLNAME) $(COMMON_UTIL_DIR)
+
+DERIVED_INCS += gra_bb_list.h
+gra_bb_list.cxx : gra_bb_list.h
+gra_bb_list.h : $(COMMON_UTIL_DIR)/gen_x_list.$(SHELLNAME)                   \
+$(BE_CG_GRA_DIR)/gen_gra_bb_list.$(SHELLNAME)
+	$(SHELLNAME) -f	$(BE_CG_GRA_DIR)/gen_gra_bb_list.$(SHELLNAME) $(COMMON_UTIL_DIR)
+
+DERIVED_INCS += lrange_list.h
+lrange_list.cxx : lrange_list.h
+lrange_list.h : $(COMMON_UTIL_DIR)/gen_x_list.$(SHELLNAME) 	\
+	        $(BE_CG_GRA_DIR)/gen_lrange_list.$(SHELLNAME)
+	$(SHELLNAME) -f  $(BE_CG_GRA_DIR)/gen_lrange_list.$(SHELLNAME) $(COMMON_UTIL_DIR)
+
+DERIVED_INCS += op_list.h
+op_list.cxx : op_list.h
+op_list.h : $(COMMON_UTIL_DIR)/gen_x_list.$(SHELLNAME)                   \
+$(BE_CG_DIR)/gen_op_list.$(SHELLNAME)
+	$(SHELLNAME) -f	$(BE_CG_DIR)/gen_op_list.$(SHELLNAME) $(COMMON_UTIL_DIR)
+
+DERIVED_INCS += st_list.h
+st_list.cxx : st_list.h
+st_list.h : $(COMMON_UTIL_DIR)/gen_x_list.$(SHELLNAME)   \
+	    $(BE_CG_DIR)/gen_st_list.$(SHELLNAME)
+	$(SHELLNAME) -f  $(BE_CG_DIR)/gen_st_list.$(SHELLNAME) $(COMMON_UTIL_DIR)
+
+DERIVED_INCS += tn_list.h
+tn_list.cxx : tn_list.h
+tn_list.h : $(COMMON_UTIL_DIR)/gen_x_list.$(SHELLNAME) 	\
+	    $(BE_CG_DIR)/gen_tn_list.$(SHELLNAME)
+	$(SHELLNAME) -f  $(BE_CG_DIR)/gen_tn_list.$(SHELLNAME) $(COMMON_UTIL_DIR)
+
+DERIVED_INCS += void_list.h
+void_list.cxx : void_list.h
+void_list.h : $(COMMON_UTIL_DIR)/gen_x_list.$(SHELLNAME) 	\
+	    $(BE_CG_DIR)/gen_void_list.$(SHELLNAME)
+	$(SHELLNAME) -f  $(BE_CG_DIR)/gen_void_list.$(SHELLNAME) $(COMMON_UTIL_DIR)
+
+#SKIP DERIVED_SRCS += bb_set.cxx
+DERIVED_INCS += bb_set.h bb_set.td
+#SKIP bb_set.cxx : bb_set.h
+bb_set.h : bb_set.td
+bb_set.td : $(SETGEN) $(BE_CG_DIR)/gen_bb_set
+	$(SHELLNAME) -f $(BE_CG_DIR)/gen_bb_set $(COMMON_UTIL_DIR) $(GEN_X_SET_OPTS)
+
+DERIVED_INCS += lrange_set.h lrange_set.td
+lrange_set.h : lrange_set.td
+lrange_set.cxx : lrange_set.td
+lrange_set.td : $(SETGEN) $(BE_CG_GRA_DIR)/gen_lrange_set
+	$(SHELLNAME) -f $(BE_CG_GRA_DIR)/gen_lrange_set $(COMMON_UTIL_DIR)
+
+DERIVED_INCS += cg_loop_scc_prop.h
+cg_loop_scc_prop.cxx : cg_loop_scc_prop.h
+cg_loop_scc_prop.h :	$(COMMON_UTIL_DIR)/gen_x_prop.$(SHELLNAME)               \
+$(BE_CG_DIR)/gen_cg_loop_scc_prop.$(SHELLNAME)
+	$(SHELLNAME) -f	$(BE_CG_DIR)/gen_cg_loop_scc_prop.$(SHELLNAME) $(COMMON_UTIL_DIR)
+
+DERIVED_INCS += tn_prop.h
+tn_prop.cxx : tn_prop.h
+tn_prop.h : $(COMMON_UTIL_DIR)/gen_x_prop.$(SHELLNAME) $(BE_CG_DIR)/gen_tn_prop.$(SHELLNAME)
+	$(SHELLNAME) -f	$(BE_CG_DIR)/gen_tn_prop.$(SHELLNAME) $(COMMON_UTIL_DIR)
+
+DERIVED_INCS += tn_set.h tn_set.td
+tn_set.h : tn_set.td
+tn_set.td : $(SETGEN) $(BE_CG_DIR)/gen_tn_set
+	$(SHELLNAME) -f $(BE_CG_DIR)/gen_tn_set $(COMMON_UTIL_DIR) $(GEN_X_SET_OPTS)
+
+DERIVED_INCS += gtn_set.h gtn_set.td
+gtn_set.h : gtn_set.td
+gtn_set.td : $(SETGEN) $(BE_CG_DIR)/gen_gtn_set
+	$(SHELLNAME) -f $(BE_CG_DIR)/gen_gtn_set $(COMMON_UTIL_DIR) $(GEN_X_SET_OPTS)
+
+# here's the target that gets made recursively
+derived_files : $(DERIVED_FILES)
+ifeq ($(DSO_MODE),STATIC)
+	cd $(TARG_BE) && $(MAKE) derived_files
+endif
+
+#----------------------------------------------------------------------
+#  Intermediate variable, to expose dependency of .o file towards
+#  derived_files. Would not work with a named dependency (such as
+#  'derived_files')
+#  Use of a variable in a rule definition must appear after all
+#  possible updates of the variable.
+# ----------------------------------------------------------------------
+$(CG_CXX_OBJS) $(CG_C_OBJS): $(DERIVED_FILES)
+
+
+#----------------------------------------------------------------------
+#  Include the usual commonrules
+#----------------------------------------------------------------------
+include $(COMMONRULES)
+
+#----------------------------------------------------------------------
+#  Special case rules for files that want to be individualistic
+#----------------------------------------------------------------------
+
+.cxx.pch:
+	$(C++F) -c $(.IMPSRC)
+
+#----------------------------------------------------------------------
+#  GCOV specific build
+#----------------------------------------------------------------------
+# gcov-iov.c is run on the build machine to generate gcov-iov.h from version.c
+gcov-iov.bo: gcov-iov.c gcov-version.c 
+	$(BUILD_CC) -I$(COMMON_COM_DIR) $(BUILD_CFLAGS) -DGENERATOR_FILE $< -c -o $@
+
+gcov-iov$(BEXE): gcov-iov.bo
+	$(BUILD_CC) -o $@ $^ $(BUILD_LDFLAGS)
+
+gcov-iov.h: s-iov
+s-iov: gcov-iov$(BEXE) 
+	./gcov-iov$(build_exeext) > gcov-iov.h
+	touch s-iov
+
+LDIRT+= s-iov *.s *.ii gcov-iov$(BEXE) *.bo *.i

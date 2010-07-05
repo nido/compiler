@@ -1,0 +1,18 @@
+
+Feedback data of short_circuit.c/main (checksum 11)
+invoke = 
+	id = 0	FB---> invoke = 1
+branch = 
+	id = 0	FB---> taken = 12, not_taken = 3
+	id = 1	FB---> taken = 118, not_taken = 15
+	id = 2	FB---> taken = 67, not_taken = 133
+loop = 
+	id = 0	FB---> total inv = 1, total trip count = 200, trip count of last inv = 200, min trip count = 0
+ max trip count = 0, nb times 0 trip = 0
+Short Circuit = 
+	id = 0	FB---> left = 0, right = 33, neither = 67
+	id = 1	FB---> left = 0, right = 0, neither = 67
+	id = 2	FB---> left = 0, right = 33, neither = 33
+	id = 3	FB---> left = 0, right = 85, neither = 15
+	id = 4	FB---> left = 0, right = 7, neither = 3
+	id = 5	FB---> left = 0, right = 0, neither = 3

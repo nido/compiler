@@ -1,0 +1,169 @@
+#
+# Specific tool paths 
+#
+# Specify full absolute paths with the trailing '/'.
+# Empty path are allowed which will imply a PATH search.
+#
+# Platform variant and build variant are include before this file,
+# thus path may be setup depending on these settings.
+#
+
+# host platform definitions
+COMPILER_LOC=
+BINUTILS_LOC=
+PREFIX=
+SUFFIX=
+YACC_LOC=
+LEX_LOC=
+INSTALL_LOC=
+
+# build platform definitions
+BUILD_PREFIX=
+BUILD_SUFFIX=
+BUILD_COMPILER_LOC=
+BUILD_BINUTILS_LOC=
+
+##
+## GNU tools names
+##
+ifeq ($(BUILD_COMPILER), GNU)
+  GNU_PREFIX=/sw/st/gnu_compil/gnu
+  ifeq ($(BUILD_OS),SUNOS5)
+    GNU_OS=sunos5.8
+    GNU_LOC=$(GNU_PREFIX)/$(GNU_OS)
+    BINUTILS_GNU_LOC=$(GNU_LOC)/bin/
+    COMP_GNU_LOC=$(GNU_LOC)/gcc/gcc-3.4.4/bin/
+    YACC_LOC=$(GNU_LOC)/.package/bison-1.35/bin/
+    LEX_LOC=
+    INSTALL_LOC=$(BINUTILS_GNU_LOC)
+
+    ifeq ($(HOST_OS),SUNOS5)
+      COMPILER_LOC=$(COMP_GNU_LOC)
+      BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+    endif
+
+    ifeq ($(HOST_OS),MINGW)
+      COMPILER_LOC=$(GNU_LOC)/gcc/x-mingw32-gcc-3.4.2/bin/
+      BINUTILS_LOC=$(COMPILER_LOC)
+      PREFIX=i386-mingw32-
+    endif
+
+    ifeq ($(HOST_OS),CYGWIN_NT)
+      COMPILER_LOC=$(GNU_LOC)/gcc/x-cygwin-1.5.9-gcc-3.3.1/bin/
+      BINUTILS_LOC=$(COMPILER_LOC)
+      PREFIX=i386-pc-cygwin-
+    endif
+
+    BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
+    BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+
+  endif # BUILD_OS = SUNOS5
+
+  ifeq ($(BUILD_OS),LINUX)
+    GNU_OS=linux-rh-ws-3
+    GNU_LOC=$(GNU_PREFIX)/$(GNU_OS)
+    BINUTILS_GNU_LOC=$(GNU_LOC)/bin/
+    # For STxP70 we keep gcc-3.2.3 to be compatible with extension flow
+    ifeq ($(BUILD_TARGET),STxP70)
+      COMP_GNU_LOC=$(GNU_LOC)/gcc/gcc-3.2.3/bin/
+    else
+      # Because of GCC's fix-include we can't use the same compiler under
+      # RH3 and RH4
+      COMP_GNU_LOC=$(GNU_PREFIX)/$(shell $(GNU_PREFIX)/scripts/guess-os)/gcc/gcc-4.4.1/bin/
+      ifneq (,$(findstring x86_64,$(shell $(GNU_PREFIX)/scripts/guess-os)))
+        # Make sure we can execute the resulting program on a 32 bits machine
+        COMPAT_FLAGS=-m32
+      endif
+    endif
+
+    BINUTILS_GNU_LOC=$(COMP_GNU_LOC)
+    YACC_LOC=$(GNU_LOC)/.package/bison-1.35/bin/
+    LEX_LOC=
+    INSTALL_LOC=
+
+    ifeq ($(HOST_OS),LINUX)
+      COMPILER_LOC=$(COMP_GNU_LOC)
+      BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+    endif
+
+    ifeq ($(HOST_OS),MINGW)
+      ifeq ($(BUILD_TARGET),STxP70)
+        COMPILER_LOC=$(GNU_LOC)/gcc/x-mingw32-gcc-3.4.2/bin/
+      else
+        COMPILER_LOC=$(GNU_LOC)/gcc/x-mingw32-gcc-4.1.2/bin/
+      endif
+      BINUTILS_LOC=$(COMPILER_LOC)
+      PREFIX=i386-mingw32-
+    endif
+
+    ifeq ($(HOST_OS),CYGWIN_NT)
+      COMPILER_LOC=$(GNU_LOC)/gcc/x-cygwin-1.5.9-gcc-3.3.1/bin/
+      BINUTILS_LOC=$(COMPILER_LOC)
+      PREFIX=i386-pc-cygwin-
+    endif
+
+    BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
+    BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+
+  endif # BUILD_OS = LINUX
+export LD_LIBRARY_PATH:=$(GNU_LOC)/lib:$(LD_LIBRARY_PATH)
+endif # BUILD_COMPILER = GNU
+
+
+##
+## OPEN64 tools names
+##
+ifeq ($(BUILD_COMPILER), OPEN64)
+
+ifeq ($(HOST_ARCH),ST200)
+
+ifeq ($(BUILD_OS),SUNOS5)
+GNU_OS=sunos5.8
+RUNNER=/apa/comp/SunOS5/st200/R4.1/bin/st200run -tsimfast --
+COMPILER_LOC=/apa/comp/SunOS5/st200/R4.1/bin/
+BINUTILS_LOC=$(COMPILER_LOC)
+endif # SUNOS5
+
+ifeq ($(BUILD_OS),LINUX)
+GNU_OS=linux-rh-ws-3
+RUNNER=/sw/st/gnu_compil/comp/st200/r5.0/linux-rh-7.2/bin/st200run -tsimfast --
+COMPILER_LOC=/sw/st/gnu_compil/comp/st200/r5.0/linux-rh-7.2/bin/
+BINUTILS_LOC=$(COMPILER_LOC)
+endif
+
+PREFIX=st200-
+CCPREFIX=st200
+
+endif # HOST_ARCH = ST200
+
+ifeq ($(HOST_ARCH),STxP70)
+
+ifeq ($(BUILD_OS),LINUX)
+GNU_OS=linux-rh-ws-3
+RUNNER=/undef
+COMPILER_LOC=/undef
+BINUTILS_LOC=$(COMPILER_LOC)
+endif
+
+PREFIX=stxp70-
+CCPREFIX=stxp70
+
+endif # HOST_ARCH = STxP70
+
+GNU_PREFIX=/sw/st/gnu_compil/gnu
+GNU_LOC=$(GNU_PREFIX)/$(GNU_OS)
+COMP_GNU_LOC=$(GNU_LOC)/gcc/gcc-3.4.4/bin/
+BINUTILS_GNU_LOC=$(GNU_LOC)/bin/
+BUILD_COMPILER_LOC=$(COMP_GNU_LOC)
+BUILD_BINUTILS_LOC=$(BINUTILS_GNU_LOC)
+
+endif # BUILD_COMPILER = OPEN64
+
+#
+# Win32 suffix
+# 
+ifeq ($(BUILD_OS),MINGW)
+SUFFIX=.exe
+endif
+
+

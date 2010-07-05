@@ -1,0 +1,2 @@
+#!/bin/sh
+../configure BUILD=gnu-release PLATFORMS=linux-mingw-arm TOOLDEFS=gnu_compil $*

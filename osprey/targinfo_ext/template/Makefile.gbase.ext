@@ -1,0 +1,1217 @@
+
+#
+#
+#  Copyright (C) 2000, 2001 Silicon Graphics, Inc. All Rights Reserved.
+#
+#  This program is free software; you can redistribute it and/or modify it
+#  under the terms of version 2 of the GNU General Public License as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it would be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+#
+#  Further, this software is distributed without any warranty that it is
+#  free of the rightful claim of any third person regarding infringement 
+#  or the like.  Any license provided herein, whether implied or 
+#  otherwise, applies only to this software file.  Patent licenses, if 
+#  any, provided herein do not apply to combinations of this program with 
+#  other software, or any other product whatsoever.  
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write the Free Software Foundation, Inc., 59
+#  Temple Place - Suite 330, Boston MA 02111-1307, USA.
+#
+#  Contact information:  Silicon Graphics, Inc., 1600 Amphitheatre Pky,
+#  Mountain View, CA 94043, or:
+#
+#  http://www.sgi.com
+#
+#  For further information regarding this notice, see:
+#
+#  http://oss.sgi.com/projects/GenInfo/NoticeExplan
+#
+#
+
+#
+# This file has been modified and adapted by STMicroelectronics
+#
+
+#
+# GNU Makefile used for building Open64 extension shared objects.
+#
+
+#----------------------------------------------------------------------
+#  Include the usual commondefs
+#----------------------------------------------------------------------
+include $(COMMONDEFS)
+
+#--------------------------------------------------------------
+# Checking some variables used hereafter.
+#--------------------------------------------------------------
+
+ifeq (,$(EXTN))
+  $(error "Variable EXTN (extension name) is not set")
+endif
+
+ifeq (,$(BUILD_TARGET_DIR))
+  $(error "Variable BUILD_TARGET_DIR is not set")
+endif
+
+ifeq (,$(BUILD_AREA))
+  $(error "Variable BUILD_AREA is not set")
+endif
+
+ifeq (,$(BUILD_TOT))
+  $(error "Variable BUILD_TOT is not set")
+endif
+
+ifeq (,$(BUILD_BASE))
+  $(error "Variable BUILD_BASE is not set")
+endif
+
+ifeq (,$(BUILD_OS))
+  $(error "Variable BUILD_OS is not set")
+endif
+
+#----------------------------------------------------------------------
+#  Set environment variables
+#----------------------------------------------------------------------
+
+META     =
+
+#----------------------------------------------------------------------
+#  Compiler Options
+#----------------------------------------------------------------------
+
+ifeq ($(DSO_MODE),DLL)
+HOSTDEFS  += -DTARGINFO_EXT_EXPORTED=$(DLLEXPORT)
+HOSTDEFS  += -DTARGINFO_EXPORTED=
+HOSTDEFS  += -DBE_EXPORTED=
+HOSTDEFS  += -DIPL_EXPORTED=
+HOSTDEFS  += -DLNO_EXPORTED=
+BUILDDEFS += -DTARGINFO_EXT_EXPORTED= -DTARGINFO_EXPORTED= -DBE_EXPORTED= -DIPL_EXPORTED= -DLNO_EXPORTED=
+else
+HOSTDEFS   = $(GCOPTS) 
+endif
+
+#----------------------------------------------------------------------
+#  List of directories, and source files of interest
+#----------------------------------------------------------------------
+
+CURRENT_DIR		  = .
+COMMON_DIR		  = $(BUILD_TOT)/common
+COMMON_COM_DIR		  = $(COMMON_DIR)/com
+
+TARGINFO_DIR              = $(BUILD_TOT)/targinfo
+TARGINFO_ACCESS_DIR       = $(TARGINFO_DIR)/access
+TARGINFO_PARSER_INC_DIR   = $(TARGINFO_DIR)/parser/inc
+TARGINFO_GENERATE_DIR 	  = $(TARGINFO_DIR)/generate
+TARGINFO_GENERATE_DYN_DIR = $(TARGINFO_GENERATE_DIR)/dyn 
+TARGINFO_ISA_DIR          = $(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/isa
+
+LIBAIR_DIR                = $(BUILD_TOT)/libair/air
+
+GCCFE_DIR                 = $(BUILD_TOT)/gccfe
+
+TARG_INCLUDE_DIR          = $(BUILD_AREA)/include
+TARG_TARGINFO_DIR         = $(BUILD_AREA)/targ_info
+
+TARGINFO_EXT_ABI          = $(BUILD_BASE)/abi
+TARGINFO_EXT_ISA          = $(BUILD_BASE)/isa
+TARGINFO_EXT_CONFIG       = $(BUILD_BASE)/config
+TARGINFO_EXT_PROC         = $(BUILD_BASE)/proc
+TARGINFO_EXT_CG           = $(BUILD_BASE)/cg
+
+# These are the directories in which to look for source files.
+
+SRC_DIRS =                      \
+  $(CURRENT_DIR)                \
+  $(TARGINFO_ACCESS_DIR)        \
+  $(TARGINFO_GENERATE_DIR)      \
+  $(TARGINFO_GENERATE_DYN_DIR)  \
+  $(TARGINFO_EXT_ABI)           \
+  $(TARGINFO_EXT_ISA)           \
+  $(TARGINFO_EXT_CONFIG)        \
+  $(TARGINFO_EXT_PROC)          \
+  $(TARGINFO_EXT_CG)
+
+VPATH    =  $(SRC_DIRS)
+
+#ifneq (,$(RTK))
+############
+# in RTK environment some targ_info files are rebuilt on site
+############
+#VPATH   += $(TARG_TARGINFO_DIR)
+#endif
+
+#----------------------------------------------------------------------
+#  Tools Options
+#----------------------------------------------------------------------
+
+#ifeq (,$(RTK))
+# not used in RTK environment, common defs are set in upper makefile
+#include $(COMMONDEFS)
+#endif
+
+#Define for dynamic extensions.
+DFLAGS_DYN_EXT   = -DDYNAMIC_CODE_GEN -DEXTN=$(EXTN) -DBACK_END
+DFLAGS_DYN_EXT  += -I$(BUILD_AREA)/targ_info 
+DFLAGS_DYN_EXT  += -I$(TARGINFO_GENERATE_DIR) 
+DFLAGS_DYN_EXT  += -I$(TARGINFO_GENERATE_DYN_DIR)
+DFLAGS_DYN_EXT  += -I$(TARGINFO_ACCESS_DIR)
+DFLAGS_DYN_EXT  += -I$(TARGINFO_PARSER_INC_DIR)
+DFLAGS_DYN_EXT  += -I$(TARGINFO_ISA_DIR)
+DFLAGS_DYN_EXT  += -I$(LIBAIR_DIR)
+DFLAGS_DYN_EXT  += -I$(CURRENT_DIR)
+DFLAGS_DYN_EXT  += -I$(COMMON_COM_DIR)
+DFLAGS_DYN_EXT  += -I$(TARGINFO_DIR)/$(BUILD_TARGET_DIR)/config
+DFLAGS_DYN_EXT  += -I$(GCCFE_DIR)/gnu
+DFLAGS_DYN_EXT  += -I$(GCCFE_DIR)/gnu/$(BUILD_TARGET_DIR)
+DFLAGS_DYN_EXT  += -I$(GCCFE_DIR)/gnu/config
+ifeq (on,$(RTK))
+DFLAGS_DYN_EXT  += -I$(RECONF_SRC_DIR)
+endif
+
+CFLAGS          += $(DFLAGS_DYN_EXT) $(HOSTDEFS)
+CXXFLAGS        += $(DFLAGS_DYN_EXT) $(HOSTDEFS)
+BUILD_CFLAGS    += $(DFLAGS_DYN_EXT) $(GCOPTS) $(BUILDDEFS)
+BUILD_CXXFLAGS  += $(DFLAGS_DYN_EXT) $(GC++OPTS) $(BUILDDEFS)
+
+ifeq (,$(RTK))
+# In Open64 build environnment, set -Wall switch
+CFLAGS          += -Wall
+CXXFLAGS        += -Wall
+else
+ifeq (on,$(DEBUG))
+# In RTK DEBUG environment, set -Wall switch
+CFLAGS          += -Wall
+CXXFLAGS        += -Wall
+endif
+endif
+
+#ifneq (,$(RTK))
+CORE_CFLAGS      = $(BUILD_CFLAGS)
+CORE_CFLAGS     += -I$(TARGINFO_ACCESS_DIR)
+CORE_CFLAGS     += -I$(TARGINFO_GENERATE_DIR)
+CORE_CFLAGS     += -I$(TARGINFO_ISA_DIR)
+CORE_CFLAGS     += -I$(TARGINFO_PROC_DIR)
+CORE_CFLAGS     += -I$(TARGINFO_ABI_DIR)
+CORE_CFLAGS     += -I$(TARGINFO_CG_DIR)
+CORE_CFLAGS     += -I$(CURRENT_DIR)
+ifeq ($(HOST_OS),WINNATIVE)
+CORE_CFLAGS     += -I"$(VISUAL_STUDIO_INCLUDES)" -DCROSS_COMPILE
+endif
+CORE_CFLAGS     += -I$(TARG_INCLUDE_DIR)
+CORE_FILES_PATH  = $(TARG_TARGINFO_DIR)
+#endif
+
+ifeq (LINUX,$(HOST_OS))
+  BDLL              = so
+  BOBJ              = o
+  OUTOBJFLAG        = -o
+  OUTEXEFLAG        = -o
+  COMPFLAG          = -c
+  LDDSOOPTS         = -shared -elf
+  DELETE            = \rm
+  REM_WIN32         =
+  WIN32_CORE_CFLAGS =
+else
+ifeq (MINGW,$(HOST_OS))
+  BDLL              = dll
+  BOBJ              = o
+  OUTOBJFLAG        = -o
+  OUTEXEFLAG        = -o
+  COMPFLAG          = -c
+  LDDSOOPTS         = --shared $(TARG_TARGINFO_DIR)/libtarginfo_dll.a
+  DELETE            = \rm
+  REM_WIN32         =
+  WIN32_CORE_CFLAGS =
+  HOSTDEFS += -DDLL_EXPORTED=$(DLLEXPORT)
+else
+ifeq (CYGWIN_NT,$(HOST_OS))
+  BDLL              = dll
+  BOBJ              = o
+  OUTOBJFLAG        = -o
+  OUTEXEFLAG        = -o
+  COMPFLAG          = -c
+  LDDSOOPTS         = --shared $(TARG_TARGINFO_DIR)/libtarginfo_dll.a
+  DELETE            = \rm
+  REM_WIN32         =
+  WIN32_CORE_CFLAGS =
+  HOSTDEFS += -DDLL_EXPORTED=$(DLLEXPORT)
+else
+ifeq (WINNATIVE,$(HOST_OS))
+  BDLL              = dll
+  BOBJ              = obj
+  BEXE              = .exe
+  OUTOBJFLAG        = /Fo
+  OUTEXEFLAG        = /Fe
+  COMPFLAG          = /c
+  LDDSOOPTS         = /link /libpath:"$(VISUAL_STUDIO_LIB)" /nologo /dll \
+                      /incremental:no /machine:I386 /release
+  DELETE            = rm
+  REM_WIN32         = rem 
+  WIN32_CORE_CFLAGS = /TC /D inline=static
+  HOSTDEFS += -DDLL_EXPORTED=$(DLLEXPORT)
+else
+  $(error "host operating system $(HOST_OS) is not managed yet, please adapt makefile")
+endif
+endif
+endif
+endif
+
+#
+# Differentiate builds on build system and on host system for shared source files.
+#
+ifeq ($(BUILD_OS),$(HOST_OS))
+BUILD_MANGLING= build
+HOST_MANGLING = $(BUILD_MANGLING)
+else
+BUILD_MANGLING= build
+HOST_MANGLING = host
+endif
+
+#----------------------------------------------------------------------
+#   Defining extension's dll name.
+#----------------------------------------------------------------------
+EXT_OPEN64_DLL = $(EXTN)open64.$(BDLL)
+
+
+#----------------------------------------------------------------------
+#  Files to remove with clobber make target
+#----------------------------------------------------------------------
+
+LDIRT  = *.[ch] *.Exported  *.$(BOBJ)      \
+         $(EXTN)_isa_gen$(BEXE)            \
+         $(EXTN)_isa_properties_gen$(BEXE) \
+         $(EXTN)_isa_variants_gen$(BEXE)   \
+         $(EXTN)_isa_syntax_gen$(BEXE)     \
+         $(EXTN)_isa_lits_gen$(BEXE)       \
+         $(EXTN)_isa_relocs_gen$(BEXE)     \
+         $(EXTN)_isa_subset_gen$(BEXE)     \
+         $(EXTN)_isa_registers_gen$(BEXE)  \
+         $(EXTN)_isa_operands_gen$(BEXE)   \
+         $(EXTN)_isa_enums_gen$(BEXE)      \
+         $(EXTN)_isa_bundle_gen$(BEXE)     \
+         $(EXTN)_isa_hazards_gen$(BEXE)    \
+         $(EXTN)_abi_properties_gen$(BEXE) \
+         $(EXTN)_isa_pack_gen$(BEXE)       \
+         $(EXTN)_isa_decode_gen$(BEXE)     \
+         $(EXTN)_isa_binutils_gen$(BEXE)   \
+         $(EXTN)_si_gen$(BEXE)
+
+OBJECTS =  $(EXTN)_$(HOST_MANGLING)_topcode.$(BOBJ)        \
+           $(EXTN)_$(HOST_MANGLING)_isa_properties.$(BOBJ) \
+           $(EXTN)_$(HOST_MANGLING)_isa_variants.$(BOBJ)   \
+           $(EXTN)_$(HOST_MANGLING)_isa_print.$(BOBJ)      \
+	   $(EXTN)_$(HOST_MANGLING)_isa_parse.$(BOBJ)      \
+           $(EXTN)_$(HOST_MANGLING)_isa_lits.$(BOBJ)       \
+           $(EXTN)_$(HOST_MANGLING)_isa_relocs.$(BOBJ)     \
+           $(EXTN)_$(HOST_MANGLING)_isa_subset.$(BOBJ)     \
+           $(EXTN)_$(HOST_MANGLING)_isa_registers.$(BOBJ)  \
+           $(EXTN)_$(HOST_MANGLING)_isa_enums.$(BOBJ)      \
+           $(EXTN)_$(HOST_MANGLING)_isa_operands.$(BOBJ)   \
+           $(EXTN)_$(HOST_MANGLING)_isa_si.$(BOBJ)         \
+           $(EXTN)_$(HOST_MANGLING)_isa_bundle.$(BOBJ)     \
+           $(EXTN)_$(HOST_MANGLING)_isa_pack.$(BOBJ)       \
+           $(EXTN)_$(HOST_MANGLING)_isa_decode.$(BOBJ)     \
+           $(EXTN)_$(HOST_MANGLING)_isa_hazards.$(BOBJ)    \
+           $(EXTN)_$(HOST_MANGLING)_abi_properties.$(BOBJ) \
+	   $(EXTN)_$(HOST_MANGLING)_targ_isa_parse.$(BOBJ) \
+           $(EXTN)_$(HOST_MANGLING)_isa_binutils.$(BOBJ)   \
+           $(EXTN)_mtypes.$(BOBJ)                          \
+           $(EXTN)_builtins.$(BOBJ)                        \
+           $(EXTN)_dyn_isa_api.$(BOBJ)                     \
+           $(EXTN)_dyn_type_api.$(BOBJ)                    \
+           $(EXTN)_isa_injected.$(BOBJ)
+
+#ifeq (,$(RTK))
+############
+# at Open64 core built time, those 3 files are re-used from targ_info
+############
+#ISA_CORE_REGISTER = $(TARG_TARGINFO_DIR)/targ_isa_registers.$(BOBJ)
+#ISA_CORE_ENUM     = $(TARG_TARGINFO_DIR)/targ_isa_enums.$(BOBJ)
+#ISA_CORE_SUBSET   = $(TARG_TARGINFO_DIR)/targ_isa_subset.$(BOBJ)
+#else
+############
+# in RTK environment those 3 files are rebuilt on site
+############
+ISA_CORE_REGISTER = targ_isa_registers.$(BOBJ)
+ISA_CORE_ENUM     = targ_isa_enums.$(BOBJ)
+ISA_CORE_SUBSET   = targ_isa_subset.$(BOBJ)
+#endif
+
+#----------------------------------------------------------------------
+#   Defining default targets
+#----------------------------------------------------------------------
+
+install: $(EXT_OPEN64_DLL)
+ifeq (,$(RTK))
+	$(META)for h in $^; do \
+	  $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(STD_MONGOOSE_OS_LOC) ; \
+	done
+endif
+
+all: local
+
+default:first local
+first:
+
+last: local
+
+local: first $(EXT_OPEN64_DLL)
+
+##########################
+## Building final dll   ##
+##########################
+
+$(EXT_OPEN64_DLL): $(OBJECTS)
+	@echo "  -Building $@"
+	$(META)$(CC) $^ $(OUTEXEFLAG)$@ $(LDDSOOPTS)
+
+#########################
+## xxx_topcode.[ch]   ##
+#########################
+
+$(EXTN)_gen_util.$(BOBJ): gen_util.cxx gen_util.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@ 
+
+$(EXTN)_isa_gen.$(BOBJ): isa_gen.cxx isa_gen.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa.$(BOBJ): $(EXTN)_isa.cxx isa_gen.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_gen$(BEXE): $(EXTN)_isa_gen.$(BOBJ)   \
+                        $(EXTN)_isa.$(BOBJ)       \
+                        $(EXTN)_gen_util.$(BOBJ)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS) 
+
+$(EXTN)_topcode.c: $(EXTN)_topcode.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_topcode.h: $(EXTN)_isa_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_topcode.$(BOBJ): $(EXTN)_topcode.c $(EXTN)_topcode.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+ifneq ($(BUILD_OS),$(HOST_OS))
+$(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ): $(EXTN)_topcode.c $(EXTN)_topcode.h
+	$(META)$(BUILD_CC) $(BUILD_CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+endif
+
+DEPS_dyn_isa_topcode.h= dyn_isa_topcode.h $(EXTN)_topcode.h
+
+$(EXTN)_stub_isa_topcode.c : $(EXTN)_topcode.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_stub_isa_topcode.$(BOBJ) : $(EXTN)_stub_isa_topcode.c           \
+                      	 	   dyn_isa_topcode.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+###############################
+## xxx_isa_properties.[ch]   ##
+###############################
+
+$(EXTN)_isa_properties_gen.$(BOBJ): isa_properties_gen.cxx \
+                              isa_properties_gen.h   \
+                              $(EXTN)_topcode.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_properties.$(BOBJ): $(EXTN)_isa_properties.cxx \
+                          isa_properties_gen.h       \
+                          $(EXTN)_topcode.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_properties_gen$(BEXE): $(EXTN)_isa_properties_gen.$(BOBJ)        \
+                                   $(EXTN)_isa_properties.$(BOBJ)            \
+                                   $(EXTN)_gen_util.$(BOBJ)                  \
+				   $(EXTN)_stub_isa_topcode.$(BOBJ)	     \
+                                   $(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS) 
+
+$(EXTN)_targ_isa_properties.c: $(EXTN)_targ_isa_properties.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_properties.h: $(EXTN)_isa_properties_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_isa_properties.$(BOBJ) : $(EXTN)_targ_isa_properties.c
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+ifneq ($(BUILD_OS),$(HOST_OS))
+$(EXTN)_$(BUILD_MANGLING)_isa_properties.$(BOBJ) : $(EXTN)_targ_isa_properties.c
+	$(META)$(BUILD_CC) $(BUILD_CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+endif
+
+DEPS_dyn_isa_properties.h = dyn_isa_properties.h $(EXTN)_targ_isa_properties.h
+
+$(EXTN)_stub_isa_properties.c : $(EXTN)_targ_isa_properties.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_stub_isa_properties.$(BOBJ) : $(EXTN)_stub_isa_properties.c           \
+                      	 	   dyn_isa_properties.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+###############################
+## xxx_isa_variants.[ch]   ##
+###############################
+
+$(EXTN)_isa_variants_gen.$(BOBJ): isa_variants_gen.cxx \
+                              isa_variants_gen.h   \
+                              $(EXTN)_topcode.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_variants.$(BOBJ): $(EXTN)_isa_variants.cxx \
+                          isa_variants_gen.h       \
+                          $(EXTN)_topcode.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_variants_gen$(BEXE): $(EXTN)_isa_variants_gen.$(BOBJ)        	\
+                                   $(EXTN)_isa_variants.$(BOBJ)            	\
+                                   $(EXTN)_gen_util.$(BOBJ)                  	\
+				   $(EXTN)_stub_isa_topcode.$(BOBJ)	     	\
+                                   $(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
+
+$(EXTN)_targ_isa_variants.c: $(EXTN)_targ_isa_variants.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_variants.h: $(EXTN)_isa_variants_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_isa_variants.$(BOBJ) : $(EXTN)_targ_isa_variants.c
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+ifneq ($(BUILD_OS),$(HOST_OS))
+$(EXTN)_$(BUILD_MANGLING)_isa_variants.$(BOBJ) : $(EXTN)_targ_isa_variants.c
+	$(META)$(BUILD_CC) $(BUILD_CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+endif
+
+DEPS_dyn_isa_variants.h  = dyn_isa_variants.h $(EXTN)_targ_isa_variants.h
+
+###############################
+## xxx_targ_isa_print.[ch]   ##
+###############################
+
+$(EXTN)_isa_syntax_gen.$(BOBJ): isa_syntax_gen.cxx isa_syntax_gen.h $(EXTN)_topcode.h 	\
+				gen_util.h $(EXTN)_targ_isa_operands.h 			\
+				$(EXTN)_targ_isa_registers.h $(EXTN)_targ_isa_lits.h 	\
+				$(EXTN)_targ_isa_subset.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_syntax.$(BOBJ): $(EXTN)_isa_syntax.cxx isa_syntax_gen.h $(EXTN)_topcode.h 	\
+			    $(EXTN)_targ_isa_registers.h $(EXTN)_targ_isa_lits.h 	\
+			    $(EXTN)_targ_isa_subset.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_syntax_gen$(BEXE): $(EXTN)_isa_syntax_gen.$(BOBJ)                  	\
+                              $(EXTN)_isa_syntax.$(BOBJ)                        \
+                              $(EXTN)_gen_util.$(BOBJ)                         	\
+			      $(EXTN)_stub_isa_topcode.$(BOBJ)		  	\
+			      $(EXTN)_stub_isa_subset.$(BOBJ)		  	\
+			      $(EXTN)_stub_isa_registers.$(BOBJ)	  	\
+			      $(EXTN)_stub_isa_lits.$(BOBJ)	  		\
+			      $(EXTN)_stub_isa_enums.$(BOBJ)		  	\
+			      $(EXTN)_stub_isa_relocs.$(BOBJ)		  	\
+			      $(EXTN)_stub_isa_operands.$(BOBJ)		  	\
+                              $(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ)        	\
+                              $(EXTN)_$(BUILD_MANGLING)_isa_subset.$(BOBJ)  	\
+                              $(EXTN)_$(BUILD_MANGLING)_isa_operands.$(BOBJ)  	\
+                              $(EXTN)_$(BUILD_MANGLING)_isa_registers.$(BOBJ)  	\
+                              $(EXTN)_$(BUILD_MANGLING)_isa_lits.$(BOBJ)  	\
+                              $(EXTN)_$(BUILD_MANGLING)_isa_relocs.$(BOBJ)  	\
+                              $(EXTN)_$(BUILD_MANGLING)_isa_enums.$(BOBJ)  	\
+                              $(EXTN)_$(BUILD_MANGLING)_isa_properties.$(BOBJ)	\
+                              $(ISA_CORE_REGISTER)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
+
+$(EXTN)_targ_isa_parse.c: $(EXTN)_targ_isa_parse.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_parse.h: $(EXTN)_targ_isa_print.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_print.c: $(EXTN)_targ_isa_print.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_subset_targ_isa_parse.pr: $(EXTN)_targ_isa_print.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_print.h: $(EXTN)_isa_syntax_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_isa_print.$(BOBJ): $(EXTN)_targ_isa_print.c $(EXTN)_targ_isa_print.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_$(HOST_MANGLING)_targ_isa_parse.$(BOBJ): 	$(EXTN)_targ_isa_parse.c $(EXTN)_targ_isa_parse.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_$(HOST_MANGLING)_isa_parse.$(BOBJ): 	$(EXTN)_subset_targ_isa_parse.c
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_subset_targ_isa_parse.c: $(EXTN)_subset_targ_isa_parse.pr $(BUILD_AREA)/gensyn/gensyn$(BEXE)
+	$(META)$(BUILD_AREA)/gensyn/gensyn$(BEXE) $< -t extension -ac $@
+
+ifneq ($(BUILD_OS),$(HOST_OS))
+$(EXTN)_$(BUILD_MANGLING)_isa_print.$(BOBJ): $(EXTN)_targ_isa_print.c $(EXTN)_targ_isa_print.h
+	$(META)$(BUILD_CC) $(BUILD_CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+endif
+
+DEPS_dyn_isa_print.h = dyn_isa_print.h $(EXTN)_targ_isa_print.h
+
+DEPS_dyn_isa_parse.h = dyn_isa_parse.h $(EXTN)_targ_isa_parse.h
+
+##############################
+## xxx_targ_isa_lits.[ch]   ##
+##############################
+
+
+$(EXTN)_isa_lits_gen.$(BOBJ) : isa_lits_gen.cxx isa_lits_gen.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_lits.$(BOBJ): $(EXTN)_isa_lits.cxx isa_lits_gen.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_lits_gen$(BEXE): $(EXTN)_isa_lits_gen.$(BOBJ)   \
+	                     $(EXTN)_isa_lits.$(BOBJ)       \
+	                     $(EXTN)_gen_util.$(BOBJ)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
+
+$(EXTN)_targ_isa_lits.c: $(EXTN)_targ_isa_lits.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_lits.h: $(EXTN)_isa_lits_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_isa_lits.$(BOBJ): $(EXTN)_targ_isa_lits.c   \
+                                     $(EXTN)_targ_isa_lits.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+ifneq ($(BUILD_OS),$(HOST_OS))
+$(EXTN)_$(BUILD_MANGLING)_isa_lits.$(BOBJ): $(EXTN)_targ_isa_lits.c   \
+                                      $(EXTN)_targ_isa_lits.h
+	$(META)$(BUILD_CC) $(BUILD_CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+endif
+
+DEPS_dyn_isa_lits.h = dyn_isa_lits.h $(EXTN)_targ_isa_lits.h
+
+$(EXTN)_stub_isa_lits.c : $(EXTN)_targ_isa_lits.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_stub_isa_lits.$(BOBJ) : $(EXTN)_stub_isa_lits.c       \
+                      	 	     dyn_isa_lits.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+##############################
+## xxx_targ_isa_relocs.[ch] ##
+##############################
+
+
+$(EXTN)_isa_relocs_gen.$(BOBJ) : isa_relocs_gen.cxx isa_relocs_gen.h \
+                                 $(EXTN)_targ_isa_subset.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_relocs.$(BOBJ): $(EXTN)_isa_relocs.cxx isa_relocs_gen.h \
+                            $(DEPS_dyn_isa_lits.h)
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_relocs_gen$(BEXE): $(EXTN)_isa_relocs_gen.$(BOBJ)             \
+	                     $(EXTN)_isa_relocs.$(BOBJ)                   \
+                             $(EXTN)_$(BUILD_MANGLING)_isa_lits.$(BOBJ)   \
+                             $(EXTN)_$(BUILD_MANGLING)_isa_subset.$(BOBJ) \
+                             $(EXTN)_stub_isa_subset.$(BOBJ)              \
+	                     $(EXTN)_gen_util.$(BOBJ)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
+
+$(EXTN)_targ_isa_relocs.c: $(EXTN)_targ_isa_relocs.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_relocs.h: $(EXTN)_isa_relocs_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_isa_relocs.$(BOBJ): $(EXTN)_targ_isa_relocs.c   \
+                                     $(EXTN)_targ_isa_relocs.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+ifneq ($(BUILD_OS),$(HOST_OS))
+$(EXTN)_$(BUILD_MANGLING)_isa_relocs.$(BOBJ): $(EXTN)_targ_isa_relocs.c   \
+                                      $(EXTN)_targ_isa_relocs.h
+	$(META)$(BUILD_CC) $(BUILD_CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+endif
+
+DEPS_dyn_isa_relocs.h = dyn_isa_relocs.h $(EXTN)_targ_isa_relocs.h
+
+$(EXTN)_stub_isa_relocs.c : $(EXTN)_targ_isa_relocs.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_stub_isa_relocs.$(BOBJ) : $(EXTN)_stub_isa_relocs.c     \
+                      	 	      dyn_isa_relocs.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+##############################
+## xxx_targ_isa_subset.[ch] ##
+##############################
+
+
+$(EXTN)_isa_subset_gen.$(BOBJ): isa_subset_gen.cxx \
+                          isa_subset_gen.h   \
+                          $(EXTN)_topcode.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_subset.$(BOBJ): $(EXTN)_isa_subset.cxx \
+                      isa_subset_gen.h       \
+                      $(EXTN)_topcode.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_subset_gen$(BEXE): $(EXTN)_isa_subset_gen.$(BOBJ)                   \
+                               $(EXTN)_isa_subset.$(BOBJ)                       \
+                               $(EXTN)_gen_util.$(BOBJ)                         \
+			       $(EXTN)_stub_isa_topcode.$(BOBJ)	     		\
+                               $(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ)        \
+                               $(EXTN)_$(BUILD_MANGLING)_isa_properties.$(BOBJ)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
+
+$(EXTN)_targ_isa_subset.c: $(EXTN)_targ_isa_subset.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_subset.h: $(EXTN)_isa_subset_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_isa_subset.$(BOBJ): $(EXTN)_targ_isa_subset.c \
+                                       $(EXTN)_targ_isa_subset.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+ifneq ($(BUILD_OS),$(HOST_OS))
+$(EXTN)_$(BUILD_MANGLING)_isa_subset.$(BOBJ): $(EXTN)_targ_isa_subset.c \
+                                        $(EXTN)_targ_isa_subset.h
+	$(META)$(BUILD_CC) $(BUILD_CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+endif
+
+DEPS_dyn_isa_subset.h = dyn_isa_subset.h $(EXTN)_targ_isa_subset.h
+
+$(EXTN)_stub_isa_subset.c : $(EXTN)_targ_isa_subset.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_stub_isa_subset.$(BOBJ) : $(EXTN)_stub_isa_subset.c     \
+                      	 	  dyn_isa_subset.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+################################
+## xxx_targ_isa_register.[ch] ##
+################################
+
+$(EXTN)_isa_registers_gen.$(BOBJ): isa_registers_gen.cxx \
+                             isa_registers_gen.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_registers.$(BOBJ): $(EXTN)_isa_registers.cxx isa_registers_gen.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_registers_gen$(BEXE): $(EXTN)_isa_registers_gen.$(BOBJ)            \
+                                  $(EXTN)_isa_registers.$(BOBJ)                \
+                                  $(EXTN)_gen_util.$(BOBJ)                     \
+                                  $(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ)    \
+                                  $(EXTN)_$(BUILD_MANGLING)_isa_subset.$(BOBJ)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
+
+$(EXTN)_targ_isa_registers.c: $(EXTN)_targ_isa_registers.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_registers.h: $(EXTN)_isa_registers_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_isa_registers.$(BOBJ): $(EXTN)_targ_isa_registers.c \
+                                          $(EXTN)_targ_isa_registers.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+ifneq ($(BUILD_OS),$(HOST_OS))
+$(EXTN)_$(BUILD_MANGLING)_isa_registers.$(BOBJ): $(EXTN)_targ_isa_registers.c \
+                                           $(EXTN)_targ_isa_registers.h
+	$(META)$(BUILD_CC) $(BUILD_CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+endif
+
+DEPS_dyn_isa_registers.h = dyn_isa_registers.h $(EXTN)_targ_isa_registers.h
+
+$(EXTN)_stub_isa_registers.c : $(EXTN)_targ_isa_registers.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_stub_isa_registers.$(BOBJ) : $(EXTN)_stub_isa_registers.c       \
+                      	 	     dyn_isa_registers.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+#############################
+## xxx_targ_isa_enums.[ch] ##
+#############################
+
+
+$(EXTN)_isa_enums_gen.$(BOBJ): isa_enums_gen.cxx \
+                         isa_enums_gen.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_enums.$(BOBJ): $(EXTN)_isa_enums.cxx isa_enums_gen.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_enums_gen$(BEXE): $(EXTN)_isa_enums_gen.$(BOBJ)   \
+                              $(EXTN)_gen_util.$(BOBJ)        \
+                              $(EXTN)_isa_enums.$(BOBJ)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
+
+$(EXTN)_targ_isa_enums.c : $(EXTN)_targ_isa_enums.h
+$(EXTN)_targ_isa_enums.h : $(EXTN)_isa_enums_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_isa_enums.$(BOBJ): $(EXTN)_targ_isa_enums.c \
+                                      $(EXTN)_targ_isa_enums.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+ifneq ($(BUILD_OS),$(HOST_OS))
+$(EXTN)_$(BUILD_MANGLING)_isa_enums.$(BOBJ): $(EXTN)_targ_isa_enums.c \
+                                       $(EXTN)_targ_isa_enums.h
+	$(META)$(BUILD_CC) $(BUILD_CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+endif
+
+DEPS_dyn_isa_enums.h = dyn_isa_enums.h $(EXTN)_targ_isa_enums.h
+
+$(EXTN)_stub_isa_enums.c : $(EXTN)_targ_isa_enums.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_stub_isa_enums.$(BOBJ) : $(EXTN)_stub_isa_enums.c     \
+                      	 	      dyn_isa_enums.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+################################
+## xxx_targ_isa_operands.[ch] ##
+################################
+
+
+$(EXTN)_isa_operands_gen.$(BOBJ): isa_operands_gen.cxx \
+                            isa_operands_gen.h   \
+                            $(DEPS_dyn_isa_topcode.h) \
+			    $(DEPS_dyn_isa_properties.h) \
+                            $(ISA_CORE_REGISTER)
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_operands.$(BOBJ): $(EXTN)_isa_operands.cxx \
+                        isa_operands_gen.h       \
+                        $(DEPS_dyn_isa_topcode.h)        \
+                        $(DEPS_dyn_isa_lits.h)           \
+                        $(DEPS_dyn_isa_registers.h)      \
+                        $(DEPS_dyn_isa_relocs.h)      \
+                        $(ISA_CORE_REGISTER)
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_operands_gen$(BEXE): $(EXTN)_isa_operands_gen.$(BOBJ)                 \
+                                 $(EXTN)_isa_operands.$(BOBJ)                     \
+                                 $(EXTN)_gen_util.$(BOBJ)                         \
+				 $(EXTN)_stub_isa_topcode.$(BOBJ)		  \
+				 $(EXTN)_stub_isa_subset.$(BOBJ)		  \
+				 $(EXTN)_stub_isa_registers.$(BOBJ)		  \
+				 $(EXTN)_stub_isa_relocs.$(BOBJ)		  \
+                                 $(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ)        \
+                                 $(EXTN)_$(BUILD_MANGLING)_isa_registers.$(BOBJ)  \
+                                 $(EXTN)_$(BUILD_MANGLING)_isa_lits.$(BOBJ)       \
+                                 $(EXTN)_$(BUILD_MANGLING)_isa_enums.$(BOBJ)      \
+                                 $(EXTN)_$(BUILD_MANGLING)_isa_subset.$(BOBJ)     \
+                                 $(EXTN)_$(BUILD_MANGLING)_isa_relocs.$(BOBJ)     \
+                                 $(EXTN)_$(BUILD_MANGLING)_isa_properties.$(BOBJ) \
+                                 $(ISA_CORE_REGISTER)                       \
+                                 $(ISA_CORE_ENUM)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
+
+$(EXTN)_targ_isa_operands.c: $(EXTN)_targ_isa_operands.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_operands.h: $(EXTN)_isa_operands_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_isa_operands.$(BOBJ): $(EXTN)_targ_isa_operands.c \
+                                         $(EXTN)_targ_isa_operands.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+ifneq ($(BUILD_OS),$(HOST_OS))
+$(EXTN)_$(BUILD_MANGLING)_isa_operands.$(BOBJ): $(EXTN)_targ_isa_operands.c \
+                                          $(EXTN)_targ_isa_operands.h
+	$(META)$(BUILD_CC) $(BUILD_CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+endif
+
+DEPS_dyn_isa_operands.h = dyn_isa_operands.h $(EXTN)_targ_isa_operands.h
+
+$(EXTN)_stub_isa_operands.c : $(EXTN)_targ_isa_operands.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_stub_isa_operands.$(BOBJ) : $(EXTN)_stub_isa_operands.c           \
+                      	 	   dyn_isa_operands.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+####################################
+### xxx_targ_abi_properties.[ch] ###
+####################################
+
+
+$(EXTN)_abi_properties_gen.$(BOBJ): abi_properties_gen.cxx \
+                              abi_properties_gen.h   \
+                              $(DEPS_dyn_isa_registers.h) \
+                              $(ISA_CORE_REGISTER)
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_abi_properties.$(BOBJ): $(EXTN)_abi_properties.cxx \
+                          $(DEPS_dyn_isa_registers.h)        \
+                          abi_properties_gen.h       \
+                          gen_util.h \
+                          $(ISA_CORE_REGISTER)
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_abi_properties_gen$(BEXE): $(EXTN)_abi_properties_gen.$(BOBJ)              	\
+                                   $(EXTN)_abi_properties.$(BOBJ)                  	\
+                                   $(EXTN)_gen_util.$(BOBJ)                        	\
+			           $(EXTN)_stub_isa_subset.$(BOBJ)  		 	\
+			           $(EXTN)_stub_isa_registers.$(BOBJ)  		 	\
+                                   $(EXTN)_$(BUILD_MANGLING)_isa_registers.$(BOBJ) 	\
+                                   $(EXTN)_$(BUILD_MANGLING)_isa_subset.$(BOBJ) 	\
+                                   $(ISA_CORE_REGISTER)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
+
+$(EXTN)_targ_abi_properties.c: $(EXTN)_targ_abi_properties.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_abi_properties.h: $(EXTN)_abi_properties_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_abi_properties.$(BOBJ): $(EXTN)_targ_abi_properties.c  \
+                                $(EXTN)_targ_abi_properties.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+DEPS_dyn_abi_properties.h = dyn_abi_properties.h $(EXTN)_targ_abi_properties.h
+
+################################
+### xxx_targ_isa_pack.[ch]   ###
+################################
+
+$(EXTN)_isa_pack_gen.$(BOBJ): isa_pack_gen.cxx  \
+                          isa_pack_gen.h    \
+                          $(DEPS_dyn_isa_topcode.h) \
+                          $(DEPS_dyn_isa_properties.h)
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_pack.$(BOBJ): $(EXTN)_isa_pack.cxx  \
+                      isa_pack_gen.h       \
+                      $(DEPS_dyn_isa_topcode.h)
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_pack_gen$(BEXE): $(EXTN)_isa_pack_gen.$(BOBJ)            	 \
+                               $(EXTN)_isa_pack.$(BOBJ)                  \
+                               $(EXTN)_gen_util.$(BOBJ)                  \
+			       $(EXTN)_stub_isa_topcode.$(BOBJ)		 \
+			       $(EXTN)_stub_isa_properties.$(BOBJ) 	 \
+                               $(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ) \
+                               $(EXTN)_$(BUILD_MANGLING)_isa_properties.$(BOBJ)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
+
+$(EXTN)_targ_isa_pack.c: $(EXTN)_targ_isa_pack.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_pack.h: $(EXTN)_isa_pack_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_isa_pack.$(BOBJ): $(EXTN)_targ_isa_pack.c  \
+                            $(EXTN)_targ_isa_pack.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+ifneq ($(BUILD_OS),$(HOST_OS))
+$(EXTN)_$(BUILD_MANGLING)_isa_pack.$(BOBJ): $(EXTN)_targ_isa_pack.c \
+                                        $(EXTN)_targ_isa_pack.h
+	$(META)$(BUILD_CC) $(BUILD_CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+endif
+
+DEPS_dyn_isa_pack.h = dyn_isa_pack.h $(EXTN)_targ_isa_pack.h
+
+$(EXTN)_stub_isa_pack.c : $(EXTN)_targ_isa_pack.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_stub_isa_pack.$(BOBJ) : $(EXTN)_stub_isa_pack.c     \
+                      	 	  dyn_isa_pack.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+################################
+### xxx_targ_isa_decode.[ch] ###
+################################
+
+$(EXTN)_isa_decode_gen.$(BOBJ): isa_decode_gen.cxx       \
+                                isa_decode_gen.h         \
+                                $(DEPS_dyn_isa_subset.h) \
+                                $(DEPS_dyn_isa_topcode.h)\
+                                $(DEPS_dyn_isa_bundle.h) \
+                                gen_util.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_decode.$(BOBJ): $(EXTN)_isa_decode.cxx   \
+                            isa_decode_gen.h         \
+                            $(DEPS_dyn_isa_topcode.h)\
+                            $(DEPS_dyn_isa_subset.h) \
+                            $(DEPS_dyn_isa_pack.h)   \
+                            $(DEPS_dyn_isa_bundle.h) \
+			    gen_util.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_decode_gen$(BEXE): $(EXTN)_isa_decode_gen.$(BOBJ)              \
+                               $(EXTN)_isa_decode.$(BOBJ)                  \
+                               $(EXTN)_gen_util.$(BOBJ)                    \
+			       $(EXTN)_stub_isa_topcode.$(BOBJ)            \
+			       $(EXTN)_stub_isa_subset.$(BOBJ)             \
+                               $(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ)   \
+                               $(EXTN)_$(BUILD_MANGLING)_isa_subset.$(BOBJ)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
+
+$(EXTN)_targ_isa_decode.c: $(EXTN)_targ_isa_decode.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_decode.h: $(EXTN)_isa_decode_gen$(BEXE) 
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+DEPS_dyn_isa_bundle.h = dyn_isa_bundle.h $(EXTN)_targ_isa_bundle.h
+
+$(EXTN)_$(HOST_MANGLING)_isa_decode.$(BOBJ): $(EXTN)_targ_isa_decode.c \
+                                             $(EXTN)_targ_isa_decode.h \
+					     $(DEPS_dyn_isa_bundle.h)
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+ifneq ($(BUILD_OS),$(HOST_OS))
+$(EXTN)_$(BUILD_MANGLING)_isa_decode.$(BOBJ): $(EXTN)_targ_isa_decode.c \
+                                              $(EXTN)_targ_isa_decode.h
+	$(META)$(BUILD_CC) $(BUILD_CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+endif
+
+DEPS_dyn_isa_decode.h = dyn_isa_decode.h targ_isa_decode.h $(EXTN)_targ_isa_decode.h
+
+$(EXTN)_stub_isa_decode.c : $(EXTN)_targ_isa_decode.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_stub_isa_decode.$(BOBJ) : $(EXTN)_stub_isa_decode.c \
+				  dyn_isa_decode.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+################################
+### xxx_targ_isa_bundle.[ch] ###
+################################
+
+$(EXTN)_isa_bundle_gen.$(BOBJ): isa_bundle_gen.cxx  \
+                          isa_bundle_gen.h    \
+                          $(DEPS_dyn_isa_topcode.h)
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_bundle.$(BOBJ): $(EXTN)_isa_bundle.cxx  \
+                      isa_bundle_gen.h        \
+                      $(DEPS_dyn_isa_topcode.h)
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_bundle_gen$(BEXE): $(EXTN)_isa_bundle_gen.$(BOBJ)            	\
+                               $(EXTN)_isa_bundle.$(BOBJ)                	\
+                               $(EXTN)_gen_util.$(BOBJ)                  	\
+			       $(EXTN)_stub_isa_topcode.$(BOBJ)		 	\
+			       $(EXTN)_stub_isa_subset.$(BOBJ)		 	\
+			       $(EXTN)_stub_isa_properties.$(BOBJ) 	 	\
+			       $(EXTN)_stub_isa_pack.$(BOBJ)		 	\
+                               $(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ) 	\
+                               $(EXTN)_$(BUILD_MANGLING)_isa_subset.$(BOBJ) 	\
+                               $(EXTN)_$(BUILD_MANGLING)_isa_properties.$(BOBJ)	\
+                               $(EXTN)_$(BUILD_MANGLING)_isa_pack.$(BOBJ)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
+
+$(EXTN)_targ_isa_bundle.c: $(EXTN)_targ_isa_bundle.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_bundle.h: $(EXTN)_isa_bundle_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_isa_bundle.$(BOBJ): $(EXTN)_targ_isa_bundle.c  \
+                            $(EXTN)_targ_isa_bundle.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+
+################################
+### xxx_targ_isa_hazards.[ch]###
+################################
+
+$(EXTN)_isa_hazards_gen.$(BOBJ): isa_hazards_gen.cxx  \
+                                 isa_hazards_gen.h    \
+                                 $(DEPS_dyn_isa_topcode.h)
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_hazards.$(BOBJ): $(EXTN)_isa_hazards.cxx   \
+                             isa_hazards_gen.h         \
+                             $(DEPS_dyn_isa_topcode.h) \
+                             $(DEPS_dyn_isa_subset.h)
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_hazards_gen$(BEXE): $(EXTN)_isa_hazards_gen.$(BOBJ) \
+                                $(EXTN)_isa_hazards.$(BOBJ)     \
+			        $(EXTN)_stub_isa_topcode.$(BOBJ)\
+                                $(EXTN)_gen_util.$(BOBJ)        \
+                                $(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
+
+$(EXTN)_targ_isa_hazards.c: $(EXTN)_targ_isa_hazards.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_hazards.h: $(EXTN)_isa_hazards_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_isa_hazards.$(BOBJ): $(EXTN)_targ_isa_hazards.c  \
+                                              $(EXTN)_targ_isa_hazards.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+DEPS_dyn_isa_hazards.h = dyn_isa_hazards.h $(EXTN)_targ_isa_hazards.h
+
+################################
+## xxx_targ_isa_binutils.[ch] ##
+################################
+
+
+$(EXTN)_isa_binutils_gen.$(BOBJ) : isa_binutils_gen.cxx isa_binutils_gen.h \
+                                   $(DEPS_dyn_isa_subset.h) $(DEPS_dyn_isa_relocs.h) \
+				   $(DEPS_dyn_isa_registers.h) $(DEPS_dyn_isa_lits.h) \
+				   $(DEPS_dyn_isa_pack.h) $(DEPS_dyn_isa_operands.h) \
+				   gen_util.h $(DEPS_dyn_isa_topcode.h)
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_binutils.$(BOBJ): $(EXTN)_isa_binutils.cxx isa_binutils_gen.h \
+                              $(DEPS_dyn_isa_subset.h) $(DEPS_dyn_isa_topcode.h)
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_binutils_gen$(BEXE): $(EXTN)_isa_binutils_gen.$(BOBJ)                \
+                                 $(EXTN)_isa_binutils.$(BOBJ)                    \
+                                 $(EXTN)_gen_util.$(BOBJ)                        \
+			         $(EXTN)_stub_isa_subset.$(BOBJ)	         \
+                                 $(EXTN)_$(BUILD_MANGLING)_isa_subset.$(BOBJ)    \
+			         $(EXTN)_stub_isa_relocs.$(BOBJ)	         \
+                                 $(EXTN)_$(BUILD_MANGLING)_isa_relocs.$(BOBJ)    \
+			         $(EXTN)_stub_isa_registers.$(BOBJ)	         \
+                                 $(EXTN)_$(BUILD_MANGLING)_isa_registers.$(BOBJ) \
+			         $(EXTN)_stub_isa_lits.$(BOBJ)	                 \
+                                 $(EXTN)_$(BUILD_MANGLING)_isa_lits.$(BOBJ)      \
+			         $(EXTN)_stub_isa_pack.$(BOBJ)	                 \
+                                 $(EXTN)_$(BUILD_MANGLING)_isa_pack.$(BOBJ)      \
+			         $(EXTN)_stub_isa_operands.$(BOBJ)	         \
+                                 $(EXTN)_$(BUILD_MANGLING)_isa_operands.$(BOBJ)  \
+			         $(EXTN)_stub_isa_topcode.$(BOBJ)	         \
+				 $(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ)       \
+                                 $(ISA_CORE_REGISTER)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
+
+$(EXTN)_targ_isa_binutils.c: $(EXTN)_targ_isa_binutils.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_binutils.h: $(EXTN)_isa_binutils_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_isa_binutils.$(BOBJ): $(EXTN)_targ_isa_binutils.c \
+                                     $(EXTN)_targ_isa_binutils.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+ifneq ($(BUILD_OS),$(HOST_OS))
+$(EXTN)_$(BUILD_MANGLING)_isa_binutils.$(BOBJ): $(EXTN)_targ_isa_binutils.c \
+                                      $(EXTN)_targ_isa_binutils.h
+	$(META)$(BUILD_CC) $(BUILD_CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+endif
+
+DEPS_dyn_isa_binutils.h = dyn_isa_binutils.h $(EXTN)_targ_isa_binutils.h
+
+#####################################
+## Building scheduling information ##
+#####################################
+
+$(EXTN)_si_gen.$(BOBJ): si_gen.cxx            \
+                  si_gen.h              \
+                  $(DEPS_dyn_isa_topcode.h)     \
+                  $(DEPS_dyn_isa_properties.h)     \
+                  gen_util.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_si.$(BOBJ): $(EXTN)_si.cxx         \
+              si_gen.h               \
+              $(DEPS_dyn_isa_topcode.h)      \
+              gen_util.h
+	$(META)$(BUILD_CXX) $(BUILD_CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+#TODO reconsider dependance on ISA_CORE_SUBSET
+$(EXTN)_si_gen$(BEXE):  $(EXTN)_si_gen.$(BOBJ)                           \
+                        $(EXTN)_si.$(BOBJ)                               \
+                        $(EXTN)_gen_util.$(BOBJ)                         \
+			$(EXTN)_stub_isa_topcode.$(BOBJ)		 \
+                        $(EXTN)_$(BUILD_MANGLING)_topcode.$(BOBJ)        \
+                        $(EXTN)_$(BUILD_MANGLING)_isa_properties.$(BOBJ) \
+                        $(ISA_CORE_SUBSET)
+	$(META)$(BUILD_CXX) $^ $(OUTEXEFLAG)$@ $(BUILD_CXXLDFLAGS)
+
+$(EXTN)_targ_isa_si.c: $(EXTN)_targ_isa_si.h
+	@$(REM_WIN32)# $@: force dependency
+$(EXTN)_targ_isa_si.h: $(EXTN)_si_gen$(BEXE)
+	@echo "  -Building $@"
+	$(META)$(RUN) ./$<
+
+$(EXTN)_$(HOST_MANGLING)_isa_si.$(BOBJ): $(EXTN)_targ_isa_si.c  \
+                                  $(EXTN)_targ_isa_si.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+DEPS_dyn_isa_si.h = dyn_isa_si.h $(EXTN)_targ_isa_si.h
+
+#############################################################################
+## in RTK environment only, building the stxp70 core required object files ##
+#############################################################################
+#ifneq (,$(RTK))
+
+$(ISA_CORE_REGISTER): $(CORE_FILES_PATH)/targ_isa_registers.c \
+                      $(CORE_FILES_PATH)/targ_isa_registers.h \
+                      $(CORE_FILES_PATH)/targ_isa_subset.h    \
+                      $(CORE_FILES_PATH)/topcode.h
+	$(META)$(BUILD_CC) $(CORE_CFLAGS) $(COMPFLAG) $(WIN32_CORE_CFLAGS) $< $(OUTOBJFLAG)$@
+
+$(ISA_CORE_ENUM): $(CORE_FILES_PATH)/targ_isa_enums.c \
+                  $(CORE_FILES_PATH)/targ_isa_enums.h
+	$(META)$(BUILD_CC) $(CORE_CFLAGS) $(COMPFLAG) $(WIN32_CORE_CFLAGS) $< $(OUTOBJFLAG)$@
+
+$(ISA_CORE_SUBSET): $(CORE_FILES_PATH)/targ_isa_subset.c \
+                    $(CORE_FILES_PATH)/targ_isa_subset.h \
+                    $(CORE_FILES_PATH)/topcode.h
+	$(META)$(BUILD_CC) $(CORE_CFLAGS) $(COMPFLAG) $(WIN32_CORE_CFLAGS) $< $(OUTOBJFLAG)$@
+
+#endif
+
+################################
+## Building the extension dll ##
+################################
+
+DEPS_DYN_HEADER = $(DEPS_dyn_isa_topcode.h)      \
+	 	  $(DEPS_dyn_isa_properties.h)   \
+	 	  $(DEPS_dyn_isa_variants.h)     \
+	 	  $(DEPS_dyn_isa_print.h)        \
+	 	  $(DEPS_dyn_isa_parse.h)        \
+	 	  $(DEPS_dyn_isa_lits.h)         \
+	 	  $(DEPS_dyn_isa_relocs.h)       \
+	 	  $(DEPS_dyn_isa_registers.h)    \
+	 	  $(DEPS_dyn_isa_subset.h)       \
+	 	  $(DEPS_dyn_isa_enums.h)        \
+	 	  $(DEPS_dyn_isa_operands.h)     \
+	 	  $(DEPS_dyn_isa_si.h)           \
+	 	  $(DEPS_dyn_isa_pack.h)         \
+	 	  $(DEPS_dyn_isa_bundle.h)       \
+	 	  $(DEPS_dyn_abi_properties.h)   \
+	 	  $(DEPS_dyn_isa_binutils.h)     \
+		  $(COMMON_COM_DIR)/dyn_isa_api.h
+
+$(EXTN)_dyn_isa_api.$(BOBJ): dyn_isa_api.c $(DEPS_DYN_HEADER)
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_dyn_type_api.$(BOBJ): dyn_type_api.c
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_mtypes.$(BOBJ): $(EXTN)_mtypes.cxx $(EXTN)_mtypes.h $(DEPS_dyn_isa_registers.h) \
+		  $(COMMON_COM_DIR)/dyn_dll_api.h
+	$(META)$(CXX) $(CXXFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_builtins.$(BOBJ): $(EXTN)_builtins.c $(DEPS_dyn_isa_topcode.h) \
+		    $(COMMON_COM_DIR)/dyn_dll_api.h
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+$(EXTN)_isa_injected.$(BOBJ): $(EXTN)_isa_injected.c $(EXTN)_topcode.h $(DEPS_DYN_HEADER)
+	$(META)$(CC) $(CFLAGS) $(COMPFLAG) $< $(OUTOBJFLAG)$@
+
+
+
+.PHONY:clean clobber
+clobber:clean
+	$(META)$(DELETE) -f *.$(BDLL) *.$(BEXE)
+clean:
+	$(META)$(DELETE) -f $(LDIRT) *.d
+

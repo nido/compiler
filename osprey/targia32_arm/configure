@@ -1,0 +1,4 @@
+#!/bin/sh
+
+../configure BUILD=gnu-default PLATFORMS=linux-arm TOOLDEFS=gnu_compil $*
+ 

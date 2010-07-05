@@ -1,0 +1,461 @@
+#!/bin/sh
+#
+# configure
+#
+# configure script for the open64 build
+#
+#
+ 
+#
+# Utilitary functions
+# The main processing is below all function declarations
+#
+
+var_assign() {
+# Assigns a value to a variable
+# usage: var_assign <varname>
+    var=$1
+    eval value=\'$2\'
+    eval _res=\${var_declared_${var}}
+    if [ x$_res = x1 ]; then
+	eval var_val_${var}=\'${value}\'
+	eval var_defined_${var}=1
+    else
+	echo "$0: warning: ${var} variable unknown to configure, ignored."
+    fi
+}
+
+subst_decl() {
+# Declare a variable to be substituted
+# Adds the variable to the subst_vars list
+# usage: subst_decl <varname> [<default_value>]
+    var=$1
+    eval def_val=\'$2\'
+    eval var_default_${var}=\'${def_val}\'
+    eval var_declared_${var}=1
+    subst_vars="${subst_vars} ${var}"
+}
+
+subst_default() {
+# Change the default value for an already declared variable
+# usage: subst_decl <varname> [<default_value>]
+    var=$1
+    eval _res=\${var_declared_${var}}
+    if [ x$_res != x1 ]; then
+	echo "$0: warning: ${var} not declared while changing default."
+	exit 1
+    fi
+    eval def_val=\'$2\'
+    eval var_default_${var}=\'${def_val}\'
+}
+
+subst_var_assign() {
+# Assign the final value for the variable
+# usage: subst_var_assign <varname>
+    var=$1
+    eval _res=\${var_defined_${var}}
+    if [ x$_res = x1 ]; then
+	eval _res=\${var_val_${var}}
+	eval var_subst_${var}=\'$_res\'
+    else
+	eval _res=\${var_default_${var}}
+	eval var_subst_${var}=\'$_res\'
+    fi
+}
+
+subst_all_assign() {
+# Assigns all declared variables their final value
+# usage: subst_all_assign
+    if [ "${subst_vars}" != "" ]; then
+	for i in ${subst_vars}; do
+	    subst_var_assign $i
+	done
+    fi
+}
+
+subst_var_print() {
+# Prints the variable assignment
+# usage: subst_var_print <varname>
+    var=$1
+    eval _res=\${var_subst_${var}}
+    echo ${var}=\'${_res}\'
+}
+
+subst_all_print() {
+# Print all declared variables subsititutions
+# usage: subst_all_print
+    if [ "${subst_vars}" != "" ]; then
+	for i in ${subst_vars}; do
+	    subst_var_print $i
+	done
+    fi
+}
+
+subst_var_to_sed() {
+# Create a sed command for the substitution
+# usage: subst_var_to_sed <varname>
+    var=$1
+    eval _res=\${var_subst_${var}}
+    eval _res=\'s!@${var}@!${_res}!g\'
+}
+
+subst_all_to_sed() {
+# Create the full sed arguments for all the variables substitutions
+# The created arguments can only be expanded once (due to quote passing)
+# The arguments are available in subst_sed_args
+# usage: subst_all_to_sed
+    if [ "${subst_vars}" != "" ]; then
+	subst_sed_args=""
+	for i in ${subst_vars}; do
+	    subst_var_to_sed $i
+	    subst_sed_args="$subst_sed_args -e '${_res}'"
+	done
+    else
+	subst_sed_args="-e 's/^//'"
+    fi
+}
+
+fatal_error()
+{
+#Emit an error message and exit on error.
+
+   echo "### Fatal error: $1" >&2
+   exit 1
+}
+
+get_extensions()
+{
+#Returns the extension list for a given core.
+#This routine is called only if CORE_EXTENSIONS
+#variable has been set on command line.
+#
+#$1: shell file name
+#
+
+   if [ ! -f $1 ] ; then
+     fatal_error "can't find file $1"
+   fi
+    
+   EXTENSION_LIST=`source $1; echo \$EXTENSION_LIST`
+   if [ "$EXTENSION_LIST" = "" ] ; then
+     fatal_error "variable EXTENSION_LIST is not defined in file $1"
+   fi
+
+   return
+}
+
+
+
+#
+# Default settings for internal variables
+#
+thispath=`dirname $0`		# path to this osprey/configure program
+absthispath=`cd $thispath;pwd`  # absolute path to this configure program
+thisprg=`basename $0`		# program name
+absbuildpath=`pwd`		# absolute path to working dir
+makepath=${thispath}/make	# path to the osprey/make directory
+verbose=1			# verbose level
+configure_osprey_gcc=0          # set if we need to call gcc configure
+
+# Do not allow configuring directly in the top directory
+if [ $absthispath = $absbuildpath ]; then
+    echo "$0: can't configure in the top level source directory" >&2
+    exit 1
+fi
+
+# Do not allow absolute configure path
+case $thispath in
+    /*) \
+	echo "$0: configure must be called with a relative path" >&2
+	exit 1
+	;;
+esac
+
+#
+# Default settings for user variables
+# CORE_EXTENSIONS is only requested for extensible cores such as STxP70.
+#
+BUILD=default
+PLATFORMS=default
+TOOLDEFS=default
+SITE=${ST_SITE:-default}
+
+ENABLE_BOOST=false
+
+CORE_EXTENSIONS=""
+EXTENSION_LIST=""
+
+#
+# First creates config.status
+#
+cat >config.status <<EOF
+#!/bin/sh
+$0 \\
+EOF
+if [ x$1 != x ]; then
+  for i in ${1+"$@"}; do
+    echo \'$i\' \\ >>config.status
+  done
+fi
+echo >>config.status
+chmod 755 config.status
+
+#
+# Declare makefile variables to substitute and default values
+# Add here any variable you want substituted in the makefile fragments
+# 
+subst_decl ROOT '$(BUILD_AREA)/devimage'
+subst_decl ABS_ROOT $absbuildpath/devimage
+
+listsubdir="include targ_info libiberty libelf libelfutil libdwarf libSYS libcmplrs libcomutil librtkutils librcparser libparse libspin gensyn instrumentationC gccfe g++fe libfereconf osprey-gcc-4.2.0 wgen wopt be lai ipl ipa lno lw_inline whirl2c ir_tools driver libair parser"
+subst_decl SUBDIRS "$listsubdir"
+
+#
+# Parse command line
+#
+while [ $# != 0 ]; do
+  case "$1" in
+      -v) \
+	  verbose=`expr $verbose + 1`
+	  ;;
+      BUILD=*|PLATFORMS=*|TOOLDEFS=*|SITE=*|CORE_EXTENSIONS=*|ENABLE_BOOST=*) \
+	  var=`echo $1 | sed 's!=.*$!!'`
+	  value=`echo $1 | sed 's!^.*=!!'`
+	  eval ${var}=\'${value}\'
+	  ;;
+      *=*) \
+	  var=`echo $1 | sed 's!=.*$!!'`
+	  value=`echo $1 | sed 's!^.*=!!'`
+	  eval var_assign ${var} \'${value}\'
+	  ;;
+      *)  \
+	  echo "$0: unrecognized option: $1" >&2
+	  exit 1
+	  ;;
+  esac
+  shift
+done
+
+#
+#
+if [ "$ENABLE_BOOST" != "true" ]; then
+    ENABLE_BOOST=false
+fi
+
+# 
+# List of subdirectories is updated if CORE_EXTENSIONS variable is set.
+#
+if [ "$CORE_EXTENSIONS" != "" ]; then
+    listsubdir="$listsubdir targ_info_ext"
+fi
+subst_default SUBDIRS "$listsubdir"
+
+#
+#
+if [ x$PLATFORMS = xdefault ]; then
+    echo "$0: missing PLATFORMS=[<build>-]<host>-<target> configuration" >&2
+    exit 1
+fi
+
+#
+# Assign all substitutions and get sed arguments
+#
+subst_all_assign
+subst_all_to_sed
+
+# Verbose output
+# Added variable EXTENSION is
+# only useful for cores that
+# support extensions.
+if [ $verbose -ge 1 ]; then
+    echo "Configuring for:"
+    echo "BUILD=$BUILD"
+    echo "PLATFORMS=$PLATFORMS"
+    echo "TOOLDEFS=$TOOLDEFS"
+    echo "SITE=$SITE"
+
+    if [ "$CORE_EXTENSIONS" != "" ]; then
+      echo "CORE_EXTENSIONS=$CORE_EXTENSIONS"
+    fi
+    echo "ENABLE_BOOST=$ENABLE_BOOST"
+
+    subst_all_print
+fi
+
+
+#
+# Create the three top level Makefile fragments from the given
+# BUILD, PLATFORMS, TOOLDEFS and SITE configurations.
+#
+files_to_copy="$makepath/build/$BUILD/Makefile.build"
+files_to_copy="$files_to_copy $makepath/platforms/$PLATFORMS/Makefile.platforms"
+files_to_copy="$files_to_copy $makepath/tooldefs/$TOOLDEFS/Makefile.tooldefs"
+files_to_copy="$files_to_copy $makepath/sitedefs/$SITE/Makefile.sitedefs"
+
+for i in $files_to_copy; do
+    base=`basename $i`
+    if [ ! -f $i ]; then
+	echo "$0: missing configuration file: $i">&2
+	exit 1
+    fi
+    if [ $verbose -ge 1 ]; then
+	echo "Creating configuration file: $base"
+    fi
+    eval sed  ${subst_sed_args} <$i >$base
+    if [ $? != 0 ]; then
+	echo "$0: error while copying $i: aborting">&2
+	exit 1
+    fi
+done
+
+#
+# From the value of the SUBDIRS variable, we guess the diretories
+# to configure. There is a special case for gccfe/g++fe that each require
+# an additional subdir level for the gnu directory
+#
+# For extensions, we have added a second variable conf_subdirs_extensions
+# that is used afterwards.
+#
+
+conf_subdirs=""
+conf_subdirs_extensions=""
+
+for i in ${var_subst_SUBDIRS}; do
+    conf_subdirs="${conf_subdirs} $i"
+
+    case $i in
+     gccfe) 
+     conf_subdirs="$conf_subdirs $i/gnu"
+     ;;
+
+     targ_info_ext) 
+     conf_subdirs="$conf_subdirs $i/$CORE_EXTENSIONS"
+     conf_subdirs_extensions="$conf_subdirs_extensions $CORE_EXTENSIONS"
+     get_extensions $makepath/extensions/$CORE_EXTENSIONS/extensions.sh
+
+     for j in $EXTENSION_LIST; do
+       conf_subdirs="$conf_subdirs $i/$CORE_EXTENSIONS/$j"
+       conf_subdirs_extensions="$conf_subdirs_extensions $CORE_EXTENSIONS/$j"
+     done
+     ;;
+
+    esac
+done
+
+#
+# Now for each configure level subdirs, 
+# create the Makefile from Makefile.sub.in.
+#
+if [ ! -f $input ]; then
+    echo "$0: missing configuration file: $input">&2
+    exit 1
+fi
+input=${makepath}/template/Makefile.sub.in
+for i in $conf_subdirs; do
+    if [ x$i = xosprey-gcc-4.2.0 ]; then
+	configure_osprey_gcc=1
+	output=$i/gccfeconf.mk
+    else
+	output=$i/Makefile
+    fi
+	
+    if [ ! -d $i ]; then
+	mkdir $i || exit 1
+    fi
+    if [ $verbose -ge 1 ]; then
+	echo "Creating subdir makefile: $output"
+    fi
+
+    #
+    # BUILD_MOD variable is specific to subdirs makefiles and declares
+    # the module name
+    BUILD_MOD=`echo $i | sed 's!/!_!g'`
+
+    #
+    # For the specific variables BUILD_AREA (where the compiler is built)
+    # and BUILD_TOT (where the sources are located) we need to
+    # account for the subdirs level in the case where they are relative
+    # paths.
+    case $i in 
+        */*/*)
+        BUILD_AREA=../../..
+        BUILD_TOT=../../../$thispath
+        ;;
+
+	*/*) 
+        BUILD_AREA=../..
+	BUILD_TOT=../../$thispath
+	;;
+
+	*) 
+        BUILD_AREA=..
+	BUILD_TOT=../$thispath
+	;;
+    esac
+    eval sed -e \'s!@BUILD_MOD@!${BUILD_MOD}!\' \
+	-e \'s!@BUILD_AREA@!${BUILD_AREA}!\' \
+	-e \'s!@BUILD_TOT@!${BUILD_TOT}!\' \
+        -e \'s!@CORE_EXTENSIONS@!${CORE_EXTENSIONS}!\' \
+        -e \'s!@EXTENSION_LIST@!${EXTENSION_LIST}!\' \
+	-e \'s!@ENABLE_BOOST@!${ENABLE_BOOST}!\' \
+	${subst_sed_args} \
+	<$input >$output
+    if [ $? != 0 ]; then
+	echo "$0: error while creating $output" >&2
+	exit 1
+    fi
+done
+
+#
+# Create the top level Makefile from Makefile.in.
+#
+input=${makepath}/template/Makefile.in
+if [ ! -f $input ]; then
+    echo "$0: missing configuration file: $input">&2
+    exit 1
+fi
+if [ $verbose -ge 1 ]; then
+    echo "Creating top level makefile: Makefile"
+fi
+eval sed \
+     -e \'s!@CORE_EXTENSIONS@!${CORE_EXTENSIONS}!\' \
+    ${subst_sed_args} \
+    < $input >Makefile
+if [ $? != 0 ]; then
+    echo "$0: error while creating Makefile" >&2
+    exit 1
+fi
+
+
+#
+# We build Makefile.extensions file
+# that is included in Makefile.gsetup
+#
+if [ "CORE_EXTENSIONS" != "" ] ; then
+
+   makefile_extensions="$absbuildpath/Makefile.extensions";
+
+
+   cat > $makefile_extensions << EOF
+
+#
+# Building BUILD_BASE_xxx for extensions.
+# This Makefile is included in top level
+# Makefile.gsetup
+#
+EOF
+
+   for i in $conf_subdirs_extensions; do
+      BUILD_MOD=`echo $i | sed 's!/!_!g'`
+      BUILD_MOD="targ_info_ext_$BUILD_MOD"
+      echo "BUILD_BASE_$BUILD_MOD = \$(BUILD_TOT)/targinfo_ext/$i" >> $makefile_extensions
+   done
+ 
+fi
+
+#
+# Run the gcc frontend configure.
+#
+if [ $configure_osprey_gcc -ne 0 ]; then
+    make --file=gccfeconf.mk --directory=osprey-gcc-4.2.0 configure
+fi

@@ -1,0 +1,47 @@
+; Options for the STMicroelectronics st200 port of the compiler
+;
+; Copyright (C) 2009 Free Software Foundation, Inc.
+;
+; This file is part of GCC.
+;
+; GCC is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free
+; Software Foundation; either version 2, or (at your option) any later
+; version.
+;
+; GCC is distributed in the hope that it will be useful, but WITHOUT
+; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+; License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with GCC; see the file COPYING.  If not, write to the Free
+; Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA
+; 02110-1301, USA.
+
+mbig-endian
+Target Report RejectNegative Mask(BIG_ENDIAN)
+Generate big endian code
+
+mlittle-endian
+Target Report RejectNegative InverseMask(BIG_ENDIAN)
+Generate little endian code
+
+mno-bundle
+Target Undocumented Report RejectNegative Mask(NO_BUNDLE)
+
+mbundle
+Target Report RejectNegative InverseMask(NO_BUNDLE)
+Pack instructions into bundles
+
+mkernel
+Target Report Mask(KERNEL_MODE)
+Kernel execution mode
+
+mdumpinfo
+Target Report RejectNegative Mask(DUMP_INFO)
+Displays info info.txt
+
+mcpu=
+Target RejectNegative Joined
+-mcpu=CPU	      Specify architecture for code generation.

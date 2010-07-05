@@ -1,0 +1,368 @@
+#
+#  Makefile.base for libinstrC
+#
+
+#----------------------------------------------------------------------
+#
+#  Copyright (C) 2000, 2001 Silicon Graphics, Inc.  All Rights Reserved.
+#
+#  This program is free software; you can redistribute it and/or modify it
+#  under the terms of version 2 of the GNU General Public License as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it would be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+#
+#  Further, this software is distributed without any warranty that it is
+#  free of the rightful claim of any third person regarding infringement 
+#  or the like.  Any license provided herein, whether implied or 
+#  otherwise, applies only to this software file.  Patent licenses, if 
+#  any, provided herein do not apply to combinations of this program with 
+#  other software, or any other product whatsoever.  
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write the Free Software Foundation, Inc., 59
+#  Temple Place - Suite 330, Boston MA 02111-1307, USA.
+#
+#  Contact information:  Silicon Graphics, Inc., 1600 Amphitheatre Pky,
+#  Mountain View, CA 94043, or:
+#
+#  http://www.sgi.com
+#
+#  For further information regarding this notice, see:
+#
+#  http://oss.sgi.com/projects/GenInfo/NoticeExplan
+#
+#----------------------------------------------------------------------
+# example how to build st200-libinstrC.a:
+#cd /home/compwork/bidaultt/pro-dev-feedback/PRO64/osprey1.0/targSunOS5_st200/instrumentationC ; make ROOT=/home/compwork/bidaultt/pro-dev-feedback/PRO64/osprey1.0/targSunOS5_st200/devimage  RUNNER='/apa/comp/SunOS5/st200/R3.1/bin/st200run -tsimfast --' clean install_all
+
+#----------------------------------------------------------------------
+#  Information about Makefile
+#
+#  This Makefile is used to build libinstrC
+#
+#  *  Because the Makefile removes temporary files that are in the
+#     current directory (at startup and on interrupts) you can't
+#     run two or more makes in the same directory at the same time.
+#     (Perhaps, If I could force the temp files out to a temp directory,
+#     this could be changed?)
+#
+#----------------------------------------------------------------------
+
+#----------------------------------------------------------------------
+#  Set environment variables
+#
+#  TARGDIR   :  is the targ specific directory in which we do build.
+#               e.q.  /d1/cmplrs.src/v4.00/host32
+#
+#----------------------------------------------------------------------
+TARGDIR = $(BUILD_AREA)
+CURDIR  = .
+
+#----------------------------------------------------------------------
+#  Include the usual commondefs
+#----------------------------------------------------------------------
+include $(COMMONDEFS)
+
+#----------------------------------------------------------------------
+#  Set environment variables
+#
+#  TARG_LIBINSTR_DIR: is the be directory in which we do build... this can
+#               be retargeted (e.g., for building be with different options)
+#               by setting LOCAL_BE_DIR in localdefs
+#----------------------------------------------------------------------
+TARG_LIBINSTR_DIR = $(TARGDIR)/libinstr
+TARG_BE_DIR = $(TARGDIR)/be
+OBJCOPY = $(BINUTILS_LOC)$(PREFIX)objcopy$(SUFFIX)
+
+#----------------------------------------------------------------------
+#  Compiler Options
+#----------------------------------------------------------------------
+HOSTDEFS += -DBE_EXPORTED= -D_USE_PROFILE_ERROR_ROUTINES
+
+ifdef CCACHE_DIR
+export CCACHE
+export CCACHE_DIR
+CCACHE?=ccache
+export CCACHE_HASHDIR=1
+else
+export CCACHE=  
+endif
+
+ifeq ($(BUILD_OPTIMIZE), DEBUG)
+HOSTDEFS += -DIs_True_On
+HOSTDEFS += -DInsist_On 
+endif
+
+ifdef DEBUG
+HOSTDEFS += -DINSTR_DEBUG
+endif
+
+#----------------------------------------------------------------------
+#  List of directories, and source files of interest
+#----------------------------------------------------------------------
+
+SO_LOCATION_DIR		= \
+ $(BUILD_TOT)/instrumentation/libinstrC
+
+LIBINSTR_DIRS		= \
+ $(BUILD_TOT)/instrumentation/libinstrC 
+
+LIBINSTR_HEADER_DIRS    = \
+ $(BUILD_TOT)/instrumentation/libinstrC
+
+# These are the directories in which to look for source files.
+
+
+#----------------------------------------------------------------------
+#  List of source files.  Please keep them in alphabetical order.
+#----------------------------------------------------------------------
+
+LIBINSTR_C_SRCS = \
+  fb_reader.c  \
+  fb_writer.c  \
+  dump.c 		\
+  profile.c		\
+  profile_error.c	\
+  hash.c  \
+  myalloc.c
+
+LIBINSTR_C_OBJS   = $(LIBINSTR_C_SRCS:.c=.o) 
+
+LIBINSTR_TEST_C_SRCS = loop_switch.c basic.c short_circuit.c
+
+LIBINSTR_TEST_C_OBJS   = $(LIBINSTR_TEST_C_SRCS:.c=.test.o) 
+
+LIBINSTR_TEST_C_TEST   = $(LIBINSTR_TEST_C_SRCS:.c=.test) 
+
+LIBINSTR_TEST_C_INSTR0   = $(LIBINSTR_TEST_C_SRCS:.c=.instr0) 
+
+# extra files to be removed with make clobber
+ifeq ($(HOST_ARCH), ST200)
+LDIRT += libinstrC.a libst200-instrC.a libinstrC.so libst200-instrC.so array $(INSTR_READER) st200-instr_reader .first
+endif
+
+ifeq ($(HOST_ARCH), STxP70)
+LDIRT += libinstrC.a libstxp70-instrC.a libinstrC.so libstxp70-instrC.so array $(INSTR_READER) stxp70-instr_reader .first
+endif
+
+ifeq ($(HOST_ARCH), ARM)
+LDIRT += libinstrC.a libarm-instrC.a libinstrC.so libarm-instrC.so array $(INSTR_READER) arm-instr_reader .first
+endif
+
+LDIRT += ii_files *.pch so_locations $(LIBINSTR_TEST_C_TEST) $(LIBINSTR_TEST_C_INSTR0) *.c_*
+
+
+VPATH    =  $(LIBINSTR_DIRS) $(BUILD_TOT)/instrumentation/test
+
+LCOPTS += $(STD_COMPILE_OPTS)
+LCDEFS = $(HOSTDEFS) $(TARGDEFS)
+LCINCS = $(addprefix -I, $(LIBINSTR_HEADER_DIRS))
+
+LC++OPTS = $(STD_COMPILE_OPTS) $(STD_C++_OPTS) $(WOFF)
+LC++DEFS = $(HOSTDEFS) $(TARGDEFS)
+LC++INCS = $(LCINCS)
+LASOPTS = $(STD_COMPILE_OPTS)
+LASDEFS = $(HOSTDEFS) $(TARGDEFS)
+LASINCS = $(LCINCS)
+
+
+
+#----------------------------------------------------------------------
+#  Define target
+#----------------------------------------------------------------------
+
+DSO	= lib$(PREFIX)instrC.so
+LIBRARY = lib$(PREFIX)instrC.a
+INSTR_READER = $(PREFIX)instr_reader$(HEXE)
+
+ifeq ($(BUILD_TYPE), NONSHARED)
+TARGETS = $(LIBRARY) 
+endif
+ifeq ($(BUILD_VARIANT), ABI)
+TARGETS = $(LIBRARY) 
+endif
+ifndef TARGETS
+TARGETS = $(LIBRARY) 
+endif
+
+# Build instr_reader only for non cross build
+ifeq ($(BUILD_OS), $(HOST_OS))
+TARGETS += $(INSTR_READER)
+endif
+#--------------------------------------------------------------------
+#  Variables describing additional sources, objects, and libraries
+#----------------------------------------------------------------------
+LLDLIBS += 
+
+default: first
+	$(MAKE) local last
+
+first:
+
+first_local:
+
+local: $(TARGETS)
+
+#----------------------------------------------------------------------
+#  The commands in this section are done AFTER every other target is
+#  built.
+#----------------------------------------------------------------------
+make_libdeps: local
+last : make_libdeps
+
+#----------------------------------------------------------------------
+#  Build 'libinstr.so'
+#
+#  These rules build the 'libinstr.so' executable by default, and can install
+#  it in the $(BUILD_INSTALL)/usr/lib32/mips3 directory.
+#
+#----------------------------------------------------------------------
+
+INSTALL_DIR=cmplrs
+INSTALL_PREFIX:=$(ROOT)/lib
+install_all_st200:
+	@for core in $(TARGET_LIBINSTR_CORES); do \
+	  for endian in $(TARGET_LIBINSTR_ENDIANESS); do \
+		$(MAKE) TARGET_CORE=$$core TARGET_ENDIANESS=$$endian target_install_st200_core_endian_libraries_; \
+	  done; \
+	done
+
+target_install_st200_core_endian_libraries_:
+	$(MAKE) \
+	HOSTDEFS+="-mcore=$(TARGET_CORE) $(addprefix -,$(subst be,EB,$(subst le,EL,$(TARGET_ENDIANESS))))" \
+	INSTALL_DIR=$(TARGET_CORE)/$(TARGET_ENDIANESS)/bare clean _install
+
+install_all_stxp70: 
+	$(MAKE) HOSTDEFS='$(HOSTDEFS) -EL -mcore=arch_1_3_1' INSTALL_DIR=arch_1_3_1/le/bare clean _install
+
+install_all_arm:
+	@for core in $(TARGET_LIBINSTR_CORES); do \
+	  for endian in $(TARGET_LIBINSTR_ENDIANESS); do \
+		$(MAKE) TARGET_CORE=$$core TARGET_ENDIANESS=$$endian target_install_arm_core_endian_libraries_; \
+	  done; \
+	done
+
+ifeq ($(BUILD_COMPILER), OPEN64)
+
+STANDALONELIB=1
+
+ifeq ($(HOST_ARCH), ST200)
+ifeq (x$(TARGET_LIBINSTR_CORES)x,xx)
+$(error no target is defined. choose a subset of st220/st231/st235 for TARGET_LIBINSTR_CORES)
+endif
+ifeq (x$(TARGET_LIBINSTR_ENDIANESS)x,xx)
+$(error no endianess is defined. choose anong le/be for TARGET_LIBINSTR_ENDIANESS)
+endif
+install: last
+	$(MAKE) install_all_st200
+endif
+
+ifeq ($(HOST_ARCH), ARM)
+ifeq (x$(TARGET_LIBINSTR_CORES)x,xx)
+$(error no target is defined. choose a subset of armv5e/armv6 for TARGET_LIBINSTR_CORES)
+endif
+ifeq (x$(TARGET_LIBINSTR_ENDIANESS)x,xx)
+$(error no endianess is defined. choose anong le/be for TARGET_LIBINSTR_ENDIANESS)
+endif
+install: last
+	$(MAKE) install_all_arm
+endif
+
+ifeq ($(HOST_ARCH), STxP70)
+install: last
+	$(MAKE) install_all_stxp70
+endif
+
+else
+install: last
+	if [ ! -d $(INSTALL_PREFIX)/$(INSTALL_DIR) ]; then $(STD_INSTALL) -d $(INSTALL_PREFIX)/$(INSTALL_DIR); fi
+	for h in $(TARGETS); do \
+	  $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(INSTALL_PREFIX)/$(INSTALL_DIR); \
+	done
+# 	$(STD_INSTALL) $(STD_INSTALL_READ_MASK) -F $(STD_LIBRARY_LOC) $(TARGETS)
+# ifeq ($(BUILD_TYPE), SHARED)
+# 	$(STD_INSTALL) -F $(STD_DSO_LOC) -lns $(LINK) $(DSO)
+# endif
+endif
+
+_install: last 
+	if [ ! -d $(INSTALL_PREFIX)/$(INSTALL_DIR) ]; then $(STD_INSTALL) -d $(INSTALL_PREFIX)/$(INSTALL_DIR); fi
+	for h in $(TARGETS); do \
+	  $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(INSTALL_PREFIX)/$(INSTALL_DIR); \
+	done
+
+so_locations: $(SO_LOCATION_DIR)/so_locations
+	cp $(SO_LOCATION_DIR)/so_locations so_locations
+	chmod u+w so_locations
+
+.PRECIOUS : $(LIBRARY)
+
+entries=__profile_branch __profile_branch_init __profile_call_entry __profile_call_exit \
+ __profile_call_init __profile_compgoto __profile_compgoto_init __profile_finish __profile_init \
+ __profile_invoke __profile_invoke_init __profile_loop __profile_loop_init __profile_loop_iter \
+ __profile_pu_init __profile_short_circuit __profile_short_circuit_init __profile_switch __profile_switch_init \
+__profile_on __profile_off __profile_icall_init __profile_icall __profile_value_init \
+__profile_value __profile_value_fp_bin_init __profile_value_fp_bin
+
+preserved_entries=$(foreach entry,$(entries),-Wo,--preserved,$(entry))
+
+objcopy_preserved_entries=$(foreach entry,$(entries),-G $(entry))
+
+ifdef STANDALONELIB
+# Stand alone LIBRARY
+$(LIBRARY): $(LIBINSTR_C_OBJS)
+	$(CC) $(HOSTDEFS) -r $(CFLAGS) --deadcode $(preserved_entries) -Wo,--ignore-start -nostdlib -nostartfiles $^ -o $@
+	$(OBJCOPY) $(objcopy_preserved_entries) $@
+else
+$(LIBRARY): $(LIBINSTR_C_OBJS)
+	$(AR) $(ARFLAGS) $@ $^
+endif
+
+$(DSO): $(LIBRARY)
+	$(LD) $(STD_DSO_LOADOPTS) -exports_file $(BUILD_BASE)/common.exports $(EXTRA_EXPORTS) \
+	$(LIBRARY) -o $@ -lc
+
+ifdef STANDALONELIB
+$(INSTR_READER):instr_reader_main.o $(LIBINSTR_C_OBJS)
+	$(CC) $(HOSTDEFS) $(CFLAGS) instr_reader_main.o -o $@ $(LIBINSTR_C_OBJS)
+else
+$(INSTR_READER):instr_reader_main.o $(LIBRARY)
+ifdef PURE
+	$(PURIFY) $(CC) $(HOSTDEFS) $(CFLAGS) instr_reader_main.o -o $@ $(LIBRARY) 
+else
+	$(CC) $(HOSTDEFS) $(CFLAGS) instr_reader_main.o -o $@ $(LIBRARY)
+endif
+endif #STANDALONELIB
+
+%.test.o:$(BUILD_TOT)/instrumentation/test/%.c 
+	$(CC) $(HOSTDEFS) $(BUILD_TOT)/instrumentation/test/$*.c -I../../include -o $@ -c
+
+%.test:%.test.o $(LIBRARY) $(INSTR_READER)
+ifdef PURE
+	$(PURIFY) $(CC) $(HOSTDEFS) $*.test.o $(LIBRARY) -o $@ 
+else
+	$(CC) $(HOSTDEFS) $*.test.o $(LIBRARY) -o $@ 
+endif
+ifneq ($(HOST_OS), CYGWIN_NT)
+#Execute test (not on cygwin cross compilation environement) 
+	-$(RUNNER) ./$@
+	rm -f  $*.c_*
+	-$(RUNNER) ./$(INSTR_READER) -files $*.instr0
+	for i in `ls $*.c_*` ; do \
+		echo Diff with reference $$i ;\
+		diff $$i $(BUILD_TOT)/instrumentation/test/$$i  ;\
+	done
+endif
+.PHONY:self_test
+
+self_test:$(LIBINSTR_TEST_C_TEST)
+
+
+#----------------------------------------------------------------------
+#  Include the usual commonrules
+#----------------------------------------------------------------------
+include $(COMMONRULES)
+

@@ -1,0 +1,158 @@
+#
+#  Makefile.base for libgcov
+#
+
+# example how to build libgcov.a for st200:
+#cd /home/compwork/bidaultt/pro-dev-feedback/PRO64/osprey1.0/targSunOS5_st200/libgcov ; make ROOT=/home/compwork/bidaultt/pro-dev-feedback/PRO64/osprey1.0/targSunOS5_st200/devimage  clean install
+
+
+#----------------------------------------------------------------------
+#  Set environment variables
+#
+#  TARGDIR   :  is the targ specific directory in which we do build.
+#               e.q.  /d1/cmplrs.src/v4.00/host32
+#
+#----------------------------------------------------------------------
+TARGDIR = $(BUILD_AREA)
+CURDIR  = .
+
+#----------------------------------------------------------------------
+#  Include the usual commondefs
+#----------------------------------------------------------------------
+include $(COMMONDEFS)
+
+#----------------------------------------------------------------------
+#  List of directories, and source files of interest
+#----------------------------------------------------------------------
+
+TARG_TARG_INFO_DIR	= $(TARGDIR)/targ_info
+TARG_WOPT_DIR           = $(TARGDIR)/wopt
+LIBINSTR_DIR		= $(BUILD_TOT)/instrumentation/libinstrC
+
+COMMON_DIR 		= $(BUILD_TOT)/common
+COMMON_COM_DIR 		= $(COMMON_DIR)/com
+
+LIBGCOVCFLAGS = -I. -I$(COMMON_COM_DIR) $(COMMONGOPTS) $(HOSTDEFS)
+
+#----------------------------------------------------------------------
+#  List of directories, and source files of interest
+#----------------------------------------------------------------------
+
+GENERATED_FILES = \
+  gcov-iov.h
+
+LIBGCOV_DIR		= $(BUILD_TOT)/instrumentation/libgcov
+
+LIBGCOV_HEADER_DIRS    = \
+ $(BUILD_TOT)/instrumentation/libgcov
+
+# These are the directories in which to look for source files.
+
+
+LIBGCOV_C_OBJS   = _gcov.o _gcov_merge_add.o \
+	_gcov_merge_single.o _gcov_merge_delta.o
+
+
+# extra files to be removed with make clobber
+VPATH    =  $(LIBGCOV_DIR)  \
+	    $(COMMON_COM_DIR)
+
+
+#----------------------------------------------------------------------
+#  Define target
+#----------------------------------------------------------------------
+
+LIBRARY = libgcov.a
+
+TARGETS = $(LIBRARY) 
+
+default: local
+
+local: $(TARGETS)
+
+
+INSTALL_DIR=cmplrs
+INSTALL_PREFIX:=$(ROOT)/lib
+
+install_all_st200:
+	@for core in $(TARGET_LIBGCOV_CORES); do \
+	  for endian in $(TARGET_LIBGCOV_ENDIANESS); do \
+		$(MAKE) TARGET_CORE=$$core TARGET_ENDIANESS=$$endian target_install_st200_core_endian_libraries_; \
+	  done; \
+	done
+
+target_install_st200_core_endian_libraries_:
+	$(MAKE) \
+	HOSTDEFS+="-mcore=$(TARGET_CORE) $(addprefix -,$(subst be,EB,$(subst le,EL,$(TARGET_ENDIANESS))))" \
+	INSTALL_DIR=$(TARGET_CORE)/$(TARGET_ENDIANESS)/bare clean _install
+
+
+install_stxp70:
+	$(MAKE) \
+	HOSTDEFS+="$(TARGET_LIBGCOV_COPTS)" \
+	INSTALL_DIR=$(TARGET_LIBGCOV_INSTALL_DIR) clean _install
+
+ifeq ($(HOST_ARCH), ST200)
+ifeq (x$(TARGET_LIBGCOV_CORES)x,xx)
+$(error no target is defined. choose a subset of st220/st231/st235 for TARGET_LIBGCOV_CORES)
+endif
+ifeq (x$(TARGET_LIBGCOV_ENDIANESS)x,xx)
+$(error no endianess is defined. Need to define TARGET_LIBGCOV_ENDIANESS anong le/be)
+endif
+install: install_all_st200
+else
+ifeq ($(HOST_ARCH), STxP70)
+install: install_stxp70
+else
+install: local
+	if [ ! -d $(INSTALL_PREFIX)/$(INSTALL_DIR) ]; then $(STD_INSTALL) -d $(INSTALL_PREFIX)/$(INSTALL_DIR); fi
+	for h in $(TARGETS); do \
+	  $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(INSTALL_PREFIX)/$(INSTALL_DIR); \
+	done
+endif
+endif
+
+_install: default 
+	if [ ! -d $(INSTALL_PREFIX)/$(INSTALL_DIR) ]; then $(STD_INSTALL) -d $(INSTALL_PREFIX)/$(INSTALL_DIR); fi
+	for h in $(TARGETS); do \
+	  $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(INSTALL_PREFIX)/$(INSTALL_DIR); \
+	done
+
+
+.PRECIOUS : $(LIBRARY)
+$(LIBRARY): $(LIBGCOV_C_OBJS)
+	$(AR) $(ARFLAGS) $@ $^
+
+#----------------------------------------------------------------------
+#  GCOV specific build
+#----------------------------------------------------------------------
+# gcov-iov.c is run on the build machine to generate gcov-iov.h from version.c
+gcov-iov.bo: gcov-iov.c gcov-version.c 
+	$(BUILD_CC) -I$(COMMON_COM_DIR) $(BUILD_CFLAGS) -DGENERATOR_FILE $< -c -o $@
+
+gcov-iov$(BEXE): gcov-iov.bo
+	$(BUILD_CC) -o $@ $^ $(BUILD_LDFLAGS)
+
+gcov-iov.h: s-iov
+s-iov: gcov-iov$(BEXE) 
+	./gcov-iov$(build_exeext) > gcov-iov.h
+	touch s-iov
+LDIRT+= s-iov *.s *.ii gcov-iov$(BEXE) *.bo *.i gcov-iov.h $(LIBRARY)
+
+_gcov.o: $(LIBGCOV_DIR)/libgcov.c $(GENERATED_FILES) gcov-io.h gcov-io.c gcov-iov.h
+	$(CC)  $(LIBGCOVCFLAGS) -DL_gcov -c $(LIBGCOV_DIR)/libgcov.c -o _gcov.o
+
+_gcov_merge_add.o: $(LIBGCOV_DIR)/libgcov.c $(GENERATED_FILES) gcov-io.h gcov-io.c gcov-iov.h
+	$(CC)  $(LIBGCOVCFLAGS) -DL_gcov_merge_add -c $(LIBGCOV_DIR)/libgcov.c -o _gcov_merge_add.o
+
+_gcov_merge_single.o:  $(LIBGCOV_DIR)/libgcov.c $(GENERATED_FILES) gcov-io.h gcov-io.c gcov-iov.h
+	$(CC)  $(LIBGCOVCFLAGS) -DL_gcov_merge_single -c $(LIBGCOV_DIR)/libgcov.c -o _gcov_merge_single.o
+
+_gcov_merge_delta.o:  $(LIBGCOV_DIR)/libgcov.c $(GENERATED_FILES) gcov-io.h gcov-io.c gcov-iov.h
+	$(CC)  $(LIBGCOVCFLAGS) -DL_gcov_merge_delta -c $(LIBGCOV_DIR)/libgcov.c -o _gcov_merge_delta.o
+
+#----------------------------------------------------------------------
+#  Include the usual commonrules
+#----------------------------------------------------------------------
+include $(COMMONRULES)
+

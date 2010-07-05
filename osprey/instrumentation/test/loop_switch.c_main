@@ -1,0 +1,12 @@
+
+Feedback data of loop_switch.c/main (checksum 5)
+invoke = 
+	id = 0	FB---> invoke = 1
+loop = 
+	id = 0	FB---> total inv = 2, total trip count = 1774, trip count of last inv = 887, min trip count = 887
+ max trip count = 887, nb times 0 trip = 0
+	id = 1	FB---> total inv = 1, total trip count = 2, trip count of last inv = 2, min trip count = 0
+ max trip count = 0, nb times 0 trip = 0
+Call = 
+	id = 0	FB---> entry = 1774, exit = 1774
+	id = 1	FB---> entry = 1774, exit = 1774

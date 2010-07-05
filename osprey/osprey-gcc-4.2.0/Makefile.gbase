@@ -1,0 +1,175 @@
+#
+#
+#  Copyright (C) 2009 STMicroelectronics.  All Rights Reserved.
+#
+#  This program is free software; you can redistribute it and/or modify it
+#  under the terms of version 2 of the GNU General Public License as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it would be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+#
+#  Further, this software is distributed without any warranty that it is
+#  free of the rightful claim of any third person regarding infringement 
+#  or the like.  Any license provided herein, whether implied or 
+#  otherwise, applies only to this software file.  Patent licenses, if 
+#  any, provided herein do not apply to combinations of this program with 
+#  other software, or any other product whatsoever.  
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write the Free Software Foundation, Inc., 59
+#  Temple Place - Suite 330, Boston MA 02111-1307, USA.
+#
+
+TARGDIR = $(BUILD_AREA)
+
+#----------------------------------------------------------------------
+#  Include the usual commondefs
+#----------------------------------------------------------------------
+include $(COMMONDEFS)
+
+COMMON_COM_DIR 		= ../$(BUILD_TOT)/common/com
+COMMON_TARGINFO_CONFIG_DIR  = ../$(BUILD_TOT)/targinfo/$(BUILD_TARGET_DIR)/config
+SPIN_DIR                = ../$(BUILD_TOT)/libspin
+WGEN_DIR                = ../$(BUILD_TOT)/wgen
+
+TARG_TARG_INFO_DIR	= ../$(TARGDIR)/targ_info
+LIBFERECONF_DIR         = ../$(TARGDIR)/libfereconf
+LIBCOMUTIL_DIR          = ../$(TARGDIR)/libcomutil
+LIBSPIN_DIR             = ../$(TARGDIR)/libspin
+LIBSYS_DIR              = ../$(TARGDIR)/libSYS
+
+LIBTARGINFO = $(TARG_TARG_INFO_DIR)/libtarginfo.a
+LIBFERECONF = $(LIBFERECONF_DIR)/libfereconf.a
+LIBCOMUTIL  = $(LIBCOMUTIL_DIR)/libcomutil.a
+LIBGSPIN    = $(LIBSPIN_DIR)/libgspin.a
+LIBSYS      = $(LIBSYS_DIR)/libSYS.a
+
+OPEN64LIBS=$(LIBGSPIN) $(LIBFERECONF) $(LIBTARGINFO) $(LIBCOMUTIL) $(LIBFERECONF) $(LIBSYS)
+
+OPEN64INC=-I$(SPIN_DIR) -I$(COMMON_TARGINFO_CONFIG_DIR) -I$(COMMON_COM_DIR) -I$(WGEN_DIR)
+
+
+EXTRA_LIBS =
+
+INSTALL_TARGETS=gcc/cc1$(HEXE)  gcc/cc1plus$(HEXE)
+
+#
+# Synthesize GNU_HOST
+#
+# HOST_OS is in  { BARE_OS21, CYGWIN_NT, LINUX, MINGW, SUNOS5 }
+# HOST_ARCH is in { ARM, IA32, ST200, STxP70 }
+
+ifeq "$(HOST_OS)" "LINUX"
+  ifeq "$(HOST_ARCH)" "IA32"
+    GNU_HOST = i686-pc-linux-gnu
+  else
+     ifeq "$(HOST_ARCH)" "ST200"
+      GNU_HOST = st231-linux-gnu
+     else
+       ifeq "$(HOST_ARCH)" "ARM"
+         GNU_HOST = arm-linux-gnu
+       endif
+     endif
+  endif
+else
+  ifeq "$(HOST_OS)" "SUNOS5"
+    GNU_HOST = sparc-sun-solaris
+  else
+    ifeq "$(HOST_OS)" "MINGW"
+      GNU_HOST = i386-pc-mingw32
+    else
+      ifeq "$(HOST_OS)" "CYGWIN_NT"
+        GNU_HOST = i386-pc-cygwin
+      endif
+    endif
+  endif
+endif
+
+ifndef GNU_HOST
+  GNU_HOST = unknown-host
+endif
+
+#
+# Synthesize GNU_TARGET
+#
+# BUILD_TARGET is in { ARM, ST200, STxP70 }
+# BUILD_TARGET_OS is in { BARE_OS21, LINUX }
+ifeq "$(BUILD_TARGET)" "ARM"
+  ifeq "$(BUILD_TARGET_OS)" "BARE_OS21"
+    GNU_TARGET = arm-elf
+  else
+    ifeq "$(BUILD_TARGET_OS)" "LINUX"
+      GNU_TARGET = arm-linux
+    endif
+  endif
+else
+  ifeq "$(BUILD_TARGET)" "ST200"
+    ifeq "$(BUILD_TARGET_OS)" "BARE_OS21"
+      GNU_TARGET = lx-stm-elf32
+    else
+      ifeq "$(BUILD_TARGET_OS)" "LINUX"
+        GNU_TARGET = st231-linux
+      endif
+    endif
+  else
+    ifeq "$(BUILD_TARGET)" "STxP70"
+      ifeq "$(BUILD_TARGET_OS)" "BARE_OS21"
+        GNU_TARGET = stxp70-elf32
+      endif
+    endif
+  endif
+endif
+
+ifndef GNU_TARGET
+  GNU_TARGET = unknown-target
+endif
+
+#
+# Synthesize GNU_BUILD
+#
+# BUILD_OS is in { CYGWIN_NT, LINUX, SUNOS5 }
+# BUILD_ARCH is in { IA32, SPARC }
+# BUILD_ABI is in { I32BIT }
+ifeq "$(BUILD_OS)" "CYGWIN_NT"
+  GNU_BUILD = i386-pc-cygwin
+else
+  ifeq "$(BUILD_OS)" "LINUX"
+    ifeq "$(BUILD_ARCH)" "IA32"
+      GNU_BUILD = i686-pc-linux-gnu
+    else
+      ifeq "$(BUILD_ARCH)" "ARM"
+        GNU_BUILD = arm-linux-gnu
+      else
+        ifeq "$(BUILD_ARCH)" "ST200"
+          GNU_BUILD = st231-linux-gnu
+        endif
+      endif
+    endif
+  else
+    ifeq "$(BUILD_OS)" "SUNOS5"
+      GNU_BUILD = sparc-sun-solaris
+    endif
+  endif
+endif
+
+ifndef GNU_BUILD
+  GNU_BUILD = unknown-build
+endif
+
+ifeq "$(BUILD_OPTIMIZE)" "DEBUG"
+  GNU_CHECKING = --enable-checking=tree
+else
+  GNU_CHECKING = --disable-checking
+endif
+
+
+configure:
+	CONFIG_SITE= CC="$(CC)" CXX="$(CXX)" AR="$(AR)" BISON="$(YACC)" FLEX="$(LEX)" AWK="$(AWK)" CC_FOR_BUILD="$(BUILD_CC)" CFLAGS="$(STD_COMPILE_OPTS) $(OPTIMIZER) -D_FILE_OFFSET_BITS=64" OPEN64XLDFLAGS="$(GLDOPTS)" OPEN64LIBS="$(OPEN64LIBS)" OPEN64INC="$(OPEN64INC)" $(BUILD_TOT)/$(BUILD_MOD)/configure --prefix=$(ABS_ROOT)/osprey-gcc-4.2.0 --program-prefix=osprey- --program-suffix=-4.2.0 --with-gnu-as --with-gnu-ld --enable-languages=c,c++ --disable-bootstrap --disable-shared --disable-multilib --disable-libmudflap --disable-libssp --disable-libstdc__-v3 --enable-threads=posix $(GNU_CHECKING) --with-system-zlib --enable-__cxa_atexit --target=$(GNU_TARGET) --host=$(GNU_HOST) --build=$(GNU_BUILD)
+
+install:
+	if [ ! -d $(STD_MONGOOSE_OS_LOC) ]; then $(STD_INSTALL) -d $(STD_MONGOOSE_OS_LOC); fi
+	for h in $(INSTALL_TARGETS); do \
+	    $(STD_INSTALL) $(STD_INSTALL_EXEC_MASK) $$h $(STD_MONGOOSE_OS_LOC) ; \
+	done

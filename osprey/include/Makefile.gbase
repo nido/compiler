@@ -1,0 +1,696 @@
+#
+#
+#  Copyright (C) 2000, 2001 Silicon Graphics, Inc.  All Rights Reserved.
+#
+#  This program is free software; you can redistribute it and/or modify it
+#  under the terms of version 2 of the GNU General Public License as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it would be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+#
+#  Further, this software is distributed without any warranty that it is
+#  free of the rightful claim of any third person regarding infringement 
+#  or the like.  Any license provided herein, whether implied or 
+#  otherwise, applies only to this software file.  Patent licenses, if 
+#  any, provided herein do not apply to combinations of this program with 
+#  other software, or any other product whatsoever.  
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program; if not, write the Free Software Foundation, Inc., 59
+#  Temple Place - Suite 330, Boston MA 02111-1307, USA.
+#
+#  Contact information:  Silicon Graphics, Inc., 1600 Amphitheatre Pky,
+#  Mountain View, CA 94043, or:
+#
+#  http://www.sgi.com
+#
+#  For further information regarding this notice, see:
+#
+#  http://oss.sgi.com/projects/GenInfo/NoticeExplan
+#
+#
+
+#
+#
+# Makefile for include
+#
+
+include	$(COMMONDEFS)
+
+ifeq ($(BUILD_OS), IRIX)
+
+#
+# Public header files, shipped to customers and used by almost everyone.
+# Try to keep these alphabetized, to avoid duplicates and ease searches.
+# These are in alphabetical order!
+#
+PUBLIC_HFILES= \
+	a.out.h  \
+	alloca.h  \
+	aouthdr.h  \
+	ar.h  \
+	auxv.h  \
+	compact_reloc.h  \
+	disassembler.h  \
+	dwarf.h  \
+	elf.h  \
+	elf_abi.h  \
+	elf_delta.h  \
+	elf_mips.h  \
+	elfaccess.h  \
+	exception.h  \
+	excpt.h  \
+	f90sigfpe.h \
+	filehdr.h  \
+	float.h  \
+	fsigfpe.h  \
+	ieeefp.h  \
+	inttypes.h  \
+	isam.h  \
+	kmem.h  \
+	ldfcn.h  \
+	libXlate.h  \
+	libdwarf.h  \
+	libelf.h  \
+	libexc.h \
+	libftn.h \
+	linenum.h  \
+	math.h  \
+	mpc.h   \
+	msym.h  \
+	nan.h  \
+	nlist.h  \
+	obj.h  \
+	objlist.h  \
+	obj_list.h  \
+	obj_type.h  \
+	omp.h \
+	opnames.h  \
+	optional_sym.h \
+	patchhdr.h  \
+	reloc.h  \
+	rld_interface.h  \
+	scncomment.h  \
+	scnhdr.h  \
+	sex.h  \
+	sgidlfcn.h \
+	shlib.h  \
+	sigfpe.h  \
+	stamp.h \
+	storclass.h  \
+	stsupport.h  \
+	svr4_math.h  \
+	sym.h  \
+	sym64.h  \
+	sym_aux.h  \
+	symconst.h  \
+	syms.h  \
+	values.h  \
+	vdComResPkt.h \
+	whirl2c.h
+
+PUBLIC_HFILES2= \
+	math62.h
+
+ifeq ($(BUILD_TARGET), MIPS)
+PUBLIC_STDARG=stdarg.h
+PUBLIC_VARARGS=varargs.h
+STD_LOC=/usr/include
+endif
+
+ifeq ($(BUILD_TARGET), IA64)
+PUBLIC_STDARG=ia64/stdarg.h
+PUBLIC_VARARGS=ia64/varargs.h
+STD_LOC=/ia64/usr/include
+endif
+
+ifdef BUILD_BASE
+CMPLRSROOT=../../targucode
+else
+CMPLRSROOT=../targucode
+endif
+
+LDIRT = obj_ext.h
+ifndef NOTARGUCODE
+OBJEXTH	= obj_ext.h
+else
+OBJEXTH = 
+endif
+OBJEXTSED = $(CMPLRSROOT)/libmld/objext.sed
+LIBMLDSRC = $(CMPLRSROOT)/libmld
+OBJSRC =  $(LIBMLDSRC)/section.c $(LIBMLDSRC)/type.c \
+	$(LIBMLDSRC)/list.c $(LIBMLDSRC)/file.c $(LIBMLDSRC)/obj.c \
+	$(LIBMLDSRC)/procedure.c $(LIBMLDSRC)/symbol.c $(LIBMLDSRC)/search.c \
+	$(LIBMLDSRC)/line.c $(LIBMLDSRC)/obj_elf.c $(LIBMLDSRC)/obj_nlist.c \
+	$(LIBMLDSRC)/obj_rewrite.c \
+	$(LIBMLDSRC)/objfcn.c
+
+#
+# List of subdirectories to run makes in.
+#
+SUBDIRS=cmplrs sys mpp
+
+default: $(OBJEXTH)
+
+COMMONPREF=inc
+include ${COMMONRULES}
+
+headers: install
+
+exports:
+
+install $(COMMONTARGS): $(COMMONPREF)$$@ $(_FORCE)
+	$(SUBDIRS_MAKERULE)
+
+ifdef BUILD_BASE
+ ifndef NOTARGUCODE
+
+$(COMMONPREF)install: $(OBJEXTH) $(_FORCE) 
+	$(INSTALL) -m 444 -F $(STD_LOC) $(OBJEXTH)
+	cd $(BUILD_BASE); \
+	$(INSTALL) -m 444 -F $(STD_LOC) $(PUBLIC_HFILES); \
+	$(INSTALL) -m 444 -F $(STD_LOC) $(PUBLIC_HFILES2); \
+	$(INSTALL) -m 444 -F $(STD_LOC) -src $(PUBLIC_STDARG) stdarg.h; \
+	$(INSTALL) -m 444 -F $(STD_LOC) -src $(PUBLIC_VARARGS) varargs.h
+
+ else
+
+$(COMMONPREF)install: $(_FORCE) 
+	cd $(BUILD_BASE); \
+	$(INSTALL) -m 444 -F $(STD_LOC) $(PUBLIC_HFILES); \
+	$(INSTALL) -m 444 -F $(STD_LOC) $(PUBLIC_HFILES2); \
+	$(INSTALL) -m 444 -F $(STD_LOC) -src $(PUBLIC_STDARG) stdarg.h; \
+	$(INSTALL) -m 444 -F $(STD_LOC) -src $(PUBLIC_VARARGS) varargs.h
+ endif
+else # no BUILD_BASE
+
+$(COMMONPREF)install: $(OBJEXTH) $(_FORCE) 
+	$(INSTALL) -m 444 -F $(STD_LOC) $(OBJEXTH)
+	$(INSTALL) -m 444 -F $(STD_LOC) $(PUBLIC_HFILES)
+	$(INSTALL) -m 444 -F $(STD_LOC) $(PUBLIC_HFILES2)
+	$(INSTALL) -m 444 -F $(STD_LOC) -src $(PUBLIC_STDARG) stdarg.h
+	$(INSTALL) -m 444 -F $(STD_LOC) -src $(PUBLIC_VARARGS) varargs.h
+
+endif
+
+$(OBJEXTH):  $(OBJSRC)
+	@rm -f $(OBJEXTH)
+	@echo "#ifndef __OBJ_EXT_H" >> $(OBJEXTH)
+	@echo "#define __OBJ_EXT_H" >> $(OBJEXTH)
+	@echo "#include <elf.h>" >> $(OBJEXTH)
+	@echo "#include <sys/elf.h>" >> $(OBJEXTH)
+	@echo "#include <msym.h>" >> $(OBJEXTH)
+	@sed -f $(OBJEXTSED) $(OBJSRC) >> $(OBJEXTH)
+	@echo "#endif /* __OBJ_EXT_H */" >> $(OBJEXTH)
+
+else
+
+#
+#  ROOT & TOOLROOT aren't used.  
+#  The GNU convention is to build using root-installed packages
+#  (headers, libraries and tools) and anything unique to the build is self-
+#  contained within the build tree.
+#
+#  Unfortunately, because of it's background, osprey needs a mixture of
+#  different header files to build correctly on Linux.  These include:
+#    1.  Component-specific headers in component source directories
+#    2.  Header files dynamically generated as part of the build process
+#    3.  The compiler-specific headers located in v7.4i/include
+#    4.  A small set of Irix-supplied headers
+#    5.  The Linux system headers
+#    6.  The GNU headers
+#    7.  "Extended" versions of headers from #3 & #4
+#    8.  A patched version of STL (the current Mips version is too compiler
+#        specific and the current Linux version is too out-of-date)
+#  In some cases headers from #3 & #4 override headers from #5 & #6.  In some
+#  cases headers from #5 & #6 override headers from #3.  In all cases, headers
+#  from #7 & #8 override headers from #5 & #6.
+#
+#  There isn't an include search path that will work correctly referencing the
+#  headers in place.  We need to build the compiler in both Mips and Linux
+#  environments.  The headers in #1 can't be radically changed (they are
+#  shipped to Mips customers) or eliminated.  We also want to "be a good
+#  citizen" on Linux hosts and not edit/replace "system" headers in #3 & #4.
+#  Finally, we don't want a particular header file to exist in more than one
+#  location in our source tree.
+#
+#  So the scheme is to "install" a subset of the headers from #3 and all the
+#  headers in #4, #7 & #8 in a local target build directory (ie:
+#  targi32/include).  Then the include search path becomes:  #1 (in place in
+#  workarea's source tree), #2 (in appropriate build directory), "installed"
+#  headers, #6, #5.  Since #6 and #5 are automatically supplied by the GNU
+#  compiler driver, we don't need to specify them.  This is very similar to
+#  the include search path for Mips-hosted builds except that item #2 and the
+#  "installed" headers are located in ROOT and we don't have to hand craft
+#  the "installed" headers to avoid conflicts.
+#
+
+###################################################################
+#    BUILD_OS -- SUN OS5
+###################################################################
+ ifeq ($(BUILD_OS), SUNOS5)
+
+
+#-------------------------- HOST SUN OS5 --------------------------
+ ifeq ($(HOST_OS), SUNOS5)
+  HOST_HFILES =   \
+	elf.h     \
+	sgidefs.h
+  HOST_LIBELF_HFILES = \
+	sys_elf.h
+  HOST_HOST_SYS_HFILES = \
+	H_wait.h
+  HOST_HOST_HFILES = \
+	H_limits.h   \
+	H_errno.h    \
+	H_endian.h   \
+	H_stdint.h   \
+	H_bstring.h
+  HOST_INCLUDE_DIR=sunos
+ endif
+
+#-------------------------- HOST MINGW ---------------------------
+ ifeq ($(HOST_OS), MINGW)
+  HOST_HFILES =   \
+	limits.h  \
+	bstring.h \
+	elf.h     \
+	stdint.h  \
+	sgidefs.h \
+	math.h    \
+	alloca.h \
+	values.h \
+	unistd.h \
+	signal.h \
+	stdlib.h \
+	endian.h \
+	ar.h \
+	wait.h \
+	regex.h \
+	dlfcn.h \
+	strings.h \
+	getopt.h
+  HOST_SYS_HFILES=\
+	mman.h \
+	param.h \
+	resource.h
+  HOST_HOST_SYS_HFILES =
+  HOST_HOST_HFILES = \
+	H_limits.h   \
+	H_bstring.h  \
+	H_alloca.h   \
+	H_values.h  
+  HOST_INCLUDE_DIR=sunos-mingw
+  endif
+
+#-------------------------- HOST CYGWIN_NT -----------------------
+ ifeq ($(HOST_OS), CYGWIN_NT)
+  HOST_HFILES =  \
+	elf.h     \
+	sgidefs.h
+  HOST_LIBELF_HFILES = \
+	sys_elf.h
+  HOST_HOST_SYS_HFILES = \
+	H_wait.h
+  HOST_HOST_HFILES = \
+	H_limits.h   \
+	H_errno.h    \
+	H_endian.h   \
+	H_stdint.h   \
+	H_bstring.h  \
+	H_alloca.h   \
+	H_values.h   \
+	H_wait.h
+  HOST_INCLUDE_DIR=sunos-cygwin
+ endif
+ endif
+
+###################################################################
+#    BUILD_OS -- CYGWIN_NT
+###################################################################
+ ifeq ($(BUILD_OS), CYGWIN_NT)
+  ifneq ($(HOST_OS), CYGWIN_NT)
+    $(error unsupported HOST_OS=$(HOST_OS) for BUILD_OS=$(BUILD_OS))
+  endif
+
+  HOST_HFILES =  \
+	elf.h     \
+	sgidefs.h
+  HOST_LIBELF_HFILES = \
+	sys_elf.h
+  HOST_HOST_SYS_HFILES = \
+	H_wait.h
+  HOST_HOST_HFILES = \
+	H_limits.h   \
+	H_errno.h    \
+	H_endian.h   \
+	H_stdint.h   \
+	H_bstring.h  \
+	H_alloca.h   \
+	H_values.h   \
+	H_wait.h
+  HOST_INCLUDE_DIR=cygwin
+ endif
+
+###################################################################
+#    BUILD_OS -- MINGWIN_NT
+###################################################################
+ ifeq ($(BUILD_OS), MINGWIN_NT)
+  HOST_HFILES =  \
+	limits.h  \
+	bstring.h \
+	elf.h     \
+	errno.h   \
+	math.h    \
+	sgidefs.h \
+	endian.h  \
+	alloca.h  \
+	values.h
+#  HOST_SYS_HFILES=
+  HOST_INCLUDE_DIR=mingwin_nt
+ endif
+
+###################################################################
+#    BUILD_OS -- LINUX
+###################################################################
+ ifeq ($(BUILD_OS), LINUX)
+
+ ifeq ($(HOST_OS), LINUX)
+  HOST_HFILES = \
+	elf.h \
+	sgidefs.h
+  HOST_LIBELF_HFILES = \
+	sys_elf.h
+  HOST_SYS_HFILES =
+  HOST_HOST_SYS_HFILES = 
+  HOST_HOST_HFILES = \
+	H_bstring.h  \
+	H_limits.h \
+	H_stdint.h
+  HOST_INCLUDE_DIR=linux
+ endif
+
+#-------------------------- HOST MINGW ---------------------------
+# linux-mingwin
+ ifeq ($(HOST_OS), MINGW)
+  HOST_HFILES=\
+	sgidefs.h \
+	elf.h
+  HOST_LIBELF_HFILES = \
+	sys_elf.h
+  HOST_HOST_SYS_HFILES =
+  HOST_HOST_HFILES = \
+	H_stdint.h   \
+	H_endian.h   \
+	H_limits.h   \
+	H_bstring.h  \
+	H_alloca.h   \
+	H_values.h   \
+	H_signal.h \
+	H_dlfcn.h \
+	H_unistd.h \
+	H_wait.h \
+	H_mman.h \
+	H_regex.h \
+	H_times.h \
+	H_ar.h
+  HOST_INCLUDE_DIR=linux-mingw
+  endif
+
+#-------------------------- HOST CYGWIN_NT -----------------------
+ ifeq ($(HOST_OS), CYGWIN_NT)
+  HOST_HFILES =  \
+	elf.h     \
+	sgidefs.h
+  HOST_LIBELF_HFILES = \
+	sys_elf.h
+  HOST_HOST_SYS_HFILES = \
+	H_wait.h
+  HOST_HOST_HFILES = \
+	H_limits.h   \
+	H_errno.h    \
+	H_endian.h   \
+	H_stdint.h   \
+	H_bstring.h  \
+	H_alloca.h   \
+	H_values.h   \
+	H_wait.h
+  HOST_INCLUDE_DIR=linux-cygwin
+ endif
+
+ endif
+
+HOST_HOST_HFILES+=config.h
+
+INCLUDE_HFILES = \
+	compact_reloc.h \
+	dwarf.h \
+	elf_abi.h \
+	elf_mips.h \
+	elfaccess.h \
+	fp_class.h \
+	isam.h \
+	libdwarf.h \
+	libXlate.h \
+	objlist.h  \
+	obj_list.h  \
+	obj_type.h  \
+	rld_interface.h \
+	stamp.h \
+	svr4_math.h
+
+CMPLR_HFILES = \
+	cif_c.h \
+	dwarf_addr_finder.h \
+	elf_interfaces.h \
+	f_errno.h \
+	events.h \
+	fb.h \
+	host.h \
+	leb128.h \
+	make_depend.h \
+	newinst.h \
+	rcodes.h \
+	xlate.h
+
+SYS_HFILES = \
+	elf_whirl.h \
+	inst.h \
+	unwind.h \
+	unwindP.h
+
+WRAP_HFILES =      \
+	W_limits.h \
+	W_errno.h  \
+	W_endian.h \
+	W_stdint.h \
+	W_bstring.h \
+	W_alloca.h \
+	W_values.h \
+	W_wait.h \
+	W_signal.h \
+	W_dlfcn.h \
+	W_unistd.h \
+	W_mman.h \
+	W_regex.h \
+	W_times.h \
+	W_ar.h
+
+WRAP_SYS_HFILES =  \
+	W_wait.h
+
+LIBELF_CONFIG_FILE = config.h
+LIBIBERTY_CONFIG_FILE = config.h
+LIBDWARF_CONFIG_FILE = config.h
+
+LIBELF_HFILES = \
+	libelf.h \
+	elf_repl.h
+
+LIBIBERTY_HFILES = \
+	libiberty.h \
+	ansidecl.h \
+	xregex2.h \
+	xregex.h \
+
+LIBSYS_DIR=libSYS
+LIBSYS_HFILES = \
+	SYS.h \
+	sys_process.h \
+
+
+SYS_DIR = sys
+CMPLR_DIR = cmplrs
+LIBELF_DIR = libelf
+LIBIBERTY_DIR = libiberty
+LIBDWARF_DIR = libdwarf
+WRAP_DIR = wrap
+HOST_DIR = host
+HOST_SYS_DIR = host/sys
+
+SUB_DIRS += $(SYS_DIR) $(CMPLR_DIR) $(LIBIBERTY_DIR) $(LIBELF_DIR) \
+	   $(LIBDWARF_DIR) $(HOST_DIR) $(HOST_SYS_DIR) 
+
+ifeq ($(BUILD_TARGET), IA64)
+SYS_DIRS += ia64
+endif
+
+ifeq ($(BUILD_TARGET), ST100)
+SYS_DIRS += st100
+endif
+
+ifeq ($(BUILD_TARGET), ST200)
+SYS_DIRS += st200
+endif
+
+ifeq ($(BUILD_TARGET), STxP70)
+SYS_DIRS += stxp70
+endif
+
+ifeq ($(BUILD_TARGET), ARM)
+SYS_DIRS += arm
+endif
+
+ifneq ($(BUILD_OS),MINGW)
+#use symlink
+TEST_ARG=-h
+CMD=ln -sf
+else
+# cannot use symbolic links in MINGW environment
+TEST_ARG=-f
+CMD=cp
+endif
+
+ifndef SRC_DIR
+# we use relative path
+ONE_UP=..
+TWO_UP=../..
+endif
+
+first:
+
+default: first
+	$(MAKE) local last
+
+local:
+	@for h in $(SUB_DIRS) ; do \
+	    if [ ! -d $$h ]; then \
+	      mkdir -p $$h; \
+	    fi; \
+	done
+ifdef HOST_HFILES
+	@for h in $(HOST_HFILES) ; do \
+	    if [ ! $(TEST_ARG) $$h ]; then \
+	      $(CMD) $(BUILD_TOT)/$(HOST_INCLUDE_DIR)/include/$$h $$h; \
+	    fi; \
+	done
+endif
+ifdef HOST_HOST_HFILES
+	@for h in $(HOST_HOST_HFILES) ; do \
+	    if [ ! $(TEST_ARG) $(HOST_DIR)/$$h ]; then \
+	      $(CMD) $(BUILD_TOT)/$(ONE_UP)/$(HOST_INCLUDE_DIR)/include/$(HOST_DIR)/$$h $(HOST_DIR)/$$h; \
+	    fi; \
+	done
+endif	
+ifdef HOST_HOST_SYS_HFILES
+	@for h in $(HOST_HOST_SYS_HFILES) ; do \
+	    if [ ! $(TEST_ARG) $(HOST_SYS_DIR)/$$h ]; then \
+	      $(CMD) $(BUILD_TOT)/$(TWO_UP)/$(HOST_INCLUDE_DIR)/include/$(HOST_SYS_DIR)/$$h $(HOST_SYS_DIR)/$$h; \
+	    fi; \
+	done
+endif
+ifdef HOST_SYS_HFILES
+	@for h in $(HOST_SYS_HFILES) ; do \
+	    if [ ! $(TEST_ARG) $(SYS_DIR)/$$h ]; then \
+	      $(CMD) $(BUILD_TOT)/$(ONE_UP)/$(HOST_INCLUDE_DIR)/include/$(SYS_DIR)/$$h $(SYS_DIR)/$$h; \
+	    fi; \
+	done
+endif
+ifdef LIBSYS_HFILES
+	@for h in $(LIBSYS_HFILES) ; do \
+	    if [ ! $(TEST_ARG) $$h ]; then \
+	      $(CMD) $(BUILD_TOT)/$(LIBSYS_DIR)/$$h $$h; \
+	    fi; \
+	done
+endif
+	@for h in $(INCLUDE_HFILES) ; do \
+	    if [ ! $(TEST_ARG) $$h ]; then \
+	      $(CMD) $(BUILD_TOT)/include/$$h $$h; \
+	    fi; \
+	done
+ifdef WRAP_HFILES
+	@for h in $(WRAP_HFILES) ; do \
+	    if [ ! $(TEST_ARG) $$h ]; then \
+	      $(CMD) $(BUILD_TOT)/include/$(WRAP_DIR)/$$h $$h; \
+	    fi; \
+	done
+endif
+ifdef WRAP_SYS_HFILES
+	@for h in $(WRAP_SYS_HFILES) ; do \
+	    if [ ! $(TEST_ARG) $(SYS_DIR)/$$h ]; then \
+	      $(CMD) $(BUILD_TOT)/$(ONE_UP)/include/$(WRAP_DIR)/$(SYS_DIR)/$$h $(SYS_DIR)/$$h; \
+	    fi; \
+	done
+endif
+	@for h in $(CMPLR_HFILES) ; do \
+	    if [ !  $(TEST_ARG) cmplrs/$$h ]; then \
+	      $(CMD) $(BUILD_TOT)/$(ONE_UP)/include/cmplrs/$$h cmplrs/$$h; \
+	    fi; \
+	done
+	@for h in $(SYS_HFILES) ; do \
+	    if [ !  $(TEST_ARG) $(SYS_DIR)/$$h ]; then \
+	      $(CMD) $(BUILD_TOT)/$(ONE_UP)/include/$(SYS_DIR)/$$h $(SYS_DIR)/$$h; \
+	    fi; \
+	done
+ifdef SYS_DIRS
+	@for h in  $(SYS_DIRS) ; do \
+	   if [ !  $(TEST_ARG) sys/$$h ]; then \
+	     ln -sf $(BUILD_TOT)/$(ONE_UP)/include/sys/$$h sys/$$h; \
+	   fi; \
+	done;
+endif
+ifdef HOST_LIBELF_HFILES
+	@for h in $(HOST_LIBELF_HFILES) ; do \
+	    if [ !  $(TEST_ARG) libelf/$$h ]; then \
+	      $(CMD) $(BUILD_TOT)/$(ONE_UP)/$(HOST_INCLUDE_DIR)/libelf/$$h libelf/$$h; \
+	    fi; \
+	done
+endif
+ifdef LIBELF_HFILES
+	@for h in $(LIBELF_HFILES) ; do \
+	    if [ !  $(TEST_ARG) libelf/$$h ]; then \
+	      $(CMD) $(BUILD_TOT)/$(ONE_UP)/gnu_common/libelf/lib/$$h libelf/$$h; \
+	    fi; \
+	done
+endif
+	@if [ ! $(TEST_ARG) libelf/$(LIBELF_CONFIG_FILE) ]; then \
+	      $(CMD) $(BUILD_TOT)/$(ONE_UP)/$(HOST_INCLUDE_DIR)/libelf/$(LIBELF_CONFIG_FILE) libelf/$(LIBELF_CONFIG_FILE); \
+	fi
+	@if [ ! $(TEST_ARG) libiberty/$(LIBIBERTY_CONFIG_FILE) ]; then \
+	      $(CMD) $(BUILD_TOT)/$(ONE_UP)/$(HOST_INCLUDE_DIR)/libiberty/$(LIBIBERTY_CONFIG_FILE) libiberty/$(LIBIBERTY_CONFIG_FILE); \
+	fi
+ifdef LIBIBERTY_HFILES
+	@for h in  $(LIBIBERTY_HFILES) ; do \
+	    if [ !  $(TEST_ARG) libiberty/$$h ]; then \
+	      $(CMD) $(BUILD_TOT)/$(ONE_UP)/gnu_common/include/$$h libiberty/$$h; \
+	    fi; \
+	done
+endif
+	@if [ ! $(TEST_ARG) libdwarf/$(LIBDWARF_CONFIG_FILE) ]; then \
+	      $(CMD) $(BUILD_TOT)/$(ONE_UP)/$(HOST_INCLUDE_DIR)/libdwarf/$(LIBDWARF_CONFIG_FILE) libdwarf/$(LIBDWARF_CONFIG_FILE); \
+	fi
+
+last: local
+
+install: last
+
+clean:
+
+clobber:
+	@rm -rf *.h $(SUB_DIRS)
+
+
+
+endif

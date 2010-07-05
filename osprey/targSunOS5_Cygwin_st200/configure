@@ -1,0 +1,2 @@
+#!/bin/sh
+../configure BUILD=gnu-default PLATFORMS=sunos-cygwin-st200 TOOLDEFS=gnu_compil $*
