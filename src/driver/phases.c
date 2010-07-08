@@ -764,6 +764,8 @@ add_file_args (string_list_t *args, phases_t index)
 	case P_gcpp_plus:
 		if (show_but_not_run)
 			add_string(args, "-###");
+		if (quiet_flag) 
+			add_string(args, "-quiet");
 #ifdef TARG_MIPS
 		add_sysroot(args, index);
 #endif
@@ -784,26 +786,6 @@ add_file_args (string_list_t *args, phases_t index)
 		if( ospace == TRUE ){	// bug 4953
 		  add_string(args, "-Os");
 		}
-		
-		switch (source_lang) {
-		case L_as:
-			add_string(args, "-xassembler-with-cpp");
-			break;
-		case L_CC:
-			add_string(args, "-xc++");
-			break;
-		case L_f77:
-		case L_f90:
-			add_string(args, "-traditional");
-
-			if (!option_was_seen(O_Wendif_labels))
-				add_string(args, "-Wno-endif-labels");
-		case L_cc:
-		default:
-			if (source_kind != S_h)
-			  add_string(args, "-xc");
-			break;
-		}
 
 #ifdef KEY
 		if (gnu_exceptions == FALSE &&		// bug 11732
@@ -822,6 +804,10 @@ add_file_args (string_list_t *args, phases_t index)
 		}
 #endif
 
+		if (source_lang == L_CC) {
+			add_string(args, "-D_GNU_SOURCE");
+		}
+
 		if (!option_was_seen(O_nostdinc)) {
 			char *root = directory_path(get_executable_dir());
 #ifndef PATH64_ENABLE_PSCRUNTIME
@@ -839,11 +825,17 @@ add_file_args (string_list_t *args, phases_t index)
 			}
 			add_inc_path(args, "%s/include", root);
 #else
-                        add_inc_path(args, "%s/include/" PSC_FULL_VERSION "/stdcxx",
-                                 root);
-                        if(stdcxx_threadsafe){
-                            add_string(args,"-D_RWSTD_POSIX_THREADS");
-                            add_string(args,"-nostdinc");
+			add_inc_path(args, "%s/lib/" PSC_FULL_VERSION "/include",
+				     root);
+                        if (source_lang == L_CC && !option_was_seen(O_nostdinc__)) {
+                                add_inc_path(args, "%s/include/" PSC_FULL_VERSION "/stdcxx/ansi",
+                                         root);
+                                add_inc_path(args, "%s/include/" PSC_FULL_VERSION "/stdcxx",
+                                         root);
+                                if(stdcxx_threadsafe){
+                                    add_string(args,"-D_RWSTD_POSIX_THREADS");
+                                }
+                                add_string(args,"-nostdinc++");
                         }
 #endif //PATH64_ENABLE_PSCRUNTIME
 		}
@@ -1820,6 +1812,7 @@ add_final_ld_args (string_list_t *args)
           // Bug 4680 - Link with libacml_mv by default.
 	  add_library(args, "acml_mv");
 #endif
+
 	if (option_was_seen(O_nodefaultlibs) || option_was_seen(O_nostdlib)) {
 	    // If -compat-gcc, link with pscrt even if -nostdlib.  Bug 4551.
 	    if (option_was_seen(O_compat_gcc) &&
@@ -1829,32 +1822,26 @@ add_final_ld_args (string_list_t *args)
 	    }
 	    return;
 	}
+
 #ifdef PATH64_ENABLE_PSCRUNTIME
-            add_library(args, "gcc_eh");
-            add_libgcc_s(args);  //adding gcc_s is tricky. Need to consider if gcc_eh and supc++ deserve special prcessing too.
-            add_library(args, "supc++");
-            add_library(args, "std");  //new runtime
-#else
-            if (option_was_seen(O_static) || option_was_seen(O__static)){
-                add_arg(args, "--start-group");
-#  ifdef CONFIGURED_LIBGCC_DIR
-                add_arg(args, "-L%s", CONFIGURED_LIBGCC_DIR);
-#  endif
-#  ifdef CONFIGURED_LIBGCC_EH_DIR
-                add_arg(args, "-L%s", CONFIGURED_LIBGCC_EH_DIR);
-#  endif
-                add_library(args, "gcc");
-                add_library(args, "gcc_eh");
-                add_library(args, "c");  /* the above libs should be grouped together */
-                add_arg(args, "--end-group");
-                 
-                if(invoked_lang == L_CC){
-#  ifdef CONFIGURED_LIBSUPCXX_DIR
-                    add_arg(args, "-L%s", CONFIGURED_LIBSUPCXX_DIR);
-#  endif
-                    add_library(args, "supc++");
-                }
-            }
+	if(source_lang == L_CC &&
+	   !option_was_seen(O_nodefaultlibs) &&
+           !option_was_seen(O_nostdlib) &&
+	   !option_was_seen(O_nostdlib__)) {
+
+        // Apache STD library
+		add_library(args, "stdcxx");
+
+        // C++ support library
+        add_library(args, "cxxabi");
+
+        // Exception support library
+		add_library(args, "unwind");
+
+        // unwind dependencies
+        add_library(args, "pthread");
+        add_library(args, "dl");
+	}
 #endif
 #endif
 	

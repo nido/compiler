@@ -147,10 +147,8 @@ set_source_files_properties(${PATHSCALE_MFEF95_TMP_SRCS} PROPERTIES COMPILE_DEFI
 target_link_libraries (mfef95-tmp comutil fe90 fe90-tmp arith cif ${MFEF95_TMP_FORTRAN_LINK_LIB} m)
 
 add_custom_command(
-    OUTPUT ${Path64_BINARY_DIR}/lib/${PSC_FULL_VERSION} ${Path64_BINARY_DIR}/lib/mfef95 ${Path64_BINARY_DIR}/lib/be ${Path64_BINARY_DIR}/bin/pathf90
-    COMMAND ln -s . ${Path64_BINARY_DIR}/lib/${PSC_FULL_VERSION}
+    OUTPUT ${Path64_BINARY_DIR}/lib/mfef95 ${Path64_BINARY_DIR}/bin/pathf90
     COMMAND ln -s ../bin/mfef95-tmp ${Path64_BINARY_DIR}/lib/mfef95
-    COMMAND ln -s ../bin/be ${Path64_BINARY_DIR}/lib/be
     COMMAND ln -s pathcc ${Path64_BINARY_DIR}/bin/pathf90
 )
 # TODO : Fix the intrinsic_module_path since I know this isn't correct

@@ -187,6 +187,11 @@ target_link_libraries (be-exec -Wl,-whole-archive be-static cg wopt -Wl,-no-whol
 SET_TARGET_PROPERTIES(be-exec PROPERTIES OUTPUT_NAME "be")
 set_target_properties(be-exec PROPERTIES LINK_FLAGS "-Wl,--export-dynamic")
 
+add_custom_target(be-stage ALL
+                  COMMAND ${CMAKE_COMMAND} -E create_symlink ../bin/be ${Path64_BINARY_DIR}/lib/be)
+add_dependencies(be-stage be-exec)
+
+
 install(TARGETS be be-exec DESTINATION ${PATH64_LIB_PATH})
 
 install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E create_symlink \"be${CMAKE_EXECUTABLE_SUFFIX}\" \"${CMAKE_INSTALL_PREFIX}/lib/${PSC_FULL_VERSION}/ipl${CMAKE_EXECUTABLE_SUFFIX}\")")

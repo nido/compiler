@@ -105,7 +105,7 @@ ELSE()
 ENDIF()
 
 # TODO : This should use FIND_FILE and be more logical when it comes to cross compiles and multilib
-SET(PSC_CRT_PATH "/usr/lib" CACHE STRING "Location of crt1.o crti.o and crtn.o")
+SET(PSC_CRT_PATH "/usr/lib64" CACHE STRING "Location of crt1.o crti.o and crtn.o")
 IF(PSC_CRT_PATH)
 	MESSAGE(STATUS "PSC_CRT_PATH is set to "${PSC_CRT_PATH})
 ELSE()
@@ -135,6 +135,7 @@ ENDIF()
 # Are we using the PathScale runtime
 OPTION(PATH64_ENABLE_PSCRUNTIME "Using the PathScale c and c++ runtime" OFF)
 IF(PATH64_ENABLE_PSCRUNTIME)
+	ADD_DEFINITIONS(-DPATH64_ENABLE_PSCRUNTIME)
 	MESSAGE(STATUS "PathScale runtime enabled")
 ELSE()
 	MESSAGE(STATUS "GNU runtime enabled")
@@ -165,13 +166,16 @@ ENDIF()
 # Tell GCC_XML that we are providing gccxml_cc1plus for it.
 SET(GCCXML_NATIVE_CC1PLUS 1)
 
-INCLUDE(${CMAKE_SOURCE_DIR}/cmake/Modules/GCCVersion.cmake)
+INCLUDE(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/GCCVersion.cmake)
 
 
 # Place all targets near the top of the build tree by default.
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${Path64_BINARY_DIR}/bin)
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${Path64_BINARY_DIR}/lib)
 SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${Path64_BINARY_DIR}/lib)
+
+FILE(MAKE_DIRECTORY ${Path64_BINARY_DIR}/lib)
+EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E create_symlink . ${Path64_BINARY_DIR}/lib/${PSC_FULL_VERSION})
 
 SET(PATH64_LIB_PATH lib/${PSC_FULL_VERSION})
 
@@ -235,3 +239,4 @@ ENDIF()
 # Build GCC and pathscale.
 ADD_SUBDIRECTORY(GCC)
 ADD_SUBDIRECTORY(src)
+ADD_SUBDIRECTORY(gcc_incl)
